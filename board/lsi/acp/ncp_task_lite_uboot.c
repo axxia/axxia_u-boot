@@ -96,19 +96,11 @@ ncp_task_lite_uboot_nca_va_2_pa(void *va32)
      {
 #ifndef TASKIOLITE_USES_UBOOT_CFG  
         pa32 = task_lite_va_2_pa_fn(va32);
-#if 0
-	printf("%s:%d - va32=0x%p pa32=0x%lx\n",
-	       __FILE__, __LINE__, va32, pa32);	/* ZZZ */
-#endif
 #else
         ncp_nca_va_2_pa(0, va32);
 #endif
         
         pa64 += (ncp_uint64_t)pa32 + NCP_DEV_AXI_PLB_BASE;  /* PLB SUPPORT ONLY! */
-#if 0
-	printf("%s:%d - pa64=0x%llx pa32=0x%lx\n",
-	       __FILE__, __LINE__, pa64, pa32);	/* ZZZ */
-#endif
      }   
 
      return pa64;
@@ -1344,7 +1336,6 @@ ncp_task_lite_uboot_config(ncp_dev_t   *dev)
 #ifdef NCP_TASKIO_LITE_USE_BACKPRESSURE
     
     /* Backpressure ON for iPCQ0, bufSZ 3 */
-    printf("%s:%d - \n", __FILE__, __LINE__); /* ZZZ */
     NCP_CALL_LITE(ncp_task_lite_uboot_set_rbp_backpressure(dev, 
                     TRUE, 
                     1, 

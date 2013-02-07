@@ -22,6 +22,7 @@
  */
 
 /*#define LSI_DEBUG*/
+#define LSI_WARN
 #include <config.h>
 #ifdef CONFIG_ACP3
 #include <common.h>
@@ -594,12 +595,12 @@ acp_osg_jump_to_os(int group)
 
 	os = acp_osg_groups[group]->os;
 
-	/* Clear the MSR */
-	__asm__ __volatile__ ("lis            6,0\n"	\
-			      "mtmsr          6");
-
 	/* Release the stage 3 lock. */
 	acp_unlock_stage3();
+
+	/* Clear the MSR */
+	__asm__ __volatile__ ("lis            6,0\n"   \
+			      "mtmsr          6");
 
 	/* Jump to the OS. */
 	(*os)(acp_osg_groups[group]->arguments[0],
@@ -723,8 +724,8 @@ acp_osg_update_dt(void *input, int group)
 	  Update the clocks, PPC and peripheral.
 	*/
 	
-	if ((0 != acp_clock_get(ppc, &ppc_clk)) ||
-	    (0 != acp_clock_get(peripheral, &clk_per))) {
+	if ((0 != acp_clock_get(clock_ppc, &ppc_clk)) ||
+	    (0 != acp_clock_get(clock_peripheral, &clk_per))) {
 		return -1;
 	}
 

@@ -210,7 +210,7 @@ i2c_set_bus_speed(unsigned int speed)
 		for (;;) {
 			int rc;
 
-			rc = acp_clock_get(peripheral, &per_clock);
+			rc = acp_clock_get(clock_peripheral, &per_clock);
 
 			if (0 == rc) {
 				per_clock *= 1000;

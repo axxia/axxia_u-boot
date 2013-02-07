@@ -125,7 +125,7 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 		for (;;) {
 			int rc;
 
-			rc = acp_clock_get(peripheral, &per_clock);
+			rc = acp_clock_get(clock_peripheral, &per_clock);
 
 			if (0 == rc) {
 				per_clock *= 1000;

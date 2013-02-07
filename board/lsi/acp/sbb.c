@@ -452,7 +452,7 @@ run_sbb_function(int function,
 	}
 
 	if (LSI_LOGIO_ENABLED())
-		printf("DONE: 0ax04 contained 0x%08x\n", value);
+		printf("DONE: 0ax04 contained 0x%08lx\n", value);
 
 	/* Release the semaphore. */
 	unlock_sbb();

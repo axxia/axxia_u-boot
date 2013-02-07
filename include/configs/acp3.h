@@ -96,7 +96,7 @@
 #define CONFIG_SYS_PCIE_NR_PORTS 3
 #endif
 
-#if !defined(ACP_25xx) && !defined(USE_HOSTCC)
+#if !defined(USE_HOSTCC)
 /* USB support */
 #define CONFIG_CMD_USB 1
 #define CONFIG_USB_EHCI 1

@@ -55,6 +55,36 @@
 extern ncp_uint8_t tRFC_vals_800[];
 extern ncp_uint8_t tRFC_vals_667[];
 
+/*
+ * sysmem compile time options 
+ */
+
+
+/*
+ * NCP_SM_PHY_REG_RESTORE: 
+ *   if defined, enable sysmem PHY register save/restore capability
+ *
+ *   TODO: not yet supported for external RTE 
+ */
+/* #define NCP_SM_PHY_REG_RESTORE  */
+
+/* 
+ * NCP_SM_PHY_REG_DUMP: 
+ *   if defined, enable dumping of sysmem PHY registers 
+ *   upon completion of the sysmem init sequence
+ */
+#define NCP_SM_PHY_REG_DUMP
+
+/* 
+ * NCP_SM_WRLVL_DUP
+ *   if defined, will only run the write leveling training
+ *   on rank0, and will duplicate the write delays for rank1.
+ *   This is a workaround for a problem with the original 
+ *   Odessa board design. 
+ */
+#define NCP_SM_WRLVL_DUP
+
+
 
 #define SMAV( regName, regField, newValue ) \
 do { \
@@ -113,7 +143,7 @@ typedef parameters_sysmem_t     ncp_sm_parms_t;
 
 #define TRUE   (1)
 #define FALSE  (0)
-#define NCP_RETURN_LABEL
+#define NCP_RETURN_LABEL ncp_return:
 
 #include "ncp_sysmem_ext.h"
 #include "ncp_sysmem_lsiphy.h"
@@ -148,7 +178,9 @@ enum {
     ncpStatus = (s); \
     if (ncpStatus != NCP_ST_SUCCESS) { \
         printf("ncpStatus=%d\n", (int) ncpStatus); \
-        acp_failure(__FILE__, __FUNCTION__, __LINE__ ); \
+        printf("%s:%s:%d\n", \
+              __FILE__, __FUNCTION__, __LINE__); \
+        goto ncp_return; \
     }
 
 

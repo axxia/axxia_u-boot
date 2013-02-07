@@ -2101,9 +2101,9 @@ ncp_sysmem_init_ibmphy(
 		int delay_table_size;
 
 		/* Static PHY Setup (ncp_sm_phy_static_init) */
-		NCR_TRACE( "# sysmem %d PHY static init\n", i );
-		controller = NCP_REGION_ID( sm_nodes [ i ], 0 );
-		phy = NCP_REGION_ID( sm_nodes [ i ], 1 );
+		NCR_TRACE( "# sysmem %d PHY static init\n", smId );
+		controller = NCP_REGION_ID( sm_nodes [ smId ], 0 );
+		phy = NCP_REGION_ID( sm_nodes [ smId ], 1 );
 
 		/* NCP_PHY_CTL6 */
 		mask = value = 0;
@@ -2224,8 +2224,8 @@ ncp_sysmem_init_ibmphy(
 		}
 
 		/* Check for errors. */
-		if( 0 != phy_status_check( i, sysmem->enableECC ) ) {
-			printf( "%d: PHY Static Initialization\n", i );
+		if( 0 != phy_status_check( smId, sysmem->enableECC ) ) {
+			printf( "%d: PHY Static Initialization\n", smId );
 			acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		}
 
@@ -2233,7 +2233,7 @@ ncp_sysmem_init_ibmphy(
 		  CPC Initialization (ncp_sm_phy_cpc_cal)
 		*/
 
-		NCR_TRACE( "# sysmem %d CPC calibration\n", i );
+		NCR_TRACE( "# sysmem %d CPC calibration\n", smId );
 
 		/* NCP_PHY_CFG_SYSMEM_PHY_ADR0_CONFIG */
 		mask = value = 0;
@@ -2278,13 +2278,13 @@ ncp_sysmem_init_ibmphy(
 
 		if( 0 != ncr_poll( phy, NCP_PHY_CFG_SYSMEM_PHY_DFICNTLCPCCNTL,
 				   mask, value, 10000, 100 ) ) {
-			printf( "%d: ncr_poll( ) failed.\n", i );
+			printf( "%d: ncr_poll( ) failed.\n", smId );
 			acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		}
 
 		/* Check for errors. */
-		if( 0 != phy_status_check( i, sysmem->enableECC ) ) {
-			printf( "%d: CPC Calibration.\n", i );
+		if( 0 != phy_status_check( smId, sysmem->enableECC ) ) {
+			printf( "%d: CPC Calibration.\n", smId );
 			acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		}
 
@@ -2302,7 +2302,7 @@ ncp_sysmem_init_ibmphy(
 			sizeof(delay_table_t);
 #else
 #if defined(ACP_X1V1) || defined(ACP_X1V2)
-		if (0 == i) {
+		if (0 == smId) {
 			delay_table = delay_table_sm0;
 			delay_table_size = sizeof(delay_table_sm0) /
 				sizeof(delay_table_t);
@@ -2312,7 +2312,7 @@ ncp_sysmem_init_ibmphy(
 				sizeof(delay_table_t);
 		}
 #else
-		if (0 != i)
+		if (0 != smId)
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
 		delay_table = delay_table_sm0;
@@ -2323,7 +2323,7 @@ ncp_sysmem_init_ibmphy(
 
 		for (j = 0; j < delay_table_size; ++j) {
 #ifdef USE_OLD_DELAY_TABLE
-			if (i != delay_table->smId) {
+			if (smId != delay_table->smId) {
 				++delay_table;
 				continue;
 			}
@@ -2346,8 +2346,8 @@ ncp_sysmem_init_ibmphy(
 			      mask, value );
 
 		/* Check for errors. */
-		if( 0 != phy_status_check( i, sysmem->enableECC ) ) {
-			printf( "%d: PHY Delay Register Setup.\n", i );
+		if( 0 != phy_status_check( smId, sysmem->enableECC ) ) {
+			printf( "%d: PHY Delay Register Setup.\n", smId );
 			acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		}
 
@@ -2355,7 +2355,7 @@ ncp_sysmem_init_ibmphy(
 		  Intialize the Memory Controller (ncp_sm_denali_init)
 		*/
 
-		NCR_TRACE( "# sysmem %d denali controller init\n", i );
+		NCR_TRACE( "# sysmem %d denali controller init\n", smId );
 
 		/* include the common RTE/u-boot controller init code */
 #define topology sysmem->topology
@@ -2399,29 +2399,29 @@ ncp_sysmem_init_ibmphy(
 			}
 
 			NCR_TRACE( "# Sysmem %d PHY gate training rank %d\n",
-				   i, j );
+				   smId, j );
 
 			/* Read calibration */
-			rc = phy_training_run(i, controller, phy, j,
+			rc = phy_training_run(smId, controller, phy, j,
 					      NCP_SYSMEM_PHY_GATE_TRAINING,
 					      sysmem->enableECC);
 			if( 0 != rc) {
 				printf( "%d: Read Calibration Error: %d\n",
-					i, rc);
+					smId, rc);
 				acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 			}
 
 			NCR_TRACE( "# Sysmem %d PHY write leveling rank %d\n",
-				   i, j );
+				   smId, j );
 
 			/* Fine write leveling */
-			rc = phy_training_run(i, controller, phy, j,
+			rc = phy_training_run(smId, controller, phy, j,
 					      NCP_SYSMEM_PHY_WRITE_LEVELING,
 					      sysmem->enableECC);
 
 			if (0 != rc) {
 				printf( "%d: Fine Write Leveling Error: %d\n",
-					i, rc);
+					smId, rc);
 				acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 			}
 
@@ -2439,38 +2439,38 @@ ncp_sysmem_init_ibmphy(
 				continue;
 			}
 
-			address = rank_address_map [ i ] [ ( j / 2 ) ];
+			address = rank_address_map [ smId ] [ ( j / 2 ) ];
 
 			/* Coarse write leveling */
-			rc = phy_coarse_write_leveling( i, j, address,
+			rc = phy_coarse_write_leveling( smId, j, address,
 							sysmem->enableECC ,
 							num_bls);
 			if ( 0 != rc) {
 				printf( "%d: Coarse Write Leveling Error %d\n",
-					i, rc  );
+					smId, rc  );
 				acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 			}
 
 			/* Read FIFO delay optimization */
 			if( 0 !=
-			    phy_read_fifo_delay_optimization( i,
+			    phy_read_fifo_delay_optimization( smId,
 							      address, num_bls,
 							      sysmem->enableECC ) ) {
 				printf( "%d: Read FIFO Delay Optimization\n",
-					i );
+					smId );
 				acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 			}
 		}
 
-		NCR_TRACE( "# sysmem %d PHY runtime adjustment\n", i );
+		NCR_TRACE( "# sysmem %d PHY runtime adjustment\n", smId );
 
-		if (0 != phy_runtime_adj(i, sysmem->topology,
+		if (0 != phy_runtime_adj(smId, sysmem->topology,
 					 sysmem->single_bit_mpr,
 					 sysmem->enable_deskew,
 					 sysmem->enable_rdlvl,
 					 sysmem->enable_auto_cpc,
 					 sysmem->enableECC)) {
-			printf( "%d: PHY runtime adjustment failure\n", i );
+			printf( "%d: PHY runtime adjustment failure\n", smId );
 			acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		}
 

@@ -22,6 +22,10 @@
 #ifndef __CONFIGS_ACP_H
 #define __CONFIGS_ACP_H
 
+#ifndef __ASSEMBLY__
+#include <linux/types.h>
+#endif
+
 /*
   ==============================================================================
   Define the hardware.
@@ -121,9 +125,11 @@ unsigned long get_sysmem_size( void );
 #define NCP_TARGET_ID( region ) ( ( region ) & 0xffff )
 int ncr_read(unsigned long, unsigned long, int, void *);
 int ncr_read8( unsigned long, unsigned long, unsigned char * );
+int ncr_read16( unsigned long, unsigned long, unsigned short * );
 int ncr_read32( unsigned long, unsigned long, unsigned long * );
 int ncr_write(unsigned long, unsigned long, int, void *);
 int ncr_write8( unsigned long, unsigned long, unsigned char );
+int ncr_write16( unsigned long, unsigned long, unsigned short );
 int ncr_write32( unsigned long, unsigned long, unsigned long );
 int ncr_modify32( unsigned long, unsigned long, unsigned long, unsigned long );
 int ncr_and( unsigned long, unsigned long, unsigned long );
@@ -439,6 +445,7 @@ void mdio_write( int phy, int reg, unsigned short value );
 int sbb_verify_image(void *, void *, int);
 int sbb_encrypt_image(void *, void *, int);
 int sbb_decrypt_range(void *, void *, int);
+int sbb_desecure_range(int, void *, size_t);
 #endif
 #endif
 
@@ -554,8 +561,13 @@ int is_asic( void );
 
 #ifndef __ASSEMBLY__
 #define CLK_REF0 125000000
-typedef enum { ppc, peripheral } acp_clock_t;
+typedef enum {
+	clock_sys, clock_ppc, clock_ddr, clock_peripheral
+} acp_clock_t;
 int acp_clock_get(acp_clock_t, unsigned long *);
+#ifdef ACP_25xx
+void axm2500_pll_check_lock(void);
+#endif
 #endif /* __ASSEMBLY__ */
 
 /*
@@ -605,30 +617,13 @@ void acp_eioa_loopback_test(void);
 
 #ifdef ACP_25xx
 
-/*
-#define PPC_RUN_ON_REF
-*/
+/*#define SM_PLL_533_MHZ*/
 
-/*
-#define PPC_PLL_FREQ 1100000000
-#define PPC_PLL_PARAMETER 0xa0240551
-*/
-
-/*
-#define PPC_PLL_FREQ  900000000
-#define PPC_PLL_PARAMETER 0xa02202d1
-*/
-
-#define PPC_PLL_FREQ  800000000
-#define PPC_PLL_PARAMETER 0xa02405d2
-
-/*#define DISABLE_CORE_1*/
-
-/*#define EXTRA_SYSMEM_INIT_UDELAY 5000*/
-
-/*#define UDELAY_AFTER_PLL_INIT 1000000*/
+/*#define RESET_INSTEAD_OF_IPI*/
 
 /*#define DISABLE_RESET*/
+
+/*#define PPCPLL_STEP_TEST*/
 
 #endif	/* ACP_25xx */
 
@@ -746,6 +741,7 @@ int serial_early_init(void);
 #define CONFIG_LOADS_ECHO		/* echo on for serial download	*/
 #define CFG_LOADS_BAUD_CHANGE		/* allow baudrate change	*/
 #define CONFIG_ENV_OVERWRITE    1       /* allow etheraddr to be changed */
+#define CONFIG_CMD_MISC         1
 
 /*
  * For booting Linux, the board info and command line data

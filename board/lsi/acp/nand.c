@@ -1423,8 +1423,10 @@ report_ecc_errors(struct mtd_info *mtd, struct nand_chip *chip,
 	int rc = 0;
 	unsigned long value;
 	unsigned long bch_status;
-	int i;
 	int is_blank = 1;
+#if defined(ACP_NAND_4BIT_ECC)
+	int i;
+#endif
 
 	DEBUG_PRINT("page=0x%x\n", page);
 
@@ -1936,7 +1938,9 @@ lsi_nand_set_config(struct mtd_info *mtd, struct nand_chip *chip)
 int
 board_nand_init(struct nand_chip *chip)
 {
+#if defined(ACP_NAND_4BIT_ECC)
 	int i;
+#endif
 
 	LSI_DEBUG_DISABLE();
 	LSI_LOGIO_DISABLE();

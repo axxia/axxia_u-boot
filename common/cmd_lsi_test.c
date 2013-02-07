@@ -178,7 +178,7 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		struct mtd_oob_ops ops;
 		nand_erase_options_t erase_ops;
 		lsi_ecc_mode_t original_ecc_mode;
-#if defined(ACP_X2V1) || defined(ACP_25xx)
+#if defined(CONFIG_ACP_342X) || defined(ACP_25xx)
 		int section;
 #endif
 		/*
@@ -218,7 +218,7 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 		offset_byte = simple_strtoul(argv[3], NULL, 16);
 
-#if defined(ACP_X2V1) || defined(ACP_25xx)
+#if defined(CONFIG_ACP_342X) || defined(ACP_25xx)
 
 		/*
 		  The EP501G3 controller stores each section's

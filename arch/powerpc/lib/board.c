@@ -646,23 +646,25 @@ acp_init_f( void )
 	register unsigned long addr;
 	unsigned long *s;
 	unsigned long core;
+#if defined(CONFIG_ACP3)
 	unsigned long cold_start;
+#endif
+#if !defined(ACP_25xx)
 	unsigned long l2version;
 	unsigned long l2revision;
+#endif
 
-#if defined(ACP_25xx) && defined(CONFIG_ACP2) && defined(DISABLE_CORE_1)
+#if defined(ACP_25xx) && defined(CONFIG_ACP2) && defined(RESET_INSTEAD_OF_IPI)
 	/*
-	  Disable core 1.
-
-	  The 25xx will only run at 1100 MHz with core 1 disabled.
+	  Disable core 1 and L2 1.
 	*/
 
 	core = dcr_read(0xd00);
 	core |= 0xab;
 	dcr_write(core, 0xd00);
 
-	dcr_write(0x2, (DCR_RESET_BASE + 2));
 	dcr_write(0x2, (DCR_RESET_BASE + 1));
+	dcr_write(0x2, (DCR_RESET_BASE + 2));
 #endif
 
 	/* Get the core number. */
@@ -1319,6 +1321,10 @@ acp_init_r( void )
 	int core;
 	int group;
 	unsigned long cold_start;
+	unsigned char *buf;
+#if defined(ACP_25xx) && !defined(ACP_ISS) && defined(CONFIG_ACP2)
+	unsigned long *phyRegs = (unsigned long *)CANNED_PHY_REGS_ADDRESS;
+#endif
 
 	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
  
@@ -1438,21 +1444,47 @@ acp_init_r( void )
 			env_save = 1;
 		}
 
-		/* Set the PCIe/SRIO mode and configuration. */
-#if 0
-#if !defined(ACP_X1V1) && !defined(ACP_ISS) && !defined(ACP_EMU)
-		env_value = getenv("phy_ctl0");
+#if defined(ACP_25xx)
 
-		if ((char *)0 != env_value) {
-			unsigned long phy_ctrl0;
+		/*
+		 * check if LCM has an updated set of sysmem PHY registers
+		 * that need to be stored 
+		 */
+#define SECTOR_SIZE 0x10000
+#define SECTOR_BASE_ADDR(n) ( SECTOR_SIZE * (n) )
 
-			phy_ctrl0 = simple_strtoul(env_value, NULL, 0);
-			printf("Updating PHY CTRL0: 0x%x\n", phy_ctrl0);
-			pciesrio_set_control(phy_ctrl0);
+		ssp_init(0, 0);
+		if (*phyRegs == CANNED_PHY_REGS_TAG_SAVE) {
+			unsigned long *pCRC;
+			/* TODO : make sure sysmem really works!! */
+
+			/* write to PROM/FLASH */
+			*phyRegs = CANNED_PHY_REGS_TAG_PROM;
+
+			buf = malloc(SECTOR_SIZE);
+			if (buf == 0) {
+				printf("malloc failed - "
+				       "couldn't write PHY regs\n");
+				return;
+			}
+
+			printf("writing sysmem PHY regs to PROM!\n");
+			/*
+			  read the second sector (where u-boot parameters lives)
+			*/
+			ssp_read(buf, SECTOR_BASE_ADDR(1),  SECTOR_SIZE);
+			memcpy(&buf[0xfe00],
+			       (const void *)CANNED_PHY_REGS_ADDRESS, 464);
+
+			pCRC = (unsigned long *) &buf[0xfff4];
+			*pCRC = crc32(0, &buf[0xfc00], 1012);
+
+			ssp_write(buf, SECTOR_BASE_ADDR(1), SECTOR_SIZE, 1);
+
 		}
 #endif
-#endif
 #else
+
 		env_value = getenv( "version3" );
 		strcpy( buffer, get_lsi_version( ) );
 
@@ -1594,37 +1626,42 @@ acp_init_r( void )
 
 #if defined(ACP_25xx) && defined(CONFIG_ACP2)
 	{
+		int rc;
 		unsigned long ncp_denali_ctl_20;
 		unsigned long ncp_denali_ctl_31;
 		unsigned long debug;
+		unsigned long system_pll;
+		unsigned long ppc_pll;
+		unsigned long ddr_pll;
+		unsigned long peripheral_clock;
+		unsigned long l2_0_sleep_state;
+		unsigned long l2_1_sleep_state;
 
 		ncr_read32(NCP_REGION_ID(0x22, 0), 0x50, &ncp_denali_ctl_20);
 		ncr_read32(NCP_REGION_ID(0x22, 0), 0x7c, &ncp_denali_ctl_31);
 		ncr_read32(NCP_REGION_ID(0x20, 0), 0x100, &debug);
 
-		printf("\nAXM2500 Settings\n"
-		       "PPC PLL: %dMHz\n"
-		       "NCR RWM Delay : %dus\n"
-		       "After PLL Init Delay : %dus\n"
-		       "ECC : %s\n"
-		       "Memory : %s\n"
-		       "SysCache : %s\n"
-		       "Reset : %s\n\n"
-		       "PCIe Test Mode: %s\n\n",
-#ifdef PPC_RUN_ON_REF
-		       125,
-#else
-		       (PPC_PLL_FREQ / 1000000),
+		dcr_write(0x80, 0x300);
+		l2_0_sleep_state = dcr_read(0x304);
+		dcr_write(0x80, 0x400);
+		l2_1_sleep_state = dcr_read(0x404);
+
+		printf("--------------- AXM2500 Settings ---------------\n"
+		       "               L2 State: %d %d\n"
+		       "   Reset instead of IPI: %s\n"
+		       "                    ECC: %s\n"
+		       "                 Memory: %s\n"
+		       "               SysCache: %s\n"
+		       "                  Reset: %s\n"
+#ifdef NCP_SM_PHY_REG_RESTORE
+		       "SM PHY Register Restore: %s\n"
 #endif
-#ifdef EXTRA_SYSMEM_INIT_UDELAY
-		       EXTRA_SYSMEM_INIT_UDELAY,
+		       "         PCIe Test Mode: %s\n\n",
+		       l2_0_sleep_state, l2_1_sleep_state,
+#ifdef RESET_INSTEAD_OF_IPI
+		       "Enabled",
 #else
-		       0,
-#endif
-#ifdef UDELAY_AFTER_PLL_INIT
-		       UDELAY_AFTER_PLL_INIT,
-#else
-		       0,
+		       "Disabled",
 #endif
 		       (0x300 ==
 			(ncp_denali_ctl_20 & 0x300)) ? "On" : "Off",
@@ -1632,10 +1669,9 @@ acp_init_r( void )
 			(ncp_denali_ctl_31 & 0x300)) ? "Dual" : "Single",
 		       (0x1 ==
 			(debug & 0x1)) ? "Disabled" : "Enabled",
-#ifdef DISABLE_RESET
-		       "Disabled"
-#else
-		       "Enabled"
+		       (0 == reset_enabled) ? "Disabled" : "Enabled",
+#ifdef NCP_SM_PHY_REG_RESTORE
+		       (0 == ncp_sm_phy_reg_restore) ? "Disabled" : "Enabled",
 #endif
 #ifdef ACP2_PCIE_TEST
 		       "Enabled"
@@ -1643,6 +1679,30 @@ acp_init_r( void )
 		       "Disabled"
 #endif
 		       );
+
+		rc = acp_clock_get(clock_sys, &system_pll);
+		rc |= acp_clock_get(clock_ppc, &ppc_pll);
+		rc |= acp_clock_get(clock_ddr, &ddr_pll);
+		rc |= acp_clock_get(clock_peripheral, &peripheral_clock);
+
+		if (0 != rc)
+			printf("Error Getting PLL/Clock Frequencies!\n");
+		else
+			printf("             System PLL: %04d MHz\n"
+			       "                PPC PLL: %04d MHz\n"
+			       "                DDR PLL: %04d MHz\n"
+			       "       Peripheral Clock: %04d MHz\n"
+			       "      PPC PLL Step Test: %s\n\n",
+			       system_pll / 1000,
+			       ppc_pll / 1000,
+			       ddr_pll / 2000,
+			       peripheral_clock / 1000,
+#ifdef PPCPLL_STEP_TEST
+			       "Enabled"
+#else
+			       "Disabled"
+#endif
+			       );
 	}
 #endif
 
@@ -1693,14 +1753,8 @@ acp_init_r( void )
 		}
 #endif
 
-		if (0 == boot_mode && 1 == pci_rc) {
-			if (1 == pei_mask) {
-				pci_init_board();
-			} else {
-				printf("The ONLY supported configuration is"
-				       "PEI0 in root complex mode!\n");
-			}
-		}
+		if (0 == boot_mode && 1 == pci_rc)
+			pci_init_board();
 	}
 #endif
 

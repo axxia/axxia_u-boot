@@ -84,7 +84,7 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 1 ] )->entry_address ) );
 		ose_add_string( 0, buffer );
-#if !defined(ACP_X2V1) && !defined(ACP_25xx)
+#if !defined(CONFIG_ACP_342X) && !defined(ACP_25xx)
 		sprintf( buffer, "spintable_2=0x%lx",
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 2 ] )->entry_address ) );
@@ -98,7 +98,7 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 		ose_add_string( 0, buffer );
 		sprintf( buffer, "serclk1=%u", UART_CLOCK_SPEED);
 		ose_add_string( 0, buffer );
-		if( 0 == acp_clock_get( ppc, & ppc_clock ) ) {
+		if( 0 == acp_clock_get( clock_ppc, & ppc_clock ) ) {
 			sprintf( buffer, "coreclk=%lu", ( ppc_clock * 1000 ) );
 			ose_add_string( 0, buffer );
 		} else {

@@ -1,4 +1,3 @@
-
 /********************************************************************
  * ncp_sm_denali_2041_init.c
  *
@@ -42,7 +41,11 @@ ncp_sm_denali_2041_init(
     ncp_uint32_t ctl_32, ctl_33, ctl_34;
     ncp_region_id_t ctlReg = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
 
+#ifdef SM_PLL_533_MHZ
+    ncp_uint8_t *tRFC_vals = tRFC_vals_533;
+#else
     ncp_uint8_t *tRFC_vals = tRFC_vals_800;
+#endif
 
     NCP_COMMENT("Sysmem %d Denali Controller init", smId);
     /* node_cfg */
@@ -187,7 +190,11 @@ ncp_sm_denali_2041_init(
 
     /* DENALI_CTL_36 */
     value = 0;
+#ifdef SM_PLL_533_MHZ
+    SV( ncp_denali_DENALI_CTL_36_t, twtr, 4 );      /* FREQDEP : 7.5ns @533MHz */
+#else
     SV( ncp_denali_DENALI_CTL_36_t, twtr, 6 );      /* FREQDEP : 7.5ns @800MHz */
+#endif
     SV( ncp_denali_DENALI_CTL_36_t, trp, parms->CAS_latency );
     ncr_write32(ctlReg,  0x0090, value );
 
@@ -204,24 +211,39 @@ ncp_sm_denali_2041_init(
     value = 0;
     /* tDAL = CL + tWR  = CL + 15ns */
     /* FREQDEP : tWR = 12 : 15ns @800MHz */
+#ifdef SM_PLL_533_MHZ
+    SV( ncp_denali_DENALI_CTL_39_t, tdal, ( parms->CAS_latency + 8 ) ); 
+#else
     SV( ncp_denali_DENALI_CTL_39_t, tdal, ( parms->CAS_latency + 12 ) ); 
-    /* TODO : LARRY -- rdlat_adj??? */
-    SV( ncp_denali_DENALI_CTL_39_t, rdlat_adj,  2);
+#endif
+    /* 
+     * due to controller bug, rdlat_adj must be 3 or greater.
+     * we set it to 4
+     */
+    SV( ncp_denali_DENALI_CTL_39_t, rdlat_adj,  4);
     ncr_write32(ctlReg,  0x009c, value);
 
     /* DENALI_CTL_40 */
     /* FREQDEP */
     /* TFAW depends on memory organization  (sdram_device_width)
-     *      and speed bin 
-     *    x8 : 30ns  = 24 clks at 800MHz
-     *   x16 : 40ns  = 32 clks at 800MHz 
+     *      and speed bin  
+     *    x8 : 30ns  = 24 clks at 800MHz,  20 clks @ 533MHz
+     *   x16 : 40ns  = 32 clks at 800MHz,  27 clks @ 533MHz
      */
     value = 0;
     if ( (NCP_SM_SDRAM_DENSITY_8GBIT == parms->sdram_device_density) || 
          (NCP_SM_SDRAM_WIDTH_16BITS  == parms->sdram_device_width)) {
+#ifdef SM_PLL_533_MHZ
+        SV(ncp_denali_DENALI_CTL_40_t, tfaw, 27);
+#else
         SV(ncp_denali_DENALI_CTL_40_t, tfaw, 32);
+#endif
     } else {
+#ifdef SM_PLL_533_MHZ
+        SV(ncp_denali_DENALI_CTL_40_t, tfaw, 20);
+#else
         SV(ncp_denali_DENALI_CTL_40_t, tfaw, 24);
+#endif
     }
     SV(ncp_denali_DENALI_CTL_40_t, tdfi_phy_rdlat, parms->phy_rdlat);
     ncr_write32(ctlReg,  0x00a0, value);
@@ -241,8 +263,13 @@ ncp_sm_denali_2041_init(
      */
     value = 0;
     SV( ncp_denali_DENALI_CTL_41_t, tmrd, 4 );
+#ifdef SM_PLL_533_MHZ
+    SV( ncp_denali_DENALI_CTL_41_t, trc, ( parms->CAS_latency + 20 ) );	/* ??? */
+    SV( ncp_denali_DENALI_CTL_41_t, twr_int, 8 );  /* FREQDEP */
+#else
     SV( ncp_denali_DENALI_CTL_41_t, trc, ( parms->CAS_latency + 28 ) );
     SV( ncp_denali_DENALI_CTL_41_t, twr_int, 12 );  /* FREQDEP */
+#endif
     ncr_write32(ctlReg,  0x00a4, value);
 
     /* DENALI_CTL_42 */
@@ -263,7 +290,11 @@ ncp_sm_denali_2041_init(
     /* DENALI_CTL_62 */
     value = 0;
     SV( ncp_denali_DENALI_CTL_62_t, trcd_int, parms->CAS_latency );
+#ifdef SM_PLL_533_MHZ
+    SV( ncp_denali_DENALI_CTL_62_t, tras_min, 20 ); /* FREQDEP - 35ns @800MHz */
+#else
     SV( ncp_denali_DENALI_CTL_62_t, tras_min, 28 ); /* FREQDEP - 35ns @800MHz */
+#endif
     SV( ncp_denali_DENALI_CTL_62_t, tmod, 12 );
     ncr_write32(ctlReg,  0x00f8, value);
 
@@ -285,11 +316,19 @@ ncp_sm_denali_2041_init(
      *   TREF[29:16] reg temp 7800ns hi temp 3900ns
      */
     value = 0;
+#ifdef SM_PLL_533_MHZ
+    if (parms->high_temp_dram) {
+        SV(ncp_denali_DENALI_CTL_70_t, tref, 2080);   /* 3900ns at 533MHz */
+    } else {
+        SV(ncp_denali_DENALI_CTL_70_t, tref, 4160);   /* 7800ns at 533MHz */
+    }
+#else
     if (parms->high_temp_dram) {
         SV(ncp_denali_DENALI_CTL_70_t, tref, 3120);   /* 3900ns at 800MHz */
     } else {
         SV(ncp_denali_DENALI_CTL_70_t, tref, 6240);   /* 7800ns at 800MHz */
     }
+#endif
     ncr_write32(ctlReg,  0x0118, value);
 
     /* DENALI_CTL_84 */
@@ -350,10 +389,15 @@ ncp_sm_denali_2041_init(
     /* DENALI_CTL_188 */
     /* MR0 */
     /* FREQDEP: tWR always equals 12 for 800MHz */
+#ifdef SM_PLL_533_MHZ
+    value = 0x0800;
+#else
+    value = 0x0c00;
+#endif
     if( parms->CAS_latency < 12 ) {
-        value = 0x0c00 | ( ( parms->CAS_latency - 4 ) << 4 );
+        value |= ( ( parms->CAS_latency - 4 ) << 4 );
     } else {
-        value = 0x0c04 | ( ( parms->CAS_latency - 12 ) << 4 );
+      value |= ( 0x0004 | ( ( parms->CAS_latency - 12 ) << 4 ) );
     }
     value |= value << 16 ;
     ncr_write32(ctlReg,  0x02ec, value);
@@ -393,11 +437,19 @@ ncp_sm_denali_2041_init(
     /* DENALI_CTL_229 */
     /* FREQDEP */
     value = 0;
+#ifdef SM_PLL_533_MHZ
+    if (parms->high_temp_dram) {
+        SV(ncp_denali_DENALI_CTL_229_t, tras_max, 0x4920); /* 35100ns @ 533MHz */
+    } else {
+        SV(ncp_denali_DENALI_CTL_229_t, tras_max, 0x9240); /* 70200ns @ 533MHz */
+    }
+#else
     if (parms->high_temp_dram) {
         SV(ncp_denali_DENALI_CTL_229_t, tras_max, 0x6db0); /* 35100ns @ 800MHz */
     } else {
         SV(ncp_denali_DENALI_CTL_229_t, tras_max, 0xdb60); /* 70200ns @ 800MHz */
     }
+#endif
     ncr_write32(ctlReg,  0x0394, value);
 
     /* DENALI_CTL_230 */

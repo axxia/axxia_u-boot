@@ -69,7 +69,7 @@ static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
 		/* v1 only supports fn=0 */
 		if (fn)
 			return NULL;
-#elif defined(ACP_X1V2) || defined(ACP_X2V1)
+#elif defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
 		/* v2 only supports fn0-3 and bus0-63 */
 		if ((fn > 3) || (PCI_BUS(devfn) > 63)) 
 			return NULL;
@@ -199,7 +199,6 @@ static int pcie_read_config(struct pci_controller *hose, unsigned int devfn,
 			*val = val32;
 			break;
 	}
-
 	 __asm__ __volatile__("msync");
 	mcsr = mfspr(SPRN_MCSR);
 	if ( mcsr != 0) {
@@ -210,7 +209,6 @@ static int pcie_read_config(struct pci_controller *hose, unsigned int devfn,
 		printf("pcie_read_config:  %s: cfg_data=%08x offset=%08x, bus_addr = 0x%08x machine check!! val = 0x%08x\n", __func__, hose->cfg_data, offset, bus_addr, mcsr);
 #endif
 		*val = 0;
-		return 0;
 	} else {
 
 #ifdef DEBUG_PCIE
@@ -663,7 +661,7 @@ void pci_init_board(void)
 	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
 
 	word0 = 0x40000000 | 0x9f0;
-#if defined(ACP25xx)
+#if defined (ACP_25xx)
 	word1 = 0x80000020;
 #else
 	word1 = 0xc0000020;
@@ -681,7 +679,7 @@ void pci_init_board(void)
 			"memory" );
 
 	word0 = 0x50000000 | 0x8f0;
-#if defined(ACP25xx)
+#if defined (ACP_25xx)
 	word1 = 0xb8000020;
 #else
 	word1 = 0xf8000020;

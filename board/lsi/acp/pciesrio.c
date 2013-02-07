@@ -257,7 +257,9 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		{0x062a, 0x0b50},
 		{0x082a, 0x0b50},
 		{0x042e, 0x0042},
-		{0x0402, 0x030c},
+		{0x0c2e, 0x0042},
+		{0x0402, 0x1a0c},
+		{0x0c02, 0x140c},
 		{0x005e, 0x7d98},
 		{0x025e, 0x7d98},
 		{0x065e, 0x7d98},
@@ -312,18 +314,13 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		{0x08a4, 0x3001}
 	};
 
-	printf("Setting PCI/SRIO to 0x%08x\n", new_control);
-
-	if (0x8 == (new_control & 0x8)) {
-		srioHSSSpeed = dcr_read(0xd0f);
-		srioHSSSpeed &= 0x3;
-	}
+	printf("Setting PCI/SRIO to 0x%08lx\n", new_control);
 
 	/*
 	  RX Serdes Configuration for All Control Values
 	*/
 
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x26c, 0x00080000);
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x26c, 0x000c0000);
 
 	for (i = 0;
 	     i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
@@ -360,6 +357,8 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0x77777777);
 		udelay(100000);
+		srioHSSSpeed = dcr_read(0xd0f);
+		srioHSSSpeed &= 0x3;
 
 		if (2 > srioHSSSpeed)
 			ncr_write32(NCP_REGION_ID(0x115, 0), 0x234, 0x06126527);
@@ -386,6 +385,8 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xfff7fff7);
 		udelay(100000);
+		srioHSSSpeed = dcr_read(0xd0f);
+		srioHSSSpeed &= 0x3;
 
 		if (2 > srioHSSSpeed)
 			ncr_write32(NCP_REGION_ID(0x115, 0), 0x234, 0x06126527);
@@ -493,6 +494,11 @@ pciesrio_init(unsigned long parameter)
 	     0b1     0b11     0x00480003
 	*/
 
+#if 0
+	printf("%s:%d - 0x%08x\n", __FILE__, __LINE__,
+	       (pci_srio_select << 2) | (pci_srio_mode));
+#endif
+
 	switch ((pci_srio_select << 2) | (pci_srio_mode)) {
 	case 0x0:
 		control = 0x00240008;
@@ -519,7 +525,10 @@ pciesrio_init(unsigned long parameter)
 		control = 0x00480003;
 		break;
 	default:
-		return -1;
+		/*
+		  Not possible since pci_srio_mode is anded with 0x3 and
+		  pci_srio_select is anded with 0x1.
+		*/
 		break;
 	}
 #else
@@ -565,7 +574,7 @@ pciesrio_init(unsigned long parameter)
 		}
 		break;
 	default:
-		/* Not possible since pci_srio_select is anded with one bit. */
+		/* Not possible since pci_srio_select is anded with 0x1. */
 		break;
 	}
 #endif

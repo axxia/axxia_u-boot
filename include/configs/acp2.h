@@ -121,6 +121,52 @@ printf( "# " format "\n", ##args ); \
 
 /*
   ----------------------------------------------------------------------
+  Parameter Storage 
+*/
+ 
+#ifdef ACP_25xx
+#define PARAMETERS_OFFSET (127 * 1024)
+#define PARAMETERS_ADDRESS (LCM + PARAMETERS_OFFSET)
+#define PARAMETERS_SIZE (1024)
+
+#define CANNED_PHY_REGS_OFFSET (PARAMETERS_OFFSET + 512)
+#define CANNED_PHY_REGS_ADDRESS (LCM + CANNED_PHY_REGS_OFFSET)
+
+ 
+#define CANNED_PHY_REGS_TAG_SAVE 0x53415645
+#define CANNED_PHY_REGS_TAG_PROM 0x50524f4d
+
+/*
+  ----------------------------------------------------------------------
+  ACP2500 sysmem init compile time options 
+*/
+ 
+/*
+ * NCP_SM_PHY_REG_RESTORE: 
+ *   if defined, enable sysmem PHY register save/restore capability
+ */
+/* #define NCP_SM_PHY_REG_RESTORE  */
+
+/* 
+ * NCP_SM_PHY_REG_DUMP: 
+ *   if defined, enable dumping of sysmem PHY registers 
+ *   upon completion of the sysmem init sequence
+ */
+#define NCP_SM_PHY_REG_DUMP
+
+/* 
+ * NCP_SM_WRLVL_DUP
+ *   if defined, will only run the write leveling training
+ *   on rank0, and will duplicate the write delays for rank1.
+ *   This is a workaround for a problem with the original 
+ *   Odessa board design. 
+ */
+#define NCP_SM_WRLVL_DUP
+
+#endif
+
+/*
+  ----------------------------------------------------------------------
   Reduce memory usage...
 */
 
@@ -137,6 +183,8 @@ printf( "# " format "\n", ##args ); \
 #ifndef __ASSEMBLY__
 extern unsigned long sysmem_size;
 extern unsigned long resest_enabled;
+extern unsigned long sm_phy_reg_restore;
+extern unsigned long sm_phy_reg_dump;
 #endif
 
 #define CONFIG_CMD_SETGETDCR
@@ -150,7 +198,7 @@ int acp_init( void );
 #endif
 
 /* Note that this adds almost 0x3000 bytes! */
-#if defined(ACP2_SYSMEM_TEST)
+#if defined(ACP2_25xx)
 #define CONFIG_CMD_MEMORY
 #define CONFIG_CMD_MTEST
 #define CFG_MEMTEST_START 0

@@ -34,8 +34,8 @@
 
 /*#define LSI_LOGIO*/
 #include <config.h>
-
 #include <common.h>
+#include <exports.h>
 
 #define SECTOR_SIZE 0x10000 
 
@@ -295,7 +295,6 @@ static int
 serial_flash_erase(unsigned long offset, unsigned long length)
 {
 	int rc = 0;
-	void *buffer;
 
 	/*
 	  Handle offset not on a sector boundary.
@@ -443,7 +442,6 @@ int
 ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 {
 	int rc = 0;
-	unsigned char *input = (unsigned char *)buffer;
 	unsigned char *vinput = (unsigned char *)buffer;
 	unsigned long voffset = offset;
 	unsigned long vlength = length;

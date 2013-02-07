@@ -561,9 +561,6 @@ ncp_task_lite_send (
    if (NULL != (taskData = pTaskLiteMetaData->taskPduData))
    { 
      physAddr64 = NCP_NCA_VA_2_PA_LITE(taskData);
-#if 0
-     printf("%s:%d - 0x%llx 0x%x\n", __FILE__, __LINE__, physAddr64, taskData); /* ZZZ */
-#endif
        pTaskOutputQueueEntry->dataBufferAddr_37_32  = ((physAddr64 >> 32) & (0x0000003F));
        pTaskOutputQueueEntry->dataBufferAddr_31_0   = (physAddr64 & 0xffffffff);
    } 
@@ -627,9 +624,6 @@ ncp_task_lite_supply_rxbuffer_to_nca(ncp_task_lite_hdl_t  taskLiteHdl,
     pRecvBuffQueueEntry->bufferId = (ncp_uint32_t)taskAddr;
 
     taskPhysAddr64 = NCP_NCA_VA_2_PA_LITE(taskAddr);
-#if 0
-    printf("%s:%d - 0x%llx 0x%x\n", __FILE__, __LINE__, taskPhysAddr64, taskAddr); /* ZZZ */
-#endif
      
     /*
      * Allocation ok
@@ -640,16 +634,6 @@ ncp_task_lite_supply_rxbuffer_to_nca(ncp_task_lite_hdl_t  taskLiteHdl,
      
     pRecvBuffQueueEntry->bufferAddress00_31 = (ncp_uint32_t)(taskPhysAddr64 & 0xFFFFFFFF); 
     pRecvBuffQueueEntry->bufferAddress32_37 = (ncp_uint32_t)(taskPhysAddr64 >> 32) & 0x3f;
-
-    {
-      unsigned long *temp = (unsigned long *)pRecvBuffQueueEntry;
-
-#if 0
-    printf("%s:%d - 0x%lx 0x%lx 0x%lx 0x%lx\n",
-	   __FILE__, __LINE__,
-	   *temp++, *temp++, *temp++, *temp++);	/* ZZZ */
-#endif
-    }
 
     /* 
      * Safe to advance producer pointer now,  which notifies HW that a new entry is available

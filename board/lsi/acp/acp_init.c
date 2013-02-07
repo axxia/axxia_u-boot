@@ -40,6 +40,7 @@
 #include "regs/ncp_phy_reg_defines_acp2500.h"
 #endif
 
+
 /*
   ===============================================================================
   ===============================================================================
@@ -50,15 +51,17 @@
 
 #define PARAMETERS_MAGIC 0x12af34ec
 
-#define PARAMETERS_GLOBAL_IGNORE_VOLTAGE    0x00000001
-#define PARAMETERS_GLOBAL_IGNORE_CLOCKS     0x00000010
-#define PARAMETERS_GLOBAL_IGNORE_SYSMEM     0x00000100
-#define PARAMETERS_GLOBAL_IGNORE_PCIESRIO   0x00001000
+#define PARAMETERS_GLOBAL_IGNORE_VOLTAGE     0x00000001
+#define PARAMETERS_GLOBAL_IGNORE_CLOCKS      0x00000010
+#define PARAMETERS_GLOBAL_IGNORE_SYSMEM      0x00000100
+#define PARAMETERS_GLOBAL_IGNORE_PCIESRIO    0x00001000
 
-#define PARAMETERS_GLOBAL_RUN_SYSMEM_BIST   0x80000000
-#define PARAMETERS_GLOBAL_SET_L2_FTC        0x40000000
-#define PARAMETERS_GLOBAL_SET_L2_DISABLE_SL 0x20000000
-#define PARAMETERS_GLOBAL_DISABLE_RESET     0x10000000
+#define PARAMETERS_GLOBAL_RUN_SYSMEM_BIST    0x80000000
+#define PARAMETERS_GLOBAL_SET_L2_FTC         0x40000000
+#define PARAMETERS_GLOBAL_SET_L2_DISABLE_SL  0x20000000
+#define PARAMETERS_GLOBAL_DISABLE_RESET      0x10000000
+#define PARAMETERS_GLOBAL_SM_PHY_REG_RESTORE 0x08000000
+#define PARAMETERS_GLOBAL_SM_PHY_REG_DUMP    0x04000000
 
 typedef struct {
 	unsigned long version;
@@ -80,6 +83,30 @@ typedef struct {
 } __attribute__((packed)) parameters_voltage_t;
 
 typedef struct {
+#ifdef ACP_25xx
+	unsigned long syspll_prms;
+	unsigned long syspll_ctrl;
+	unsigned long syspll_mcgc;
+	unsigned long syspll_mcgc1;
+	unsigned long syspll_psd;
+	unsigned long ppcpll_prms;
+	unsigned long ppcpll_ctrl;
+	unsigned long ppcpll_mcgc;
+	unsigned long ppcpll_mcgc1;
+	unsigned long ppcpll_psd;
+	unsigned long smpll_prms;
+	unsigned long smpll_ctrl;
+	unsigned long smpll_mcgc;
+	unsigned long smpll_mcgc1;
+	unsigned long smpll_psd;
+	unsigned long tmpll_prms;
+	unsigned long tmpll_ctrl;
+	unsigned long tmpll_mcgc;
+	unsigned long tmpll_mcgc1;
+	unsigned long tmpll_psd;
+	unsigned long per_mcgc;
+	unsigned long per_mcgc1;
+#else
 	unsigned long sys_control;
 	unsigned long sys_lftune_upper;
 	unsigned long sys_lftune_lower;
@@ -96,6 +123,7 @@ typedef struct {
 	unsigned long ddr_lftune_lower;
 	unsigned long ddr_fftune;
 	unsigned long ddr_locktune;
+#endif
 } __attribute__ ((packed)) parameters_clocks_t;
 
 typedef struct {
@@ -175,6 +203,8 @@ static parameters_sysmem_t *sysmem = (parameters_sysmem_t *)1;
 
 unsigned long sysmem_size = 1;
 unsigned long reset_enabled = 1;
+unsigned long ncp_sm_phy_reg_restore = 1;
+unsigned long ncp_sm_phy_reg_dump = 1;
 
 /*
   ----------------------------------------------------------------------
@@ -261,6 +291,8 @@ fill_sysmem(unsigned long long address, unsigned long long size,
 
 	return;
 }
+
+#ifndef ACP_25xx
 
 /*
   ----------------------------------------------------------------------
@@ -481,6 +513,353 @@ voltage_init(void)
 	return 0;
 }
 
+#endif
+
+#ifdef ACP_25xx
+
+/*
+  ------------------------------------------------------------------------------
+  pll_init_2500
+*/
+
+#define PARAMETER_MASK 0x3ffffff
+#define CONTROL_MASK 0x1f300
+
+static int
+pll_init_2500(unsigned long offset, unsigned long *parameters)
+{
+	int timeout = 10000;
+	unsigned long value;
+
+	/*
+	  Enable the PLL.
+	*/
+
+	dcr_write(0xe0000000, offset);
+	mdelay(1);		/* Required in practice (if not in theory)... */
+
+	/*
+	  Set the parameter value and reset the PLL, with
+	  bypass and bypass_select (in the control register),
+	  set.
+	*/
+
+	dcr_write((parameters[1] & CONTROL_MASK) | 0xc00, (offset + 1));
+	dcr_write((parameters[0] & PARAMETER_MASK) | 0xe0000000, offset);
+	dcr_write((parameters[1] & CONTROL_MASK) | 0xc02, offset + 1);
+
+	/*
+	  Wait for pll_locked.
+	*/
+
+	do {
+		value = dcr_read(offset + 0xa);
+	} while ((0 == (value & 0x80000000) &&
+		  (0 < --timeout)));
+
+	if (0 == timeout)
+		return -1;
+
+	/*
+	  Clear bypass.
+	*/
+
+	dcr_write((parameters[1] & CONTROL_MASK) | 0x402, offset + 1);
+
+	/*
+	  Update the mcgc.
+	*/
+
+	if (0 != parameters[2]) {
+		value = dcr_read(0xd00);
+		value |= (parameters[2] | 0x800);
+		dcr_write(value, 0xd00);
+		value &= ~0x800;
+		dcr_write(value, 0xd00);
+	}
+
+	/*
+	  Update the mcgc1.
+	*/
+
+	if (0 != parameters[2]) {
+		value = dcr_read(0xd01);
+		value |= (parameters[3] | 0x3);
+		dcr_write(value, 0xd01);
+		value &= ~0x3;
+		dcr_write(value, 0xd01);
+	}
+
+	/*
+	  Delay.
+	*/
+
+	udelay(parameters[4]);
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  clocks_init
+*/
+
+static int
+clocks_init( void )
+{
+	unsigned long value;
+
+#ifdef DISPLAY_PARAMETERS
+	printf("-- -- Clocks\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx\n",
+	       clocks->syspll_prms, clocks->syspll_ctrl, clocks->syspll_mcgc,
+	       clocks->syspll_mcgc1, clocks->syspll_psd, clocks->ppcpll_prms,
+	       clocks->ppcpll_ctrl, clocks->ppcpll_mcgc, clocks->ppcpll_mcgc1,
+	       clocks->ppcpll_psd, clocks->smpll_prms, clocks->smpll_ctrl,
+	       clocks->smpll_mcgc, clocks->smpll_mcgc1, clocks->smpll_psd,
+	       clocks->tmpll_prms, clocks->tmpll_ctrl, clocks->tmpll_mcgc,
+	       clocks->tmpll_mcgc1, clocks->tmpll_psd, clocks->per_mcgc,
+	       clocks->per_mcgc1);
+#endif
+
+	/*
+	  Enable protected writes
+	  ncpWrite   0x18d.0.0x0000000000 0x000000ab
+	*/
+
+	value = dcr_read(0xd00);
+	value |= 0xab;
+	dcr_write(value, 0xd00);
+
+#ifdef PPCPLL_STEP_TEST
+	pll_init_2500(0xd40, &clocks->syspll_prms); /* system */
+
+	/*
+	  PPC, Stepped...
+	*/
+
+	dcr_write(0xa0000000, 0xd50);
+	mdelay(1);
+	dcr_write(0x14f00, 0xd51);
+	/*dcr_write(0xa0240551, 0xd50);*/
+	dcr_write(0xa02405d2, 0xd50);
+	dcr_write(0x14f02, 0xd51);
+
+	do {
+		value = dcr_read(0xd5a);
+	} while (0 == (value & 0x80000000));
+
+	value = dcr_read(0xd00);
+	value |= 0x40000000;
+	dcr_write(value, 0xd00);
+
+	dcr_write(0x14702, 0xd51);
+	mdelay(1000);
+
+	value = dcr_read(0xd00);
+	value &= 0xfffff7ff;
+	dcr_write(value, 0xd00);
+
+	value = dcr_read(0xd00);
+	value |= 0x00100000;
+	dcr_write(value, 0xd00);
+
+	value = dcr_read(0xd00);
+	value |= 0x00000800;
+	dcr_write(value, 0xd00);
+
+	mdelay(1000);
+
+	value = dcr_read(0xd00);
+	value &= 0xfffff7ff;
+	dcr_write(value, 0xd00);
+
+	value = dcr_read(0xd00);
+	value |= 0x80000000;
+	dcr_write(value, 0xd00);
+
+	mdelay(1000);
+
+	value = dcr_read(0xd00);
+	value &= 0xff0fffff;
+	dcr_write(value, 0xd00);
+
+	value = dcr_read(0xd00);
+	value |= 0x00000800;
+	dcr_write(value, 0xd00);
+
+	mdelay(1000);
+
+	value = dcr_read(0xd00);
+	value &= 0xfffff7ff;
+	dcr_write(value, 0xd00);
+
+	mdelay(1000);
+
+	/*
+	  Put TM in reset.
+
+	  0x18e.0.0xc - Reset Module Register
+	       tm_phy_io_rst and tm_clksync_rst
+	*/
+
+	dcr_write(0xc00000, 0x1703);
+
+	pll_init_2500(0xd60, &clocks->tmpll_prms); /* tree memory */
+
+	/*
+	  Re-enable TM.
+	*/
+
+	dcr_write(0, 0x1703);
+
+	/*
+	  Put SM in reset.
+
+	  0x18e.0.0xc - Reset Module Register
+	       sm_phy_io_rst and sm_clksync_rst
+	*/
+
+	dcr_write(0xc0000, 0x1703);
+
+	pll_init_2500(0xd70, &clocks->smpll_prms); /* system memory */
+
+	/*
+	  Re-enable SM.
+	*/
+
+	dcr_write(0, 0x1703);
+
+	/*
+	  -----------------------------------------------------------------------
+	  Peripheral Clock Setup
+	*/
+
+	switch ((clocks->per_mcgc1 & 0xc000) >> 14) {
+	case 0:
+		/* Stay on the reference clock. */
+		break;
+	case 1:
+		/* Use the PPC clock. */
+		value = dcr_read(0xd00);
+		value |= (clocks->per_mcgc | 0x800);
+		dcr_write(value, 0xd00);
+		value &= ~0x800;
+		dcr_write(value, 0xd00);
+		break;
+	case 2:
+	case 3:
+		/* Use the SYS clock. */
+		value = dcr_read(0xd01);
+		value |= ((clocks->per_mcgc1 & 0xf00) | 0x2);
+		dcr_write(value, 0xd01);
+		value &= ~0x2;
+		dcr_write(value, 0xd01);
+		break;
+	default:
+		break;
+	}
+
+	value = dcr_read(0xd01);
+	value |= (clocks->per_mcgc1 & 0xc000);
+	dcr_write(value, 0xd01);
+#else
+	/*
+	  -----------------------------------------------------------------------
+	  PLL Setup
+	  -----------------------------------------------------------------------
+	*/
+
+	pll_init_2500(0xd40, &clocks->syspll_prms); /* system */
+	pll_init_2500(0xd50, &clocks->ppcpll_prms); /* ppc */
+
+	/*
+	  Put TM in reset.
+
+	  0x18e.0.0xc - Reset Module Register
+	       tm_phy_io_rst and tm_clksync_rst
+	*/
+
+	dcr_write(0xc00000, 0x1703);
+
+	pll_init_2500(0xd60, &clocks->tmpll_prms); /* tree memory */
+
+	/*
+	  Re-enable TM.
+	*/
+
+	dcr_write(0, 0x1703);
+
+	/*
+	  Put SM in reset.
+
+	  0x18e.0.0xc - Reset Module Register
+	       sm_phy_io_rst and sm_clksync_rst
+	*/
+
+	dcr_write(0xc0000, 0x1703);
+
+	pll_init_2500(0xd70, &clocks->smpll_prms); /* system memory */
+
+	/*
+	  Re-enable SM.
+	*/
+
+	dcr_write(0, 0x1703);
+
+	/*
+	  -----------------------------------------------------------------------
+	  Peripheral Clock Setup
+	*/
+
+	switch ((clocks->per_mcgc1 & 0xc000) >> 14) {
+	case 0:
+		/* Stay on the reference clock. */
+		break;
+	case 1:
+		/* Use the PPC clock. */
+		value = dcr_read(0xd00);
+		value |= (clocks->per_mcgc | 0x800);
+		dcr_write(value, 0xd00);
+		value &= ~0x800;
+		dcr_write(value, 0xd00);
+		break;
+	case 2:
+	case 3:
+		/* Use the SYS clock. */
+		value = dcr_read(0xd01);
+		value |= ((clocks->per_mcgc1 & 0xf00) | 0x2);
+		dcr_write(value, 0xd01);
+		value &= ~0x2;
+		dcr_write(value, 0xd01);
+		break;
+	default:
+		break;
+	}
+
+	value = dcr_read(0xd01);
+	value |= (clocks->per_mcgc1 & 0xc000);
+	dcr_write(value, 0xd01);
+
+	/*
+	  Disable protected writes
+	  ncpWrite   0x18d.0.0x0000000000 0
+	*/
+
+	value = dcr_read(0xd00);
+	value &= ~0xff;
+	dcr_write(value, 0xd00);
+#endif
+
+	return 0;
+}
+
+#else
+
 /*
   -------------------------------------------------------------------------------
   clocks_ddr_init
@@ -508,7 +887,7 @@ clocks_ddr_init( unsigned long node, unsigned long value,
 }
 
 /*
-  ----------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   clocks_init
 */
 
@@ -523,152 +902,6 @@ clocks_ddr_init( unsigned long node, unsigned long value,
 static int
 clocks_init( void )
 {
-#ifdef ACP_25xx
-	unsigned long value;
-	unsigned long scratch;
-
-	/*
-	  Enable protected writes
-	  ncpWrite   0x18d.0.0x0000000000 0x000000ab
-	*/
-
-	value = dcr_read(0xd00);
-	value |= 0xab;
-	dcr_write(value, 0xd00);
-
-	/*
-	  -----------------------------------------------------------------------
-	  SYS_PLL setup
-	  -----------------------------------------------------------------------
-	*/
-
-	dcr_write(0x80000000, 0xd40);
-	mdelay(1);
-
-	dcr_write(0x14f00, 0xd41);
-	dcr_write(0xa02405d2, 0xd40);
-	dcr_write(0x14f02, 0xd41);
-
-	do {
-		value = dcr_read(0xd4a);
-	} while (0 == (value & 0x80000000));
-
-	dcr_write(0x14702, 0xd41);
-	mdelay(1);
-
-	dcr_write(0x20010800, 0xd00);
-	mdelay(1);
-
-	/*
-	  -----------------------------------------------------------------------
-	  PPC PLL setup
-	  -----------------------------------------------------------------------
-	*/
-
-#if !defined(PPC_RUN_ON_REF)
-	dcr_write(0x80000000, 0xd50);
-	mdelay(1);
-
-	dcr_write(0x14f00, 0xd51);
-	dcr_write(PPC_PLL_PARAMETER, 0xd50);
-	dcr_write(0x14f02, 0xd51);
-
-	do {
-		value = dcr_read(0xd5a);
-	} while (0 == (value & 0x80000000));
-
-	dcr_write(0x14702, 0xd51);
-	mdelay(1);
-
-	value = dcr_read(0xd00);
-	value |= 0x40000000;
-	dcr_write(value, 0xd00);
-	mdelay(1);
-#endif
-
-	/*
-	  -----------------------------------------------------------------------
-	  SM_PLL setup
-	  -----------------------------------------------------------------------
-	*/
-
-	dcr_write(0xc0000, 0x1703);
-	mdelay(1);
-
-	dcr_write(0xc00, 0xd71);
-	dcr_write(0, 0xd70);
-	dcr_write(0xc0000000, 0xd70);
-	mdelay(1);
-
-	dcr_write(0x4f00, 0xd71);
-	dcr_write(0xe04403d0, 0xd70);
-	dcr_write(0x4f02, 0xd71);
-	mdelay(1);
-
-	do {
-		value = dcr_read(0xd7a);
-	} while (0 == (value & 0x80000000));
-
-	dcr_write(0x4702, 0xd71);
-	mdelay(1);
-
-	dcr_write(0, 0x1703);
-	mdelay(1);
-
-	/*
-	  -----------------------------------------------------------------------
-	  TM_PLL setup
-	  -----------------------------------------------------------------------
-	*/
-
-	dcr_write(0xc00000, 0x1703);
-	mdelay(1);
-
-	dcr_write(0xc00, 0xd61);
-	dcr_write(0, 0xd60);
-	dcr_write(0xc0000000, 0xd60);
-	mdelay(1);
-
-	dcr_write(0x1af00, 0xd61);
-	dcr_write(0xe02203d1, 0xd60);
-	dcr_write(0x1af02, 0xd61);
-
-	do {
-		value = dcr_read(0xd6a);
-	} while (0 == (value & 0x80000000));
-
-	dcr_write(0x1a702, 0xd61);
-	mdelay(1);
-
-	dcr_write(0, 0x1703);
-	mdelay(1);
-
-	/*
-	  -----------------------------------------------------------------------
-	  Peripherals
-	*/
-
-	value = dcr_read(0xd01);
-	value |= 0x302;
-	dcr_write(value, 0xd01);
-	mdelay(1);
-
-	value = dcr_read(0xd01);
-	value |= 0x8000;
-	dcr_write(value, 0xd01);
-	mdelay(1);
-
-	/*
-	  Disable protected writes
-	  ncpWrite   0x18d.0.0x0000000000 0
-	*/
-
-	value = dcr_read(0xd00);
-	value &= ~0xff;
-	dcr_write(value, 0xd00);
-
-	return 0;
-#else
 	int type;
 	unsigned long control;
 	unsigned long tune1;
@@ -838,8 +1071,9 @@ clocks_init( void )
 			 tune1, tune2, tune3 );
 
 	return 0;
-#endif
 }
+
+#endif
 
 #if defined(ACP_EMU)
 #include "sysmem_emulation.c"
@@ -1183,6 +1417,14 @@ acp_sysmem_bist( void )
 #endif
 
 /*
+  ==============================================================================
+  ==============================================================================
+  Public Interface
+  ==============================================================================
+  ==============================================================================
+*/
+
+/*
   ------------------------------------------------------------------------------
   acp_init
 */
@@ -1278,6 +1520,26 @@ acp_init( void )
 	if (0 != (global->flags & PARAMETERS_GLOBAL_DISABLE_RESET))
 		reset_enabled = 0;
 
+#ifdef NCP_SM_PHY_REG_RESTORE
+	ncp_sm_phy_reg_restore = 
+		(global->flags & PARAMETERS_GLOBAL_SM_PHY_REG_RESTORE) ? 1 : 0;
+#else 
+	ncp_sm_phy_reg_restore = 0;
+#endif
+
+#ifdef NCP_SM_PHY_REG_DUMP
+	ncp_sm_phy_reg_dump = 
+		(global->flags & PARAMETERS_GLOBAL_SM_PHY_REG_DUMP) ? 1 : 0;
+#else
+	ncp_sm_phy_reg_dump = 0;
+#endif
+
+	/*
+	  =======
+	  Voltage
+	  =======
+	*/
+
 #ifndef ACP_25xx
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE ) ) {
@@ -1294,10 +1556,16 @@ acp_init( void )
 	}
 #endif
 
+	/*
+	  ======
+	  Clocks
+	  ======
+	*/
+
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS ) ) {
 #ifndef DISPLAY_PARAMETERS
-		serial_exit(); /* Turn off the UART while updating the PLLs. */
+	  serial_exit(); /* Turn off the UART while updating the PLLs. */
 #endif
 
 		if( 0 != ( returnCode = clocks_init( ) ) ) {
@@ -1317,47 +1585,9 @@ acp_init( void )
 		serial_early_init( );
 	}
 
-#if defined(ACP_25xx) && defined(UDELAY_AFTER_PLL_INIT)
-	udelay(UDELAY_AFTER_PLL_INIT);
+#if defined(ACP_25xx) && !defined(ACP_EMU)
+	axm2500_pll_check_lock();
 #endif
-
-	/*ZZZ*/
-#ifdef ACP_25xx
-	mdelay(1000);
-
-	{
-		int i;
-		int offset = 0xd40;
-		unsigned long pll_stat;
-		unsigned long dcr_pllctl_int_status;
-
-		for (i = 0; i < 4; ++i) {
-			pll_stat = dcr_read(offset + 0xa);
-			dcr_pllctl_int_status = dcr_read(offset + 0x4);
-
-			if (0 == (pll_stat & 0x80000000UL)) {
-				printf("0x%x is NOT locked!\n", offset);
-			}
-
-			if (0 != (dcr_pllctl_int_status & 1)) {
-				printf("0x%x lost lock at some point...\n",
-				       offset);
-				dcr_pllctl_int_status &= ~0x1UL;
-				dcr_write(dcr_pllctl_int_status, (offset + 0x4));
-			}
-
-			offset += 0x10;
-		}
-	}
-#endif
-	/*ZZZ*/
-
-	if( 0 ==
-	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO ) ) {
-		if( 0 != ( returnCode = pciesrio_init( pciesrio->control ) ) ) {
-			goto acp_init_return;
-		}
-	}
 
 #ifdef CLOCK_LOCK_VERIFY_EARLY
 	printf("LSI Version: %s\n", get_lsi_version());
@@ -1377,10 +1607,43 @@ acp_init( void )
 	}
 #endif
 
+	/*
+	  =========
+	  PCIe/SRIO
+	  =========
+	*/
+
+	if( 0 ==
+	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO ) ) {
+		if( 0 != ( returnCode = pciesrio_init( pciesrio->control ) ) ) {
+			goto acp_init_return;
+		}
+	}
+
+	/*
+	  =============
+	  System Memory
+	  =============
+	*/
+
 	ncr_tracer_enable( );
 
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM ) ) {
+		/*
+		  Create a UTLB entry for system memory.
+		*/
+
+		__asm__ __volatile__ ( "tlbwe %1,%0,0\n"			\
+				       "tlbwe %2,%0,1\n"			\
+				       "tlbwe %3,%0,2\n"			\
+				       "isync\n"
+				       : :
+					 "r" (0x80000000),
+					 "r" (0x00000bf0),
+					 "r" (0x00000000),
+					 "r" (0x00030207));
+
 		if( 0 != ( returnCode = sysmem_init( ) ) ) {
 			goto acp_init_return;
 		}

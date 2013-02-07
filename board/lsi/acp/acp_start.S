@@ -130,6 +130,51 @@ utlb_table_end:
 
 _start_acp:
 
+#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+	#; ------------------------------------------------------------
+	#; In some cases, the core attempts to prefetch from system
+	#; memory before it has been initialized.  To avoid this,
+	#; remove the system memory TLB entry here, and re-create it
+	#; just before initializing system memory.
+	#; ------------------------------------------------------------
+
+	lis		r0,0x8000
+	lis		r1,0
+	tlbwe		r1,r0,0
+	tlbwe		r1,r0,1
+	tlbwe		r1,r0,2
+	isync
+
+	#; ------------------------------------------------------------
+	#; Put L2(1) to sleep.  This should have been done in the 1st
+	#; stage before putting the core into WFI...
+	#; ------------------------------------------------------------
+
+#ifndef RESET_INSTEAD_OF_IPI
+	li		r0,0x84
+	li		r1,0x400
+#if 0
+	mtdcrx		r0,r1
+#else
+	#; mtdcrx		r0,r1
+	#; Use 0x7c000306 | (0 << 21) | (1 << 16)
+	#; to avoid incomaptibility with older binutils...
+	.long		0x7c010306
+#endif
+
+	li		r0,0x1
+	li		r1,0x404
+#if 0
+	mtdcrx		r0,r1
+#else
+	#; mtdcrx		r0,r1
+	#; Use 0x7c000306 | (0 << 21) | (1 << 16)
+	#; to avoid incomaptibility with older binutils...
+	.long		0x7c010306
+#endif
+#endif
+#endif
+
 	#; Clear the MSR
 
 	lis		r0,0
@@ -695,6 +740,19 @@ acp_icache_init:
 	#; ------------------------------------------------------------
 
 #ifdef CONFIG_ACP2
+
+#ifdef ACP_25xx
+
+	#; Write to the extra 16K of LCM.
+
+	lis		r4,CFG_INIT_RAM_ADDR@h
+	ori		r4,r4,CFG_INIT_RAM_ADDR@l
+	subi		r3,r4,0x4004
+	lis		r5,0
+1:	stwu		r5,4(r3)
+	bne		1b
+
+#endif
 
 	lis		r1,CFG_INIT_RAM_ADDR@h
 	ori		r1,r1,CFG_INIT_RAM_ADDR@l

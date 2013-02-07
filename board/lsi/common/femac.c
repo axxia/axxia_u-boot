@@ -1044,10 +1044,8 @@ static int rx_enable_( void ) {
 
 		rx_configuration_ |= APP3XXNIC_RX_CONF_ENABLE;
 		rx_configuration_ |= APP3XXNIC_RX_CONF_LINK;
-		/*ZZZ*/
 		rx_configuration_ |= APP3XXNIC_RX_CONF_RXFCE;
 		rx_configuration_ |= APP3XXNIC_RX_CONF_TXFCE;
-		/*ZZZ*/
 		rx_enabled_ = 1;
 
 	} else {
@@ -1650,11 +1648,6 @@ static void app3xxnic_display_( void ) {
 int
 lsi_femac_eth_init(bd_t *board_info)
 {
-	int ethaddr_size_;
-	char ethaddr_string_ [ 64 ];
-	char * string_;
-	char * end_pointer_;
-	int index_;
 	size_t memory_needed;
 	void * temp;
 
@@ -1729,8 +1722,6 @@ lsi_femac_eth_init(bd_t *board_info)
 	  unsigned long tzc_address_mask = 0x10000;
 	  unsigned long tzc_size_field = 0xe;
 
-	  printf("memory: 0x%p, 0x%x bytes\n", memory, memory_needed); /* ZZZ */
-
 	  tzc_address = (unsigned long)memory & ~(tzc_address_mask - 1);
 	  tzc_size = 32 * 1024;
 
@@ -1740,12 +1731,7 @@ lsi_femac_eth_init(bd_t *board_info)
 	    tzc_address = (unsigned long)memory & ~(tzc_address_mask - 1);
 	    tzc_size *= 2;
 	    ++tzc_size_field;
-	    printf("address=0x%08x size=0x%08x mask=0x%08x\n",
-		   tzc_address, tzc_size, tzc_address_mask); /* ZZZ */
 	  }
-
-	  printf("tzc region: 0x%08x, 0x%x bytes\n",
-		 tzc_address, tzc_size); /* ZZZ */
 
 	  writeio(tzc_address, 0xf0941110);
 	  writeio(0, 0xf0941114);
@@ -1992,7 +1978,6 @@ lsi_femac_eth_rx( void )
 
 	TRACE_BEGINNING( "\n" );
 
-	/* ZZZ */
 #ifdef DUMP_STATS
 #ifdef EH_STATS
 	++eh_stats->rx_calls;
@@ -2023,7 +2008,6 @@ lsi_femac_eth_rx( void )
 	}
 #endif
 #endif
-	/* ZZZ */
 
 	/*
 	  If no packet is available, return 0;

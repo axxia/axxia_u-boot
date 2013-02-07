@@ -95,8 +95,8 @@ typedef ncp_st_t
         ncp_sm_parms_t             *parms);
 
 
-/*#define SM_REG_DUMP*/
-#ifdef SM_REG_DUMP
+#define NCP_SM_PHY_REG_DUMP
+#ifdef  NCP_SM_PHY_REG_DUMP 
 
 static ncp_st_t 
 dump_regs(ncp_dev_hdl_t dev, ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t num)
@@ -385,7 +385,7 @@ dump_rl(ncp_dev_hdl_t dev,
     printf("\n");
     for (j = 0; j < num_ranks; j++) 
     {
-        printf("\nRDALIGNGNDQ[%d]: \n", j);
+        printf("\nRDALIGNNDQ[%d]: \n", j);
         offset = 0x18040 + (j * 0x100);
         for (i = 0; i < num_bls; i++) 
         {
@@ -522,9 +522,173 @@ NCP_RETURN_LABEL
 }
 
 #endif /* SM_REG_DUMP */
+     
+
+#if SM_PHY_REG_RESTORE
+/*
+ * ncp_sm_lsiphy_reg_save/restore 
+ *
+ *   A set of functions to read a set of PHY calibration registers 
+ *   and store them to SPI flash, or read the register values from
+ *   flash and restore them to h/w. 
+ *
+ *   The register list is compacted to reduce code and data size.
+ */
+
+typedef struct {
+    ncp_uint32_t   baseOffset;
+    ncp_uint8_t    nregs;
+    ncp_uint8_t    stride;
+    ncp_uint8_t    width;
+    ncp_uint8_t    nranks;
+    short          *fudge;
+} ncp_sm_phy_reg_list_t;
+
+/* 
+ * address fudge factor for WRTALIGNDQS broadcast addresses 
+ */
+short wrdqs_fudge[2] = {36, -8};
+
+ncp_sm_phy_reg_list_t ncp_sm_phy_regs[6] = 
+{
+    { NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG3_BL0,     1,  0,  2,  0, NULL},
+    { NCP_PHY_CFG_SYSMEM_PHY_WRTLVLUPP_BL0CS0,   2,  4,  1,  1, NULL},
+    { NCP_PHY_CFG_SYSMEM_PHY_WRTALIGNDQ0_BL0CS0, 2, 16,  1,  1, wrdqs_fudge},
+    { NCP_PHY_CFG_SYSMEM_PHY_GTUPPCTRL_BL0CS0,   2, 16,  2,  1, NULL},
+    { NCP_PHY_CFG_SYSMEM_PHY_PUPPDQSDLY_BL0CS0,  4,  4,  2,  1, NULL},
+    { NCP_PHY_CFG_SYSMEM_PHY_RDALIGNDQ0_BL0CS0,  8,  4,  1,  1, NULL},
+};
 
 
 
+
+ncp_st_t
+ncp_sm_lsiphy_reg_save_restore(
+        ncp_dev_hdl_t dev,
+        ncp_region_id_t region,
+        ncp_uint8_t   *buf,
+        ncp_bool_t    save)
+
+{
+
+    ncp_st_t     ncpStatus = NCP_ST_SUCCESS;
+    ncp_uint32_t idx;
+    ncp_uint32_t bl;
+    ncp_uint32_t rank;
+    ncp_uint32_t nreg; 
+    ncp_uint32_t offset;
+    ncp_uint8_t  *pnt = buf;
+    ncp_uint8_t   val8;
+    ncp_uint16_t  val16;
+    ncp_uint16_t *p16;
+
+    ncp_sm_phy_reg_list_t *pList;
+    ncp_uint32_t  value;
+
+    for (idx = 0; idx < 6; idx++) 
+    {
+        pList = &ncp_sm_phy_regs[idx];
+
+        for (rank = 0; rank <= pList->nranks; rank++)
+        {
+            for (bl = 0; bl < 5; bl++) 
+            {
+                offset = pList->baseOffset + (rank * 0x100) + (bl * 0x800);
+                for (nreg = 0; nreg < pList->nregs; nreg++) 
+                {
+
+                    if (save) 
+                    {
+                        /* 
+                         * read the register and save it in the packed buffer
+                         */
+                        ncr_read32(region, offset, &value);
+
+                        if (pList->width == 1) 
+                        {
+                            *pnt++ = (ncp_uint8_t) value;
+                        } else {
+                            p16 = (ncp_uint16_t *) pnt;
+                            *p16 = (ncp_uint16_t) value;
+                            pnt+=2;
+                        }
+                    } else {
+                        /* 
+                         * read the value from the packed buffer and write it
+                         * back to h/w.
+                         */
+                        if (pList->width == 1) 
+                        {
+                            val8 = *pnt++;
+                            value = (ncp_uint32_t) val8;
+                        } else {
+                            p16 = (ncp_uint16_t *) pnt;
+                            val16 = *p16;
+                            value = (ncp_uint32_t) val16;
+                            pnt += 2;
+                        }
+
+                        if (pList->fudge) 
+                        {
+                            offset += pList->fudge[nreg];
+                        }
+
+                        ncr_write32(region, offset, value);
+                    }
+
+                    offset += pList->stride;
+                }
+            }
+        }
+    }
+
+NCP_RETURN_LABEL
+
+    return ncpStatus;
+
+}
+
+ncp_st_t
+ncp_sm_lsiphy_reg_save(
+        ncp_dev_hdl_t dev,
+        ncp_region_id_t region)
+
+{
+    ncp_uint32_t *buf = CANNED_PHY_REGS_ADDRESS;
+
+    if (*buf != 0) {
+        printf("overwriting existing PHY regs?!?!?\n");
+    }
+
+    *buf++ = CANNED_PHY_REGS_TAG_SAVE;
+    ncp_sm_lsiphy_reg_save_restore(dev, region, buf, 1);
+
+}
+
+
+ncp_st_t
+ncp_sm_lsiphy_reg_restore(
+        ncp_dev_hdl_t dev,
+        ncp_region_id_t region)
+
+{
+
+    ncp_uint32_t *buf = CANNED_PHY_REGS_ADDRESS;
+
+
+    if (*buf++ != CANNED_PHY_REGS_TAG_PROM) 
+        return -1;
+
+    ncp_sm_lsiphy_reg_save_restore(dev, region, buf, 0);
+
+}
+
+#else 
+
+#define ncp_sm_lsiphy_reg_restore(foo, bar) NCP_ST_SUCCESS
+#define ncp_sm_lsiphy_reg_save(foo, bar)    NCP_ST_SUCCESS
+
+#endif /* UBOOT */
 
 /*
  * read all of the phy error registers for display purposes
@@ -755,8 +919,26 @@ ncp_sm_lsiphy_static_init(
                         *(ncp_uint32_t *) &phyconfig2);
 
 
+    /* 
+     * RLRANK = RLGATE - tDFI_RDDATA_EN
+     *
+     * tDFI_RDDATA_EN = RDLAT_ADJ + REG_DIMM_ENABLE - 1
+     *
+     * For now, RDLAT_ADJ is hard-coded to 4 and registered
+     * DIMMs are not yet supported, so we have 
+     *
+     * RLRANK = RLGATE - (4 + 0 - 1) = RLGATE - 3
+     *
+     * if the initial RLRANK value (specified by the 
+     * min_phy_cal_delay parameter) is less then 3 we
+     * make it 3.
+     */
 
-    phyconfig3.rdlatrank = parms->min_phy_cal_delay + 1;
+    if (parms->min_phy_cal_delay < 3) {
+        parms->min_phy_cal_delay = 3;
+    }
+
+    phyconfig3.rdlatrank = parms->min_phy_cal_delay - 3;
     phyconfig3.rdlatgate = parms->min_phy_cal_delay;
     for (i = 0; i < n_byte_lanes; i++) 
     {
@@ -782,6 +964,15 @@ ncp_sm_lsiphy_static_init(
             phyconfig2.dp1ena      = 0;
         }
     }
+
+#ifndef UBOOT
+    /* only needed for treemem in FBRS mode */
+    if (isSysMem == FALSE) {
+        phyconfig2.dp4ena      = 0;
+        phyconfig2.dp3ena      = 0;
+        phyconfig2.dp2ena      = 0;
+    }
+#endif
 
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, 
                         *(ncp_uint32_t *) &phyconfig2);
@@ -880,29 +1071,6 @@ NCP_RETURN_LABEL
 }
 
 
-#ifndef UBOOT
-static ncp_st_t
-ncp_sm_lsiphy_poll_for_op_done(
-        ncp_dev_hdl_t dev,
-        ncp_region_id_t region)
-{
-    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
-    ncp_denali_DENALI_CTL_13_t ctl_13 = {0};
-    ncp_denali_DENALI_CTL_13_t ctl_13_mask = {0};
-
-    ctl_13_mask.swlvl_op_done = ctl_13.swlvl_op_done = 1;
-    NCP_CALL(ncp_poll(dev, region, NCP_DENALI_CTL_13,
-                *(ncp_uint32_t *)&ctl_13_mask,
-                *(ncp_uint32_t *)&ctl_13,
-                NCP_SYSMEM_PHY_TRAIN_DELAY_USEC,
-                NCP_SYSMEM_PHY_TRAIN_DELAY_LOOPS));
-
-
-NCP_RETURN_LABEL
-    return ncpStatus;
-}
-
-#endif
 
 /*
  * The 'general purpose' sysmem PHY training init procedure. 
@@ -925,42 +1093,23 @@ ncp_sm_sysmem_phy_training_run(
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
 
     int i;
-    ncp_uint32_t ctl_58; 
-/*    ncp_uint32_t ctl_59; */
-    ncp_uint32_t ctl_60;
     ncp_uint32_t mask, value;
+    ncp_uint32_t offset;
+    ncp_uint32_t reg32;
     ncp_uint32_t            phyconfig2;
     ncp_uint32_t  dp_en;
-    ncp_uint32_t  swlvl_complete;
+    ncp_uint32_t  phyCompleteMask;
 
-    ncp_uint32_t trainLoops;
 #ifndef UBOOT
     ncp_uint32_t busAdaptor;
 #endif
 
-    switch (mode) {
-        case NCP_SYSMEM_PHY_GATE_TRAINING:
-            NCP_COMMENT("Sysmem %d PHY gate training rank %d ", smId, rank);
-            break;
-
-        case NCP_SYSMEM_PHY_WRITE_LEVELING:
-            NCP_COMMENT("Sysmem %d PHY write leveling rank %d", smId, rank);
-            break;
-
-        case NCP_SYSMEM_PHY_READ_LEVELING:
-            NCP_COMMENT("Sysmem %d PHY read leveling rank %d %s edge", smId, rank, (edge == 0) ? "pos" : "neg");
-            break;
-
-        default:
-            NCP_COMMENT("unexpected PHY training mode %d !", mode);
-    }
 
 #ifndef UBOOT
     /* get the driver bus adaptor */
     NCP_CALL(ncp_dev_read32(dev, NCP_REGION_DRIVER_CFG, 
                                  NCP_DEV_CFG_BUS_ADAPTOR, &busAdaptor));
 #endif
-
 
     /* initialize the local dp_enable field */
 
@@ -981,109 +1130,80 @@ ncp_sm_sysmem_phy_training_run(
     /* write-leveling chip_select and mode */
     mask = value = 0;
     SMAV( ncp_denali_DENALI_CTL_21_t, wrlvl_cs, rank );
-    SMAV( ncp_denali_DENALI_CTL_21_t, sw_leveling_mode, mode );
     ncr_modify32( ctlRegion, NCP_DENALI_CTL_21, mask, value );
 
-    /* set the start bit */
-    mask = value = 0;
-    SMAV( ncp_denali_DENALI_CTL_14_t, swlvl_start, 1);
-    ncr_modify32( ctlRegion, NCP_DENALI_CTL_14, mask, value );
 
+    switch (mode) {
+        case NCP_SYSMEM_PHY_WRITE_LEVELING:
+            NCP_COMMENT("Sysmem %d PHY write leveling rank %d", smId, rank);
+            
+            mask = value = 0;
+            SMAV( ncp_denali_DENALI_CTL_231_t, wrlvl_en, 1 );
+            ncr_modify32( ctlRegion, NCP_DENALI_CTL_231, mask, value );
 
-    /* poll for the OP_DONE bit */
-    NCP_SM_POLL_FOR_OP_DONE(ctlRegion);
+            mask = value = 0;
+            SMAV( ncp_denali_DENALI_CTL_15_t, wrlvl_req, 1 );
+            offset = NCP_DENALI_CTL_15;
 
+            phyCompleteMask = 0x00000100;
 
-#define NCP_PHY_MAX_TRAIN_LOOPS 5000
-    trainLoops = 0;
-    while (trainLoops < NCP_PHY_MAX_TRAIN_LOOPS) {
-        /* set the load bit */
-        mask = value = 0;
-        SMAV( ncp_denali_DENALI_CTL_13_t, swlvl_load, 1 );
-        ncr_modify32( ctlRegion, NCP_DENALI_CTL_13, mask, value );
+            break;
 
-        /* poll for the OP_DONE bit */
-        NCP_SM_POLL_FOR_OP_DONE(ctlRegion);
+        case NCP_SYSMEM_PHY_GATE_TRAINING:
+            NCP_COMMENT("Sysmem %d PHY gate training rank %d ", smId, rank);
 
-        /* 
-         * read the leveling response registers
-         * we'll check the values after completing the training operation
-         */
-        swlvl_complete = 0;
-        ncr_read32(ctlRegion, NCP_DENALI_CTL_58, &ctl_58);
-        for (i = 0; i < 4; i++) 
-        {
-            if (ctl_58 & 0xff) {
-                swlvl_complete |= (1 << i);
-            }
-            ctl_58 >>= 8;
-        }
+            mask = value = 0;
+            SMAV( ncp_denali_DENALI_CTL_08_t, rdlvl_gate_en, 1 );
+            ncr_modify32( ctlRegion, NCP_DENALI_CTL_08, mask, value );
 
-#if 0
-        ncr_read32(ctlRegion, NCP_DENALI_CTL_59, &ctl_59);
-        for (i = 0; i < 4; i++) 
-        {
-            if (ctl_59 & 0xff) {
-                swlvl_complete |= (0x10 << i);
-            }
-            ctl_59 >>= 8;
-        }
-#endif
+            mask = value = 0;
+            SMAV( ncp_denali_DENALI_CTL_08_t, rdlvl_gate_req, 1 );
+            offset = NCP_DENALI_CTL_08;
 
-        ncr_read32(ctlRegion, NCP_DENALI_CTL_60, &ctl_60);
-        if (ctl_60)
-        {
-            swlvl_complete |= 0x10;
-        }
+            phyCompleteMask = 0x00000080;
+            break;
 
-        /*
-         * Now compare the bitmask of completed bytelanes against those
-         * that are enabled. If all enabled bytelanes are complete then
-         * we're finished. 
-         */
-        if ((swlvl_complete & dp_en) == dp_en)
-        {
-            break; 
-        }
+        case NCP_SYSMEM_PHY_READ_LEVELING:
+            NCP_COMMENT("Sysmem %d PHY read leveling rank %d %s edge", smId, rank, (edge == 0) ? "pos" : "neg");
 
-#ifndef UBOOT
-        if (busAdaptor == NCP_DEV_BUS_FBRS) 
-        {
-            NCP_COMMENT("### FBRS setting leveling response registers");
-            NCP_CALL(ncp_dev_write32(dev, ctlRegion, NCP_DENALI_CTL_58, 0xffffffff));
-            NCP_CALL(ncp_dev_write32(dev, ctlRegion, NCP_DENALI_CTL_59, 0xffffffff));
-            NCP_CALL(ncp_dev_write32(dev, ctlRegion, NCP_DENALI_CTL_60, 0x000000ff));
-        }
-#endif
+            mask = value = 0;
+            SMAV( ncp_denali_DENALI_CTL_08_t, rdlvl_en, 1 );
+            ncr_modify32( ctlRegion, NCP_DENALI_CTL_08, mask, value );
 
-        trainLoops++;
+            mask = value = 0;
+            SMAV( ncp_denali_DENALI_CTL_11_t, rdlvl_req, 1 );
+            offset = NCP_DENALI_CTL_11;
+
+            phyCompleteMask = 0x00000020;
+            break;
+
+        default:
+            NCP_COMMENT("unexpected PHY training mode %d !", mode);
     }
 
-    if (trainLoops >= NCP_PHY_MAX_TRAIN_LOOPS) 
+    /*
+     * initiate the training operation using the offset,
+     * mask and value set above for this training mode.
+     */
+    ncr_modify32( ctlRegion, offset, mask, value );
+
+
+    /* poll for leveling operation complete */
+    if (0 != ncr_poll(ctlRegion, 0x410, 0x00020000, 0x00020000,100, 100) )
     {
+        /* shouldn't happen */
         NCP_CALL(NCP_ST_SYSMEM_PHY_TRAIN_TIMEOUT);
     }
 
-    /* set the exit bit */
-    mask = value = 0;
-    SMAV( ncp_denali_DENALI_CTL_13_t, swlvl_exit, 1);
-    ncr_modify32( ctlRegion, NCP_DENALI_CTL_13, 0x100, 0x10100 );
+    /* acknowledge interrupt */
+    ncr_read32 (ctlRegion, 0x410, &reg32);
+    ncr_write32(ctlRegion, 0x164,  reg32);
 
-
-    /* poll for the OP_DONE bit */
-    NCP_SM_POLL_FOR_OP_DONE(ctlRegion);
-
-#if 0
-    /* disable firmware control of ODT */
-    ctl_127 &= 0xe0ffffff; 
-    NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DENALI_CTL_127, ctl_127));
-#endif
 
     /* check the PHY status */
     if (mode != NCP_SYSMEM_PHY_GATE_TRAINING)
     {
-        ncpStatus = ncp_sm_lsiphy_status_check(dev, smId, parms);
-
+        NCP_CALL(ncp_sm_lsiphy_status_check(dev, smId, parms));
     }
 
     if (mode == NCP_SYSMEM_PHY_READ_LEVELING)
@@ -1106,6 +1226,17 @@ ncp_sm_sysmem_phy_training_run(
 
 
 NCP_RETURN_LABEL
+    /* reset training enables */
+    mask = value = 0;
+    SMAV( ncp_denali_DENALI_CTL_08_t, rdlvl_gate_en, 0 );
+    SMAV( ncp_denali_DENALI_CTL_08_t, rdlvl_en, 0 );
+    ncr_modify32( ctlRegion, NCP_DENALI_CTL_08, mask, value );
+
+    mask = value = 0;
+    SMAV( ncp_denali_DENALI_CTL_231_t, wrlvl_en, 0 );
+    ncr_modify32( ctlRegion, NCP_DENALI_CTL_231, mask, value );
+
+
     return ncpStatus;
 }
 
@@ -1464,15 +1595,42 @@ ncp_sm_lsiphy_gate_training(
             bl_stat = (ncp_uint32_t) gt_stat & 0xf;
             if (bl_stat == 0) 
             {
-                /* This bytelane passed! disable it */
-                dp_en &= ~(1 << i);
+                /* 
+                 * This bytelane passed! 
+                 * Check the gate delay, if it's greater than two cycles 
+                 * we'll increment RLGATE again. Otherwise we've found 
+                 * the 'optimal' RLGATE so we disable this bytelane from
+                 * further training. 
+                 *
+                 * bits [12:11] is the single cycle delay, so if bit 12 
+                 * is set we've got two or more cycles of delay 
+                 *
+                 * We only do this for rank0. For rank1 we'll use the 
+                 * RLGATE values we got for rank0, and as long as it 
+                 * works we don't try to restrict the gate delays.
+                 */
+
+                if (rank == 0) {
+                    ncr_read32( phyRegion, 
+                        NCP_PHY_CFG_SYSMEM_PHY_GTUPPCTRL_BL_CS(i, rank), &value);
+                    if ( (value & 0x00001000) )
+                    {
+                        /* indicate this bytelane failed */
+                        bl_stat = 0xf;
+                    }
+                } 
             }
+
+            if (bl_stat == 0) 
+            {
+                /* this bytelane still passed! disable it */
+                dp_en &= ~(1 << i);
+            } 
             else 
             {
                 /* this bytelane failed! try incrememnting rlgate */
                 if (rank != 0)  {
-                    printf("Rank1 gate training fail!\n");
-                    NCP_CALL(NCP_ST_ERROR);
+                    NCP_CALL(NCP_ST_SYSMEM_PHY_GT_TRN_ERR);
                 }
 
 
@@ -1522,6 +1680,7 @@ NCP_RETURN_LABEL
 }
 
 
+#ifdef NCP_SM_WRLVL_DUP
 /* 
  *  copy a set of write levling registers
  *  from one rank to another
@@ -1538,7 +1697,7 @@ ncp_sm_lsiphy_wrlvl_dup(
     ncp_region_id_t         phyRegion;
     ncp_uint32_t            value;
     ncp_uint32_t            from, to;
-    int i, j;
+    int i;
 
 
     phyRegion = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_PHY);
@@ -1589,6 +1748,8 @@ NCP_RETURN_LABEL
 
     return ncpStatus;
 }
+#endif
+
 
 
 /* #define SM_BYTELANE_TEST_DEBUG */
@@ -2704,6 +2865,30 @@ ncp_sysmem_init_lsiphy(
     ncp_bool_t do_rd_lvl = TRUE;
     ncp_bool_t do_wr_lvl = TRUE;
     ncp_bool_t do_gt_trn = TRUE;
+    ncp_bool_t did_training = FALSE;
+
+#ifndef UBOOT 
+    ncp_bool_t ncp_sm_phy_reg_restore = FALSE;
+    ncp_bool_t ncp_sm_phy_reg_dump    = FALSE;
+
+#else
+    ncp_uint32_t value;
+
+    /* enable protected writes */
+    value = dcr_read(0xd00);
+    dcr_write((value | 0xab), 0xd00);
+
+    /* reset sysmem */
+    dcr_write(0x00040000, 0x1703);
+    mdelay(1);
+    dcr_write(0x00000000, 0x1703);
+    mdelay(1);
+
+    /* restore protected writes */
+    dcr_write(value, 0xd00);
+
+#endif
+
 
 
     /* static PHY setup */
@@ -2734,45 +2919,93 @@ ncp_sysmem_init_lsiphy(
 #endif
 
 
-    /* do read calibration and fine write-leveling on each rank */
-    for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++) 
+    /* 
+     * attempt to restore canned PHY register settings. 
+     * if this is successful then we can skip the whole
+     * PHY training sequence. 
+     */
+    if ( ncp_sm_phy_reg_restore  &&
+          (NCP_ST_SUCCESS == ncp_sm_lsiphy_reg_restore(dev, NCP_REGION_ID(34,1)) ))
     {
-        if (topology & (1 << rank)) 
+/*        printf("PHY register restore succeeded!!\n"); */
+
+    }
+    else 
+    {
+/*        printf("Could not restore PHY registers, training...\n"); */
+
+        /* do read calibration and fine write-leveling on each rank */
+        for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++) 
         {
-            if (do_wr_lvl) {
-                /* fine write leveling */
-                /* printf("wrlvl smId %d rank %d\n", smId, rank); */
-                if (rank == 0 ) {
+            if (topology & (1 << rank)) 
+            {
+                if (do_wr_lvl) {
+                    /* fine write leveling */
+                    /* printf("wrlvl smId %d rank %d\n", smId, rank); */
+#ifdef NCP_SM_WRLVL_DUP
+                    if (rank > 0 ) 
+                    {
+                        NCP_CALL(ncp_sm_lsiphy_wrlvl_dup(dev, smId, 0, 1));
+                    } 
+                    else 
+#endif
+                    {
+                        NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 0,
+                             NCP_SYSMEM_PHY_WRITE_LEVELING,
+                             parms));
+                    }
+                }
 
+                if (do_gt_trn) {
+                    /* gate training */
+                    /* printf("gttrn smId %d rank %d\n", smId, rank); */
+                    NCP_CALL(ncp_sm_lsiphy_gate_training(dev, smId, rank, parms));
+                }
+
+                if (do_rd_lvl) {
+                    /* read leveling */
+                    /* printf("rdlvl smId %d rank %d\n", smId, rank); */
                     NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 0,
-                         NCP_SYSMEM_PHY_WRITE_LEVELING,
-                         parms));
-                } else {
-                    NCP_CALL(ncp_sm_lsiphy_wrlvl_dup(dev, smId, 0, 1));
+                             NCP_SYSMEM_PHY_READ_LEVELING,
+                             parms));
 
+                    NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 1,
+                             NCP_SYSMEM_PHY_READ_LEVELING,
+                             parms));
                 }
             }
-
-            if (do_gt_trn) {
-                /* gate training */
-                /* printf("gttrn smId %d rank %d\n", smId, rank); */
-                NCP_CALL(ncp_sm_lsiphy_gate_training(dev, smId, rank, parms));
-            }
-
-            if (do_rd_lvl) {
-                /* read leveling */
-                /* printf("rdlvl smId %d rank %d\n", smId, rank); */
-                NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 0,
-                         NCP_SYSMEM_PHY_READ_LEVELING,
-                         parms));
-
-                NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 1,
-                         NCP_SYSMEM_PHY_READ_LEVELING,
-                         parms));
-            }
-
         }
+        did_training = TRUE;
     }
+
+
+#if 0
+    /* TEMP DEBUG */
+    /* 
+     * enabling fixed latency mode will prevent a missing 
+     * read response from hanging the system. Instead of 
+     * not returning, the read will return garbage. 
+     */
+    printf("enabling fixed latency mode\n");
+
+    /*
+     * set fixed_rl. this value must be calculated using some
+     * TBD formula.
+     */
+    ncr_read32(NCP_REGION_ID(34,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0, &reg32);
+    reg32 |= 0x00058000;
+    ncr_write32(NCP_REGION_ID(34,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0, reg32);
+
+    /* enable fixed latency fifo mode */
+    ncr_read32(NCP_REGION_ID(34,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, &reg32);
+    reg32 |= 0x44000000;
+    ncr_write32(NCP_REGION_ID(34,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, reg32);
+#endif
+
 
 
     for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++) 
@@ -2804,13 +3037,28 @@ ncp_sysmem_init_lsiphy(
         }
     }
 
+    if (ncp_sm_phy_reg_restore && did_training) 
+    {
+        /* 
+         *  PHY training complete - perform memory test 
+         */
+        /* TODO !! */
+
+        /*
+         * save these PHY training values for next time
+         */
+        ncp_sm_lsiphy_reg_save(dev, NCP_REGION_ID(34,1));
+    }
+
     NCP_CALL(ncp_sm_lsiphy_runtime_adj(dev, smId, parms));
 
 NCP_RETURN_LABEL
 
-#ifdef SM_REG_DUMP
-  if (NCP_ST_SUCCESS != ncpStatus)
+#ifdef NCP_SM_PHY_REG_DUMP
+  if ( (NCP_ST_SUCCESS != ncpStatus) || ncp_sm_phy_reg_dump ) 
+  {
     ncp_sm_lsiphy_reg_dump(dev, smId);
+  }
 #endif
 
  return  ncpStatus;

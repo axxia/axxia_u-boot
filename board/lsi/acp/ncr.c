@@ -44,8 +44,8 @@ ncr_fail(const char *file, const char *function, const int line)
 	if (1 == ncr_sysmem_mode_disabled)
 		return -1;
 	
-	printf("Config Ring Access Failed: 0x%08lx 0x%08lx\n",
-	       in_be32(NCA + 0xe4), in_be32(NCA + 0xe8));
+	printf("Config Ring Access Failed: 0x%08x 0x%08x\n",
+	       in_be32((u32 *)(NCA + 0xe4)), in_be32((u32 *)(NCA + 0xe8)));
 	acp_failure(file, function, line);
 
 	return -1;
@@ -524,7 +524,7 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 	if ((NCP_REGION_ID(0x115, 0) == region) ||
 	    (NCP_REGION_ID(0x115, 2) == region) ||
 	    (NCP_REGION_ID(0x115, 3) == region)) {
-		unsigned long base;
+		unsigned long base = 0;
 
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
@@ -827,7 +827,7 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 	if ((NCP_REGION_ID(0x115, 0) == region) ||
 	    (NCP_REGION_ID(0x115, 2) == region) ||
 	    (NCP_REGION_ID(0x115, 3) == region)) {
-		unsigned long base;
+		unsigned long base = 0;
 
 		switch (NCP_TARGET_ID(region)) {
 		case 0:

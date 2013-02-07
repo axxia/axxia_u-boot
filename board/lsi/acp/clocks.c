@@ -30,6 +30,30 @@
   ===============================================================================
 */
 
+#if defined(ACP_25xx)
+
+static unsigned long
+get_pll(unsigned long prms, unsigned long seldiv)
+{
+	unsigned long frequency;
+	unsigned long postdiv;
+	unsigned long fbdiv;
+	unsigned long refdiv;
+
+	postdiv = (prms & 0xf) + 1;
+	fbdiv = ((prms & 0xfff0) >> 4) + 3;
+	refdiv = ((prms & 0x1f0000) >> 16) + 1;
+	frequency =  CLK_REF0 / 1000;
+	frequency *= fbdiv;
+	frequency /= refdiv;
+	frequency /= postdiv;
+	frequency /= seldiv;
+
+	return frequency;
+}
+
+#else
+
 static unsigned char ps[] = {1, 3, 2, 4};
 
 static unsigned char idiv[] = {
@@ -89,33 +113,18 @@ static int
 get_ppc_pll(unsigned long *dco, unsigned long *pllouta, unsigned long *plloutb)
 {
 	unsigned long ctrl;
-#if 0
-	unsigned long tune2;
-	unsigned long tune3;
-#endif
 
 	ctrl = dcr_read(0xd02);
-#if 0
-	tune2 = dcr_read(0xd05);
-	tune3 = dcr_read(0xd06);
-#endif
 
 	*dco = (CLK_REF0 / 1000 / PREDIV(ctrl));
 	*dco *= (MULTINT_PRE(ctrl) * MULTINT_MAIN(ctrl));
 	*pllouta = *dco / (RANGEA_PRE(ctrl) * RANGEA_MAIN(ctrl));
 	*plloutb = *dco / (RANGEA_PRE(ctrl) * RANGEB_MAIN(ctrl));
 
-#if 0
-	printf("0x%x %d 0x%x (%d %d) 0x%x (%d %d) 0x%x (%d %d) 0x%x\n",
-	       ctrl, PREDIV(ctrl),
-	       MULTINT(ctrl), MULTINT_PRE(ctrl), MULTINT_MAIN(ctrl),
-	       RANGEA(ctrl), RANGEA_PRE(ctrl), RANGEA_MAIN(ctrl),
-	       RANGEB(ctrl), RANGEB_PRE(ctrl), RANGEB_MAIN(ctrl),
-	       MULTFRAC(tune2, tune3));
-#endif
-
 	return 0;
 }
+
+#endif
 
 /*
   ===============================================================================
@@ -140,11 +149,12 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 	/*
 	  Clocks are only available on the ASIC.
 	*/
+
 	switch (clock) {
-	case peripheral:
+	case clock_peripheral:
 		*frequency = 6500;
 		break;
-	case ppc:
+	case clock_ppc:
 		*frequency = 12500;
 		break;
 	default:
@@ -157,33 +167,66 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 
 #else
 
+/*
+  ------------------------------------------------------------------------------
+  acp_clock_get
+*/
+
 int
 acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 {
-#ifdef ACP_25xx
-	unsigned long gcr;
+#if defined(ACP_25xx)
+	unsigned long mcgc;
+	unsigned long mcgc1;
+	unsigned long prms;
 
 	switch (clock) {
-	case peripheral:
-		gcr = dcr_read(0xd01);
+	case clock_sys:
+		mcgc = dcr_read(0xd00);
 
-		if (0 == (gcr & 0xc000))
+		if (0 == (mcgc & 0x30000000)) {
 			*frequency = CLK_REF0 / 1000;
-		else
-			*frequency = 200000000 / 1000;
-
+		} else {
+			prms = dcr_read(0xd40);
+			*frequency = get_pll(prms, ((mcgc & 0xf0000) >> 16) + 1);
+		}
 		break;
-	case ppc:
-#ifdef PPC_RUN_ON_REF
-		*frequency = CLK_REF0 / 1000;
-#else
-		gcr = dcr_read(0xd00);
+	case clock_ppc:
+		mcgc = dcr_read(0xd00);
 
-		if (0 == (gcr & 0xc0000000))
+		if (0 == (mcgc & 0xc0000000)) {
 			*frequency = CLK_REF0 / 1000;
-		else
-			*frequency = PPC_PLL_FREQ / 1000;
-#endif
+		} else {
+			prms = dcr_read(0xd50);
+			*frequency = get_pll(prms,
+					     ((mcgc & 0xf00000) >> 20) + 1);
+		}
+		break;
+	case clock_ddr:
+		prms = dcr_read(0xd70);
+		*frequency = get_pll(prms, 1);
+		break;
+	case clock_peripheral:
+		mcgc1 = dcr_read(0xd01);
+
+		switch (((mcgc1 & 0xc000) >> 14) & 0x3) {
+		case 0x0:
+			*frequency = CLK_REF0 / 1000;
+			break;
+		case 0x1:
+			mcgc = dcr_read(0xd00);
+			prms = dcr_read(0xd50);
+			*frequency = get_pll(prms, ((mcgc & 0xf000) >> 12) + 1);
+			break;
+		case 0x2:
+		case 0x3:
+			mcgc = dcr_read(0xd00);
+			prms = dcr_read(0xd40);
+			*frequency = get_pll(prms, ((mcgc1 & 0xf00) >> 8) + 1);
+			break;
+		default:
+			break;
+		}
 		break;
 	default:
 		return -1;
@@ -204,7 +247,21 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 	mcgs = dcr_read(0xd01);
 
 	switch (clock) {
-	case peripheral:
+	case clock_ppc:
+		if (0 == (mcgc & 0xc0000000)) {
+			/* ppc_clk is clk_ref0 */
+			*frequency = CLK_REF0 / 1000;
+		} else if (0 == get_ppc_pll(&dco, &pllouta, &plloutb)) {
+			if (1 == ((mcgc & 0xc0000000) >> 30)) {
+				*frequency = pllouta;
+			} else {
+				*frequency = pllouta / 2;
+			}
+		} else {
+			return -1;
+		}
+		break;
+	case clock_peripheral:
 		if (0 == (mcgc & 0x08000000)) {
 			/* clk_per is clk_ref0 */
 			*frequency = CLK_REF0 / 1000;
@@ -219,20 +276,6 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 			*frequency = plloutb;
 		}
 		break;
-	case ppc:
-		if (0 == (mcgc & 0xc0000000)) {
-			/* ppc_clk is clk_ref0 */
-			*frequency = CLK_REF0 / 1000;
-		} else if (0 == get_ppc_pll(&dco, &pllouta, &plloutb)) {
-			if (1 == ((mcgc & 0xc0000000) >> 30)) {
-				*frequency = pllouta;
-			} else {
-				*frequency = pllouta / 2;
-			}
-		} else {
-			return -1;
-		}
-		break;
 	default:
 		return -1;
 		break;
@@ -241,6 +284,37 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 	return 0;
 #endif
 }
+
+#if defined(ACP_25xx)
+void
+axm2500_pll_check_lock(void)
+{
+	int i;
+	int offset = 0xd40;
+	unsigned long pll_stat;
+	unsigned long dcr_pllctl_int_status;
+	char *pll_names[] = {"SYS", "PPC", "TM", "SM"};
+
+	for (i = 0; i < 4; ++i) {
+		pll_stat = dcr_read(offset + 0xa);
+		dcr_pllctl_int_status = dcr_read(offset + 0x4);
+
+		if (0 == (pll_stat & 0x80000000UL)) {
+			printf("%s PLL is NOT locked!\n",
+			       pll_names[(offset - 0xd40)/0x10]);
+		}
+
+		if (0 != (dcr_pllctl_int_status & 1)) {
+			printf("%s lost lock at some point...\n",
+			       pll_names[(offset - 0xd40)/0x10]);
+			dcr_pllctl_int_status &= ~0x1UL;
+			dcr_write(dcr_pllctl_int_status, (offset + 0x4));
+		}
+
+		offset += 0x10;
+	}
+}
+#endif
 
 /*
   ==============================================================================

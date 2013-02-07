@@ -104,7 +104,7 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 	struct fdt_header *dt;
 	const struct fdt_property *property;
 	int nodeoffset;
-	int retries = 100;
+	int retries = 1000;
 
 	/* Get the group this core belongs to. */
 	if (-1 == (group = acp_osg_get_group(core)))
@@ -179,10 +179,37 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 	DEBUG_PRINT("Changing core %d spintable state.\n", core);
 	acp_osg_set_spintable_state(core, ACP_OSG_SPINTABLE_AVAILABLE);
 
+#ifdef ACP_25xx
+#ifdef RESET_INSTEAD_OF_IPI
+	/* Enable L2 1 and Core 1 */
+	{
+		unsigned temp;
+
+		temp = dcr_read(0xd00);
+		temp |= 0xab;
+		dcr_write(temp, 0xd00);
+
+		dcr_write(0x0, (DCR_RESET_BASE + 2));
+		dcr_write(0x0, (DCR_RESET_BASE + 1));
+	}
+#else
+	/* Wake up the L2 */
+	dcr_write(0x84, 0x300 + (0x100 * core));
+	dcr_write(0, 0x304 + (0x100 * core));
+
+	/* Send an IPI */
 	if (0 != cold_start) {
 		DEBUG_PRINT("Sending an IPI to core %d.\n", core);
 		dcr_write((1 << core), 0xffc00040);
 	}
+#endif
+#else
+	/* Send an IPI */
+	if (0 != cold_start) {
+		DEBUG_PRINT("Sending an IPI to core %d.\n", core);
+		dcr_write((1 << core), 0xffc00040);
+	}
+#endif
 
 	/* Wait for a response */
 	while( 0 < retries ) {
