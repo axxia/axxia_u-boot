@@ -2077,6 +2077,8 @@ ncp_sysmem_init_ibmphy(
 	unsigned long ctl_34 = 0;
 	unsigned long munge_reg;
 	unsigned long num_bls;
+    ncp_uint8_t   *tRFC_vals = tRFC_vals_533;
+
 	int i, j;
 	int rc;
 

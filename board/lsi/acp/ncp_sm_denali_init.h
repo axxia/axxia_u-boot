@@ -66,13 +66,13 @@
             ctl_34  = 0x00000001;
             break;
         case 0x3:
-            ctl_26  = 0x01010a02;
+            ctl_26  = 0x01010a00;
             ctl_32  = 0x00000000;
             ctl_33  = 0x02010000;
             ctl_34  = 0x00000000;
             break;
         case 0xf:
-            ctl_26  = 0x01010a0a;
+            ctl_26  = 0x01010a00;
             ctl_32  = 0x08040000;
             ctl_33  = 0x08040201;
             ctl_34  = 0x00000201;
@@ -114,7 +114,7 @@
     SV( ncp_denali_DENALI_CTL_22_t, bstlen, 3 );
     SV( ncp_denali_DENALI_CTL_22_t, age_count, 7 );
 
-    /*
+        /*
         Density         Width           addr_pins       col_size
         512Mb           x8              3               3
         512Mb           x16             4               3
@@ -156,6 +156,8 @@
     }
 
     ncr_write32( controller, 0x05c, value );
+
+
     ncr_write32( controller, 0x060, 0x04070000 );
 
     /* 
@@ -176,6 +178,9 @@
     ncr_write32( controller, 0x064, value);
 
     /* DENALI_CTL_26 */
+    if (address_mirroring) {
+        ctl_26 |= 0xa;
+    }
     ncr_write32( controller, 0x068, ctl_26 );
     ncr_write32( controller, 0x06c, 0x01010101 );
     ncr_write32( controller, 0x070, 0x01010101 );
@@ -277,7 +282,7 @@
     value = 0;
     SV( ncp_denali_DENALI_CTL_63_t, axi0_priority_relax, 0x64 );
     SV( ncp_denali_DENALI_CTL_63_t,
-          trfc, tRFC_vals [ sdram_device_density ] );
+        trfc, tRFC_vals [ sdram_device_density ] );
     ncr_write32( controller, 0x0fc, value );
 
     ncr_write32( controller, 0x100, 0x00640064 );
@@ -316,6 +321,7 @@
      *
      */
     value = 0;
+
     if (high_temp_dram) {
         SV(ncp_denali_DENALI_CTL_85_t, tras_max, 0x4920); /* 35100ns @ 533MHz */
     } else {

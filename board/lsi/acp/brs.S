@@ -65,11 +65,26 @@ utlb_table:
 	.long		0x80000000,0xf0900870,0x00500020,0x00030507
 #endif
 
+#ifdef ACP_25xx
+	#; Physical Address - 0x0010_0002_0000
+	#; Virtual Address - 0xf0a0_0000
+	#; Size - 64K
+	.long           0xe0000000,0xf0a00830,0x00020010,0x00030507
+	#; Physical Address - 0x0010_0003_0000
+	#; Virtual Address - 0xf0a1_0000
+	#; Size - 64K
+	.long           0xe0000000,0xf0a10830,0x00030010,0x00030507
+	#; Physical Address - 0x0010_0000_0000
+	#; Virtual Address - 0xf0a2_0000
+	#; Size - 16K
+	.long           0xe0000000,0xf0a20810,0x00000010,0x00030507
+#else
 	#; -- -- Local CPU memory -- --
 	#; Physical Address - 0x0010_0000_0000
 	#; Virtual Address - 0xf0a0_0000
 	#; Size - 1M
 	.long		0x80000000,0xf0a00870,0x00000010,0x00030507
+#endif
 	
 	#; -- -- ROM -- --
 	#; Physical Address - 0x0021_0000_0000
@@ -361,9 +376,26 @@ init_core_relocate:
 #if defined(ACP_CORE1ONLY) && ! defined(ACP_ISS)
 	cmpwi		r3,1
 #else
-	cmpwi		r3,0
+	cmpwi		r3,SYSTEM_BOOTCORE
 #endif
 	bne		cold_reset_pen
+
+	#; set up the PLB6
+
+	li              r11,0x104
+	li              r12,0x20
+	isync
+	mtdcrx          r11,r12
+	li              r11,0x105
+	isync
+	mtdcrx          r11,r12
+	li              r11,0x106
+	isync
+	mtdcrx          r11,r12
+	li              r11,0x100
+	lis             r12,0x80000000@h
+	isync
+	mtdcrx          r11,r12
 
 	#; core 0 jumps to the base of LCM
 

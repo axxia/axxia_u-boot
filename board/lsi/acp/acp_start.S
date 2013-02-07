@@ -135,6 +135,11 @@ _start_acp:
 	lis		r0,0
 	mtmsr		r0
 
+	#; Clear the MCSR
+ 
+	mfspr           r0,0x23c
+	mtspr           0x33c,r0
+ 
 	#; Clear the TCR
 
 	mtspr		0x154,r0
@@ -371,7 +376,7 @@ acp_relocate:
 
 	#; If not core 0, skip the next bit...
 
-	cmpwi		r22,0
+	cmpwi		r22,SYSTEM_BOOTCORE
 	bne		continue_start
 
 	#; Determine whether this is a cold or warm reset.

@@ -40,38 +40,6 @@
 #include "regs/ncp_phy_reg_defines_acp2500.h"
 #endif
 
-
-#undef PRESET_ECC_LEVELING
-/*#define PRESET_ECC_LEVELING*/
-
-#undef SM_BYTELANE_TEST_DEBUG
-/*#define SM_BYTELANE_TEST_DEBUG*/
-
-#undef SM_ECC_BYTELANE_TEST_DEBUG
-/*#define SM_ECC_BYTELANE_TEST_DEBUG*/
-
-#undef SM_DEBUG_MODE
-/*#define SM_DEBUG_MODE*/
-
-#undef SM_REG_DUMP
-/*#define SM_REG_DUMP*/
-
-#undef DISPLAY_PARAMETERS
-/*#define DISPLAY_PARAMETERS*/
-
-#undef VID_VERBOSE
-/*#define VID_VERBOSE*/
-
-#ifdef NCR_TRACER
-#define NCR_TRACE( format, args... ) do { \
-if( 0 != ncr_tracer_is_enabled( ) ) { \
-printf( "# " format "\n", ##args ); \
-} \
-} while( 0 );
-#else
-#define NCR_TRACE( format, args... )
-#endif
-
 /*
   ===============================================================================
   ===============================================================================
@@ -554,176 +522,155 @@ clocks_init( void )
 {
 #ifdef ACP_25xx
 	unsigned long value;
+	unsigned long scratch;
+
 	/*
-		# SYS_PLL setup
-		# enable PLL
-		ncpWrite 0x18d.0x1.0x0 0x80000000
+	  Enable protected writes
+	  ncpWrite   0x18d.0.0x0000000000 0x000000ab
 	*/
+
+	value = dcr_read(0xd00);
+	value |= 0xab;
+	dcr_write(value, 0xd00);
+
+	/*
+	  -----------------------------------------------------------------------
+	  SYS_PLL setup
+	  -----------------------------------------------------------------------
+	*/
+
 	dcr_write(0x80000000, 0xd40);
-	mdelay(10);
-	/*
-		# Set Parameters
-		ncpWrite 0x18d.0x1.0x4 0x14F00
-		ncpWrite 0x18d.0x1.0x0 0x802405d2
-	*/
+	mdelay(1);
+
 	dcr_write(0x14f00, 0xd41);
-	dcr_write(0x802405d2, 0xd40);
-	/*
-		# remove PLL reset
-		ncpWrite 0x18d.0x1.0x4 0x14F02
-	*/
+	dcr_write(0xa02405d2, 0xd40);
 	dcr_write(0x14f02, 0xd41);
-	/*
-		# check for lock (reg 0x28 bit[31])
-		ncpRead 0x18d.0x1.0x0 12
-	*/
+
 	do {
 		value = dcr_read(0xd4a);
 	} while (0 == (value & 0x80000000));
-	/*
-		# Set clk select and divider
-		ncpWrite 0x18d.0x0.0x0 0x20010800
-	*/
-	dcr_write(0x20010800, 0xd00);
-	/*
-		# remove PLL bypass
-		ncpWrite 0x18d.0x1.0x4 0x14702
-	*/
+
 	dcr_write(0x14702, 0xd41);
-	mdelay(10);
-#ifdef SLOW_DOWN_PPC_25xx
+	mdelay(1);
+
+	dcr_write(0x20010800, 0xd00);
+	mdelay(1);
+
+	/*
+	  -----------------------------------------------------------------------
+	  PPC PLL setup
+	  -----------------------------------------------------------------------
+	*/
+
+#if !defined(PPC_RUN_ON_REF)
 	dcr_write(0x80000000, 0xd50);
-	mdelay(10);
+	mdelay(1);
+
 	dcr_write(0x14f00, 0xd51);
-	dcr_write(0x802405d2, 0xd50);
+	dcr_write(PPC_PLL_PARAMETER, 0xd50);
 	dcr_write(0x14f02, 0xd51);
+
 	do {
 		value = dcr_read(0xd5a);
 	} while (0 == (value & 0x80000000));
+
+	dcr_write(0x14702, 0xd51);
+	mdelay(1);
+
 	value = dcr_read(0xd00);
 	value |= 0x40000000;
 	dcr_write(value, 0xd00);
-	dcr_write(0x14702, 0xd51);
-	mdelay(10);
-#else
-	/*
-	  # PPC_PLL setup
-	  # enable PLL
-	  ncpWrite 0x18d.0x2.0x0 0x80000000
-	*/
-	dcr_write(0x80000000, 0xd50);
-	mdelay(10);
-	/*
-	  # Set Parameters
-	  ncpWrite 0x18d.0x2.0x4 0x14F00
-	  ncpWrite 0x18d.0x2.0x0 0x80240551
-	*/
-	dcr_write(0x14f00, 0xd51);
-	dcr_write(0x80240551, 0xd50);
-	/*
-	  # remove PLL reset
-	  ncpWrite 0x18d.0x2.0x4 0x14F02
-	*/
-	dcr_write(0x14f02, 0xd51);
-	/*
-	  # check for lock (reg 0x28 bit[31])
-	  ncpRead 0x18d.0x2.0x0 12
-	*/
-	do {
-		value = dcr_read(0xd5a);
-	} while (0 == (value & 0x80000000));
-	/*
-	  # Set clk select and divider
-	  ncpOr 0x18d.0.0x0 0x40000000
-	*/
-	value = dcr_read(0xd00);
-	value |= 0x40000000;
-	dcr_write(value, 0xd00);
-	/*
-	  # Remove PLL bypass
-	  ncpWrite 0x18d.0x2.0x4 0x14702
-	  ncpRead 0x18d.0x2.0x0 12
-	*/
-	dcr_write(0x14702, 0xd51);
-	mdelay(10);
+	mdelay(1);
 #endif
+
 	/*
-	  # TM_PLL setup
-	  # enable PLL
-	  ncpWrite 0x18d.0x3.0x0 0xC0000000
+	  -----------------------------------------------------------------------
+	  SM_PLL setup
+	  -----------------------------------------------------------------------
 	*/
-	dcr_write(0xc0000000, 0xd60);
-	mdelay(10);
-	/*
-	  # Set Parameters
-	  ncpWrite 0x18d.0x3.0x4 0x1af00
-	  ncpWrite 0x18d.0x3.0x0 0xC02203d1
-	*/
-	dcr_write(0x1af00, 0xd61);
-	dcr_write(0xc02203d1, 0xd60);
-	/*
-	  # Remove PLL reset
-	  ncpWrite 0x18d.0x3.0x4 0x1af02
-	*/
-	dcr_write(0x1af02, 0xd61);
-	/*
-	  # check for PLL lock bit 
-	  ncpRead 0x18d.0x3.0x0 12
-	*/
-	do {
-		value = dcr_read(0xd6a);
-	} while (0 == (value & 0x80000000));
-	/*
-	  # remove PLL bypass
-	  ncpWrite 0x18d.0x3.0x4 0x1a702
-	*/
-	dcr_write(0x1a702, 0xd61);
-	/*
-	  # SM_PLL setup
-	  # enable PLL
-	  ncpWrite 0x18d.0x4.0x0 0xC0000000
-	*/
+
+	dcr_write(0xc0000, 0x1703);
+	mdelay(1);
+
+	dcr_write(0xc00, 0xd71);
+	dcr_write(0, 0xd70);
 	dcr_write(0xc0000000, 0xd70);
-	mdelay(10);
-	/*
-	  # Set Parameters
-	  ncpWrite 0x18d.0x4.0x4 0x04f00
-	  ncpWrite 0x18d.0x4.0x0 0xC04403d0
-	*/
+	mdelay(1);
+
 	dcr_write(0x4f00, 0xd71);
-	dcr_write(0xc04403d0, 0xd70);
-	/*
-	  # Remove PLL reset
-	  ncpWrite 0x18d.0x4.0x4 0x04f02
-	*/
+	dcr_write(0xe04403d0, 0xd70);
 	dcr_write(0x4f02, 0xd71);
-	/*
-	  # check for PLL lock bit 
-	  ncpRead 0x18d.0x4.0x0 12
-	*/
+	mdelay(1);
+
 	do {
 		value = dcr_read(0xd7a);
 	} while (0 == (value & 0x80000000));
-	/*
-	  # remove PLL bypass
-	  ncpWrite 0x18d.0x4.0x4 0x04702
-	*/
+
 	dcr_write(0x4702, 0xd71);
-	mdelay(10);
+	mdelay(1);
+
+	dcr_write(0, 0x1703);
+	mdelay(1);
+
 	/*
-	  # mcgc1 reg for clk_per
-	  # 1. set the clock dividers, both clk_per is div_by_4 (bits[11:8]), and clk_nrcp is div_by_2 (bits[7:4]). Enable clk_div_load (bit[1:0])
-	  # 2. select clk_per (bits[15:14]) source  to clk_sys_pll/div
-	  ncpOr 0x18d.0x0.0x4 0x00000302
-	  ncpOr 0x18d.0x0.0x4 0x00008000
+	  -----------------------------------------------------------------------
+	  TM_PLL setup
+	  -----------------------------------------------------------------------
 	*/
+
+	dcr_write(0xc00000, 0x1703);
+	mdelay(1);
+
+	dcr_write(0xc00, 0xd61);
+	dcr_write(0, 0xd60);
+	dcr_write(0xc0000000, 0xd60);
+	mdelay(1);
+
+	dcr_write(0x1af00, 0xd61);
+	dcr_write(0xe02203d1, 0xd60);
+	dcr_write(0x1af02, 0xd61);
+
+	do {
+		value = dcr_read(0xd6a);
+	} while (0 == (value & 0x80000000));
+
+	dcr_write(0x1a702, 0xd61);
+	mdelay(1);
+
+	dcr_write(0, 0x1703);
+	mdelay(1);
+
+	/*
+	  -----------------------------------------------------------------------
+	  Peripherals
+	*/
+
 	value = dcr_read(0xd01);
 	value |= 0x302;
 	dcr_write(value, 0xd01);
-	mdelay(10);
+	mdelay(1);
+
 	value = dcr_read(0xd01);
 	value |= 0x8000;
 	dcr_write(value, 0xd01);
+	mdelay(1);
+
+	/*
+	  Disable protected writes
+	  ncpWrite   0x18d.0.0x0000000000 0
+	*/
+
+	value = dcr_read(0xd00);
+	value &= ~0xff;
+	dcr_write(value, 0xd00);
+
+	/*
+	  Re-initialize the uart incase the divisors need to change.
+	*/
+
+	serial_early_init();
+
+	return 0;
 #else
 	int type;
 	unsigned long control;
@@ -911,6 +858,20 @@ clocks_init( void )
 
 #if !defined(ACP_EMU)
 
+#if defined(ACP_X1V1)
+#define INT_STATUS_OFFSET 0x16c
+#define BIST_COMPLETION 0x200
+#define ECC_ERROR_MASK 0x3c
+#elif defined(ACP_X1V2) || defined(ACP_X2V1)
+#define INT_STATUS_OFFSET 0x16c
+#define BIST_COMPLETION 0x400
+#define ECC_ERROR_MASK 0x78
+#elif defined(ACP_25xx)
+#define INT_STATUS_OFFSET 0x410
+#define BIST_COMPLETION 0x800
+#define ECC_ERROR_MASK 0x78
+#endif
+
 /*
   ----------------------------------------------------------------------
   acp_sysmem_bist_failure
@@ -921,10 +882,15 @@ acp_sysmem_bist_failure(unsigned long region)
 {
 	int i;
 	unsigned long value;
-	unsigned long offsets [] = {
-		0x248, 0x24c, 0x2b0, 0x2b4, 0x2b8, 0x2bc, 0x2c0, 0x2c4, 0x2c8,
-		0x2cc
-	};
+	unsigned long offsets [] =
+	  { 0x248, 0x24c,
+#ifdef ACP_25xx
+	    0x418, 0x41c, 0x420, 0x424, 0x428, 0x42c, 0x430, 0x434,
+	    0x438, 0x43c, 0x440, 0x444, 0x448, 0x44c, 0x450, 0x454
+#else
+	    0x2b0, 0x2b4, 0x2b8, 0x2bc, 0x2c0, 0x2c4, 0x2c8, 0x2cc
+#endif
+	  };
 
 	for (i = 0; i < (sizeof(offsets) / sizeof(unsigned long)); ++i) {
 		ncr_read32(region, offsets[i], &value);
@@ -940,12 +906,6 @@ acp_sysmem_bist_failure(unsigned long region)
   acp_sysmem_asic_check_ecc
 */
 
-#ifdef ACP_X1V1
-#define ECC_ERROR_MASK 0x3c
-#else
-#define ECC_ERROR_MASK 0x78
-#endif
-
 static void
 acp_sysmem_asic_check_ecc(unsigned long region)
 {
@@ -959,7 +919,7 @@ acp_sysmem_asic_check_ecc(unsigned long region)
 		return;
 	}
 
-	ncr_read32(region, NCP_DENALI_CTL_91, &value);
+	ncr_read32(region, INT_STATUS_OFFSET, &value);
 
 	if (0 == (value & ECC_ERROR_MASK)) {
 		printf("No ECC Errors Detected on Node 0x%03lx.\n",
@@ -1013,6 +973,8 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 #if defined(ACP_25xx)
 	ncr_write32( region, 0x3f8, 0 );
 	ncr_write32( region, 0x3fc, 0 );
+	ncr_write32( region, 0x400, 0 );
+	ncr_write32( region, 0x404, 0 );
 #else
 	ncr_write32( region, 0x280, 0 );
 	ncr_write32( region, 0x284, 0 );
@@ -1041,7 +1003,7 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 
 	/* Erase the interrupt status from the previous run. */
 #if defined(ACP_25xx)
-	ncr_or( region, 0x164, 0x600 );	/* ZZZ: TODO */
+	ncr_or( region, 0x164, 0x200 );
 #else
 	ncr_or( region, 0x164, 0x600 );
 #endif
@@ -1059,14 +1021,6 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 
 #define PARALLEL_BIST
 
-#if defined(ACP_X1V1)
-#define BIST_COMPLETION 0x200
-#elif defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
-#define BIST_COMPLETION 0x400
-#elif defined(ACP_25xx)
-#define BIST_COMPLETION 0x800
-#endif
-
 static void
 acp_sysmem_bist( void )
 {
@@ -1075,6 +1029,8 @@ acp_sysmem_bist( void )
 	unsigned long bits = 20;
 	int test;
 	unsigned long result;
+	int smid;
+	unsigned long interrupt_status;
 
 	printf("Running the Built In Self Test.\n");
 	acp_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
@@ -1095,10 +1051,10 @@ acp_sysmem_bist( void )
 
 		if( 1 == test ) {
 			printf( "ADDRESS Check MBIST on all nodes...\n" );
-			delay_loops = 12000;
+			delay_loops = 20000;
 		} else {
 			printf( "DATA Check MBIST on all nodes...\n" );
-			delay_loops = 48000;
+			delay_loops = 100000;
 		}
 
 #if defined(ACP_EMU)
@@ -1111,12 +1067,15 @@ acp_sysmem_bist( void )
 			acp_sysmem_bist_start( smregion1, bits, test );
 
 		/* Poll for completion and get the results. */
-		if( 0 != ncr_poll( smregion0, 0x16c,
+		if( 0 != ncr_poll( smregion0, INT_STATUS_OFFSET,
 				   BIST_COMPLETION, BIST_COMPLETION,
 				   10000, delay_loops ) ) {
 			printf( "SM Node 0x%lx Didn't Complete.\n",
 				NCP_NODE_ID( smregion0 ) );
 		} else {
+			ncr_read32(smregion0, INT_STATUS_OFFSET,
+				   &interrupt_status);
+			ncr_write32(smregion0, 0x164, interrupt_status);
 			ncr_read32( smregion0, 0x50, & result );
 
 			if( result & ( 1 << test ) ) {
@@ -1128,12 +1087,15 @@ acp_sysmem_bist( void )
 		}
 
 		if( 1 < sysmem->num_interfaces ) {
-			if( 0 != ncr_poll( smregion1, 0x16c,
+			if( 0 != ncr_poll( smregion1, INT_STATUS_OFFSET,
 					   BIST_COMPLETION, BIST_COMPLETION,
 					   10000, delay_loops ) ) {
 				printf( "SM Node 0x%lx Didn't Complete.\n",
 					NCP_NODE_ID( smregion1 ) );
 			} else {
+				ncr_read32(smregion1, INT_STATUS_OFFSET,
+					   &interrupt_status);
+				ncr_write32(smregion1, 0x164, interrupt_status);
 				ncr_read32( smregion1, 0x50, & result );
 				
 				if( result & ( 1 << test ) ) {
@@ -1152,8 +1114,17 @@ acp_sysmem_bist( void )
 		*/
 		ncr_and( smregion0, 0x8, 0xfffffffe );
 
-		if( 1 < sysmem->num_interfaces )
+		do {
+			ncr_read32(smregion0, 0x8, &result);
+		} while (0 != (result & 1));
+
+		if( 1 < sysmem->num_interfaces ) {
 			ncr_and( smregion1, 0x8, 0xfffffffe );
+
+			do {
+				ncr_read32(smregion1, 0x8, &result);
+			} while (0 != (result & 1));
+		}
 	}
 #else
 	for( smid = 0 ; smid < sysmem->num_interfaces ; ++ smid ) {
@@ -1176,12 +1147,16 @@ acp_sysmem_bist( void )
 			acp_sysmem_bist_start( smregion, bits, test );
 
 			/* Poll for completion. */
-			ncr_poll( smregion, 0x16c,
+			ncr_poll( smregion, INT_STATUS_OFFSET,
 				  BIST_COMPLETION, BIST_COMPLETION,
 				  1000000, 10000 );
 
+			ncr_read32(smregion, INT_STATUS_OFFSET,
+				   &interrupt_status);
+			ncr_write32(smregion, 0x164, interrupt_status);
+
 			/* Get the results. */
-			ncr_read32( smregion, 0x50, & result );
+			ncr_read32(smregion, 0x50, & result);
 
 			if( result & ( 1 << test ) ) {
 				printf( "PASSED.\n" );
@@ -1391,6 +1366,7 @@ acp_init( void )
 	printf("Parameter Table Version %lu\n", global->version);
 #endif
 
+#ifndef ACP_25xx
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE ) ) {
 		if( 0 != ( returnCode = voltage_init( ) ) ) {
@@ -1404,6 +1380,7 @@ acp_init( void )
 			goto acp_init_return;
 		}
 	}
+#endif
 
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS ) ) {
@@ -1416,7 +1393,7 @@ acp_init( void )
 			  Set the PCIe/SRIO mode based on the
 			  reset_config value since no parameters are
 			  available.
-			*/
+			*/	
 			pciesrio_init( 1 );
 
 			goto acp_init_return;
@@ -1427,6 +1404,33 @@ acp_init( void )
 #endif
 		serial_early_init( );
 	}
+
+	/*ZZZ*/
+	{
+		int i;
+		int offset = 0xd40;
+		unsigned long pll_stat;
+		unsigned long dcr_pllctl_int_status;
+
+		for (i = 0; i < 4; ++i) {
+			pll_stat = dcr_read(offset + 0xa);
+			dcr_pllctl_int_status = dcr_read(offset + 0x4);
+
+			if (0 == (pll_stat & 0x80000000UL)) {
+				printf("0x%x is NOT locked!", offset);
+			}
+
+			if (0 != (dcr_pllctl_int_status & 1)) {
+				printf("0x%x lost lock at some point...\n",
+				       offset);
+				dcr_pllctl_int_status &= ~0x1UL;
+				dcr_write(dcr_pllctl_int_status, (offset + 0x4));
+			}
+
+			offset += 0x10;
+		}
+	}
+	/*ZZZ*/
 
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO ) ) {
@@ -1462,10 +1466,11 @@ acp_init( void )
 		}
 
 #if !defined(ACP_EMU)
-		if( 0 !=
-		    ( global->flags &
-		      PARAMETERS_GLOBAL_RUN_SYSMEM_BIST ) ) {
+		if( 0 != ( global->flags &
+			   PARAMETERS_GLOBAL_RUN_SYSMEM_BIST ) ) {
 			acp_sysmem_bist( );
+			fill_sysmem(0ULL, (1ULL << sysmem_size),
+				    (sysmem->num_interfaces * 4));
 		}
 #endif
 	}

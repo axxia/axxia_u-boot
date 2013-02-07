@@ -539,6 +539,9 @@ acp_osg_is_group_boot_core(int group)
 int
 acp_osg_is_boot_core(int core)
 {
+	if (SYSTEM_BOOTCORE == core)
+		return 1;
+
 #if defined(CONFIG_ACP_342X) || defined(ACP_25xx)
 	if ((0 != ((1 << core) & BOOT(acp_osg_groups[0]->flags))) ||
 	    (0 != ((1 << core) & BOOT(acp_osg_groups[1]->flags)))) {

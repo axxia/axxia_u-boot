@@ -39,16 +39,20 @@
 #define CONFIG_4xx   1		/* ... PPC4xx family         */
 #define CONFIG_BOOKE 1
 
-#ifndef ACP_25xx
 #define CONFIG_PCI 1
 #define CONFIG_PCI_PNP 1                          /* do pci plug-and-play*/
 #define CONFIG_CMD_PCI 1
 #define CONFIG_PCI_SCAN_SHOW 1
-#endif
 
 #define ACP_PEI0 1
 #define ACP_PEI1 1
+
+#ifdef ACP_25xx
+#define CONFIG_SYS_PCIE_NR_PORTS 2
+#else
 #define ACP_PEI2 1
+#define CONFIG_SYS_PCIE_NR_PORTS 3
+#endif
 
 /* Board-specific PCI */
 #define CONFIG_SYS_PCI_TARGET_INIT                 /* let board init pci target    */
@@ -86,7 +90,11 @@
 #define CONFIG_SYS_PCIE1_CFGADDR PCIE1_CONFIG
 #define CONFIG_SYS_PCIE2_CFGADDR PCIE2_CONFIG
 
+#ifdef ACP_25xx
+#define CONFIG_SYS_PCIE_NR_PORTS 2
+#else
 #define CONFIG_SYS_PCIE_NR_PORTS 3
+#endif
 
 
 
@@ -119,13 +127,12 @@
 
 /* Use the last 2M of the first 4M of system memory */
 #define CFG_MALLOC_BASE     0x00400000
-#define ACP3_MALLOC_SIZE    0x200000
 #ifdef ACP_ISS
-#define CFG_MALLOC_LEN      (ACP3_MALLOC_SIZE - (64 * 1024))
+#define CFG_MALLOC_LEN      ((2 * 1024 * 1024) - (64 * 1024))
 #else
-#define CFG_MALLOC_LEN      (ACP3_MALLOC_SIZE)
+#define CFG_MALLOC_LEN      (2 * 1024 * 1024)
 #endif
-#define CFG_STACK_BASE      (CFG_MALLOC_BASE - CFG_MALLOC_LEN)
+#define CFG_STACK_BASE      0x00200000
 #define CFG_INIT_RAM_END    0x4000 /* This is really the size... */
 #define CFG_INIT_RAM_ADDR0  (CFG_STACK_BASE - 0x0000)
 #define CFG_INIT_RAM_ADDR1  (CFG_STACK_BASE - 0x4000)
@@ -451,6 +458,17 @@ int eioa_ethernet_configure(void);
   ======================================================================
 */
 
+#if 0
+#define CONFIG_SATA_SIL3114
+#define CONFIG_SYS_SATA_MAX_DEVICE 1
+#define CONFIG_CMD_SATA
+#define CONFIG_DOS_PARTITION
+#define CONFIG_CMD_FAT
+#define CONFIG_SUPPORT_VFAT
+#define CONFIG_CMD_EXT2
+#define CONFIG_LIBATA
+#endif
+
 #define CONFIG_LSI_OSG 1
 #define CONFIG_LSI_NIC 1
 #define CONFIG_MTD_DEVICE 1
@@ -462,10 +480,13 @@ int eioa_ethernet_configure(void);
 #define CONFIG_SYS_LONGHELP
 #define CONFIG_CMD_CACHE
 #define CONFIG_CMD_MEMORY
+#define CONFIG_CMD_MTEST
 #define CFG_MEMTEST_START 0x4000000
 #define CONFIG_SYS_MEMTEST_START 0x4000000
 #define CFG_MEMTEST_END   0x5000000
 #define CONFIG_SYS_MEMTEST_END   0x5000000
+#define CONFIG_SYS_ALT_MEMTEST
+
 #define CONFIG_CMD_BDI
 #define CONFIG_CMD_LOADB
 #define CONFIG_SYS_BOOTM_LEN 0x4000000

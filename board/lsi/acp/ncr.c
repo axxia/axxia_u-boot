@@ -23,6 +23,8 @@
 #include <common.h>
 #include <asm/io.h>
 
+#define WFC_TIMEOUT (400000)
+
 static int ncr_enabled = 1;
 static int ncr_tracer_disabled = 1;
 
@@ -234,6 +236,7 @@ ncr_modify( unsigned long region, unsigned long address, int count,
 	command_data_register_1_t cdr1;
 	command_data_register_2_t cdr2;
 	unsigned long data_word_base;
+	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
 	  Set up the write.
@@ -293,9 +296,17 @@ ncr_modify( unsigned long region, unsigned long address, int count,
 	  Wait for completion.
 	*/
 
-	while( 0x80000000 ==
-	       ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-		 0x80000000 ) );
+	do {
+		--wfc_timeout;
+	} while( (0x80000000 ==
+		  ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+		    0x80000000 ) ) &&
+		 0 < wfc_timeout);
+
+	if (0 == wfc_timeout) {
+		printf("ncr_modify(): NCA Lockup!\n");
+		return -1;
+	}
 
 	/*
 	  Check status.
@@ -334,6 +345,7 @@ ncr_read( unsigned long region, unsigned long address, int number )
 	command_data_register_0_t cdr0;	/* 0x101.0.0xf0 */
 	command_data_register_1_t cdr1;	/* 0x101.0.0xf4 */
 	command_data_register_2_t cdr2;	/* 0x101.0.0xf8 */
+	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
 	  Set up the read command.
@@ -382,9 +394,17 @@ ncr_read( unsigned long region, unsigned long address, int number )
 	  Wait for completion.
 	*/
 
-	while( 0x80000000 ==
-	       ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-		 0x80000000 ) );
+	do {
+		--wfc_timeout;
+	} while( (0x80000000 ==
+		  ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+		    0x80000000 ) ) &&
+		 0 < wfc_timeout);
+
+	if (0 == wfc_timeout) {
+		printf("ncr_read(): NCA Lockup!\n");
+		return -1;
+	}
 
 	/*
 	  Check status.
@@ -516,6 +536,7 @@ ncr_write( unsigned long region, unsigned long address, int number )
 	command_data_register_1_t cdr1;
 	command_data_register_2_t cdr2;
 	int dbs = ( number - 1 );
+	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
 	  Set up the write.
@@ -564,9 +585,17 @@ ncr_write( unsigned long region, unsigned long address, int number )
 	  Wait for completion.
 	*/
 
-	while( 0x80000000 ==
-	       ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-		 0x80000000 ) );
+	do {
+		--wfc_timeout;
+	} while( (0x80000000 ==
+		  ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+		    0x80000000 ) ) &&
+		 0 < wfc_timeout);
+
+	if (0 == wfc_timeout) {
+		printf("ncr_write(): NCA Lockup!\n");
+		return -1;
+	}
 
 	/*
 	  Check status.

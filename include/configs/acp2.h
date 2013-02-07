@@ -27,11 +27,41 @@
 
 #define CONFIG_ACP2 1
 
-/*#define NCR_TRACER*/
-
 #ifdef CONFIG_FIT
 #error "CONFIG_FIT is DEFINED!!!"
 #endif
+
+/*
+  ------------------------------------------------------------------------------
+  Special Functionality for Testing...
+*/
+
+/*#define NCR_TRACER*/
+/*#define ACP2_SYSMEM_TEST*/
+
+#ifdef NCR_TRACER
+#define NCR_TRACE( format, args... ) do { \
+if( 0 != ncr_tracer_is_enabled( ) ) { \
+printf( format, ##args ); \
+} \
+} while( 0 );
+#define NCP_COMMENT( format, args... ) do { \
+if( 0 != ncr_tracer_is_enabled( ) ) { \
+printf( "# " format "\n", ##args ); \
+} \
+} while( 0 );
+#else
+#define NCR_TRACE( format, args... )
+#define NCP_COMMENT( format, args... )
+#endif
+
+/*#define PRESET_ECC_LEVELING*/
+/*#define SM_BYTELANE_TEST_DEBUG*/
+/*#define SM_ECC_BYTELANE_TEST_DEBUG*/
+/*#define SM_DEBUG_MODE*/
+/*#define SM_REG_DUMP*/
+/*#define DISPLAY_PARAMETERS*/
+/*#define VID_VERBOSE*/
 
 /*
   ----------------------------------------------------------------------
@@ -48,6 +78,23 @@
 #define CFG_BARGSIZE		CFG_CBSIZE
 #define CONFIG_SYS_BARGSIZE	CONFIG_SYS_CBSIZE
 
+#ifdef ACP2_SYSMEM_TEST
+#if !defined(ACP_25xx) && !defined(USE_HOSTCC)
+#error "Only Possible on 2500!!!"
+#endif
+
+/*
+  ----------------------------------------------------------------------
+  Memory Layout with NO SYSTEM MEMORY
+
+  In this case, just try to get to the prompt...
+*/
+
+#define CFG_MALLOC_BASE 0xf0a24000
+#define CFG_MALLOC_LEN 0x4000
+#define CFG_INIT_RAM_ADDR 0xf0a24000
+
+#else
 /*
   ----------------------------------------------------------------------
   Memory Layout
@@ -67,6 +114,7 @@
 #else
 #define CFG_INIT_RAM_ADDR   0xf0a1fc00
 #endif
+#endif	/* ACP2_SYSMEM_TEST */
 
 /*
   ----------------------------------------------------------------------
@@ -83,9 +131,6 @@
   ======================================================================
 */
 
-#undef CONFIG_CMD_IMPORTENV
-#undef CONFIG_CMD_EXPORTENV
-
 #ifndef __ASSEMBLY__
 extern unsigned long sysmem_size;
 #endif
@@ -96,21 +141,27 @@ extern unsigned long sysmem_size;
 int acp_init( void );
 #endif /* __ASSEMBLY__ */
 
+#ifndef ACP2_SYSMEM_TEST
 #define CONFIG_BOOTM_UBOOT
+#endif
 
 /* Note that this adds almost 0x3000 bytes! */
-#if 0
-#if defined(ACP_EMU)
+#if defined(ACP2_SYSMEM_TEST)
 #define CONFIG_CMD_MEMORY
-#define CFG_MEMTEST_START 0x4000000
-#define CONFIG_SYS_MEMTEST_START 0x4000000
-#define CFG_MEMTEST_END   0x5000000
-#define CONFIG_SYS_MEMTEST_END   0x5000000
-#endif
+#define CONFIG_CMD_MTEST
+#define CFG_MEMTEST_START 0
+#define CONFIG_SYS_MEMTEST_START 0
+#define CFG_MEMTEST_END   0x10000000
+#define CONFIG_SYS_MEMTEST_END   0x10000000
+#define CONFIG_SYS_ALT_MEMTEST
 #endif
 
 #ifdef ACP_EMU
 #define CONFIG_LSI_TEST 1
+#endif
+
+#ifndef NCR_TRACER
+#define CONFIG_LSI_NIC 1
 #endif
 
 /* Note that this adds about 0x300 bytes. */
@@ -124,7 +175,9 @@ int acp_init( void );
   ======================================================================
 */
 
-#define ACP_NAND_4BIT_ECC
+#ifndef ACP2_SYSMEM_TEST
+/*#define ACP_NAND_4BIT_ECC*/
+#endif
 
 /*
   ======================================================================
@@ -134,12 +187,10 @@ int acp_init( void );
   ======================================================================
 */
 
-#if !defined(NCR_TRACER)
-#if 0
+#if !defined(NCR_TRACER) && !defined(ACP2_SYSMEM_TEST)
 #define CONFIG_LSI_NET
 #define CONFIG_CMD_NET
 #define CONFIG_CMD_DHCP
-#endif
 #define APP3XXNIC_RX_BASE  (IO+0x80000)
 #define APP3XXNIC_TX_BASE  (IO+0x81000)
 #define APP3XXNIC_DMA_BASE (IO+0x82000)

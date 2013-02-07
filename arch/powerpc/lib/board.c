@@ -650,6 +650,21 @@ acp_init_f( void )
 	unsigned long l2version;
 	unsigned long l2revision;
 
+#if defined(ACP_25xx) && defined(CONFIG_ACP2) && defined(DISABLE_CORE_1)
+	/*
+	  Disable core 1.
+
+	  The 25xx will only run at 1100 MHz with core 1 disabled.
+	*/
+
+	core = dcr_read(0xd00);
+	core |= 0xab;
+	dcr_write(core, 0xd00);
+
+	dcr_write(0x2, (DCR_RESET_BASE + 2));
+	dcr_write(0x2, (DCR_RESET_BASE + 1));
+#endif
+
 	/* Get the core number. */
 	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
 
@@ -682,13 +697,15 @@ acp_init_f( void )
       cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
 #endif
 
-	/* Fail if this is a cold start, and not core 0. */
-	if (cold_start && (0 != core))
+	/* Fail if this is a cold start, and not SYSTEM_BOOTCORE. */
+	if (cold_start && (SYSTEM_BOOTCORE != core))
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
 	/* Initialize the Stage 3 Lock. */
-	if (cold_start && (0 == core))
+	if (cold_start && (SYSTEM_BOOTCORE == core)) {
 		acp_initialize_stage3_lock();
+		acp_osg_group_set_res(0, ACP_OS_BOOT_CORE, 0);
+	}
 
 	/* All secondary cores should spin. */
 	if (!acp_osg_is_boot_core(core)) {
@@ -725,6 +742,7 @@ acp_init_f( void )
 	  All versions of the L2 before 1.4 are affected.
 	*/
 
+#ifndef ACP_25xx
 	dcr_write(0xc, 0x300);	/* 0x300 is L2[0] on 34xx and 25xx */
 	l2version = dcr_read(0x304);
 	l2revision = l2version & 0xff;
@@ -741,6 +759,7 @@ acp_init_f( void )
 		dcr_write(0xc10, (0x300 + (0x100 * core)));
 		dcr_write(value, (0x304 + (0x100 * core)));
 	}
+#endif
 
 #ifdef CONFIG_ACP2
 #ifndef ACP_ISS
@@ -1308,6 +1327,7 @@ acp_init_r( void )
 	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
+	cold_start = (0 != cold_start);
 #else
 	cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
 #endif
@@ -1643,240 +1663,6 @@ acp_init_r( void )
 	printf( "System Memory Size: %lu M\n", get_sysmem_size( ) );
 #endif
 	printf( "LSI Version: %s\n", get_lsi_version( ) );
-
-#ifdef CONFIG_ACP3
-#if 0
-	/*
-	  ECM Test.
-	*/
-	{
-		unsigned long value;
-		int i;
-
-		printf("========== ECM Setup...\n");
-
-		/*
-		  1.
-		*/
-
-		while(0 == (dcr_read(0xd01) & 0x80000000)) {
-			printf("Waiting for reset done bit.\n");
-			udelay(1000000);
-		}
-
-		dcr_write(0x80000000, 0xd01);
-
-		/*
-		  2.
-		*/
-
-		printf("Register 1: 0x%08lx\n", dcr_read(0xd01));
-
-		/*
-		  3.
-		*/
-
-		printf("Register 4: 0x%08lx\n", dcr_read(0xd04));
-
-		/*
-		  4.
-		*/
-
-		printf("Register 0: 0x%08lx\n", dcr_read(0xd00));
-		printf("Register 2: 0x%08lx\n", dcr_read(0xd02));
-		printf("Register 3: 0x%08lx\n", dcr_read(0xd03));
-		printf("Register 5: 0x%08lx\n", dcr_read(0xd05));
-		printf("Register 6: 0x%08lx\n", dcr_read(0xd06));
-		printf("Register 7: 0x%08lx\n", dcr_read(0xd07));
-
-		for (i = 0xd08; i <= 0xd0f; ++i) {
-			printf("WriteData%d : 0x%08lx\n",
-			       (i - 0xd08), dcr_read(i));
-		}
-
-		for (i = 0xd10; i <= 0xd17; ++i) {
-			printf("ReadData%d : 0x%08lx\n",
-			       (i - 0xd10), dcr_read(i));
-		}
-
-		/*
-		  5.
-		*/
-
-		dcr_write(0x00000080, 0xd00);
-
-		/*
-		  6.
-		*/
-
-		while ((0x00000004 & dcr_read(0xd00)) != 0) {
-			printf("Waiting for ProgWriteData to be 0.\n");
-			udelay(1000000);
-		};
-
-		/*
-		  7.
-		*/
-
-		dcr_write(0x00000082, 0xd00);
-
-		/*
-		  8.
-		*/
-
-		/*dcr_write(0x76543210, 0xd08);*/
-
-		/*
-		  9.
-		*/
-
-		/*dcr_write(0xfffefdfc, 0xd0f);*/
-
-		/* Write local public key... */
-
-		/*
-		  0x01295730
-		  0xe9c6f9bd
-		  0xe4880ca6
-		  0x7445c660
-		  0x65d8af26
-		  0x6c41bb73
-		  0x5173f0a0
-		  0x48e9b8d0
-		*/
-
-		dcr_write(0x01295730, 0xd08);
-		dcr_write(0xe9c6f9bd, 0xd09);
-		dcr_write(0xe4880ca6, 0xd0a);
-		dcr_write(0x7445c660, 0xd0b);
-		dcr_write(0x65d8af26, 0xd0c);
-		dcr_write(0x6c41bb73, 0xd0d);
-		dcr_write(0x5173f0a0, 0xd0e);
-		dcr_write(0x48e9b8d0, 0xd0f);
-
-		/*
-		  10.
-		*/
-
-		dcr_write(0x00000808, 0xd05);
-
-		/*
-		  11.
-		*/
-
-		dcr_write(0x00000000, 0xd00);
-
-		/*
-		  12.
-		*/
-
-		udelay(1);
-
-		/*
-		  13.
-		*/
-
-		dcr_write(0x00ff0044, 0xd00);
-
-		/*
-		  14.
-		*/
-
-		while ((0x40000000 & dcr_read(0xd01)) != 0) {
-			printf("Waiting for ProgWriteDone.\n");
-			udelay(1000000);
-		}
-
-		/*
-		  15.
-		*/
-
-		dcr_write(0x00000080, 0xd00);
-
-		/*
-		  16.
-		*/
-
-		dcr_write(0x40000000, 0xd01);
-
-		/*
-		  17.
-		*/
-
-		printf("17. 0x%08lx\n", dcr_read(0xd01));
-
-		/*
-		  18.
-		*/
-
-		while ((0x00000001 & dcr_read(0xd00)) != 0) {
-			printf("Waiting for ReadEFuse to be 0.\n");
-			udelay(1000000);
-		}
-
-		/*
-		  19.
-		*/
-
-		dcr_write(0x00008080, 0xd00);
-		dcr_write(0x00000808, 0xd05);
-
-		/*
-		  20.
-		*/
-
-		dcr_write(0x00000000, 0xd00);
-
-		/*
-		  21.
-		*/
-
-		udelay(1);
-
-		/*
-		  22.
-		*/
-
-		dcr_write(0xff000001, 0xd00);
-
-		/*
-		  23.
-		*/
-
-		while ((0x20000000 & dcr_read(0xd01)) == 0) {
-			printf("Waiting for LocalReadDone = 1.\n");
-			udelay(1000000);
-		}
-
-		/*
-		  24.
-		*/
-
-		dcr_write(0x00000080, 0xd00);
-
-		/*
-		  25.
-		*/
-
-		dcr_write(0x20000000, 0xd01);
-
-		/*
-		  26.
-		*/
-
-		printf("26. 0x%08lx\n", dcr_read(0xd01));
-
-		/*
-		  27.
-		*/
-
-		for (i = 0xd10; i <= 0xd17; ++i) {
-			printf("ReadData%d : 0x%08lx\n",
-			       (i - 0xd10), dcr_read(i));
-		}
-	}
-#endif
-#endif /* CONFIG_ACP3 */
 
 	/* IP Address */
 	gd->bd->bi_ip_addr = getenv_IPaddr ("ipaddr");

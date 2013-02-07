@@ -471,7 +471,7 @@ int sbb_decrypt_range(void *, void *, int);
   ======================================================================
 */
 
-#if defined(ACP_ISS) || defined(NCR_TRACER)
+#if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
 #define CFG_NO_FLASH
 #define CONFIG_SYS_NO_FLASH
 #define CONFIG_CMD_ENV
@@ -593,6 +593,25 @@ void acp_eioa_loopback_test(void);
   ======================================================================
 */
 
+/*#define PPC_RUN_ON_REF*/
+
+/*
+#define PPC_PLL_FREQ 1100000000
+#define PPC_PLL_PARAMETER 0xa0240551
+*/
+
+/*
+#define PPC_PLL_FREQ  900000000
+#define PPC_PLL_PARAMETER 0xa02202d1
+*/
+
+#define PPC_PLL_FREQ  800000000
+#define PPC_PLL_PARAMETER 0xa02405d2
+
+#define SYSTEM_BOOTCORE 0
+
+/*#define DISABLE_CORE_1*/
+
 /*
   The 1st stage leaves both L1 caches disabled and all memory in the
   WIMG=0101 state.  L3 is in the reset state.
@@ -611,6 +630,7 @@ void acp_eioa_loopback_test(void);
 */
 
 /*#define ACP_CACHE_TLB 0x00030507*/
+/*#define ACP_CACHE_TLB 0x00000507*/
 /*#define ACP_CACHE_TLB 0x00030207*/
 #define ACP_CACHE_TLB 0x00000207
 /*#define ACP_DISABLE_L3*/
@@ -633,7 +653,6 @@ int acp_clock_lock_verify(int, int);
 #define CCR1_DEFAULT 0x00000400
 #define CCR2_DEFAULT 0x04000000
 #elif defined(ACP_25xx)
-/*#define CCR0_DEFAULT 0x00204050*/
 #define CCR0_DEFAULT 0x00200000
 #define CCR1_DEFAULT 0x00000000
 #define CCR2_DEFAULT 0x00000000
@@ -643,10 +662,14 @@ int acp_clock_lock_verify(int, int);
 #define CCR2_DEFAULT 0x00000000
 #endif
 
+#ifndef ACP2_SYSMEM_TEST
 #define CONFIG_LSI_SSP 1
-#define CONFIG_LSI_NCR 1
 #define CONFIG_LSI_MDIO 1
 #define CONFIG_LSI_IO 1
+#endif
+#define CONFIG_LSI_NCR 1
+
+#define NCP_BIG_ENDIAN 1
 
 #ifndef __ASSEMBLY__
 #define mb() {__asm__ __volatile__ ("sync" : : : "memory");}

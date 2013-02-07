@@ -161,24 +161,25 @@ int
 acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 {
 #ifdef ACP_25xx
-	unsigned long scgc;
-
-	scgc = dcr_read(0xd01);
+	unsigned long gcr;
 
 	switch (clock) {
 	case peripheral:
-		if (0 == (scgc & 0xc000))
+		gcr = dcr_read(0xd01);
+
+		if (0 == (gcr & 0xc000))
 			*frequency = CLK_REF0 / 1000;
 		else
 			*frequency = 200000000 / 1000;
 
 		break;
 	case ppc:
-#ifdef SLOW_DOWN_PPC_25xx
-		*frequency = 800000000 / 1000;
-#else
-		*frequency = 1100000000 / 1000;
-#endif
+		gcr = dcr_read(0xd00);
+
+		if (0 == (gcr & 0xc0000000))
+			*frequency = CLK_REF0 / 1000;
+		else
+			*frequency = PPC_PLL_FREQ / 1000;
 		break;
 	default:
 		return -1;

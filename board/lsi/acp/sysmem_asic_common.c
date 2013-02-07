@@ -24,6 +24,32 @@
 #ifdef ACP_25xx
 #include "ncp_sysmem_lsiphy.h"
 extern ncp_st_t ncp_sysmem_init_lsiphy(ncp_dev_hdl_t, ncp_uint32_t, ncp_sm_parms_t *);
+#else
+typedef long long               ncp_int64_t;
+typedef unsigned long long      ncp_uint64_t;
+typedef unsigned long           ncp_uint32_t;
+typedef unsigned short          ncp_uint16_t;
+typedef unsigned char           ncp_uint8_t;
+typedef unsigned char           ncp_bool_t;
+typedef void *                  ncp_dev_hdl_t;
+typedef unsigned long           ncp_st_t;
+typedef unsigned long           ncp_region_id_t;
+typedef parameters_sysmem_t     ncp_sm_parms_t;
+
+#define TRUE   (1)
+#define FALSE  (0)
+#define NCP_RETURN_LABEL
+#endif
+
+#if defined(ACP_X1V1)
+#define INT_STATUS_OFFSET 0x16c
+#define ECC_ERROR_MASK 0x3c
+#elif defined(ACP_X1V2) || defined(ACP_X2V1)
+#define INT_STATUS_OFFSET 0x16c
+#define ECC_ERROR_MASK 0x78
+#elif defined(ACP_25xx)
+#define INT_STATUS_OFFSET 0x410
+#define ECC_ERROR_MASK 0x78
 #endif
 
 /*
@@ -45,11 +71,25 @@ static unsigned long sm_nodes [ ] = {
 };
 
 static unsigned long rank_address_map [ 2 ] [ 2 ] = {
-	{ 0x300, 0x100 },
-	{ 0x400, 0x600 }
-};
+    { 0x300, 0x100 },
+    { 0x400, 0x600 }
+}; 
 
-static unsigned short tRFC_vals [ 5 ] = { 0, 0x30, 0x3b, 0x56, 0xa0 };
+/*
+ * tRFC values based on device density
+ *
+ *       density     tRFC             @800MHz    @667MHz  @533MHz 
+ *         512Mb      90 ns/clk           72       60       48
+ *           1GB     110 ns/clk           88       74       59
+ *           2GB     160 ns/clk          128      107       86
+ *           4GB     300 ns/clk          240      200      160
+ *
+ */
+ncp_uint8_t tRFC_vals_533[5] = { 0, 0x30, 0x3b, 0x56, 0xa0 } ;
+ncp_uint8_t tRFC_vals_667[5] = { 0, 0x3c, 0x4a, 0x6b, 0xc8 } ;
+ncp_uint8_t tRFC_vals_800[5] = { 0, 0x48, 0x58, 0x80, 0xf0 } ;
+
+
 
 #define SMAV( regName, regField, newValue ) \
 do { \
@@ -312,7 +352,7 @@ sysmem_init(void)
 #ifdef ACP_25xx
 		ncp_sysmem_init_lsiphy(NULL, i, sysmem);
 #endif
-#if defined (ACP_X1V2) || defined (CONFIG_ACP_342X)
+#if defined (ACP_X1V2) || defined (ACP_X2V1)
 		ncp_sysmem_init_ibmphy(NULL, i, sysmem);
 #endif
 	}
@@ -421,7 +461,7 @@ sysmem_init(void)
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		break;
 	}
-#elif defined(ACP_X1V2) || defined(CONFIG_ACP_342X) || defined(ACP_25xx)
+#elif defined(ACP_X1V2) || defined(ACP_X2V1) || defined(ACP_25xx)
 	value = ( 1 << ( sysmem_size - 20 ) ) / num_sc_nodes;
 
 	switch( value ) {
@@ -512,7 +552,7 @@ sysmem_init(void)
 		/* clear ECC interrupt status bits */
 		for( i = 0; i < sysmem->num_interfaces; ++ i ) {
 			ncr_read32( NCP_REGION_ID( sm_nodes [ i ], 0 ),
-				    NCP_DENALI_CTL_91, & value );
+				    INT_STATUS_OFFSET, & value );
 #ifdef ACP_X1V1
 			value &= 0x3c;
 #else
@@ -528,16 +568,11 @@ sysmem_init(void)
 #endif /* SM_REG_DUMP */
 
 	/* Disable some speculative reads. */
-#if defined(ACP_X1V1) || defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
+#if defined(ACP_X1V1) || defined(ACP_X1V2) || defined(ACP_X2V1)
 	if (sysmem->half_mem)
 		dcr_write( 0x3377c800, 0xf00 );
 	else
 		dcr_write( 0x33774800, 0xf00 );
-#endif
-
-    /* for ACP2500 set NHA cache_disable */
-#ifdef ACP_25xx
-	dcr_write( 0x33774800, 0xf00 );
 #endif
 
 	/* set up NHA */
@@ -561,8 +596,8 @@ sysmem_init(void)
 		ncr_modify32( NCP_REGION_ID(0x00, 0x00), 0x4, mask, value );
 	}
 
-	/* WA for 34575 (applies to X1V2 and X2). */
-#if defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
+	/* WA for BZ 34575 (applies to X1V2 and X2). */
+#if defined(ACP_X1V2) || defined(ACP_X2V1)
 	dcr_write(0, 0xf1f);
 #endif
 
