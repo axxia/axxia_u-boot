@@ -29,19 +29,23 @@ LIB	= $(obj)libcommon.o
 ifndef CONFIG_SPL_BUILD
 COBJS-y += main.o
 COBJS-y += command.o
-COBJS-y += exports.o
 COBJS-$(CONFIG_SYS_HUSH_PARSER) += hush.o
 COBJS-y += image.o
-COBJS-y += s_record.o
 COBJS-$(CONFIG_SERIAL_MULTI) += serial.o
+ifndef CONFIG_ACP2
+COBJS-y += exports.o
 COBJS-y += xyzModem.o
+COBJS-y += s_record.o
+endif
 
 # core command
 COBJS-y += cmd_boot.o
 COBJS-$(CONFIG_CMD_BOOTM) += cmd_bootm.o
+ifndef CONFIG_ACP2
 COBJS-y += cmd_help.o
-COBJS-y += cmd_nvedit.o
 COBJS-y += cmd_version.o
+endif
+COBJS-y += cmd_nvedit.o
 
 # environment
 COBJS-y += env_common.o
@@ -134,7 +138,9 @@ COBJS-$(CONFIG_CMD_OTP) += cmd_otp.o
 ifdef CONFIG_PCI
 COBJS-$(CONFIG_CMD_PCI) += cmd_pci.o
 endif
+ifndef CONFIG_ACP2
 COBJS-y += cmd_pcmcia.o
+endif
 COBJS-$(CONFIG_CMD_PORTIO) += cmd_portio.o
 COBJS-$(CONFIG_CMD_PXE) += cmd_pxe.o
 COBJS-$(CONFIG_CMD_REGINFO) += cmd_reginfo.o
@@ -187,12 +193,23 @@ COBJS-$(CONFIG_UPDATE_TFTP) += update.o
 COBJS-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
 endif
 
+COBJS-$(CONFIG_LSI_NIC) += cmd_lsi_net.o
+COBJS-$(CONFIG_LSI_SSP) += cmd_lsi_ssp.o
+COBJS-$(CONFIG_LSI_NCR) += cmd_lsi_ncr.o
+#COBJS-$(CONFIG_LSI_MDIO) += cmd_lsi_mdio.o
+COBJS-$(CONFIG_LSI_IO) += cmd_lsi_io.o
+COBJS-$(CONFIG_LSI_TEST) += cmd_lsi_test.o
+COBJS-$(CONFIG_LSI_OSG) += cmd_lsi_osg.o
+COBJS-$(CONFIG_LSI_SBB) += cmd_lsi_sbb.o
+
 ifdef CONFIG_SPL_BUILD
 COBJS-$(CONFIG_SPL_YMODEM_SUPPORT) += xyzModem.o
 endif
 COBJS-y += console.o
 COBJS-y += dlmalloc.o
+ifndef CONFIG_ACP2
 COBJS-y += memsize.o
+endif
 COBJS-y += stdio.o
 
 

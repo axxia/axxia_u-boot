@@ -40,6 +40,8 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifndef CONFIG_ACP2
+
 void board_reset(void);
 
 /*
@@ -295,6 +297,7 @@ static int do_chip_reset (unsigned long sys0, unsigned long sys1)
 
 int checkcpu (void)
 {
+#if !defined(CONFIG_ACP)
 #if !defined(CONFIG_405)	/* not used on Xilinx 405 FPGA implementations */
 	uint pvr = get_pvr();
 	ulong clock = gd->cpu_clk;
@@ -684,23 +687,31 @@ int checkcpu (void)
 
 	putc ('\n');
 
+#endif	/* !CONFIG_ACP */
 	return 0;
 }
 
 int ppc440spe_revB() {
+#ifndef CONFIG_ACP
 	unsigned int pvr;
 
 	pvr = get_pvr();
 	if ((pvr == PVR_440SPe_6_RB) || (pvr == PVR_440SPe_RB))
 		return 1;
 	else
+#endif
 		return 0;
 }
+
+#endif	/* !CONFIG_ACP */
 
 /* ------------------------------------------------------------------------- */
 
 int do_reset (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
+#if defined(CONFIG_ACP)
+	acp_reset(argc, argv);
+#else
 #if defined(CONFIG_BOARD_RESET)
 	board_reset();
 #else
@@ -713,16 +724,16 @@ int do_reset (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	mtspr(SPRN_DBCR0, 0x30000000);
 #endif /* defined(CONFIG_SYS_4xx_RESET_TYPE) */
 #endif /* defined(CONFIG_BOARD_RESET) */
-
+#endif /* defined(CONFIG_ACP) */
 	return 1;
 }
-
 
 /*
  * Get timebase clock frequency
  */
 unsigned long get_tbclk (void)
 {
+#ifndef CONFIG_ACP
 #if !defined(CONFIG_IOP480)
 	sys_info_t  sys_info;
 
@@ -731,7 +742,13 @@ unsigned long get_tbclk (void)
 #else
 	return (66000000);
 #endif
+#else
+	unsigned long frequency;
 
+	acp_clock_get(ppc, &frequency);
+
+	return (frequency * 1000);
+#endif
 }
 
 

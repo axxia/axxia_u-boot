@@ -32,7 +32,7 @@
 
 void udelay(unsigned long usec)
 {
-	ulong kv;
+	unsigned long kv;
 
 	do {
 		WATCHDOG_RESET();

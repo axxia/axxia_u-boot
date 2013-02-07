@@ -21,6 +21,10 @@
  * MA 02111-1307 USA
  */
 
+#include <config.h>
+
+#ifndef CONFIG_ACP
+
 #include <common.h>
 #include <command.h>
 #include <net.h>
@@ -249,6 +253,8 @@ int eth_unregister(struct eth_device *dev)
 	return 0;
 }
 
+#ifndef CONFIG_ACP
+
 int eth_initialize(bd_t *bis)
 {
 	int num_devices = 0;
@@ -312,6 +318,8 @@ int eth_initialize(bd_t *bis)
 
 	return num_devices;
 }
+
+#endif	/* CONFIG_ACP */
 
 #ifdef CONFIG_MCAST_TFTP
 /* Multicast.
@@ -530,3 +538,5 @@ char *eth_get_name (void)
 {
 	return (eth_current ? eth_current->name : "unknown");
 }
+
+#endif	/* !CONFIG_ACP */

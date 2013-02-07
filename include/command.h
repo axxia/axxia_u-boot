@@ -49,9 +49,11 @@ struct cmd_tbl_s {
 	int		repeatable;	/* autorepeat allowed?		*/
 					/* Implementation function	*/
 	int		(*cmd)(struct cmd_tbl_s *, int, int, char * const []);
+#ifndef CFG_NOHELP
 	char		*usage;		/* Usage message	(short)	*/
 #ifdef	CONFIG_SYS_LONGHELP
 	char		*help;		/* Help  message	(long)	*/
+#endif
 #endif
 #ifdef CONFIG_AUTO_COMPLETE
 	/* do auto completion on the arguments */

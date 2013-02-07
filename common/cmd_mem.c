@@ -153,6 +153,8 @@ int do_mem_md ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return (rc);
 }
 
+#ifndef CONFIG_ACP2
+
 int do_mem_mm ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	return mod_mem (cmdtp, 1, flag, argc, argv);
@@ -161,6 +163,8 @@ int do_mem_nm ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	return mod_mem (cmdtp, 0, flag, argc, argv);
 }
+
+#endif	/* CONFIG_ACP2 */
 
 int do_mem_mw ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -202,6 +206,8 @@ int do_mem_mw ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 	return 0;
 }
+
+#ifndef CONFIG_ACP2
 
 #ifdef CONFIG_MX_CYCLIC
 int do_mem_mdc ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -345,6 +351,8 @@ int do_mem_cmp (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		ngood == 1 ? "" : "s");
 	return rcode;
 }
+
+#endif	/* CONFIG_ACP2 */
 
 int do_mem_cp ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -609,6 +617,8 @@ int do_mem_loopw (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 }
 #endif /* CONFIG_LOOPW */
+
+#ifndef CONFIG_ACP2
 
 /*
  * Perform a memory test. A more complete alternative test can be
@@ -1161,6 +1171,8 @@ usage:
 
 #endif
 
+#endif	/* CONFIG_ACP2 */
+
 /**************************************************/
 U_BOOT_CMD(
 	md,	3,	1,	do_mem_md,
@@ -1168,6 +1180,7 @@ U_BOOT_CMD(
 	"[.b, .w, .l] address [# of objects]"
 );
 
+#ifndef CONFIG_ACP2
 
 U_BOOT_CMD(
 	mm,	2,	1,	do_mem_mm,
@@ -1182,11 +1195,15 @@ U_BOOT_CMD(
 	"[.b, .w, .l] address"
 );
 
+#endif	/* CONFIG_ACP2 */
+
 U_BOOT_CMD(
 	mw,	4,	1,	do_mem_mw,
 	"memory write (fill)",
 	"[.b, .w, .l] address value [count]"
 );
+
+#ifndef CONFIG_ACP2
 
 U_BOOT_CMD(
 	cp,	4,	1,	do_mem_cp,
@@ -1249,6 +1266,8 @@ U_BOOT_CMD(
 	"simple RAM read/write test",
 	"[start [end [pattern [iterations]]]]"
 );
+
+#endif	/* CONFIG_ACP2 */
 
 #ifdef CONFIG_MX_CYCLIC
 U_BOOT_CMD(

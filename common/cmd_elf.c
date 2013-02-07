@@ -112,6 +112,7 @@ int do_bootelf (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
  * ====================================================================== */
 int do_bootvx (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
+#ifndef CONFIG_ACP2
 	unsigned long addr;		/* Address of image            */
 	unsigned long bootaddr;		/* Address to put the bootline */
 	char *bootline;			/* Text of the bootline        */
@@ -176,42 +177,37 @@ int do_bootvx (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	 * construct the info
 	 */
 
-	if ((bootline = getenv ("bootargs")) != NULL) {
-		memcpy ((void *) bootaddr, bootline,
-			max (strlen (bootline), 255));
-		flush_cache (bootaddr, max (strlen (bootline), 255));
+#ifdef CONFIG_APP
+	if ((bootline = getenv ("bootargsvx")) != NULL) {
+	  sprintf( ( char * ) bootaddr, "%s f=0x%x", bootline,
+		   ( get_feac_flip_bits( ) >> 13 ) );
+	}
+#else  /* CONFIG_APP */
+	sprintf (build_buf, CONFIG_SYS_VXWORKS_BOOT_DEVICE);
+	if ((tmp = getenv ("bootfile")) != NULL) {
+	  sprintf (&build_buf[strlen (build_buf)],
+		   "%s:%s ", CONFIG_SYS_VXWORKS_SERVERNAME, tmp);
 	} else {
+	  sprintf (&build_buf[strlen (build_buf)],
+		   "%s:file ", CONFIG_SYS_VXWORKS_SERVERNAME);
+	}
+ 
+	if ((tmp = getenv ("serverip")) != NULL) {
+	  sprintf (&build_buf[strlen (build_buf)], "h=%s ", tmp);
+	}
 
+	if ((tmp = getenv ("hostname")) != NULL) {
+	  sprintf (&build_buf[strlen (build_buf)], "tn=%s ", tmp);
+	}
 
-		sprintf (build_buf, CONFIG_SYS_VXWORKS_BOOT_DEVICE);
-		if ((tmp = getenv ("bootfile")) != NULL) {
-			sprintf (&build_buf[strlen (build_buf)],
-				 "%s:%s ", CONFIG_SYS_VXWORKS_SERVERNAME, tmp);
-		} else {
-			sprintf (&build_buf[strlen (build_buf)],
-				 "%s:file ", CONFIG_SYS_VXWORKS_SERVERNAME);
-		}
-
-		if ((tmp = getenv ("ipaddr")) != NULL) {
-			sprintf (&build_buf[strlen (build_buf)], "e=%s ", tmp);
-		}
-
-		if ((tmp = getenv ("serverip")) != NULL) {
-			sprintf (&build_buf[strlen (build_buf)], "h=%s ", tmp);
-		}
-
-		if ((tmp = getenv ("hostname")) != NULL) {
-			sprintf (&build_buf[strlen (build_buf)], "tn=%s ", tmp);
-		}
 #ifdef CONFIG_SYS_VXWORKS_ADD_PARAMS
 		sprintf (&build_buf[strlen (build_buf)],
 			 CONFIG_SYS_VXWORKS_ADD_PARAMS);
 #endif
 
-		memcpy ((void *) bootaddr, build_buf,
-			max (strlen (build_buf), 255));
-		flush_cache (bootaddr, max (strlen (build_buf), 255));
-	}
+	memcpy ((void *) bootaddr, build_buf,
+		max (strlen (build_buf), 255));
+	flush_cache (bootaddr, max (strlen (build_buf), 255));
 
 	/*
 	 * If the data at the load address is an elf image, then
@@ -226,15 +222,44 @@ int do_bootvx (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		/* leave addr as load_addr */
 	}
 
+#endif  /* CONFIG_APP */
+
 	printf ("## Using bootline (@ 0x%lx): %s\n", bootaddr,
 			(char *) bootaddr);
 	printf ("## Starting vxWorks at 0x%08lx ...\n", addr);
 
 	dcache_disable();
+
+#if 0
+	/*
+	  If the L1 caches are on, VxWorks won't boot.
+	*/
+
+	__asm__ __volatile__ (
+		"lis            0,0\n"                \
+		"iccci          0,0\n"                \
+		"dccci          0,0\n"                \
+		"lis		0,(0x80000000)@h\n"   \
+		"ori		0,0,(0x80000000)@l\n" \
+		"lis		1,(0x00000bf0)@h\n"   \
+		"ori		1,1,(0x00000bf0)@l\n" \
+		"tlbwe		1,0,0\n"              \
+		"lis		1,(0x00000000)@h\n"   \
+		"ori		1,1,(0x00000000)@l\n" \
+		"tlbwe		1,0,1\n"              \
+		"lis		1,(0x00030207)@h\n"   \
+		"ori		1,1,(0x00030207)@l\n" \
+		"tlbwe		1,0,2\n"              \
+		"isync\n" );
+#endif
+
 	((void (*)(int)) addr) (0);
 
 	puts ("## vxWorks terminated\n");
 	return 1;
+#else
+	return 1;
+#endif
 }
 
 /* ======================================================================

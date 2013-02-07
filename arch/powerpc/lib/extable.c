@@ -37,6 +37,8 @@
  * on our cache or tlb entries.
  */
 
+#ifndef CONFIG_ACP2
+
 DECLARE_GLOBAL_DATA_PTR;
 
 struct exception_table_entry
@@ -81,3 +83,5 @@ search_exception_table(unsigned long addr)
 
 	return 0;
 }
+
+#endif	/* !CONFIG_ACP2 */

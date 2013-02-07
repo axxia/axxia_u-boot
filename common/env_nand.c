@@ -191,6 +191,7 @@ int saveenv(void)
 		error("Cannot export environment: errno = %d\n", errno);
 		return 1;
 	}
+
 	env_new.crc	= crc32(0, env_new.data, ENV_SIZE);
 	env_new.flags	= ++env_flags; /* increase the serial */
 

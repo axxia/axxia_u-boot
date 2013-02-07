@@ -60,6 +60,10 @@ ifndef CONFIG_SPL_BUILD
 COBJS-$(CONFIG_USB_TTY) += usbtty.o
 endif
 
+ifdef CONFIG_ACP
+COBJS-y += acp.o
+endif
+
 COBJS	:= $(sort $(COBJS-y))
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

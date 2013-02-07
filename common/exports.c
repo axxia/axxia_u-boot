@@ -39,5 +39,14 @@ unsigned long get_version(void)
 void jumptable_init(void)
 {
 	gd->jt = malloc(XF_MAX * sizeof(void *));
+
+ 	gd->jt[XF_getc] = getc;
+ 	gd->jt[XF_tstc] = tstc;
+ 	gd->jt[XF_putc] = putc;
+ 	gd->jt[XF_puts] = puts;
+ 	gd->jt[XF_printf] = printf;
+ 	gd->jt[XF_malloc] = malloc;
+ 	gd->jt[XF_free] = free;
+
 #include <_exports.h>
 }

@@ -186,6 +186,10 @@ void set_default_env(const char *s)
 		error("Environment import failed: errno = %d\n", errno);
 
 	gd->flags |= GD_FLG_ENV_READY;
+
+#if defined(CONFIG_ACP) && defined(ACP_ISS)
+	saveenv();
+#endif
 }
 
 /*

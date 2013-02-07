@@ -1,0 +1,1322 @@
+@ -*-Asm-*-
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@
+@ app3k.meminit
+@
+@ Memory initialization recipies for the APP3K.
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+#define MDAC_SPEED MHZ_200
+#define ODT_SPEED MHZ_180
+@#define __DEBUG_COUNT__
+@#define __DEBUG_TRIGGER__
+        
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ APP3K Memory Constants
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+#define CLOCKS_FPGA        MHZ_166
+#define CONTROL_FPGA       0x8e803191
+#define EXT_CONTROL_FPGA   0xaa880049
+#define CONTROL_125MHZ     0x92003191
+#define EXT_CONTROL_125MHZ 0xead8c02d
+#define CONTROL_133MHZ     0x8e003191
+#define EXT_CONTROL_133MHZ 0xead8c02d
+#define CONTROL_166MHZ     0x8e803191
+#define EXT_CONTROL_166MHZ 0xead8c03d
+#define CONTROL_200MHZ     0x8e003191
+#define EXT_CONTROL_200MHZ 0xead8c045
+
+#if defined( AP_DENSITY_256M )
+#define SPEC_FPGA   0x728a4a2a
+#define SPEC_125MHZ 0x53cf5347
+#define SPEC_133MHZ 0x640f5348
+#define SPEC_166MHZ 0x75136b4a
+#define SPEC_200MHZ 0x86183b4b
+#elif defined( AP_DENSITY_512M )
+#define SPEC_FPGA   0x728a4a2a
+#define SPEC_125MHZ 0x53cf7347
+#define SPEC_133MHZ 0x640f7348
+#define SPEC_166MHZ 0x7513934a
+#define SPEC_200MHZ 0x8618534b
+#elif defined( AP_DENSITY_1G )
+#define SPEC_FPGA   0x728a4a2a
+#define SPEC_125MHZ 0x53cf8347
+#define SPEC_133MHZ 0x640f8b48
+#define SPEC_166MHZ 0x7513b34a
+#define SPEC_200MHZ 0x86186b4b
+#else
+#error "Unsupported AP Density"
+#endif
+
+#define TEST_VALUE_0 0xcafec0c0
+#define TEST_VALUE_1 0x11111111
+#define TEST_VALUE_2 0x55555555
+#define TEST_VALUE_3 0xaaaaaaaa
+#define TEST_VALUE_4 0xeeeedddd
+#define TEST_VALUE_5 0xdeadbeef
+#define TEST_VALUE_6 0x77777777
+#define TEST_VALUE_7 0xaabbccdd
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ Macros
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_read
+        @
+        @ Result returned in r0.  'offset' and 'scratch' must be unique,
+        @ neither can be r0.
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .macro  ddr_read,value,offset,scratch
+1:
+        ldr     \scratch,=CONFIG_NORMAL_DDR2_CFG_BASE
+        mov     \value,#0
+        str     \value,[\scratch,#0x60]
+        str     \value,[\scratch,#0x64]
+        str     \value,[\scratch,#0x68]
+        str     \value,[\scratch,#0x6c]
+        str     \value,[\scratch,#0x70]
+        mov     \value,#0xc0000000
+        orr     \value,\value,\offset
+        str     \value,[\scratch,#0x60]
+        mov     \offset,#0
+2:
+        add     \offset,\offset,#1
+        cmp     \offset,#0xf
+        beq     1b
+        ldr     \value,[\scratch,#0x60]
+        and     \value,\value,#0x80000000
+        cmp     \value,#0
+        bne     2b
+        ldr     \value,[\scratch,#0x68]
+        .endm
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_write
+        @
+        @ 'value', 'offset', and 'scratch' must be unique.
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .macro  ddr_write,value,offset,scratch,scratch2
+        ldr     \scratch,=CONFIG_NORMAL_DDR2_CFG_BASE
+        str     \value,[\scratch,#0x68]
+        mov     \value,#0
+        str     \value,[\scratch,#0x64]
+        str     \value,[\scratch,#0x6c]
+        str     \value,[\scratch,#0x70]
+1:
+        mov     \value,#0
+        str     \value,[\scratch,#0x60]
+        mov     \value,#0x80000000
+        bic     \offset,#0xc0000000
+        orr     \value,\value,\offset
+        str     \value,[\scratch,#0x60]
+        mov     \scratch2,#0
+2:
+        add     \scratch2,\scratch2,#1
+        cmp     \scratch2,#0xf
+        beq     1b
+        ldr     \value,[\scratch,#0x60]
+        and     \value,\value,#0x80000000
+        cmp     \value,#0
+        bne     2b
+        .endm
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ banks_and_columns
+        @
+        @ Trashes r2-r6
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ r1 - density
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .align  5
+
+banks_and_columns:
+
+        ldr             r6,=CONFIG_NORMAL_DDR2_CFG_BASE
+        
+        @ Figure out the mode, 16 or 32 bit.  Set r4 bit 0 if in 32 bit mode.
+        
+        mov             r1,#0x88
+        pll_read        r1
+        tst             r0,#0x4
+        movne           r4,#1                   @ 32 bit mode
+        moveq           r4,#0                   @ 16 bit mode
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        ldr             r1, [r2, #0x1a0]
+        add             r1, r1, #1
+        str             r1, [r2, #0x1a0]
+#endif
+
+        @ Find the number of banks.
+
+        mov             r0,#0
+        ldr             r1,=TEST_VALUE_0
+        ddr_write       r1,r0,r2,r3
+        mcr             p15,0,r0,c7,c10,4       @ Drain the write buffer
+        tst             r4,#1
+        moveq           r0,#0x40                @ 16 bit mode
+        movne           r0,#0x80                @ 32 bit mode
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        ldr             r1, [r2, #0x1a4]
+        add             r1, r1, #1
+        str             r1, [r2, #0x1a4]
+#endif
+
+        ldr             r1,=TEST_VALUE_0
+        mvn             r1,r1
+        ddr_write       r1,r0,r2,r3
+        mcr             p15,0,r0,c7,c10,4       @ Drain the write buffer
+        
+#ifdef __DEBUG_COUNT__
+        ldr             r2,=(CONFIG_NORMAL_ASI_BASE)
+        ldr             r1,[r2, #0x1a8]
+        add             r1,r1, #1
+        str             r1,[r2, #0x1a8]
+#endif
+
+#ifndef __DEBUG_COUNT__
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+#else
+        ldr             r3,=(CONFIG_NORMAL_ASI_BASE)
+        mov             r0,#0
+        str             r0,[r3,#0x1a0]
+        ldr             r2,=CONFIG_NORMAL_DDR2_CFG_BASE
+        mov             r0,#0
+        str             r0,[r2,#0x60]
+        mov             r0,#0xc0000000
+        orr             r0,r0,r2
+        str             r0,[r2,#0x60]
+1:
+        ldr             r1,[r3,#0x1a0]
+        add             r1,r1,#1
+        str             r1,[r3,#0x1a0]
+#ifdef __DEBUG_TRIGGER__
+        ldr             r1,=(0xc0006000)
+        mov             r0,#1
+        str             r0,[r1,#0x104]
+1122:   b               1122b
+#endif
+        ldr             r0,[r2,#0x60]
+        and             r0,r0,#0x80000000
+        cmp             r0,#0
+        bne             1b
+        ldr             r0,[r2,#0x68]
+#endif
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        ldr             r1, [r2, #0x1ac]
+        add             r1, r1, #1
+        str             r1, [r2, #0x1ac]
+#endif
+
+        ldr             r1,=TEST_VALUE_0
+        mvn             r1,r1
+        cmp             r0,r1
+        orreq           r4,r4,#0x10             @ 4 banks
+
+        @ Find the column address width.
+
+        mov             r0,#0
+        ldr             r1,=TEST_VALUE_0
+        ddr_write       r1,r0,r2,r3
+        mcr             p15,0,r0,c7,c10,4       @ Drain the write buffer
+        tst             r4,#1
+        moveq           r0,#0x1000              @ 16 bit mode
+        movne           r0,#0x2000              @ 32 bit mode
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        ldr             r1, [r2, #0x1b0]
+        add             r1, r1, #1
+        str             r1, [r2, #0x1b0]
+#endif
+
+        ldr             r1,=TEST_VALUE_0
+        mvn             r1,r1
+        ddr_write       r1,r0,r2,r3
+        mcr             p15,0,r0,c7,c10,4       @ Drain the write buffer
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        ldr             r1, [r2, #0x1b4]
+        add             r1, r1, #1
+        str             r1, [r2, #0x1b4]
+#endif
+
+        ldr             r1,=TEST_VALUE_0
+        mvn             r1,r1
+        cmp             r0,r1
+        orreq           r4,r4,#0x100            @ 9 columns
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        ldr             r1, [r2, #0x1b8]
+        add             r1, r1, #1
+        str             r1, [r2, #0x1b8]
+#endif
+
+set_banks:
+        
+        tst             r4,#0x10
+        beq             set_columns
+        ldr             r3,[r6,#0x8]            @ load
+        bic             r3,#0x4                 @ clear bit 2
+        str             r3,[r6,#0x8]            @ store
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        str             r3, [r2, #0x1c0]
+#endif
+
+set_columns:
+
+        tst             r4,#0x100
+        beq             chip_selects
+        ldr             r3,[r6,#0x8]
+        bic             r3,#0x3
+        str             r3,[r6,#0x8]
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        str             r3, [r2, #0x1c4]
+#endif
+
+chip_selects:   
+
+        @ Find the number of chip selects.
+        @
+        @ There are three possiblities, as follows
+        @ (all amounts are 16bit/32bit).
+        @
+        @ 1) 512M/1G with 2 chip selects
+        @ 2) 256M/512M with 2 chip selects
+        @ 3) 1 chip select
+
+        tst             r4,#1
+        bne             load_32_bit_values
+
+load_16_bit_values:
+
+        mov             r0,#0
+        ldr             r1,=TEST_VALUE_0
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x8000000
+        ldr             r1,=TEST_VALUE_1
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x10000000
+        ldr             r1,=TEST_VALUE_2
+
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x18000000
+        ldr             r1,=TEST_VALUE_3
+        ddr_write       r1,r0,r2,r3
+        b               compare_values
+
+load_32_bit_values:
+
+        mov             r0,#0
+        ldr             r1,=TEST_VALUE_0
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x10000000
+        ldr             r1,=TEST_VALUE_1
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x20000000
+        ldr             r1,=TEST_VALUE_2
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x30000000
+        ldr             r1,=TEST_VALUE_3
+        ddr_write       r1,r0,r2,r3
+        
+compare_values:
+
+        mcr             p15,0,r0,c7,c10,4       @ Drain the write buffer
+
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        ldr             r1,=TEST_VALUE_1
+        cmp             r0,r1
+        beq             option_2
+
+        ldr             r1,=TEST_VALUE_0
+        cmp             r0,r1
+        bne             option_3
+        
+        tst             r4,#1
+        moveq           r1,#0x8000000
+        movne           r1,#0x10000000
+        ddr_read        r0,r1,r2
+        ldr             r1,=TEST_VALUE_1
+        cmp             r0,r1
+        bne             option_3
+        
+        tst             r4,#1
+        moveq           r1,#0x10000000
+        movne           r1,#0x20000000
+        ddr_read        r0,r1,r2
+        ldr             r1,=TEST_VALUE_2
+        cmp             r0,r1
+        bne             option_3
+        
+        tst             r4,#1
+        moveq           r1,#0x18000000
+        movne           r1,#0x30000000
+        ddr_read        r0,r1,r2
+        ldr             r1,=TEST_VALUE_3
+        cmp             r0,r1
+        bne             option_3
+        
+option_1:
+
+        ldr             r3,[r6,#0x8]
+        orr             r3,r3,#0xc000
+        str             r3,[r6,#0x8]
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        str             r3, [r2, #0x1c8]
+#endif
+
+        ldr             r1,=(MBYTES_1024)               @ Part Density
+        b               banks_and_columns_return
+
+option_2:
+
+        ldr             r3,[r6,#0x8]
+        bic             r3,#0xc000
+        orr             r3,r3,#0x4000
+        str             r3,[r6,#0x8]
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        str             r3, [r2, #0x1cc]
+#endif
+
+        ldr             r1,=(MBYTES_512)                @ Part Density
+        b               banks_and_columns_return
+
+option_3:
+
+        ldr             r3,[r6,#0x8]
+        bic             r3,#0xc000
+        str             r3,[r6,#0x8]
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        str             r3, [r2, #0x1d0]
+#endif
+
+        mov             r0,#0x00000000
+        ldr             r1,=(0x11111111)
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x20000000
+        ldr             r1,=(0x22222222)
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x10000000
+        ldr             r1,=(0x33333333)
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x8000000
+        ldr             r1,=(0x44444444)
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x4000000
+        ldr             r1,=(0x55555555)
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x2000000
+        ldr             r1,=(0x66666666)
+        ddr_write       r1,r0,r2,r3
+        mov             r0,#0x1000000
+        ldr             r1,=(0x77777777)
+        ddr_write       r1,r0,r2,r3
+
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        str             r0, [r2, #0x1d4]
+#endif
+
+        ldr             r1,=(0x77777777)
+        cmp             r0,r1
+        ldreq           r1,=(16*1024*1024)
+        orr             r1,r1,#0x80000000
+        beq             banks_and_columns_return
+
+        ldr             r1,=(0x66666666)
+        cmp             r0,r1
+        ldreq           r1,=(32*1024*1024)
+        orr             r1,r1,#0x80000000
+        beq             banks_and_columns_return
+
+        ldr             r1,=(0x55555555)
+        cmp             r0,r1
+        ldreq           r1,=(64*1024*1024)
+        orr             r1,r1,#0x80000000
+        beq             banks_and_columns_return
+
+        ldr             r1,=(0x44444444)
+        cmp             r0,r1
+        ldreq           r1,=(128*1024*1024)
+        orr             r1,r1,#0x80000000
+        beq             banks_and_columns_return
+
+        ldr             r1,=(0x33333333)
+        cmp             r0,r1
+        ldreq           r1,=(256*1024*1024)
+        orr             r1,r1,#0x80000000
+        beq             banks_and_columns_return
+
+        ldr             r1,=(0x22222222)
+        cmp             r0,r1
+        ldreq           r1,=(512*1024*1024)
+        orr             r1,r1,#0x80000000
+        beq             banks_and_columns_return
+
+        ldr             r1,=(0x1111111)
+        cmp             r0,r1
+        ldreq           r1,=(1024*1024*1024)
+        orr             r1,r1,#0x80000000
+
+banks_and_columns_return:
+
+#ifdef __DEBUG_COUNT__
+        ldr             r2, =(CONFIG_NORMAL_ASI_BASE)
+        str             r1, [r2, #0x1d8]
+#endif
+
+        mov             pc,lr
+        
+        .ltorg
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ set_termination
+        @
+        @ Trashes r2-r6
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ r1 - density
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .align  5
+
+set_termination:
+
+        @ Figure out the mode, 16 or 32 bit.  Set r4 bit 0 if in 32 bit mode.
+        
+        mov             r1,#0x88
+        pll_read        r1
+        tst             r0,#0x4
+        movne           r4,#1                   @ 32 bit mode
+        moveq           r4,#0                   @ 16 bit mode
+
+        @ Enable ODT, both ends, from ODT_SPEED on up.
+
+        ldr     r5,=ODT_SPEED
+        cmp     r10,r5
+        blt     set_termination_return
+        ldr     r2,=CONFIG_NORMAL_AEI_BASE
+        ldr     r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        ldr     r5,[r2,#0x1c]
+        tst     r4,#1
+        ldrne   r6,=0xfff83fe0 @ 32 bit mask
+        ldreq   r6,=0xfff83fff @ 16 bit mask
+        and     r5,r5,r6
+        ldrne   r6,=0x0006c002 @ 32 bit value
+        ldreq   r6,=0x0006c000 @ 16 bit value
+        orr     r5,r5,r6
+        str     r5,[r2,#0x1c]
+        ldr     r5,=0xe0000000
+        str     r5,[r3,#0x24]
+        ldr     r5,=0x18888810
+        str     r5,[r3,#0x20]
+
+set_termination_return:
+
+        mov     pc,lr
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_init_fpga
+        @
+        @ Trashes r0-r6
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .align  5
+
+ddr_init_fpga:
+
+        @ DDRI) @@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @ DDRI) Initialization for the FPGA
+        ldr     r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        
+        @ 'CKE' bit.  Connected on REV-C boards and beyond.  Enables
+        @ memory.  Not connected on earlier boards.
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0000 = 0x0000_0010
+        mov     r5,#0x10
+        str     r5,[r3]
+        
+        @ DDRI) delay
+        mov     r0,#1
+        mov     r6,lr
+        bl      platform_msleep_
+        mov     lr,r6
+        
+        @ DDRI) 0xc000_8008 = 0x0000_0000
+        mov     r5,#0
+        str     r5,[r3,#0x8]
+        @ DDRI) 0xc000_800c = 0x0000_0000
+        str     r5,[r3,#0xc]
+        @ DDRI) 0xc000_8010 = 0x000c_0000
+        mov     r5,#0xc0000
+        str     r5,[r3,#0x10]
+
+        @ DDRI) 0xc000_8014=0x0000_2400
+        mov     r5,#0x2400
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) 0xc000_8014=0x0000_8413
+        mov     r5,#0x8400
+        orr     r5,r5,#0x13
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) 0xc000_8014=0x0000_0532
+        mov     r5,#0x530
+        orr     r5,r5,#0x2
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) 0xc000_8014=0x0000_2400
+        mov     r5,#0x2400
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) Write 0 indirectly
+        mov             r0,#0
+        mov             r1,#0
+        ddr_write       r1,r0,r2,r3
+        ldr             r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI) Write 0 indirectly
+        mov             r0,#0
+        mov             r1,#0
+        ddr_write       r1,r0,r2,r3
+        ldr             r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI) 0xc000_8014=0x0000_0432
+        mov     r5,#0x430
+        orr     r5,r5,#0x2
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) 0xc000_8014=0x0000_8793
+        mov     r5,#0x8700
+        orr     r5,r5,#0x93
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) 0xc000_8014=0x0000_8413
+        mov     r5,#0x8400
+        orr     r5,r5,#0x13
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) 0xc000_8000 = CONTROL_FPGA
+        ldr     r5,=CONTROL_FPGA
+        str     r5,[r3]
+        @ DDRI) 0xc000_8004 = SPEC_FPGA
+        ldr     r5,=SPEC_FPGA
+        str     r5,[r3,#0x4]
+        @ DDRI) 0xc000_8000 = EXT_CONTROL_FPGA
+        ldr     r5,=EXT_CONTROL_FPGA
+        str     r5,[r3,#0x8]
+        @ DDRI) 0xc000_803c = 0xffffffff
+        mvn     r5,#0
+        str     r5,[r3,#0x3c]
+        @ DDRI) 0xc000_8020 = 0x00000010
+        mov     r5,#0x10
+        str     r5,[r3,#0x20]
+        @ DDRI) 0xc000_8064=0x7654_3210
+        mov     r5,#0x76000000
+        orr     r5,r5,#0x00540000
+        orr     r5,r5,#0x00003200
+        orr     r5,r5,#0x00000010
+        str     r5,[r3,#0x64]
+        @ DDRI) 0xc000_8068=0xfedc_ba98
+        mov     r5,#0xfe000000
+        orr     r5,r5,#0x00dc0000
+        orr     r5,r5,#0x0000ba00
+        orr     r5,r5,#0x00000098
+        str     r5,[r3,#0x68]
+        @ DDRI) 0xc000_8060=0x8008_8000
+        mov     r5,#0x80000000
+        orr     r5,r5,#0x00088000
+        str     r5,[r3,#0x60]
+1:      @ DDRI) read 0xc000_8060
+        ldr     r5,[r3,#0x60]
+        and     r5,r5,#0x80000000
+        cmp     r5,#0
+        bne     1b
+        @ DDRI) 0xc000_8064=0x0000_0000
+        mov     r5,#0
+        str     r5,[r3,#0x64]
+        @ DDRI) 0xc000_8068=0x0000_0000
+        mov     r5,#0
+        str     r5,[r3,#0x68]
+        @ DDRI) 0xc000_8060=0xc008_8000
+        mov     r5,#0xc0000000
+        orr     r5,r5,#0x00088000
+        str     r5,[r3,#0x60]
+1:      @ DDRI) read 0xc000_8060
+        ldr     r5,[r3,#0x60]
+        and     r5,r5,#0x80000000
+        cmp     r5,#0
+        bne     1b
+        @ DDRI) read 0xc000_8064
+        ldr     r5,[r3,#0x64]
+        @ DDRI) read 0xc000_8068
+        ldr     r5,[r3,#0x68]
+        @ DDRI) read 0xc000_8000
+        ldr     r5,[r3]
+        @ DDRI) read 0xc000_8004
+        ldr     r5,[r3,#0x4]
+        @ DDRI) read 0xc000_8008
+        ldr     r5,[r3,#0x8]
+
+        @ return
+        mov     pc,lr
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_adj_fpga
+        @
+        @ Trashes r3-r5
+        @
+        @ Adjust the specification value based on the RAM density.  Expects
+        @ the extended control register to be set.
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .align  5
+
+ddr_adj_fpga:    
+
+        mov     pc,lr
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_init_125
+        @
+        @ Trashes r0-r6
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        
+        .ltorg
+        .align  5
+
+ddr_init_125:
+        
+        @ DDRI) @@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @ DDRI) Initialization up to 125 MHz
+        ldr     r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0000 = 0x0000_0010
+        mov     r5,#0x10
+        str     r5,[r3]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0008 = 0x0000_0000
+        mov     r5,#0
+        str     r5,[r3,#0x8]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x000c = 0x0000_0000
+        str     r5,[r3,#0xc]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0010 = 0x000c_0000
+        mov     r5,#0x000c0000
+        str     r5,[r3,#0x10]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_2400
+        mov     r5,#0x2400
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8410
+        mov     r5,#0x8400
+        orr     r5,r5,#0x10
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_0532
+        mov     r5,#0x530
+        orr     r5,r5,#0x2
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_2400
+        mov     r5,#0x2400
+        str     r5,[r3,#0x14]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0004 = SPEC_125MHZ
+        ldr     r5,=SPEC_125MHZ
+        str     r5,[r3,#0x4]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0020 = 0x0000_0010
+        mov     r5,#0x10
+        str     r5,[r3,#0x20]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0001 = EXT_CONTROL_125MHZ
+        ldr     r5,=EXT_CONTROL_125MHZ
+        str     r5,[r3,#0x8]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI)
+        mov             r0,#0
+        mov             r1,#0
+        ddr_write       r1,r0,r2,r3
+        ldr             r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI)
+        mov             r0,#0
+        mov             r1,#0
+        ddr_write       r1,r0,r2,r3
+        ldr             r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_0232
+        mov     r5,#0x430
+        orr     r5,r5,#0x2
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8790
+        mov     r5,#0x8700
+        orr     r5,r5,#0x90
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8410
+        mov     r5,#0x8400
+        orr     r5,r5,#0x10
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0000 = CONTROL_125MHZ
+        ldr     r5,=CONTROL_125MHZ
+        str     r5,[r3]
+        @ return
+        mov     pc,lr
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_adj_125
+        @
+        @ Trashes r3-r5
+        @
+        @ Adjust the specification value based on the RAM density.  Expects
+        @ the extended control register to be set.
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .align  5
+        
+ddr_adj_125:
+
+        mov     pc,lr
+        
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_init_133
+        @
+        @ Trashes r0-r6
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .align  5
+        
+ddr_init_133:
+        
+        @ DDRI) @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @ DDRI) Initialization for 167 MHz on up
+        ldr     r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0000 = 0x0000_0010
+        mov     r5,#0x10
+        str     r5,[r3]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0008 = 0x0000_0000
+        mov     r5,#0
+        str     r5,[r3,#0x8]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x000c = 0x0000_0000
+        str     r5,[r3,#0xc]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0010 = 0x000c_0000
+        mov     r5,#0x000c0000
+        str     r5,[r3,#0x10]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_2400
+        mov     r5,#0x2400
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8410
+        mov     r5,#0x8400
+        orr     r5,r5,#0x10
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_0532
+        mov     r5,#0x530
+        orr     r5,r5,#0x2
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_2400
+        mov     r5,#0x2400
+        str     r5,[r3,#0x14]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0004 = SPEC_133MHZ
+        ldr     r5,=SPEC_133MHZ
+        str     r5,[r3,#0x4]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0020 = 0x0000_0010
+        mov     r5,#0x10
+        str     r5,[r3,#0x20]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0001 = EXT_CONTROL_133MHZ
+        ldr     r5,=EXT_CONTROL_133MHZ
+        str     r5,[r3,#0x8]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI)
+        mov             r0,#0
+        mov             r1,#0
+        ddr_write       r1,r0,r2,r3
+        ldr             r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI)
+        mov             r0,#0
+        mov             r1,#0
+        ddr_write       r1,r0,r2,r3
+        ldr             r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_0232
+        mov     r5,#0x430
+        orr     r5,r5,#0x2
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8790
+        mov     r5,#0x8700
+        orr     r5,r5,#0x90
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8410
+        mov     r5,#0x8400
+        orr     r5,r5,#0x10
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0000 = CONTROL_133MHZ
+        ldr     r5,=CONTROL_133MHZ
+        str     r5,[r3]
+        @ return
+        mov     pc,lr
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_adj_133
+        @
+        @ Trashes r3-r5
+        @
+        @ Adjust the specification value based on the RAM density.  Expects
+        @ the extended control register to be set.
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .align  5
+        
+ddr_adj_133:
+
+        mov     pc,lr
+        
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_init_166
+        @
+        @ Trashes r0-r6
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .ltorg
+        .align  5
+        
+ddr_init_166:
+
+        @ DDRI) @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @ DDRI) Initialization for 167 MHz on up
+
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0000 = 0x0000_0010
+        ldr     r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ldr     r5,[r3]
+        @bic     r5,r5,#0x3
+        mov     r5,#0x10
+        str     r5,[r3]
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @ DDRI) Update the MDAC
+        @ Update MDAC values, from 167 MHz on up.  This must be done
+        @ early, see defect 22456.
+        mov     r5,#0x7c
+        str     r5,[r3,#0x228]
+        mov     r5,#0x07
+        str     r5,[r3,#0x26c]
+        mov     r5,#0x01
+        str     r5,[r3,#0x270]
+
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0008 = 0x0000_0000
+        mov     r5,#0
+        str     r5,[r3,#0x8]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x000c = 0x0000_0000
+        str     r5,[r3,#0xc]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0010 = 0x000c_0000
+        mov     r5,#0x000c0000
+        str     r5,[r3,#0x10]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_2400
+        mov     r5,#0x2400
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8410
+        mov     r5,#0x8400
+        orr     r5,r5,#0x10
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_0532
+        mov     r5,#0x530
+        orr     r5,r5,#0x2
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_2400
+        mov     r5,#0x2400
+        str     r5,[r3,#0x14]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0004 = SPEC_166MHZ
+        ldr     r5,=SPEC_166MHZ
+        str     r5,[r3,#0x4]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0020 = 0x0000_0010
+        mov     r5,#0x10
+        str     r5,[r3,#0x20]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0008 = EXT_CONTROL_166MHZ
+        ldr     r5,=EXT_CONTROL_166MHZ
+        str     r5,[r3,#0x8]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI)
+        mov             r0,#0
+        mov             r1,#0
+        ddr_write       r1,r0,r2,r3
+        ldr             r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI)
+        mov             r0,#0
+        mov             r1,#0
+        ddr_write       r1,r0,r2,r3
+        ldr             r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_0432
+        mov     r5,#0x430
+        orr     r5,r5,#0x2
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8790
+        mov     r5,#0x8700
+        orr     r5,r5,#0x90
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8412
+        mov     r5,#0x8400
+        orr     r5,r5,#0x12
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0000 = CONTROL_166MHZ
+        ldr     r5,=CONTROL_166MHZ
+        str     r5,[r3]
+        @ return
+        mov     pc,lr
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_adj_166
+        @
+        @ Trashes r3-r5
+        @
+        @ Adjust the specification value based on the RAM density.  Expects
+        @ the extended control register to be set.
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .align  5
+        
+ddr_adj_166:
+
+        mov     pc,lr
+        
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_init_200
+        @
+        @ Trashes r0-r6
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .ltorg
+        .align  5
+        
+ddr_init_200:
+
+        @ DDRI) @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @ DDRI) Initialization for 200 MHz on up
+
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0000 = 0x0000_0010
+        ldr     r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ldr     r5,[r3]
+        @bic     r5,r5,#0x3
+        mov     r5,#0x10
+        str     r5,[r3]
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @ DDRI) Update the MDAC
+        @ Update MDAC values, from 167 MHz on up.  This must be done
+        @ early, see defect 22456.
+        mov     r5,#0x7c
+        str     r5,[r3,#0x228]
+        mov     r5,#0x07
+        str     r5,[r3,#0x26c]
+        mov     r5,#0x01
+        str     r5,[r3,#0x270]
+
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0008 = 0x0000_0000
+        mov     r5,#0
+        str     r5,[r3,#0x8]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x000c = 0x0000_0000
+        str     r5,[r3,#0xc]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0010 = 0x000c_0000
+        mov     r5,#0x000c0000
+        str     r5,[r3,#0x10]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_2400
+        mov     r5,#0x2400
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8452
+        mov     r5,#0x8400
+        orr     r5,r5,#0x52
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_0532
+        mov     r5,#0x530
+        orr     r5,r5,#0x2
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_2400
+        mov     r5,#0x2400
+        str     r5,[r3,#0x14]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0004 = SPEC_200MHZ
+        ldr     r5,=SPEC_200MHZ
+        str     r5,[r3,#0x4]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0020 = 0x0000_0010
+        mov     r5,#0x10
+        str     r5,[r3,#0x20]
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0008 = EXT_CONTROL_200MHZ
+        ldr     r5,=EXT_CONTROL_200MHZ
+        str     r5,[r3,#0x8]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI)
+        mov             r0,#0
+        mov             r1,#0
+        ddr_write       r1,r0,r2,r3
+        ldr             r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI)
+        mov             r0,#0
+        mov             r1,#0
+        ddr_write       r1,r0,r2,r3
+        ldr             r3,=CONFIG_NORMAL_DDR2_CFG_BASE
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_0432
+        mov     r5,#0x430
+        orr     r5,r5,#0x2
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8790
+        ldr     r5,=(0x8790)
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0014 = 0x0000_8452
+        mov     r5,#0x8400
+        orr     r5,r5,#0x52
+        str     r5,[r3,#0x14]
+        @ DDRI) Read 0 indirectly
+        mov             r1,#0
+        ddr_read        r0,r1,r2
+        @ DDRI) CONFIG_NORMAL_DDR2_CFG_BASE + 0x0000 = CONTROL_200MHZ
+        ldr     r5,=CONTROL_200MHZ
+        str     r5,[r3]
+        @ return
+        mov     pc,lr
+
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ ddr_adj_200
+        @
+        @ Trashes r3-r5
+        @
+        @ Adjust the specification value based on the RAM density.  Expects
+        @ the extended control register to be set.
+        @
+        @@@@ IN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ r1 - the DDR density.
+        @
+        @@@@ OUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ nothing
+        @
+        @@@@ TRASHES @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+        @
+        @ r0 - r3
+        @
+        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+        .align  5
+        
+ddr_adj_200:
+
+        mov     pc,lr

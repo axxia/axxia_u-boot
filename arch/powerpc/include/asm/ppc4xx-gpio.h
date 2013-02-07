@@ -39,7 +39,7 @@
 /* GPIO controller */
 struct ppc4xx_gpio {
 	u32 or;		/* Output Control */
-	u32 tcr;	/* Tri-State Control */
+  /*u32 tcr;*/	/* Tri-State Control */
 	u32 osl;	/* Output Select 16..31 */
 	u32 osh;	/* Output Select 0..15 */
 	u32 tsl;	/* Tri-State Select 16..31 */

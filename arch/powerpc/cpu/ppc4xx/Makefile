@@ -32,6 +32,7 @@ SOBJS	:= cache.o
 SOBJS	+= dcr.o
 SOBJS	+= kgdb.o
 
+ifndef CONFIG_ACP
 COBJS	:= 40x_spd_sdram.o
 
 ifndef CONFIG_NAND_SPL
@@ -45,11 +46,14 @@ COBJS	+= 4xx_pci.o
 COBJS	+= 4xx_pcie.o
 COBJS	+= bedbug_405.o
 COBJS-$(CONFIG_CMD_CHIP_CONFIG)	+= cmd_chip_config.o
+endif
 COBJS	+= cpu.o
 COBJS	+= cpu_init.o
+ifndef CONFIG_ACP
 COBJS	+= denali_data_eye.o
 COBJS	+= denali_spd_ddr2.o
 COBJS	+= ecc.o
+endif
 COBJS-$(CONFIG_CMD_ECCTEST) += cmd_ecctest.o
 COBJS	+= fdt.o
 COBJS	+= interrupts.o
@@ -59,6 +63,7 @@ COBJS	+= sdram.o
 COBJS	+= speed.o
 COBJS	+= tlb.o
 COBJS	+= traps.o
+ifndef CONFIG_ACP
 COBJS	+= usb.o
 COBJS	+= usb_ohci.o
 COBJS-$(CONFIG_XILINX_440) += xilinx_irq.o
@@ -67,6 +72,10 @@ COBJS	+= 4xx_uart.o
 COBJS	+= gpio.o
 COBJS	+= miiphy.o
 COBJS	+= uic.o
+endif
+endif
+ifdef CONFIG_ACP
+COBJS	+= mpic.o
 endif
 
 SRCS	:= $(START:.o=.S) $(SOBJS:.o=.S) $(COBJS:.o=.c)

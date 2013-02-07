@@ -77,6 +77,7 @@ extern void do_bedbug_breakpoint(struct pt_regs *);
 void
 print_backtrace(unsigned long *sp)
 {
+#ifndef CONFIG_ACP2
 	int cnt = 0;
 	unsigned long i;
 
@@ -93,10 +94,12 @@ print_backtrace(unsigned long *sp)
 		sp = (unsigned long *)*sp;
 	}
 	printf("\n");
+#endif /* CONFIG_ACP2 */
 }
 
 void show_regs(struct pt_regs * regs)
 {
+#ifndef CONFIG_ACP2
 	int i;
 
 	printf("NIP: %08lX XER: %08lX LR: %08lX REGS: %p TRAP: %04lx DEAR: %08lX\n",
@@ -118,20 +121,24 @@ void show_regs(struct pt_regs * regs)
 			printf("\n");
 		}
 	}
+#endif /* CONFIG_ACP2 */
 }
 
 
 void
 _exception(int signr, struct pt_regs *regs)
 {
+#ifndef CONFIG_ACP2
 	show_regs(regs);
 	print_backtrace((unsigned long *)regs->gpr[1]);
 	panic("Exception");
+#endif /* CONFIG_ACP2 */
 }
 
 void
 MachineCheckException(struct pt_regs *regs)
 {
+#ifndef CONFIG_ACP2
 	unsigned long fixup, val;
 #if defined(CONFIG_440EPX) || defined(CONFIG_440GRX)
 	u32 value2;
@@ -139,6 +146,7 @@ MachineCheckException(struct pt_regs *regs)
 	int uncorr_ecc = 0;
 #endif
 
+#ifndef CONFIG_ACP2
 	if ((fixup = search_exception_table(regs->nip)) != 0) {
 		regs->nip = fixup;
 		val = mfspr(MCSR);
@@ -146,6 +154,7 @@ MachineCheckException(struct pt_regs *regs)
 		mtspr(SPRN_MCSR, val);
 		return;
 	}
+#endif
 
 #if defined(CONFIG_CMD_KGDB)
 	if (debugger_exception_handler && (*debugger_exception_handler)(regs))
@@ -310,11 +319,13 @@ MachineCheckException(struct pt_regs *regs)
 	show_regs(regs);
 	print_backtrace((unsigned long *)regs->gpr[1]);
 	panic("machine check");
+#endif /* CONFIG_ACP2 */
 }
 
 void
 AlignmentException(struct pt_regs *regs)
 {
+#ifndef CONFIG_ACP2
 #if defined(CONFIG_CMD_KGDB)
 	if (debugger_exception_handler && (*debugger_exception_handler)(regs))
 		return;
@@ -323,11 +334,13 @@ AlignmentException(struct pt_regs *regs)
 	show_regs(regs);
 	print_backtrace((unsigned long *)regs->gpr[1]);
 	panic("Alignment Exception");
+#endif /* CONFIG_ACP2 */
 }
 
 void
 ProgramCheckException(struct pt_regs *regs)
 {
+#ifndef CONFIG_ACP2
 	long esr_val;
 
 #if defined(CONFIG_CMD_KGDB)
@@ -347,11 +360,13 @@ ProgramCheckException(struct pt_regs *regs)
 
 	print_backtrace((unsigned long *)regs->gpr[1]);
 	panic("Program Check Exception");
+#endif /* CONFIG_ACP2 */
 }
 
 void
 DecrementerPITException(struct pt_regs *regs)
 {
+#ifndef CONFIG_ACP2
 	/*
 	 * Reset PIT interrupt
 	 */
@@ -361,12 +376,14 @@ DecrementerPITException(struct pt_regs *regs)
 	 * Call timer_interrupt routine in interrupts.c
 	 */
 	timer_interrupt(NULL);
+#endif /* CONFIG_ACP2 */
 }
 
 
 void
 UnknownException(struct pt_regs *regs)
 {
+#ifndef CONFIG_ACP2
 #if defined(CONFIG_CMD_KGDB)
 	if (debugger_exception_handler && (*debugger_exception_handler)(regs))
 		return;
@@ -375,16 +392,19 @@ UnknownException(struct pt_regs *regs)
 	printf("Bad trap at PC: %lx, SR: %lx, vector=%lx\n",
 	       regs->nip, regs->msr, regs->trap);
 	_exception(0, regs);
+#endif /* CONFIG_ACP2 */
 }
 
 void
 DebugException(struct pt_regs *regs)
 {
+#ifndef CONFIG_ACP2
 	printf("Debugger trap at @ %lx\n", regs->nip );
 	show_regs(regs);
 #if defined(CONFIG_CMD_BEDBUG)
 	do_bedbug_breakpoint( regs );
 #endif
+#endif /* CONFIG_ACP2 */
 }
 
 /* Probe an address by reading.  If not present, return -1, otherwise

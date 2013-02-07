@@ -27,7 +27,7 @@
 
 void flush_cache(ulong start_addr, ulong size)
 {
-#ifndef CONFIG_5xx
+#if defined(CONFIG_5xx)
 	ulong addr, start, end;
 
 	start = start_addr & ~(CONFIG_SYS_CACHELINE_SIZE - 1);
@@ -49,5 +49,22 @@ void flush_cache(ulong start_addr, ulong size)
 	asm volatile("sync" : : : "memory");
 	/* flush prefetch queue */
 	asm volatile("isync" : : : "memory");
+#elif defined(CONFIG_47x)
+	void *address;
+	unsigned long start;
+	unsigned long end;
+
+	start = start_addr & ~(CONFIG_SYS_CACHELINE_SIZE - 1);
+	end = start_addr + size - 1;
+
+	for (address = (void *)start; address < (void *)end;
+	     address += CONFIG_SYS_CACHELINE_SIZE) {
+		__asm__ __volatile__("dcbf    0,%0\n" \
+				     "icbi    0,%0\n" : : "r" (address));
+	}
+
+	__asm__ __volatile__("sync" : : : "memory");
+	__asm__ __volatile__("isync" : : : "memory");
+	__asm__ __volatile__(".long 0x7c0004ac" : : : "memory");
 #endif
 }

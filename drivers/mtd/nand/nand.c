@@ -109,7 +109,9 @@ void nand_init(void)
 		nand_init_chip(i);
 #endif
 
+#ifndef CONFIG_ACP
 	printf("%lu MiB\n", total_nand_size / 1024);
+#endif
 
 #ifdef CONFIG_SYS_NAND_SELECT_DEVICE
 	/*

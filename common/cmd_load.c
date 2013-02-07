@@ -41,6 +41,7 @@ static ulong load_serial_ymodem (ulong offset);
 static ulong load_serial (long offset);
 static int read_record (char *buf, ulong len);
 # if defined(CONFIG_CMD_SAVES)
+#error "##@@##@@##@@##@@ Got Here!"
 static int save_serial (ulong offset, ulong size);
 static int write_record (char *buf);
 #endif

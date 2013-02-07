@@ -230,7 +230,7 @@ LIBS += lib/lzma/liblzma.o
 LIBS += lib/lzo/liblzo.o
 LIBS += lib/zlib/libz.o
 LIBS += $(shell if [ -f board/$(VENDOR)/common/Makefile ]; then echo \
-	"board/$(VENDOR)/common/lib$(VENDOR).o"; fi)
+	"board/$(VENDOR)/common/lib$(VENDOR).a"; fi)
 LIBS += $(CPUDIR)/lib$(CPU).o
 ifdef SOC
 LIBS += $(CPUDIR)/$(SOC)/lib$(SOC).o
@@ -323,8 +323,12 @@ endif
 LIBS := $(addprefix $(obj),$(sort $(LIBS)))
 .PHONY : $(LIBS)
 
-LIBBOARD = board/$(BOARDDIR)/lib$(BOARD).o
+LIBBOARD = board/$(BOARDDIR)/lib$(BOARD).a
 LIBBOARD := $(addprefix $(obj),$(LIBBOARD))
+
+ifeq ($(BOARD),acp)
+LIBBOARD += board/$(BOARDDIR)/brs.o
+endif
 
 # Add GCC lib
 ifdef USE_PRIVATE_LIBGCC
@@ -370,7 +374,7 @@ BOARD_SIZE_CHECK =
 endif
 
 # Always append ALL so that arch config.mk's can add custom ones
-ALL-y += $(obj)u-boot.srec $(obj)u-boot.bin $(obj)System.map
+ALL-y += $(obj)u-boot.srec $(obj)u-boot.bin $(obj)System.map u-boot.img
 
 ALL-$(CONFIG_NAND_U_BOOT) += $(obj)u-boot-nand.bin
 ALL-$(CONFIG_ONENAND_U_BOOT) += $(obj)u-boot-onenand.bin
@@ -379,6 +383,9 @@ ALL-$(CONFIG_SPL) += $(obj)spl/u-boot-spl.bin
 ALL-$(CONFIG_OF_SEPARATE) += $(obj)u-boot.dtb $(obj)u-boot-dtb.bin
 
 all:		$(ALL-y) $(SUBDIR_EXAMPLES)
+
+$(obj)u-boot.S:		$(obj)u-boot
+		$(OBJDUMP) -DS $< > $@
 
 $(obj)u-boot.dtb:	$(obj)u-boot
 		$(MAKE) -C dts binary
@@ -408,12 +415,19 @@ $(obj)u-boot.ldr.hex:	$(obj)u-boot.ldr
 $(obj)u-boot.ldr.srec:	$(obj)u-boot.ldr
 		$(OBJCOPY) ${OBJCFLAGS} -O srec $< $@ -I binary
 
+#$(obj)u-boot.img:	$(obj)u-boot.bin
+#		$(obj)tools/mkimage -A $(ARCH) -T firmware -C none \
+#		-O u-boot -a $(CONFIG_SYS_TEXT_BASE) -e 0 \
+#		-n $(shell sed -n -e 's/.*U_BOOT_VERSION//p' $(VERSION_FILE) | \
+#			sed -e 's/"[	 ]*$$/ for $(BOARD) board"/') \
+#		-d $< $@
 $(obj)u-boot.img:	$(obj)u-boot.bin
-		$(obj)tools/mkimage -A $(ARCH) -T firmware -C none \
-		-O u-boot -a $(CONFIG_SYS_TEXT_BASE) -e 0 \
-		-n $(shell sed -n -e 's/.*U_BOOT_VERSION//p' $(VERSION_FILE) | \
+	mkimage -A ppc -O u-boot -C none \
+		-n $(shell sed -n -e 's/.*U_BOOT_VERSION//p' \
+			$(VERSION_FILE) | \
 			sed -e 's/"[	 ]*$$/ for $(BOARD) board"/') \
-		-d $< $@
+		-a 0 -e 0 -d $< $@
+	rm -f temp.bin.gz
 
 $(obj)u-boot.imx:       $(obj)u-boot.bin
 		$(obj)tools/mkimage -n  $(CONFIG_IMX_CONFIG) -T imximage \
@@ -470,6 +484,7 @@ endif
 $(obj)u-boot:	depend \
 		$(SUBDIR_TOOLS) $(OBJS) $(LIBBOARD) $(LIBS) $(LDSCRIPT) $(obj)u-boot.lds
 		$(GEN_UBOOT)
+		$(OBJDUMP) -DS u-boot > u-boot.S
 ifeq ($(CONFIG_KALLSYMS),y)
 		smap=`$(call SYSTEM_MAP,u-boot) | \
 			awk '$$2 ~ /[tTwW]/ {printf $$1 $$3 "\\\\000"}'` ; \
@@ -546,7 +561,9 @@ etags:
 						-name '*.[chS]' -print`
 cscope:
 		$(FIND) $(FINDFLAGS) $(TAG_SUBDIRS) -name '*.[chS]' -print > \
-						cscope.files
+						cscope.files0
+		cat cscope.files0 | sort | uniq > cscope.files
+		rm -f cscopes.files0
 		cscope -b -q -k
 
 SYSTEM_MAP = \
@@ -703,6 +720,161 @@ smdk6400_config	:	unconfig
 	@echo "CONFIG_NAND_U_BOOT = y" >> $(obj)include/config.mk
 
 #########################################################################
+## APP and ACP, LSI Logic
+#########################################################################
+
+app3_config: unconfig
+	@@$(MKCONFIG) app3 arm arm926ejs app lsi app3
+	@pushd board/lsi/app >/dev/null ; \
+		rm -f u-boot.lds ; \
+		ln -s u-boot-app3.lds u-boot.lds ; \
+		rm -f config.mk ; \
+		ln -s config-app3.mk config.mk ; \
+	popd > /dev/null
+
+app3k_config: unconfig
+	@@$(MKCONFIG) app3k arm arm11mp app lsi app3k
+	@pushd board/lsi/app >/dev/null ; \
+		rm -f u-boot.lds ; \
+		ln -s u-boot-app3k.lds u-boot.lds ; \
+		rm -f config.mk ; \
+		ln -s config-app3k.mk config.mk ; \
+	popd > /dev/null
+
+acp_stage2_ACP344xV1_config: unconfig
+	@@$(MKCONFIG) acp2 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acp_stage2_ACP344xV1.mk config.mk ; \
+	popd >/dev/null
+
+acp_stage2_ACP344xV2_config: unconfig
+	@@$(MKCONFIG) acp2 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acp_stage2_ACP344xV2.mk config.mk ; \
+	popd >/dev/null
+
+acp_stage2_ACP342xD_config: unconfig
+	@@$(MKCONFIG) acp2 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acp_stage2_ACP342xD.mk config.mk ; \
+	popd >/dev/null
+
+acp_stage2_ACP25xx_config: unconfig
+	@@$(MKCONFIG) acp2 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acp_stage2_ACP25xx.mk config.mk ; \
+	popd >/dev/null
+
+acpemu_stage2_ACP344xV1_config: unconfig
+	@@$(MKCONFIG) acp2 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acpemu_stage2_ACP344xV1.mk config.mk ; \
+	popd >/dev/null
+
+acpemu_stage2_ACP344xV2_config: unconfig
+	@@$(MKCONFIG) acp2 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acpemu_stage2_ACP344xV2.mk config.mk ; \
+	popd >/dev/null
+
+acpemu_stage2_ACP342x_config: unconfig
+	@@$(MKCONFIG) acp2 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acpemu_stage2_ACP342x.mk config.mk ; \
+	popd >/dev/null
+
+acpemu_stage2_ACP25xx_config: unconfig
+	@@$(MKCONFIG) acp2 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acpemu_stage2_ACP25xx.mk config.mk ; \
+	popd >/dev/null
+
+acpiss_stage2_config: unconfig
+	@@$(MKCONFIG) acp2 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acpiss_stage2.mk config.mk ; \
+	popd >/dev/null
+
+acp_stage3_ACP344xV1_config: unconfig
+	@@$(MKCONFIG) acp3 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acp_stage3_ACP344xV1.mk config.mk ; \
+	popd >/dev/null
+
+acp_stage3_ACP344xV2_config: unconfig
+	@@$(MKCONFIG) acp3 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acp_stage3_ACP344xV2.mk config.mk ; \
+	popd >/dev/null
+
+#acp_stage3_ACP342xC_config: unconfig
+#	@@$(MKCONFIG) acp3 ppc ppc4xx acp lsi
+#	@pushd board/lsi/acp >/dev/null ; \
+#		rm -f config.mk ; \
+#		ln -s config-acp_stage3_ACP342xC.mk config.mk ; \
+#	popd >/dev/null
+
+acp_stage3_ACP342xD_config: unconfig
+	@@$(MKCONFIG) acp3 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acp_stage3_ACP342xD.mk config.mk ; \
+	popd >/dev/null
+
+acp_stage3_ACP25xx_config: unconfig
+	@@$(MKCONFIG) acp3 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acp_stage3_ACP25xx.mk config.mk ; \
+	popd >/dev/null
+
+acpemu_stage3_ACP344xV1_config: unconfig
+	@@$(MKCONFIG) acp3 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acpemu_stage3_ACP344xV1.mk config.mk ; \
+	popd >/dev/null
+
+acpemu_stage3_ACP344xV2_config: unconfig
+	@@$(MKCONFIG) acp3 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acpemu_stage3_ACP344xV2.mk config.mk ; \
+	popd >/dev/null
+
+acpemu_stage3_ACP342x_config: unconfig
+	@@$(MKCONFIG) acp3 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acpemu_stage3_ACP342x.mk config.mk ; \
+	popd >/dev/null
+
+acpemu_stage3_ACP25xx_config: unconfig
+	@@$(MKCONFIG) acp3 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acpemu_stage3_ACP25xx.mk config.mk ; \
+	popd >/dev/null
+
+acpiss_stage3_config: unconfig
+	@@$(MKCONFIG) acp3 ppc ppc4xx acp lsi
+	@pushd board/lsi/acp >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-acpiss_stage3.mk config.mk ; \
+	popd >/dev/null
+
+#########################################################################
 #########################################################################
 
 clean:
@@ -747,6 +919,9 @@ clean:
 		\( -name 'core' -o -name '*.bak' -o -name '*~' -o -name '*.su' \
 		-o -name '*.o'	-o -name '*.a' -o -name '*.exe'	\) -print \
 		| xargs rm -f
+	@rm -f board/lsi/acp/u-boot.lds
+	@rm -f board/lsi/acp/config.mk
+	@rm -f u-boot.S rw.path
 
 # Removes everything not needed for testing u-boot
 tidy:	clean

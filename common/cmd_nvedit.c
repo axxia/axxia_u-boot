@@ -225,6 +225,8 @@ int _do_env_set(int flag, int argc, char * const argv[])
 	e.data = NULL;
 	hsearch_r(e, FIND, &ep, &env_htab);
 
+#ifndef CONFIG_ACP
+
 	/* Check for console redirection */
 	if (strcmp(name, "stdin") == 0)
 		console = stdin;
@@ -254,6 +256,7 @@ int _do_env_set(int flag, int argc, char * const argv[])
 #endif
 #endif /* CONFIG_CONSOLE_MUX */
 	}
+#endif	/* CONFIG_ACP */
 
 	/*
 	 * Some variables like "ethaddr" and "serial#" can be set only

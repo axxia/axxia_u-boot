@@ -205,14 +205,18 @@
 #define GPT0_DCT0		0x00000110
 #define GPT0_DCIS		0x0000011C
 
-#if defined(CONFIG_440)
+#if defined(CONFIG_47x)
+#include <asm/ppc47x.h>
+#elif defined(CONFIG_440)
 #include <asm/ppc440.h>
 #else
 #include <asm/ppc405.h>
 #endif
 
 #include <asm/ppc4xx-sdram.h>
+#ifndef CONFIG_47x
 #include <asm/ppc4xx-ebc.h>
+#endif	/* CONFIG_47x */
 #if !defined(CONFIG_XILINX_440)
 #include <asm/ppc4xx-uic.h>
 #endif

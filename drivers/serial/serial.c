@@ -312,6 +312,8 @@ serial_setbrg(void)
 }
 #endif
 
+;alskdjf;lkajsdf;lkasdjf;laskdjf;alskfj
+
 #if defined(CONFIG_SERIAL_MULTI)
 
 DECLARE_ESERIAL_FUNCTIONS(1);

@@ -262,6 +262,13 @@ int abortboot(int bootdelay)
 		gd->flags &= ~GD_FLG_SILENT;
 #endif
 
+#if defined( LSI_ARCH_APP3K ) || defined( LSI_ARCH_APP3 )
+    if (!abort) {
+      /* set up the pll if necessary */
+      pll_setup_clocks( );
+    }
+#endif  /* AGERE_ARCH_APP3K */
+
 	return abort;
 }
 # endif	/* CONFIG_AUTOBOOT_KEYED */
@@ -372,7 +379,13 @@ void main_loop (void)
 	}
 	else
 #endif /* CONFIG_BOOTCOUNT_LIMIT */
+#if defined( CONFIG_ACP2 )
+		s = getenv ("bootcmd2");
+#elif defined( CONFIG_ACP3 )
+		s = getenv ("bootcmd3");
+#else
 		s = getenv ("bootcmd");
+#endif
 
 	debug ("### main_loop: bootcmd=\"%s\"\n", s ? s : "<UNDEFINED>");
 

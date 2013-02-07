@@ -1,0 +1,10 @@
+const char board_type_info [ ] =
+     "Board Type: BOARD_TYPE";
+const char board_env_size_info [ ] =
+     "Board Environment Size: BOARD_ENV_SIZE";
+const char board_memory_type_info [ ] =
+     "Board Memory Type: BOARD_MEMORY_TYPE";
+const char board_memory_density_info [ ] =
+     "Board Memory Density: BOARD_MEMORY_DENSITY";
+const char board_name_info [ ] =
+     "Board Name: BOARD_NAME";

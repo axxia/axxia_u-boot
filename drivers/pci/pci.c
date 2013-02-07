@@ -393,6 +393,10 @@ int pci_hose_config_device(struct pci_controller *hose,
 
 	debug ("PCI Config: I/O=0x%lx, Memory=0x%llx, Command=0x%lx\n",
 		io, (u64)mem, command);
+#ifdef CONFIG_ACP3
+	printf ("PCI Config: I/O=0x%lx, Memory=0x%llx, Command=0x%lx\n",
+		io, (u64)mem, command);
+#endif
 
 	pci_hose_write_config_dword (hose, dev, PCI_COMMAND, 0);
 
@@ -588,6 +592,9 @@ int __pci_skip_dev(struct pci_controller *hose, pci_dev_t dev)
 	 * Check if pci device should be skipped in configuration
 	 */
 	if (dev == PCI_BDF(hose->first_busno, 0, 0)) {
+#ifdef CONFIG_ACP3
+		return 0;
+#endif
 #if defined(CONFIG_PCI_CONFIG_HOST_BRIDGE) /* don't skip host bridge */
 		/*
 		 * Only skip configuration if "pciconfighost" is not set
@@ -607,6 +614,9 @@ int pci_skip_dev(struct pci_controller *hose, pci_dev_t dev)
 #ifdef CONFIG_PCI_SCAN_SHOW
 int __pci_print_dev(struct pci_controller *hose, pci_dev_t dev)
 {
+#ifdef CONFIG_ACP3
+	return 1;
+#endif
 	if (dev == PCI_BDF(hose->first_busno, 0, 0))
 		return 0;
 
@@ -651,7 +661,11 @@ int pci_hose_scan_bus(struct pci_controller *hose, int bus)
 
 		debug ("PCI Scan: Found Bus %d, Device %d, Function %d\n",
 			PCI_BUS(dev), PCI_DEV(dev), PCI_FUNC(dev) );
-
+#ifdef CONFIG_ACP3
+		printf ("PCI Scan: Found Bus %d, Device %d, Function %d\n",
+			PCI_BUS(dev), PCI_DEV(dev), PCI_FUNC(dev) );
+#endif
+	
 		pci_hose_read_config_word(hose, dev, PCI_DEVICE_ID, &device);
 		pci_hose_read_config_word(hose, dev, PCI_CLASS_DEVICE, &class);
 
