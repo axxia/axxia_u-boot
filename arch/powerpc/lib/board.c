@@ -810,8 +810,7 @@ acp_init_f( void )
 	  Set up the board info, global data, and stack
 	*/
 
-	addr = (CFG_MALLOC_BASE - CFG_MALLOC_LEN);
-	memset( ( void * ) addr, 0, CFG_MALLOC_LEN );
+	addr = CONFIG_SYS_MALLOC_BASE;
 	addr -= sizeof( bd_t );
 	bd = ( bd_t * ) addr;
 	addr -= sizeof( gd_t );
@@ -831,7 +830,7 @@ acp_init_f( void )
 	*/
 
 	gd->ram_size = ( 256 * 1024 * 1024 );
-	bd->bi_memstart = CFG_SDRAM_BASE;
+	bd->bi_memstart = 0;
 	bd->bi_memsize = gd->ram_size;
 
 #if 0
@@ -854,7 +853,7 @@ acp_init_f( void )
 #endif
 
 	/* Set up the Stack */
-	acp_mem_init( addr, 0, ( unsigned long ) acp_init_r );
+	acp_mem_init(addr, 0, (unsigned long) acp_init_r);
 
 	return;
 }
@@ -1346,6 +1345,9 @@ acp_init_r( void )
 		__asm__ __volatile__ ("mtmsr %0" : : "r" (value));
 	}
 
+	/* Set up memory allocation. */
+	mem_malloc_init(CONFIG_SYS_MALLOC_BASE, CONFIG_SYS_MALLOC_SIZE);
+
 	/* Set up the environment */
 	if( 0 != env_init( ) ) {
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
@@ -1355,13 +1357,6 @@ acp_init_r( void )
 	if( 0 != init_timebase( ) ) {
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 	}
-
-	/* Set up memory allocation. */
-	mem_malloc_start = CFG_MALLOC_BASE - CFG_MALLOC_LEN;
-	mem_malloc_end = mem_malloc_start + CFG_MALLOC_LEN;
-	mem_malloc_brk = mem_malloc_start;
-	memset( ( void * ) mem_malloc_start, 0,
-		( mem_malloc_end - mem_malloc_start ) );
 
 #ifdef CONFIG_ACP2
 	if( ( volatile uchar * ) 0 == 

@@ -98,7 +98,6 @@
 
 #if !defined(ACP_25xx) && !defined(USE_HOSTCC)
 /* USB support */
-#if 0
 #define CONFIG_CMD_USB 1
 #define CONFIG_USB_EHCI 1
 #define CONFIG_USB_STORAGE 1
@@ -111,7 +110,6 @@
 #define CONFIG_SYS_PPC4XX_USB_ADDR (IO+0xA0000)
 #define CONFIG_EHCI_IS_TDI 1
 #define CONFIG_LSI_USB 1
-#endif
 #endif
 
 /*
@@ -138,22 +136,23 @@
   two RAM segments.  1 Mb at address 0 (U-Boot text) and 3 Mbyte at
   0x100000.
 
-  Note that CFG_MALLOC_BASE is the top of the heap.
+  Note that CONFIG_SYS_MALLOC_BASE is the bottom of the heap, and the
+  stack will grow downward from there.
 */
 
-/* Use the last 2M of the first 4M of system memory */
-#define CFG_MALLOC_BASE     0x00400000
+#define CONFIG_SYS_MALLOC_BASE (0x00300000)
 #ifdef ACP_ISS
-#define CFG_MALLOC_LEN      ((2 * 1024 * 1024) - (64 * 1024))
+#define CONFIG_SYS_MALLOC_SIZE (0x400000 - CONFIG_SYS_MALLOC_BASE - (64 * 1024)))
 #else
-#define CFG_MALLOC_LEN      0x200000
+#define CONFIG_SYS_MALLOC_SIZE (0x400000 - CONFIG_SYS_MALLOC_BASE)
 #endif
-#define CFG_STACK_BASE      (0x00400000 - CFG_MALLOC_LEN)
-#define CFG_INIT_RAM_END    0x4000 /* This is really the size... */
-#define CFG_INIT_RAM_ADDR0  (CFG_STACK_BASE - 0x0000)
-#define CFG_INIT_RAM_ADDR1  (CFG_STACK_BASE - 0x4000)
-#define CFG_INIT_RAM_ADDR2  (CFG_STACK_BASE - 0x8000)
-#define CFG_INIT_RAM_ADDR3  (CFG_STACK_BASE - 0xc000)
+#define CONFIG_SYS_STACK_BASE  (CONFIG_SYS_MALLOC_BASE)
+
+/* Early stack for each core. */
+#define CFG_INIT_RAM_ADDR0  (CONFIG_SYS_STACK_BASE - 0x0000)
+#define CFG_INIT_RAM_ADDR1  (CONFIG_SYS_STACK_BASE - 0x4000)
+#define CFG_INIT_RAM_ADDR2  (CONFIG_SYS_STACK_BASE - 0x8000)
+#define CFG_INIT_RAM_ADDR3  (CONFIG_SYS_STACK_BASE - 0xc000)
 
 /*
   ----------------------------------------------------------------------
