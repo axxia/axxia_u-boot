@@ -594,6 +594,10 @@ acp_osg_jump_to_os(int group)
 
 	os = acp_osg_groups[group]->os;
 
+	/* Clear the MSR */
+	__asm__ __volatile__ ("lis            6,0\n"	\
+			      "mtmsr          6");
+
 	/* Release the stage 3 lock. */
 	acp_unlock_stage3();
 

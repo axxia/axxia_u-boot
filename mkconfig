@@ -19,8 +19,6 @@ vendor=""
 soc=""
 options=""
 
-echo "INPUT $*"
-
 if [ \( $# -eq 2 \) -a \( "$1" = "-A" \) ] ; then
 	# Automatic mode
 	line=`egrep -i "^[[:space:]]*${2}[[:space:]]" boards.cfg` || {

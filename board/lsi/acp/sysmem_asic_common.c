@@ -44,7 +44,7 @@ typedef parameters_sysmem_t     ncp_sm_parms_t;
 #if defined(ACP_X1V1)
 #define INT_STATUS_OFFSET 0x16c
 #define ECC_ERROR_MASK 0x3c
-#elif defined(ACP_X1V2) || defined(ACP_X2V1)
+#elif defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
 #define INT_STATUS_OFFSET 0x16c
 #define ECC_ERROR_MASK 0x78
 #elif defined(ACP_25xx)
@@ -145,13 +145,11 @@ sm_reg_dump(int id, int rank, char *file, unsigned long line)
 	for (i = 0; i < 9; ++i) {
 		unsigned buffer[4];
 
-		ncr_read(region, offset, 16);
-		ncr_read_buffer(buffer, 0, 16);
+		ncr_read(region, offset, 16, buffer);
 		printf("0.%x.1.%010x: %08x %08x %08x %08x\n", node[id], offset,
 		       buffer[0], buffer[1], buffer[2], buffer[3]);
 		offset += 0x40;
-		ncr_read(region, offset, 16);
-		ncr_read_buffer(buffer, 0, 16);
+		ncr_read(region, offset, 16, buffer);
 		printf("0.%x.1.%010x: %08x %08x %08x %08x\n", node[id], offset,
 		       buffer[0], buffer[1], buffer[2], buffer[3]);
 		offset += 0x40;
@@ -174,13 +172,11 @@ sm_reg_dump(int id, int rank, char *file, unsigned long line)
 		for (i = 0; i < 9; ++i) {
 			unsigned long buffer[8];
 
-			ncr_read(region, offset, 12);
-			ncr_read_buffer(buffer, 0, 12);
+			ncr_read(region, offset, 12, buffer);
 			printf("0.%x.1.%010x: %08x %08x %08x\n",
 			       node[id], offset,
 			       buffer[0], buffer[1], buffer[2]);
-			ncr_read(region, (offset + 0x20), 32);
-			ncr_read_buffer(buffer, 0, 32);
+			ncr_read(region, (offset + 0x20), 32, buffer);
 			printf("0.%x.1.%010x: %08x %08x %08x %08x\n",
 			       node[id], (offset + 0x20),
 			       buffer[0], buffer[1], buffer[2], buffer[3]);
@@ -262,14 +258,9 @@ sysmem_init(void)
 	unsigned long phy;
 	unsigned long mask;
 	unsigned long value;
-	unsigned long ctl_26 = 0;
-	unsigned long ctl_32 = 0;
-	unsigned long ctl_33 = 0;
-	unsigned long ctl_34 = 0;
 	unsigned long munge_reg;
 	unsigned long num_bls;
-	int i, j;
-	int rc;
+	int i;
 
 	/*
 	  ======================================================================
@@ -352,7 +343,7 @@ sysmem_init(void)
 #ifdef ACP_25xx
 		ncp_sysmem_init_lsiphy(NULL, i, sysmem);
 #endif
-#if defined (ACP_X1V2) || defined (ACP_X2V1)
+#if defined (ACP_X1V2) || defined (CONFIG_ACP_342X)
 		ncp_sysmem_init_ibmphy(NULL, i, sysmem);
 #endif
 	}
@@ -391,6 +382,9 @@ sysmem_init(void)
 	/*check_for_failure(1, __FILE__, __LINE__);*/
 #endif /* SM_REG_DUMP */
 
+	/* Just match the RTE trace... */
+	NCR_TRACE("ncpRead    0.24.255.0x0000000004 1\n");
+
 	/*
 	  Enable system caches.
 	*/
@@ -411,7 +405,7 @@ sysmem_init(void)
 	}
 #endif
 
-	NCR_TRACE("# Initializing system cache ");
+	NCR_TRACE("# Initializing system cache\n");
 
 	/*
 	 * Determine appropriate value of the system cache address munge
@@ -461,7 +455,7 @@ sysmem_init(void)
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		break;
 	}
-#elif defined(ACP_X1V2) || defined(ACP_X2V1) || defined(ACP_25xx)
+#elif defined(ACP_X1V2) || defined(CONFIG_ACP_342X) || defined(ACP_25xx)
 	value = ( 1 << ( sysmem_size - 20 ) ) / num_sc_nodes;
 
 	switch( value ) {
@@ -502,8 +496,9 @@ sysmem_init(void)
 	munge_reg = value | (sysmem->sysCacheMode << 4);
 
 	/* Just match the RTE trace... */
-	NCR_TRACE("ncpRead    0.24.255.0x0000000004 1");
-	NCR_TRACE("ncpRead    0.32.0.0x0000000014 1");
+	NCR_TRACE("ncpRead    0.32.255.0x0000000000 1\n");
+	NCR_TRACE("ncpRead    0.24.255.0x0000000004 1\n");
+	NCR_TRACE("ncpRead    0.32.0.0x0000000014 1\n");
 
 	/* loop through all syscaches */
 	for( i = 0; i < num_sc_nodes; ++ i ) {
@@ -568,7 +563,7 @@ sysmem_init(void)
 #endif /* SM_REG_DUMP */
 
 	/* Disable some speculative reads. */
-#if defined(ACP_X1V1) || defined(ACP_X1V2) || defined(ACP_X2V1)
+#if defined(ACP_X1V1) || defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
 	if (sysmem->half_mem)
 		dcr_write( 0x3377c800, 0xf00 );
 	else
@@ -597,7 +592,7 @@ sysmem_init(void)
 	}
 
 	/* WA for BZ 34575 (applies to X1V2 and X2). */
-#if defined(ACP_X1V2) || defined(ACP_X2V1)
+#if defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
 	dcr_write(0, 0xf1f);
 #endif
 

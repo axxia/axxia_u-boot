@@ -193,7 +193,7 @@ COBJS-$(CONFIG_UPDATE_TFTP) += update.o
 COBJS-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
 endif
 
-COBJS-$(CONFIG_LSI_NIC) += cmd_lsi_net.o
+COBJS-$(CONFIG_LSI_NET) += cmd_lsi_net.o
 COBJS-$(CONFIG_LSI_SSP) += cmd_lsi_ssp.o
 COBJS-$(CONFIG_LSI_NCR) += cmd_lsi_ncr.o
 #COBJS-$(CONFIG_LSI_MDIO) += cmd_lsi_mdio.o

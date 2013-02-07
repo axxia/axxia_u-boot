@@ -664,12 +664,6 @@ clocks_init( void )
 	value &= ~0xff;
 	dcr_write(value, 0xd00);
 
-	/*
-	  Re-initialize the uart incase the divisors need to change.
-	*/
-
-	serial_early_init();
-
 	return 0;
 #else
 	int type;
@@ -862,7 +856,7 @@ clocks_init( void )
 #define INT_STATUS_OFFSET 0x16c
 #define BIST_COMPLETION 0x200
 #define ECC_ERROR_MASK 0x3c
-#elif defined(ACP_X1V2) || defined(ACP_X2V1)
+#elif defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
 #define INT_STATUS_OFFSET 0x16c
 #define BIST_COMPLETION 0x400
 #define ECC_ERROR_MASK 0x78
@@ -1187,92 +1181,6 @@ acp_sysmem_bist( void )
 
 /*
   ----------------------------------------------------------------------
-  pciesrio_init
-*/
-
-static int
-pciesrio_init( int ignore_parameters )
-{
-#if !defined(ACP_EMU) && !defined(ACP_ISS) && !defined(ACP_X1V1)
-	unsigned long control;
-
-	/*
-	  When no parameters are available, this function will be
-	  called with index equal to -1.  In that case, use the
-	  reset_config value (auto mode).
-	*/
-
-	if( 0 != ignore_parameters  )
-		control = 0x80000000;
-	else
-		control = pciesrio->control;
-
-#ifdef DISPLAY_PARAMETERS
-	printf( "PCIe/SRIO\ncontrol=0x%08x\n", control );
-#endif
-
-	/*
-	  Set up the PCIe/SRIO and related options.
-
-	  If the control parameter is 0x80000000, use the reset_config value.
-	*/
-
-	if( 0x80000000 == control ) {
-		unsigned long reset_config;
-
-		reset_config = dcr_read(0xe00);
-		control = acpreadio((void *)GPREG_PHY_CTRL0);
-		control &= ~0x3f0f;
-
-		if (0 == (reset_config & 0x4000)) {
-			/* SRIO */
-			switch ((reset_config & 0x3000) >> 12) {
-			case 0:
-				control |= 0x0108;
-				break;
-			case 1:
-				control |= 0x0508;
-				break;
-			case 2:
-				control |= 0x0908;
-				break;
-			case 3:
-				control |= 0x0d08;
-				break;
-			default:
-				break;
-			}
-		} else {
-			/* PCIe */
-			switch ((reset_config & 0x3000) >> 12) {
-			case 0:
-				control |= 0x0001;
-				break;
-			case 1:
-				control |= 0x1001;
-				break;
-			case 2:
-				control |= 0x0201;
-				break;
-			case 3:
-				control |= 0x0301;
-				break;
-			default:
-				break;
-			}
-		}
-
-	}
-
-	/*printf("PCIe/SRIO Mode: 0x%08lx\n", control);*/
-	pciesrio_set_control(control);
-#endif
-
-	return 0;
-}
-
-/*
-  ----------------------------------------------------------------------
   acp_init
 */
 
@@ -1405,7 +1313,12 @@ acp_init( void )
 		serial_early_init( );
 	}
 
+#if defined(ACP_25xx) && defined(UDELAY_AFTER_PLL_INIT)
+	udelay(UDELAY_AFTER_PLL_INIT);
+#endif
+
 	/*ZZZ*/
+#ifdef ACP_25xx
 	{
 		int i;
 		int offset = 0xd40;
@@ -1430,11 +1343,12 @@ acp_init( void )
 			offset += 0x10;
 		}
 	}
+#endif
 	/*ZZZ*/
 
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO ) ) {
-		if( 0 != ( returnCode = pciesrio_init( 0 ) ) ) {
+		if( 0 != ( returnCode = pciesrio_init( pciesrio->control ) ) ) {
 			goto acp_init_return;
 		}
 	}

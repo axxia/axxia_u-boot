@@ -25,6 +25,8 @@
 
 #define WFC_TIMEOUT (400000)
 
+#define LOCK_DOMAIN 0
+
 static int ncr_enabled = 1;
 static int ncr_tracer_disabled = 1;
 
@@ -62,6 +64,15 @@ ncr_trace_read8(unsigned long region, unsigned long offset)
 }
 
 void
+ncr_trace_read16(unsigned long region, unsigned long offset)
+{
+	printf("ncpRead    0.%lu.%lu.0x00%08lx 1\n",
+	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
+
+	return;
+}
+
+void
 ncr_trace_read32(unsigned long region, unsigned long offset)
 {
 	printf("ncpRead    0.%lu.%lu.0x00%08lx 1\n",
@@ -92,6 +103,16 @@ ncr_trace_write8(unsigned long region, unsigned long offset, unsigned long value
 			short_write_count = 0;
 		}
 	}
+
+	return;
+}
+
+void
+ncr_trace_write16(unsigned long region,
+		  unsigned long offset, unsigned long value)
+{
+	printf("ncpWrite   0.%lu.%lu.0x00%08lx 0x%04lx\n",
+	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
 
 	return;
 }
@@ -133,6 +154,10 @@ ncr_trace_poll(unsigned long region,
 if (ncr_tracer_is_enabled()) { \
 ncr_trace_read8(region, offset); } \
 } while (0);
+#define NCR_TRACE_READ16(region, offset) do { \
+if (ncr_tracer_is_enabled()) { \
+ncr_trace_read16(region, offset); } \
+} while (0);
 #define NCR_TRACE_READ32(region, offset) do { \
 if (ncr_tracer_is_enabled()) { \
 ncr_trace_read32(region, offset); } \
@@ -140,6 +165,10 @@ ncr_trace_read32(region, offset); } \
 #define NCR_TRACE_WRITE8(region, offset, value) do { \
 if (ncr_tracer_is_enabled()) { \
 ncr_trace_write8(region, offset, value); } \
+} while (0);
+#define NCR_TRACE_WRITE16(region, offset, value) do { \
+if (ncr_tracer_is_enabled()) { \
+ncr_trace_write16(region, offset, value); } \
 } while (0);
 #define NCR_TRACE_WRITE32(region, offset, value) do { \
 if (ncr_tracer_is_enabled()) { \
@@ -155,8 +184,10 @@ ncr_trace_poll(region, loops, delay, offset, mask, value); } \
 } while (0);
 #else
 #define NCR_TRACE_READ8(region, offset) {}
+#define NCR_TRACE_READ16(region, offset) {}
 #define NCR_TRACE_READ32(region, offset) {}
 #define NCR_TRACE_WRITE8(region, offset, value) {}
+#define NCR_TRACE_WRITE16(region, offset, value) {}
 #define NCR_TRACE_WRITE32(region, offset, value) {}
 #define NCR_TRACE_MODIFY(region, offset, mask, value) {}
 #define NCR_TRACE_POLL(region, loops, delay, offset, mask, value) {}
@@ -218,9 +249,626 @@ ncr_register_read(unsigned *address)
 static __inline__ void
 ncr_register_write(const unsigned value, unsigned *address)
 {
-	mb();
 	out_be32(address, value);
-	(void)in_be32(address);
+}
+
+/*
+  ------------------------------------------------------------------------------
+  ncr_lock
+*/
+
+static int
+ncr_lock(int domain)
+{
+#ifdef ACP3
+	unsigned long offset;
+	unsigned long value;
+	int loops = 400000;
+
+	offset=(0xff80 + (domain * 4));
+
+	do {
+		value = in_be32((unsigned *)(NCA + offset));
+	} while ((0 != value) && (0 < --loops));
+
+	if (0 == loops)
+		return -1;
+#endif
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  ncr_unlock
+*/
+
+static void
+ncr_unlock(int domain)
+{
+#ifdef ACP3
+	unsigned long offset;
+
+	offset=(0xff80 + (domain * 4));
+	out_be32((unsigned *)(NCA + offset), 0);
+#endif
+	return;
+}
+
+/*
+  ======================================================================
+  ======================================================================
+  Public Interface
+  ======================================================================
+  ======================================================================
+*/
+
+/*
+  ----------------------------------------------------------------------
+  ncr_read
+*/
+
+int
+ncr_read(unsigned long region, unsigned long address, int number, void *buffer)
+{
+	command_data_register_0_t cdr0;	/* 0x101.0.0xf0 */
+	command_data_register_1_t cdr1;	/* 0x101.0.0xf4 */
+	command_data_register_2_t cdr2;	/* 0x101.0.0xf8 */
+	int wfc_timeout = WFC_TIMEOUT;
+
+	if (0 != ncr_lock(LOCK_DOMAIN))
+		return -1;
+
+	/*
+	  Set up the read command.
+	*/
+
+	cdr2.raw = 0;
+
+	if( NCP_REGION_ID( 512, 1 ) != region ) {
+		cdr2.bits.target_node_id = NCP_NODE_ID( region );
+		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
+	}
+
+	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
+
+	cdr1.raw = 0;
+
+	if( NCP_REGION_ID( 512, 1 ) == region ) {
+		cdr1.bits.target_address = address;
+	} else {
+		cdr1.bits.target_address = ( address >> 2 );
+	}
+
+	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + 0xf4 ) );
+
+	cdr0.raw = 0;
+	cdr0.bits.start_done = 1;
+
+	if( 0xff == cdr2.bits.target_id_address_upper ) {
+		cdr0.bits.local_bit = 1;
+	}
+
+	if( NCP_REGION_ID( 512, 1 ) == region ) {
+		cdr0.bits.cmd_type = 0xc;
+#ifndef ACP_X1V1
+		cdr0.bits.sysmem_access_type = 2;
+#endif
+	} else {
+		cdr0.bits.cmd_type = 0x4;
+	}
+
+	/* TODO: Verify number... */
+	cdr0.bits.dbs = ( number - 1 );
+	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + 0xf0 ) );
+
+	/*
+	  Wait for completion.
+	*/
+
+	do {
+		--wfc_timeout;
+	} while( (0x80000000 ==
+		  ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+		    0x80000000 ) ) &&
+		 0 < wfc_timeout);
+
+	if (0 == wfc_timeout) {
+		printf("ncr_read(): NCA Lockup!\n");
+		ncr_unlock(LOCK_DOMAIN);
+		return -1;
+	}
+
+	/*
+	  Check status.
+	*/
+
+	if( 0x3 != ( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+		       0x00c00000 ) >> 22 ) ) {
+		unsigned long status;
+
+		status = ncr_register_read( ( unsigned * ) ( NCA + 0xe4 ) );
+		ncr_unlock(LOCK_DOMAIN);
+
+		if (0 == status)
+			return -1;
+
+		return status;
+	}
+
+	/*
+	  Read the data into the buffer.
+	*/
+
+	if (NULL != buffer) {
+		unsigned long address;
+
+		address = (NCA + 0x1000);
+
+		while (4 <= number) {
+			*((unsigned long *)buffer) =
+				ncr_register_read((unsigned *)address);
+			address += 4;
+			number -= 4;
+			buffer += 4;
+		}
+
+		if (0 < number) {
+			unsigned long temp;
+
+			temp = ncr_register_read((unsigned *)address);
+			memcpy(buffer, (void *)&temp, number);
+		}
+	}
+
+	ncr_unlock(LOCK_DOMAIN);
+	return 0;
+}
+
+/*
+   ----------------------------------------------------------------------
+  ncr_read8
+*/
+
+int
+ncr_read8(unsigned long region, unsigned long offset, unsigned char *value)
+{
+	NCR_TRACE_READ8(region, offset);
+	return ncr_read(region, offset, 1, value);
+}
+
+/*
+   ----------------------------------------------------------------------
+  ncr_read16
+*/
+
+int
+ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
+{
+	int rc = 0;
+
+#ifdef ACP_25xx
+	int wfc_timeout = WFC_TIMEOUT;
+
+	/*
+	  Handle the 0x115.1 node on the AXM25xx.
+	*/
+
+	if (NCP_REGION_ID(0x115, 1) == region) {
+		unsigned long base;
+
+		base = (IO + 0x3000);
+
+		if (0xffff < offset) {
+			printf("Bad Offset!\n");
+			return -1;
+		}
+
+		WRITEL((0x84c00000 + offset), (base + 4));
+
+		do {
+			--wfc_timeout;
+			*value = READL(base + 4);
+		} while (0 != (*value & 0x80000000) &&
+			 0 < wfc_timeout);
+
+		if (0 == wfc_timeout) {
+			printf("apb2ser read timed out!\n");
+			return -1;
+		}
+
+		*value = READL(base + 8);
+
+		return 0;
+	}
+#endif
+
+	NCR_TRACE_READ16(region, offset);
+	return ncr_read(region, offset, 2, value);
+}
+
+/*
+  ----------------------------------------------------------------------
+  ncr_read32
+*/
+
+int
+ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
+{
+	int rc = 0;
+
+#ifdef ACP_25xx
+	int wfc_timeout = WFC_TIMEOUT;
+
+	/*
+	  Handle the 0x115.0, 0x115.2, and 0x115.3 nodes on the AXM25xx.
+	*/
+
+	if ((NCP_REGION_ID(0x115, 0) == region) ||
+	    (NCP_REGION_ID(0x115, 2) == region) ||
+	    (NCP_REGION_ID(0x115, 3) == region)) {
+		unsigned long base;
+
+		switch (NCP_TARGET_ID(region)) {
+		case 0:
+			base = (IO + 0x3030);
+			break;
+		case 2:
+			base = (IO + 0x3010);
+			break;
+		case 3:
+			base = (IO + 0x3020);
+			break;
+		default:
+			/* Unreachable, due to the if() above. */
+			break;
+		}
+
+		if (0xffff < offset)
+			return -1;
+
+		WRITEL((0x85400000 + offset), (base + 4));
+
+		do {
+			--wfc_timeout;
+			*value = READL(base + 4);
+		} while (0 != (*value & 0x80000000) &&
+			 0 < wfc_timeout);
+
+		if (0 == wfc_timeout) {
+			printf("apb2ser read timed out!\n");
+			return -1;
+		}
+
+		*value = READL(base + 8);
+
+		return 0;
+	}
+#endif
+
+	NCR_TRACE_READ32(region, offset);
+	return ncr_read(region, offset, 4, value);
+}
+
+
+/*
+  ------------------------------------------------------------------------------
+  ncr_poll
+*/
+
+int
+ncr_poll( unsigned long region, unsigned long offset,
+	  unsigned long mask, unsigned long desired_value,
+	  unsigned long delay_time, unsigned long delay_loops )
+{
+	int i;
+	int rc = 0;
+
+	NCR_TRACE_POLL(region, delay_loops, delay_time,
+		       offset, mask, desired_value);
+
+	for( i = 0; i < delay_loops; ++ i ) {
+		unsigned long value;
+
+		rc |= ncr_read(region, offset, 4, &value);
+
+		if( ( value & mask ) == desired_value ) {
+			break;
+		}
+
+		udelay( delay_time );
+	}
+
+	if( delay_loops == i ) {
+		return -1;
+	}
+
+	return rc;
+}
+
+/*
+  ----------------------------------------------------------------------
+  ncr_write
+*/
+
+int
+ncr_write(unsigned long region, unsigned long address, int number, void *buffer)
+{
+	command_data_register_0_t cdr0;
+	command_data_register_1_t cdr1;
+	command_data_register_2_t cdr2;
+	int dbs = (number - 1);
+	int wfc_timeout = WFC_TIMEOUT;
+
+	if (0 != ncr_lock(LOCK_DOMAIN))
+		return -1;
+
+	/*
+	  Set up the write.
+	*/
+
+	cdr2.raw = 0;
+
+	if( NCP_REGION_ID( 512, 1 ) != region ) {
+		cdr2.bits.target_node_id = NCP_NODE_ID( region );
+		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
+	}
+
+	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
+
+	cdr1.raw = 0;
+
+	if( NCP_REGION_ID( 512, 1 ) == region ) {
+		cdr1.bits.target_address = address;
+	} else {
+		cdr1.bits.target_address = ( address >> 2 );
+	}
+
+	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + 0xf4 ) );
+
+	/*
+	  Copy data from the buffer.
+	*/
+
+	if (NULL != buffer) {
+		unsigned long address;
+
+		address = (NCA + 0x1000);
+
+		while (4 <= number) {
+			ncr_register_write(*((unsigned long *)buffer),
+					   (unsigned *)address);
+			address += 4;
+			buffer += 4;
+			number -= 4;
+		}
+
+		if (0 < number) {
+			unsigned long temp;
+
+			memcpy((void *)&temp, buffer, number);
+			ncr_register_write(temp, (unsigned *)address);
+		}
+	}
+
+	/*
+	  Write
+	*/
+
+	cdr0.raw = 0;
+	cdr0.bits.start_done = 1;
+
+	if( 0xff == cdr2.bits.target_id_address_upper ) {
+		cdr0.bits.local_bit = 1;
+	}
+
+	if( NCP_REGION_ID( 512, 1 ) == region ) {
+		cdr0.bits.cmd_type = 0xd;
+#ifndef ACP_X1V1
+		cdr0.bits.sysmem_access_type = 2;
+#endif
+	} else {
+		cdr0.bits.cmd_type = 0x5;
+	}
+
+	/* TODO: Verify number... */
+	cdr0.bits.dbs = dbs;
+	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + 0xf0 ) );
+
+	/*
+	  Wait for completion.
+	*/
+
+	do {
+		--wfc_timeout;
+	} while( (0x80000000 ==
+		  ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+		    0x80000000 ) ) &&
+		 0 < wfc_timeout);
+
+	if (0 == wfc_timeout) {
+		printf("ncr_write(): NCA Lockup!\n");
+		ncr_unlock(LOCK_DOMAIN);
+		return -1;
+	}
+
+	/*
+	  Check status.
+	*/
+
+	if( 0x3 !=
+	    ( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+		0x00c00000 ) >> 22 ) ) {
+		unsigned long status;
+
+		status = ncr_register_read( ( unsigned * ) ( NCA + 0xe4 ) );
+#ifdef NCR_TRACER
+		printf( "ncr_write( ) failed: 0x%lx\n",
+			( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+			    0x00c00000 ) >> 22 ) );
+#endif
+		ncr_unlock(LOCK_DOMAIN);
+
+		if (0 == status)
+			return -1;
+
+		return status;
+	}
+
+	ncr_unlock(LOCK_DOMAIN);
+	return 0;
+}
+
+/*
+  ----------------------------------------------------------------------
+  ncr_write8
+*/
+
+int
+ncr_write8( unsigned long region, unsigned long offset, unsigned char value )
+{
+	NCR_TRACE_WRITE8(region, offset, value);
+	return ncr_write(region, offset, 1, &value);
+}
+
+/*
+  ----------------------------------------------------------------------
+  ncr_write16
+*/
+
+int
+ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
+{
+#ifdef ACP_25xx
+	int wfc_timeout = WFC_TIMEOUT;
+
+	/*
+	  Handle the 0x115 nodes on AXM25xx
+	*/
+
+	if (NCP_REGION_ID(0x115, 1) == region) {
+		unsigned long base;
+
+		base = (IO + 0x3000);
+
+		if (0xffff < offset)
+			return -1;
+
+		WRITEL(value, base);
+		WRITEL((0xc4c00000 + offset), (base + 4));
+
+		do {
+			--wfc_timeout;
+			value = READL(base + 4);
+		} while (0 != (value & 0x80000000) &&
+			 0 < wfc_timeout);
+
+		if (0 == wfc_timeout) {
+			printf("apb2ser write timed out!\n");
+			return -1;
+		}
+
+		return 0;
+	}
+#endif
+
+	NCR_TRACE_WRITE16(region, offset, value);
+	return ncr_write(region, offset, 2, &value);
+}
+
+/*
+  ----------------------------------------------------------------------
+  ncr_write32
+*/
+
+int
+ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
+{
+#ifdef ACP_25xx
+	int wfc_timeout = WFC_TIMEOUT;
+
+	/*
+	  Handle the 0x115 nodes on AXM25xx
+	*/
+
+	if ((NCP_REGION_ID(0x115, 0) == region) ||
+	    (NCP_REGION_ID(0x115, 2) == region) ||
+	    (NCP_REGION_ID(0x115, 3) == region)) {
+		unsigned long base;
+
+		switch (NCP_TARGET_ID(region)) {
+		case 0:
+			base = (IO + 0x3030);
+			break;
+		case 2:
+			base = (IO + 0x3010);
+			break;
+		case 3:
+			base = (IO + 0x3020);
+			break;
+		default:
+			/* Unreachable, due to the if() above. */
+			break;
+		}
+
+		if (0xffff < offset)
+			return -1;
+
+		WRITEL(value, base);
+		WRITEL((0xc5400000 + offset), (base + 4));
+
+		do {
+			--wfc_timeout;
+			value = READL(base + 4);
+		} while (0 != (value & 0x80000000) &&
+			 0 < wfc_timeout);
+
+		if (0 == wfc_timeout) {
+			printf("apb2ser write timed out!\n");
+			return -1;
+		}
+
+		return 0;
+	}
+#endif
+
+	NCR_TRACE_WRITE32(region, offset, value);
+	return ncr_write(region, offset, 4, &value);
+}
+
+/*
+  ------------------------------------------------------------------------------
+  ncr_and
+*/
+
+int
+ncr_and( unsigned long region, unsigned long offset, unsigned long value )
+{
+	unsigned long temp;
+	int rc = 0;
+
+	rc |= ncr_read(region, offset, 4, &temp);
+	temp &= value;
+	rc |= ncr_write(region, offset, 4, &temp);
+
+	return rc;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  ncr_or
+*/
+
+int
+ncr_or( unsigned long region, unsigned long offset, unsigned long value )
+{
+	unsigned long temp;
+	int rc = 0;
+
+	rc |= ncr_read(region, offset, 4, &temp);
+	temp |= value;
+	rc |= ncr_write(region, offset, 4, &temp);
+
+	return rc;
 }
 
 /*
@@ -228,7 +876,7 @@ ncr_register_write(const unsigned value, unsigned *address)
   ncr_modify
 */
 
-static int
+int
 ncr_modify( unsigned long region, unsigned long address, int count,
 	    void * masks, void * values )
 {
@@ -237,6 +885,9 @@ ncr_modify( unsigned long region, unsigned long address, int count,
 	command_data_register_2_t cdr2;
 	unsigned long data_word_base;
 	int wfc_timeout = WFC_TIMEOUT;
+
+	if (0 != ncr_lock(LOCK_DOMAIN))
+		return -1;
 
 	/*
 	  Set up the write.
@@ -305,6 +956,7 @@ ncr_modify( unsigned long region, unsigned long address, int count,
 
 	if (0 == wfc_timeout) {
 		printf("ncr_modify(): NCA Lockup!\n");
+		ncr_unlock(LOCK_DOMAIN);
 		return -1;
 	}
 
@@ -320,336 +972,12 @@ ncr_modify( unsigned long region, unsigned long address, int count,
 			( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
 			    0x00c00000 ) >> 22 ) );
 #endif
+		ncr_unlock(LOCK_DOMAIN);
 		return -1;
 	}
 
+	ncr_unlock(LOCK_DOMAIN);
 	return 0;
-}
-
-/*
-  ======================================================================
-  ======================================================================
-  Public Interface
-  ======================================================================
-  ======================================================================
-*/
-
-/*
-  ----------------------------------------------------------------------
-  ncr_read
-*/
-
-int
-ncr_read( unsigned long region, unsigned long address, int number )
-{
-	command_data_register_0_t cdr0;	/* 0x101.0.0xf0 */
-	command_data_register_1_t cdr1;	/* 0x101.0.0xf4 */
-	command_data_register_2_t cdr2;	/* 0x101.0.0xf8 */
-	int wfc_timeout = WFC_TIMEOUT;
-
-	/*
-	  Set up the read command.
-	*/
-
-	cdr2.raw = 0;
-
-	if( NCP_REGION_ID( 512, 1 ) != region ) {
-		cdr2.bits.target_node_id = NCP_NODE_ID( region );
-		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
-	}
-
-	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
-
-	cdr1.raw = 0;
-
-	if( NCP_REGION_ID( 512, 1 ) == region ) {
-		cdr1.bits.target_address = address;
-	} else {
-		cdr1.bits.target_address = ( address >> 2 );
-	}
-
-	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + 0xf4 ) );
-
-	cdr0.raw = 0;
-	cdr0.bits.start_done = 1;
-
-	if( 0xff == cdr2.bits.target_id_address_upper ) {
-		cdr0.bits.local_bit = 1;
-	}
-
-	if( NCP_REGION_ID( 512, 1 ) == region ) {
-		cdr0.bits.cmd_type = 0xc;
-#ifndef ACP_X1V1
-		cdr0.bits.sysmem_access_type = 2;
-#endif
-	} else {
-		cdr0.bits.cmd_type = 0x4;
-	}
-
-	/* TODO: Verify number... */
-	cdr0.bits.dbs = ( number - 1 );
-	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + 0xf0 ) );
-
-	/*
-	  Wait for completion.
-	*/
-
-	do {
-		--wfc_timeout;
-	} while( (0x80000000 ==
-		  ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-		    0x80000000 ) ) &&
-		 0 < wfc_timeout);
-
-	if (0 == wfc_timeout) {
-		printf("ncr_read(): NCA Lockup!\n");
-		return -1;
-	}
-
-	/*
-	  Check status.
-	*/
-
-	if( 0x3 != ( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-		       0x00c00000 ) >> 22 ) ) {
-		unsigned long status;
-
-		status = ncr_register_read( ( unsigned * ) ( NCA + 0xe4 ) );
-#if 0
-#ifdef NCR_TRACER
-		printf( "ncr_read( ) failed: 0x%lx 0x%lx\n",
-			( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-			    0x00c00000 ) >> 22 ),
-			status );
-#endif
-#endif
-		return status;
-	}
-
-	return 0;
-}
-
-/*
-  ------------------------------------------------------------------------------
-  ncr_read_buffer
-*/
-
-int
-ncr_read_buffer( void * buffer, unsigned long offset, int number )
-{
-	unsigned long address;
-
-	address = ( NCA + 0x1000 + offset );
-
-	while( 4 <= number ) {
-		* ( ( unsigned long * ) buffer ) =
-			ncr_register_read( ( unsigned * ) address );
-		address += 4;
-		number -= 4;
-		buffer += 4;
-	}
-
-	if( 0 < number ) {
-		unsigned long temp;
-
-		temp = ncr_register_read( ( unsigned * ) address );
-		memcpy( buffer, ( void * ) & temp, number );
-	}
-
-	return 0;
-}
-
-
-/*
-   ----------------------------------------------------------------------
-  ncr_read8
-*/
-
-int
-ncr_read8( unsigned long region, unsigned long offset, unsigned char * value )
-{
-	int rc = 0;
-
-	NCR_TRACE_READ8(region, offset);
-	rc |= ncr_read( region, offset, 1 );
-	rc |= ncr_read_buffer( value, 0, 1 );
-
-	return rc;
-}
-
-/*
-  ----------------------------------------------------------------------
-  ncr_read32
-*/
-
-int
-ncr_read32( unsigned long region, unsigned long offset, unsigned long * value )
-{
-	int rc = 0;
-
-	NCR_TRACE_READ32(region, offset);
-	rc |= ncr_read( region, offset, 4 );
-	rc |= ncr_read_buffer( value, 0, 4 );
-
-	return rc;
-}
-
-/*
-  ------------------------------------------------------------------------------
-  ncr_write_buffer
-*/
-
-int
-ncr_write_buffer( void * buffer, unsigned long offset, int number )
-{
-	unsigned long address;
-
-	address = ( NCA + 0x1000 + offset );
-
-	while( 4 <= number ) {
-		ncr_register_write( * ( ( unsigned long * ) buffer ),
-				    ( unsigned * ) address );
-		address += 4;
-		buffer += 4;
-		number -= 4;
-	}
-
-	if( 0 < number ) {
-		unsigned long temp;
-
-		memcpy( ( void * ) & temp, buffer, number );
-		ncr_register_write( temp, ( unsigned * ) address );
-	}
-
-	return 0;
-}
-
-/*
-  ----------------------------------------------------------------------
-  ncr_write
-*/
-
-int
-ncr_write( unsigned long region, unsigned long address, int number )
-{
-	command_data_register_0_t cdr0;
-	command_data_register_1_t cdr1;
-	command_data_register_2_t cdr2;
-	int dbs = ( number - 1 );
-	int wfc_timeout = WFC_TIMEOUT;
-
-	/*
-	  Set up the write.
-	*/
-
-	cdr2.raw = 0;
-
-	if( NCP_REGION_ID( 512, 1 ) != region ) {
-		cdr2.bits.target_node_id = NCP_NODE_ID( region );
-		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
-	}
-
-	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
-
-	cdr1.raw = 0;
-
-	if( NCP_REGION_ID( 512, 1 ) == region ) {
-		cdr1.bits.target_address = address;
-	} else {
-		cdr1.bits.target_address = ( address >> 2 );
-	}
-
-	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + 0xf4 ) );
-
-	cdr0.raw = 0;
-	cdr0.bits.start_done = 1;
-
-	if( 0xff == cdr2.bits.target_id_address_upper ) {
-		cdr0.bits.local_bit = 1;
-	}
-
-	if( NCP_REGION_ID( 512, 1 ) == region ) {
-		cdr0.bits.cmd_type = 0xd;
-#ifndef ACP_X1V1
-		cdr0.bits.sysmem_access_type = 2;
-#endif
-	} else {
-		cdr0.bits.cmd_type = 0x5;
-	}
-
-	/* TODO: Verify number... */
-	cdr0.bits.dbs = dbs;
-	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + 0xf0 ) );
-
-	/*
-	  Wait for completion.
-	*/
-
-	do {
-		--wfc_timeout;
-	} while( (0x80000000 ==
-		  ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-		    0x80000000 ) ) &&
-		 0 < wfc_timeout);
-
-	if (0 == wfc_timeout) {
-		printf("ncr_write(): NCA Lockup!\n");
-		return -1;
-	}
-
-	/*
-	  Check status.
-	*/
-
-	if( 0x3 !=
-	    ( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-		0x00c00000 ) >> 22 ) ) {
-		unsigned long status;
-
-		status = ncr_register_read( ( unsigned * ) ( NCA + 0xe4 ) );
-#ifdef NCR_TRACER
-		printf( "ncr_write( ) failed: 0x%lx\n",
-			( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-			    0x00c00000 ) >> 22 ) );
-#endif
-		return status;
-	}
-
-	return 0;
-}
-
-/*
-  ----------------------------------------------------------------------
-  ncp_write8
-*/
-
-int
-ncr_write8( unsigned long region, unsigned long offset, unsigned char value )
-{
-	int rc = 0;
-
-	NCR_TRACE_WRITE8(region, offset, value);
-	rc |= ncr_write_buffer( & value, 0, 1 );
-	rc |= ncr_write( region, offset, 1 );
-
-	return rc;
-}
-
-/*
-  ----------------------------------------------------------------------
-  ncp_write32
-*/
-
-int
-ncr_write32( unsigned long region, unsigned long offset, unsigned long value )
-{
-	int rc = 0;
-
-	NCR_TRACE_WRITE32(region, offset, value);
-	rc |= ncr_write_buffer( & value, 0, 4 );
-	rc |= ncr_write( region, offset, 4 );
-
-	return rc;
 }
 
 /*
@@ -663,80 +991,4 @@ ncr_modify32( unsigned long region, unsigned long offset,
 {
 	NCR_TRACE_MODIFY(region, offset, mask, value);
 	return ncr_modify( region, offset, 1, & mask, & value );
-}
-
-/*
-  ------------------------------------------------------------------------------
-  ncr_and
-*/
-
-int
-ncr_and( unsigned long region, unsigned long offset, unsigned long value )
-{
-	unsigned long temp;
-	int rc = 0;
-
-	rc |= ncr_read( region, offset, 4 );
-	rc |= ncr_read_buffer( & temp, 0, 4 );
-	temp &= value;
-	rc |= ncr_write_buffer( & temp, 0, 4 );
-	rc |= ncr_write( region, offset, 4 );
-
-	return rc;
-}
-
-/*
-  ------------------------------------------------------------------------------
-  ncr_or
-*/
-
-int
-ncr_or( unsigned long region, unsigned long offset, unsigned long value )
-{
-	unsigned long temp;
-	int rc = 0;
-
-	rc |= ncr_read( region, offset, 4 );
-	rc |= ncr_read_buffer( & temp, 0, 4 );
-	temp |= value;
-	rc |= ncr_write_buffer( & temp, 0, 4 );
-	rc |= ncr_write( region, offset, 4 );
-
-	return rc;
-}
-
-/*
-  ------------------------------------------------------------------------------
-  ncr_poll
-*/
-
-int
-ncr_poll( unsigned long region, unsigned long offset,
-	  unsigned long mask, unsigned long desired_value,
-	  unsigned long delay_time, unsigned long delay_loops )
-{
-	int i;
-	int rc = 0;
-
-	NCR_TRACE_POLL(region, delay_loops, delay_time,
-		       offset, mask, desired_value);
-
-	for( i = 0; i < delay_loops; ++ i ) {
-		unsigned long value;
-
-		rc |= ncr_read( region, offset, 4 );
-		rc |= ncr_read_buffer( & value, 0, 4 );
-
-		if( ( value & mask ) == desired_value ) {
-			break;
-		}
-
-		udelay( delay_time );
-	}
-
-	if( delay_loops == i ) {
-		return -1;
-	}
-
-	return rc;
 }

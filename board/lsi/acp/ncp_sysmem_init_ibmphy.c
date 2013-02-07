@@ -1168,13 +1168,13 @@ sm_bytelane_test(void * foo, unsigned long address, int pattern, unsigned long *
 	}
 #endif
 
-	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128 );
+	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128, NULL );
 
 	if (0 != (pattern & 0x2))
 		return 0;
 
 	/* Read back and compare. */
-	ncr_read( NCP_REGION_ID( 512, 1 ), address, 128 );
+	ncr_read( NCP_REGION_ID( 512, 1 ), address, 128, NULL );
 	NCR_TRACE("ncpRead   -w8 0.512.1.0x00%08lx 128", address);
 
 #ifdef SM_BYTELANE_TEST_DEBUG
@@ -1298,7 +1298,7 @@ sm_ecc_bytelane_test(void *foo, unsigned long region, unsigned long address,
 	}
 #endif /* SM_ECC_BYTELANE_TEST_DEBUG */
 
-	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128 );
+	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128, NULL );
 
 	/*
 	  ncr_read() returns the contents of "CFG Ring Command Error
@@ -1327,7 +1327,7 @@ sm_ecc_bytelane_test(void *foo, unsigned long region, unsigned long address,
 #endif
 
 	/* Read, Ignoring the Value Read */
-	rc = ncr_read( NCP_REGION_ID( node, 5 ), 0, 128/4 );
+	rc = ncr_read( NCP_REGION_ID( node, 5 ), 0, 128/4, NULL );
 	NCR_TRACE( "ncpRead    0.%lu.5.0x0000000000 32", node );
 
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG

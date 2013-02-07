@@ -68,6 +68,12 @@
 static struct usb_hub_device hub_dev[USB_MAX_HUB];
 static int usb_hub_index;
 
+#ifdef CONFIG_ACP3 
+int usb_reset_device_on_hub(struct usb_device *dev);
+int usb_restart_device(struct usb_device *dev);
+static int hub_port_wait_reset(struct usb_device *dev, int port,
+			unsigned int delay, unsigned short *portstatus_ret);
+#endif
 
 static int usb_get_hub_descriptor(struct usb_device *dev, void *data, int size)
 {
@@ -149,6 +155,86 @@ static inline char *portspeed(int portstatus)
 		return "12 Mb/s";
 }
 
+#ifdef CONFIG_ACP3
+/* brought this in from kernel 2.6.36 as it is a problem area. Some USB
+sticks do not operate properly with the previous reset code */
+#define PORT_RESET_TRIES	5
+#define SET_ADDRESS_TRIES	2
+#define GET_DESCRIPTOR_TRIES	2
+#define SET_CONFIG_TRIES	(2 * (use_both_schemes + 1))
+#define USE_NEW_SCHEME(i)	((i) / 2 == old_scheme_first)
+
+#define HUB_ROOT_RESET_TIME	50	/* times are in msec */
+#define HUB_SHORT_RESET_TIME	10
+#define HUB_LONG_RESET_TIME	200
+#define HUB_RESET_TIMEOUT	500
+
+#define ENOTCONN 107
+#endif
+
+#ifdef CONFIG_ACP3
+int hub_port_reset(struct usb_device *dev, int port,
+			unsigned short *portstat)
+{
+	int tries, status;
+	unsigned delay = HUB_SHORT_RESET_TIME;
+	int oldspeed = dev->speed;
+
+	/* root hub ports have a slightly longer reset period
+	 * (from USB 2.0 spec, section 7.1.7.5)
+	 */
+	if (!dev->parent) {
+		delay = HUB_ROOT_RESET_TIME;
+	}
+
+
+	/* Some low speed devices have problems with the quick delay, so */
+	/*  be a bit pessimistic with those devices. RHbug #23670 */
+	if (oldspeed == USB_SPEED_LOW)
+		delay = HUB_LONG_RESET_TIME;
+
+	USB_HUB_PRINTF("hub_port_reset: resetting port %d...\n", port);
+	for (tries = 0; tries < MAX_TRIES; tries++) {
+
+		status = usb_set_port_feature(dev, port + 1, USB_PORT_FEAT_RESET);
+		if (status)
+			USB_HUB_PRINTF("cannot reset port %d (err = %d)\n",
+					port, status);
+		else {
+			status = hub_port_wait_reset(dev, port, delay,
+						     portstat);
+			if (status && status != -ENOTCONN)
+				USB_HUB_PRINTF("port_wait_reset: err = %d\n",
+						status);
+		}
+
+		/* return on disconnect or reset */
+		switch (status) {
+		case 0:
+			/* TRSTRCY = 10 ms; plus some extra */
+			mdelay(10 + 40);
+			/* FALL THROUGH */
+		case -1:
+			/* we have finished trying to reset, so return */
+			usb_clear_port_feature(dev,
+				port + 1, USB_PORT_FEAT_C_RESET);
+			return 0;
+		}
+
+		USB_HUB_PRINTF (
+			"port %d not enabled, trying reset again...\n",
+			port);
+		delay = HUB_LONG_RESET_TIME;
+ 	}
+
+	if (tries == MAX_TRIES) {
+		USB_HUB_PRINTF("Maybe the USB cable is bad?\n");
+		return -1;
+	}
+
+	return 0;
+}
+#else
 int hub_port_reset(struct usb_device *dev, int port,
 			unsigned short *portstat)
 {
@@ -201,7 +287,7 @@ int hub_port_reset(struct usb_device *dev, int port,
 	*portstat = portstatus;
 	return 0;
 }
-
+#endif
 
 void usb_hub_port_connect_change(struct usb_device *dev, int port)
 {
@@ -477,3 +563,97 @@ int usb_hub_probe(struct usb_device *dev, int ifnum)
 	ret = usb_hub_configure(dev);
 	return ret;
 }
+
+#ifdef CONFIG_ACP3
+/* find a device's parent hub, and reset this device's port on that hub */
+int usb_reset_device_on_hub(struct usb_device *dev)
+{
+	struct usb_device *parent = dev->parent;
+	unsigned short portstatus;
+	int port = -1;
+	int err;
+
+	/* find the port number we're at */
+	if (parent) {
+		int j;
+
+		for (j = 0; j < parent->maxchild; j++) {
+			if (parent->children[j] == dev) {
+				port = j;
+				break;
+			}
+		}
+		if (port < 0) {
+			printf("usb_new_device:cannot locate device's port.\n");
+			return 1;
+		}
+
+		err = hub_port_reset(dev->parent, port, &portstatus);
+		if (err < 0) {
+			printf("\n     Couldn't reset port %i\n", port);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/* reset and restart a device that is misbehaving */
+int usb_restart_device(struct usb_device *dev)
+{
+	usb_reset_device_on_hub(dev);  /* ignore return value */
+ 	return usb_new_device(dev);
+}
+
+static int hub_port_wait_reset(struct usb_device *dev, int port,
+			unsigned int delay, unsigned short *portstatus_ret)
+{
+	int tries;
+	int delay_time, ret;
+	struct usb_port_status portsts;
+	unsigned short portstatus, portchange;
+
+
+	for (delay_time = 0;
+			delay_time < HUB_RESET_TIMEOUT;
+			delay_time += delay) {
+		/* wait to give the device a chance to reset */
+		mdelay(delay);
+
+		/* read and decode port status */
+		ret = usb_get_port_status(dev, port + 1, &portsts);
+		if (ret < 0) {
+			USB_HUB_PRINTF("get_port_status failed status %lX\n",
+					dev->status);
+			return ret;
+		}
+		portstatus = le16_to_cpu(portsts.wPortStatus);
+		portchange = le16_to_cpu(portsts.wPortChange);
+
+		/* Device went away? */
+		if (!(portstatus & USB_PORT_STAT_CONNECTION))
+			return -ENOTCONN;
+
+		/* bomb out completely if the connection bounced */
+		if ((portchange & USB_PORT_STAT_C_CONNECTION))
+			return -ENOTCONN;
+
+		/* if we`ve finished resetting, then break out of the loop */
+		if (!(portstatus & USB_PORT_STAT_RESET) &&
+		    (portstatus & USB_PORT_STAT_ENABLE)) {
+			*portstatus_ret = portstatus;
+			return 0;
+		}
+
+
+		/* switch to the long delay after two short delay failures */
+		if (delay_time >= 2 * HUB_SHORT_RESET_TIME)
+			delay = HUB_LONG_RESET_TIME;
+
+		USB_HUB_PRINTF(
+			"port %d not reset yet, waiting %dms\n",
+			port, delay);
+	}
+
+	return -1;
+}
+#endif

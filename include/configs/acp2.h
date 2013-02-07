@@ -156,12 +156,8 @@ int acp_init( void );
 #define CONFIG_SYS_ALT_MEMTEST
 #endif
 
-#ifdef ACP_EMU
+#if defined(ACP_EMU) || defined(ACP_25xx)
 #define CONFIG_LSI_TEST 1
-#endif
-
-#ifndef NCR_TRACER
-#define CONFIG_LSI_NIC 1
 #endif
 
 /* Note that this adds about 0x300 bytes. */

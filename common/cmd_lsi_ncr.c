@@ -45,6 +45,7 @@ printf( format, ##args ); \
 /*
   ======================================================================
   Local Stuff
+  ======================================================================
 */
 
 /*
@@ -62,6 +63,9 @@ int
 do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 {
 	int return_code = 1;
+	unsigned node;
+	unsigned target;
+	unsigned offset;
 
 	DEBUG_PRINT( "flag=%d argc=%d\n", flag, argc );
 
@@ -75,9 +79,6 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 #endif
 		return_code = 0;
 	} else if( 0 == strncmp( argv[1], "r", strlen( "r" ) ) ) {
-		unsigned node;
-		unsigned target;
-		unsigned offset;
 		unsigned length = 1;
 		char * token;
 		int index;
@@ -89,22 +90,37 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 		token = strsep( & ( argv [ 2 ] ), "." );
 		offset = simple_strtoul( token, NULL, 0 );
 
-		if( 4 == argc ) {
+		if( 5 == argc ) {
 			length = simple_strtoul( argv [ 3 ], NULL, 0 );
 		}
 
 		DEBUG_PRINT( "Read %d values from 0x%x.0x%x.0x%x\n",
 			     length, node, target, offset );
 
-		if( ( 0x100 > node ) || ( 0x200 == node && 1 == target ) ) {
-			for( index = 0; index < length; ++ index ) {
+		if ((0x100 > node) ||
+		    (0x200 == node && 1 == target) ||
+		    (0x115 == node && 0 == target) ||
+		    (0x115 == node && 2 == target) ||
+		    (0x115 == node && 3 == target)) {
+			for (index = 0; index < length; ++index) {
 				unsigned long value;
 
-				ncr_read32( NCP_REGION_ID( node, target ),
-					    offset, ( void * ) & value );
-				printf( "0x%x.0x%x.0x%x : 0x%lx\n",
-					node, target, offset, value );
+				ncr_read32(NCP_REGION_ID(node, target),
+					   offset, &value);
+				printf("0x%x.0x%x.0x%x : 0x%lx\n",
+				       node, target, offset, value);
 				offset += 4;
+			}
+		} else if (0x115 == node && 1 == target) {
+			for (index = 0; index < length; ++index) {
+				unsigned short value;
+
+				ncr_read16(NCP_REGION_ID(node, target),
+					   offset, &value);
+				printf("0x%x.0x%x.0x%x : 0x%x\n",
+				       node, target, offset,
+				       (unsigned long)value);
+				offset += 2;
 			}
 		} else {
 			/*
@@ -137,9 +153,6 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 
 		return_code = 0;
 	} else if( 0 == strncmp( argv[1], "w", strlen( "w" ) ) ) {
-		unsigned node;
-		unsigned target;
-		unsigned offset;
 		char * token;
 		int index;
 
@@ -150,7 +163,11 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 		token = strsep( & ( argv [ 2 ] ), "." );
 		offset = simple_strtoul( token, NULL, 0 );
 
-		if( ( 0x100 > node ) || ( 0x200 == node && 1 == target ) ) {
+		if ((0x100 > node) ||
+		    (0x200 == node && 1 == target) ||
+		    (0x115 == node && 0 == target) ||
+		    (0x115 == node && 2 == target) ||
+		    (0x115 == node && 3 == target)) {
 			for( index = 0; index < ( argc - 3 ); ++ index ) {
 				unsigned long value;
 
@@ -158,8 +175,21 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 				  simple_strtoul( argv [ 3 + index ], NULL, 0 );
 				DEBUG_PRINT( "Writing 0x%lx to 0x%x.0x%x.0x%x\n",
 					     value, node, target, offset );
-				ncr_write32( NCP_REGION_ID( node, target ),
-					     offset, value );
+				ncr_write32(NCP_REGION_ID(node, target),
+					    offset, value );
+				offset += 4;
+			}
+		} else if (0x115 == node && 1 == target) {
+			for( index = 0; index < ( argc - 3 ); ++ index ) {
+				unsigned short value;
+
+				value =
+				  simple_strtoul( argv [ 3 + index ], NULL, 0 );
+				DEBUG_PRINT( "Writing 0x%lx to 0x%x.0x%x.0x%x\n",
+					     value, node, target, offset );
+				ncr_write16(NCP_REGION_ID(node, target),
+					    offset,
+					    (unsigned short)(value & 0xffff));
 				offset += 4;
 			}
 		} else {
@@ -180,12 +210,12 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 			}
 
 			if( 0 == return_code ) {
-				for( index = 0; index < ( argc - 3 );
+				for( index = 0; index < ( argc - 4 );
 				     ++ index ) {
 					unsigned long value;
 
 					value =
-					  simple_strtoul( argv [ 3 + index ],
+					  simple_strtoul( argv [ 4 + index ],
 							  NULL, 0 );
 					DEBUG_PRINT( "Writing 0x%lx to 0x%x." \
 						     "0x%x.0x%x <0x%x>\n",
@@ -218,10 +248,9 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 U_BOOT_CMD( ncr, 5, 0, do_ncr,
 	    "ncr help|read|write [arguments]\n",
 	    "h,elp\n" \
-	    "r,ead node.target.offset width number\n" \
+	    "r,ead node.target.offset number\n" \
 	    "\tread number values of width bytes from node.target.offset\n" \
 	    "w,rite node.target.offset width value\n" \
 	    "\twrite value of size width bytes to node.target.offset\n" );
-
 
 #endif /* CONFIG_ACP */

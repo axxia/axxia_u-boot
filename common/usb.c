@@ -216,10 +216,21 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe,
 int usb_bulk_msg(struct usb_device *dev, unsigned int pipe,
 			void *data, int len, int *actual_length, int timeout)
 {
+#ifdef CONFIG_ACP3
+	int err;
+#endif
+
 	if (len < 0)
 		return -1;
 	dev->status = USB_ST_NOT_PROC; /*not yet processed */
+#ifdef CONFIG_ACP3
+	err = submit_bulk_msg(dev, pipe, data, len);
+	if (err < 0) {
+		return err;
+	}
+#else
 	submit_bulk_msg(dev, pipe, data, len);
+#endif
 	while (timeout--) {
 		if (!((volatile unsigned long)dev->status & USB_ST_NOT_PROC))
 			break;
@@ -413,9 +424,15 @@ int usb_clear_halt(struct usb_device *dev, int pipe)
 	int result;
 	int endp = usb_pipeendpoint(pipe)|(usb_pipein(pipe)<<7);
 
+#ifdef CONFIG_ACP3
+	result = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+				 USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT, 0,
+				 endp, NULL, 0, USB_CNTL_TIMEOUT);
+#else
 	result = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
 				 USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT, 0,
 				 endp, NULL, 0, USB_CNTL_TIMEOUT * 3);
+#endif
 
 	/* don't clear if failed */
 	if (result < 0)

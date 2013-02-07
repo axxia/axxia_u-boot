@@ -95,8 +95,7 @@ typedef ncp_st_t
         ncp_sm_parms_t             *parms);
 
 
-#define SM_REG_DUMP
-
+/*#define SM_REG_DUMP*/
 #ifdef SM_REG_DUMP
 
 static ncp_st_t 
@@ -851,6 +850,11 @@ ncp_sm_lsiphy_static_init(
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR1_ADRIOSET, *(ncp_uint32_t *) &adrioset);
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR2_ADRIOSET, *(ncp_uint32_t *) &adrioset);
 
+#if 0
+    dpiovrefset.sldm   = 3;
+    dpiovrefset.sldqs  = 3;
+    dpiovrefset.sldq   = 3;
+#endif
     dpiovrefset.drvdq  = parms->phy_dat_imp;
     dpiovrefset.drvdqs = parms->phy_dat_imp;
     dpiovrefset.drvdm  = parms->phy_dat_imp;
@@ -1054,11 +1058,6 @@ ncp_sm_sysmem_phy_training_run(
         }
 #endif
 
-
-    	/* Clear any errors for the next iteration */
-    	ncr_read32( ctlRegion, NCP_DENALI_CTL_260, & value );
-        ncr_write32( ctlRegion, NCP_DENALI_CTL_89, value);
-
         trainLoops++;
     }
 
@@ -1105,17 +1104,6 @@ ncp_sm_sysmem_phy_training_run(
             ncr_modify32( phyRegion, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG2_BL(i), mask, value );
         }
 
-    }
-
-    if (mode == NCP_SYSMEM_PHY_WRITE_LEVELING) 
-    {
-    	/* Check the interrupt status. */
-    	ncr_read32( ctlRegion, NCP_DENALI_CTL_260, & value );
-        ncr_write32( ctlRegion, NCP_DENALI_CTL_89, value);
-        if (value & 0x00004000) {
-            /* a write leveling error occurred */
-            NCP_CALL(NCP_ST_SYSMEM_PHY_WR_LVL_ERR); 
-        }
     }
 
 
@@ -1617,7 +1605,7 @@ sm_bytelane_test(ncp_dev_hdl_t dev, unsigned long address, int pattern,
 
     /* write it out and save the comparison value from the write buffer*/
 #ifdef UBOOT
-	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128 );
+	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128, NULL );
     compare_value = *p8;
 #else 
 
@@ -1632,7 +1620,7 @@ sm_bytelane_test(ncp_dev_hdl_t dev, unsigned long address, int pattern,
 
 	/* Read back and compare. */
 #ifdef UBOOT
-	ncr_read( NCP_REGION_ID( 512, 1 ), address, 128 );
+	ncr_read( NCP_REGION_ID( 512, 1 ), address, 128, NULL );
 	NCR_TRACE("ncpRead   -w8 0.512.1.0x00%08lx 128\n", address);
     pTmp = p32;
 #else 
@@ -1681,7 +1669,6 @@ sm_bytelane_test(ncp_dev_hdl_t dev, unsigned long address, int pattern,
     		++j;
     	}
     } else {
-        /* TODO!! implement full buffer compare for uboot */
 #ifndef UBOOT
         if (memcmp(rbuf, wbuf, NCP_SM_BURST_SIZE)) {
             *bad_bl_bad = 0x1ff;
@@ -1816,7 +1803,7 @@ sm_ecc_bytelane_test(ncp_dev_hdl_t dev, unsigned long region, unsigned long addr
 	}
 #endif /* SM_ECC_BYTELANE_TEST_DEBUG */
 
-	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128 );
+	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128, NULL );
 
 
 #else 
@@ -1855,7 +1842,7 @@ sm_ecc_bytelane_test(ncp_dev_hdl_t dev, unsigned long region, unsigned long addr
      * This may fail if the ECC bytelane is out of level
      */
 #ifdef UBOOT
-	rc = ncr_read( NCP_REGION_ID( node, 5 ), (address >> 2), 128/4 );
+        rc = ncr_read( NCP_REGION_ID( node, 5 ), (address >> 2), 128/4, NULL );
 	NCR_TRACE( "ncpRead    0.%lu.5.0x%010x 32\n", node, (address >> 2) );
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG
 	{

@@ -96,7 +96,23 @@
 #define CONFIG_SYS_PCIE_NR_PORTS 3
 #endif
 
-
+#if !defined(ACP_25xx) && !defined(USE_HOSTCC)
+/* USB support */
+#if 0
+#define CONFIG_CMD_USB 1
+#define CONFIG_USB_EHCI 1
+#define CONFIG_USB_STORAGE 1
+#define CONFIG_CMD_USB_STORAGE 1
+#define CONFIG_USB_ULPI 1
+#define CONFIG_USB_ULPI_VIEWPORT 1
+#define CONFIG_CMD_FAT 1
+#define CONFIG_CMD_EXT2 1
+#define CONFIG_DOS_PARTITION 1
+#define CONFIG_SYS_PPC4XX_USB_ADDR (IO+0xA0000)
+#define CONFIG_EHCI_IS_TDI 1
+#define CONFIG_LSI_USB 1
+#endif
+#endif
 
 /*
   ----------------------------------------------------------------------
@@ -130,9 +146,9 @@
 #ifdef ACP_ISS
 #define CFG_MALLOC_LEN      ((2 * 1024 * 1024) - (64 * 1024))
 #else
-#define CFG_MALLOC_LEN      (2 * 1024 * 1024)
+#define CFG_MALLOC_LEN      0x200000
 #endif
-#define CFG_STACK_BASE      0x00200000
+#define CFG_STACK_BASE      (0x00400000 - CFG_MALLOC_LEN)
 #define CFG_INIT_RAM_END    0x4000 /* This is really the size... */
 #define CFG_INIT_RAM_ADDR0  (CFG_STACK_BASE - 0x0000)
 #define CFG_INIT_RAM_ADDR1  (CFG_STACK_BASE - 0x4000)
@@ -234,10 +250,10 @@ unsigned long *get_acp_fdt(int);
 #define ACP_MAX_CORES 4
 #if defined(CONFIG_ACP_342X) || defined(ACP_25xx)
 #define ACP_NR_CORES 2
-#define OS_GROUP0_DEFAULT "0xffffff31:0:0x100"
+#define OS_GROUP0_DEFAULT "0xd31:0:0x100"
 #else
 #define ACP_NR_CORES 4
-#define OS_GROUP0_DEFAULT "0xfffffff1:0:0x100"
+#define OS_GROUP0_DEFAULT "0xdf1:0:0x100"
 #endif
 #define OS_MEMORY_DEFAULT 0x100
 
@@ -434,6 +450,7 @@ int eioa_ethernet_configure(void);
 #define APP3XXNIC_RX_BASE  (IO+0x80000)
 #define APP3XXNIC_TX_BASE  (IO+0x81000)
 #define APP3XXNIC_DMA_BASE (IO+0x82000)
+#define CONFIG_NET_DO_NOT_TRY_ANOTHER
 
 /*
   ======================================================================
@@ -447,7 +464,6 @@ int eioa_ethernet_configure(void);
 #define NULL ((void *)0)
 #define FALSE 0
 #define TRUE (!FALSE)
-#define NCP_BIG_ENDIAN
 #define NCP_TASKIO_UBOOT_ENV
 
 /*
@@ -470,7 +486,6 @@ int eioa_ethernet_configure(void);
 #endif
 
 #define CONFIG_LSI_OSG 1
-#define CONFIG_LSI_NIC 1
 #define CONFIG_MTD_DEVICE 1
 #define CONFIG_CMD_MTDPARTS 1
 #define CONFIG_LSI_TEST 1

@@ -174,12 +174,16 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 
 		break;
 	case ppc:
+#ifdef PPC_RUN_ON_REF
+		*frequency = CLK_REF0 / 1000;
+#else
 		gcr = dcr_read(0xd00);
 
 		if (0 == (gcr & 0xc0000000))
 			*frequency = CLK_REF0 / 1000;
 		else
 			*frequency = PPC_PLL_FREQ / 1000;
+#endif
 		break;
 	default:
 		return -1;

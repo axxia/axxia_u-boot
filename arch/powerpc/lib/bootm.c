@@ -592,9 +592,9 @@ do_bootm_uboot(int flag, int argc, char *argv[], bootm_headers_t *images)
 
 	uboot = (void (*)(void))images->ep;
 #ifdef ACP
-	__asm__ __volatile__ ("mtspr          26,%0\n" \
-			      "mfmsr          6\n"     \
+	__asm__ __volatile__ ("lis            6,0\n"   \
 			      "mtspr          27,6\n"  \
+			      "mtspr          26,%0\n" \
 			      "iccci          %0,%0\n" \
 			      "dccci          %0,%0\n" \
 			      "rfi\n" : :

@@ -1332,6 +1332,20 @@ acp_init_r( void )
 	cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
 #endif
 
+	/*
+	  Enable Machine Checks.
+	*/
+
+	{
+		unsigned long value;
+
+		__asm__ __volatile__ ("mfspr %0,0x23c" : "=r" (value));
+		__asm__ __volatile__ ("mtspr 0x33c,%0" : : "r" (value));        
+		__asm__ __volatile__ ("mfmsr %0" : "=r" (value));
+		value |= 0x1000;
+		__asm__ __volatile__ ("mtmsr %0" : : "r" (value));
+	}
+
 	/* Set up the environment */
 	if( 0 != env_init( ) ) {
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
@@ -1583,14 +1597,109 @@ acp_init_r( void )
 	serial_init();
 	acp_splash();
 
-#ifdef CONFIG_ACP3
+#ifdef ACP_25xx
 	{
-		unsigned long phy_ctl0;
+		unsigned long ncp_denali_ctl_20;
+		unsigned long ncp_denali_ctl_31;
+		unsigned long debug;
 
-		phy_ctl0 = acpreadio((void *)GPREG_PHY_CTRL0);
- 
-		if (0 != (phy_ctl0 & 0x1000))
-			pci_init_board();
+		ncr_read32(NCP_REGION_ID(0x22, 0), 0x50, &ncp_denali_ctl_20);
+		ncr_read32(NCP_REGION_ID(0x22, 0), 0x7c, &ncp_denali_ctl_31);
+		ncr_read32(NCP_REGION_ID(0x20, 0), 0x100, &debug);
+
+		printf("\nAXM2500 Settings\n"
+		       "PPC PLL: %dMHz\n"
+		       "NCR RWM Delay : %dus\n"
+		       "After PLL Init Delay : %dus\n"
+		       "ECC : %s\n"
+		       "Memory : %s\n"
+		       "SysCache : %s\n"
+		       "Reset : %s\n\n",
+#ifdef PPC_RUN_ON_REF
+		       125,
+#else
+		       (PPC_PLL_FREQ / 1000000),
+#endif
+#ifdef EXTRA_SYSMEM_INIT_UDELAY
+		       EXTRA_SYSMEM_INIT_UDELAY,
+#else
+		       0,
+#endif
+#ifdef UDELAY_AFTER_PLL_INIT
+		       UDELAY_AFTER_PLL_INIT,
+#else
+		       0,
+#endif
+		       (0x300 ==
+			(ncp_denali_ctl_20 & 0x300)) ? "On" : "Off",
+		       (0x300 ==
+			(ncp_denali_ctl_31 & 0x300)) ? "Dual" : "Single",
+		       (0x1 ==
+			(debug & 0x1)) ? "Disabled" : "Enabled",
+#ifdef DISABLE_RESET
+		       "Disabled"
+#else
+		       "Enabled"
+#endif
+		       );
+	}
+#endif
+
+#ifdef CONFIG_ACP3
+	/*
+	  Only set up PCI when in internal boot mode, in control of
+	  one of the PEIs, and the root complex.
+	*/
+
+	{	
+		int boot_mode;
+		unsigned long control;
+		int pci_rc = 0;
+		int group;
+		int pei_mask = 0;
+	
+		group = acp_osg_get_group(core);
+
+#if defined(ACP_25xx)
+		control = dcr_read(0xd0f);
+		boot_mode = (control & 0x100) >> 8;
+		if (0 != ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &control)) {
+			printf("Error Reading PHY Control: "
+			       "Skipping PCI setup.\n");
+			control = 0;
+		}
+
+		if (0 != (control & 0x00400000) &&
+		    0 != acp_osg_group_get_res(group, ACP_OS_PCIE0)) {
+			pci_rc = 1;
+			pei_mask |= 1;
+		}
+
+		if (0 != (control & 0x00080000) &&
+		    0 != acp_osg_group_get_res(group, ACP_OS_PCIE1)) {
+			pci_rc = 1;
+			pei_mask |= 2;
+		}
+#else
+		control = dcr_read(DCR_RESET_BASE);
+		boot_mode = (control & 0x80000000) >> 31;
+		control = acpreadio((void *)GPREG_PHY_CTRL0);
+
+		if (0 != (control & 0x1000) &&
+		    0 != acp_osg_group_get_res(group, ACP_OS_PCIE0)) {
+			pci_rc = 1;
+			pei_mask |= 1;
+		}
+#endif
+
+		if (0 == boot_mode && 1 == pci_rc) {
+			if (1 == pei_mask) {
+				pci_init_board();
+			} else {
+				printf("The ONLY supported configuration is"
+				       "PEI0 in root complex mode!\n");
+			}
+		}
 	}
 #endif
 

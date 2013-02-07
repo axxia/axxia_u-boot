@@ -916,15 +916,14 @@ acp_mem_init:
 	#; Exception Handlers
 	#; ------------------------------------------------------------
 
-#define ACP_UNHANDLED_EXCEPTION(name, number)        \
+#define ACP_UNHANDLED_EXCEPTION(name, number)  \
 	.global		acp_##name;            \
 	.align		4;                     \
 acp_##name:;                                   \
 	mtspr		sprg3,r3;              \
-	mtspr		sprg4,r4;              \
 	li		r3,number;             \
-	mfspr		r4,srr0;               \
-	mflr		r5;                    \
+	mtspr		sprg4,r4;              \
+	mflr		r4;                    \
 	bl		acp_failure_exception
 
 	.section	.text
@@ -943,8 +942,13 @@ acp_start_of_vectors:
 	#; Machine Check
 	#; ------------------------------------------------------------
 
-	ACP_UNHANDLED_EXCEPTION(machine_check, 1)
-
+	.global         acp_machine_check
+	.align          4
+acp_machine_check:
+	mtspr           sprg3,r3
+	mflr            r3
+	bl              acp_failure_machine_check
+ 
 	#; ------------------------------------------------------------
 	#; Data Storage
 	#; ------------------------------------------------------------

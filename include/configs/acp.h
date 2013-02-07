@@ -119,12 +119,10 @@ unsigned long get_sysmem_size( void );
 ( unsigned long ) ( ( ( ( node ) & 0xffff ) << 16 ) | ( ( target ) & 0xffff ) )
 #define NCP_NODE_ID( region ) ( ( ( region ) >> 16 ) & 0xffff )
 #define NCP_TARGET_ID( region ) ( ( region ) & 0xffff )
-int ncr_read( unsigned long, unsigned long, int );
-int ncr_read_buffer( void *, unsigned long, int );
+int ncr_read(unsigned long, unsigned long, int, void *);
 int ncr_read8( unsigned long, unsigned long, unsigned char * );
 int ncr_read32( unsigned long, unsigned long, unsigned long * );
-int ncr_write_buffer( void *, unsigned long, int );
-int ncr_write( unsigned long, unsigned long, int );
+int ncr_write(unsigned long, unsigned long, int, void *);
 int ncr_write8( unsigned long, unsigned long, unsigned char );
 int ncr_write32( unsigned long, unsigned long, unsigned long );
 int ncr_modify32( unsigned long, unsigned long, unsigned long, unsigned long );
@@ -588,12 +586,16 @@ void acp_eioa_loopback_test(void);
 /*
   ======================================================================
   ======================================================================
-  Errata
+  25xx Bring Up Test...
   ======================================================================
   ======================================================================
 */
 
-/*#define PPC_RUN_ON_REF*/
+#ifdef ACP_25xx
+
+/*
+#define PPC_RUN_ON_REF
+*/
 
 /*
 #define PPC_PLL_FREQ 1100000000
@@ -608,9 +610,25 @@ void acp_eioa_loopback_test(void);
 #define PPC_PLL_FREQ  800000000
 #define PPC_PLL_PARAMETER 0xa02405d2
 
-#define SYSTEM_BOOTCORE 0
-
 /*#define DISABLE_CORE_1*/
+
+/*#define EXTRA_SYSMEM_INIT_UDELAY 5000*/
+
+/*#define UDELAY_AFTER_PLL_INIT 1000000*/
+
+/*#define DISABLE_RESET*/
+
+#endif	/* ACP_25xx */
+
+/*
+  ======================================================================
+  ======================================================================
+  Errata
+  ======================================================================
+  ======================================================================
+*/
+
+#define SYSTEM_BOOTCORE 0
 
 /*
   The 1st stage leaves both L1 caches disabled and all memory in the
@@ -646,8 +664,6 @@ void acp_eioa_loopback_test(void);
 int acp_clock_lock_verify(int, int);
 #endif
 
-#define CONFIG_NET_DO_NOT_TRY_ANOTHER 1
-
 #if defined(ACP_X1V1)
 #define CCR0_DEFAULT 0x01604040
 #define CCR1_DEFAULT 0x00000400
@@ -674,7 +690,7 @@ int acp_clock_lock_verify(int, int);
 #ifndef __ASSEMBLY__
 #define mb() {__asm__ __volatile__ ("sync" : : : "memory");}
 void acp_failure( const char *, const char *, const int );
-void acp_failure_exception( unsigned long, unsigned long, unsigned long );
+void acp_failure_exception(unsigned long, unsigned long);
 void acp_failure_enable_console(void);
 void acp_failure_disable_console(void);
 extern unsigned long perf_clock;

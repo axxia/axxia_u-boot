@@ -164,10 +164,10 @@ SECTIONS
   PROVIDE (_bss_start = .);
   .bss (NOLOAD)       :
   {
-   *(.sbss*)
-   *(.scommon*)
-   *(.dynbss*)
-   *(.bss*)
+   *(.sbss)
+   *(.scommon)
+   *(.dynbss)
+   *(.bss)
    *(COMMON)
   }
   . = ALIGN(256);
