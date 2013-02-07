@@ -68,7 +68,11 @@ extern int dumprx;
 extern int dumptx;
 
 static int port_by_index[] = {1, 2, 3, 4, 9, 10, 11, 12};
+#ifdef ACP_25xx
+static int phy_by_index[] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17};
+#else
 static int phy_by_index[] = {0x10, 0x11, 0x12, 0x13, 0x18, 0x19, 0x1a, 0x1b};
+#endif
 static int index_by_port[] = {-1, 0, 1, 2, 3, -1, -1, -1, -1, 4, 5, 6, 7};
 
 #define NUMBER_OF_RX_BUFFERS 15
@@ -101,7 +105,8 @@ typedef enum {
 	NCR_COMMAND_WRITE,
 	NCR_COMMAND_READ,
 	NCR_COMMAND_MODIFY,
-	NCR_COMMAND_USLEEP
+	NCR_COMMAND_USLEEP,
+	NCR_COMMAND_POLL
 } ncr_command_code_t;
 
 typedef struct {
@@ -116,22 +121,116 @@ typedef struct {
 #include "EIOA344x/mmb.c"
 #include "EIOA344x/vp.c"
 #include "EIOA344x/nca.c"
-#include "EIOA344x/eioa0.c"
-#include "EIOA344x/eioa1.c"
+#include "EIOA344x/eioa.c"
 #elif defined(CONFIG_ACP_342X)
 #include "EIOA342x/mmb.c"
 #include "EIOA342x/vp.c"
 #include "EIOA342x/nca.c"
-#include "EIOA342x/eioa0.c"
-#include "EIOA342x/eioa1.c"
+#include "EIOA342x/eioa.c"
 #elif defined(ACP_25xx)
 #include "EIOA25xx/mmb.c"
 #include "EIOA25xx/vp.c"
 #include "EIOA25xx/nca.c"
-#include "EIOA25xx/eioa0.c"
-#include "EIOA25xx/eioa1.c"
+#include "EIOA25xx/eioa.c"
 #else
 #error "EIOA is not defined for this architecture!"
+#endif
+
+#ifdef ACP_25xx
+/*
+  ------------------------------------------------------------------------------
+  ncp_1d1_read
+*/
+
+static int
+ncp_1d1_read(ncr_command_t *command, unsigned long *data)
+{
+	unsigned long target;
+	unsigned long base;
+	unsigned long timeout = 0x100000;
+	unsigned long value;
+
+	target = NCP_TARGET_ID(command->region);
+	base = IO + 0x3000 + (target * 0x10);
+
+	WRITEL(value, base);
+
+	if (5 == target || 7 == target || 9 == target) {
+		/* 32 bit */
+		WRITEL((0x81400000 + command->offset), (base + 4));
+	} else if (4 == target || 6 == target || 8 == target) {
+		/* 16 bit */
+		WRITEL((0x80c00000 + command->offset), (base + 4));
+	}
+
+	do {
+		--timeout;
+		value = READL(base + 4);
+	} while (0 != (value & 0x80000000) && 0 < timeout);
+
+	if (0 == timeout) {
+		printf("ncp_1d1_read() timed out!\n");
+		return -1;
+	}
+
+	value = READL(base + 0xc);
+
+	if (0 != value) {
+		printf("ncp_1d1_read() error!\n");
+		return -1;
+	}
+
+	*data = READL(base + 0x8);
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  ncp_1d1_write
+*/
+
+static int
+ncp_1d1_write(ncr_command_t *command)
+{
+	unsigned long target;
+	unsigned long base;
+	unsigned long timeout = 0x100000;
+	unsigned long value;
+
+	target = NCP_TARGET_ID(command->region);
+	base = IO + 0x3000 + (target * 0x10);
+
+	WRITEL(command->value, base);
+
+	if (5 == target || 7 == target || 9 == target) {
+		/* 32 bit */
+		WRITEL((0xc1400000 + command->offset), (base + 4));
+	} else if (4 == target || 6 == target || 8 == target) {
+		/* 16 bit */
+		WRITEL((0xc0c00000 + command->offset), (base + 4));
+	}
+
+	do {
+		--timeout;
+		value = READL(base + 4);
+	} while (0 != (value & 0x80000000) && 0 < timeout);
+
+	if (0 == timeout) {
+		printf("ncp_1d1_write() timed out!\n");
+		return -1;
+	}
+
+	value = READL(base + 0xc);
+
+	if (0 != value) {
+		printf("ncp_1d1_write() error!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 #endif
 
 /*
@@ -142,11 +241,16 @@ typedef struct {
 static int
 ncp_dev_reset(void)
 {
+	unsigned long value;
+
 	DEBUG_PRINT("\n");
 
 	/*
 	  Reset Modules
+	*/
 
+#if defined(ACP_X1V2)
+	/*
 	  asp, nca, eioa0, eioa1, eioa_phy2, eioa_phy1, eioa_phy0
 	*/
 
@@ -154,6 +258,43 @@ ncp_dev_reset(void)
 	udelay(10000);
 	dcr_write(0, (DCR_RESET_BASE + 2));
 	udelay(10000);
+#elif defined(CONFIG_ACP_342X)
+	/*
+	  asp, nca, eioa0, eioa1, eioa_phy2, eioa_phy0
+	*/
+
+	dcr_write(0xcc500000, (DCR_RESET_BASE + 2));
+	udelay(10000);
+	dcr_write(0, (DCR_RESET_BASE + 2));
+	udelay(10000);
+#elif defined(ACP_25xx)
+	/*
+	  Enable protected writes.
+	*/
+
+	value = dcr_read(0xd00);
+	value |= 0xab;
+	dcr_write(value, 0xd00);
+
+	/*
+	  asp_rst, tmgr_nca_rst, tmc_rst, eioa_io_rst, xfi_phy_rst,
+	  eioa_phy1_rst, eioa_phy0_rst, nrcp_rst
+	*/
+
+	dcr_write(0xd8380010, 0x1703);
+	udelay(10000);
+	dcr_write(0, 0x1703);
+	udelay(10000);
+
+	/*
+	  Disable protected writes.
+	*/
+
+	value = dcr_read(0xd00);
+	value &= ~0xab;
+	dcr_write(value, 0xd00);
+#else
+#endif
 
 	return 0;
 }
@@ -170,6 +311,10 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 		*value = readl(command->offset);
 
 		return 0;
+#ifdef ACP_25xx
+	} else if(0x1d1 == NCP_NODE_ID(command->region)) {
+		return ncp_1d1_read(command, value);
+#endif
 	}
 
 	if (0x100 <= NCP_NODE_ID(command->region)) {
@@ -251,19 +396,23 @@ ncp_dev_do_modify(ncr_command_t *command)
 static int
 ncp_dev_do_write(ncr_command_t *command)
 {
-#if !defined(ACP_25xx)
 	DEBUG_PRINT(" WRITE: r=0x%lx o=0x%lx v=0x%lx\n",
 		    command->region, command->offset, command->value);
 
-	if (NCP_REGION_ID(328, 0) == command->region) {
+	if (NCP_REGION_ID(0x200, 1) == command->region) {
+		out_be32((volatile unsigned *)command->offset, command->value);
+		flush_cache(command->offset, 4);
+#ifndef ACP_25xx
+	} else if (NCP_REGION_ID(0x148, 0) == command->region) {
 		out_le32((volatile unsigned *)(APB2RC + command->offset),
 			 command->value);
 		flush_cache((APB2RC + command->offset), 4);
-	} else if (NCP_REGION_ID(512, 1) == command->region) {
-		out_be32((volatile unsigned *)command->offset, command->value);
-		flush_cache(command->offset, 4);
+#else
+	} else if (0x1d1 == NCP_NODE_ID(command->region)) {
+		return ncp_1d1_write(command);
+#endif
 	} else if (0x100 > NCP_NODE_ID(command->region)) {
-		if (NCP_REGION_ID(23, 17) == command->region &&
+		if (NCP_REGION_ID(0x17, 0x11) == command->region &&
 		    0x11c == command->offset) {
 			return 0;
 		}
@@ -295,7 +444,36 @@ ncp_dev_do_write(ncr_command_t *command)
 		return 0;
 	}
 
-#endif
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  ncp_dev_do_poll
+*/
+
+static int
+ncp_dev_do_poll(ncr_command_t *command)
+{
+	int timeout = 1000;
+	int delay = 1000;
+	unsigned long value;
+
+	do {
+		udelay(delay);
+
+		if (0 != ncp_dev_do_read(command, &value)) {
+			printf("ncp_dev_do_read() failed!\n");
+			return -1;
+		}
+	} while (((value & command->mask) != command->value) &&
+		 0 < --timeout);
+
+	if (0 == timeout) {
+		printf("ncp_dev_do_poll() timed out!\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -311,18 +489,21 @@ ncp_dev_configure(ncr_command_t *commands) {
 
 	while (NCR_COMMAND_NULL != commands->command) {
 		switch (commands->command) {
+		case NCR_COMMAND_WRITE:
+			rc = ncp_dev_do_write(commands);
+			break;
 		case NCR_COMMAND_READ:
 			rc = ncp_dev_do_read(commands, &value);
 			break;
 		case NCR_COMMAND_MODIFY:
 			rc = ncp_dev_do_modify(commands);
 			break;
-		case NCR_COMMAND_WRITE:
-			rc = ncp_dev_do_write(commands);
-			break;
 		case NCR_COMMAND_USLEEP:
 			DEBUG_PRINT("USLEEP: v=0x%lx\n", commands->value);
 			udelay(commands->value);
+			break;
+		case NCR_COMMAND_POLL:
+			rc = ncp_dev_do_poll(commands);
 			break;
 		default:
 			ERROR_PRINT("Unknown Command: 0x%x\n",
@@ -803,6 +984,20 @@ line_setup(int index)
 		NCR_CALL(ncr_modify32(gmacRegion, 0x330 + gmacPortOffset,
 				      0x3f, 0x09));
 
+#ifdef ACP_25xx
+	control = mdio_read(phy_by_index[index], 0x17);
+	control |= 0x2000;
+	mdio_write(phy_by_index[index], 0x17, control);
+
+	control = mdio_read(phy_by_index[index], 0x1b);
+	control |= 0x7000;
+	mdio_write(phy_by_index[index], 0x1b, control);
+
+	mdio_write(0x17, 0x00, 0x8000);
+
+	udelay(10);
+#endif
+
 	return 0;
 
  ncr_exit:
@@ -881,7 +1076,7 @@ initialize_task_lite(void)
 							alloc_nvm,
 							free_nvm,
 							va2pa));
-	NCP_CALL_LITE(ncp_task_lite_uboot_config());
+	NCP_CALL_LITE(ncp_task_lite_uboot_config(NULL));
 	NCP_CALL_LITE(ncp_task_lite_hdl_create(0,
 					       (ncp_uint8_t)queueSetId,
 					       &taskLiteHdl));
@@ -903,13 +1098,8 @@ initialize_task_lite(void)
 						     rx_buffers[i], 3);
 	}
 
-	if (0 != ncp_dev_configure(eioa0)) {
-		WARN_PRINT("EIOA0 Configuration Failed\n");
-		return -1;
-	}
-
-	if (0 != ncp_dev_configure(eioa1)) {
-		WARN_PRINT("EIOA1 Configuration Failed\n");
+	if (0 != ncp_dev_configure(eioa)) {
+		WARN_PRINT("EIOA Configuration Failed\n");
 		return -1;
 	}
 

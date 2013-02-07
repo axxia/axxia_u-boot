@@ -894,7 +894,16 @@ ncp_sm_lsiphy_static_init(
 
     phyconfig1.rdranksw  = 0; /* TODO: Do these need to be set later on?? */
     phyconfig1.wrranksw  = 0;
-    phyconfig1.wrlatrank = 5;
+    /*phyconfig1.wrlatrank = 5;*/
+    /*
+      write latency - 3 - casx - 2 * rank high freq
+
+      casx = 1
+      rank high freq = 0
+
+      In our case 4
+     */
+    phyconfig1.wrlatrank = 4;
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG1, 
                         *(ncp_uint32_t *) &phyconfig1);
 
@@ -1679,8 +1688,8 @@ NCP_RETURN_LABEL
     return ncpStatus;
 }
 
+#if defined(UBOOT) || defined(NCP_SM_WRLVL_DUP)
 
-#ifdef NCP_SM_WRLVL_DUP
 /* 
  *  copy a set of write levling registers
  *  from one rank to another
@@ -1748,11 +1757,10 @@ NCP_RETURN_LABEL
 
     return ncpStatus;
 }
-#endif
 
+#endif	/* UBOOT || NCP_SM_WRLVL_DUP */
 
-
-/* #define SM_BYTELANE_TEST_DEBUG */
+/*#define SM_BYTELANE_TEST_DEBUG*/
 
 /*
  *------------------------------------------------------------------------------
@@ -2942,6 +2950,28 @@ ncp_sysmem_init_lsiphy(
                 if (do_wr_lvl) {
                     /* fine write leveling */
                     /* printf("wrlvl smId %d rank %d\n", smId, rank); */
+#ifdef UBOOT
+		    unsigned long rcfg;
+
+		    rcfg = dcr_read(0xd0f);
+
+		    if (0 != (rcfg & 0x1000)) {
+                        printf("Duplicating Write Leveling!\n");
+
+		        if (rank > 0 ) {
+			    NCP_CALL(ncp_sm_lsiphy_wrlvl_dup(dev, smId, 0, 1));
+			} else {
+				NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId,
+				    rank, 0, NCP_SYSMEM_PHY_WRITE_LEVELING,
+				    parms));
+			}
+		    } else {
+                        printf("Not Duplicating Write Leveling!\n");
+		        NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId,
+			    rank, 0, NCP_SYSMEM_PHY_WRITE_LEVELING,
+			    parms));
+		    }
+#else
 #ifdef NCP_SM_WRLVL_DUP
                     if (rank > 0 ) 
                     {
@@ -2954,6 +2984,7 @@ ncp_sysmem_init_lsiphy(
                              NCP_SYSMEM_PHY_WRITE_LEVELING,
                              parms));
                     }
+#endif
                 }
 
                 if (do_gt_trn) {

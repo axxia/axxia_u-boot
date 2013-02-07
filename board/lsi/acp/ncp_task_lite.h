@@ -291,7 +291,7 @@ ncp_task_lite_uboot_register_allocators(
  *
 */	
 NCP_API ncp_st_t
-ncp_task_lite_uboot_config(); 
+ncp_task_lite_uboot_config(ncp_dev_t *);
 #endif
 
 /*!

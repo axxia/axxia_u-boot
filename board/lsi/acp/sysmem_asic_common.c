@@ -348,6 +348,11 @@ sysmem_init(void)
 
 		if (rc != 0) {
 		  printf("*** Sysmem Init Failed ***\n");
+		  printf("0x18e.0.0xc: 0x%08x\n",
+			 dcr_read(0x1703));
+		  printf("0x18d.4.0x0: 0x%08x\n"
+			 "0x18d.4.0x4: 0x%08x\n",
+			 dcr_read(0xd70), dcr_read(0xd71));
 		  acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		}
 #else

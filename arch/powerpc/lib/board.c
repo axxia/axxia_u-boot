@@ -1306,6 +1306,108 @@ void board_init_r(gd_t *id, ulong dest_addr)
 }
 
 /*
+  ------------------------------------------------------------------------------
+  pci_speed_change
+*/
+
+#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+typedef enum {
+	PEI_2_5G = 1,
+	PEI_5G = 2
+} peiSpeed_t;
+
+void
+pci_speed_change(char peiCore, peiSpeed_t changeSpeed)
+{
+	unsigned long lnkStatus, addr;
+	unsigned width;
+	peiSpeed_t speedBefore, speedAfter;
+
+	if (peiCore == 0) {
+		addr = PCIE0_CONFIG;
+	} else {
+		addr = PCIE1_CONFIG;
+	}
+
+	lnkStatus = acpreadio((void *)(addr + 0x117c));
+	printk("PEI%d 0x117c LnkStatus = 0x%x\n",  peiCore,lnkStatus);
+	speedBefore = lnkStatus & 0xf;
+	width = (lnkStatus & 0xf0) >> 4;
+	printf("PEI%d width - %d lane \n",peiCore, width);
+
+
+	if (changeSpeed == speedBefore) {
+		if (changeSpeed == PEI_2_5G)
+			printf("PEI%d speed already set to (2.5 Gb/s)\n", peiCore);
+		else
+			printf("PEI%d speed already set to (5 Gb/s)\n", peiCore);
+	} else if (changeSpeed == PEI_2_5G) {
+		/* Change PEI speed to Gen 1 */
+		acpwriteio(0x1, (void *)(addr + 0x90));
+		acpwriteio(0x10000, (void *)(addr + 0x117c));
+
+		/* delay for 1000ms */
+		mdelay(1000);
+		lnkStatus = acpreadio((void *)(addr + 0x117c));
+		printf("pei%d lnkStatus 0x117c after speed initiation = 0x%x\n", peiCore, lnkStatus);
+		speedAfter = lnkStatus & 0xf;
+		if ((lnkStatus & 0xc00) == 0xc00) {
+			/* Please note that this is also ensuring that there is no link training error */
+			printk("PEI%d has Link Training error\n", peiCore);
+			if (lnkStatus & 0x10000) {
+				/* clear speed change initiation bit */
+				acpwriteio(0x20000, (void *)(addr + 0x117c));
+			}
+			return;
+		}
+		if ((lnkStatus & 0x10000) != 0x10000) {
+			if (speedAfter == changeSpeed) {
+				printf("Successfully changed PEI%d speed from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s)\n", peiCore);
+			} else {
+				printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
+			}
+		} else {
+			/* clear speed change initiation bit */
+			acpwriteio(0x20000, (void *)(addr + 0x117c));
+			printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
+		}
+	} else if (changeSpeed == PEI_5G) {
+		/* Change PEI speed to Gen 2 */
+		acpwriteio(0x2, (void *)(addr + 0x90));
+		acpwriteio(0x10000, (void *)(addr + 0x117c));
+
+		/* delay for 1000 ms */
+		mdelay(1000);
+		lnkStatus = acpreadio((void *)(addr + 0x117c));
+		printf("pei%d lnkStatus 0x117c after speed initiation = 0x%x\n", peiCore, lnkStatus);
+		speedAfter = lnkStatus & 0xf;
+
+		if ((lnkStatus & 0xc00) == 0xc00) {
+			/* Please note that this is also ensuring that there is no link training error */
+			printk("PEI%d has Link Training error\n", peiCore);
+			if (lnkStatus & 0x10000) {
+				/* clear speed change initiation bit */
+				acpwriteio(0x20000, (void *)(addr + 0x117c));
+			}
+			return;
+		}
+		
+		if ((lnkStatus & 0x10000) != 0x10000) {
+			if (speedAfter == changeSpeed) {
+				printf("Successfully changed PEI%d speed from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s)\n", peiCore);
+			} else {
+				printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
+			}
+		} else {
+			/* clear speed change initiation bit */
+			acpwriteio(0x20000, (void *)(addr + 0x117c));
+			printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
+		}
+	}
+}
+#endif
+
+/*
   ----------------------------------------------------------------------
   acp_init_r
 
@@ -1688,25 +1790,20 @@ acp_init_r( void )
 		if (0 != rc)
 			printf("Error Getting PLL/Clock Frequencies!\n");
 		else
-			printf("             System PLL: %04d MHz\n"
-			       "                PPC PLL: %04d MHz\n"
-			       "                DDR PLL: %04d MHz\n"
-			       "       Peripheral Clock: %04d MHz\n"
-			       "      PPC PLL Step Test: %s\n\n",
+			printf("      System PLL: %04d MHz\n"
+			       "         PPC PLL: %04d MHz\n"
+			       "         DDR PLL: %04d MHz\n"
+			       "Peripheral Clock: %04d MHz\n\n",
 			       system_pll / 1000,
 			       ppc_pll / 1000,
 			       ddr_pll / 2000,
-			       peripheral_clock / 1000,
-#ifdef PPCPLL_STEP_TEST
-			       "Enabled"
-#else
-			       "Disabled"
-#endif
-			       );
+			       peripheral_clock / 1000);
 	}
 #endif
 
-#ifdef CONFIG_ACP3
+
+
+#if defined(CONFIG_ACP2) || defined(CONFIG_ACP3)
 	/*
 	  Only set up PCI when in internal boot mode, in control of
 	  one of the PEIs, and the root complex.
@@ -1718,8 +1815,10 @@ acp_init_r( void )
 		int pci_rc = 0;
 		int group;
 		int pei_mask = 0;
-	
+
+#if defined(CONFIG_ACP3)	
 		group = acp_osg_get_group(core);
+#endif
 
 #if defined(ACP_25xx)
 		control = dcr_read(0xd0f);
@@ -1730,8 +1829,14 @@ acp_init_r( void )
 			control = 0;
 		}
 
-		if (0 != (control & 0x00400000) &&
-		    0 != acp_osg_group_get_res(group, ACP_OS_PCIE0)) {
+#if defined (CONFIG_ACP2)
+		if (0 != (control & 0x00400000))
+			pci_rc = 1;
+		if (0 != (control & 0x00080000))
+			pci_rc = 1;
+#elif defined (CONFIG_ACP3)
+		if (0 != (control & 0x00400000) 
+			&& 0 != acp_osg_group_get_res(group, ACP_OS_PCIE0)) {
 			pci_rc = 1;
 			pei_mask |= 1;
 		}
@@ -1741,7 +1846,9 @@ acp_init_r( void )
 			pci_rc = 1;
 			pei_mask |= 2;
 		}
+#endif
 #else
+#if defined (CONFIG_ACP3)
 		control = dcr_read(DCR_RESET_BASE);
 		boot_mode = (control & 0x80000000) >> 31;
 		control = acpreadio((void *)GPREG_PHY_CTRL0);
@@ -1752,9 +1859,51 @@ acp_init_r( void )
 			pei_mask |= 1;
 		}
 #endif
+#endif
 
-		if (0 == boot_mode && 1 == pci_rc)
-			pci_init_board();
+		if (0 == boot_mode && 1 == pci_rc) {
+#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+			{
+				char * env_value;
+				unsigned long pciStatus, linkState;
+				
+				pciStatus = acpreadio((void *)(PCIE0_CONFIG + 0x1004));
+				printk("PEI0 pciStatus = 0x%x\n", pciStatus);
+				linkState = (pciStatus & 0x3f00) >> 8;
+				if (linkState == 0xb) {
+					printf("PCIE0 link State UP = 0x%x\n", linkState);
+					env_value = getenv("pei0_speed");
+					if ((char *)0 != env_value) {
+						unsigned long pei0_speed;
+
+						pei0_speed = simple_strtoul(env_value, NULL, 0);
+						pci_speed_change(0, pei0_speed);
+					}
+				} else {
+					printf("PCIE0 link State DOWN = 0x%x\n", linkState);
+				}
+				pciStatus = acpreadio((void *)(PCIE1_CONFIG + 0x1004));
+				printk("PEI1 pciStatus = 0x%x\n", pciStatus);
+				linkState = (pciStatus & 0x3f00) >> 8;
+	
+				if (linkState == 0xb) {
+					printf("PCIE1 link State UP = 0x%x\n", linkState);
+					env_value = getenv("pei1_speed");
+					if ((char *)0 != env_value) {
+						unsigned long pei1_speed; 
+					
+						pei1_speed = simple_strtoul(env_value, NULL, 0); 
+						pci_speed_change(1, pei1_speed);
+					}
+				} else {
+					printf("PCIE1 link State DOWN = 0x%x\n", linkState);
+				}
+			}
+#endif
+#if defined(CONFIG_ACP3) && defined(CONFIG_PCI)
+				pci_init_board();
+#endif
+		}
 	}
 #endif
 
@@ -1838,6 +1987,55 @@ acp_init_r( void )
 	*/
  	jumptable_init();
 #endif
+
+	/*ZZZ*/
+#if 0
+#define BURST_ADDRESS 0x400000
+#define BURST_SIZE 32
+	{
+		unsigned char *burst = (unsigned char *)BURST_ADDRESS;
+		unsigned char value = 0x01;
+		int i;
+		int iteration = 1;
+
+		/* A New Memory Test... */
+		printf("Starting the fake coarse write-leveling test.\n"
+		       "Ctrl-C to Stop the Test and Continue Booting...\n");
+
+		for (;;) {
+			/* Write the current value. */
+			for (i = 0; i < BURST_SIZE; i += 2)
+				burst[i] = value;
+
+			/* Read back and verify. */
+			for (i = 0; i < BURST_SIZE; i += 2) {
+				unsigned char compare;
+
+				compare = burst[i];
+
+				if (value != compare)
+					printf("ERROR: iteration %d i %d "
+					       "wrote 0x%02x read 0x%02x\n",
+					       iteration, i, value, compare);
+			}
+
+			/* Change the value. */
+			if (0x80 > value)
+				value = value << 1;
+			else
+				value = 0x01;
+
+			/* Check for Ctrl-C. */
+			if (ctrlc())
+				break;
+
+			++iteration;
+		}
+
+		printf("\nEnding the test after %d iterations.\n", iteration);
+	}
+#endif
+	/*ZZZ*/
 
 	/* Jump to the main loop... */
 	for (;;) {

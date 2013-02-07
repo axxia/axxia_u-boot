@@ -192,13 +192,13 @@ typedef enum {
  * I/O Macros 
  */
 #define NCP_DEV_NCA_READ_REG32(_dev, _region, _offset, _pReg32Val) \
-*_pReg32Val = in_be32((NCA + _offset));
+  *_pReg32Val = in_be32((volatile u32 *)(NCA + _offset));
 
 #define NCP_DEV_NCA_WRITE_INDIRECT_REG32(_dev, _region, _offset, _pReg32Val) \
-{mb(); out_be32((NCA + _offset), *_pReg32Val); (void)in_be32(NCA + _offset);}
+  {mb(); out_be32((volatile u32 *)(NCA + _offset), *_pReg32Val); (void)in_be32((volatile u32 *)(NCA + _offset));}
 
 #define NCP_DEV_NCA_WRITE_REG32(_dev, _region, _offset, _reg32Val) \
-{mb(); out_be32((NCA + _offset), _reg32Val); (void)in_be32(NCA + _offset);}
+  {mb(); out_be32((volatile u32 *)(NCA + _offset), _reg32Val); (void)in_be32((volatile u32 *)(NCA + _offset));}
 
 typedef struct {
     volatile ncp_uint16_t i_pIdx[NCP_DEV_NUM_IPCQ_PER_GROUP];

@@ -20,16 +20,12 @@
  * MA 02111-1307 USA
  */
 
-
-
-
 #ifndef NCP_STD_TASKIO_LITE
 #include <config.h>
 #else
 #include <stdint.h>
 #include <sys/types.h>
 #endif
-
 
 #if defined(NCP_TASKIO_UBOOT_ENV)
 #include "ncp_task_lite_nca_regs.h"
@@ -110,7 +106,7 @@ ncp_task_lite_uboot_nca_va_2_pa(void *va32)
 
 
 ncp_st_t
-ncp_task_lite_uboot_config_mem()
+ncp_task_lite_uboot_config_mem(void)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
 
@@ -154,7 +150,7 @@ NCP_RETURN_LABEL
 }
 
 ncp_st_t
-ncp_task_lite_uboot_config_tqs_struct()
+ncp_task_lite_uboot_config_tqs_struct(void)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     
@@ -181,7 +177,7 @@ NCP_RETURN_LABEL
 
 
 ncp_st_t
-ncp_task_lite_uboot_config_grp_struct()
+ncp_task_lite_uboot_config_grp_struct(void)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     
@@ -1183,6 +1179,61 @@ NCP_RETURN_LABEL
 
     return(ncpStatus);  
 }
+   
+   
+/* 
+ * Use for ACP2500 and later
+ */
+#ifdef ACP_25xx
+ncp_st_t
+ncp_dev_nca_program_rxPoolFifoRange(ncp_dev_hdl_t dev, 
+                            ncp_uint8_t poolId,
+                            ncp_uint32_t sz0FifoStart,
+                            ncp_uint32_t sz0FifoEntries,
+                            ncp_uint32_t sz1FifoStart,
+                            ncp_uint32_t sz1FifoEntries,
+                            ncp_uint32_t sz2FifoStart,
+                            ncp_uint32_t sz2FifoEntries,
+                            ncp_uint32_t sz3FifoStart,
+                            ncp_uint32_t sz3FifoEntries)                                                                 
+{
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+    ncp_nca_rbp_fifo0_range_reg_size0_acp2500_t  fifo_range_sz0_reg;
+    ncp_nca_rbp_fifo0_range_reg_size1_acp2500_t  fifo_range_sz1_reg;
+    ncp_nca_rbp_fifo0_range_reg_size2_acp2500_t  fifo_range_sz2_reg;
+    ncp_nca_rbp_fifo0_range_reg_size3_acp2500_t  fifo_range_sz3_reg;  
+    ncp_uint32_t regAddr;
+    
+    regAddr = NCP_NCA_RBP_FIFO_RANGE_ACP2500_FIFO0_RANGE_SIZE0_ACP2500;
+    
+    fifo_range_sz0_reg.rbp_fifo0_range_start_size0   = sz0FifoStart;
+    fifo_range_sz0_reg.rbp_fifo0_range_end_size0     = sz0FifoStart + sz0FifoEntries;    
+    NCP_DEV_NCA_WRITE_INDIRECT_REG32(dev, NCP_REGION_NCA_AXI,  
+                                     regAddr+0+(poolId*0x10),       
+                                     (ncp_uint32_t *)&fifo_range_sz0_reg);    
+    
+    fifo_range_sz1_reg.rbp_fifo0_range_start_size1   = sz1FifoStart;
+    fifo_range_sz1_reg.rbp_fifo0_range_end_size1     = sz1FifoStart + sz1FifoEntries;    
+    NCP_DEV_NCA_WRITE_INDIRECT_REG32(dev, NCP_REGION_NCA_AXI,  
+                                     regAddr+4+(poolId*0x10),       
+                                     (ncp_uint32_t *)&fifo_range_sz1_reg);    
+                                     
+    fifo_range_sz2_reg.rbp_fifo0_range_start_size2   = sz2FifoStart;
+    fifo_range_sz2_reg.rbp_fifo0_range_end_size2     = sz2FifoStart + sz2FifoEntries;    
+    NCP_DEV_NCA_WRITE_INDIRECT_REG32(dev, NCP_REGION_NCA_AXI,  
+                                     regAddr+8+(poolId*0x10),
+                                     (ncp_uint32_t *)&fifo_range_sz2_reg);    
+                                     
+    fifo_range_sz3_reg.rbp_fifo0_range_start_size3   = sz3FifoStart;
+    fifo_range_sz3_reg.rbp_fifo0_range_end_size3     = sz3FifoStart + sz3FifoEntries;    
+    NCP_DEV_NCA_WRITE_INDIRECT_REG32(dev, NCP_REGION_NCA_AXI,  
+                                     regAddr+0xC+(poolId*0x10),
+                                     (ncp_uint32_t *)&fifo_range_sz3_reg);    
+                                                                                                                   
+NCP_RETURN_LABEL
+    return(ncpStatus);            
+}
+#endif
     
 ncp_st_t
 ncp_task_lite_uboot_config(ncp_dev_t   *dev)
@@ -1225,7 +1276,25 @@ ncp_task_lite_uboot_config(ncp_dev_t   *dev)
     /*
      * <<<=== Start NCA Hardware Initialization ===>>> 
      */ 
-     
+    
+#ifdef ACP_25xx
+    {  
+        int poolId;
+        for (poolId=0; poolId<6; poolId++)
+        {
+	NCP_CALL_LITE(ncp_dev_nca_program_rxPoolFifoRange(dev, 
+                    (ncp_uint8_t)poolId,
+                    0, 
+                    0, 
+                    0, 
+                    0, 
+                    0,
+                    0, 
+                    0, 
+                    0)); 
+        }            
+    }
+#endif
 
     /* 
      * Config rxPool 0 
@@ -1237,7 +1306,21 @@ ncp_task_lite_uboot_config(ncp_dev_t   *dev)
                                             1024,
                                             2048));    
     
-    
+#ifdef ACP_25xx  
+    {    
+        NCP_CALL_LITE(ncp_dev_nca_program_rxPoolFifoRange(dev, 
+                (ncp_uint8_t)0, /* Pool Id */
+                0, 
+                0x5ff, 
+                0, 
+                0x2ff, 
+                0,
+                0x17f, 
+                0, 
+                0xbf)); 
+    }
+#endif
+   
     /*
     * Force all queues to be disabled,   
     */

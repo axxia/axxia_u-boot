@@ -561,7 +561,7 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 
 		return 0;
 	}
-#endif
+#endif	/* ACP_25xx */
 
 	NCR_TRACE_READ32(region, offset);
 	rc = ncr_read(region, offset, 4, value);
@@ -863,7 +863,7 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 
 		return 0;
 	}
-#endif
+#endif	/* ACP_25xx */
 
 	NCR_TRACE_WRITE32(region, offset, value);
 	rc = ncr_write(region, offset, 4, &value);

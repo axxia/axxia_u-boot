@@ -91,7 +91,7 @@ SECTIONS
   _etext = .;
   PROVIDE (etext = .);
 
-  . = 0x60000;
+  . = 0x68000;
   __acp_osg_cores = .;
   .acp_osg_cores_section : { *(.acp_osg_cores_section) }
   . += 0x100;
