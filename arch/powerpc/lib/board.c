@@ -646,7 +646,7 @@ acp_init_f( void )
 	register unsigned long addr;
 	unsigned long *s;
 	unsigned long core;
-	unsigned long cold_reset;
+	unsigned long cold_start;
 	unsigned long l2version;
 	unsigned long l2revision;
 
@@ -674,14 +674,20 @@ acp_init_f( void )
 	*/
 
 	/* Is this a cold reset? */
-	cold_reset = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
+#if defined(ACP_25xx) && !defined(ACP_EMU)
+      cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
+      cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
+      cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
+#else
+      cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
+#endif
 
 	/* Fail if this is a cold start, and not core 0. */
-	if (cold_reset && (0 != core))
+	if (cold_start && (0 != core))
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
 	/* Initialize the Stage 3 Lock. */
-	if (cold_reset && (0 == core))
+	if (cold_start && (0 == core))
 		acp_initialize_stage3_lock();
 
 	/* All secondary cores should spin. */
@@ -776,7 +782,7 @@ acp_init_f( void )
 #endif /* CONFIG_ACP2 */
 
 	/* Clear BSS */
-	memset((void *)&_bss_start, 0, ((&_bss_end - &_bss_start) * 4));
+	memset((void *)&_bss_start, 0, ((&_bss_end - &_bss_start)));
 
 	/* Re-Initialize the serial port (since BSS just got cleared). */
 	serial_early_init();
@@ -1297,7 +1303,14 @@ acp_init_r( void )
 	unsigned long cold_start;
 
 	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
-	cold_start = (0 != (0x00ffe000 & dcr_read(DCR_RESET_BASE + 1)));
+ 
+#if defined(ACP_25xx) && !defined(ACP_EMU)
+	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
+#else
+	cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
+#endif
 
 	/* Set up the environment */
 	if( 0 != env_init( ) ) {
@@ -1335,8 +1348,20 @@ acp_init_r( void )
 #endif
 #endif
 
-	/* NAND */
-#if !defined(ACP_ISS) && !defined(NCR_TRACER)
+#ifdef ACP_25xx
+	/*
+	  On the 2500, IO pins get shared.  To use the FEMAC, the pins
+	  must be connected.  So, connect the pins.
+	*/
+	writel(0x0c0c0c0c, 0xf0801064);
+	writel(0x180c0c0c, 0xf0801068);
+	writel(0x04181818, 0xf0801074);
+	writel(0x18181800, 0xf0801078);
+	writel(0x00180070, 0xf0801060);
+#endif
+
+ 	/* NAND */
+#if !defined(ACP_ISS) && !defined(NCR_TRACER) && !defined(ACP2_SYSMEM_TEST)
 	nand_init( );
 #endif
 	env_relocate( );
@@ -1466,8 +1491,14 @@ acp_init_r( void )
 
 #ifdef CONFIG_ACP3
 	/* Clear the Reset Status Register. */
-	dcr_write(0xffffe000, (DCR_RESET_BASE + 1));
-
+#ifdef ACP_25xx
+	dcr_write(0xf, (DCR_RESET_BASE + 0xe));
+	dcr_write(0x3, (DCR_RESET_BASE + 0x8));
+	dcr_write(0x3, (DCR_RESET_BASE + 0x6));
+#else
+        dcr_write(0xffffe000, (DCR_RESET_BASE + 1));
+#endif
+ 
 	/*
 	  If this is the initial boot, bring up the other OS boot cores.
 
@@ -1533,11 +1564,14 @@ acp_init_r( void )
 	acp_splash();
 
 #ifdef CONFIG_ACP3
-#ifndef ACP_25xx
-#ifdef CONFIG_PCI
-	pci_init_board();
-#endif
-#endif
+	{
+		unsigned long phy_ctl0;
+
+		phy_ctl0 = acpreadio((void *)GPREG_PHY_CTRL0);
+ 
+		if (0 != (phy_ctl0 & 0x1000))
+			pci_init_board();
+	}
 #endif
 
 #if 0

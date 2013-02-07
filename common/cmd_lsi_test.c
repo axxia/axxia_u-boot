@@ -65,6 +65,7 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 		rc = 0;
 	} else if (0 == strncmp(argv[1], "e", strlen("e"))) {
+#if !defined(NCR_TRACER)
 		rc = 0;
 
 		if (3 == argc) {
@@ -90,6 +91,9 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			printf("ECC Mode is %s\n",
 			       get_ecc_mode_string(get_ecc_mode()));
 		}
+#else
+		printf("Not Available when NCR_TRACER is defined!\n");
+#endif
 	} else if (0 == strncmp(argv[1], "loc", strlen("loc"))) {
 #if !defined(CONFIG_ACP2) && !defined(ACP_EMU) && !defined(ACP_ISS)
 		printf("Starting Lock Loop (Ctrl-C to Exit).\n");

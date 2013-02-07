@@ -30,11 +30,9 @@
 #include <asm/processor.h>
 #include <asm/io.h>
 
-#ifdef CONFIG_CMD_GO
-
 /* Allow ports to override the default behavior */
 __attribute__((weak))
-unsigned long do_go_exec (ulong (*entry)(int, char * const []), int argc, char * const argv[])
+unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 {
 #ifdef CONFIG_ACP3
 	{
@@ -82,7 +80,7 @@ unsigned long do_go_exec (ulong (*entry)(int, char * const []), int argc, char *
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 1 ] )->entry_address ) );
 		ose_add_string( 0, buffer );
-#ifndef CONFIG_ACP_342X
+#if !defined(CONFIG_ACP_342X) && !defined(ACP_25xx)
 		sprintf( buffer, "spintable_2=0x%lx",
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 2 ] )->entry_address ) );
@@ -161,13 +159,15 @@ unsigned long do_go_exec (ulong (*entry)(int, char * const []), int argc, char *
 	return entry (argc, argv);
 }
 
-int do_go (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+int do_go (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	ulong	addr, rc;
 	int     rcode = 0;
 
-	if (argc < 2)
-		return CMD_RET_USAGE;
+	if (argc < 2) {
+		cmd_usage(cmdtp);
+		return 1;
+	}
 
 	addr = simple_strtoul(argv[1], NULL, 16);
 
@@ -192,8 +192,6 @@ U_BOOT_CMD(
 	"addr [arg ...]\n    - start application at address 'addr'\n"
 	"      passing 'arg' as arguments"
 );
-
-#endif
 
 U_BOOT_CMD(
 	reset, 2, 0,	do_reset,

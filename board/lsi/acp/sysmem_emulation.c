@@ -146,8 +146,14 @@ initialize_syscache(int sm_version, int sc_version, int num_sc_nodes)
 #else
 
 #ifdef ACP_25xx
-	/* Per BZ38847, the munge value for 2500 is 0x106. */
-	munge = 0x106;
+	/*
+	  Per BZ38847, the munge value for 2500 is 0x106, if there are
+	  4 syscache nodes.
+	*/
+	if (2 == num_sc_nodes)
+		munge = 0x115;
+	else
+		munge = 0x106;
 #else
 	munge = 0x115;
 #endif
@@ -221,6 +227,9 @@ initialize_syscache(int sm_version, int sc_version, int num_sc_nodes)
 
 #if defined(SYSMEM_ACP3)
 
+#undef TEST_MODIFICATIONS
+/*#define TEST_MODIFICATIONS*/
+
 static int
 initialize_sysmem(int sm_version)
 {
@@ -237,6 +246,10 @@ initialize_sysmem(int sm_version)
 		break;
 	}
 
+#ifdef TEST_MODIFICATIONS
+	sysmem_size -= 1;
+#endif
+
 	switch (sm_version) {
 	case SYSMEM_V0:
 	case SYSMEM_V1:
@@ -249,6 +262,14 @@ initialize_sysmem(int sm_version)
 		return -1;
 		break;
 	}
+
+#ifdef TEST_MODIFICATIONS
+	if (SYSMEM_V3 != sm_version) {
+		printf("For the test, only V3 of the "
+		       "system memory controller is valid!\n");
+		return -1;
+	}
+#endif
 
 	if (SYSMEM_V0 == sm_version) {
 		ncr_write32( NCP_REGION_ID( 34, 256 ), 0x010, 0x00000003 );
@@ -316,7 +337,11 @@ initialize_sysmem(int sm_version)
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x020, 0x00000000 );
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x024, 0x00000000 );
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x028, 0x00000000 );
+#ifdef TEST_MODIFICATIONS
+	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x02c, 0x00010000 );
+#else
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x02c, 0x00000000 );
+#endif
 
 	switch( sm_version ) {
 	case SYSMEM_V0:
@@ -368,7 +393,11 @@ initialize_sysmem(int sm_version)
 			ncr_write32(NCP_REGION_ID(34, 0), 0x050, 0x00000300);
 		else
 			ncr_write32(NCP_REGION_ID(34, 0), 0x050, 0x00000000);
+#ifdef TEST_MODIFICATIONS
+		ncr_write32(NCP_REGION_ID(34, 0), 0x054, 0x02000000);
+#else
 		ncr_write32(NCP_REGION_ID(34, 0), 0x054, 0x01000000);
+#endif
 		break;
 	}
 
@@ -445,7 +474,11 @@ initialize_sysmem(int sm_version)
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x084, 0x00000000 );
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x088, 0x04000000 );
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x08c, 0x02000a02 );
+#ifdef TEST_MODIFICATIONS
+	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x090, 0x04090f0f );
+#else
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x090, 0x04070f0f );
+#endif
 
 	switch( sm_version ) {
 	case SYSMEM_V0:
@@ -463,9 +496,15 @@ initialize_sysmem(int sm_version)
 	else
 		ncr_write32( NCP_REGION_ID( 34, 0 ), 0x098, 0x00000e0c );
 
+#ifdef TEST_MODIFICATIONS
+	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x09c, 0x15070000 );
+	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x0a0, 0x18020008 );
+	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x0a4, 0x000c2504 );
+#else
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x09c, 0x0f070000 );
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x0a0, 0x14020008 );
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x0a4, 0x00081b04 );
+#endif
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x0a8, 0x00002819 );
 
 	if (SYSMEM_V0 == sm_version) {
@@ -492,7 +531,11 @@ initialize_sysmem(int sm_version)
 		break;
 	case SYSMEM_V1:
 	case SYSMEM_V3:
+#ifdef TEST_MODIFICATIONS
+		ncr_write32(NCP_REGION_ID(34, 0), 0x0f8, 0x091c0c00);
+#else
 		ncr_write32(NCP_REGION_ID(34, 0), 0x0f8, 0x07140a00);
+#endif
 		break;
 	case SYSMEM_V2:
 		ncr_write32(NCP_REGION_ID(34, 0), 0x0f8, 0x07140c00);
@@ -590,9 +633,15 @@ initialize_sysmem(int sm_version)
 		ncr_write32(NCP_REGION_ID(34, 0), 0x168, 0x00000000);
 		break;
 	case SYSMEM_V3:
+#ifdef TEST_MODIFICATIONS
+		ncr_write32(NCP_REGION_ID(34, 0), 0x150, 0x00050200);
+		ncr_write32(NCP_REGION_ID(34, 0), 0x154, 0x00140000);
+		ncr_write32(NCP_REGION_ID(34, 0), 0x158, 0x02000060);
+#else
 		ncr_write32(NCP_REGION_ID(34, 0), 0x150, 0x00030200);
 		ncr_write32(NCP_REGION_ID(34, 0), 0x154, 0x000a0000);
 		ncr_write32(NCP_REGION_ID(34, 0), 0x158, 0x00050040);
+#endif
 		ncr_write32(NCP_REGION_ID(34, 0), 0x15c, 0x00000000);
 		ncr_write32(NCP_REGION_ID(34, 0), 0x160, 0x00000000);
 		ncr_write32(NCP_REGION_ID(34, 0), 0x164, 0x00000000);
@@ -605,9 +654,17 @@ initialize_sysmem(int sm_version)
 		ncr_write32(NCP_REGION_ID(34, 0), 0x170, 0x00000000);
 	}
 
+#ifdef TEST_MODIFICATIONS
+	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x174, 0x00000008 );
+#else
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x174, 0x00000006 );
+#endif
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x178, 0x0000010a );
+#ifdef TEST_MODIFICATIONS
+	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x17c, 0x00008000 );
+#else
 	ncr_write32( NCP_REGION_ID( 34, 0 ), 0x17c, 0x00000000 );
+#endif
 
 	switch (sm_version) {
 	case SYSMEM_V0:
@@ -700,12 +757,20 @@ initialize_sysmem(int sm_version)
 			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x2dc, 0x00000104 );
 			break;
 		case SYSMEM_V3:
+#ifdef TEST_MODIFICATIONS
+			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x2d8, 0x02020002 );
+#else
 			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x2d8, 0x00020002 );
+#endif
 			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x2dc, 0x00000204 );
 			break;
 		}
 
+#ifdef TEST_MODIFICATIONS
+		ncr_write32( NCP_REGION_ID( 34, 0 ), 0x2e0, 0x00000900 );
+#else
 		ncr_write32( NCP_REGION_ID( 34, 0 ), 0x2e0, 0x00000700 );
+#endif
 		ncr_write32( NCP_REGION_ID( 34, 0 ), 0x2e4, 0x007f007f );
 
 		if (SYSMEM_V1 == sm_version) {
@@ -749,10 +814,19 @@ initialize_sysmem(int sm_version)
 
 		switch( sm_version ) {
 		case SYSMEM_V3:
+#ifdef TEST_MODIFICATIONS
+			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x38c, 0x10330504 );
+#else
 			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x38c, 0x10330404 );
+#endif
 			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x390, 0x10331033 );
+#ifdef TEST_MODIFICATIONS
+			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x394, 0x0000036d );
+			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x398, 0x00000002 );
+#else
 			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x394, 0x0000083c );
 			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x398, 0x0000000a );
+#endif
 			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x39c, 0x00000000 );
 			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x3a0, 0x00000000 );
 			ncr_write32( NCP_REGION_ID( 34, 0 ), 0x3a4, 0x00000000 );
@@ -851,7 +925,7 @@ initialize_sysmem(int sm_version)
 	if (SYSMEM_V0 == sm_version)
 		ncr_write32(NCP_REGION_ID(0x22, 0), 0x00c, 0x01000000);
 	else
-		ncr_write32(NCP_REGION_ID(0x22, 0), 0x00c, 0x01000000);
+		ncr_write32(NCP_REGION_ID(0x22, 0), 0x00c, 0x00000000);
 
 	ncr_write32(NCP_REGION_ID(0x22, 0), 0x010, 0x00000000);
 	ncr_write32(NCP_REGION_ID(0x22, 0), 0x014, 0x01000000);
@@ -1082,26 +1156,27 @@ sysmem_init(void)
 	int forced_encryption = 0;
 
 #ifdef DISPLAY_PARAMETERS
-	printf("sysmem: 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "        0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "        0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "        0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
-	       sysmem->version, sysmem->autoDetect,
-	       sysmem->numInterfaces, sysmem->numRanksPerInterface,
+	printf("-- -- Sysmem\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
+	       sysmem->version, sysmem->auto_detect,
+	       sysmem->num_interfaces, sysmem->num_ranks_per_interface,
 	       sysmem->topology, sysmem->sdram_device_density,
 	       sysmem->sdram_device_width, sysmem->primary_bus_width,
 	       sysmem->CAS_latency, sysmem->CAS_write_latency,
-	       sysmem->enableECC, sysmem->enableDeskew,
-	       sysmem->enableRdlvl, sysmem->enableAutoCpc,
-	       sysmem->minPhyCalibrationDelay,
-	       sysmem->min_ctrl_roundtrip_delay, sysmem->singleBitMpr,
-	       sysmem->rdcalCompareEven, sysmem->rdcalCompareOdd,
+	       sysmem->enableECC, sysmem->enable_deskew,
+	       sysmem->enable_rdlvl, sysmem->enable_auto_cpc,
+	       sysmem->min_phy_cal_delay,
+	       sysmem->min_ctrl_roundtrip_delay, sysmem->single_bit_mpr,
+	       sysmem->rdcal_cmp_even, sysmem->rdcal_cmp_odd,
 	       sysmem->phy_rdlat, sysmem->added_rank_switch_delay,
 	       sysmem->high_temp_dram, sysmem->sdram_rtt_nom,
 	       sysmem->sdram_rtt_wr, sysmem->sdram_data_drv_imp,
 	       sysmem->phy_adr_imp, sysmem->phy_dat_imp,
 	       sysmem->phy_rcv_imp, sysmem->sysCacheMode,
-	       sysmem->syscacheDisable, sysmem->halfmemMode);
+	       sysmem->syscacheDisable, sysmem->half_mem);
 #endif
 
 	/* Get the version of the System Memory controller. */
@@ -1139,7 +1214,7 @@ sysmem_init(void)
 		  architectures before ACP2500V2!
 		  See BZ38534.
 		*/
-		syscache_mode(num_sc_nodes, 8);
+		syscache_mode(num_sc_nodes, (0 == sysmem->enableECC) ? 0 : 8);
 #endif
 
 	/*

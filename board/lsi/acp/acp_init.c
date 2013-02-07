@@ -26,10 +26,20 @@
 
 #include <asm/io.h>
 
-#include "ncp_denali_regs.h"
-#include "ncp_denali_reg_defines.h"
-#include "ncp_phy_regs.h"
-#include "ncp_phy_reg_defines.h"
+#if defined (ACP_X1V2) | defined (CONFIG_ACP_342X)
+#include "regs/ncp_denali_regs.h"
+#include "regs/ncp_denali_reg_defines.h"
+#include "regs/ncp_phy_regs.h"
+#include "regs/ncp_phy_reg_defines.h"
+#endif
+
+#if defined (ACP_25xx) 
+#include "regs/ncp_denali_regs_acp2500.h"
+#include "regs/ncp_denali_reg_defines_acp2500.h"
+#include "regs/ncp_phy_regs_acp2500.h"
+#include "regs/ncp_phy_reg_defines_acp2500.h"
+#endif
+
 
 #undef PRESET_ECC_LEVELING
 /*#define PRESET_ECC_LEVELING*/
@@ -55,7 +65,7 @@
 #ifdef NCR_TRACER
 #define NCR_TRACE( format, args... ) do { \
 if( 0 != ncr_tracer_is_enabled( ) ) { \
-printf( format, ##args ); \
+printf( "# " format "\n", ##args ); \
 } \
 } while( 0 );
 #else
@@ -120,9 +130,9 @@ typedef struct {
 
 typedef struct {
 	unsigned long version;
-	unsigned long autoDetect;
-	unsigned long numInterfaces;
-	unsigned long numRanksPerInterface;
+	unsigned long auto_detect;
+	unsigned long num_interfaces;
+	unsigned long num_ranks_per_interface;
 	unsigned long topology;
 	unsigned long sdram_device_density;
 	unsigned long sdram_device_width;
@@ -130,14 +140,14 @@ typedef struct {
 	unsigned long CAS_latency;
 	unsigned long CAS_write_latency;
 	unsigned long enableECC;
-	unsigned long enableDeskew;
-	unsigned long enableRdlvl;
-	unsigned long enableAutoCpc;
-	unsigned long minPhyCalibrationDelay;
+	unsigned long enable_deskew;
+	unsigned long enable_rdlvl;
+	unsigned long enable_auto_cpc;
+	unsigned long min_phy_cal_delay;
 	unsigned long min_ctrl_roundtrip_delay;
-	unsigned long singleBitMpr;
-	unsigned long rdcalCompareEven;
-	unsigned long rdcalCompareOdd;
+	unsigned long single_bit_mpr;
+	unsigned long rdcal_cmp_even;
+	unsigned long rdcal_cmp_odd;
 	unsigned long phy_rdlat;
 	unsigned long added_rank_switch_delay;
 	unsigned long high_temp_dram;
@@ -149,7 +159,8 @@ typedef struct {
 	unsigned long phy_rcv_imp;
 	unsigned long sysCacheMode;
 	unsigned long syscacheDisable;
-	unsigned long halfmemMode;
+	unsigned long half_mem;
+	unsigned long address_mirroring;
 } __attribute__((packed)) parameters_sysmem_t;
 
 typedef struct {
@@ -541,6 +552,179 @@ clocks_ddr_init( unsigned long node, unsigned long value,
 static int
 clocks_init( void )
 {
+#ifdef ACP_25xx
+	unsigned long value;
+	/*
+		# SYS_PLL setup
+		# enable PLL
+		ncpWrite 0x18d.0x1.0x0 0x80000000
+	*/
+	dcr_write(0x80000000, 0xd40);
+	mdelay(10);
+	/*
+		# Set Parameters
+		ncpWrite 0x18d.0x1.0x4 0x14F00
+		ncpWrite 0x18d.0x1.0x0 0x802405d2
+	*/
+	dcr_write(0x14f00, 0xd41);
+	dcr_write(0x802405d2, 0xd40);
+	/*
+		# remove PLL reset
+		ncpWrite 0x18d.0x1.0x4 0x14F02
+	*/
+	dcr_write(0x14f02, 0xd41);
+	/*
+		# check for lock (reg 0x28 bit[31])
+		ncpRead 0x18d.0x1.0x0 12
+	*/
+	do {
+		value = dcr_read(0xd4a);
+	} while (0 == (value & 0x80000000));
+	/*
+		# Set clk select and divider
+		ncpWrite 0x18d.0x0.0x0 0x20010800
+	*/
+	dcr_write(0x20010800, 0xd00);
+	/*
+		# remove PLL bypass
+		ncpWrite 0x18d.0x1.0x4 0x14702
+	*/
+	dcr_write(0x14702, 0xd41);
+	mdelay(10);
+#ifdef SLOW_DOWN_PPC_25xx
+	dcr_write(0x80000000, 0xd50);
+	mdelay(10);
+	dcr_write(0x14f00, 0xd51);
+	dcr_write(0x802405d2, 0xd50);
+	dcr_write(0x14f02, 0xd51);
+	do {
+		value = dcr_read(0xd5a);
+	} while (0 == (value & 0x80000000));
+	value = dcr_read(0xd00);
+	value |= 0x40000000;
+	dcr_write(value, 0xd00);
+	dcr_write(0x14702, 0xd51);
+	mdelay(10);
+#else
+	/*
+	  # PPC_PLL setup
+	  # enable PLL
+	  ncpWrite 0x18d.0x2.0x0 0x80000000
+	*/
+	dcr_write(0x80000000, 0xd50);
+	mdelay(10);
+	/*
+	  # Set Parameters
+	  ncpWrite 0x18d.0x2.0x4 0x14F00
+	  ncpWrite 0x18d.0x2.0x0 0x80240551
+	*/
+	dcr_write(0x14f00, 0xd51);
+	dcr_write(0x80240551, 0xd50);
+	/*
+	  # remove PLL reset
+	  ncpWrite 0x18d.0x2.0x4 0x14F02
+	*/
+	dcr_write(0x14f02, 0xd51);
+	/*
+	  # check for lock (reg 0x28 bit[31])
+	  ncpRead 0x18d.0x2.0x0 12
+	*/
+	do {
+		value = dcr_read(0xd5a);
+	} while (0 == (value & 0x80000000));
+	/*
+	  # Set clk select and divider
+	  ncpOr 0x18d.0.0x0 0x40000000
+	*/
+	value = dcr_read(0xd00);
+	value |= 0x40000000;
+	dcr_write(value, 0xd00);
+	/*
+	  # Remove PLL bypass
+	  ncpWrite 0x18d.0x2.0x4 0x14702
+	  ncpRead 0x18d.0x2.0x0 12
+	*/
+	dcr_write(0x14702, 0xd51);
+	mdelay(10);
+#endif
+	/*
+	  # TM_PLL setup
+	  # enable PLL
+	  ncpWrite 0x18d.0x3.0x0 0xC0000000
+	*/
+	dcr_write(0xc0000000, 0xd60);
+	mdelay(10);
+	/*
+	  # Set Parameters
+	  ncpWrite 0x18d.0x3.0x4 0x1af00
+	  ncpWrite 0x18d.0x3.0x0 0xC02203d1
+	*/
+	dcr_write(0x1af00, 0xd61);
+	dcr_write(0xc02203d1, 0xd60);
+	/*
+	  # Remove PLL reset
+	  ncpWrite 0x18d.0x3.0x4 0x1af02
+	*/
+	dcr_write(0x1af02, 0xd61);
+	/*
+	  # check for PLL lock bit 
+	  ncpRead 0x18d.0x3.0x0 12
+	*/
+	do {
+		value = dcr_read(0xd6a);
+	} while (0 == (value & 0x80000000));
+	/*
+	  # remove PLL bypass
+	  ncpWrite 0x18d.0x3.0x4 0x1a702
+	*/
+	dcr_write(0x1a702, 0xd61);
+	/*
+	  # SM_PLL setup
+	  # enable PLL
+	  ncpWrite 0x18d.0x4.0x0 0xC0000000
+	*/
+	dcr_write(0xc0000000, 0xd70);
+	mdelay(10);
+	/*
+	  # Set Parameters
+	  ncpWrite 0x18d.0x4.0x4 0x04f00
+	  ncpWrite 0x18d.0x4.0x0 0xC04403d0
+	*/
+	dcr_write(0x4f00, 0xd71);
+	dcr_write(0xc04403d0, 0xd70);
+	/*
+	  # Remove PLL reset
+	  ncpWrite 0x18d.0x4.0x4 0x04f02
+	*/
+	dcr_write(0x4f02, 0xd71);
+	/*
+	  # check for PLL lock bit 
+	  ncpRead 0x18d.0x4.0x0 12
+	*/
+	do {
+		value = dcr_read(0xd7a);
+	} while (0 == (value & 0x80000000));
+	/*
+	  # remove PLL bypass
+	  ncpWrite 0x18d.0x4.0x4 0x04702
+	*/
+	dcr_write(0x4702, 0xd71);
+	mdelay(10);
+	/*
+	  # mcgc1 reg for clk_per
+	  # 1. set the clock dividers, both clk_per is div_by_4 (bits[11:8]), and clk_nrcp is div_by_2 (bits[7:4]). Enable clk_div_load (bit[1:0])
+	  # 2. select clk_per (bits[15:14]) source  to clk_sys_pll/div
+	  ncpOr 0x18d.0x0.0x4 0x00000302
+	  ncpOr 0x18d.0x0.0x4 0x00008000
+	*/
+	value = dcr_read(0xd01);
+	value |= 0x302;
+	dcr_write(value, 0xd01);
+	mdelay(10);
+	value = dcr_read(0xd01);
+	value |= 0x8000;
+	dcr_write(value, 0xd01);
+#else
 	int type;
 	unsigned long control;
 	unsigned long tune1;
@@ -637,7 +821,7 @@ clocks_init( void )
 			(clocks->sys_fftune & 0xffff);
 #ifdef DISPLAY_PARAMETERS
 		serial_early_init();
-		printf("%s Tune Values: 0x%08x 0x%08x 0x%08x\n",
+		printf("%s Tune Values: 0x%08lx 0x%08lx 0x%08lx\n",
 		       (0 == type) ? "SYS" : "PPC", tune1, tune2, tune3);
 #endif
 
@@ -701,7 +885,7 @@ clocks_init( void )
 
 #ifdef DISPLAY_PARAMETERS
 	serial_early_init();
-	printf("DDR Tune Values: 0x%08x 0x%08x 0x%08x\n",
+	printf("DDR Tune Values: 0x%08lx 0x%08lx 0x%08lx\n",
 	       tune1, tune2, tune3);
 #endif
 	clocks_ddr_init( 0x23, clocks->ddr0_control,
@@ -710,12 +894,19 @@ clocks_init( void )
 			 tune1, tune2, tune3 );
 
 	return 0;
+#endif
 }
 
 #if defined(ACP_EMU)
 #include "sysmem_emulation.c"
 #else
-#include "sysmem_asic.c"
+#include "sysmem_asic_common.c"
+#if defined (ACP_X1V2) || defined (CONFIG_ACP_342X)
+#include "ncp_sysmem_init_ibmphy.c"
+#endif
+#if defined (ACP_25xx) 
+#include "ncp_sysmem_init_lsiphy.c"
+#endif
 #endif
 
 #if !defined(ACP_EMU)
@@ -880,7 +1071,7 @@ static void
 acp_sysmem_bist( void )
 {
 	unsigned long size =
-		( 1 << ( sysmem_size - 20 ) ) / sysmem->numInterfaces;
+		( 1 << ( sysmem_size - 20 ) ) / sysmem->num_interfaces;
 	unsigned long bits = 20;
 	int test;
 	unsigned long result;
@@ -888,7 +1079,7 @@ acp_sysmem_bist( void )
 	printf("Running the Built In Self Test.\n");
 	acp_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
 
-	if( 1 < sysmem->numInterfaces )
+	if( 1 < sysmem->num_interfaces )
 		acp_sysmem_asic_check_ecc(NCP_REGION_ID(0x00f, 0));
 
 	while( 0 == ( size & 1 ) ) {
@@ -916,7 +1107,7 @@ acp_sysmem_bist( void )
 		
 		acp_sysmem_bist_start( smregion0, bits, test );
 
-		if( 1 < sysmem->numInterfaces )
+		if( 1 < sysmem->num_interfaces )
 			acp_sysmem_bist_start( smregion1, bits, test );
 
 		/* Poll for completion and get the results. */
@@ -936,7 +1127,7 @@ acp_sysmem_bist( void )
 			}
 		}
 
-		if( 1 < sysmem->numInterfaces ) {
+		if( 1 < sysmem->num_interfaces ) {
 			if( 0 != ncr_poll( smregion1, 0x16c,
 					   BIST_COMPLETION, BIST_COMPLETION,
 					   10000, delay_loops ) ) {
@@ -961,11 +1152,11 @@ acp_sysmem_bist( void )
 		*/
 		ncr_and( smregion0, 0x8, 0xfffffffe );
 
-		if( 1 < sysmem->numInterfaces )
+		if( 1 < sysmem->num_interfaces )
 			ncr_and( smregion1, 0x8, 0xfffffffe );
 	}
 #else
-	for( smid = 0 ; smid < sysmem->numInterfaces ; ++ smid ) {
+	for( smid = 0 ; smid < sysmem->num_interfaces ; ++ smid ) {
 		unsigned long smregion;
 
 		if( 0 == smid )
@@ -1011,7 +1202,7 @@ acp_sysmem_bist( void )
 
 	acp_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
 
-	if( 1 < sysmem->numInterfaces )
+	if( 1 < sysmem->num_interfaces )
 		acp_sysmem_asic_check_ecc(NCP_REGION_ID(0x00f, 0));
 
 	return;
@@ -1122,13 +1313,6 @@ acp_init( void )
 	  table.
 	*/
 
-#if 0
-	for (;;) {
-		serial_puts("Go Away!\n");
-		/*serial_puts("NOW!\n");*/
-	}
-#endif
-
 	/* Verify that the paramater table is valid. */
 	if( PARAMETERS_MAGIC != header->magic ) {
 		use_seeprom = 1;
@@ -1155,7 +1339,7 @@ acp_init( void )
 	}
 
 #ifdef DISPLAY_PARAMETERS
-	printf("-- -- Header (V3)\n"
+	printf("-- -- Header\n"
 	       "0x%08lx 0x%08lx 0x%08lx 0x%08lx\n"
 	       "0x%08lx 0x%08lx\n"
 	       "0x%08lx 0x%08lx\n"
@@ -1309,7 +1493,7 @@ acp_init( void )
 	}
 
 #ifdef SM_REG_DUMP
-	check_for_failure(0, __FILE__, __LINE__);
+	/*check_for_failure(0, __FILE__, __LINE__);*/
 #endif /* SM_REG_DUMP */
 
 	/*
@@ -1355,8 +1539,9 @@ acp_init( void )
 #endif
 
 #ifdef SM_REG_DUMP
-	check_for_failure(0, __FILE__, __LINE__);
+	/*check_for_failure(0, __FILE__, __LINE__);*/
 #endif /* SM_REG_DUMP */
+
 	return returnCode;
 }
 

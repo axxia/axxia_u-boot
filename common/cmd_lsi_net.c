@@ -32,8 +32,10 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_ACP3
 extern int dumprx;
 extern int dumptx;
+#endif
 
 #undef DEBUG
 /*#define DEBUG*/
@@ -61,6 +63,7 @@ do_net( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 {
 	DEBUG_PRINT( "flag=%d argc=%d\n", flag, argc );
 
+#ifdef CONFIG_ACP3
 	if( 0 == strncmp( argv[1], "dr", strlen( "dr" ) ) ) {
 		dumprx ^= 1;
 
@@ -72,6 +75,7 @@ do_net( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 
 		return 0;
 	}
+#endif
 
 	if( 0 == strncmp( argv[1], "l", strlen( "l" ) ) ) {
 		printf( "Starting Loopback Test -- Ctrl-C to Exit.\n" );
@@ -93,7 +97,9 @@ do_net( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 
 		if( ( char * ) 0 == buffer ) {
 			printf( "malloc() failed!\n" );
+#ifndef CFG_NOHELP
 			printf( "%s", cmdtp->usage);
+#endif
 
 			return -1;
 		} else {
@@ -107,7 +113,9 @@ do_net( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 		}
 	}
 
+#ifndef CFG_NOHELP
 	printf( "%s", cmdtp->usage );
+#endif
 
 	return -1;
 }

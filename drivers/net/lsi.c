@@ -295,8 +295,6 @@ eth_getenv_enetaddrg(const char *name, unsigned char enetaddr[6])
 	return 0;
 }
 
-#if !defined(CONFIG_ACP2)
-
 /*
   -------------------------------------------------------------------------------
   lsi_net_receive_test
@@ -305,12 +303,16 @@ eth_getenv_enetaddrg(const char *name, unsigned char enetaddr[6])
 void
 lsi_net_receive_test(void)
 {
+#ifdef CONFIG_ACP3
 	update_femac();
 
 	if (0 != femac)
 		lsi_femac_receive_test();
 	else
 		acp_eioa_receive_test();
+#else
+	lsi_femac_receive_test();
+#endif
 }
 
 /*
@@ -321,30 +323,16 @@ lsi_net_receive_test(void)
 void
 lsi_net_loopback_test(void)
 {
+#ifdef CONFIG_ACP3
 	update_femac();
 
 	if (0 != femac)
 		lsi_femac_loopback_test();
 	else
 		acp_eioa_loopback_test();
-}
-
+#else
+	lsi_femac_loopback_test();
 #endif
-
-/*
-  ------------------------------------------------------------------------------
-  board_eth_init
-
-  This will get called by 
-*/
-
-int
-board_eth_init(bd_t *bis)
-{
-	printf("%s:%d - LSI Ethernet Driver Initialization.\n",
-	       __FILE__, __LINE__); /* ZZZ */
-
-	return 0;
 }
 
 #endif /* NCR_TRACER */

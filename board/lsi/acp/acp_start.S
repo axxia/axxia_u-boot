@@ -32,10 +32,6 @@
 #undef CLEAR_UTLB
 #define CLEAR_UTLB
 
-#if defined(CONFIG_ACP3) && defined(CONFIG_ISS)
-#define CLEAR_UTLB
-#endif
-
 	.section	.text
 
 	.global		acp_spintable_jump
@@ -380,6 +376,48 @@ acp_relocate:
 
 	#; Determine whether this is a cold or warm reset.
 
+#if defined(ACP_25xx) && !defined(ACP_EMU)
+	#; 2500 Case
+	lis		r23,(DCR_RESET_BASE + 0xe)@h
+	ori		r23,r23,(DCR_RESET_BASE + 0xe)@l
+#if 0
+	mfdcrx		r21,r23
+#else
+	#; mfdcrx		r21,r23
+	#; Use 0x7c000206 | (0x15 << 21) | (0x17 << 16)
+	#; to avoid incomaptibility with older binutils...
+	.long		0x7eb70206
+#endif
+	andi.		r21,r21,0xf
+	ori		r22,r21,0
+	lis		r23,(DCR_RESET_BASE + 0x8)@h
+	ori		r23,r23,(DCR_RESET_BASE + 0x8)@l
+#if 0
+	mfdcrx		r21,r23
+#else
+	#; mfdcrx		r21,r23
+	#; Use 0x7c000206 | (0x15 << 21) | (0x17 << 16)
+	#; to avoid incomaptibility with older binutils...
+	.long		0x7eb70206
+#endif
+	andi.		r21,r21,0x3
+	or		r22,r22,r21
+	lis		r23,(DCR_RESET_BASE + 0x6)@h
+	ori		r23,r23,(DCR_RESET_BASE + 0x6)@l
+#if 0
+	mfdcrx		r21,r23
+#else
+	#; mfdcrx		r21,r23
+	#; Use 0x7c000206 | (0x15 << 21) | (0x17 << 16)
+	#; to avoid incomaptibility with older binutils...
+	.long		0x7eb70206
+#endif
+	andi.		r21,r21,0x3
+	or		r22,r22,r21
+	cmpwi		r22,0
+	beq		warm_start
+#else
+	#; Non-2500 Case
 	lis		r23,(DCR_RESET_BASE + 1)@h
 	ori		r23,r23,(DCR_RESET_BASE + 1)@l
 #if 0
@@ -395,6 +433,7 @@ acp_relocate:
 	and		r21,r21,r23
 	cmpwi		r21,0
 	beq		warm_start
+#endif
 
 cold_start:
 
@@ -586,7 +625,7 @@ clear_all_fp_done:
 	mtspr		ccr1, r0
 	isync
 
-#ifdef ACP3
+#ifdef CONFIG_ACP3
 acp_icache_init:
 
 	#; Create a 64K page at virtual=0x40000000/physical=0x003f0000

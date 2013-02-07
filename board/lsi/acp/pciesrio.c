@@ -22,6 +22,19 @@
 
 #include <common.h>
 
+#undef PCIESRIO_EXTERNAL_TEST1
+/*#define PCIESRIO_EXTERNAL_TEST1*/
+
+#ifdef PCIESRIO_EXTERNAL_TEST1
+#if (ACP_CACHE_TLB != 0x00030507)
+#error "!!L1 and L2 caches MUST be disabled for this to work!!"
+#endif
+#endif
+
+#ifdef PCIESRIO_EXTERNAL_TEST1
+volatile unsigned long pciesrio_value_from_ext_host = 0xffffffffUL;
+#endif
+
 /*
   -------------------------------------------------------------------------------
   pciesrio_set_control
@@ -45,8 +58,54 @@
 int
 pciesrio_set_control(unsigned long new_control)
 {
+#ifdef ACP_25xx
+	return 0;
+#else
 #if !defined(ACP_EMU) && !defined(ACP_ISS) && !defined(ACP_X1V1)
 	unsigned long old_control;
+
+#ifdef PCIESRIO_EXTERNAL_TEST1
+	/*
+	  Set up as end-point.
+	 */
+
+	acpwriteio(0x80000000, (void *)GPREG_PHY_CTRL0);
+	acpwriteio(0, (void *)GPREG_PHY_CTRL0);
+	udelay(1000);
+	acpwriteio(1, (void *)GPREG_PHY_CTRL0);
+
+	/*
+	  Wait for the final value from the external host.
+	*/
+
+	printf("** The current phy_ctrl0 value is 0x%08x\n"
+	       "** Update offset 0x%08x in LCM with the value you want...\n",
+	       acpreadio((void *)GPREG_PHY_CTRL0),
+	       ((unsigned long)&pciesrio_value_from_ext_host - 0xf0a00000));
+
+	while (0xffffffffUL == pciesrio_value_from_ext_host)
+		;
+
+	printf("** Writing 0x%08x to phy_ctrl0.\n",
+	       pciesrio_value_from_ext_host);
+
+	/*
+	  Write the final value.
+	*/
+
+	acpwriteio((pciesrio_value_from_ext_host & 0x1f00),
+		   (void *)GPREG_PHY_CTRL0);
+	udelay(1);
+	acpwriteio((0x80000000 |
+		    (pciesrio_value_from_ext_host & 0x1f00)),
+		   (void *)GPREG_PHY_CTRL0);
+	udelay(1);
+	acpwriteio((pciesrio_value_from_ext_host & 0x1f00),
+		   (void *)GPREG_PHY_CTRL0);
+	udelay(1);
+	acpwriteio((pciesrio_value_from_ext_host & 0x1f0f),
+		   (void *)GPREG_PHY_CTRL0);
+#else  /* PCIESRIO_EXTERNAL_TEST1 */
 
 	if (0 != (new_control & ~0x00003f8f)) {
 		printf("Invalid PHY control value: 0x%08lx\n", new_control);
@@ -56,6 +115,7 @@ pciesrio_set_control(unsigned long new_control)
 	old_control = acpreadio((void *)GPREG_PHY_CTRL0);
 	printf("Switching PHY0 Control from 0x%08lx to 0x%08lx\n",
 	       old_control, new_control);
+
 
 	if ((0 != old_control) && (new_control != old_control)) {
 		printf("WARNING: Switchting from one non-zero control setting "
@@ -101,6 +161,8 @@ pciesrio_set_control(unsigned long new_control)
 			    acpreadio((void *)GPREG_PHY_CTRL0));
 	}
 
+#endif	/* PCIESRIO_EXTERNAL_TEST1 */
 	return 0;
+#endif
 #endif
 }

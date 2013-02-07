@@ -196,7 +196,8 @@ acpwriteio( ( value ), ( unsigned long * ) ( address ) )
 
 /* -- -- */
 
-#define PHY_ADDRESS_ 0x1e
+/*#define PHY_ADDRESS_ 0x1e*/
+#define PHY_ADDRESS_ 0
 
 /* Set to -1 to auto-detect. */
 static int phy_address_ = PHY_ADDRESS_;
@@ -639,8 +640,6 @@ static app3xxnic_queue_pointer_t tx_head_;
   ======================================================================
 */
 
-#ifndef CONFIG_ACP2
-
 static void
 dump_configuration(void)
 {
@@ -826,8 +825,6 @@ lsi_femac_loopback_test( void )
 	return;
 
 }
-
-#endif /* CONFIG_ACP2 */
 
 /*
   ======================================================================

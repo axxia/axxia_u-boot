@@ -21,10 +21,12 @@
  */
 
 #include <common.h>
-#include "ncp_denali_regs.h"
-#include "ncp_denali_reg_defines.h"
-#include "ncp_phy_regs.h"
-#include "ncp_phy_reg_defines.h"
+
+#include "ncp_sysmem_ext.h"
+#include "regs/ncp_denali_regs.h"
+#include "regs/ncp_denali_reg_defines.h"
+#include "regs/ncp_phy_regs.h"
+#include "regs/ncp_phy_reg_defines.h"
 
 /*
   ==============================================================================
@@ -35,28 +37,6 @@
   ==============================================================================
   ==============================================================================
 */
-
-static unsigned long sc_nodes [ ] = {
-	0x20, 0x1e, 0x21, 0x1d, 0x11, 0x12, 0x10, 0x13
-};
-
-static unsigned long sm_nodes [ ] = {
-	0x22, 0x0f, 0x08, 0x09
-};
-
-static unsigned long rank_address_map [ 2 ] [ 2 ] = {
-	{ 0x300, 0x100 },
-	{ 0x400, 0x600 }
-};
-
-typedef enum {
-	NCP_SYSMEM_PHY_NO_LEVELING = 0,
-	NCP_SYSMEM_PHY_WRITE_LEVELING,
-	NCP_SYSMEM_PHY_READ_LEVELING,
-	NCP_SYSMEM_PHY_GATE_TRAINING
-} ncp_sm_phy_training_mode_t;
-
-static unsigned short tRFC_vals [ 5 ] = { 0, 0x30, 0x3b, 0x56, 0xa0 };
 
 #define SMAV( regName, regField, newValue ) \
 do { \
@@ -1026,142 +1006,6 @@ delay_table_t delay_table_sm1[] = {
 
 #endif
 
-#ifdef SM_REG_DUMP
-
-/*
-  ------------------------------------------------------------------------------
-  sm_reg_dump
-*/
-
-void
-sm_reg_dump(int id, int rank, char *file, unsigned long line)
-{
-	unsigned long region;
-	unsigned long offset;
-	unsigned long value;
-	int tmp;
-	int i;
-	int j;
-	int node[] = {0x22, 0x0f};
-
-	printf("SM Register (node=0x%x rank=%d) Dump from %s, line %d\n",
-	       node[id], rank, file, line);
-	region = NCP_REGION_ID(node[id], 1);
-
-	for (offset = 0x3d8; offset <= 0xbd8; offset += 0x400) {
-		ncr_read32(region, offset, &value);
-		printf("0.%x.1.%010x: %08x\n", node[id], offset, value);
-	}
-
-	for (offset = 0x803c; offset <= 0x847c; offset += 0x40) {
-		ncr_read32(region, offset, &value);
-		printf("0.%x.1.%010x: %08x\n", node[id], offset, value);
-	}
-
-	offset = 0x8000 + ((rank >> 1) * 0x800);
-
-	for (i = 0; i < 9; ++i) {
-		unsigned buffer[4];
-
-		ncr_read(region, offset, 16);
-		ncr_read_buffer(buffer, 0, 16);
-		printf("0.%x.1.%010x: %08x %08x %08x %08x\n", node[id], offset,
-		       buffer[0], buffer[1], buffer[2], buffer[3]);
-		offset += 0x40;
-		ncr_read(region, offset, 16);
-		ncr_read_buffer(buffer, 0, 16);
-		printf("0.%x.1.%010x: %08x %08x %08x %08x\n", node[id], offset,
-		       buffer[0], buffer[1], buffer[2], buffer[3]);
-		offset += 0x40;
-	}
-
-	offset = 0x8010 + ((rank >> 1) * 0x800);
-
-	for (i = 0; i < 9; ++i) {
-		ncr_read32(region, offset, &value);
-		printf("0.%x.1.%010x: %08x\n", node[id], offset, value);
-		offset += 0x40;
-		ncr_read32(region, offset, &value);
-		printf("0.%x.1.%010x: %08x\n", node[id], offset, value);
-		offset += 0x40;
-	}
-
-	for (tmp = 0; tmp < 1; ++tmp) {
-		offset = 0x10000 + (tmp * 0x800);
-
-		for (i = 0; i < 9; ++i) {
-			unsigned long buffer[8];
-
-			ncr_read(region, offset, 12);
-			ncr_read_buffer(buffer, 0, 12);
-			printf("0.%x.1.%010x: %08x %08x %08x\n",
-			       node[id], offset,
-			       buffer[0], buffer[1], buffer[2]);
-			ncr_read(region, (offset + 0x20), 32);
-			ncr_read_buffer(buffer, 0, 32);
-			printf("0.%x.1.%010x: %08x %08x %08x %08x\n",
-			       node[id], (offset + 0x20),
-			       buffer[0], buffer[1], buffer[2], buffer[3]);
-			printf("0.%x.1.%010x: %08x %08x %08x %08x\n",
-			       node[id], (offset + 0x30),
-			       buffer[4], buffer[5], buffer[6], buffer[7]);
-			offset += 0x80;
-		}
-	}
-
-	for (tmp = 0; tmp <= 1; ++tmp) {
-		offset = 0x18000 + (tmp * 0x800);
-
-		for (i = 0; i < 9; ++i) {
-			ncr_read32(region, offset, &value);
-			printf("0.%x.1.%010x: %08x\n", node[id], offset, value);
-			offset += 0x80;
-		}
-	}
-
-	return;
-}
-
-/*
-  check_for_failure
-*/
-
-int
-check_for_failure(int display, char *file, unsigned long line)
-{
-	int rc = 0;
-	int i;
-
-	for (i = 0x103a0; i <= 0x103bc; ++i) {
-		unsigned long value0;
-		unsigned long value1;
-
-		ncr_read32(NCP_REGION_ID(0x22, 1), i, &value0);
-		ncr_read32(NCP_REGION_ID(0x0f, 1), i, &value1);
-
-		if (0x20 <= value0) {
-			printf("0x22.1.0x%08x = 0x%08x\n", i, value0);
-			rc = 1;
-		}
-
-		if (0x20 <= value1) {
-			printf("0x0f.1.0x%08x = 0x%08x\n", i, value1);
-			rc = 1;
-		}
-	}
-
-	if (0 != display || 0 != rc) {
-		sm_reg_dump(0, 0, file, line);
-		sm_reg_dump(0, 1, file, line);
-		sm_reg_dump(1, 0, file, line);
-		sm_reg_dump(1, 1, file, line);
-	}
-
-	return rc;
-}
-
-#endif /* SM_REG_DUMP */
-
 /*
   ------------------------------------------------------------------------------
   debug_dump
@@ -1252,6 +1096,315 @@ delay_dump(unsigned long line, unsigned long smNode)
 		       smNode, (offset + 0x280), value);
 	}
 #endif
+}
+
+/*
+  ------------------------------------------------------------------------------
+  sm_bytelane_test
+*/
+
+static int
+sm_bytelane_test(void * foo, unsigned long address, int pattern, unsigned long *bad_bl_bad,
+		 unsigned long *bad_bl_early, unsigned long *bad_bl_late, 
+		 unsigned long num_bls)
+{
+	int i;
+	int j;
+	unsigned char *cdar = (unsigned char *)(NCA + 0x1060);
+	unsigned long *cdar32 = (unsigned long *)(NCA + 0x1000);
+	unsigned char value;
+	unsigned long value32 = 0x01010101UL;
+	unsigned long offset = num_bls * 2;
+
+	/* The RTE writes the opposite pattern first... */
+
+	/* Write. */
+	for (i = 0; i < (128 / num_bls); ++i) {
+		unsigned long temp;
+
+		if (0 == pattern)
+			temp = value32;
+		else
+			temp = ~value32;
+
+		*cdar32++ = temp;
+
+		NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
+			  "0x%02x 0x%02x 0x%02x 0x%02x",
+			  (address + (num_bls * i)),
+			  (unsigned char )((temp & 0xff000000) >> 24),
+			  (unsigned char )((temp & 0x00ff0000) >> 16),
+			  (unsigned char )((temp & 0x0000ff00) >>  8),
+			  (unsigned char )(temp & 0x000000ff));
+
+		if (num_bls == 8) {
+			*cdar32++ = temp;
+			NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
+				  "0x%02x 0x%02x 0x%02x 0x%02x",
+				  (address + 4 + (8 * i)),
+				  (unsigned char )((temp & 0xff000000) >> 24),
+				  (unsigned char )((temp & 0x00ff0000) >> 16),
+				  (unsigned char )((temp & 0x0000ff00) >>  8),
+				  (unsigned char )(temp & 0x000000ff));
+		}
+
+		if (0x80808080UL > value32)
+			value32 = value32 << 1;
+		else
+			value32 = 0x01010101UL;
+
+	}
+
+#ifdef SM_BYTELANE_TEST_DEBUG
+	{
+		int index;
+
+		for (index = 0; index < (128 / 4); ++index) {
+			printf("<%03d:0x%08lx>", (index * 4),
+			       *((unsigned long *)(NCA + 0x1000 + (index * 4))));
+		}
+
+		printf("\n");
+	}
+#endif
+
+	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128 );
+
+	if (0 != (pattern & 0x2))
+		return 0;
+
+	/* Read back and compare. */
+	ncr_read( NCP_REGION_ID( 512, 1 ), address, 128 );
+	NCR_TRACE("ncpRead   -w8 0.512.1.0x00%08lx 128", address);
+
+#ifdef SM_BYTELANE_TEST_DEBUG
+	{
+		int index;
+
+		for (index = 0; index < (128 / 4); ++index) {
+			printf("(%03d:0x%08lx)", (index * 4),
+			       *((unsigned long *)(NCA + 0x1000 + (index * 4))));
+		}
+
+		printf("\n");
+	}
+#endif
+	*bad_bl_bad = 0;
+	*bad_bl_early = 0;
+	*bad_bl_late = 0;
+	j = 0;
+
+	for (i = 0; i < num_bls; ++i) {
+		value = (8 == num_bls) ? 0x10 : 0x01;
+
+		if (0 != pattern)
+			value = ~value;
+
+#ifdef SM_BYTELANE_TEST_DEBUG
+		printf("i=%d j=%d value=0x%02x "
+		       "cdar=0x%08x/0x%02x/0x%02x/0x%02x\n",
+		       i, j, value, cdar, *cdar, *(cdar - offset),
+		       *(cdar + offset));
+#endif
+
+		if (value != *cdar) {
+			if (*(cdar - offset) == value)
+				*bad_bl_early |= 1 << i;
+			else if (*(cdar + offset) == value)
+				*bad_bl_late |= 1 << i;
+			else
+				*bad_bl_bad |= 1 << i;
+		}
+
+		++cdar;
+		++j;
+	}
+
+#ifdef SM_BYTELANE_TEST_DEBUG
+	printf("*bad_bl_bad=0x%x *bad_bl_early=0x%x *bad_bl_late=0x%x\n",
+	       *bad_bl_bad, *bad_bl_early, *bad_bl_late);
+#endif
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  sm_ecc_bytelane_test
+*/
+
+static int
+sm_ecc_bytelane_test(void *foo, unsigned long region, unsigned long address,
+		     unsigned long node, int pattern, unsigned long ecc_mask,
+		     unsigned long *bad_bl)
+{
+	unsigned long value;
+	unsigned long temp;
+	int i;
+	int rc;
+
+	/* clear ECC interrupt status bits */
+	ncr_read32( region, NCP_DENALI_CTL_91, & value );
+#ifdef SM_ECC_BYTELANE_TEST_DEBUG
+	printf( "region=0x%08lx value=0x%08lx\n", region, value );
+#endif /* SM_ECC_BYTELANE_TEST_DEBUG */
+	value &= ecc_mask;
+	ncr_write32( region, NCP_DENALI_CTL_89, value );
+
+	/* Write. */
+	value = 0x01010101;
+		
+	for (i = 0; i < 128 ; i += 8) {
+		unsigned long this_value;
+
+		if (0 == pattern)
+			this_value = value;
+		else
+			this_value = ~value;
+
+		*((unsigned long *)(NCA + 0x1000 + i)) = this_value;
+		*((unsigned long *)(NCA + 0x1004 + i)) = this_value;
+		NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
+			  "0x%02x 0x%02x 0x%02x 0x%02x",
+			  (address + i),
+			  (unsigned char )((this_value & 0xff000000) >> 24),
+			  (unsigned char )((this_value & 0x00ff0000) >> 16),
+			  (unsigned char )((this_value & 0x0000ff00) >>  8),
+			  (unsigned char )(this_value & 0x000000ff));
+		NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
+			  "0x%02x 0x%02x 0x%02x 0x%02x",
+			  (address + 4 + i),
+			  (unsigned char )((this_value & 0xff000000) >> 24),
+			  (unsigned char )((this_value & 0x00ff0000) >> 16),
+			  (unsigned char )((this_value & 0x0000ff00) >>  8),
+			  (unsigned char )(this_value & 0x000000ff));
+
+		if (value < 0x80808080)
+			value <<= 1;
+		else
+			value = 0x01010101;
+	}
+
+#ifdef SM_ECC_BYTELANE_TEST_DEBUG
+	{
+		int index;
+
+		for (index = 0; index < (128 / 4); ++index) {
+			printf("<%03d:0x%08lx>", (index * 4),
+			       *((unsigned long *)(NCA + 0x1000 + (index * 4))));
+		}
+
+		printf("\n");
+	}
+#endif /* SM_ECC_BYTELANE_TEST_DEBUG */
+
+	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128 );
+
+	/*
+	  ncr_read() returns the contents of "CFG Ring Command Error
+	  Status Register 0" after the operation.
+
+	  The top 6 bits are all that matter; but the layout changed
+	  as of X1V2.  See the definition of 0x101.0.0xe4 for details.
+
+	  In X1V1, the RTE returns NCP_ST_DEV_PIO_DECODE_ERR when the
+	  "decode_error" bit is set.
+
+	  In X1V2 and later, the RTE returns NCP_ST_DEV_PIO_DECODE_ERR
+	  when both the "target_error" and
+	  "decode_err_or_node_err_type_bit0" bits are set.
+
+	  In the following, both NCP_ST_SUCCESS, and
+	  NCP_ST_DEV_PIO_DECODE_ERR should be acceptable; any other
+	  return code is an error.
+	*/
+
+#define NCR_ERROR_BIT_MASK 0xfc000000
+#ifdef ACP_X1V1
+#define NCP_ST_DEV_PIO_DECODE_ERR 0x40000000
+#else
+#define NCP_ST_DEV_PIO_DECODE_ERR 0x84000000
+#endif
+
+	/* Read, Ignoring the Value Read */
+	rc = ncr_read( NCP_REGION_ID( node, 5 ), 0, 128/4 );
+	NCR_TRACE( "ncpRead    0.%lu.5.0x0000000000 32", node );
+
+#ifdef SM_ECC_BYTELANE_TEST_DEBUG
+	{
+		int index;
+
+		for (index = 0; index < (128 / 4); ++index) {
+			printf("(%03d:0x%08lx)", (index * 4),
+			       *((unsigned long *)(NCA + 0x1000 + (index * 4))));
+		}
+
+		printf("\n");
+	}
+#endif /* SM_ECC_BYTELANE_TEST_DEBUG */
+
+	if ((0 != rc) &&
+	    (NCP_ST_DEV_PIO_DECODE_ERR != (rc & NCR_ERROR_BIT_MASK))) {
+		printf("%s:%s:%d - rc=0x%x\n",
+		       __FILE__, __FUNCTION__, __LINE__, rc);
+		return -1;
+	}
+
+	/*
+	  If the interrupt status below is 0, the data just read back
+	  should be compared to what was written.  Since there isn't a
+	  place to store it, compare it now (since the following
+	  config ring accesses will overwrite the first few words).
+	 */
+	{
+		value = 0x01010101;
+		rc = 0;
+
+		for (i = 0; i < 128 ; i += 8) {
+			unsigned long this_value;
+
+			if (0 == pattern)
+				this_value = value;
+			else
+				this_value = ~value;
+
+			temp = *((unsigned long *)(NCA + 0x1000 + i));
+
+			if (temp != this_value) {
+				rc = 0x1ff;
+			}
+
+			temp = *((unsigned long *)(NCA + 0x1004 + i));
+
+			if (temp != this_value) {
+				rc = 0x1ff;
+			}
+
+			if (value < 0x80808080)
+				value <<= 1;
+			else
+				value = 0x01010101;
+		}
+	}
+
+	/* Clear any ACK errors created during initialization. */
+	ncr_read32( NCP_REGION_ID( node, 0 ), 0, &temp);
+	ncr_write32( NCP_REGION_ID( node, 0 ), 0, temp);
+
+	/* Check the interrupt status. */
+	ncr_read32( region, NCP_DENALI_CTL_91, & value );
+#ifdef SM_ECC_BYTELANE_TEST_DEBUG
+	printf("NCP_DENALI_CTL_91: 0x%lx\n", value);
+#endif /* SM_ECC_BYTELANE_TEST_DEBUG */
+	value &= ecc_mask;
+
+	if (0 != value) {
+		*bad_bl = 0x100;
+	} else if (0 != rc) {
+		*bad_bl = 0x1ff;
+	}
+
+	return 0;
 }
 
 /*
@@ -1477,315 +1630,6 @@ phy_training_run( unsigned long smId,
 
 /*
   ------------------------------------------------------------------------------
-  sm_bytelane_test
-*/
-
-static int
-sm_bytelane_test(unsigned long address, int pattern, unsigned long *bad_bl_bad,
-		 unsigned long *bad_bl_early, unsigned long *bad_bl_late, 
-		 unsigned long num_bls)
-{
-	int i;
-	int j;
-	unsigned char *cdar = (unsigned char *)(NCA + 0x1060);
-	unsigned long *cdar32 = (unsigned long *)(NCA + 0x1000);
-	unsigned char value;
-	unsigned long value32 = 0x01010101UL;
-	unsigned long offset = num_bls * 2;
-
-	/* The RTE writes the opposite pattern first... */
-
-	/* Write. */
-	for (i = 0; i < (128 / num_bls); ++i) {
-		unsigned long temp;
-
-		if (0 == pattern)
-			temp = value32;
-		else
-			temp = ~value32;
-
-		*cdar32++ = temp;
-
-		NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
-			  "0x%02x 0x%02x 0x%02x 0x%02x\n",
-			  (address + (num_bls * i)),
-			  (unsigned char )((temp & 0xff000000) >> 24),
-			  (unsigned char )((temp & 0x00ff0000) >> 16),
-			  (unsigned char )((temp & 0x0000ff00) >>  8),
-			  (unsigned char )(temp & 0x000000ff));
-
-		if (num_bls == 8) {
-			*cdar32++ = temp;
-			NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
-				  "0x%02x 0x%02x 0x%02x 0x%02x\n",
-				  (address + 4 + (8 * i)),
-				  (unsigned char )((temp & 0xff000000) >> 24),
-				  (unsigned char )((temp & 0x00ff0000) >> 16),
-				  (unsigned char )((temp & 0x0000ff00) >>  8),
-				  (unsigned char )(temp & 0x000000ff));
-		}
-
-		if (0x80808080UL > value32)
-			value32 = value32 << 1;
-		else
-			value32 = 0x01010101UL;
-
-	}
-
-#ifdef SM_BYTELANE_TEST_DEBUG
-	{
-		int index;
-
-		for (index = 0; index < (128 / 4); ++index) {
-			printf("<%03d:0x%08x>", (index * 4),
-			       *((unsigned long *)(NCA + 0x1000 + (index * 4))));
-		}
-
-		printf("\n");
-	}
-#endif
-
-	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128 );
-
-	if (0 != (pattern & 0x2))
-		return 0;
-
-	/* Read back and compare. */
-	ncr_read( NCP_REGION_ID( 512, 1 ), address, 128 );
-	NCR_TRACE("ncpRead   -w8 0.512.1.0x00%08lx 128\n", address);
-
-#ifdef SM_BYTELANE_TEST_DEBUG
-	{
-		int index;
-
-		for (index = 0; index < (128 / 4); ++index) {
-			printf("(%03d:0x%08x)", (index * 4),
-			       *((unsigned long *)(NCA + 0x1000 + (index * 4))));
-		}
-
-		printf("\n");
-	}
-#endif
-	*bad_bl_bad = 0;
-	*bad_bl_early = 0;
-	*bad_bl_late = 0;
-	j = 0;
-
-	for (i = 0; i < num_bls; ++i) {
-		value = 0x10;
-
-		if (0 != pattern)
-			value = ~value;
-
-#ifdef SM_BYTELANE_TEST_DEBUG
-		printf("i=%d j=%d value=0x%02x "
-		       "cdar=0x%08x/0x%02x/0x%02x/0x%02x\n",
-		       i, j, value, cdar, *cdar, *(cdar - offset),
-		       *(cdar + offset));
-#endif
-
-		if (value != *cdar) {
-			if (*(cdar - offset) == value)
-				*bad_bl_early |= 1 << i;
-			else if (*(cdar + offset) == value)
-				*bad_bl_late |= 1 << i;
-			else
-				*bad_bl_bad |= 1 << i;
-		}
-
-		++cdar;
-		++j;
-	}
-
-#ifdef SM_BYTELANE_TEST_DEBUG
-	printf("*bad_bl_bad=0x%x *bad_bl_early=0x%x *bad_bl_late=0x%x\n",
-	       *bad_bl_bad, *bad_bl_early, *bad_bl_late);
-#endif
-
-	return 0;
-}
-
-/*
-  ------------------------------------------------------------------------------
-  sm_ecc_bytelane_test
-*/
-
-static int
-sm_ecc_bytelane_test(unsigned long region, unsigned long address,
-		     unsigned long node, int pattern, unsigned long ecc_mask,
-		     unsigned long *bad_bl)
-{
-	unsigned long value;
-	unsigned long temp;
-	int i;
-	int rc;
-
-	/* clear ECC interrupt status bits */
-	ncr_read32( region, NCP_DENALI_CTL_91, & value );
-#ifdef SM_ECC_BYTELANE_TEST_DEBUG
-	printf( "region=0x%08lx value=0x%08lx\n", region, value );
-#endif /* SM_ECC_BYTELANE_TEST_DEBUG */
-	value &= ecc_mask;
-	ncr_write32( region, NCP_DENALI_CTL_89, value );
-
-	/* Write. */
-	value = 0x01010101;
-		
-	for (i = 0; i < 128 ; i += 8) {
-		unsigned long this_value;
-
-		if (0 == pattern)
-			this_value = value;
-		else
-			this_value = ~value;
-
-		*((unsigned long *)(NCA + 0x1000 + i)) = this_value;
-		*((unsigned long *)(NCA + 0x1004 + i)) = this_value;
-		NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
-			  "0x%02x 0x%02x 0x%02x 0x%02x\n",
-			  (address + i),
-			  (unsigned char )((this_value & 0xff000000) >> 24),
-			  (unsigned char )((this_value & 0x00ff0000) >> 16),
-			  (unsigned char )((this_value & 0x0000ff00) >>  8),
-			  (unsigned char )(this_value & 0x000000ff));
-		NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
-			  "0x%02x 0x%02x 0x%02x 0x%02x\n",
-			  (address + 4 + i),
-			  (unsigned char )((this_value & 0xff000000) >> 24),
-			  (unsigned char )((this_value & 0x00ff0000) >> 16),
-			  (unsigned char )((this_value & 0x0000ff00) >>  8),
-			  (unsigned char )(this_value & 0x000000ff));
-
-		if (value < 0x80808080)
-			value <<= 1;
-		else
-			value = 0x01010101;
-	}
-
-#ifdef SM_ECC_BYTELANE_TEST_DEBUG
-	{
-		int index;
-
-		for (index = 0; index < (128 / 4); ++index) {
-			printf("<%03d:0x%08lx>", (index * 4),
-			       *((unsigned long *)(NCA + 0x1000 + (index * 4))));
-		}
-
-		printf("\n");
-	}
-#endif /* SM_ECC_BYTELANE_TEST_DEBUG */
-
-	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128 );
-
-	/*
-	  ncr_read() returns the contents of "CFG Ring Command Error
-	  Status Register 0" after the operation.
-
-	  The top 6 bits are all that matter; but the layout changed
-	  as of X1V2.  See the definition of 0x101.0.0xe4 for details.
-
-	  In X1V1, the RTE returns NCP_ST_DEV_PIO_DECODE_ERR when the
-	  "decode_error" bit is set.
-
-	  In X1V2 and later, the RTE returns NCP_ST_DEV_PIO_DECODE_ERR
-	  when both the "target_error" and
-	  "decode_err_or_node_err_type_bit0" bits are set.
-
-	  In the following, both NCP_ST_SUCCESS, and
-	  NCP_ST_DEV_PIO_DECODE_ERR should be acceptable; any other
-	  return code is an error.
-	*/
-
-#define NCR_ERROR_BIT_MASK 0xfc000000
-#ifdef ACP_X1V1
-#define NCP_ST_DEV_PIO_DECODE_ERR 0x40000000
-#else
-#define NCP_ST_DEV_PIO_DECODE_ERR 0x84000000
-#endif
-
-	/* Read, Ignoring the Value Read */
-	rc = ncr_read( NCP_REGION_ID( node, 5 ), 0, 128/4 );
-	NCR_TRACE( "ncpRead    0.%lu.5.0x0000000000 32\n", node );
-
-#ifdef SM_ECC_BYTELANE_TEST_DEBUG
-	{
-		int index;
-
-		for (index = 0; index < (128 / 4); ++index) {
-			printf("(%03d:0x%08lx)", (index * 4),
-			       *((unsigned long *)(NCA + 0x1000 + (index * 4))));
-		}
-
-		printf("\n");
-	}
-#endif /* SM_ECC_BYTELANE_TEST_DEBUG */
-
-	if ((0 != rc) &&
-	    (NCP_ST_DEV_PIO_DECODE_ERR != (rc & NCR_ERROR_BIT_MASK))) {
-		printf("%s:%s:%d - rc=0x%x\n",
-		       __FILE__, __FUNCTION__, __LINE__, rc);
-		return -1;
-	}
-
-	/*
-	  If the interrupt status below is 0, the data just read back
-	  should be compared to what was written.  Since there isn't a
-	  place to store it, compare it now (since the following
-	  config ring accesses will overwrite the first few words).
-	 */
-	{
-		value = 0x01010101;
-		rc = 0;
-
-		for (i = 0; i < 128 ; i += 8) {
-			unsigned long this_value;
-
-			if (0 == pattern)
-				this_value = value;
-			else
-				this_value = ~value;
-
-			temp = *((unsigned long *)(NCA + 0x1000 + i));
-
-			if (temp != this_value) {
-				rc = 0x1ff;
-			}
-
-			temp = *((unsigned long *)(NCA + 0x1004 + i));
-
-			if (temp != this_value) {
-				rc = 0x1ff;
-			}
-
-			if (value < 0x80808080)
-				value <<= 1;
-			else
-				value = 0x01010101;
-		}
-	}
-
-	/* Clear any ACK errors created during initialization. */
-	ncr_read32( NCP_REGION_ID( node, 0 ), 0, &temp);
-	ncr_write32( NCP_REGION_ID( node, 0 ), 0, temp);
-
-	/* Check the interrupt status. */
-	ncr_read32( region, NCP_DENALI_CTL_91, & value );
-#ifdef SM_ECC_BYTELANE_TEST_DEBUG
-	printf("NCP_DENALI_CTL_91: 0x%lx\n", value);
-#endif /* SM_ECC_BYTELANE_TEST_DEBUG */
-	value &= ecc_mask;
-
-	if (0 != value) {
-		*bad_bl = 0x100;
-	} else if (0 != rc) {
-		*bad_bl = 0x1ff;
-	}
-
-	return 0;
-}
-
-/*
-  ------------------------------------------------------------------------------
   phy_coarse_write_leveling
 */
 
@@ -1809,15 +1653,15 @@ phy_coarse_write_leveling( unsigned long smId,
 
 	NCR_TRACE("# sysmem phy coarse write leveling\n");
 
-	sm_bytelane_test(address, 3, &bad_bl[0], &bad_bl[1], &bad_bl[2],
+	sm_bytelane_test(NULL, address, 3, &bad_bl[0], &bad_bl[1], &bad_bl[2],
 			 num_bls);
-	sm_bytelane_test(address, 0, &bad_bl[0], &bad_bl[1], &bad_bl[2],
+	sm_bytelane_test(NULL, address, 0, &bad_bl[0], &bad_bl[1], &bad_bl[2],
 			 num_bls);
 
 	if (0 != bad_bl[0]) {
-		sm_bytelane_test(address, 1,
+		sm_bytelane_test(NULL, address, 1,
 				 &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls);
-		sm_bytelane_test(address, 0,
+		sm_bytelane_test(NULL, address, 0,
 				 &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls);
 	}
 
@@ -1859,7 +1703,7 @@ phy_coarse_write_leveling( unsigned long smId,
 		}
 	}
 
-	sm_bytelane_test(address, 1, &bad_bl[0], &bad_bl[1], &bad_bl[2],
+	sm_bytelane_test(NULL, address, 1, &bad_bl[0], &bad_bl[1], &bad_bl[2],
 			 num_bls);
 
 	if (0 != bad_bl[0] || 0 != bad_bl[1] || 0 != bad_bl[2]) {
@@ -1938,16 +1782,16 @@ phy_coarse_write_leveling( unsigned long smId,
 
 		if (0 != ncr_tracer_is_enabled()) {
 			ncr_tracer_disable();
-			sm_ecc_bytelane_test(ctlRegion, address, node,
+			sm_ecc_bytelane_test(NULL, ctlRegion, address, node,
 					     1, ecc_mask, &ecc_bad_bl);
 			ncr_tracer_enable();
 		} else {
-			sm_ecc_bytelane_test(ctlRegion, address, node,
+			sm_ecc_bytelane_test(NULL, ctlRegion, address, node,
 					     1, ecc_mask, &ecc_bad_bl);
 		}
 
 		ecc_bad_bl = 0;
-		sm_ecc_bytelane_test(ctlRegion, address, node, 0, ecc_mask,
+		sm_ecc_bytelane_test(NULL, ctlRegion, address, node, 0, ecc_mask,
 				     &ecc_bad_bl);
 
 		/*for (i = 0; i < 3; ++ i) {*/
@@ -1994,9 +1838,9 @@ phy_coarse_write_leveling( unsigned long smId,
 			}
 
 			ecc_bad_bl = 0;
-			sm_ecc_bytelane_test(ctlRegion, address, node, 1,
+			sm_ecc_bytelane_test(NULL, ctlRegion, address, node, 1,
 					     ecc_mask, &ecc_bad_bl);
-			sm_ecc_bytelane_test(ctlRegion, address, node, 0,
+			sm_ecc_bytelane_test(NULL, ctlRegion, address, node, 0,
 					     ecc_mask, &ecc_bad_bl);
 		}
 
@@ -2061,10 +1905,10 @@ phy_read_fifo_delay_optimization( unsigned long smId, unsigned long address,
 	rd_fifo_dly = glb_dly.rd_fifo_dly;
 
 	bad_bl[0] = 0;
-	sm_ecc_bytelane_test( ctlRegion, address, scNode, 0, eccMask,
+	sm_ecc_bytelane_test( NULL, ctlRegion, address, scNode, 0, eccMask,
 			      &bad_bl[0]);
 	bad_bl[0] = 0;
-	sm_ecc_bytelane_test( ctlRegion, address, scNode, 1, eccMask,
+	sm_ecc_bytelane_test( NULL, ctlRegion, address, scNode, 1, eccMask,
 			      &bad_bl[0]);
 
 	while (0 == bad_bl[0] && rd_fifo_dly > 2) {
@@ -2074,10 +1918,10 @@ phy_read_fifo_delay_optimization( unsigned long smId, unsigned long address,
 			     * ( ( unsigned long * ) & glb_dly ) );
 
 		bad_bl[0] = 0;
-		sm_ecc_bytelane_test( ctlRegion, address, scNode, 0, eccMask,
+		sm_ecc_bytelane_test( NULL, ctlRegion, address, scNode, 0, eccMask,
 				      &bad_bl[0]);
 		bad_bl[0] = 0;
-		sm_ecc_bytelane_test( ctlRegion, address, scNode, 1, eccMask,
+		sm_ecc_bytelane_test( NULL, ctlRegion, address, scNode, 1, eccMask,
 				      &bad_bl[0]);
 	}
 
@@ -2093,10 +1937,10 @@ phy_read_fifo_delay_optimization( unsigned long smId, unsigned long address,
 
 	/* run the test one more time - it better work! */
 	bad_bl[0] = 0;
-	sm_ecc_bytelane_test( ctlRegion, address, scNode, 0, eccMask,
+	sm_ecc_bytelane_test( NULL, ctlRegion, address, scNode, 0, eccMask,
 			      &bad_bl[0]);
 	bad_bl[0] = 0;
-	sm_ecc_bytelane_test( ctlRegion, address, scNode, 1, eccMask,
+	sm_ecc_bytelane_test( NULL, ctlRegion, address, scNode, 1, eccMask,
 			      &bad_bl[0]);
 
 	if( 0 != bad_bl[0] || 0 != phy_status_check( smId, enableECC ) ) {
@@ -2189,12 +2033,6 @@ phy_runtime_adj( unsigned long smId, unsigned long topology,
 
 	ncr_write32( ctlRegion, 0x114, 0x3fff );
 
-#if 0
-	mask = value = 0;
-	SMAV( ncp_denali_DENALI_CTL_08_t, rdlvl_en, 1 );
-	ncr_modify32( ctlRegion, NCP_DENALI_CTL_08, mask, value );
-#endif
-
 	/* clear ECC interrupt status bits */
 	ncr_read32( ctlRegion, NCP_DENALI_CTL_91, & value );
 #ifdef ACP_X1V1
@@ -2223,7 +2061,10 @@ phy_runtime_adj( unsigned long smId, unsigned long topology,
 */
 
 int
-sysmem_init(void)
+ncp_sysmem_init_ibmphy(
+        void *   dev,
+        int    smId,
+        parameters_sysmem_t *sysmem)
 {
 	unsigned long num_sc_nodes;
 	unsigned long controller;
@@ -2239,63 +2080,6 @@ sysmem_init(void)
 	int i, j;
 	int rc;
 
-	/*
-	  ======================================================================
-	  This should follow ncp_sm_init.nsh
-	  ======================================================================
-	*/
-
-#ifdef DISPLAY_PARAMETERS
-	printf("-- -- Sysmem\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
-	       sysmem->version, sysmem->autoDetect,
-	       sysmem->numInterfaces, sysmem->numRanksPerInterface,
-	       sysmem->topology, sysmem->sdram_device_density,
-	       sysmem->sdram_device_width, sysmem->primary_bus_width,
-	       sysmem->CAS_latency, sysmem->CAS_write_latency,
-	       sysmem->enableECC, sysmem->enableDeskew,
-	       sysmem->enableRdlvl, sysmem->enableAutoCpc,
-	       sysmem->minPhyCalibrationDelay,
-	       sysmem->min_ctrl_roundtrip_delay, sysmem->singleBitMpr,
-	       sysmem->rdcalCompareEven, sysmem->rdcalCompareOdd,
-	       sysmem->phy_rdlat, sysmem->added_rank_switch_delay,
-	       sysmem->high_temp_dram, sysmem->sdram_rtt_nom,
-	       sysmem->sdram_rtt_wr, sysmem->sdram_data_drv_imp,
-	       sysmem->phy_adr_imp, sysmem->phy_dat_imp,
-	       sysmem->phy_rcv_imp, sysmem->sysCacheMode,
-	       sysmem->syscacheDisable, sysmem->halfmemMode);
-#endif
-
-	/*
-	 * set the version.
-	 * Note that this is the Denali controller version,
-	 * which is 2 for v1 and 3 for v2+
-	 */
-#ifdef ACP_X1V1
-	sysmem->version = 2;
-#else
-	sysmem->version = 3;
-#endif
-
-	/*
-	 * determine number of syscaches and halfmem setting 
-	 * based on chipType and numInterfaces 
-	 */
-	num_sc_nodes = sysmem->numInterfaces * 4;
-
-#if defined (ACP_X1V1) || defined (ACP_X1V2)
-	if (sysmem->numInterfaces == 1) {
-		sysmem->halfmemMode = 1;
-	}
-#endif
-
-	delay_dump(__LINE__, sm_nodes[0]);
-	if (sysmem->halfmemMode == 0) {
-		delay_dump(__LINE__, sm_nodes[1]);
-	}
 
 	if (sysmem->primary_bus_width == 2) {
 		num_bls = 4;    
@@ -2304,18 +2088,9 @@ sysmem_init(void)
 	}
 
 	/*
-	  Put all system caches in "force_uncached" mode 
-	*/
-
-	for (i = 0; i < num_sc_nodes; ++i) {
-		ncr_write32(NCP_REGION_ID(sc_nodes[i], 0), 0x100, 1);
-	}
-
-	/*
 	  Initialize all system memories.  This is ncp_sysmem_init_asic( ).
 	*/
 
-	for (i = 0; i < sysmem->numInterfaces; ++ i) {
 		delay_table_t *delay_table;
 		int delay_table_size;
 
@@ -2360,7 +2135,7 @@ sysmem_init(void)
 		      max_rank_delay, 0xf );
 		SMAV( ncp_phy_CFG_SYSMEM_PHY_RDCALGLBDLY_r_t, rd_fifo_dly, 5);
 		SMAV( ncp_phy_CFG_SYSMEM_PHY_RDCALGLBDLY_r_t,
-		      dqs_gate_global_offset, sysmem->minPhyCalibrationDelay);
+		      dqs_gate_global_offset, sysmem->min_phy_cal_delay);
 		ncr_modify32( phy, NCP_PHY_CFG_SYSMEM_PHY_RDCALGLBDLY,
 			      mask, value );
 
@@ -2388,7 +2163,7 @@ sysmem_init(void)
 		ncr_modify32( phy, NCP_PHY_CFG_SYSMEM_PHY_MSTRCTLCFG1,
 			      mask, value );
 
-		if( 0 != sysmem->singleBitMpr ) {
+		if( 0 != sysmem->single_bit_mpr ) {
 			/* disable read calibration deskew */
 			mask = value = 0;
 			SMAV( ncp_phy_CFG_SYSMEM_PHY_RDCALRDDLYOVR_r_t,
@@ -2407,16 +2182,16 @@ sysmem_init(void)
 					NCP_PHY_CFG_SYSMEM_PHY_CMPEVEN_0_BL( j );
 
 				ncr_write32( phy, offset,
-					     sysmem->rdcalCompareEven );
+					     sysmem->rdcal_cmp_even );
 				offset += 4;
 				ncr_write32( phy, offset,
-					     sysmem->rdcalCompareOdd );
+					     sysmem->rdcal_cmp_odd );
 				offset += 4;
 				ncr_write32( phy, offset,
-					     sysmem->rdcalCompareEven );
+					     sysmem->rdcal_cmp_even );
 				offset += 4;
 				ncr_write32( phy, offset,
-					     sysmem->rdcalCompareOdd );
+					     sysmem->rdcal_cmp_odd );
 			}				     
 		} else {
 			/* not single-bit MPR, enable deskew for calibration */
@@ -2591,6 +2366,7 @@ sysmem_init(void)
 #define sdram_rtt_wr sysmem->sdram_rtt_wr
 #define CAS_write_latency sysmem->CAS_write_latency
 #define version sysmem->version
+#define address_mirroring sysmem->address_mirroring
 #include "ncp_sm_denali_init.h"
 #undef topology
 #undef primary_bus_width
@@ -2682,277 +2458,15 @@ sysmem_init(void)
 
 		NCR_TRACE( "# sysmem %d PHY runtime adjustment\n", i );
 
-#if 0
-		/*ZZZ*/
-		if (1 == i) {
-			unsigned long value;
-
-			value = 0xa5a5a5a5;
-			*((unsigned long *)(NCA + 0x1200)) = value;
-
-			do {
-				udelay(1000);
-				value = *((unsigned long *)(NCA + 0x1200));
-			} while (0xdeadbeef != value);
-		}
-		/*ZZZ*/
-#endif
-
 		if (0 != phy_runtime_adj(i, sysmem->topology,
-					 sysmem->singleBitMpr,
-					 sysmem->enableDeskew,
-					 sysmem->enableRdlvl,
-					 sysmem->enableAutoCpc,
+					 sysmem->single_bit_mpr,
+					 sysmem->enable_deskew,
+					 sysmem->enable_rdlvl,
+					 sysmem->enable_auto_cpc,
 					 sysmem->enableECC)) {
 			printf( "%d: PHY runtime adjustment failure\n", i );
 			acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		}
-	}
-
-	/*
-	  Calculate the size of system memory.
-
-	  This should match ncp_calc_mem_size().
-	*/
-
-	{
-		unsigned long long sdram_capacity_bytes;
-		unsigned long sdram_device_width_bits;
-		unsigned long primary_bus_width_bits;
-
-		sdram_capacity_bytes =
-			(1 << sysmem->sdram_device_density) *
-			((256 * 1024 * 1024) / 8);
-		sdram_device_width_bits = 4 * (1 << sysmem->sdram_device_width);
-		primary_bus_width_bits = 8 * (1 << sysmem->primary_bus_width);
-		sdram_capacity_bytes =
-			sysmem->numInterfaces * sysmem->numRanksPerInterface *
-			sdram_capacity_bytes *
-			(primary_bus_width_bits / sdram_device_width_bits);
-		sysmem_size = 0;
-
-		while (0 < sdram_capacity_bytes) {
-			++sysmem_size;
-			sdram_capacity_bytes >>= 1;
-		}
-
-		--sysmem_size;
-	}
-
-#ifdef SM_REG_DUMP
-	check_for_failure(1, __FILE__, __LINE__);
-#endif /* SM_REG_DUMP */
-
-	/*
-	  Enable system caches.
-	*/
-
-	/* loop through all syscaches */
-#if !defined(ACP_DISABLE_L3)
-	for (i = 0; i < num_sc_nodes; ++i) {
-		/* enable the cache - unless the user asked not to */
-		if (!sysmem->syscacheDisable)
-			/*
-			  TODO: This should only be done for
-			  architectures before ACP2500V2!
-			*/
-			ncr_write32(NCP_REGION_ID(sc_nodes[i], 0), 0x100, 8);
-	}
-#endif
-
-	NCR_TRACE("# Initializing system cache \n");
-
-	/*
-	 * Determine appropriate value of the system cache address munge
-	 * register based on the number of syscaches present.
-	 * The field we program has a different value meaning for v1
-	 * and v2:
-	 *
-	 *         v1                                v2
-	 *   system_memory_size      value     memory_per_cache
-	 *        64GB                 0            16GB
-	 *        32GB                 1             8GB
-	 *        16GB                 2             4GB
-	 *         8GB                 3             2GB
-	 *         4GB                 4             1GB
-	 *         2GB                 5           512MB
-	 *         1GB                 6           256MB
-	 *       512MB                 7           128MB
-	 */
-#if defined( ACP_X1V1 )
-	switch( ( 1 << ( sysmem_size - 20 ) ) ) {
-	case 512:
-		value = 7;
-		break;
-	case 1024:
-		value = 6;
-		break;
-	case 2048:
-		value = 5;
-		break;
-	case 4096:
-		value = 4;
-		break;
-	case 8192:
-		value = 3;
-		break;
-	case 16384:
-		value = 2;
-		break;
-	case 32768:
-		value = 1;
-		break;
-	case 65536:
-		value = 0;
-		break;
-	default:
-		printf( "Error Calculating Munge Value.\n" );
-		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
-		break;
-	}
-#elif defined(ACP_X1V2) || defined(CONFIG_ACP_342X) || defined(ACP_25xx)
-	value = ( 1 << ( sysmem_size - 20 ) ) / num_sc_nodes;
-
-	switch( value ) {
-	case 128:
-		value = 7;
-		break;
-	case 256:
-		value = 6;
-		break;
-	case 512:
-		value = 5;
-		break;
-	case 1024:
-		value = 4;
-		break;
-	case 2048:
-		value = 3;
-		break;
-	case 4196:
-		value = 2;
-		break;
-	case 8192:
-		value = 1;
-		break;
-	case 16384:
-		value = 0;
-		break;
-	default:
-		printf( "Error Calculating Munge Value.\n" );
-		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
-		break;
-	}
-#else
-#error "Unsupported System!"
-#endif
-
-	/* if syscacheMode == 1 set the munge reg 'field_order' to 2 */
-	munge_reg = value | (sysmem->sysCacheMode << 4);
-
-	/* Just match the RTE trace... */
-	NCR_TRACE("ncpRead    0.24.255.0x0000000004 1\n");
-	NCR_TRACE("ncpRead    0.32.0.0x0000000014 1\n");
-
-	/* loop through all syscaches */
-	for( i = 0; i < num_sc_nodes; ++ i ) {
-		/* write 'magic value' to enable_init field */
-		ncr_write32( NCP_REGION_ID(sc_nodes[i], 0), 0x18, 0xed );
-		/* set init_cache_ram field */
-		ncr_write32( NCP_REGION_ID(sc_nodes[i], 0), 0x18, 0x000200ed );
-
-		/* wait for it to complete */
-		if (0 != ncr_poll(NCP_REGION_ID(sc_nodes[i], 0), 0x20, 
-				  0x4,        /* mask */
-				  0,          /* value */
-				  0,          /* delayTime */
-				  1000))       /* delayLoops */
-		{
-			acp_failure( __FILE__, __FUNCTION__, __LINE__ );
-		}
-
-		/* set the munge register */
-		ncr_write32( NCP_REGION_ID(sc_nodes[i], 0), 0x14, munge_reg );
-
-		/*
-		  BZ 33026
-		  X1V2 & X2: WFQ Mechanism in SYSCACHE Needs New
-		  Updated Weight Configuration
-		*/
-		ncr_write32(NCP_REGION_ID(sc_nodes[i], 0), 0x1c, 0x23630323);
-
-#ifdef ACP_X1V1
-		/*
-		  BZ 29933
-		  Change the high water mark (the fifo_high_wm field in
-		  mem_inf_write_scr_cmd_fifo_wm) to 4 (default is 5).
-		  Should be done for all system caches in V1.
-		*/
-		ncr_write32( NCP_REGION_ID( sc_nodes[i], 1 ), 0x254,
-			     0x00040004 );
-#endif
-	}
-
-	/* Clear System Memory. */
-	fill_sysmem(0ULL, (1ULL << sysmem_size), num_sc_nodes);
-
-	/* If ECC is enabled, clear the status bits. */
-	if (0 != sysmem->enableECC) {
-		/* clear ECC interrupt status bits */
-		for( i = 0; i < sysmem->numInterfaces; ++ i ) {
-			ncr_read32( NCP_REGION_ID( sm_nodes [ i ], 0 ),
-				    NCP_DENALI_CTL_91, & value );
-#ifdef ACP_X1V1
-			value &= 0x3c;
-#else
-			value &= 0x78;
-#endif
-			ncr_write32( NCP_REGION_ID( sm_nodes [ i ], 0 ),
-				     NCP_DENALI_CTL_89, value );
-		}
-	}
-
-#ifdef SM_REG_DUMP
-	check_for_failure(0, __FILE__, __LINE__);
-#endif /* SM_REG_DUMP */
-
-	/* Disable some speculative reads. */
-#if defined(ACP_X1V1) || defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
-	if (sysmem->halfmemMode)
-		dcr_write( 0x3377c000, 0xf00 );
-	else
-		dcr_write( 0x33774000, 0xf00 );
-#endif
-
-	/* set up NHA */
-	if (sysmem->halfmemMode) {
-		/* and all the other sysmem clients */
-		mask = value = 0x10000000;
-		ncr_modify32( NCP_REGION_ID(0x0b, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x0e, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x15, 0x00), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x16, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x19, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x1c, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x17, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x1f, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x1a, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x1a, 0x23), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x14, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x14, 0x0a), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x0c, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x1b, 0x05), 0x4, mask, value );
-		ncr_modify32( NCP_REGION_ID(0x00, 0x00), 0x4, mask, value );
-	}
-
-	/* WA for 34575 (applies to X1V2 and X2). */
-#ifndef ACP_X1V1
-	dcr_write(0, 0xf1f);
-#endif
-
-#ifdef SM_REG_DUMP
-	check_for_failure(0, __FILE__, __LINE__);
-#endif /* SM_REG_DUMP */
 
 	return 0;
 }
