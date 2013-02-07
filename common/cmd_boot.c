@@ -57,8 +57,10 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 
 		disable_interrupts( );
 
+#if 0
 		if (0 != os_access_enabled)
 			os_access_init( );
+#endif
 
 		ose_init( );
 		os_base = (acp_osg_group_get_res(0, ACP_OS_BASE) *
@@ -66,11 +68,13 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 		sprintf( buffer, "valid=1" );
 		ose_add_string( 0, buffer );
 
+#if 0
 		if (0 != os_access_enabled) {
 			sprintf( buffer, "nand_access_base=0x%lx",
 				 ( unsigned long ) os_access_get_address( ) );
 			ose_add_string( 0, buffer );
 		}
+#endif
 
 		sprintf( buffer, "spintable_0=0x%lx",
 			 ( unsigned long ) 
@@ -80,7 +84,7 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 1 ] )->entry_address ) );
 		ose_add_string( 0, buffer );
-#if !defined(CONFIG_ACP_342X) && !defined(ACP_25xx)
+#if !defined(ACP_X2V1) && !defined(ACP_25xx)
 		sprintf( buffer, "spintable_2=0x%lx",
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 2 ] )->entry_address ) );

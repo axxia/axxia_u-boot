@@ -1390,7 +1390,7 @@ acp_init_r( void )
 #endif
 
  	/* NAND */
-#if !defined(ACP_ISS) && !defined(NCR_TRACER) && !defined(ACP2_SYSMEM_TEST)
+#if defined(CONFIG_LSI_NAND)
 	nand_init( );
 #endif
 	env_relocate( );
@@ -1592,7 +1592,7 @@ acp_init_r( void )
 	serial_init();
 	acp_splash();
 
-#ifdef ACP_25xx
+#if defined(ACP_25xx) && defined(CONFIG_ACP2)
 	{
 		unsigned long ncp_denali_ctl_20;
 		unsigned long ncp_denali_ctl_31;
@@ -1609,7 +1609,8 @@ acp_init_r( void )
 		       "ECC : %s\n"
 		       "Memory : %s\n"
 		       "SysCache : %s\n"
-		       "Reset : %s\n\n",
+		       "Reset : %s\n\n"
+		       "PCIe Test Mode: %s\n\n",
 #ifdef PPC_RUN_ON_REF
 		       125,
 #else
@@ -1635,6 +1636,11 @@ acp_init_r( void )
 		       "Disabled"
 #else
 		       "Enabled"
+#endif
+#ifdef ACP2_PCIE_TEST
+		       "Enabled"
+#else
+		       "Disabled"
 #endif
 		       );
 	}

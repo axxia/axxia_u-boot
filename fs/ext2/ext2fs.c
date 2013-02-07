@@ -250,7 +250,12 @@ void ext2fs_free_node (ext2fs_node_t node, ext2fs_node_t currroot) {
 }
 
 
+#define CFG_OPTIMIZE_EXT2_READ
+#ifdef CFG_OPTIMIZE_EXT2_READ
+static int ext2fs_read_block (ext2fs_node_t node, int fileblock, int *stream) {
+#else
 static int ext2fs_read_block (ext2fs_node_t node, int fileblock) {
+#endif
 	struct ext2_data *data = node->data;
 	struct ext2_inode *inode = &node->inode;
 	int blknr;
@@ -258,9 +263,20 @@ static int ext2fs_read_block (ext2fs_node_t node, int fileblock) {
 	int log2_blksz = LOG2_EXT2_BLOCK_SIZE (data);
 	int status;
 
+#ifdef CFG_OPTIMIZE_EXT2_READ
+       *stream = 1;/* itself */
+#endif
+
 	/* Direct blocks.  */
 	if (fileblock < INDIRECT_BLOCKS) {
 		blknr = __le32_to_cpu (inode->b.blocks.dir_blocks[fileblock]);
+#ifdef CFG_OPTIMIZE_EXT2_READ
+               while(((inode->b.blocks.dir_blocks[fileblock + 1] -
+                       inode->b.blocks.dir_blocks[fileblock]) == 1) && (fileblock < INDIRECT_BLOCKS - 1)) {
+                       fileblock++;
+                       *stream += 1;
+               }
+#endif
 	}
 	/* Indirect.  */
 	else if (fileblock < (INDIRECT_BLOCKS + (blksz / 4))) {
@@ -302,6 +318,15 @@ static int ext2fs_read_block (ext2fs_node_t node, int fileblock) {
 		}
 		blknr = __le32_to_cpu (indir1_block
 				       [fileblock - INDIRECT_BLOCKS]);
+#ifdef CFG_OPTIMIZE_EXT2_READ
+               while(((__le32_to_cpu (indir1_block[fileblock - INDIRECT_BLOCKS
++ 1]) - \
+                       __le32_to_cpu (indir1_block[fileblock - INDIRECT_BLOCKS]
+)) == 1) && (fileblock < (blksz - 1))) {
+                       fileblock++;
+                       *stream += 1;
+               }
+#endif
 	}
 	/* Double indirect.  */
 	else if (fileblock <
@@ -309,6 +334,9 @@ static int ext2fs_read_block (ext2fs_node_t node, int fileblock) {
 		unsigned int perblock = blksz / 4;
 		unsigned int rblock = fileblock - (INDIRECT_BLOCKS
 						   + blksz / 4);
+#ifdef CFG_OPTIMIZE_EXT2_READ
+	int rbcnt = 0;                                                  
+#endif        
 
 		if (indir1_block == NULL) {
 			indir1_block = (uint32_t *) memalign(ARCH_DMA_MINALIGN,
@@ -382,6 +410,14 @@ static int ext2fs_read_block (ext2fs_node_t node, int fileblock) {
 				__le32_to_cpu (indir1_block[rblock / perblock]) << log2_blksz;
 		}
 		blknr = __le32_to_cpu (indir2_block[rblock % perblock]);
+#ifdef CFG_OPTIMIZE_EXT2_READ
+               rbcnt = rblock % perblock;
+               while(((__le32_to_cpu (indir2_block[rbcnt + 1]) - \
+                       __le32_to_cpu (indir2_block[rbcnt])) == 1) && (rbcnt < (blksz - 1))) {
+                       rbcnt++;
+                       *stream += 1;
+               }
+#endif
 	}
 	/* Tripple indirect.  */
 	else {
@@ -394,7 +430,57 @@ static int ext2fs_read_block (ext2fs_node_t node, int fileblock) {
 	return (blknr);
 }
 
+#ifdef CFG_OPTIMIZE_EXT2_READ
+int ext2fs_read_file
+       (ext2fs_node_t node, int pos, unsigned int len, char *buf) {
+       int log2blocksize = LOG2_EXT2_BLOCK_SIZE (node->data);
+       int blocksize = 1 << (log2blocksize + DISK_SECTOR_BITS);
+       unsigned int filesize = __le32_to_cpu(node->inode.size);
+       int blknr;
+       int blockend;
+       int status;
+       int remain = len;
+       char *buffer = buf;
+       int stream = 0;
+       int cur = pos / blocksize;
+       int blockoff = pos % blocksize;
 
+       /* Adjust len so it we can't read past the end of the file.  */
+       if (len > filesize) {
+               len = filesize;
+       }
+
+       while (remain > 0) {
+               blknr = ext2fs_read_block (node, cur, &stream);
+               if (blknr < 0) {
+                       return (-1);
+               }
+               blknr = blknr << log2blocksize;
+
+               if(remain < blocksize * stream) {
+                       blockend = remain;
+               } else {
+                       blockend = blocksize * stream;
+               }
+
+               status = ext2fs_devread (blknr, blockoff, blockend, buffer);
+               if (status == 0) {
+                       return (-1);
+               }
+
+               remain -= blockend;
+               buffer += blockend;
+               cur += stream;
+               blockoff = 0;
+
+               if(remain == 0)
+                       return (len);
+               else if(remain < 0)
+                       return (-1);
+       }
+       return (len);
+}
+#else
 int ext2fs_read_file
 	(ext2fs_node_t node, int pos, unsigned int len, char *buf) {
 	int i;
@@ -454,6 +540,7 @@ int ext2fs_read_file
 	}
 	return (len);
 }
+#endif
 
 
 static int ext2fs_iterate_dir (ext2fs_node_t dir, char *name, ext2fs_node_t * fnode, int *ftype)

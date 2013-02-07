@@ -12,6 +12,13 @@
 #include <asm/4xx_pcie.h>
 #endif
 
+#if defined (ACP_25xx)
+#include "regs/ncp_denali_regs_acp2500.h"
+#include "regs/ncp_denali_reg_defines_acp2500.h"
+#include "regs/ncp_phy_regs_acp2500.h"
+#include "regs/ncp_phy_reg_defines_acp2500.h"
+#endif
+
 
 #ifdef CONFIG_PCI
 
@@ -62,7 +69,7 @@ static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
 		/* v1 only supports fn=0 */
 		if (fn)
 			return NULL;
-#elif defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
+#elif defined(ACP_X1V2) || defined(ACP_X2V1)
 		/* v2 only supports fn0-3 and bus0-63 */
 		if ((fn > 3) || (PCI_BUS(devfn) > 63)) 
 			return NULL;
@@ -82,12 +89,13 @@ static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
 		mpage = (PCI_BUS(devfn) << 11) |
 		(dev << 6) |
 		(cfg_type << 5);
-		mpage |= 0x11;	/* enable MPAGE for configuration access */
 
 		/* the function number moved for X2 */
 #if defined(ACP_X1V1) || defined(ACP_X1V2)
+		mpage |= 0x11;	/* enable MPAGE for configuration access */
 		mpage |= (fn << 17);
 #else
+		mpage |= 0x10;	/* enable MPAGE for configuration access */
 		mpage |= (fn << 19);
 #endif
 
@@ -109,7 +117,7 @@ static int pcie_read_config(struct pci_controller *hose, unsigned int devfn,
 
 	u8 *address;
 	*val = 0;
-	u32 bus_addr, val32;
+	u32 bus_addr, val32, mcsr;
 	int bo = offset & 0x3;
 	int wo;
 
@@ -142,6 +150,15 @@ static int pcie_read_config(struct pci_controller *hose, unsigned int devfn,
 #ifdef DEBUG_PCIE
 	printf("pcie_read_config:  cfg space base_address  = 0x%x, cfg_data = 0x%x\n", address, hose->cfg_data);
 #endif
+
+        /*
+         * Reading from configuration space of non-existing device can
+         * generate transaction errors. For the read duration we suppress
+         * assertion of machine check exceptions to avoid those.
+         */
+        mtmsr( mfmsr() & ~(MSR_ME));
+        __asm__ __volatile__("msync");
+
 
 	if (PCI_BUS(devfn) == 0) {
 		wo = offset & 0xfffffffc;
@@ -182,9 +199,28 @@ static int pcie_read_config(struct pci_controller *hose, unsigned int devfn,
 			*val = val32;
 			break;
 	}
+
+	 __asm__ __volatile__("msync");
+	mcsr = mfspr(SPRN_MCSR);
+	if ( mcsr != 0) {
+		mtspr(SPRN_MCSR, 0);
+		__asm__ __volatile__("msync");	
+
 #ifdef DEBUG_PCIE
-	printf("pcie_read_config:  %s: cfg_data=%08x offset=%08x, bus_addr = 0x%08x, val = 0x%08x\n", __func__, hose->cfg_data, offset, bus_addr, *val);
+		printf("pcie_read_config:  %s: cfg_data=%08x offset=%08x, bus_addr = 0x%08x machine check!! val = 0x%08x\n", __func__, hose->cfg_data, offset, bus_addr, mcsr);
 #endif
+		*val = 0;
+		return 0;
+	} else {
+
+#ifdef DEBUG_PCIE
+		printf("pcie_read_config:  %s: cfg_data=%08x offset=%08x, bus_addr = 0x%08x, val = 0x%08x\n", __func__, hose->cfg_data, offset, bus_addr, *val);
+#endif
+	}
+	/* re-enable machine checks */
+	mtmsr(mfmsr() | (MSR_ME) );
+	__asm__ __volatile__("msync");
+
 
 	return 0;
 }
@@ -317,6 +353,7 @@ int pci_476_init (struct pci_controller *hose, int port)
 	void __iomem *tpage_base;
 	pci_addr_t bus_start;   /* Start on the bus */
 	phys_addr_t phys_start;
+	unsigned long registers;
 
 	pci_set_ops(hose, 
 		pcie_read_config_byte, 
@@ -328,18 +365,42 @@ int pci_476_init (struct pci_controller *hose, int port)
 
 	switch (port) {
 		case 0:
+#if defined (ACP_25xx)
+			ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &registers);
+			if (registers & 0x400001) {
+				/* PEI0 RC mode */
+				mbase = (u32 *)CONFIG_SYS_PCIE0_CFGADDR;
+				hose->cfg_data = (u8 *)CONFIG_SYS_PCIE0_MEMBASE;
+				bus_start = CONFIG_PCIE0_BUS_START;
+				phys_start = CONFIG_PCIE0_PHY_START;
+				break;
+			} else {
+				return 0;
+			}
+#endif
+			/* PEI0 RC mode */
 			mbase = (u32 *)CONFIG_SYS_PCIE0_CFGADDR;
 			hose->cfg_data = (u8 *)CONFIG_SYS_PCIE0_MEMBASE;
 			bus_start = CONFIG_PCIE0_BUS_START;
 			phys_start = CONFIG_PCIE0_PHY_START;
-			//out_le32(GPREG_PHY_CTRL0, 0x1001);
 			break;
         case 1:
+#if defined (ACP_25xx)
+			ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &registers);
+			if (registers & 0x2) {
+				/* PEI1 enabled */
+				mbase = (u32 *)CONFIG_SYS_PCIE1_CFGADDR;
+				hose->cfg_data = (u8 *)CONFIG_SYS_PCIE1_MEMBASE;
+				bus_start = CONFIG_PCIE1_BUS_START;
+				phys_start = CONFIG_PCIE1_PHY_START;
+				break;
+			} else
+				return 0;
+#endif
 			mbase = (u32 *)CONFIG_SYS_PCIE1_CFGADDR;
 			hose->cfg_data = (u8 *)CONFIG_SYS_PCIE1_MEMBASE;
 			bus_start = CONFIG_PCIE1_BUS_START;
 			phys_start = CONFIG_PCIE1_PHY_START;
-			//out_le32(GPREG_PHY_CTRL0, 0x1202);
 			break;
 #if CONFIG_SYS_PCIE_NR_PORTS > 2
         case 2:
@@ -347,7 +408,6 @@ int pci_476_init (struct pci_controller *hose, int port)
 			hose->cfg_data = (u8 *)CONFIG_SYS_PCIE2_MEMBASE;
 			bus_start = CONFIG_PCIE2_BUS_START;
 			phys_start = CONFIG_PCIE2_PHY_START;
-			//out_le32(GPREG_PHY_CTRL0, 0x130f);
 			break;
 #endif
 	}
@@ -425,7 +485,9 @@ int pci_476_init (struct pci_controller *hose, int port)
 	num_pages = ( (size - 1) >> 27) + 1;
 	for (i = 0; i < num_pages; i++) {
 		mpage_lower = (pcial & 0xf8000000); 
+#if defined(ACP_X1V1) || defined(ACP_X1V2)
 		mpage_lower |= 1;
+#endif
 		out_le32( mbase + ACPX1_PCIE_MPAGE_UPPER(i), pciah);
 		out_le32( mbase + ACPX1_PCIE_MPAGE_LOWER(i), mpage_lower);
 		pcial += 0x08000000;
@@ -446,7 +508,6 @@ int pci_476_init (struct pci_controller *hose, int port)
 
 	hose->region_count = 1;
 	pci_register_hose(hose);
-
 #ifdef DEBUG_PCIE
 	printf("pci_476_init: Returned bus no after = %d\n", hose->last_busno);
 #endif
@@ -597,13 +658,16 @@ void pci_init_board(void)
 	
 	busno = pci_476_init (&ppc476_hose[0], 0);
 
-
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
 	 * and MPAGE7 1 MB config space
 	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
 
 	word0 = 0x40000000 | 0x9f0;
+#if defined(ACP25xx)
+	word1 = 0x80000020;
+#else
 	word1 = 0xc0000020;
+#endif
 	word2 = 0x00030507;
 
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \ 
@@ -617,7 +681,11 @@ void pci_init_board(void)
 			"memory" );
 
 	word0 = 0x50000000 | 0x8f0;
+#if defined(ACP25xx)
+	word1 = 0xb8000020;
+#else
 	word1 = 0xf8000020;
+#endif
 	word2 = 0x00030507;
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
 			"tlbwe %2,%0,1\n"               \
@@ -629,7 +697,6 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 	busno = pci_476_init (&ppc476_hose[1], 1);
-	out_le32(GPREG_PHY_CTRL0, 0x130f);
 #elif defined(ACP_PEI0)
 
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0

@@ -1328,6 +1328,10 @@ sm_ecc_bytelane_test(void *foo, unsigned long region, unsigned long address,
 
 	/* Read, Ignoring the Value Read */
 	rc = ncr_read( NCP_REGION_ID( node, 5 ), 0, 128/4, NULL );
+
+	if (-1 == rc)
+		rc = in_be32(NCA + 0xe4);
+
 	NCR_TRACE( "ncpRead    0.%lu.5.0x0000000000 32", node );
 
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG

@@ -38,6 +38,9 @@
 
 /*#define NCR_TRACER*/
 /*#define ACP2_SYSMEM_TEST*/
+#ifdef ACP_25xx
+#define ACP2_PCIE_TEST
+#endif
 
 #ifdef NCR_TRACER
 #define NCR_TRACE( format, args... ) do { \
@@ -133,6 +136,7 @@ printf( "# " format "\n", ##args ); \
 
 #ifndef __ASSEMBLY__
 extern unsigned long sysmem_size;
+extern unsigned long resest_enabled;
 #endif
 
 #define CONFIG_CMD_SETGETDCR
@@ -156,7 +160,7 @@ int acp_init( void );
 #define CONFIG_SYS_ALT_MEMTEST
 #endif
 
-#if defined(ACP_EMU) || defined(ACP_25xx)
+#if defined(ACP_EMU) || defined(ACP2_PCIE_TEST)
 #define CONFIG_LSI_TEST 1
 #endif
 
@@ -166,13 +170,19 @@ int acp_init( void );
 /*
   ======================================================================
   ======================================================================
-  NAND
+  Non-Volatile Storage...
   ======================================================================
   ======================================================================
 */
 
-#ifndef ACP2_SYSMEM_TEST
-/*#define ACP_NAND_4BIT_ECC*/
+#ifndef ACP_25xx
+#define CONFIG_LSI_NAND
+#define ACP_NAND_4BIT_ECC
+#define CONFIG_LSI_NAND_ENV
+#else
+#define CONFIG_SYS_NO_FLASH
+#define CONFIG_LSI_SERIAL_FLASH
+#define CONFIG_LSI_SERIAL_FLASH_ENV
 #endif
 
 /*
@@ -183,14 +193,19 @@ int acp_init( void );
   ======================================================================
 */
 
-#if !defined(NCR_TRACER) && !defined(ACP2_SYSMEM_TEST)
 #define CONFIG_LSI_NET
+
+#if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
+#undef CONFIG_LSI_NET
+#endif
+
+#if defined(CONFIG_LSI_NET)
 #define CONFIG_CMD_NET
 #define CONFIG_CMD_DHCP
 #define APP3XXNIC_RX_BASE  (IO+0x80000)
 #define APP3XXNIC_TX_BASE  (IO+0x81000)
 #define APP3XXNIC_DMA_BASE (IO+0x82000)
-#endif /* NCR_TRACER */
+#endif
 
 /*
   ----------------------------------------------------------------------

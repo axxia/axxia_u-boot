@@ -85,8 +85,8 @@ read( unsigned long offset, unsigned long address, unsigned long length )
 {
 	DEBUG_PRINT( "offset=0x%lx/%ld address=0x%lx/%ld length=%ld\n",
 		     offset, offset, address, address, length );
-	ssp_init( );
-	seeprom_read( ( void * ) address, offset, length );
+	ssp_init(0, 0);
+	ssp_read( ( void * ) address, offset, length );
 
 	return 0;
 }
@@ -96,19 +96,16 @@ read( unsigned long offset, unsigned long address, unsigned long length )
   write
 */
 
-int seeprom_write( void *, int, int );
-
 static int
 write( unsigned long address, unsigned long offset, unsigned long length )
 {
 	DEBUG_PRINT( "address=0x%lx/%ld offset=0x%lx/%ld length=%ld\n",
 		     address, address, offset, offset, length );
 
-	ssp_init( );
-	seeprom_write( ( void * ) address, offset, length );
-
-	return 0;
+	ssp_init(0, 0);
+	return ssp_write((void *)address, offset, length, 0);
 }
+
 
 /*
   ======================================================================
@@ -162,7 +159,7 @@ do_ssp( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 #endif
 		return_code = 0;
 	} else if( 0 == strncmp( argv[1], "i", strlen( "i" ) ) ) {
-		return_code = ssp_init( );
+		return_code = ssp_init(0, 0);
 	} else if( 0 == strncmp( argv[1], "r", strlen( "r" ) ) ) {
 		if( 5 == argc ) {
 			offset = simple_strtoul( argv[2], NULL, 16 );
@@ -177,6 +174,8 @@ do_ssp( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 			length = simple_strtoul( argv[4], NULL, 16 );
 			return_code = write( address, offset, length );
 		}
+
+
 	}
 
 	if( 0 != return_code ) {
@@ -206,7 +205,6 @@ U_BOOT_CMD( ssp, 5, 0, do_ssp,
 	    "r,ead offset address length\n" \
 	    "\tread length bytes from offset to address\n" \
 	    "w,rite address offset length\n" \
-	    "\twrite length bytes from address to offset\n" );
-
+	    "\twrite length bytes from address to offset\n");
 
 #endif /* CONFIG_ACP */

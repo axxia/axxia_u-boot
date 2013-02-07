@@ -438,18 +438,43 @@ int eioa_ethernet_configure(void);
 /*
   ======================================================================
   ======================================================================
+  Non-Volatile Storage...
+  ======================================================================
+  ======================================================================
+*/
+
+#ifndef ACP_25xx
+#define CONFIG_LSI_NAND
+#define ACP_NAND_4BIT_ECC
+#define CONFIG_LSI_NAND_ENV
+#else
+#define CONFIG_SYS_NO_FLASH
+#define CONFIG_LSI_SERIAL_FLASH
+#define CONFIG_LSI_SERIAL_FLASH_ENV
+#endif
+
+/*
+  ======================================================================
+  ======================================================================
   Network
   ======================================================================
   ======================================================================
 */
 
 #define CONFIG_LSI_NET
+
+#if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
+#undef CONFIG_LSI_NET
+#endif
+
+#if defined(CONFIG_LSI_NET)
 #define CONFIG_CMD_NET
 #define CONFIG_CMD_DHCP
 #define APP3XXNIC_RX_BASE  (IO+0x80000)
 #define APP3XXNIC_TX_BASE  (IO+0x81000)
 #define APP3XXNIC_DMA_BASE (IO+0x82000)
 #define CONFIG_NET_DO_NOT_TRY_ANOTHER
+#endif
 
 /*
   ======================================================================

@@ -33,6 +33,69 @@
 */
 
 /*
+  ------------------------------------------------------------------------------
+  pcie_lsdq_workaround
+
+  ACP PCIe detect cycle does not have enough time to run, meaning that
+  in some rare cases, the link may fail to be detected. This issue
+  might be observed when configured as two x2 PCIe configurations or
+  three x1 PCIe configurations.  (Advisory 37842).
+
+  Workaround: For applications where the ACP is in RC mode:
+      - Perform a soft reset by setting bit of the PEI Configuration register
+      - Set bit 4 (LSDQ) in the LTSSM Configuration 1 Register to have LTSSM
+        stay in detect quiet.
+      - Clear bit 4 of LTSSM Configuration 1 Register to transition out of
+        detect quiet
+  
+  For applications where the ACP is in EP mode, additional resistors
+  to ground should be placed on the TX+ and TX- lanes. This allows the
+  detect cycle to run correctly.
+*/
+
+void
+pcie_lsdq_workaround(int pei)
+{
+	unsigned long addr;
+	unsigned long ltssmConfig = 0;
+	unsigned long peiConfig;
+
+	switch (pei) {
+	case 0:
+		addr = PCIE0_CONFIG;
+		break;
+	case 1:
+		addr = PCIE1_CONFIG;
+		break;
+	case 2:
+		addr = PCIE2_CONFIG;
+		break;
+	default:
+		break;
+	}
+
+	/* soft reset the PEI */
+	peiConfig = acpreadio((void *)(addr + 0x1000));
+	peiConfig = peiConfig | 0x1;
+	acpwriteio(peiConfig, (void *)(addr + 0x1000));
+
+	/* Set bit 4 to 0x1 */
+	ltssmConfig = acpreadio((void *)(addr + 0x3300));
+	ltssmConfig = ltssmConfig | (0x1 << 4);
+	acpwriteio(ltssmConfig, (void *)(addr + 0x3300));
+
+	/* delay for 10ms */
+	mdelay(10);
+
+	/* clear bit 4 */
+	ltssmConfig = acpreadio((void *)(addr + 0x3300));
+	ltssmConfig = (ltssmConfig & 0xffffffef);
+	acpwriteio(ltssmConfig, (void *)(addr + 0x3300));
+
+	return;
+}
+
+/*
   -------------------------------------------------------------------------------
   pciesrio_set_control
 
@@ -57,6 +120,7 @@ pciesrio_setcontrol_acp34xx(unsigned long new_control)
 {
 #if !defined(ACP_EMU) && !defined(ACP_ISS) && !defined(ACP_X1V1)
 	unsigned long old_control;
+	unsigned long linkStatus;
 
 	if (0 != (new_control & ~0x00003f8f)) {
 		printf("Invalid PHY control value: 0x%08lx\n", new_control);
@@ -87,6 +151,49 @@ pciesrio_setcontrol_acp34xx(unsigned long new_control)
 
 	/* Enable MACs that are specified in the parameter. (step 5.) */
 	acpwriteio((new_control & 0x1f0f), (void *)GPREG_PHY_CTRL0);
+
+	/* Check for Link Detection Problems (Advisory 37842). */
+	mdelay(500);
+
+	if ((new_control & 0x1) && (new_control & 0x1000)) {
+		/* PEI0 is enabled  and in RC mode */
+		/* check Link status */
+		linkStatus = acpreadio(PCIE0_CONFIG+0x1004);
+		printf("PEI0 Status = 0x%x\n", linkStatus);
+		linkStatus = (linkStatus & 0x3f00) >> 8;
+
+		if (linkStatus != 0xb) {
+			printf("pcie_lsdq_workaround for PEI0 "
+			       "linkStatus = 0x%x\n", linkStatus);
+			pcie_lsdq_workaround(0);
+		}
+	}
+	if (new_control & 0x2) {
+		/* PEI1 is enabled */
+		/* check Link status */
+		linkStatus = acpreadio(PCIE1_CONFIG+0x1004);
+		printf("PEI1 Status = 0x%x\n", linkStatus);
+		linkStatus = (linkStatus & 0x3f00) >> 8;
+
+		if (linkStatus != 0xb) {
+			printf("pcie_lsdq_workaround for PEI1 "
+			       "linkStatus = 0x%x\n", linkStatus);
+			pcie_lsdq_workaround(1);
+		}
+	}
+	if (new_control & 0x4) {
+		/* PEI2 is enabled */
+		/* check Link status */
+		linkStatus = acpreadio(PCIE2_CONFIG+0x1004);
+		printf("PEI2 Status = 0x%x\n", linkStatus);
+		linkStatus = (linkStatus & 0x3f00) >> 8;
+
+		if (linkStatus != 0xb) {
+			printf("pcie_lsdq_workaround for PEI2 "
+			       "linkStatus = 0x%x\n", linkStatus);
+			pcie_lsdq_workaround(2);
+		}
+	}
 
 	return 0;
 #endif
@@ -130,10 +237,80 @@ pciesrio_setcontrol_acp34xx(unsigned long new_control)
   0x007c000b  PEI0 RC x1[L3], PEI1 RC x1[L2], sRIO x1[L0] [RESERVED]
 */
 
+typedef struct {
+	unsigned short offset;
+	unsigned short value;
+} rx_serdes_value_t;
+
 int
 pciesrio_setcontrol_axm25xx(unsigned long new_control)
 {
 	int srioHSSSpeed;
+	int i;
+	rx_serdes_value_t rx_serdes_values[] = {
+		{0x0026, 0x00ff},
+		{0x0226, 0x00ff},
+		{0x0626, 0x00ff},
+		{0x0826, 0x00ff},
+		{0x002a, 0x0b50},
+		{0x022a, 0x0b50},
+		{0x062a, 0x0b50},
+		{0x082a, 0x0b50},
+		{0x042e, 0x0042},
+		{0x0402, 0x030c},
+		{0x005e, 0x7d98},
+		{0x025e, 0x7d98},
+		{0x065e, 0x7d98},
+		{0x085e, 0x7d98},
+		{0x008c, 0x2040},
+		{0x028c, 0x2040},
+		{0x068c, 0x2040},
+		{0x088c, 0x2040},
+		{0x008c, 0x2000},
+		{0x028c, 0x2000},
+		{0x068c, 0x2000},
+		{0x088c, 0x2000},
+		{0x00ba, 0x0061},
+		{0x02ba, 0x0061},
+		{0x06ba, 0x0061},
+		{0x08ba, 0x0061},
+		{0x0052, 0x2a43},
+		{0x0252, 0x2a43}, 
+		{0x0652, 0x2a43},
+		{0x0852, 0x2a43},
+		{0x0084, 0x001b},
+		{0x0284, 0x001b},
+		{0x0684, 0x001b},
+		{0x0884, 0x001b},
+		{0x008a, 0x1bd0},
+		{0x028a, 0x1bd0},
+		{0x068a, 0x1bd0},
+		{0x088a, 0x1bd0},
+		{0x0078, 0x1006},
+		{0x0278, 0x1006},
+		{0x0678, 0x1006},
+		{0x0878, 0x1006},
+		{0x0080, 0x4204},
+		{0x0280, 0x4204},
+		{0x0680, 0x4204},
+		{0x0880, 0x4204},
+		{0x0066, 0x3623},
+		{0x0266, 0x3623},
+		{0x0666, 0x3623},
+		{0x0866, 0x3623},
+		{0x007a, 0x5204},
+		{0x027a, 0x5204},
+		{0x067a, 0x5204},
+		{0x087a, 0x5204},
+		{0x007e, 0x4202},
+		{0x027e, 0x4202},
+		{0x067e, 0x4202},
+		{0x087e, 0x4202},
+		{0x00a4, 0x3001},
+		{0x02a4, 0x3001},
+		{0x06a4, 0x3001},
+		{0x08a4, 0x3001}
+	};
 
 	printf("Setting PCI/SRIO to 0x%08x\n", new_control);
 
@@ -147,14 +324,15 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 	*/
 
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0x26c, 0x00080000);
-	ncr_write16(NCP_REGION_ID(0x115, 1), 0x026, 0x000000fe);
-	ncr_write16(NCP_REGION_ID(0x115, 1), 0x226, 0x000000fe);
-	ncr_write16(NCP_REGION_ID(0x115, 1), 0x626, 0x000000fe);
-	ncr_write16(NCP_REGION_ID(0x115, 1), 0x826, 0x000000fe);
-	ncr_write16(NCP_REGION_ID(0x115, 1), 0x02a, 0x00000e64);
-	ncr_write16(NCP_REGION_ID(0x115, 1), 0x22a, 0x00000e64);
-	ncr_write16(NCP_REGION_ID(0x115, 1), 0x62a, 0x00000e64);
-	ncr_write16(NCP_REGION_ID(0x115, 1), 0x82a, 0x00000e64);
+
+	for (i = 0;
+	     i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
+	     ++i) {
+		ncr_write16(NCP_REGION_ID(0x115, 1),
+			    rx_serdes_values[i].offset,
+			    rx_serdes_values[i].value);
+	}
+
 	udelay(100000);
 
 	switch (new_control) {
@@ -167,7 +345,7 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
 		udelay(100000);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000100);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000000);
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control);
 		udelay(100000);
@@ -178,7 +356,7 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 	case 0x00140008:
 	case 0x00240008:
 	case 0x00340008:
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x40);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x60);
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0x77777777);
 		udelay(100000);
@@ -189,7 +367,7 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 			ncr_write32(NCP_REGION_ID(0x115, 0), 0x234, 0x08176527);
 
 		udelay(100000);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000001);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000000);
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control);
 		udelay(100000);
@@ -206,7 +384,7 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 	case 0x007c000b:
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x60);
 		udelay(100000);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0x7fff7fff);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xfff7fff7);
 		udelay(100000);
 
 		if (2 > srioHSSSpeed)
@@ -280,9 +458,6 @@ pciesrio_init(unsigned long parameter)
 	pci_srio_select = (control & 0x4000) >> 14;
 	pci_srio_mode = (control & 0x3000) >> 12;
 #endif
-
-	printf("pci_srio_select=0x%x pci_srio_mode=0x%x\n",
-	       pci_srio_select, pci_srio_mode);
 
 	if (0 != boot_mode) {
 		/*

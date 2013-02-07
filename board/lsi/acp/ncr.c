@@ -27,16 +27,29 @@
 
 #define LOCK_DOMAIN 0
 
-static int ncr_enabled = 1;
 static int ncr_tracer_disabled = 1;
+static int ncr_sysmem_mode_disabled = 1;
 
 #ifndef CONFIG_ACP3
 void ncr_tracer_enable( void ) { ncr_tracer_disabled = 0; }
 void ncr_tracer_disable( void ) { ncr_tracer_disabled = 1; }
 int ncr_tracer_is_enabled( void ) { return 0 == ncr_tracer_disabled ? 1 : 0; }
-void ncr_enable( void ) { ncr_enabled = 1; }
-void ncr_disable( void ) { ncr_enabled = 0; }
+void ncr_sysmem_init_mode_enable(void) { ncr_sysmem_mode_disabled = 0; }
+void ncr_sysmem_init_mode_disable(void) { ncr_sysmem_mode_disabled = 1; }
 #endif
+
+static int
+ncr_fail(const char *file, const char *function, const int line)
+{
+	if (1 == ncr_sysmem_mode_disabled)
+		return -1;
+	
+	printf("Config Ring Access Failed: 0x%08lx 0x%08lx\n",
+	       in_be32(NCA + 0xe4), in_be32(NCA + 0xe8));
+	acp_failure(file, function, line);
+
+	return -1;
+}
 
 #ifdef NCR_TRACER
 static int short_read_count = 100;	/* Make sure this isn't in bss. */
@@ -384,15 +397,8 @@ ncr_read(unsigned long region, unsigned long address, int number, void *buffer)
 
 	if( 0x3 != ( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
 		       0x00c00000 ) >> 22 ) ) {
-		unsigned long status;
-
-		status = ncr_register_read( ( unsigned * ) ( NCA + 0xe4 ) );
 		ncr_unlock(LOCK_DOMAIN);
-
-		if (0 == status)
-			return -1;
-
-		return status;
+		return -1;
 	}
 
 	/*
@@ -432,8 +438,15 @@ ncr_read(unsigned long region, unsigned long address, int number, void *buffer)
 int
 ncr_read8(unsigned long region, unsigned long offset, unsigned char *value)
 {
+	int rc;
+
 	NCR_TRACE_READ8(region, offset);
-	return ncr_read(region, offset, 1, value);
+	rc = ncr_read(region, offset, 1, value);
+
+	if (0 != rc)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
 }
 
 /*
@@ -483,7 +496,12 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 #endif
 
 	NCR_TRACE_READ16(region, offset);
-	return ncr_read(region, offset, 2, value);
+	rc = ncr_read(region, offset, 2, value);
+
+	if (0 != rc)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
 }
 
 /*
@@ -546,7 +564,12 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 #endif
 
 	NCR_TRACE_READ32(region, offset);
-	return ncr_read(region, offset, 4, value);
+	rc = ncr_read(region, offset, 4, value);
+
+	if (0 != rc)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
 }
 
 
@@ -579,10 +602,13 @@ ncr_poll( unsigned long region, unsigned long offset,
 	}
 
 	if( delay_loops == i ) {
-		return -1;
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
 	}
 
-	return rc;
+	if (0 != rc)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
 }
 
 /*
@@ -698,9 +724,6 @@ ncr_write(unsigned long region, unsigned long address, int number, void *buffer)
 	if( 0x3 !=
 	    ( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
 		0x00c00000 ) >> 22 ) ) {
-		unsigned long status;
-
-		status = ncr_register_read( ( unsigned * ) ( NCA + 0xe4 ) );
 #ifdef NCR_TRACER
 		printf( "ncr_write( ) failed: 0x%lx\n",
 			( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
@@ -708,10 +731,7 @@ ncr_write(unsigned long region, unsigned long address, int number, void *buffer)
 #endif
 		ncr_unlock(LOCK_DOMAIN);
 
-		if (0 == status)
-			return -1;
-
-		return status;
+		return -1;
 	}
 
 	ncr_unlock(LOCK_DOMAIN);
@@ -726,8 +746,15 @@ ncr_write(unsigned long region, unsigned long address, int number, void *buffer)
 int
 ncr_write8( unsigned long region, unsigned long offset, unsigned char value )
 {
+	int rc;
+
 	NCR_TRACE_WRITE8(region, offset, value);
-	return ncr_write(region, offset, 1, &value);
+	rc = ncr_write(region, offset, 1, &value);
+
+	if (0 != rc)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
 }
 
 /*
@@ -738,6 +765,7 @@ ncr_write8( unsigned long region, unsigned long offset, unsigned char value )
 int
 ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 {
+	int rc;
 #ifdef ACP_25xx
 	int wfc_timeout = WFC_TIMEOUT;
 
@@ -772,7 +800,12 @@ ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 #endif
 
 	NCR_TRACE_WRITE16(region, offset, value);
-	return ncr_write(region, offset, 2, &value);
+	rc = ncr_write(region, offset, 2, &value);
+
+	if (0 != rc)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
 }
 
 /*
@@ -783,6 +816,7 @@ ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 int
 ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 {
+	int rc;
 #ifdef ACP_25xx
 	int wfc_timeout = WFC_TIMEOUT;
 
@@ -832,7 +866,12 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 #endif
 
 	NCR_TRACE_WRITE32(region, offset, value);
-	return ncr_write(region, offset, 4, &value);
+	rc = ncr_write(region, offset, 4, &value);
+
+	if (0 != rc)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
 }
 
 /*
@@ -850,7 +889,10 @@ ncr_and( unsigned long region, unsigned long offset, unsigned long value )
 	temp &= value;
 	rc |= ncr_write(region, offset, 4, &temp);
 
-	return rc;
+	if (0 != rc)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
 }
 
 /*
@@ -868,7 +910,10 @@ ncr_or( unsigned long region, unsigned long offset, unsigned long value )
 	temp |= value;
 	rc |= ncr_write(region, offset, 4, &temp);
 
-	return rc;
+	if (0 != rc)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
 }
 
 /*
@@ -877,8 +922,8 @@ ncr_or( unsigned long region, unsigned long offset, unsigned long value )
 */
 
 int
-ncr_modify( unsigned long region, unsigned long address, int count,
-	    void * masks, void * values )
+ncr_modify(unsigned long region, unsigned long address, int count,
+	   void *masks, void *values)
 {
 	command_data_register_0_t cdr0;
 	command_data_register_1_t cdr1;
@@ -989,6 +1034,13 @@ int
 ncr_modify32( unsigned long region, unsigned long offset,
 	      unsigned long mask, unsigned long value )
 {
+	int rc;
+
 	NCR_TRACE_MODIFY(region, offset, mask, value);
-	return ncr_modify( region, offset, 1, & mask, & value );
+	rc = ncr_modify( region, offset, 1, & mask, & value );
+
+	if (0 != rc)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
 }

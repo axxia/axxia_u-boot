@@ -1,0 +1,7 @@
+env_flash.c:		sizeof(env_ptr->data) + (ulong)&(flash_addr_new->data));
+env_flash.c:	if (crc32(0, env_ptr->data, ENV_SIZE) == env_ptr->crc) {
+env_flash.c:		gd->env_addr	= (ulong)&(env_ptr->data);
+env_mgdisk.c:	env_ptr->crc = crc32(0, env_ptr->data, ENV_SIZE);
+env_nand.c:	gd->env_addr = (ulong)env_ptr->data;
+env_nvram.c:	if (crc32(0, env_ptr->data, ENV_SIZE) == env_ptr->crc) {
+env_nvram.c:		gd->env_addr	= (ulong)&env_ptr->data;

@@ -36,7 +36,7 @@ COBJS += ncr.o version.o reset.o clocks.o pciesrio.o sbb.o
 SOBJS = acp_start.o util.o ipi.o
 
 ifdef CONFIG_ACP3
-COBJS  += dt.o spintable.o os_access.o ose.o nvram.o osg.o locks.o i2c.o eioa.o pcie.o
+COBJS  += dt.o spintable.o ose.o nvram.o osg.o locks.o i2c.o eioa.o pcie.o
 COBJS  += ncp_task_lite.o ncp_task_lite_uboot.o
 SOBJS  += acp_static.o
 endif

@@ -334,9 +334,9 @@ void mmtest( unsigned long, unsigned long, unsigned long );
 #define SSP_PCELLID3  0xffc
 
 #ifndef __ASSEMBLY__
-int seeprom_read( void *, int, int );
-int seeprom_write( void *, int, int );
-int ssp_init( void );
+int ssp_read(void *, unsigned long, unsigned long);
+int ssp_write(void *, unsigned long, unsigned long, int);
+int ssp_init(int, int);
 #endif
 
 /*
@@ -464,47 +464,59 @@ int sbb_decrypt_range(void *, void *, int);
 /*
   ======================================================================
   ======================================================================
-  NAND and the Environment...
+  Non-Volatile Storage
   ======================================================================
   ======================================================================
 */
 
 #if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
-#define CFG_NO_FLASH
+#undef CONFIG_LSI_NAND
+#undef CONFIG_LSI_NAND_ENV
+#undef CONFIG_LSI_SERIAL_FLASH
+#undef CONFIG_LSI_SERIAL_FLASH_ENV
 #define CONFIG_SYS_NO_FLASH
 #define CONFIG_CMD_ENV
-#define CFG_ENV_IS_IN_NVRAM
 #define CONFIG_ENV_IS_IN_NVRAM
-#define CFG_ENV_SIZE              ( 64 * 1024 )
-#define CONFIG_ENV_SIZE           ( 64 * 1024 )
-#define CFG_ENV_ADDR              ( ( 4 * 1024 * 1024 ) - CFG_ENV_SIZE )
-#define CONFIG_ENV_ADDR           ( ( 4 * 1024 * 1024 ) - CFG_ENV_SIZE )
-#define CFG_NVRAM_ACCESS_ROUTINE
+#define CONFIG_ENV_SIZE           (64 * 1024)
+#define CONFIG_ENV_ADDR           ((4 * 1024 * 1024) - CONFIG_ENV_SIZE)
 #define CONFIG_SYS_MAX_FLASH_SECT 1024
 #define CONFIG_SYS_MAX_FLASH_BANKS 4
-#else
-#define CONFIG_FLASH_CFI_DRIVER 1
-#define CONFIG_SYS_FLASH_CFI 1
-#define CONFIG_CMD_ENV
+#endif
+
+#if defined(CONFIG_LSI_NAND)
+#define CONFIG_FLASH_CFI_DRIVER      1
+#define CONFIG_SYS_FLASH_CFI         1
 #define CONFIG_CMD_NAND
-#define CFG_ENV_IS_IN_NAND        1
-#define CONFIG_ENV_IS_IN_NAND     1
-#define CFG_REDUNDAND_ENVIRONMENT 1
+#elif defined(CONFIG_LSI_SERIAL_FLASH)
+#endif
+
+#if defined(CONFIG_LSI_NAND_ENV)
+#if !defined(CONFIG_LSI_NAND)
+#error "CONFIG_LSI_NAND must be defined for CONFIG_LSI_NAND_ENV"
+#endif
+#define CONFIG_CMD_ENV
+#define CONFIG_ENV_IS_IN_NAND        1
 #define CONFIG_REDUNDAND_ENVIRONMENT 1
-#define CONFIG_SYS_MAX_FLASH_SECT 1024
-#define CONFIG_SYS_MAX_FLASH_BANKS 4
-#define CFG_ENV_SECT_SIZE         (128*1024)
-#define CFG_ENV_OFFSET            (512*1024)
-#define CONFIG_ENV_OFFSET         (512*1024)
-#define CFG_ENV_SIZE              (128*1024)
-#define CONFIG_ENV_SIZE           CFG_ENV_SIZE
-#define CFG_ENV_RANGE             (512*1024)
+#define CONFIG_SYS_MAX_FLASH_SECT    1024
+#define CONFIG_SYS_MAX_FLASH_BANKS   4
+#define CONFIG_ENV_OFFSET            (512*1024)
+#define CONFIG_ENV_SIZE              (128*1024)
 #define CONFIG_ENV_RANGE             (512*1024)
-#define CFG_ENV_OFFSET_REDUND     (CFG_ENV_OFFSET+CFG_ENV_RANGE)
-#define CONFIG_ENV_OFFSET_REDUND     (CONFIG_ENV_OFFSET+CONFIG_ENV_RANGE)
-#define CFG_ENV_SIZE_REDUND       CFG_ENV_SIZE
-#define CONFIG_ENV_SIZE_REDUND       CFG_ENV_SIZE
-#define CFG_NO_FLASH
+#define CONFIG_ENV_OFFSET_REDUND     (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
+#define CONFIG_ENV_SIZE_REDUND       CONFIG_ENV_SIZE
+#elif defined(CONFIG_LSI_SERIAL_FLASH_ENV)
+#if !defined(CONFIG_LSI_SERIAL_FLASH)
+#error "CONFIG_LSI_SERIAL_FLASH must be defined for CONFIG_LSI_SERIAL_FLASH_ENV"
+#endif
+#define CONFIG_SYS_NO_FLASH
+#define CONFIG_ENV_IS_IN_SERIAL_FLASH
+#define CONFIG_REDUNDAND_ENVIRONMENT     1
+#define CONFIG_SYS_REDUNDAND_ENVIRONMENT 1
+#define CONFIG_ENV_OFFSET                (512 * 1024)
+#define CONFIG_ENV_SIZE                  (128 * 1024)
+#define CONFIG_ENV_RANGE                 (512 * 1024)
+#define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
+#define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
 #endif
 
 /*

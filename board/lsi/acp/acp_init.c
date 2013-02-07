@@ -54,9 +54,11 @@
 #define PARAMETERS_GLOBAL_IGNORE_CLOCKS     0x00000010
 #define PARAMETERS_GLOBAL_IGNORE_SYSMEM     0x00000100
 #define PARAMETERS_GLOBAL_IGNORE_PCIESRIO   0x00001000
+
 #define PARAMETERS_GLOBAL_RUN_SYSMEM_BIST   0x80000000
 #define PARAMETERS_GLOBAL_SET_L2_FTC        0x40000000
 #define PARAMETERS_GLOBAL_SET_L2_DISABLE_SL 0x20000000
+#define PARAMETERS_GLOBAL_DISABLE_RESET     0x10000000
 
 typedef struct {
 	unsigned long version;
@@ -172,6 +174,7 @@ static parameters_sysmem_t *sysmem = (parameters_sysmem_t *)1;
 */
 
 unsigned long sysmem_size = 1;
+unsigned long reset_enabled = 1;
 
 /*
   ----------------------------------------------------------------------
@@ -1180,7 +1183,7 @@ acp_sysmem_bist( void )
 #endif
 
 /*
-  ----------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   acp_init
 */
 
@@ -1188,7 +1191,6 @@ int
 acp_init( void )
 {
 	int returnCode = 0;
-	int use_seeprom = 0;
 
 	/*
 	  Try LCM first, to allow for board repair when the serial
@@ -1198,22 +1200,21 @@ acp_init( void )
 
 	/* Verify that the paramater table is valid. */
 	if( PARAMETERS_MAGIC != header->magic ) {
-		use_seeprom = 1;
-
-		/* Initialize the SEEPROM. */
-		ssp_init( );
+		/* Initialize the SEEPROM (device 0, read only). */
+		ssp_init(0, 1);
 
 		/* Copy the last 1K of the SEEPROM to the last 1K of LCM. */
-		seeprom_read((void *)PARAMETERS_ADDRESS,
-			     PARAMETERS_OFFSET, PARAMETERS_SIZE);
+		returnCode = ssp_read((void *)PARAMETERS_ADDRESS,
+				      PARAMETERS_OFFSET, PARAMETERS_SIZE);
 
-		if( PARAMETERS_MAGIC != header->magic ) {
+		if (0 != returnCode ||
+		    PARAMETERS_MAGIC != header->magic) {
 			/*
 			  Set the PCIe/SRIO mode based on the
 			  reset_config value since no parameters are
 			  available.
 			*/
-			pciesrio_init( 1 );
+			pciesrio_init(1);
 
 			/* No parameters available, fail. */
 			returnCode = -1;
@@ -1274,6 +1275,9 @@ acp_init( void )
 	printf("Parameter Table Version %lu\n", global->version);
 #endif
 
+	if (0 != (global->flags & PARAMETERS_GLOBAL_DISABLE_RESET))
+		reset_enabled = 0;
+
 #ifndef ACP_25xx
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE ) ) {
@@ -1319,6 +1323,8 @@ acp_init( void )
 
 	/*ZZZ*/
 #ifdef ACP_25xx
+	mdelay(1000);
+
 	{
 		int i;
 		int offset = 0xd40;
@@ -1330,7 +1336,7 @@ acp_init( void )
 			dcr_pllctl_int_status = dcr_read(offset + 0x4);
 
 			if (0 == (pll_stat & 0x80000000UL)) {
-				printf("0x%x is NOT locked!", offset);
+				printf("0x%x is NOT locked!\n", offset);
 			}
 
 			if (0 != (dcr_pllctl_int_status & 1)) {

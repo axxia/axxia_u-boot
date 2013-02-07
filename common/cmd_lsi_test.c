@@ -162,7 +162,7 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		rc = 0;
 	} else if ((0 == strncmp(argv[1], "n", strlen("n"))) &&
 		   (5 == argc)) {
-#ifndef CONFIG_ACP2
+#if !defined(CONFIG_ACP2) && defined(CONFIG_LSI_NAND)
 		nand_info_t *nand;
 		struct nand_chip *chip;
 		unsigned long page;
@@ -178,7 +178,7 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		struct mtd_oob_ops ops;
 		nand_erase_options_t erase_ops;
 		lsi_ecc_mode_t original_ecc_mode;
-#if defined(CONFIG_ACP_342X) || defined(ACP_25xx)
+#if defined(ACP_X2V1) || defined(ACP_25xx)
 		int section;
 #endif
 		/*
@@ -218,7 +218,7 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 		offset_byte = simple_strtoul(argv[3], NULL, 16);
 
-#if defined(CONFIG_ACP_342X) || defined(ACP_25xx)
+#if defined(ACP_X2V1) || defined(ACP_25xx)
 
 		/*
 		  The EP501G3 controller stores each section's

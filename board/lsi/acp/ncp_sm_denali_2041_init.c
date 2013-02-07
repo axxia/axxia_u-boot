@@ -338,10 +338,10 @@ ncp_sm_denali_2041_init(
 
     /* DENALI_CTL_185 */
     /* 
-     * tdfi_rdlvl_rr = 0x43
+     * tdfi_rdlvl_rr = 0x10c
      * tdfi_wrlvl_ww = 0xc8
      */ 
-    ncr_write32(ctlReg,  0x02e4, 0x00c80043);
+    ncr_write32(ctlReg,  0x02e4, 0x00c8010c);
 
     /* DENALI_CTL_186 */
     ncr_write32(ctlReg,  0x02e8, 0x02000100);
