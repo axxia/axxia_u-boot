@@ -140,7 +140,7 @@
   stack will grow downward from there.
 */
 
-#define CONFIG_SYS_MALLOC_BASE (0x00300000)
+#define CONFIG_SYS_MALLOC_BASE (0x200000)
 #ifdef ACP_ISS
 #define CONFIG_SYS_MALLOC_SIZE (0x400000 - CONFIG_SYS_MALLOC_BASE - (64 * 1024)))
 #else
@@ -443,14 +443,33 @@ int eioa_ethernet_configure(void);
   ======================================================================
 */
 
-#ifndef ACP_25xx
+/*
+  By default, the 3rd stage always supports NAND flash.  To turn off
+  NAND flash support, comment out the following.
+*/
+
 #define CONFIG_LSI_NAND
 #define ACP_NAND_4BIT_ECC
-#define CONFIG_LSI_NAND_ENV
-#else
-#define CONFIG_SYS_NO_FLASH
+
+/*
+  By default, the 3rd stage always supports serial flash.  To turn off
+  NAND flash support, comment out the following.
+*/
+
 #define CONFIG_LSI_SERIAL_FLASH
+
+/*
+  By default, the U-Boot environment is stored in NAND for all targets
+  except AXM2500.  To switch to serial flash, defined
+  CONFIG_LIS_SERIAL_FLASH_ENV.
+*/
+
+#ifdef ACP_25xx
 #define CONFIG_LSI_SERIAL_FLASH_ENV
+#endif
+
+#ifndef CONFIG_LSI_SERIAL_FLASH_ENV
+#define CONFIG_LSI_NAND_ENV
 #endif
 
 /*
@@ -473,8 +492,9 @@ int eioa_ethernet_configure(void);
 #define APP3XXNIC_RX_BASE  (IO+0x80000)
 #define APP3XXNIC_TX_BASE  (IO+0x81000)
 #define APP3XXNIC_DMA_BASE (IO+0x82000)
-#define CONFIG_NET_DO_NOT_TRY_ANOTHER
 #endif
+
+/*#define CONFIG_LSI_EIOA*/
 
 /*
   ======================================================================

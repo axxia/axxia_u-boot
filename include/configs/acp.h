@@ -420,7 +420,6 @@ void mdio_write( int phy, int reg, unsigned short value );
 #define GPREG_MAC    (IO+0xc004)
 #define GPREG_USB    (IO+0xc008)
 #define GPREG_STATUS (IO+0xc00c)
-#if defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
 #define GPREG_PCI_SRIO_PHY_CTRL (IO+0xc010)
 #define GPREG_PHY_CTRL0         (IO+0xc014)
 #define GPREG_PHY_CTRL1         (IO+0xc018)
@@ -428,7 +427,6 @@ void mdio_write( int phy, int reg, unsigned short value );
 #define GPREG_PHY_STAT0         (IO+0xc020)
 #define GPREG_PHY_STAT1         (IO+0xc024)
 #define GPREG_MISC_CTRL         (IO+0xc028)
-#endif
 #endif
 
 /*
@@ -446,6 +444,7 @@ int sbb_verify_image(void *, void *, int);
 int sbb_encrypt_image(void *, void *, int);
 int sbb_decrypt_range(void *, void *, int);
 int sbb_desecure_range(int, void *, size_t);
+
 #endif
 #endif
 
@@ -494,7 +493,10 @@ int sbb_desecure_range(int, void *, size_t);
 #define CONFIG_FLASH_CFI_DRIVER      1
 #define CONFIG_SYS_FLASH_CFI         1
 #define CONFIG_CMD_NAND
-#elif defined(CONFIG_LSI_SERIAL_FLASH)
+#define CONFIG_SYS_MAX_FLASH_SECT    1024
+#define CONFIG_SYS_MAX_FLASH_BANKS   4
+#else
+#define CONFIG_SYS_NO_FLASH
 #endif
 
 #if defined(CONFIG_LSI_NAND_ENV)
@@ -504,8 +506,6 @@ int sbb_desecure_range(int, void *, size_t);
 #define CONFIG_CMD_ENV
 #define CONFIG_ENV_IS_IN_NAND        1
 #define CONFIG_REDUNDAND_ENVIRONMENT 1
-#define CONFIG_SYS_MAX_FLASH_SECT    1024
-#define CONFIG_SYS_MAX_FLASH_BANKS   4
 #define CONFIG_ENV_OFFSET            (512*1024)
 #define CONFIG_ENV_SIZE              (128*1024)
 #define CONFIG_ENV_RANGE             (512*1024)
@@ -515,7 +515,6 @@ int sbb_desecure_range(int, void *, size_t);
 #if !defined(CONFIG_LSI_SERIAL_FLASH)
 #error "CONFIG_LSI_SERIAL_FLASH must be defined for CONFIG_LSI_SERIAL_FLASH_ENV"
 #endif
-#define CONFIG_SYS_NO_FLASH
 #define CONFIG_ENV_IS_IN_SERIAL_FLASH
 #define CONFIG_REDUNDAND_ENVIRONMENT     1
 #define CONFIG_SYS_REDUNDAND_ENVIRONMENT 1
@@ -670,6 +669,8 @@ void acp_eioa_loopback_test(void);
 #ifndef __ASSEMBLY__
 int acp_clock_lock_verify(int, int);
 #endif
+
+#define CONFIG_NET_DO_NOT_TRY_ANOTHER 1
 
 #if defined(ACP_X1V1)
 #define CCR0_DEFAULT 0x01604040

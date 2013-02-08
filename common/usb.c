@@ -223,6 +223,7 @@ int usb_bulk_msg(struct usb_device *dev, unsigned int pipe,
 	if (len < 0)
 		return -1;
 	dev->status = USB_ST_NOT_PROC; /*not yet processed */
+
 #ifdef CONFIG_ACP3
 	err = submit_bulk_msg(dev, pipe, data, len);
 	if (err < 0) {
@@ -231,6 +232,7 @@ int usb_bulk_msg(struct usb_device *dev, unsigned int pipe,
 #else
 	submit_bulk_msg(dev, pipe, data, len);
 #endif
+
 	while (timeout--) {
 		if (!((volatile unsigned long)dev->status & USB_ST_NOT_PROC))
 			break;

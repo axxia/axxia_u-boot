@@ -69,7 +69,7 @@ extern int dumptx;
 
 static int port_by_index[] = {1, 2, 3, 4, 9, 10, 11, 12};
 #ifdef ACP_25xx
-static int phy_by_index[] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17};
+static int phy_by_index[] = {0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10};
 #else
 static int phy_by_index[] = {0x10, 0x11, 0x12, 0x13, 0x18, 0x19, 0x1a, 0x1b};
 #endif
@@ -131,6 +131,8 @@ typedef struct {
 #include "EIOA25xx/mmb.c"
 #include "EIOA25xx/vp.c"
 #include "EIOA25xx/nca.c"
+#include "EIOA25xx/timer.c"
+#include "EIOA25xx/tdmioa.c"
 #include "EIOA25xx/eioa.c"
 #else
 #error "EIOA is not defined for this architecture!"
@@ -250,19 +252,11 @@ ncp_dev_reset(void)
 	*/
 
 #if defined(ACP_X1V2)
-	/*
-	  asp, nca, eioa0, eioa1, eioa_phy2, eioa_phy1, eioa_phy0
-	*/
-
 	dcr_write(0xcc700000, (DCR_RESET_BASE + 2));
 	udelay(10000);
 	dcr_write(0, (DCR_RESET_BASE + 2));
 	udelay(10000);
 #elif defined(CONFIG_ACP_342X)
-	/*
-	  asp, nca, eioa0, eioa1, eioa_phy2, eioa_phy0
-	*/
-
 	dcr_write(0xcc500000, (DCR_RESET_BASE + 2));
 	udelay(10000);
 	dcr_write(0, (DCR_RESET_BASE + 2));
@@ -278,10 +272,11 @@ ncp_dev_reset(void)
 
 	/*
 	  asp_rst, tmgr_nca_rst, tmc_rst, eioa_io_rst, xfi_phy_rst,
-	  eioa_phy1_rst, eioa_phy0_rst, nrcp_rst
+	  eioa_phy1_rst, eioa_phy0_rst, tm_clksync_rst, tm_phy_io_rst,
+	  enet_ser_rst, nrcp_rst
 	*/
 
-	dcr_write(0xd8380010, 0x1703);
+	dcr_write(0x0ac01c1b, 0x1703);
 	udelay(10000);
 	dcr_write(0, 0x1703);
 	udelay(10000);
@@ -293,7 +288,6 @@ ncp_dev_reset(void)
 	value = dcr_read(0xd00);
 	value &= ~0xab;
 	dcr_write(value, 0xd00);
-#else
 #endif
 
 	return 0;
@@ -985,15 +979,9 @@ line_setup(int index)
 				      0x3f, 0x09));
 
 #ifdef ACP_25xx
-	control = mdio_read(phy_by_index[index], 0x17);
-	control |= 0x2000;
-	mdio_write(phy_by_index[index], 0x17, control);
-
-	control = mdio_read(phy_by_index[index], 0x1b);
-	control |= 0x7000;
-	mdio_write(phy_by_index[index], 0x1b, control);
-
-	mdio_write(0x17, 0x00, 0x8000);
+	mdio_write(phy_by_index[index], 0x17, 0x2000);
+	mdio_write(phy_by_index[index], 0x1b, 0x7000);
+	mdio_write(phy_by_index[index], 0x00, 0x8000);
 
 	udelay(10);
 #endif
@@ -1097,6 +1085,18 @@ initialize_task_lite(void)
 		ncp_task_lite_supply_rxbuffer_to_nca(taskLiteHdl,
 						     rx_buffers[i], 3);
 	}
+
+#ifdef ACP_25xx
+	if (0 != ncp_dev_configure(timer)) {
+		WARN_PRINT("TIMER Configuration Failed\n");
+		return -1;
+	}
+
+	if (0 != ncp_dev_configure(tdmioa)) {
+		WARN_PRINT("TDMIOA Configuration Failed\n");
+		return -1;
+	}
+#endif
 
 	if (0 != ncp_dev_configure(eioa)) {
 		WARN_PRINT("EIOA Configuration Failed\n");

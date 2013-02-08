@@ -49,9 +49,3 @@ int env_init(void)
 
 	return 0;
 }
-
-int saveenv(void)
-{
-
-	return 0;
-}

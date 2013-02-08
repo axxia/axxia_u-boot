@@ -37,21 +37,7 @@ unsigned char ethernet_address[6];
 static int initialized = 0;
 static int femac;
 
-#if defined(CONFIG_ACP2)
-static int
-_eth_init(bd_t *bd)
-{
-	return lsi_femac_eth_init(bd);
-}
-
-static void
-_eth_halt(void)
-{
-	lsi_femac_eth_halt();
-
-	return;
-}
-#elif defined(CONFIG_ACP3)
+#if defined(CONFIG_LSI_EIOA)
 static void
 update_femac(void)
 {
@@ -91,6 +77,20 @@ _eth_halt(void)
 		lsi_femac_eth_halt();
 	else
 		acp_eioa_eth_halt();
+
+	return;
+}
+#else
+static int
+_eth_init(bd_t *bd)
+{
+	return lsi_femac_eth_init(bd);
+}
+
+static void
+_eth_halt(void)
+{
+	lsi_femac_eth_halt();
 
 	return;
 }
@@ -217,16 +217,16 @@ eth_halt(void)
 {
 	DEBUG_PRINT("\n");
 
-#if defined(CONFIG_ACP2)
-	if (0 != initialized)
-		lsi_femac_eth_halt();
-#else
+#if defined(CONFIG_LSI_EIOA)
 	if (0 != initialized) {
 		if (0 != femac)
 			lsi_femac_eth_halt();
 		else
 			acp_eioa_eth_halt();
 	}
+#else
+	if (0 != initialized)
+		lsi_femac_eth_halt();
 #endif
 
 	return;
@@ -247,13 +247,13 @@ eth_send(volatile void *packet, int length)
 		return 0;
 	}
 
-#if defined(CONFIG_ACP2)
-	return lsi_femac_eth_send(packet, length);
-#else
+#if defined(CONFIG_LSI_EIOA)
 	if (0 != femac)
 		return lsi_femac_eth_send(packet, length);
 	else
 		return acp_eioa_eth_send(packet, length);
+#else
+	return lsi_femac_eth_send(packet, length);
 #endif
 }
 
@@ -272,13 +272,13 @@ eth_rx(void)
 		return 0;
 	}
 
-#if defined(CONFIG_ACP2)
-	return lsi_femac_eth_rx();
-#else
+#if defined(CONFIG_LSI_EIOA)
 	if (0 != femac)
 		return lsi_femac_eth_rx();
 	else
 		return acp_eioa_eth_rx();
+#else
+	return lsi_femac_eth_rx();
 #endif
 }
 
@@ -295,6 +295,8 @@ eth_getenv_enetaddrg(const char *name, unsigned char enetaddr[6])
 	return 0;
 }
 
+#if !defined(CONFIG_ACP2)
+
 /*
   -------------------------------------------------------------------------------
   lsi_net_receive_test
@@ -303,7 +305,7 @@ eth_getenv_enetaddrg(const char *name, unsigned char enetaddr[6])
 void
 lsi_net_receive_test(void)
 {
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_LSI_EIOA)
 	update_femac();
 
 	if (0 != femac)
@@ -323,7 +325,7 @@ lsi_net_receive_test(void)
 void
 lsi_net_loopback_test(void)
 {
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_LSI_EIOA)
 	update_femac();
 
 	if (0 != femac)
@@ -333,6 +335,24 @@ lsi_net_loopback_test(void)
 #else
 	lsi_femac_loopback_test();
 #endif
+}
+
+#endif
+
+/*
+  ------------------------------------------------------------------------------
+  board_eth_init
+
+  This will get called by 
+*/
+
+int
+board_eth_init(bd_t *bis)
+{
+	printf("%s:%d - LSI Ethernet Driver Initialization.\n",
+	       __FILE__, __LINE__); /* ZZZ */
+
+	return 0;
 }
 
 #endif /* NCR_TRACER */

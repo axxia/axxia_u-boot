@@ -33,7 +33,7 @@ SECTIONS
 
   .bootpg 0xf0a00010 :
   {
-    cpu/ppc4xx/start.o	(.bootpg)
+    arch/powerpc/cpu/ppc4xx/start.o	(.bootpg)
   } = 0xfffff
 
   /* Read-only sections, merged into text segment: */
@@ -64,7 +64,7 @@ SECTIONS
   {
     /* WARNING - the following is hand-optimized to fit within	*/
     /* the sector layout of our flash chips!	XXX FIXME XXX	*/
-    cpu/ppc4xx/start.o (.text)
+    arch/powerpc/cpu/ppc4xx/start.o (.text)
     *(.text)
     *(.fixup)
   }
@@ -72,7 +72,7 @@ SECTIONS
   PROVIDE (etext = .);
   .rodata    :
   {
-    *(.rodata)
+    *(.rodata*)
     *(.rodata1)
     *(.rodata.str1.4)
     *(.eh_frame)
@@ -88,9 +88,9 @@ SECTIONS
 
   .data    :
   {
-    *(.data)
+    *(.data*)
     *(.data1)
-    *(.sdata)
+    *(.sdata*)
     *(.sdata2)
     *(.dynamic)
     CONSTRUCTORS
@@ -131,9 +131,10 @@ SECTIONS
   PROVIDE (_bss_start = .);
   .bss (NOLOAD)       :
   {
-   *(.sbss) *(.scommon)
-   *(.dynbss)
-   *(.bss)
+   *(.sbss*)
+   *(.scommon*)
+   *(.dynbss*)
+   *(.bss*)
    *(COMMON)
   }
   PROVIDE (_bss_end = . );

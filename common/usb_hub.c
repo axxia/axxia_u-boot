@@ -173,8 +173,7 @@ sticks do not operate properly with the previous reset code */
 #endif
 
 #ifdef CONFIG_ACP3
-int hub_port_reset(struct usb_device *dev, int port,
-			unsigned short *portstat)
+int hub_port_reset(struct usb_device *dev, int port, unsigned short *portstat)
 {
 	int tries, status;
 	unsigned delay = HUB_SHORT_RESET_TIME;
@@ -288,6 +287,7 @@ int hub_port_reset(struct usb_device *dev, int port,
 	return 0;
 }
 #endif
+
 
 void usb_hub_port_connect_change(struct usb_device *dev, int port)
 {
@@ -656,4 +656,5 @@ static int hub_port_wait_reset(struct usb_device *dev, int port,
 
 	return -1;
 }
+
 #endif

@@ -36,15 +36,7 @@ void
 acp_failure(const char *file, const char *function, const int line)
 {
 	if (1 != console_not_available)
-		printf( "\n%s:%s:%d - System Failure", file, function, line );
-
-	{
-		unsigned long registers[2];
-		ncr_read32(NCP_REGION_ID(34, 1), 0x10034, &registers[0]);
-		ncr_read32(NCP_REGION_ID(34, 1), 0x10038, &registers[1]);
-		printf("\n34.1.0x10034=0x%lx 34.1.0x10038=0x%lx\n",
-		       registers[0], registers[1]);
-	}
+		printf("\n%s:%s:%d - System Failure\n", file, function, line);
 
 #ifndef DISABLE_RESET
 	acp_reset(0, NULL);
@@ -116,7 +108,7 @@ acp_failure_exception(unsigned long exception_number,
 
 		printf("\n"
 		       "Unhandled Exception (%s)\n"
-		       "CORE=%d (C)SRR0=0x%08lx SRR1=0x%08lx LR=0x%08lx\n"
+		       "CORE=%lu (C)SRR0=0x%08lx SRR1=0x%08lx LR=0x%08lx\n"
 		       "ESR=0x%08lx\n"
 		       "Board Reset Required!\n",
 		       exception_names[exception_number],
@@ -124,9 +116,10 @@ acp_failure_exception(unsigned long exception_number,
 		       esr_value);
 	}
 
-#ifndef DISABLE_RESET
-	acp_reset(0, NULL);
+#ifdef CONFIG_ACP2
+	if (0 != reset_enabled)
 #endif
+		acp_reset(0, NULL);
 
 	while (1)
 		;
@@ -159,16 +152,17 @@ acp_failure_machine_check(unsigned long original_lr)
 
 		printf("\n"
 		       "Machine Check\n"
-		       "CORE=%d MCSRR0=0x%08lx MCSRR1=0x%08lx LR=0x%08lx\n"
+		       "CORE=%lu MCSRR0=0x%08lx MCSRR1=0x%08lx LR=0x%08lx\n"
 		       "ESR=0x%08lx MCSR=0x%08lx\n"
 		       "Board Reset Required!\n",
 		       core, mcsrr0_value, mcsrr1_value, original_lr,
 		       esr_value, mcsr_value);
 	}
 
-#ifndef DISABLE_RESET
-	acp_reset(0, NULL);
+#ifdef CONFIG_ACP2
+	if (0 != reset_enabled)
 #endif
+		acp_reset(0, NULL);
 
 	while (1)
 		;

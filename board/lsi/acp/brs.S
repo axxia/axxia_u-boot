@@ -27,7 +27,7 @@
 
 #ifdef CONFIG_ACP2
 
-#include <asm/ppc4xx.h>
+#include <ppc4xx.h>
 #include <ppc_asm.tmpl>
 #include <ppc_defs.h>
 
@@ -69,15 +69,15 @@ utlb_table:
 	#; Physical Address - 0x0010_0002_0000
 	#; Virtual Address - 0xf0a0_0000
 	#; Size - 64K
-	.long           0xe0000000,0xf0a00830,0x00020010,0x00030507
+	.long		0xe0000000,0xf0a00830,0x00020010,0x00030507
 	#; Physical Address - 0x0010_0003_0000
 	#; Virtual Address - 0xf0a1_0000
 	#; Size - 64K
-	.long           0xe0000000,0xf0a10830,0x00030010,0x00030507
+	.long		0xe0000000,0xf0a10830,0x00030010,0x00030507
 	#; Physical Address - 0x0010_0000_0000
 	#; Virtual Address - 0xf0a2_0000
 	#; Size - 16K
-	.long           0xe0000000,0xf0a20810,0x00000010,0x00030507
+	.long		0xe0000000,0xf0a20810,0x00000010,0x00030507
 #else
 	#; -- -- Local CPU memory -- --
 	#; Physical Address - 0x0010_0000_0000
@@ -382,20 +382,20 @@ init_core_relocate:
 
 	#; set up the PLB6
 
-	li              r11,0x104
-	li              r12,0x20
+	li		r11,0x104
+	li		r12,0x20
 	isync
-	mtdcrx          r11,r12
-	li              r11,0x105
+	mtdcrx		r11,r12
+	li		r11,0x105
 	isync
-	mtdcrx          r11,r12
-	li              r11,0x106
+	mtdcrx		r11,r12
+	li		r11,0x106
 	isync
-	mtdcrx          r11,r12
-	li              r11,0x100
-	lis             r12,0x80000000@h
+	mtdcrx		r11,r12
+	li		r11,0x100
+	lis		r12,0x80000000@h
 	isync
-	mtdcrx          r11,r12
+	mtdcrx		r11,r12
 
 	#; core 0 jumps to the base of LCM
 

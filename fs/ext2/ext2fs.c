@@ -318,6 +318,7 @@ static int ext2fs_read_block (ext2fs_node_t node, int fileblock) {
 		}
 		blknr = __le32_to_cpu (indir1_block
 				       [fileblock - INDIRECT_BLOCKS]);
+
 #ifdef CFG_OPTIMIZE_EXT2_READ
                while(((__le32_to_cpu (indir1_block[fileblock - INDIRECT_BLOCKS
 + 1]) - \
@@ -430,6 +431,7 @@ static int ext2fs_read_block (ext2fs_node_t node, int fileblock) {
 	return (blknr);
 }
 
+
 #ifdef CFG_OPTIMIZE_EXT2_READ
 int ext2fs_read_file
        (ext2fs_node_t node, int pos, unsigned int len, char *buf) {
@@ -481,6 +483,7 @@ int ext2fs_read_file
        return (len);
 }
 #else
+
 int ext2fs_read_file
 	(ext2fs_node_t node, int pos, unsigned int len, char *buf) {
 	int i;

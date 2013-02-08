@@ -164,7 +164,6 @@ printf( "# " format "\n", ##args ); \
 #define NCP_SM_WRLVL_DUP
 
 #endif
-
 /*
   ----------------------------------------------------------------------
   Reduce memory usage...
@@ -182,7 +181,7 @@ printf( "# " format "\n", ##args ); \
 
 #ifndef __ASSEMBLY__
 extern unsigned long sysmem_size;
-extern unsigned long resest_enabled;
+extern unsigned long reset_enabled;
 extern unsigned long sm_phy_reg_restore;
 extern unsigned long sm_phy_reg_dump;
 #endif
@@ -198,7 +197,7 @@ int acp_init( void );
 #endif
 
 /* Note that this adds almost 0x3000 bytes! */
-#if defined(ACP2_25xx)
+#if defined(ACP_25xx)
 #define CONFIG_CMD_MEMORY
 #define CONFIG_CMD_MTEST
 #define CFG_MEMTEST_START 0
@@ -223,14 +222,21 @@ int acp_init( void );
   ======================================================================
 */
 
-#ifndef ACP_25xx
-#define CONFIG_LSI_NAND
-#define ACP_NAND_4BIT_ECC
-#define CONFIG_LSI_NAND_ENV
-#else
+/*
+  The 2nd stage can only support either NAND or Serial FLASH.  The
+  environment must be stored on the supported device.  By default, the
+  supported device is Serial FLASH in the AXM2500 and NAND in all
+  other cases.
+*/
+
+#ifdef ACP_25xx
 #define CONFIG_SYS_NO_FLASH
 #define CONFIG_LSI_SERIAL_FLASH
 #define CONFIG_LSI_SERIAL_FLASH_ENV
+#else
+#define CONFIG_LSI_NAND
+#define ACP_NAND_4BIT_ECC
+#define CONFIG_LSI_NAND_ENV
 #endif
 
 /*

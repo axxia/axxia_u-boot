@@ -39,6 +39,7 @@
 /u-boot.ais
 /u-boot.dtb
 /u-boot.sb
+/u-boot.S
 
 #
 # Generated files

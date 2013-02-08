@@ -103,7 +103,8 @@ utlb_table:
 	#; Virtual Address - 0xf0b0_0000
 	#; Size - 32K (2 16K chunks)
 #ifdef ISS
-	.long		0x80000000,0xf0b00810,0xffff802f,0x00030507
+	.long		0x80000000,0xf0b0081000022294: 000000c7 abcd1234    .......4
+,0xffff802f,0x00030507
 	.long		0x80000000,0xf0b04810,0xffffc02f,0x00030507
 #else
 	.long		0x80000000,0xf0b00810,0xffff802f,0x00030505
@@ -181,10 +182,10 @@ _start_acp:
 	mtmsr		r0
 
 	#; Clear the MCSR
- 
-	mfspr           r0,0x23c
-	mtspr           0x33c,r0
- 
+
+	mfspr		r0,0x23c
+	mtspr		0x33c,r0
+
 	#; Clear the TCR
 
 	mtspr		0x154,r0
@@ -675,7 +676,7 @@ clear_all_fp_done:
 	mtspr		ccr1, r0
 	isync
 
-#ifdef CONFIG_ACP3
+#ifdef ACP3
 acp_icache_init:
 
 	#; Create a 64K page at virtual=0x40000000/physical=0x003f0000
@@ -742,8 +743,6 @@ acp_icache_init:
 #ifdef CONFIG_ACP2
 
 #ifdef ACP_25xx
-
-	#; Write to the extra 16K of LCM.
 
 	lis		r4,CFG_INIT_RAM_ADDR@h
 	ori		r4,r4,CFG_INIT_RAM_ADDR@l
@@ -974,7 +973,7 @@ acp_mem_init:
 	#; Exception Handlers
 	#; ------------------------------------------------------------
 
-#define ACP_UNHANDLED_EXCEPTION(name, number)  \
+#define ACP_UNHANDLED_EXCEPTION(name, number)          \
 	.global		acp_##name;            \
 	.align		4;                     \
 acp_##name:;                                   \
@@ -1000,13 +999,13 @@ acp_start_of_vectors:
 	#; Machine Check
 	#; ------------------------------------------------------------
 
-	.global         acp_machine_check
-	.align          4
+	.global		acp_machine_check
+	.align		4
 acp_machine_check:
-	mtspr           sprg3,r3
-	mflr            r3
-	bl              acp_failure_machine_check
- 
+	mtspr		sprg3,r3
+	mflr		r3
+	bl		acp_failure_machine_check
+
 	#; ------------------------------------------------------------
 	#; Data Storage
 	#; ------------------------------------------------------------

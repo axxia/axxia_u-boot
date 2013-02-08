@@ -59,12 +59,17 @@ void flush_cache(ulong start_addr, ulong size)
 
 	for (address = (void *)start; address < (void *)end;
 	     address += CONFIG_SYS_CACHELINE_SIZE) {
-		__asm__ __volatile__("dcbf    0,%0\n" \
-				     "icbi    0,%0\n" : : "r" (address));
+		__asm__ __volatile__("dcbf    0,%0\n" : : "r" (address));
+	}
+
+	__asm__ __volatile__("sync" : : : "memory");
+
+	for (address = (void *)start; address < (void *)end;
+	     address += CONFIG_SYS_CACHELINE_SIZE) {
+		__asm__ __volatile__("icbi    0,%0\n" : : "r" (address));
 	}
 
 	__asm__ __volatile__("sync" : : : "memory");
 	__asm__ __volatile__("isync" : : : "memory");
-	__asm__ __volatile__(".long 0x7c0004ac" : : : "memory");
 #endif
 }

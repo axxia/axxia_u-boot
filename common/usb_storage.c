@@ -274,27 +274,26 @@ int usb_stor_scan(int mode)
 			     lun++) {
 				usb_dev_desc[usb_max_devs].lun = lun;
 #ifdef CONFIG_ACP3
+			result = usb_stor_get_info(dev, &usb_stor[usb_max_devs],
+						&usb_dev_desc[usb_max_devs]);
+			if (result == USB_EDEVCRITICAL) {
+				/*
+				 * Something there, but failed badly.
+				 * Retry one more time. This happens
+				 * sometimes with some USB sticks,
+				 * e.g. Patriot Rage ID 13fe:3800
+				 */
+				printf (".");
+				usb_restart_device(dev);  /* ignore return value */
 				result = usb_stor_get_info(dev, &usb_stor[usb_max_devs],
-							   &usb_dev_desc[usb_max_devs]);
-				if (result == USB_EDEVCRITICAL) {
-				  /*
-				   * Something there, but failed badly.
-				   * Retry one more time. This happens
-				   * sometimes with some USB sticks,
-				   * e.g. Patriot Rage ID 13fe:3800
-				   */
-				  printf (".");
-				  usb_restart_device(dev);  /* ignore return value */
-				  result = usb_stor_get_info(dev, &usb_stor[usb_max_devs],
-							     &usb_dev_desc[usb_max_devs]);
-				}
-				if (result == 1) {
+						&usb_dev_desc[usb_max_devs]);
+			}
 #else
- 				if (usb_stor_get_info(dev, &usb_stor[start],
-						      &usb_dev_desc[usb_max_devs]) == 1) {
+			if (usb_stor_get_info(dev, &usb_stor[start],
+					      &usb_dev_desc[usb_max_devs]) == 1) {
+			  usb_max_devs++;
+			}
 #endif
-				  usb_max_devs++;
-				}
 			}
 		}
 		/* if storage device */
@@ -378,9 +377,9 @@ static int us_one_transfer(struct us_data *us, int pipe, char *buf, int length)
 			USB_STOR_PRINTF("Bulk xfer 0x%x(%d) try #%d\n",
 				  (unsigned int)buf, this_xfer, 11 - maxtry);
 #ifdef CONFIG_ACP3
-                      result = usb_bulk_msg(us->pusb_dev, pipe, buf,
-                                            this_xfer, &partial,
-                                            USB_CNTL_TIMEOUT);
+			result = usb_bulk_msg(us->pusb_dev, pipe, buf,
+					      this_xfer, &partial,
+					      USB_CNTL_TIMEOUT);
 #else
 			result = usb_bulk_msg(us->pusb_dev, pipe, buf,
 					      this_xfer, &partial,
@@ -753,12 +752,7 @@ int usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 		USB_STOR_PRINTF("failed to send CBW status %ld\n",
 			us->pusb_dev->status);
 		usb_stor_BBB_reset(us);
-#ifdef CONFIG_ACP3
-		return result == USB_EDEVCRITICAL ? result
-				: USB_STOR_TRANSPORT_FAILED;
-#else
 		return USB_STOR_TRANSPORT_FAILED;
-#endif
 	}
 	mdelay(5);
 	pipein = usb_rcvbulkpipe(us->pusb_dev, us->ep_in);
@@ -773,8 +767,13 @@ int usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 		pipe = pipein;
 	else
 		pipe = pipeout;
+#ifdef CONFIG_ACP3
+	result = usb_bulk_msg(us->pusb_dev, pipe, srb->pdata, srb->datalen,
+			      &data_actlen, USB_CNTL_TIMEOUT);
+#else
 	result = usb_bulk_msg(us->pusb_dev, pipe, srb->pdata, srb->datalen,
 			      &data_actlen, USB_CNTL_TIMEOUT * 5);
+#endif
 	/* special handling of STALL in DATA phase */
 	if ((result < 0) && (us->pusb_dev->status & USB_ST_STALLED)) {
 		USB_STOR_PRINTF("DATA:stall\n");

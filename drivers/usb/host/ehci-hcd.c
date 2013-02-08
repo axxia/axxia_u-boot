@@ -470,9 +470,6 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 	ts = get_timer(0);
 	vtd = td;
 	timeout = USB_TIMEOUT_MS(pipe);
-#ifdef CONFIG_ACP3
-	timeout *= 3;
-#endif
 	do {
 		/* Invalidate dcache */
 		ehci_invalidate_dcache(&qh_list);
@@ -480,7 +477,11 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		if (!(token & 0x80))
 			break;
 		WATCHDOG_RESET();
-	} while (get_timer(ts) < timeout);
+#ifdef CONFIG_ACP3
+	} while (get_timer(ts) < CONFIG_SYS_HZ*3);
+#else
+	} while (get_timer(ts) < CONFIG_SYS_HZ);
+#endif
 
 	/* Check that the TD processing happened */
 	if (token & 0x80) {
@@ -560,7 +561,7 @@ fail:
 #ifdef CONFIG_ACP3
 	return result;
 #else
-        return -1;
+	return -1;
 #endif
 }
 
@@ -857,12 +858,12 @@ int usb_lowlevel_init(void)
 	port_status = ehci_readl(&hcor->or_portsc[0]);
 	if (port_status & 0x100) {
 		printf(KERN_ERR "USB port is in reset status, not able to "
-                       "change host controller status to run\n");
+			 "change host controller status to run\n");
 		return -1;
 	}
 #endif
 
- 	/* Set head of reclaim list */
+	/* Set head of reclaim list */
 	memset(&qh_list, 0, sizeof(qh_list));
 	qh_list.qh_link = cpu_to_hc32((uint32_t)&qh_list | QH_LINK_TYPE_QH);
 	qh_list.qh_endpt1 = cpu_to_hc32((1 << 15) | (USB_SPEED_HIGH << 12));

@@ -656,15 +656,17 @@ acp_init_f( void )
 
 #if defined(ACP_25xx) && defined(CONFIG_ACP2) && defined(RESET_INSTEAD_OF_IPI)
 	/*
-	  Disable core 1 and L2 1.
+	  Disable core 1.
+
+	  The 25xx will only run at 1100 MHz with core 1 disabled.
 	*/
 
 	core = dcr_read(0xd00);
 	core |= 0xab;
 	dcr_write(core, 0xd00);
 
-	dcr_write(0x2, (DCR_RESET_BASE + 1));
 	dcr_write(0x2, (DCR_RESET_BASE + 2));
+	dcr_write(0x2, (DCR_RESET_BASE + 1));
 #endif
 
 	/* Get the core number. */
@@ -692,14 +694,14 @@ acp_init_f( void )
 
 	/* Is this a cold reset? */
 #if defined(ACP_25xx) && !defined(ACP_EMU)
-      cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
-      cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
-      cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
+	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
 #else
-      cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
+	cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
 #endif
 
-	/* Fail if this is a cold start, and not SYSTEM_BOOTCORE. */
+	/* Fail if this is a cold start, and not core 0. */
 	if (cold_start && (SYSTEM_BOOTCORE != core))
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
@@ -721,9 +723,17 @@ acp_init_f( void )
 	acp_lock_stage3();
 
 	/* Restore this core's copy of the "data" section. */
-	if (0 == core) {
-		memcpy((void *)&_core_copy_beginning,
-		       (void *)&_core_copy_core0,
+	if (SYSTEM_BOOTCORE == core) {
+		void *source[] = {
+			(void *)&_core_copy_core0,
+			(void *)&_core_copy_core1,
+#if !defined(CONFIG_ACP_342X) || !defined(ACP_25xx)
+			(void *)&_core_copy_core2,
+			(void *)&_core_copy_core3
+#endif
+		};
+
+		memcpy((void *)&_core_copy_beginning, source[0],
 		       (&_core_copy_end - &_core_copy_beginning) * 4);
 	} else {
 		if (-1 == acp_osg_map(acp_osg_get_group(core)))
@@ -745,7 +755,7 @@ acp_init_f( void )
 	*/
 
 #ifndef ACP_25xx
-	dcr_write(0xc, 0x300);	/* 0x300 is L2[0] on 34xx and 25xx */
+	dcr_write(0xc, 0x300);	/* 0x300 is L2[0] on 34xx */
 	l2version = dcr_read(0x304);
 	l2revision = l2version & 0xff;
 	l2version = (l2version & 0xfff00) >> 8;
@@ -803,7 +813,7 @@ acp_init_f( void )
 #endif /* CONFIG_ACP2 */
 
 	/* Clear BSS */
-	memset((void *)&_bss_start, 0, ((&_bss_end - &_bss_start)));
+	memset((void *)&_bss_start, 0, (&_bss_end - &_bss_start));
 
 	/* Re-Initialize the serial port (since BSS just got cleared). */
 	serial_early_init();
@@ -835,27 +845,8 @@ acp_init_f( void )
 	bd->bi_memstart = 0;
 	bd->bi_memsize = gd->ram_size;
 
-#if 0
-	{
-#define TEST_SIZE 0x10000
-		int i;
-		void *source = 0xf0a00000;
-
-		for (i = 0; i < 100; ++i) {
-			printf("Running \"stack\" test (%d): addr=0x%x\n",
-			       i, addr);
-			memset((addr - TEST_SIZE), 0, TEST_SIZE);
-			memcpy((addr - TEST_SIZE), source, TEST_SIZE);
-
-			if (0 != memcmp((addr - TEST_SIZE), source, TEST_SIZE)) {
-				printf("Compare Failed!\n");
-			}
-		}
-	}
-#endif
-
 	/* Set up the Stack */
-	acp_mem_init(addr, 0, (unsigned long) acp_init_r);
+	acp_mem_init(addr, 0, ( unsigned long ) acp_init_r);
 
 	return;
 }
@@ -1306,108 +1297,6 @@ void board_init_r(gd_t *id, ulong dest_addr)
 }
 
 /*
-  ------------------------------------------------------------------------------
-  pci_speed_change
-*/
-
-#if defined(ACP_25xx) && defined(CONFIG_ACP2)
-typedef enum {
-	PEI_2_5G = 1,
-	PEI_5G = 2
-} peiSpeed_t;
-
-void
-pci_speed_change(char peiCore, peiSpeed_t changeSpeed)
-{
-	unsigned long lnkStatus, addr;
-	unsigned width;
-	peiSpeed_t speedBefore, speedAfter;
-
-	if (peiCore == 0) {
-		addr = PCIE0_CONFIG;
-	} else {
-		addr = PCIE1_CONFIG;
-	}
-
-	lnkStatus = acpreadio((void *)(addr + 0x117c));
-	printk("PEI%d 0x117c LnkStatus = 0x%x\n",  peiCore,lnkStatus);
-	speedBefore = lnkStatus & 0xf;
-	width = (lnkStatus & 0xf0) >> 4;
-	printf("PEI%d width - %d lane \n",peiCore, width);
-
-
-	if (changeSpeed == speedBefore) {
-		if (changeSpeed == PEI_2_5G)
-			printf("PEI%d speed already set to (2.5 Gb/s)\n", peiCore);
-		else
-			printf("PEI%d speed already set to (5 Gb/s)\n", peiCore);
-	} else if (changeSpeed == PEI_2_5G) {
-		/* Change PEI speed to Gen 1 */
-		acpwriteio(0x1, (void *)(addr + 0x90));
-		acpwriteio(0x10000, (void *)(addr + 0x117c));
-
-		/* delay for 1000ms */
-		mdelay(1000);
-		lnkStatus = acpreadio((void *)(addr + 0x117c));
-		printf("pei%d lnkStatus 0x117c after speed initiation = 0x%x\n", peiCore, lnkStatus);
-		speedAfter = lnkStatus & 0xf;
-		if ((lnkStatus & 0xc00) == 0xc00) {
-			/* Please note that this is also ensuring that there is no link training error */
-			printk("PEI%d has Link Training error\n", peiCore);
-			if (lnkStatus & 0x10000) {
-				/* clear speed change initiation bit */
-				acpwriteio(0x20000, (void *)(addr + 0x117c));
-			}
-			return;
-		}
-		if ((lnkStatus & 0x10000) != 0x10000) {
-			if (speedAfter == changeSpeed) {
-				printf("Successfully changed PEI%d speed from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s)\n", peiCore);
-			} else {
-				printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
-			}
-		} else {
-			/* clear speed change initiation bit */
-			acpwriteio(0x20000, (void *)(addr + 0x117c));
-			printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
-		}
-	} else if (changeSpeed == PEI_5G) {
-		/* Change PEI speed to Gen 2 */
-		acpwriteio(0x2, (void *)(addr + 0x90));
-		acpwriteio(0x10000, (void *)(addr + 0x117c));
-
-		/* delay for 1000 ms */
-		mdelay(1000);
-		lnkStatus = acpreadio((void *)(addr + 0x117c));
-		printf("pei%d lnkStatus 0x117c after speed initiation = 0x%x\n", peiCore, lnkStatus);
-		speedAfter = lnkStatus & 0xf;
-
-		if ((lnkStatus & 0xc00) == 0xc00) {
-			/* Please note that this is also ensuring that there is no link training error */
-			printk("PEI%d has Link Training error\n", peiCore);
-			if (lnkStatus & 0x10000) {
-				/* clear speed change initiation bit */
-				acpwriteio(0x20000, (void *)(addr + 0x117c));
-			}
-			return;
-		}
-		
-		if ((lnkStatus & 0x10000) != 0x10000) {
-			if (speedAfter == changeSpeed) {
-				printf("Successfully changed PEI%d speed from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s)\n", peiCore);
-			} else {
-				printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
-			}
-		} else {
-			/* clear speed change initiation bit */
-			acpwriteio(0x20000, (void *)(addr + 0x117c));
-			printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
-		}
-	}
-}
-#endif
-
-/*
   ----------------------------------------------------------------------
   acp_init_r
 
@@ -1429,7 +1318,7 @@ acp_init_r( void )
 #endif
 
 	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
- 
+
 #if defined(ACP_25xx) && !defined(ACP_EMU)
 	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
@@ -1447,7 +1336,7 @@ acp_init_r( void )
 		unsigned long value;
 
 		__asm__ __volatile__ ("mfspr %0,0x23c" : "=r" (value));
-		__asm__ __volatile__ ("mtspr 0x33c,%0" : : "r" (value));        
+		__asm__ __volatile__ ("mtspr 0x33c,%0" : : "r" (value));	
 		__asm__ __volatile__ ("mfmsr %0" : "=r" (value));
 		value |= 0x1000;
 		__asm__ __volatile__ ("mtmsr %0" : : "r" (value));
@@ -1460,7 +1349,7 @@ acp_init_r( void )
 	if( 0 != env_init( ) ) {
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 	}
-
+	
 	/* Set up the time base */
 	if( 0 != init_timebase( ) ) {
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
@@ -1497,11 +1386,13 @@ acp_init_r( void )
 	writel(0x00180070, 0xf0801060);
 #endif
 
- 	/* NAND */
+	/* NAND */
 #if defined(CONFIG_LSI_NAND)
 	nand_init( );
 #endif
 	env_relocate( );
+
+	printf("Updating the Environment...\n");	/* ZZZ */
 
 	/* Update "baudrate" now that the environment is available. */
 	{
@@ -1586,7 +1477,6 @@ acp_init_r( void )
 		}
 #endif
 #else
-
 		env_value = getenv( "version3" );
 		strcpy( buffer, get_lsi_version( ) );
 
@@ -1659,15 +1549,18 @@ acp_init_r( void )
 	dcr_write(0x3, (DCR_RESET_BASE + 0x8));
 	dcr_write(0x3, (DCR_RESET_BASE + 0x6));
 #else
-        dcr_write(0xffffe000, (DCR_RESET_BASE + 1));
+	dcr_write(0xffffe000, (DCR_RESET_BASE + 1));
 #endif
- 
+
 	/*
 	  If this is the initial boot, bring up the other OS boot cores.
 
 	  In all cases, bring up the secondary cores associated with
 	  this OS group.
 	*/
+
+	printf("Bringing Up Other Cores...\n");	/* ZZZ */
+
 	{
 		int i;
 		char *testmode;
@@ -1675,7 +1568,6 @@ acp_init_r( void )
 		/*
 		  Core 0 has to have access to the memory of every group...
 		*/
-
 		for (i = 0; i < ACP_MAX_OS_GROUPS; ++i) {
 			if (-1 == acp_osg_map(i))
 				acp_failure(__FILE__, __FUNCTION__, __LINE__);
@@ -1800,8 +1692,6 @@ acp_init_r( void )
 			       peripheral_clock / 1000);
 	}
 #endif
-
-
 
 #if defined(CONFIG_ACP2) || defined(CONFIG_ACP3)
 	/*
@@ -1976,6 +1866,22 @@ acp_init_r( void )
 	printf( "System Memory Size: %lu M\n", get_sysmem_size( ) );
 #endif
 	printf( "LSI Version: %s\n", get_lsi_version( ) );
+
+	/*ZZZ*/
+#if 0
+	{
+		unsigned long pvr_value;
+		unsigned long dbcr0_value;
+
+		__asm__ __volatile__ ("mfspr %0,0x11f" : "=r" (pvr_value));
+		__asm__ __volatile__ ("mfspr %0,0x134" : "=r" (dbcr0_value));
+
+		printf("** PVR: 0x%08x  DBCR0: 0x%08x\n",
+		       pvr_value, dbcr0_value);
+	}
+#endif
+	/*ZZZ*/
+	       
 
 	/* IP Address */
 	gd->bd->bi_ip_addr = getenv_IPaddr ("ipaddr");

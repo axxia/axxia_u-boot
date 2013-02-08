@@ -41,6 +41,10 @@
   ===============================================================================
 */
 
+#ifndef CONFIG_ACP_342X
+#error "GOT HERE!"
+#endif
+
 #if defined(ACP_X1V1)
 #define EP501
 #elif defined(ACP_X1V2)

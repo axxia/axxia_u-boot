@@ -30,9 +30,11 @@
 #include <asm/processor.h>
 #include <asm/io.h>
 
+#ifdef CONFIG_CMD_GO
+
 /* Allow ports to override the default behavior */
 __attribute__((weak))
-unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
+unsigned long do_go_exec (ulong (*entry)(int, char * const []), int argc, char * const argv[])
 {
 #ifdef CONFIG_ACP3
 	{
@@ -57,10 +59,8 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 
 		disable_interrupts( );
 
-#if 0
 		if (0 != os_access_enabled)
 			os_access_init( );
-#endif
 
 		ose_init( );
 		os_base = (acp_osg_group_get_res(0, ACP_OS_BASE) *
@@ -68,13 +68,11 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 		sprintf( buffer, "valid=1" );
 		ose_add_string( 0, buffer );
 
-#if 0
 		if (0 != os_access_enabled) {
 			sprintf( buffer, "nand_access_base=0x%lx",
 				 ( unsigned long ) os_access_get_address( ) );
 			ose_add_string( 0, buffer );
 		}
-#endif
 
 		sprintf( buffer, "spintable_0=0x%lx",
 			 ( unsigned long ) 
@@ -84,7 +82,7 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 1 ] )->entry_address ) );
 		ose_add_string( 0, buffer );
-#if !defined(CONFIG_ACP_342X) && !defined(ACP_25xx)
+#ifndef CONFIG_ACP_342X
 		sprintf( buffer, "spintable_2=0x%lx",
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 2 ] )->entry_address ) );
@@ -163,15 +161,13 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 	return entry (argc, argv);
 }
 
-int do_go (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+int do_go (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong	addr, rc;
 	int     rcode = 0;
 
-	if (argc < 2) {
-		cmd_usage(cmdtp);
-		return 1;
-	}
+	if (argc < 2)
+		return CMD_RET_USAGE;
 
 	addr = simple_strtoul(argv[1], NULL, 16);
 
@@ -196,6 +192,8 @@ U_BOOT_CMD(
 	"addr [arg ...]\n    - start application at address 'addr'\n"
 	"      passing 'arg' as arguments"
 );
+
+#endif
 
 U_BOOT_CMD(
 	reset, 2, 0,	do_reset,

@@ -40,43 +40,6 @@
   ======================================================================
 */
 
-static int
-test_pipe_display(unsigned long region, unsigned long value,
-		  int link, int extras, unsigned long *extra_offset)
-{
-	int i;
-	int j;
-	unsigned long *offset;
-	unsigned long temp[3];
-
-	i = 0;
-	j = extras;
-	offset = extra_offset;
-
-	while (0 < j--) {
-		if (0 != ncr_read32(region, *offset++, &(temp[i++])))
-			goto pipe_display_read_failed;
-	}
-
-	i = 0;
-	j = extras;
-	offset = extra_offset;
-
-	printf("0x11f.2.0x%08lx contains 0x%08lx\n",
-	       link, value);
-
-	while (0 < j--) {
-		printf("0x115.2.0x%08lx contains 0x%08lx\n",
-		       *offset++, temp[i++]);
-	}
-
-	return 0;
-
-pipe_display_read_failed:
-
-	return -1;
-}
-
 /*
   ======================================================================
   U-Boot Stuff
@@ -102,8 +65,6 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 		rc = 0;
 	} else if (0 == strncmp(argv[1], "e", strlen("e"))) {
-#ifndef CONFIG_ACP2
-#if !defined(NCR_TRACER)
 		rc = 0;
 
 		if (3 == argc) {
@@ -129,10 +90,6 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			printf("ECC Mode is %s\n",
 			       get_ecc_mode_string(get_ecc_mode()));
 		}
-#else
-		printf("Not Available when NCR_TRACER is defined!\n");
-#endif
-#endif
 	} else if (0 == strncmp(argv[1], "loc", strlen("loc"))) {
 #if !defined(CONFIG_ACP2) && !defined(ACP_EMU) && !defined(ACP_ISS)
 		printf("Starting Lock Loop (Ctrl-C to Exit).\n");
@@ -162,7 +119,7 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		rc = 0;
 	} else if ((0 == strncmp(argv[1], "n", strlen("n"))) &&
 		   (5 == argc)) {
-#if !defined(CONFIG_ACP2) && defined(CONFIG_LSI_NAND)
+#ifndef CONFIG_ACP2
 		nand_info_t *nand;
 		struct nand_chip *chip;
 		unsigned long page;
@@ -370,8 +327,7 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			bufi = (nand->writesize + nand->oobsize) >> 4;
 
 			while (bufi--) {
-				unsigned long temp[3];
-	printf("\t"
+				printf("\t"
 				       "%02x %02x %02x %02x "
 				       "%02x %02x %02x %02x  "
 				       "%02x %02x %02x %02x "
@@ -508,134 +464,6 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		value |= 0xbffff;
 		ncr_write32(NCP_REGION_ID(0x22, 0), 0x168, value);
 #endif
-	} else if (0 == strncmp(argv[1], "pc", strlen("pc"))) {
-		unsigned long configuration;
-		unsigned long mask;
-		unsigned long last_value;
-
-		configuration = simple_strtoul(argv[2], NULL, 16);
-
-		if (4 <= argc)
-			mask = simple_strtoul(argv[3], NULL, 16);
-		else
-			mask = 0xffffffffUL;
-
-		printf("Configuration: 0x%08lx  Mask: 0x%08lx\n",
-		       configuration, mask);
-
-		acpwriteio(0x80000100, 0xf0983020);
-		acpwriteio(configuration, 0xf09830a4);
-
-		last_value = (acpreadio(0xf09830a0) & mask);
-		printf("0xf09a30a0 contains 0x%08lx\n", last_value);
-
-		for (;;) {
-			unsigned long value;
-
-			value = (acpreadio(0xf09830a0) & mask);
-
-			if (last_value != value) {
-				last_value = value;
-				printf("0xf09a30a0 contains 0x%08lx\n",
-				       last_value);
-			}
-
-			if (ctrlc())
-				break;
-		}
-
-		rc = 0;
-	} else if (0 == strncmp(argv[1], "pi", strlen("pi"))) {
-		unsigned long value;
-		unsigned long mask;
-		unsigned long link;
-		unsigned long mlink[3];
-		unsigned long region;
-		unsigned long temp;
-		unsigned long last_value;
-
-		region = NCP_REGION_ID(0x115, 2);
-
-		value = simple_strtoul(argv[2], NULL, 16);
-		mask = simple_strtoul(argv[3], NULL, 16);
-		link = simple_strtoul(argv[4], NULL, 16);
-
-		if (4 <= link)
-			goto pipe_bad_input;
-
-		link = 0x64 + (link * 8);
-
-		if (6 <= argc)
-			mlink[0] =
-				(0x64 + (simple_strtoul(argv[5], NULL, 16) * 8));
-		else
-			mlink[0] = 0;
-
-		if (7 <= argc)
-			mlink[1] =
-				(0x64 + (simple_strtoul(argv[6], NULL, 16) * 8));
-		else
-			mlink[1] = 0;
-
-		if (8 <= argc)
-			mlink[2] =
-				(0x64 + (simple_strtoul(argv[7], NULL, 16) * 8));
-		else
-			mlink[2] = 0;
-
-		printf("Pipe: 0x%08lx 0x%08lx 0x%08lx 0x%08lx 0x%08lx 0x%08lx\n",
-		       value, mask, link, mlink[0], mlink[1], mlink[2]);
-
-		if (0 != ncr_read32(region, 0x4, &temp))
-			goto pipe_read_failed;
-
-		temp &= ~0x1fe0;
-		temp |= ((value << 5) & 0x1fe0);
-
-		if (0 != ncr_write32(region, 0x4, temp))
-			goto pipe_read_failed;
-
-		if (0 != ncr_read32(region, link, &last_value))
-			goto pipe_read_failed;
-
-		if (0 != test_pipe_display(region,
-					   last_value, link, argc - 5, mlink))
-			goto pipe_read_failed;
-
-		for (;;) {
-			unsigned long this_value;
-
-			if (0 !=
-			    ncr_read32(region, link, &this_value))
-				goto pipe_read_failed;
-
-			if ((last_value & mask) != (this_value & mask)) {
-				last_value = this_value;
-
-				if (0 != test_pipe_display(region, last_value,
-							   link, argc - 5,
-							   mlink))
-					goto pipe_read_failed;
-			}
-
-			if (ctrlc())
-				break;
-		}
-
-		goto pipe_done;
-
-	pipe_read_failed:
-
-		printf("Config Ring Access Failed!\n");
-		goto pipe_done;
-
-	pipe_bad_input:
-
-		printf("Bad Input.\n");
-		goto pipe_done;
-
-	pipe_done:
-		rc = 0;
 	}
 
 	if (0 != rc) {
@@ -654,8 +482,8 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
   ======================================================================
 */
 
-U_BOOT_CMD(test, 9, 0, do_test,
-	   "test debug|ecc|pcie|logio|locks|nand|ticks|memory|help\n",
+U_BOOT_CMD(test, 5, 0, do_test,
+	   "test debug|ecc|logio|locks|nand|ticks|memory|help\n",
 	   "d,ebug  -- Toggle DEBUG logging.\n" \
 	   "e,cc    -- Set the ECC mode to the given value.\n" \
 	   "log,io  -- Toggle IO logging.\n" \
@@ -666,8 +494,6 @@ U_BOOT_CMD(test, 9, 0, do_test,
 	   "           to specify a value, start with 0x...\n" \
 	   "t,icks  -- Display the Return Value from get_ticks().\n" \
 	   "m,emory -- Verify the memory fault trigger.\n" \
-	   "pc,ie   -- Poll PCIe debug register.\n" \
-	   "pi,pe   -- Poll PIPE debug registers\n"
 	   "h,elp   -- This Wonderful Help Screen\n");
 
 #endif /* CONFIG_ACP */
