@@ -727,7 +727,7 @@ acp_init_f( void )
 		void *source[] = {
 			(void *)&_core_copy_core0,
 			(void *)&_core_copy_core1,
-#if !defined(CONFIG_ACP_342X) || !defined(ACP_25xx)
+#if !defined(CONFIG_AXXIA_342X) || !defined(ACP_25xx)
 			(void *)&_core_copy_core2,
 			(void *)&_core_copy_core3
 #endif

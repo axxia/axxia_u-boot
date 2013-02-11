@@ -122,7 +122,7 @@ typedef struct {
 #include "EIOA344x/vp.c"
 #include "EIOA344x/nca.c"
 #include "EIOA344x/eioa.c"
-#elif defined(CONFIG_ACP_342X)
+#elif defined(CONFIG_AXXIA_342X)
 #include "EIOA342x/mmb.c"
 #include "EIOA342x/vp.c"
 #include "EIOA342x/nca.c"
@@ -256,7 +256,7 @@ ncp_dev_reset(void)
 	udelay(10000);
 	dcr_write(0, (DCR_RESET_BASE + 2));
 	udelay(10000);
-#elif defined(CONFIG_ACP_342X)
+#elif defined(CONFIG_AXXIA_342X)
 	dcr_write(0xcc500000, (DCR_RESET_BASE + 2));
 	udelay(10000);
 	dcr_write(0, (DCR_RESET_BASE + 2));

@@ -82,7 +82,7 @@ unsigned long do_go_exec (ulong (*entry)(int, char * const []), int argc, char *
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 1 ] )->entry_address ) );
 		ose_add_string( 0, buffer );
-#ifndef CONFIG_ACP_342X
+#ifndef CONFIG_AXXIA_342X
 		sprintf( buffer, "spintable_2=0x%lx",
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 2 ] )->entry_address ) );

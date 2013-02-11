@@ -26,7 +26,7 @@
 
 #include <asm/io.h>
 
-#if defined (ACP_X1V2) | defined (CONFIG_ACP_342X)
+#if defined (ACP_X1V2) | defined (CONFIG_AXXIA_342X)
 #include "regs/ncp_denali_regs.h"
 #include "regs/ncp_denali_reg_defines.h"
 #include "regs/ncp_phy_regs.h"
@@ -1079,7 +1079,7 @@ clocks_init( void )
 #include "sysmem_emulation.c"
 #else
 #include "sysmem_asic_common.c"
-#if defined (ACP_X1V2) || defined (CONFIG_ACP_342X)
+#if defined (ACP_X1V2) || defined (CONFIG_AXXIA_342X)
 #include "ncp_sysmem_init_ibmphy.c"
 #endif
 #if defined (ACP_25xx) 
@@ -1093,7 +1093,7 @@ clocks_init( void )
 #define INT_STATUS_OFFSET 0x16c
 #define BIST_COMPLETION 0x200
 #define ECC_ERROR_MASK 0x3c
-#elif defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
+#elif defined(ACP_X1V2) || defined(CONFIG_AXXIA_342X)
 #define INT_STATUS_OFFSET 0x16c
 #define BIST_COMPLETION 0x400
 #define ECC_ERROR_MASK 0x78

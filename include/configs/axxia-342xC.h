@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012
+ * (C) Copyright 2013
  * LSI <www.lsi.com>
  * John Jacques <john.jacques@lsi.com>
  * Configuration settings for the LSI ACP development boards.
@@ -20,12 +20,12 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __CONFIGS_ACP3_ACP342XC_H
-#define __CONFIGS_ACP3_ACP342XC_H
+#ifndef __CONFIGS_AXXIA_342XC_H
+#define __CONFIGS_AXXIA_342XC_H
 
-#define CONFIG_ACP_342X 1
-#define CONFIG_ACP_P0 1
+#define CONFIG_AXXIA_342X 1
+#define CONFIG_AXXIA_P0   1
 
-#include <configs/acp3.h>
+#include <configs/axxia-ppc.h>
 
-#endif	/* __CONFIGS_ACP3_ACP342XC_H */
+#endif	/* __CONFIGS_AXXIA_342XC_H */

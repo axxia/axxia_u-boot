@@ -82,7 +82,7 @@ SECTIONS
     /* the sector layout of our flash chips!	XXX FIXME XXX	*/
 
     arch/powerpc/cpu/ppc4xx/start.o	(.text)
-    board/lsi/acp/acp_init.o	(.text)
+    board/lsi/axxia-ppc/acp_init.o	(.text)
 
     *(.text)
     *(.fixup)

@@ -69,7 +69,7 @@ static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
 		/* v1 only supports fn=0 */
 		if (fn)
 			return NULL;
-#elif defined(ACP_X1V2) || defined(CONFIG_ACP_342X)
+#elif defined(ACP_X1V2) || defined(CONFIG_AXXIA_342X)
 		/* v2 only supports fn0-3 and bus0-63 */
 		if ((fn > 3) || (PCI_BUS(devfn) > 63)) 
 			return NULL;

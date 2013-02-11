@@ -1,7 +1,9 @@
 /*
- * board/lsi/acp/version.c
+ * dt.c
  *
- * Copyright (C) 2010 LSI Corporation
+ * Default device trees for LSI's ACP.
+ *
+ * Copyright (C) 2009 LSI Corporation
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -23,44 +25,34 @@
  */
 
 #include <config.h>
+#include <common.h>
 
-#ifdef CONFIG_ACP
-
-/*
-  is_asic
-*/
-
-int
-is_asic(void)
-{
-#if !defined(ACP_ISS) && !defined(ACP_EMU)
-	return 1;
-#else
-	return 0;
-#endif
-}
-
-unsigned long
-get_sysmem_size(void)
-{
 #if defined(ACP_ISS)
-	return 256 * 1024;
+#if defined(ACP_X1V1)
+#include "dtb/ACPISS344xV1.h"
+#elif defined(ACP_X1V2)
+#include "dtb/ACPISS344xV2.h"
+#elif defined(CONFIG_AXXIA_342X)
+#include "dtb/ACPISS342x.h"
 #else
-	unsigned long size = 0;
+#error "Unknown Target!"
+#endif
+#elif defined(ACP_X1V1)
+#include "dtb/ACP344xV1.h"
+#elif defined(ACP_X1V2)
+#include "dtb/ACP344xV2.h"
+#elif defined(CONFIG_AXXIA_342X)
+#include "dtb/ACP342x.h"
+#elif defined(ACP_25xx)
+#include "dtb/ACP25xx.h"
+#endif
 
-#if defined(CONFIG_ACP3)
-	char *env_memory;
-
-	env_memory = getenv("memory");
-
-	if ((char *)0 != env_memory) {
-		size = simple_strtoul(env_memory, (char **)0, 0);
+unsigned long *
+get_acp_fdt(int group)
+{
+	if (ACP_NR_CORES > group) {
+		return acp_fdt[group];
 	}
-#else
-	size = (1 << (sysmem_size - 20));
-#endif
-	return size;
-#endif
-}
 
-#endif /* CONFIG_ACP */
+	return NULL;
+}
