@@ -178,9 +178,7 @@ do_mdio(cmd_tbl_t *command_table, int flag, int argc, char *argv[])
 	} else if ((0 == strncmp(argv[1], "d", strlen("d")))) {
 		phy_debug();
 	} else {
-#ifndef CFG_NOHELP
 		printf("%s", command_table->usage);
-#endif
 	}
 
 	return 0;

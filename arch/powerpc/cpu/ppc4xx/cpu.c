@@ -40,8 +40,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifndef CONFIG_ACP2
-
 void board_reset(void);
 
 /*
@@ -702,8 +700,6 @@ int ppc440spe_revB() {
 #endif
 		return 0;
 }
-
-#endif	/* !CONFIG_ACP */
 
 /* ------------------------------------------------------------------------- */
 

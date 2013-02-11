@@ -66,12 +66,10 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 	DEBUG_PRINT( "flag=%d argc=%d\n", flag, argc );
 
 	if( 0 == strncmp( argv[1], "h", strlen( "h" ) ) ) {
-#ifndef CFG_NOHELP
 #ifdef CFG_LONGHELP
 		printf( "%s", cmdtp->help );
 #else
 		printf( "%s", cmdtp->usage );
-#endif
 #endif
 		return_code = 0;
 	} else if( 0 == strncmp( argv[1], "r", strlen( "r" ) ) ) {
@@ -201,9 +199,7 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 	}
 
 	if( 0 != return_code ) {
-#ifndef CFG_NOHELP
 		printf( "%s", cmdtp->usage );
-#endif
 	}
 
 	return return_code;

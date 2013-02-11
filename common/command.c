@@ -37,7 +37,6 @@
 int _do_help (cmd_tbl_t *cmd_start, int cmd_items, cmd_tbl_t * cmdtp, int
 	      flag, int argc, char * const argv[])
 {
-#ifndef CFG_NOHELP
 	int i;
 	int rcode = 0;
 
@@ -97,9 +96,6 @@ int _do_help (cmd_tbl_t *cmd_start, int cmd_items, cmd_tbl_t * cmdtp, int
 		}
 	}
 	return rcode;
-#else  /* CFG_NOHELP */
-	return 0;
-#endif	/* CFG_NOHELP */
 }
 
 /***************************************************************************
@@ -147,7 +143,6 @@ cmd_tbl_t *find_cmd (const char *cmd)
 
 int cmd_usage(const cmd_tbl_t *cmdtp)
 {
-#ifndef CFG_NOHELP
 	printf("%s - %s\n\n", cmdtp->name, cmdtp->usage);
 
 #ifdef	CONFIG_SYS_LONGHELP
@@ -161,7 +156,6 @@ int cmd_usage(const cmd_tbl_t *cmdtp)
 	puts (cmdtp->help);
 	putc ('\n');
 #endif	/* CONFIG_SYS_LONGHELP */
-#endif	/* CFG_NOHELP */
 	return 1;
 }
 

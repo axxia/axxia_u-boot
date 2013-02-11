@@ -116,9 +116,7 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 #endif
 
 	if (0 != rc) {
-#ifndef CFG_NOHELP
 		printf("%s", cmdtp->usage);
-#endif
 	}
 
  do_test_exit:

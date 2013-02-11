@@ -85,9 +85,7 @@ do_io(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	}
 
 	if (0 != rc) {
-#ifndef CFG_NOHELP
 		printf("%s", cmdtp->usage);
-#endif
 	}
 
 	return rc;

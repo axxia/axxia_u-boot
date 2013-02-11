@@ -248,7 +248,7 @@
 	GOT_ENTRY(__bss_start)
 	END_GOT
 #endif /* CONFIG_NAND_SPL */
-#endif /* CONFIG_ACP2 */
+#endif /* CONFIG_ACP */
 
 #if defined(CONFIG_NAND_U_BOOT) && !defined(CONFIG_NAND_SPL)
 	/*
@@ -566,11 +566,7 @@ tlbnx2:	addi	r4,r4,1		/* Next TLB */
 version_string:
 	.ascii U_BOOT_VERSION_STRING, "\0"
 
-#ifdef CONFIG_ACP2
-	. = 0x100
-#else
 	. = EXC_OFF_SYS_RESET
-#endif
 
 #ifndef CONFIG_ACP
 	.globl	_start_of_vectors
@@ -1223,7 +1219,6 @@ _start:
 
 
 #ifndef CONFIG_NAND_SPL
-#ifndef CONFIG_ACP2
 /*
  * This code finishes saving the registers to the exception frame
  * and jumps to the appropriate handler for the exception.
@@ -1344,7 +1339,6 @@ mck_return:
 	SYNC
 	rfmci
 #endif /* CONFIG_440 */
-#endif /* CONFIG_ACP2 */
 
 	.globl get_pvr
 get_pvr:
