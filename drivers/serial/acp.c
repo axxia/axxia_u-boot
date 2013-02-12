@@ -447,7 +447,6 @@ serial_early_init()
 int
 serial_init()
 {
-#if 0
 #ifndef ACP_ISS
 	clock_stuff_t clock_stuff;
 #ifdef CONFIG_ACP3
@@ -480,7 +479,7 @@ serial_init()
 	acp_serial_init(clock_stuff.divisor, clock_stuff.ibrd, clock_stuff.fbrd);
 #endif
 	acp_failure_enable_console();
-#endif
+
 	return 0;
 }
 

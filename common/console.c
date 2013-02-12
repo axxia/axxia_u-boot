@@ -44,6 +44,8 @@ extern int overwrite_console(void);
 
 #endif /* CONFIG_SYS_CONSOLE_IS_IN_ENV */
 
+#ifndef CONFIG_ACP
+
 static int console_setfile(int file, struct stdio_dev * dev)
 {
 	int error = 0;
@@ -289,6 +291,7 @@ int fprintf(int file, const char *fmt, ...)
 	return i;
 }
 
+#endif	/* !CONFIG_ACP */
 
 /** U-Boot INITIAL CONSOLE-COMPATIBLE FUNCTION *****************************/
 
@@ -299,6 +302,7 @@ int getc(void)
 		return 0;
 #endif
 
+#ifndef CONFIG_ACP
 	if (gd->flags & GD_FLG_DEVINIT) {
 		/* Get from the standard input */
 		return fgetc(stdin);
@@ -306,6 +310,7 @@ int getc(void)
 
 	if (!gd->have_console)
 		return 0;
+#endif	/* CONFIG_ACP */
 
 	/* Send directly to the handler */
 	return serial_getc();
@@ -318,6 +323,7 @@ int tstc(void)
 		return 0;
 #endif
 
+#ifndef CONFIG_ACP
 	if (gd->flags & GD_FLG_DEVINIT) {
 		/* Test the standard input */
 		return ftstc(stdin);
@@ -325,6 +331,7 @@ int tstc(void)
 
 	if (!gd->have_console)
 		return 0;
+#endif	/* CONFIG_ACP */
 
 	/* Send directly to the handler */
 	return serial_tstc();
@@ -375,8 +382,9 @@ void putc(const char c)
 		return;
 #endif
 
+#ifdef CONFIG_ACP
 	serial_putc(c);
-
+#else  /* CONFIG_ACP */
 	if (!gd->have_console)
 		return pre_console_putc(c);
 
@@ -387,6 +395,7 @@ void putc(const char c)
 		/* Send directly to the handler */
 		serial_putc(c);
 	}
+#endif	/* CONFIG_ACP */
 }
 
 void puts(const char *s)
@@ -401,7 +410,9 @@ void puts(const char *s)
 		return;
 #endif
 
+#ifdef CONFIG_ACP
 	serial_puts(s);
+#else  /* CONFIG_ACP */
 	if (!gd->have_console)
 		return pre_console_puts(s);
 
@@ -412,6 +423,7 @@ void puts(const char *s)
 		/* Send directly to the handler */
 		serial_puts(s);
 	}
+#endif	/* CONFIG_ACP */
 }
 
 int printf(const char *fmt, ...)
