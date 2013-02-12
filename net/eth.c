@@ -21,8 +21,6 @@
  * MA 02111-1307 USA
  */
 
-#include <config.h>
-
 #include <common.h>
 #include <command.h>
 #include <net.h>
@@ -155,13 +153,11 @@ int eth_get_dev_index (void)
 static void eth_current_changed(void)
 {
 	char *act = getenv("ethact");
-
 	/* update current ethernet name */
 	if (eth_current) {
 		if (act == NULL || strcmp(act, eth_current->name) != 0)
 			setenv("ethact", eth_current->name);
 	}
-
 	/*
 	 * remove the variable completely if there is no active
 	 * interface
