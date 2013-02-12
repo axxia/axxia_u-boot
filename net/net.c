@@ -411,11 +411,7 @@ int NetLoop(enum proto_t protocol)
 	}
 
 restart:
-#ifndef CONFIG_ACP
 	memcpy(NetOurEther, eth_get_dev()->enetaddr, 6);
-#else
-	eth_getenv_enetaddrg("ethaddr", NetOurEther);
-#endif
 
 	NetState = NETLOOP_CONTINUE;
 

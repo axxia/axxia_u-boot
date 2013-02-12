@@ -369,7 +369,6 @@ typedef union {
 int phy_duplex( int );
 int phy_link( int );
 int phy_renegotiate( int, int );
-int phy_reset( int );
 int phy_speed( int );
 void dump_packet(const char *, void *, int);
 

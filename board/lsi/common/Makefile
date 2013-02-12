@@ -27,7 +27,7 @@ ifneq ($(OBJTREE),$(SRCTREE))
 $(shell mkdir -p $(obj)board/$(VENDOR)/common)
 endif
 
-LIB	= $(obj)lib$(VENDOR).a
+LIB	= $(obj)lib$(VENDOR).o
 
 COBJS   := phy.o version.o femac.o
 

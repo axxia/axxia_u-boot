@@ -39,10 +39,12 @@
 #define CONFIG_4xx   1		/* ... PPC4xx family         */
 #define CONFIG_BOOKE 1
 
+#ifdef CONFIG_AXXIA_PCI
 #define CONFIG_PCI 1
 #define CONFIG_PCI_PNP 1                          /* do pci plug-and-play*/
 #define CONFIG_CMD_PCI 1
 #define CONFIG_PCI_SCAN_SHOW 1
+#endif
 
 #define ACP_PEI0 1
 #define ACP_PEI1 1
@@ -98,6 +100,7 @@
 
 #if !defined(USE_HOSTCC)
 /* USB support */
+#ifdef CONFIG_AXXIA_USB
 #define CONFIG_CMD_USB 1
 #define CONFIG_USB_EHCI 1
 #define CONFIG_USB_STORAGE 1
@@ -110,6 +113,7 @@
 #define CONFIG_SYS_PPC4XX_USB_ADDR (IO+0xA0000)
 #define CONFIG_EHCI_IS_TDI 1
 #define CONFIG_LSI_USB 1
+#endif
 #endif
 
 /*
@@ -1129,29 +1133,31 @@ void axm2500_pll_check_lock(void);
 #include <asm/types.h>
 #include <asm/u-boot.h>
 
+struct eth_device;
+
 extern unsigned char ethernet_address[6];
 
 void eth_getenv_enetaddrg(const char *, unsigned char [6]);
 
-int lsi_femac_eth_init(bd_t *);
-int acp_eioa_eth_init(bd_t *);
+int lsi_femac_eth_init(struct eth_device *, bd_t *);
+int acp_eioa_eth_init(struct eth_device *, bd_t *);
 
-void lsi_femac_eth_halt(void);
-void acp_eioa_eth_halt(void);
+void lsi_femac_eth_halt(struct eth_device *);
+void acp_eioa_eth_halt(struct eth_device *);
 
-int lsi_femac_eth_send(volatile void *, int);
-int acp_eioa_eth_send(volatile void *, int);
+int lsi_femac_eth_send(struct eth_device *, volatile void *, int);
+int acp_eioa_eth_send(struct eth_device *, volatile void *, int);
 
-int lsi_femac_eth_rx(void);
-int acp_eioa_eth_rx(void);
+int lsi_femac_eth_recv(struct eth_device *);
+int acp_eioa_eth_recv(struct eth_device *);
 
 void lsi_net_receive_test(void);
 void lsi_net_loopback_test(void);
 
-void lsi_femac_receive_test(void);
-void acp_eioa_receive_test(void);
-void lsi_femac_loopback_test(void);
-void acp_eioa_loopback_test(void);
+void lsi_femac_receive_test(struct eth_device *);
+void acp_eioa_receive_test(struct eth_device *);
+void lsi_femac_loopback_test(struct eth_device *);
+void acp_eioa_loopback_test(struct eth_device *);
 #endif /* __ASSEMBLY__ */
 
 /*

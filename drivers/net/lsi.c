@@ -19,12 +19,9 @@
  */
 
 #include <config.h>
-#ifdef CONFIG_LSI_NET
-#ifndef NCR_TRACER
 #include <common.h>
+#include <malloc.h>
 #include <net.h>
-
-unsigned char ethernet_address[6];
 
 /*
   ===============================================================================
@@ -36,8 +33,9 @@ unsigned char ethernet_address[6];
 
 static int initialized = 0;
 static int femac;
+static struct eth_device *device;
 
-#if defined(CONFIG_LSI_EIOA)
+#if defined(CONFIG_AXXIA_EIOA)
 static void
 update_femac(void)
 {
@@ -56,82 +54,45 @@ update_femac(void)
 }
 
 static int
-_eth_init(bd_t *bd)
+_eth_init(struct eth_device *dev, bd_t *bd)
 {
 	int rc;
 
 	update_femac();
 
 	if (0 != femac)
-		rc = lsi_femac_eth_init(bd);
+		rc = lsi_femac_eth_init(dev, bd);
 	else
-		rc = acp_eioa_eth_init(bd);
+		rc = acp_eioa_eth_init(dev, bd);
 
 	return rc;
 }
 
 static void
-_eth_halt(void)
+_eth_halt(struct eth_device *dev)
 {
 	if (0 != femac)
-		lsi_femac_eth_halt();
+		lsi_femac_eth_halt(struct eth_device *dev);
 	else
-		acp_eioa_eth_halt();
+		acp_eioa_eth_halt(struct eth_device *dev);
 
 	return;
 }
 #else
 static int
-_eth_init(bd_t *bd)
+_eth_init(struct eth_device *dev, bd_t *bd)
 {
-	return lsi_femac_eth_init(bd);
+	return lsi_femac_eth_init(dev, bd);
 }
 
 static void
-_eth_halt(void)
+_eth_halt(struct eth_device *dev)
 {
-	lsi_femac_eth_halt();
+	lsi_femac_eth_halt(dev);
 
 	return;
 }
 #endif
-
-static int
-get_ethernet_address(bd_t *bd)
-{
-	int i;
-	char *ethaddr = NULL;
-	char *endp;
-
-	ethaddr = getenv("ethaddr");
-
-	if (NULL == ethaddr) {
-		ERROR_PRINT("ethaddr is not set.\n");
-		return -1;
-	}
-
-	for (i = 0; i < 6; ++i) {
-		ethernet_address[i] = simple_strtoul(ethaddr, &endp, 16);
-
-		if (endp == ethaddr) {
-			ERROR_PRINT("Error parsing ethaddr.\n");
-			return -1;
-		}
-
-		if (0 != *endp)
-			ethaddr = (endp + 1);
-	}
-
-	DEBUG_PRINT("Ethernet Address : %02x:%02x:%02x:%02x:%02x:%02x\n",
-		    ethernet_address[0], ethernet_address[1],
-		    ethernet_address[2], ethernet_address[3],
-		    ethernet_address[4], ethernet_address[5]);
-
-	for (i = 0; i < 6; ++i)
-		bd->bi_enetaddr[i] = ethernet_address[i];
-
-	return 0;
-}
 
 /*
   ===============================================================================
@@ -146,8 +107,6 @@ get_ethernet_address(bd_t *bd)
   dump_packet
 */
 
-#ifdef CONFIG_ACP3
-
 int dumprx = 0;
 int dumptx = 0;
 
@@ -155,7 +114,6 @@ void
 dump_packet(const char *header, void *packet, int length)
 {
 	int i;
-	unsigned char *input = packet;
 
 	printf("---------- %s (%d bytes)----------\n", header, length);
 
@@ -175,128 +133,6 @@ dump_packet(const char *header, void *packet, int length)
 	puts("--------------------\n");
 }
 
-#endif
-
-/*
-  ----------------------------------------------------------------------
-  eth_init
-*/
-
-int
-eth_init(bd_t *bd)
-{
-	int rc;
-
-	DEBUG_PRINT("\n");
-
-	/* If already initialized, halt an do it again.	*/
-	if (0 != initialized)
-		eth_halt();
-
-	/* Get the Ethernet address from the environment. */
-	if (0 != get_ethernet_address(bd))
-		return -1;
-
-	/* Call the appropriate eth_init. */
-	rc = _eth_init(bd);
-
-	/* Change the state to "initialized" if successful. */
-	if (0 == rc)
-		initialized = 1;
-
-	return rc;
-}
-
-/*
-  -------------------------------------------------------------------------------
-  eth_halt
-*/
-
-void
-eth_halt(void)
-{
-	DEBUG_PRINT("\n");
-
-#if defined(CONFIG_LSI_EIOA)
-	if (0 != initialized) {
-		if (0 != femac)
-			lsi_femac_eth_halt();
-		else
-			acp_eioa_eth_halt();
-	}
-#else
-	if (0 != initialized)
-		lsi_femac_eth_halt();
-#endif
-
-	return;
-}
-
-/*
-  -------------------------------------------------------------------------------
-  eth_send
-*/
-
-int
-eth_send(volatile void *packet, int length)
-{
-	DEBUG_PRINT("\n");
-
-	if (0 == initialized) {
-		ERROR_PRINT("Networking Isn't Initialized!\n");
-		return 0;
-	}
-
-#if defined(CONFIG_LSI_EIOA)
-	if (0 != femac)
-		return lsi_femac_eth_send(packet, length);
-	else
-		return acp_eioa_eth_send(packet, length);
-#else
-	return lsi_femac_eth_send(packet, length);
-#endif
-}
-
-/*
-  -------------------------------------------------------------------------------
-  eth_rx
-*/
-
-int
-eth_rx(void)
-{
-	DEBUG_PRINT("\n");
-
-	if (0 == initialized) {
-		ERROR_PRINT("Networking Isn't Initialized!\n");
-		return 0;
-	}
-
-#if defined(CONFIG_LSI_EIOA)
-	if (0 != femac)
-		return lsi_femac_eth_rx();
-	else
-		return acp_eioa_eth_rx();
-#else
-	return lsi_femac_eth_rx();
-#endif
-}
-
-/*
-  -------------------------------------------------------------------------------
-  eth_getenv_enetaddrg
-*/
-
-void
-eth_getenv_enetaddrg(const char *name, unsigned char enetaddr[6])
-{
-	memcpy(enetaddr, ethernet_address, (sizeof(unsigned char) * 6));
-
-	return 0;
-}
-
-#if !defined(CONFIG_ACP2)
-
 /*
   -------------------------------------------------------------------------------
   lsi_net_receive_test
@@ -305,15 +141,15 @@ eth_getenv_enetaddrg(const char *name, unsigned char enetaddr[6])
 void
 lsi_net_receive_test(void)
 {
-#if defined(CONFIG_LSI_EIOA)
+#if defined(CONFIG_AXXIA_EIOA)
 	update_femac();
 
 	if (0 != femac)
-		lsi_femac_receive_test();
+		lsi_femac_receive_test(device);
 	else
-		acp_eioa_receive_test();
+		acp_eioa_receive_test(device);
 #else
-	lsi_femac_receive_test();
+	lsi_femac_receive_test(device);
 #endif
 }
 
@@ -325,35 +161,191 @@ lsi_net_receive_test(void)
 void
 lsi_net_loopback_test(void)
 {
-#if defined(CONFIG_LSI_EIOA)
+#if defined(CONFIG_AXXIA_EIOA)
 	update_femac();
 
 	if (0 != femac)
-		lsi_femac_loopback_test();
+		lsi_femac_loopback_test(device);
 	else
-		acp_eioa_loopback_test();
+		acp_eioa_loopback_test(device);
 #else
-	lsi_femac_loopback_test();
+	lsi_femac_loopback_test(device);
 #endif
 }
 
+/*
+  ----------------------------------------------------------------------
+  lsi_eth_init
+*/
+
+static int
+lsi_eth_init(struct eth_device *dev, bd_t *bd)
+{
+	int rc;
+
+	DEBUG_PRINT("\n");
+
+	/* If already initialized, halt an do it again.	*/
+	if (0 != initialized)
+		dev->halt(dev);
+
+	/* Call the appropriate eth_init. */
+	rc = _eth_init(dev, bd);
+
+	/* Change the state to "initialized" if successful. */
+	if (0 == rc)
+		initialized = 1;
+
+	return rc;
+}
+
+/*
+  -------------------------------------------------------------------------------
+  lsi_eth_send
+*/
+
+static int
+lsi_eth_send(struct eth_device *dev, volatile void *packet, int length)
+{
+	DEBUG_PRINT("\n");
+
+	if (0 == initialized) {
+		ERROR_PRINT("Networking Isn't Initialized!\n");
+		return 0;
+	}
+
+#if defined(CONFIG_AXXIA_EIOA)
+	if (0 != femac)
+		return lsi_femac_eth_send(packet, length);
+	else
+		return acp_eioa_eth_send(packet, length);
+#else
+	return lsi_femac_eth_send(dev, packet, length);
 #endif
+}
+
+/*
+  -------------------------------------------------------------------------------
+  lsi_eth_recv
+*/
+
+static int
+lsi_eth_recv(struct eth_device *dev)
+{
+	DEBUG_PRINT("\n");
+
+	if (0 == initialized) {
+		ERROR_PRINT("Networking Isn't Initialized!\n");
+		return 0;
+	}
+
+#if defined(CONFIG_AXXIA_EIOA)
+	if (0 != femac)
+		return lsi_femac_eth_recv(dev);
+	else
+		return acp_eioa_eth_recv(dev);
+#else
+	return lsi_femac_eth_recv(dev);
+#endif
+}
+
+/*
+  -------------------------------------------------------------------------------
+  lsi_eth_halt
+*/
+
+static void
+lsi_eth_halt(struct eth_device *dev)
+{
+	DEBUG_PRINT("\n");
+
+#if defined(CONFIG_AXXIA_EIOA)
+	if (0 != initialized) {
+		if (0 != femac)
+			lsi_femac_eth_halt(dev);
+		else
+			acp_eioa_eth_halt(dev);
+	}
+#else
+	if (0 != initialized)
+		lsi_femac_eth_halt(dev);
+#endif
+
+	return;
+}
+
+/*
+  -------------------------------------------------------------------------------
+  lsi_eth_write_hwaddr
+*/
+
+static int
+lsi_eth_write_hwaddr(struct eth_device *dev)
+{
+	return 0;
+}
 
 /*
   ------------------------------------------------------------------------------
   board_eth_init
-
-  This will get called by 
 */
 
 int
-board_eth_init(bd_t *bis)
+board_eth_init(bd_t *bd)
 {
-	printf("%s:%d - LSI Ethernet Driver Initialization.\n",
-	       __FILE__, __LINE__); /* ZZZ */
+	int i;
+	char *ethaddr = NULL;
+	char *endp;
+
+	/*
+	  Allocate a device structure and clear it.
+	*/
+
+	if (NULL ==
+	    (device = (struct eth_device *)malloc(sizeof(struct eth_device)))) {
+		ERROR_PRINT("unable to allocate memory\n");
+		return -1;
+	}
+
+	memset((void *)device, 0, sizeof(struct eth_device *));
+
+	/*
+	  Get the Ethernet address from the environment.
+	*/
+
+	ethaddr = getenv("ethaddr");
+
+	if (NULL == ethaddr) {
+		ERROR_PRINT("ethaddr is not set.\n");
+		return -1;
+	}
+
+	for (i = 0; i < 6; ++i) {
+		device->enetaddr[i] = simple_strtoul(ethaddr, &endp, 16);
+
+		if (endp == ethaddr) {
+			ERROR_PRINT("Error parsing ethaddr.\n");
+			return -1;
+		}
+
+		if (0 != *endp)
+			ethaddr = (endp + 1);
+	}
+
+	for (i = 0; i < 6; ++i)
+		bd->bi_enetaddr[i] = device->enetaddr[i];
+
+	/*
+	  Set up the reset of the eth_device structure and register it.
+	*/
+
+	sprintf(device->name, "LSI_FEMAC");
+	device->init         = lsi_eth_init;
+	device->halt         = lsi_eth_halt;
+	device->send         = lsi_eth_send;
+	device->recv         = lsi_eth_recv;
+	device->write_hwaddr = lsi_eth_write_hwaddr;
+	eth_register(device);
 
 	return 0;
 }
-
-#endif /* NCR_TRACER */
-#endif /* CONFIG_LSI_NET */

@@ -732,7 +732,7 @@ void TftpStart(enum proto_t protocol)
 		}
 	}
 
-	/*printf("Using %s device\n", eth_get_name());*/
+	printf("Using %s device\n", eth_get_name());
 	printf("TFTP %s server %pI4; our IP address is %pI4",
 #ifdef CONFIG_CMD_TFTPPUT
 	       protocol == TFTPPUT ? "to" : "from",
@@ -820,7 +820,7 @@ TftpStartServer(void)
 {
 	tftp_filename[0] = 0;
 
-	/*printf("Using %s device\n", eth_get_name());*/
+	printf("Using %s device\n", eth_get_name());
 	printf("Listening for TFTP transfer on %pI4\n", &NetOurIP);
 	printf("Load address: 0x%lx\n", load_addr);
 

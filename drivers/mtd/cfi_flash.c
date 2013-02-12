@@ -1895,7 +1895,6 @@ static void flash_fixup_stm(flash_info_t *info, struct cfi_qry *qry)
  */
 ulong flash_get_size (phys_addr_t base, int banknum)
 {
-#ifndef CONFIG_ACP2
 	flash_info_t *info = &flash_info[banknum];
 	int i, j;
 	flash_sect_t sect_cnt;
@@ -2079,9 +2078,6 @@ ulong flash_get_size (phys_addr_t base, int banknum)
 	}
 
 	return (info->size);
-#else
-	return 0;
-#endif
 }
 
 #ifdef CONFIG_FLASH_CFI_MTD

@@ -1309,6 +1309,7 @@ volatile uchar * PktBuf;
 void
 acp_init_r( void )
 {
+	bd_t *bd;
 	int core;
 	int group;
 	unsigned long cold_start;
@@ -1316,6 +1317,8 @@ acp_init_r( void )
 #if defined(ACP_25xx) && !defined(ACP_ISS) && defined(CONFIG_ACP2)
 	unsigned long *phyRegs = (unsigned long *)CANNED_PHY_REGS_ADDRESS;
 #endif
+
+	bd = gd->bd;
 
 	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
 
@@ -1615,6 +1618,7 @@ acp_init_r( void )
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 
+	eth_initialize(bd);
 	serial_init();
 	acp_splash();
 

@@ -485,11 +485,6 @@ static int phy_enable_( int );
   ======================================================================
 */
 
-extern int  eth_init( bd_t * );
-extern void eth_halt( void );
-extern int  eth_rx( void );
-extern int  eth_send( volatile void *, int );
-
 /*
   Data Structures.
 */
@@ -684,7 +679,7 @@ dump_rx_stats(void)
 */
 
 void
-lsi_femac_receive_test( void )
+lsi_femac_receive_test(struct eth_device *dev)
 {
 
 	bd_t * bd = gd->bd;
@@ -734,7 +729,7 @@ typedef struct {
 #define PACKET_LOG_NUMBER 100
 
 void
-lsi_femac_loopback_test( void )
+lsi_femac_loopback_test(struct eth_device *dev)
 {
 
 	bd_t * bd = gd->bd;
@@ -1099,7 +1094,7 @@ void rx_disable_( void ) {
 */
 
 static int
-tx_enable_( void ) {
+tx_enable_( struct eth_device *dev ) {
 
 	unsigned long tx_configuration_;
 	unsigned long swap_source_address_;
@@ -1119,13 +1114,13 @@ tx_enable_( void ) {
 
 		tx_configuration_ |= APP3XXNIC_TX_CONF_ENABLE_SWAP_SA;
 		swap_source_address_ =
-			( ( ethernet_address [ 4 ] ) << 8 ) | ethernet_address [ 5 ];
+			( ( dev->enetaddr [ 4 ] ) << 8 ) | dev->enetaddr [ 5 ];
 		writeio( swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_2 );
 		swap_source_address_ =
-			( ( ethernet_address [ 2 ] ) << 8 ) | ethernet_address [ 3 ];
+			( ( dev->enetaddr [ 2 ] ) << 8 ) | dev->enetaddr [ 3 ];
 		writeio( swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_1 );
 		swap_source_address_ =
-			( ( ethernet_address [ 0 ] ) << 8 ) | ethernet_address [ 1 ];
+			( ( dev->enetaddr [ 0 ] ) << 8 ) | dev->enetaddr [ 1 ];
 		writeio( swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_0 );
 
 	}
@@ -1646,7 +1641,7 @@ static void app3xxnic_display_( void ) {
 */
 
 int
-lsi_femac_eth_init(bd_t *board_info)
+lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 {
 	size_t memory_needed;
 	void * temp;
@@ -1899,7 +1894,7 @@ lsi_femac_eth_init(bd_t *board_info)
 
 		}
 
-		if( 0 != tx_enable_( ) ) {
+		if( 0 != tx_enable_( dev ) ) {
 
 			WARN_PRINT( "Transmitter not enabled, link down?\n" );
 
@@ -1929,7 +1924,9 @@ lsi_femac_eth_init(bd_t *board_info)
   lsi_femac_eth_halt
 */
 
-void lsi_femac_eth_halt( void ) {
+void
+lsi_femac_eth_halt(struct eth_device *dev)
+{
 
 	TRACE_BEGINNING( "\n" );
 
@@ -1968,11 +1965,11 @@ void lsi_femac_eth_halt( void ) {
 
 /*
   ----------------------------------------------------------------------
-  lsi_femac_eth_rx
+  lsi_femac_eth_recv
 */
 
 int
-lsi_femac_eth_rx( void )
+lsi_femac_eth_recv(struct eth_device *dev)
 {
 	int bytes_received_ = 0;
 
@@ -2124,7 +2121,7 @@ lsi_femac_eth_rx( void )
 
 				if( ( 0 != rx_allow_all ) ||
 				    ( ( 0 == memcmp( ( const void * ) & ( destination_ [ 0 ] ),
-						     ( const void * ) & ( ethernet_address [ 0 ] ),
+						     ( const void * ) & ( dev->enetaddr [ 0 ] ),
 						     6 ) ) ||
 				      ( 0 == memcmp( ( const void * ) & ( destination_ [ 0 ] ),
 						     ( const void * ) & ( broadcast_ [ 0 ] ),
@@ -2223,7 +2220,7 @@ lsi_femac_eth_rx( void )
 */
 
 int
-lsi_femac_eth_send( volatile void * packet, int length )
+lsi_femac_eth_send(struct eth_device *dev, volatile void * packet, int length)
 {
 	int bytes_sent_ = 0;
 

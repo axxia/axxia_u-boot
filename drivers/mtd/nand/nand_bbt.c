@@ -1442,6 +1442,5 @@ int nand_isbad_bbt(struct mtd_info *mtd, loff_t offs, int allowbbt)
 	case 0x02:
 		return allowbbt ? 0 : 1;
 	}
-
 	return 1;
 }

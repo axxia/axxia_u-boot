@@ -26,6 +26,14 @@
 #define CONFIG_AXXIA_342X 1
 #define CONFIG_AXXIA_P0   1
 
+#define CONFIG_AXXIA_USB
+#define CONFIG_AXXIA_PCI
+/*#define CONFIG_AXXIA_EIOA*/
+#define CONFIG_AXXIA_NET
+#define CONFIG_AXXIA_NAND
+#define CONFIG_AXXIA_SERIAL_FLASH
+#define CONFIG_AXXIA_NAND_ENV
+
 #include <configs/axxia-ppc.h>
 
 #endif	/* __CONFIGS_AXXIA_342XC_H */

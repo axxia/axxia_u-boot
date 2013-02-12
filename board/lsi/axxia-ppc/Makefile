@@ -23,7 +23,7 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	= $(obj)lib$(BOARD).a
+LIB	= $(obj)lib$(BOARD).o
 
 ifndef ACP_ISS
 COBJS = acp_init.o
@@ -41,7 +41,7 @@ COBJS  += ncp_task_lite.o ncp_task_lite_uboot.o
 SOBJS  += acp_static.o
 endif
 
-ifdef CONFIG_LSI_EIOA
+ifdef CONFIG_AXXIA_EIOA
 COBJS  += eioa.o
 endif
 
