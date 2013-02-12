@@ -404,7 +404,7 @@ int NetLoop(enum proto_t protocol)
 
 	bootstage_mark_name(BOOTSTAGE_ID_ETH_START, "eth_start");
 	eth_halt();
-	/*eth_set_current();*/
+	eth_set_current();
 	if (eth_init(bd) < 0) {
 		eth_halt();
 		return -1;
@@ -513,12 +513,10 @@ restart:
 	/*
 	 * Echo the inverted link state to the fault LED.
 	 */
-#if 0
 	if (miiphy_link(eth_get_dev()->name, CONFIG_SYS_FAULT_MII_ADDR))
 		status_led_set(STATUS_LED_RED, STATUS_LED_OFF);
 	else
 		status_led_set(STATUS_LED_RED, STATUS_LED_ON);
-#endif
 #endif /* CONFIG_SYS_FAULT_ECHO_LINK_DOWN, ... */
 #endif /* CONFIG_MII, ... */
 
@@ -562,7 +560,6 @@ restart:
 #if	defined(CONFIG_SYS_FAULT_ECHO_LINK_DOWN)	&& \
 	defined(CONFIG_STATUS_LED)			&& \
 	defined(STATUS_LED_RED)
-#if 0
 			/*
 			 * Echo the inverted link state to the fault LED.
 			 */
@@ -572,7 +569,6 @@ restart:
 			} else {
 				status_led_set(STATUS_LED_RED, STATUS_LED_ON);
 			}
-#endif
 #endif /* CONFIG_SYS_FAULT_ECHO_LINK_DOWN, ... */
 #endif /* CONFIG_MII, ... */
 			x = timeHandler;
@@ -986,7 +982,7 @@ int CDPSendTrigger(void)
 #ifdef CONFIG_CDP_PORT_ID
 	*s++ = htons(CDP_PORT_ID_TLV);
 	memset(buf, 0, sizeof(buf));
-	/*sprintf(buf, CONFIG_CDP_PORT_ID, eth_get_dev_index());*/
+	sprintf(buf, CONFIG_CDP_PORT_ID, eth_get_dev_index());
 	len = strlen(buf);
 	if (len & 1)	/* make it even */
 		len++;
@@ -1860,12 +1856,8 @@ common:
 	case CDP:
 	case DHCP:
 		if (memcmp(NetOurEther, "\0\0\0\0\0\0", 6) == 0) {
-#ifndef CONFIG_ACP
 			extern int eth_get_dev_index(void);
 			int num = eth_get_dev_index();
-#else
-			int num = 0;
-#endif
 
 			switch (num) {
 			case -1:
