@@ -37,7 +37,14 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-#if defined(CONFIG_405GP) || defined(CONFIG_405CR)
+#if defined(CONFIG_47x)
+
+void
+get_sys_info(PPC4xx_SYS_INFO * sysInfo)
+{
+}
+
+#elif defined(CONFIG_405GP) || defined(CONFIG_405CR)
 
 void get_sys_info (PPC4xx_SYS_INFO * sysInfo)
 {
@@ -320,6 +327,10 @@ void get_sys_info(sys_info_t *sysInfo)
 		sysInfo->pllFwdDivA / cpudv / ddr2dv / 2;
 	sysInfo->freqUART = sysInfo->freqPLB;
 }
+
+#elif defined(CONFIG_ACP)
+
+	val = 66;
 
 #else
 /*
@@ -1208,6 +1219,8 @@ ulong get_bus_freq (ulong dummy)
 
 	get_sys_info (&sys_info);
 	val = sys_info.freqPLB;
+#elif defined(CONFIG_ACP)
+	val = 66;
 #else
 # error get_bus_freq() not implemented
 #endif

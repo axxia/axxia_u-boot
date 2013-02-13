@@ -147,6 +147,9 @@ static int ehci_reset(int index)
 	uint32_t tmp;
 	uint32_t *reg_ptr;
 	int ret = 0;
+#ifdef CONFIG_ACP3
+	int result = USB_EFAIL;
+#endif
 
 	cmd = ehci_readl(&ehcic[index].hcor->or_usbcmd);
 	cmd = (cmd & ~CMD_RUN) | CMD_RESET;
@@ -490,7 +493,10 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		goto fail;
 	}
 
-	/* Wait for TDs to be processed. */
+	/*
+	 * Wait for TDs to be processed. We wait 3s since some USB
+	 * sticks can take a long time immediately after system reset
+	 */
 	ts = get_timer(0);
 	vtd = &qtd[qtd_counter - 1];
 	timeout = USB_TIMEOUT_MS(pipe);
@@ -507,7 +513,11 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		if (!(QT_TOKEN_GET_STATUS(token) & QT_TOKEN_STATUS_ACTIVE))
 			break;
 		WATCHDOG_RESET();
-	} while (get_timer(ts) < timeout);
+#ifdef CONFIG_ACP3
+	} while (get_timer(ts) < CONFIG_SYS_HZ*3);
+#else
+	} while (get_timer(ts) < CONFIG_SYS_HZ);
+#endif
 
 	/*
 	 * Invalidate the memory area occupied by buffer
@@ -858,6 +868,10 @@ int usb_lowlevel_init(int index, void **controller)
 	uint32_t reg;
 	uint32_t cmd;
 	struct QH *qh_list;
+#ifdef CONFIG_ACP3
+	u32 port_status;
+	unsigned burst_size;
+#endif
 
 	if (ehci_hcd_init(index, &ehcic[index].hccr, &ehcic[index].hcor))
 		return -1;
@@ -872,6 +886,15 @@ int usb_lowlevel_init(int index, void **controller)
 #endif
 
 	qh_list = &ehcic[index].qh_list;
+
+#ifdef CONFIG_ACP3
+	port_status = ehci_readl(&ehcic[index].hcor->or_portsc[0]);
+	if (port_status & 0x100) {
+		printf(KERN_ERR "USB port is in reset status, not able to "
+			 "change host controller status to run\n");
+		return -1;
+	}
+#endif
 
 	/* Set head of reclaim list */
 	memset(qh_list, 0, sizeof(*qh_list));
@@ -915,6 +938,12 @@ int usb_lowlevel_init(int index, void **controller)
 	mdelay(5);
 	reg = HC_VERSION(ehci_readl(&ehcic[index].hccr->cr_capbase));
 	printf("USB EHCI %x.%02x\n", reg >> 8, reg & 0xff);
+
+#ifdef CONFIG_ACP3
+	burst_size = ehci_readl(&ehcic[index].hcor->or_burstsize);
+	burst_size = (burst_size & 0xffff00ff) | 0x4000;        /* TXPBURST */
+	ehci_writel(&ehcic[index].hcor->or_burstsize, burst_size);
+#endif
 
 	ehcic[index].rootdev = 0;
 

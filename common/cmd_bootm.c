@@ -120,6 +120,9 @@ extern void lynxkdi_boot(image_header_t *);
 #ifdef CONFIG_BOOTM_RTEMS
 static boot_os_fn do_bootm_rtems;
 #endif
+#ifdef CONFIG_BOOTM_UBOOT
+extern boot_os_fn do_bootm_uboot;
+#endif
 #if defined(CONFIG_BOOTM_OSE)
 static boot_os_fn do_bootm_ose;
 #endif
@@ -134,6 +137,7 @@ static boot_os_fn do_bootm_integrity;
 #endif
 
 static boot_os_fn *boot_os[] = {
+#ifndef CONFIG_ACP2
 #ifdef CONFIG_BOOTM_LINUX
 	[IH_OS_LINUX] = do_bootm_linux,
 #endif
@@ -155,6 +159,10 @@ static boot_os_fn *boot_os[] = {
 #endif
 #ifdef CONFIG_INTEGRITY
 	[IH_OS_INTEGRITY] = do_bootm_integrity,
+#endif
+#endif	/* CONFIG_ACP2 */
+#ifdef CONFIG_BOOTM_UBOOT
+	[IH_OS_U_BOOT] = do_bootm_uboot
 #endif
 };
 
@@ -218,7 +226,14 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 		images.os.os = image_get_os(os_hdr);
 
 		images.os.end = image_get_image_end(os_hdr);
+#ifndef CONFIG_ACP3
 		images.os.load = image_get_load(os_hdr);
+#else
+		images.os.load =
+		       (acp_osg_group_get_res(acp_osg_get_current(),
+					      ACP_OS_BASE) * 1024 * 1024) +
+		       image_get_load(os_hdr);
+#endif
 		break;
 #if defined(CONFIG_FIT)
 	case IMAGE_FORMAT_FIT:
@@ -260,7 +275,14 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 
 	/* find kernel entry point */
 	if (images.legacy_hdr_valid) {
+#ifndef CONFIG_ACP3
 		images.ep = image_get_ep(&images.legacy_hdr_os_copy);
+#else
+		images.ep =
+			(acp_osg_group_get_res(acp_osg_get_current(),
+					       ACP_OS_BASE) * 1024 * 1024) +
+			image_get_ep(&images.legacy_hdr_os_copy);
+#endif
 #if defined(CONFIG_FIT)
 	} else if (images.fit_uname_os) {
 		ret = fit_image_get_entry(images.fit_hdr_os,
@@ -292,6 +314,7 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 			return 1;
 		}
 
+#ifndef CONFIG_ACP
 #if defined(CONFIG_OF_LIBFDT)
 		/* find flattened device tree */
 		ret = boot_get_fdt(flag, argc, argv, &images,
@@ -302,6 +325,7 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 		}
 
 		set_working_fdt_addr(images.ft_addr);
+#endif
 #endif
 	}
 
@@ -478,6 +502,7 @@ static int do_bootm_subcommand(cmd_tbl_t *cmdtp, int flag, int argc,
 			char * const argv[])
 {
 	int ret = 0;
+#ifndef NCR_TRACER
 	long state;
 	cmd_tbl_t *c;
 	boot_os_fn *boot_fn;
@@ -576,6 +601,7 @@ static int do_bootm_subcommand(cmd_tbl_t *cmdtp, int flag, int argc,
 			break;
 	}
 
+#endif	/* NCR_TRACER */
 	return ret;
 }
 
@@ -589,6 +615,9 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	ulong		load_end = 0;
 	int		ret;
 	boot_os_fn	*boot_fn;
+#ifdef CONFIG_ACP3
+	int             group;
+#endif
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
 	static int relocated = 0;
 
@@ -713,6 +742,7 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	boot_fn(0, argc, argv, &images);
 
+#ifndef CONFIG_ACP3
 	bootstage_error(BOOTSTAGE_ID_BOOT_OS_RETURNED);
 #ifdef DEBUG
 	puts("\n## Control returned to monitor - resetting...\n");
@@ -720,6 +750,9 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	do_reset(cmdtp, flag, argc, argv);
 
 	return 1;
+#else  /* !CONFIG_ACP3 */
+	return 0;
+#endif	/* !CONFIG_ACP3 */
 }
 
 int bootm_maybe_autostart(cmd_tbl_t *cmdtp, const char *cmd)
@@ -1080,8 +1113,18 @@ int do_bootd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int rcode = 0;
 
+#ifdef CONFIG_ACP
+#ifdef CONFIG_ACP3
+	if (run_command (getenv ("bootcmd3"), flag) < 0)
+		rcode = 1;
+#else  /* CONFIG_ACP3 */
+	if (run_command (getenv ("bootcmd2"), flag) < 0)
+		rcode = 1;
+#endif	/* CONFIG_ACP3 */
+#else  /* CONFIG_ACP */
 	if (run_command(getenv("bootcmd"), flag) < 0)
 		rcode = 1;
+#endif	/* CONFIG_ACP */
 	return rcode;
 }
 
@@ -1299,6 +1342,7 @@ static void fixup_silent_linux(void)
 static int do_bootm_netbsd(int flag, int argc, char * const argv[],
 			    bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	void (*loader)(bd_t *, image_header_t *, char *, char *);
 	image_header_t *os_hdr, *hdr;
 	ulong kernel_data, kernel_len;
@@ -1380,6 +1424,7 @@ static int do_bootm_netbsd(int flag, int argc, char * const argv[],
 	 */
 	(*loader)(gd->bd, os_hdr, consdev, cmdline);
 
+#endif	/* CONFIG_ACP2 */
 	return 1;
 }
 #endif /* CONFIG_BOOTM_NETBSD*/
@@ -1388,6 +1433,7 @@ static int do_bootm_netbsd(int flag, int argc, char * const argv[],
 static int do_bootm_lynxkdi(int flag, int argc, char * const argv[],
 			     bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	image_header_t *hdr = &images->legacy_hdr_os_copy;
 
 	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
@@ -1402,6 +1448,7 @@ static int do_bootm_lynxkdi(int flag, int argc, char * const argv[],
 
 	lynxkdi_boot((image_header_t *)hdr);
 
+#endif	/* CONFIG_ACP2 */
 	return 1;
 }
 #endif /* CONFIG_LYNXKDI */
@@ -1410,6 +1457,7 @@ static int do_bootm_lynxkdi(int flag, int argc, char * const argv[],
 static int do_bootm_rtems(int flag, int argc, char * const argv[],
 			   bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	void (*entry_point)(bd_t *);
 
 	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
@@ -1435,6 +1483,7 @@ static int do_bootm_rtems(int flag, int argc, char * const argv[],
 	 */
 	(*entry_point)(gd->bd);
 
+#endif	/* CONFIG_ACP2 */
 	return 1;
 }
 #endif /* CONFIG_BOOTM_RTEMS */
@@ -1443,6 +1492,7 @@ static int do_bootm_rtems(int flag, int argc, char * const argv[],
 static int do_bootm_ose(int flag, int argc, char * const argv[],
 			   bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	void (*entry_point)(void);
 
 	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
@@ -1457,6 +1507,9 @@ static int do_bootm_ose(int flag, int argc, char * const argv[],
 
 	entry_point = (void (*)(void))images->ep;
 
+#ifdef CONFIG_ACP3
+       do_go_exec(entry_point, 0, NULL);
+#else
 	printf("## Transferring control to OSE (at address %08lx) ...\n",
 		(ulong)entry_point);
 
@@ -1467,7 +1520,8 @@ static int do_bootm_ose(int flag, int argc, char * const argv[],
 	 *   None
 	 */
 	(*entry_point)();
-
+#endif	/* CONFIG_ACP3 */
+#endif	/* CONFIG_ACP2 */
 	return 1;
 }
 #endif /* CONFIG_BOOTM_OSE */
@@ -1476,6 +1530,7 @@ static int do_bootm_ose(int flag, int argc, char * const argv[],
 static int do_bootm_vxworks(int flag, int argc, char * const argv[],
 			     bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	char str[80];
 
 	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
@@ -1492,12 +1547,14 @@ static int do_bootm_vxworks(int flag, int argc, char * const argv[],
 	setenv("loadaddr", str);
 	do_bootvx(NULL, 0, 0, NULL);
 
+#endif	/* CONFIG_ACP2 */
 	return 1;
 }
 
 static int do_bootm_qnxelf(int flag, int argc, char * const argv[],
 			    bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	char *local_args[2];
 	char str[16];
 
@@ -1516,6 +1573,7 @@ static int do_bootm_qnxelf(int flag, int argc, char * const argv[],
 	local_args[1] = str;	/* and provide it via the arguments */
 	do_bootelf(NULL, 0, 2, local_args);
 
+#endif	/* CONFIG_ACP2 */
 	return 1;
 }
 #endif

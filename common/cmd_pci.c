@@ -29,6 +29,9 @@
  * PCI routines
  */
 
+#define CONFIG_PCI 1
+#ifdef CONFIG_PCI
+
 #include <common.h>
 #include <command.h>
 #include <asm/processor.h>
@@ -507,3 +510,5 @@ U_BOOT_CMD(
 	pci,	5,	1,	do_pci,
 	"list and access PCI Configuration Space", pci_help_text
 );
+
+#endif /* CONFIG_PCI */

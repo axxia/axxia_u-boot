@@ -39,6 +39,7 @@ int find_dev_and_part(const char *id, struct mtd_device **dev,
 
 static int nand_dump(nand_info_t *nand, ulong off, int only_oob, int repeat)
 {
+#if !defined(CONFIG_ACP2)
 	int i;
 	u_char *datbuf, *oobbuf, *p;
 	static loff_t last;
@@ -70,7 +71,7 @@ static int nand_dump(nand_info_t *nand, ulong off, int only_oob, int repeat)
 		free(oobbuf);
 		return 1;
 	}
-	printf("Page %08lx dump:\n", off);
+	printf("Page %08lx (%d) dump:\n", off, i);
 	i = nand->writesize >> 4;
 	p = datbuf;
 
@@ -93,6 +94,7 @@ static int nand_dump(nand_info_t *nand, ulong off, int only_oob, int repeat)
 	}
 	free(datbuf);
 	free(oobbuf);
+#endif	/* CONFIG_ACP2 */
 
 	return 0;
 }
@@ -566,7 +568,8 @@ static int do_nand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		opts.offset = off;
 		opts.length = size;
 		opts.jffs2  = clean;
-		opts.quiet  = quiet;
+		/*opts.quiet  = quiet;*/
+		opts.quiet = 0;
 		opts.spread = spread;
 
 		if (scrub) {
@@ -588,7 +591,15 @@ static int do_nand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 				return -1;
 			}
 		}
+#if defined(CONFIG_ACP) && !defined(ACP_EMU)
+		set_display_cecc(0);
+		set_display_ucecc(0);
+#endif
 		ret = nand_erase_opts(nand, &opts);
+#if defined(CONFIG_ACP) && !defined(ACP_EMU)
+		set_display_ucecc(1);
+		set_display_cecc(1);
+#endif
 		printf("%s\n", ret ? "ERROR" : "OK");
 
 		return ret == 0 ? 0 : 1;
@@ -857,6 +868,8 @@ U_BOOT_CMD(
 	"NAND sub-system", nand_help_text
 );
 
+#ifndef CONFIG_ACP2
+
 static int nand_load_image(cmd_tbl_t *cmdtp, nand_info_t *nand,
 			   ulong offset, ulong addr, char *cmd)
 {
@@ -1021,3 +1034,5 @@ U_BOOT_CMD(nboot, 4, 1, do_nandboot,
 	"boot from NAND device",
 	"[partition] | [[[loadAddr] dev] offset]"
 );
+
+#endif	/* CONFIG_ACP2 */

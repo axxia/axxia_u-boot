@@ -18,6 +18,9 @@
 #include <pci.h>
 
 #undef DEBUG
+#ifdef CONFIG_ACP3                                            <
+#define DEBUG                                                 <
+#endif     
 #ifdef DEBUG
 #define DEBUGF(x...) printf(x)
 #else

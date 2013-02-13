@@ -136,6 +136,7 @@ void MachineCheckException(struct pt_regs *regs)
 	int uncorr_ecc = 0;
 #endif
 
+#ifndef CONFIG_ACP2
 	if ((fixup = search_exception_table(regs->nip)) != 0) {
 		regs->nip = fixup;
 		val = mfspr(MCSR);
@@ -143,6 +144,7 @@ void MachineCheckException(struct pt_regs *regs)
 		mtspr(SPRN_MCSR, val);
 		return;
 	}
+#endif
 
 #if defined(CONFIG_CMD_KGDB)
 	if (debugger_exception_handler && (*debugger_exception_handler)(regs))

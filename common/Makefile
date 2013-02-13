@@ -62,6 +62,7 @@ COBJS-$(CONFIG_ENV_IS_IN_NVRAM) += env_nvram.o
 COBJS-$(CONFIG_ENV_IS_IN_ONENAND) += env_onenand.o
 COBJS-$(CONFIG_ENV_IS_IN_SPI_FLASH) += env_sf.o
 COBJS-$(CONFIG_ENV_IS_IN_REMOTE) += env_remote.o
+COBJS-$(CONFIG_ENV_IS_IN_SERIAL_FLASH) += env_serial_flash.o
 COBJS-$(CONFIG_ENV_IS_NOWHERE) += env_nowhere.o
 
 # command
@@ -146,7 +147,9 @@ COBJS-$(CONFIG_CMD_PART) += cmd_part.o
 ifdef CONFIG_PCI
 COBJS-$(CONFIG_CMD_PCI) += cmd_pci.o
 endif
+ifndef CONFIG_ACP2
 COBJS-y += cmd_pcmcia.o
+endif
 COBJS-$(CONFIG_CMD_PORTIO) += cmd_portio.o
 COBJS-$(CONFIG_CMD_PXE) += cmd_pxe.o
 COBJS-$(CONFIG_CMD_READ) += cmd_read.o
@@ -204,6 +207,15 @@ COBJS-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
 COBJS-$(CONFIG_CMD_DFU) += cmd_dfu.o
 COBJS-$(CONFIG_CMD_GPT) += cmd_gpt.o
 endif
+
+COBJS-$(CONFIG_LSI_NET) += cmd_lsi_net.o
+COBJS-$(CONFIG_LSI_SSP) += cmd_lsi_ssp.o
+COBJS-$(CONFIG_LSI_NCR) += cmd_lsi_ncr.o
+#COBJS-$(CONFIG_LSI_MDIO) += cmd_lsi_mdio.o
+COBJS-$(CONFIG_LSI_IO) += cmd_lsi_io.o
+COBJS-$(CONFIG_LSI_TEST) += cmd_lsi_test.o
+COBJS-$(CONFIG_LSI_OSG) += cmd_lsi_osg.o
+COBJS-$(CONFIG_LSI_SBB) += cmd_lsi_sbb.o
 
 ifdef CONFIG_SPL_BUILD
 COBJS-y += cmd_nvedit.o

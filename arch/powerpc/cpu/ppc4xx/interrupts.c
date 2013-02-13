@@ -75,8 +75,9 @@ static __inline__ void set_evpr(unsigned long val)
 
 int interrupt_init_cpu (unsigned *decrementer_count)
 {
-	int vec;
 	unsigned long val;
+#ifndef CONFIG_ACP
+	int vec;
 
 	/* decrementer is automatically reloaded */
 	*decrementer_count = 0;
@@ -132,6 +133,29 @@ int interrupt_init_cpu (unsigned *decrementer_count)
 	 * Call uic or xilinx_irq pic_enable
 	 */
 	pic_enable();
+
+#else  /* CONFIG_ACP */
+
+	/*
+	  Set the Decrementer count for 1 ms ticks.
+
+	  ISS is 
+	  EMU is
+	  ASIC is 1 GHz
+	*/
+
+#if defined(ACP_ISS)
+	*decrementer_count = 0xffffffff;
+#elif defined(ACP_EMU)
+	*decrementer_count = 0xffffffff;
+#else
+	*decrementer_count = 1000000;
+#endif
+	val = mfspr(SPRN_TCR);
+	val |= 0x04000000;
+	mtspr(SPRN_TCR, val);
+
+#endif /* CONFIG_ACP */
 
 	return (0);
 }

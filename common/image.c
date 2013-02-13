@@ -77,6 +77,7 @@ static const image_header_t *image_get_ramdisk(ulong rd_addr, uint8_t arch,
 
 static const table_entry_t uimage_arch[] = {
 	{	IH_ARCH_INVALID,	NULL,		"Invalid ARCH",	},
+#ifndef CONFIG_ACP
 	{	IH_ARCH_ALPHA,		"alpha",	"Alpha",	},
 	{	IH_ARCH_ARM,		"arm",		"ARM",		},
 	{	IH_ARCH_I386,		"x86",		"Intel x86",	},
@@ -86,8 +87,6 @@ static const table_entry_t uimage_arch[] = {
 	{	IH_ARCH_MIPS,		"mips",		"MIPS",		},
 	{	IH_ARCH_MIPS64,		"mips64",	"MIPS 64 Bit",	},
 	{	IH_ARCH_NIOS2,		"nios2",	"NIOS II",	},
-	{	IH_ARCH_PPC,		"powerpc",	"PowerPC",	},
-	{	IH_ARCH_PPC,		"ppc",		"PowerPC",	},
 	{	IH_ARCH_S390,		"s390",		"IBM S390",	},
 	{	IH_ARCH_SH,		"sh",		"SuperH",	},
 	{	IH_ARCH_SPARC,		"sparc",	"SPARC",	},
@@ -96,6 +95,9 @@ static const table_entry_t uimage_arch[] = {
 	{	IH_ARCH_AVR32,		"avr32",	"AVR32",	},
 	{	IH_ARCH_NDS32,		"nds32",	"NDS32",	},
 	{	IH_ARCH_OPENRISC,	"or1k",		"OpenRISC 1000",},
+#endif	/* CONFIG_ACP */
+	{	IH_ARCH_PPC,		"powerpc",	"PowerPC",	},
+	{	IH_ARCH_PPC,		"ppc",		"PowerPC",	},
 	{	-1,			"",		"",		},
 };
 
@@ -276,6 +278,8 @@ void image_multi_getimg(const image_header_t *hdr, ulong idx,
 	}
 }
 
+#ifndef CONFIG_ACP2
+
 static void image_print_type(const image_header_t *hdr)
 {
 	const char *os, *arch, *type, *comp;
@@ -287,6 +291,8 @@ static void image_print_type(const image_header_t *hdr)
 
 	printf("%s %s %s (%s)\n", arch, os, type, comp);
 }
+
+#endif	/* CONFIG_ACP2 */
 
 /**
  * image_print_contents - prints out the contents of the legacy format image
@@ -302,6 +308,7 @@ static void image_print_type(const image_header_t *hdr)
  */
 void image_print_contents(const void *ptr)
 {
+#ifndef CONFIG_ACP2
 	const image_header_t *hdr = (const image_header_t *)ptr;
 	const char *p;
 
@@ -320,8 +327,19 @@ void image_print_contents(const void *ptr)
 	image_print_type(hdr);
 	printf("%sData Size:    ", p);
 	genimg_print_size(image_get_data_size(hdr));
+#ifndef CONFIG_ACP
 	printf("%sLoad Address: %08x\n", p, image_get_load(hdr));
 	printf("%sEntry Point:  %08x\n", p, image_get_ep(hdr));
+#else  /* CONFIG_ACP */
+	printf("%sLoad Address: %08x\n",
+	       p, ((acp_osg_group_get_res(acp_osg_get_current(), ACP_OS_BASE) *
+		    1024 * 1024) +
+		   image_get_load(hdr)));
+	printf("%sEntry Point:  %08x\n",
+	       p, ((acp_osg_group_get_res(acp_osg_get_current(), ACP_OS_BASE) *
+		    1024 * 1024) +
+		   image_get_ep(hdr)));
+#endif	/* CONFIG_ACP */
 
 	if (image_check_type(hdr, IH_TYPE_MULTI) ||
 			image_check_type(hdr, IH_TYPE_SCRIPT)) {
@@ -346,9 +364,10 @@ void image_print_contents(const void *ptr)
 			}
 		}
 	}
+#endif	/* CONFIG_ACP2 */
 }
 
-
+#ifndef CONFIG_ACP2
 #ifndef USE_HOSTCC
 /**
  * image_get_ramdisk - get and verify ramdisk image
@@ -412,6 +431,7 @@ static const image_header_t *image_get_ramdisk(ulong rd_addr, uint8_t arch,
 	return rd_hdr;
 }
 #endif /* !USE_HOSTCC */
+#endif	/* !CONFIG_ACP2 */
 
 /*****************************************************************************/
 /* Shared dual-format routines */
@@ -810,6 +830,7 @@ int genimg_has_config(bootm_headers_t *images)
 int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 		uint8_t arch, ulong *rd_start, ulong *rd_end)
 {
+#ifndef CONFIG_ACP2
 	ulong rd_addr, rd_load;
 	ulong rd_data, rd_len;
 	const image_header_t *rd_hdr;
@@ -1056,6 +1077,7 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 	debug("   ramdisk start = 0x%08lx, ramdisk end = 0x%08lx\n",
 			*rd_start, *rd_end);
 
+#endif	/* !CONFIG_ACP2 */
 	return 0;
 }
 
@@ -1084,6 +1106,7 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 int boot_ramdisk_high(struct lmb *lmb, ulong rd_data, ulong rd_len,
 		  ulong *initrd_start, ulong *initrd_end)
 {
+#ifndef CONFIG_ACP2
 	char	*s;
 	ulong	initrd_high;
 	int	initrd_copy_to_ram = 1;
@@ -1116,6 +1139,7 @@ int boot_ramdisk_high(struct lmb *lmb, ulong rd_data, ulong rd_len,
 			*initrd_end = rd_data + rd_len;
 			lmb_reserve(lmb, rd_data, rd_len);
 		} else {
+#ifndef CONFIG_ACP
 			if (initrd_high)
 				*initrd_start = (ulong)lmb_alloc_base(lmb,
 						rd_len, 0x1000, initrd_high);
@@ -1127,6 +1151,10 @@ int boot_ramdisk_high(struct lmb *lmb, ulong rd_data, ulong rd_len,
 				puts("ramdisk - allocation error\n");
 				goto error;
 			}
+#else  /* !CONFIG_ACP */
+			*initrd_start = initrd_high;
+#endif	/* !CONFIG_ACP */
+
 			bootstage_mark(BOOTSTAGE_ID_COPY_RAMDISK);
 
 			*initrd_end = *initrd_start + rd_len;
@@ -1156,6 +1184,7 @@ int boot_ramdisk_high(struct lmb *lmb, ulong rd_data, ulong rd_len,
 	return 0;
 
 error:
+#endif	/* !CONFIG_ACP2 */
 	return -1;
 }
 #endif /* CONFIG_SYS_BOOT_RAMDISK_HIGH */
@@ -1742,6 +1771,7 @@ error:
  */
 int boot_get_cmdline(struct lmb *lmb, ulong *cmd_start, ulong *cmd_end)
 {
+#ifndef CONFIG_ACP2
 	char *cmdline;
 	char *s;
 
@@ -1761,6 +1791,7 @@ int boot_get_cmdline(struct lmb *lmb, ulong *cmd_start, ulong *cmd_end)
 
 	debug("## cmdline at 0x%08lx ... 0x%08lx\n", *cmd_start, *cmd_end);
 
+#endif	/* !CONFIG_ACP2 */
 	return 0;
 }
 #endif /* CONFIG_SYS_BOOT_GET_CMDLINE */
@@ -1781,6 +1812,7 @@ int boot_get_cmdline(struct lmb *lmb, ulong *cmd_start, ulong *cmd_end)
  */
 int boot_get_kbd(struct lmb *lmb, bd_t **kbd)
 {
+#ifndef CONFIG_ACP2
 	*kbd = (bd_t *)(ulong)lmb_alloc_base(lmb, sizeof(bd_t), 0xf,
 				getenv_bootm_mapsize() + getenv_bootm_low());
 	if (*kbd == NULL)
@@ -1794,6 +1826,7 @@ int boot_get_kbd(struct lmb *lmb, bd_t **kbd)
 	do_bdinfo(NULL, 0, 0, NULL);
 #endif
 
+#endif	/* !CONFIG_ACP2 */
 	return 0;
 }
 #endif /* CONFIG_SYS_BOOT_GET_KBD */

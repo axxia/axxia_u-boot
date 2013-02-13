@@ -190,6 +190,7 @@ int stdio_deregister(const char *devname)
 }
 #endif	/* CONFIG_SYS_STDIO_DEREGISTER */
 
+#ifndef CONFIG_ACP
 int stdio_init (void)
 {
 #if defined(CONFIG_NEEDS_MANUAL_RELOC)
@@ -241,3 +242,4 @@ int stdio_init (void)
 #endif
 	return (0);
 }
+#endif	/* CONFIG_ACP */

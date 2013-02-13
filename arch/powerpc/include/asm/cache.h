@@ -24,7 +24,9 @@
  * Use the L1 data cache line size value for the minimum DMA buffer alignment
  * on PowerPC.
  */
+#ifndef ARCH_DMA_MINALIGN
 #define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
+#endif
 
 /*
  * For compatibility reasons support the CONFIG_SYS_CACHELINE_SIZE too

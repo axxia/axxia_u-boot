@@ -31,6 +31,8 @@
   |
   +-----------------------------------------------------------------------------*/
 
+#ifndef CONFIG_ACP
+
 /* define DEBUG for debugging output (obviously ;-)) */
 #if 0
 #define DEBUG
@@ -363,3 +365,5 @@ int emac4xx_miiphy_write (const char *devname, unsigned char addr, unsigned char
 {
 	return emac_miiphy_command(addr, reg, EMAC_STACR_WRITE, value);
 }
+
+#endif	/* !CONFIG_ACP */

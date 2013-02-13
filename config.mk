@@ -192,12 +192,12 @@ RELFLAGS= $(PLATFORM_RELFLAGS)
 DBGFLAGS= -g # -DDEBUG
 OPTFLAGS= -Os #-fomit-frame-pointer
 
-OBJCFLAGS += --gap-fill=0xff
+#OBJCFLAGS += --gap-fill=0xff
+OBJCFLAGS += --gap-fill=0x55
 
 gccincdir := $(shell $(CC) -print-file-name=include)
 
-CPPFLAGS := $(DBGFLAGS) $(OPTFLAGS) $(RELFLAGS)		\
-	-D__KERNEL__
+CPPFLAGS := $(DBGFLAGS) $(OPTFLAGS) $(RELFLAGS)	-D__KERNEL__ -DUBOOT
 
 # Enable garbage collection of un-used sections for SPL
 ifeq ($(CONFIG_SPL_BUILD),y)
@@ -229,7 +229,7 @@ ifneq ($(OBJTREE),$(SRCTREE))
 CPPFLAGS += -I$(OBJTREE)/include2 -I$(OBJTREE)/include
 endif
 
-CPPFLAGS += -I$(TOPDIR)/include
+CPPFLAGS += -I$(TOPDIR)/include -I$(IBB_INCLUDES)
 CPPFLAGS += -fno-builtin -ffreestanding -nostdinc	\
 	-isystem $(gccincdir) -pipe $(PLATFORM_CPPFLAGS)
 

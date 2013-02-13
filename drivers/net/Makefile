@@ -75,6 +75,7 @@ COBJS-$(CONFIG_FMAN_ENET) += fsl_mdio.o
 COBJS-$(CONFIG_TSI108_ETH) += tsi108_eth.o
 COBJS-$(CONFIG_ULI526X) += uli526x.o
 COBJS-$(CONFIG_VSC7385_ENET) += vsc7385.o
+COBJS-$(CONFIG_AXXIA_NET) += lsi.o
 COBJS-$(CONFIG_XILINX_AXIEMAC) += xilinx_axi_emac.o
 COBJS-$(CONFIG_XILINX_EMACLITE) += xilinx_emaclite.o
 COBJS-$(CONFIG_XILINX_LL_TEMAC) += xilinx_ll_temac.o xilinx_ll_temac_mdio.o \

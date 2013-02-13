@@ -232,6 +232,7 @@
  *
  * Use r12 to access the GOT
  */
+#ifndef CONFIG_ACP
 #if !defined(CONFIG_NAND_SPL)
 	START_GOT
 	GOT_ENTRY(_GOT2_TABLE_)
@@ -247,6 +248,7 @@
 	GOT_ENTRY(__bss_start)
 	END_GOT
 #endif /* CONFIG_NAND_SPL */
+#endif /* CONFIG_ACP */
 
 #if defined(CONFIG_NAND_U_BOOT) && !defined(CONFIG_NAND_SPL)
 	/*
@@ -270,6 +272,24 @@
 	bl	_start_440
 #endif
 
+#if defined(CONFIG_47x)
+
+/*
+ * 47x Startup
+ */
+
+	.section	.bootpg,"ax"
+	.global		_start_47x
+
+_start_47x:
+#if defined(CONFIG_ACP)
+	b		_start_acp
+#else
+#error "47x support is limited to the ACP!"
+#endif
+
+#elif defined(CONFIG_440)
+
 /*
  * 440 Startup -- on reset only the top 4k of the effective
  * address space is mapped in by an entry in the instruction
@@ -282,7 +302,6 @@
  * space after reset.
  */
 
-#if defined(CONFIG_440)
 #if !defined(CONFIG_NAND_SPL)
     .section .bootpg,"ax"
 #endif
@@ -457,6 +476,7 @@ skip_debug_init:
 	/*----------------------------------------------------------------*/
 	/* Clear all TLB entries -- TID = 0, TS = 0 */
 	/*----------------------------------------------------------------*/
+
 	addis	r0,0,0x0000
 #ifdef CONFIG_SYS_RAMBOOT
 	li	r4,0		/* Start with TLB #0 */
@@ -547,6 +567,8 @@ version_string:
 	.ascii U_BOOT_VERSION_STRING, "\0"
 
 	. = EXC_OFF_SYS_RESET
+
+#ifndef CONFIG_ACP
 	.globl	_start_of_vectors
 _start_of_vectors:
 
@@ -567,7 +589,7 @@ _start_of_vectors:
 	STD_EXCEPTION(0x400, InstStorage, UnknownException)
 
 /* External Interrupt exception. */
-	STD_EXCEPTION(0x500, ExtInterrupt, external_interrupt)
+	/*STD_EXCEPTION(0x500, ExtInterrupt, external_interrupt)*/
 
 /* Alignment exception. */
 	. = 0x600
@@ -609,8 +631,14 @@ ProgramCheck:
 _end_of_vectors:
 	. = _START_OFFSET
 #endif
+#endif /* CONFIG_ACP */
+
 	.globl	_start
 _start:
+
+#ifdef CONFIG_ACP
+	b	_start_acp
+#else
 
 /*****************************************************************************/
 #if defined(CONFIG_440)
@@ -1079,6 +1107,8 @@ _start:
 #endif	/* CONFIG_405GP || CONFIG_405CR || CONFIG_405 || CONFIG_405EP */
 	/*----------------------------------------------------------------------- */
 
+#endif /* CONFIG_ACP */
+
 
 #ifndef CONFIG_NAND_SPL
 /*
@@ -1202,7 +1232,6 @@ mck_return:
 	rfmci
 #endif /* CONFIG_440 */
 
-
 	.globl get_pvr
 get_pvr:
 	mfspr	r3, PVR
@@ -1274,6 +1303,7 @@ in32r:
  */
 	.globl	relocate_code
 relocate_code:
+#ifndef CONFIG_ACP
 #if defined(CONFIG_4xx_DCACHE) || defined(CONFIG_SYS_INIT_DCACHE_CS)
 	/*
 	 * We need to flush the initial global data (gd_t) and bd_info
@@ -1645,6 +1675,7 @@ __440_msr_continue:
 	function_epilog(dcbz_area)
 #endif /* CONFIG_440 */
 #endif /* CONFIG_NAND_SPL */
+#endif /* CONFIG_ACP */
 
 /*------------------------------------------------------------------------------- */
 /* Function:	 in8 */

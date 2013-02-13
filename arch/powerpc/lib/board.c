@@ -75,6 +75,10 @@
 #include <keyboard.h>
 #endif
 
+#ifdef CONFIG_ACP3
+#include <libfdt.h>
+#endif
+
 #ifdef CONFIG_ADDR_MAP
 #include <asm/mmu.h>
 #endif
@@ -104,6 +108,7 @@ void doc_init(void);
 #endif
 #include <spi.h>
 #include <nand.h>
+#include <asm/io.h>
 
 static char *failed = "*** failed ***\n";
 
@@ -262,6 +267,8 @@ static int init_func_watchdog_reset(void)
  * Initialization sequence
  */
 
+#ifndef CONFIG_ACP
+
 static init_fnc_t *init_sequence[] = {
 #if defined(CONFIG_MPC85xx) || defined(CONFIG_MPC86xx)
 	probecpu,
@@ -334,6 +341,8 @@ static init_fnc_t *init_sequence[] = {
 	NULL,	/* Terminate this list */
 };
 
+#endif /* CONFIG_ACP */
+
 ulong get_effective_memsize(void)
 {
 #ifndef	CONFIG_VERY_BIG_RAM
@@ -374,6 +383,7 @@ unsigned long logbuffer_base(void)
 
 void board_init_f(ulong bootflag)
 {
+#ifndef CONFIG_ACP
 	bd_t *bd;
 	ulong len, addr, addr_sp;
 	ulong *s;
@@ -622,6 +632,229 @@ void board_init_f(ulong bootflag)
 	relocate_code(addr_sp, id, addr);
 
 	/* NOTREACHED - relocate_code() does not return */
+#endif /* CONFIG_ACP */
+}
+
+/*
+  ----------------------------------------------------------------------
+  acp_init_f
+
+  ACP early initialization routine.
+*/
+
+void acp_mem_init( unsigned long, unsigned long, unsigned long );
+void acp_init_r( void );
+
+void
+acp_init_f( void )
+{
+	bd_t *bd;
+	register unsigned long addr;
+	unsigned long *s;
+	unsigned long core;
+#if defined(CONFIG_ACP3)
+	unsigned long cold_start;
+#endif
+#if !defined(ACP_25xx)
+	unsigned long l2version;
+	unsigned long l2revision;
+#endif
+
+#if defined(ACP_25xx) && defined(CONFIG_ACP2) && defined(RESET_INSTEAD_OF_IPI)
+	/*
+	  Disable core 1.
+
+	  The 25xx will only run at 1100 MHz with core 1 disabled.
+	*/
+
+	core = dcr_read(0xd00);
+	core |= 0xab;
+	dcr_write(core, 0xd00);
+
+	dcr_write(0x2, (DCR_RESET_BASE + 2));
+	dcr_write(0x2, (DCR_RESET_BASE + 1));
+#endif
+
+	/* Get the core number. */
+	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
+
+#if !defined(ACP_ISS) && defined(ACP_X1V1)
+	/*
+	  Add work around recommended by IBM.  ``Force
+	  inclusion status of L1 cache lines in the L2 when
+	  the L2 is sending snoop invalidates (kills) to the
+	  L1.''
+	*/
+	dcr_write(0x610, (0x300 + (0x100 * core)));
+	dcr_write(1, (0x304 + (0x100 * core)));
+#endif
+
+#ifdef CONFIG_ACP3
+	/*
+	  Handle SMP/AMP.
+
+	  Only core 0 should be here if this is a cold start; all
+	  other cores should be in the "wait for interrupt state" (1st
+	  stage).
+	*/
+
+	/* Is this a cold reset? */
+#if defined(ACP_25xx) && !defined(ACP_EMU)
+	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
+#else
+	cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
+#endif
+
+	/* Fail if this is a cold start, and not core 0. */
+	if (cold_start && (SYSTEM_BOOTCORE != core))
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+	/* Initialize the Stage 3 Lock. */
+	if (cold_start && (SYSTEM_BOOTCORE == core)) {
+		acp_initialize_stage3_lock();
+		acp_osg_group_set_res(0, ACP_OS_BOOT_CORE, 0);
+	}
+
+	/* All secondary cores should spin. */
+	if (!acp_osg_is_boot_core(core)) {
+		if (-1 == acp_osg_map(acp_osg_get_group(core)))
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		acp_spintable_spin();
+	}
+
+	/* Only one boot core at a time... */
+	acp_lock_stage3();
+
+	/* Restore this core's copy of the "data" section. */
+	if (SYSTEM_BOOTCORE == core) {
+		void *source[] = {
+			(void *)&_core_copy_core0,
+			(void *)&_core_copy_core1,
+#if !defined(CONFIG_AXXIA_342X) || !defined(ACP_25xx)
+			(void *)&_core_copy_core2,
+			(void *)&_core_copy_core3
+#endif
+		};
+
+		memcpy((void *)&_core_copy_beginning, source[0],
+		       (&_core_copy_end - &_core_copy_beginning) * 4);
+	} else {
+		if (-1 == acp_osg_map(acp_osg_get_group(core)))
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		acp_osg_jump_to_os(acp_osg_get_group(core));
+	}
+#endif /* CONFIG_ACP3 */
+
+	/* Initialize the serial port. */
+	serial_early_init();
+
+	/*
+	  Work around for the problem described in the L2 errata document.
+
+	  "L2 store re-ordering with address match collision".
+
+	  All versions of the L2 before 1.4 are affected.
+	*/
+
+#ifndef ACP_25xx
+	dcr_write(0xc, 0x300);	/* 0x300 is L2[0] on 34xx */
+	l2version = dcr_read(0x304);
+	l2revision = l2version & 0xff;
+	l2version = (l2version & 0xfff00) >> 8;
+	/*printf("L2 Version/Revision: 0x%x/0x%x\n", l2version, l2revision);*/
+
+	if ((1 < l2version) ||
+	    ((1 == l2version) && (4 <= l2revision))) {
+		unsigned long value;
+
+		dcr_write(0xc10, (0x300 + (0x100 * core)));
+		value = dcr_read((0x304 + (0x100 * core)));
+		value |= 0x4;
+		dcr_write(0xc10, (0x300 + (0x100 * core)));
+		dcr_write(value, (0x304 + (0x100 * core)));
+	}
+#endif
+
+#ifdef CONFIG_ACP2
+#ifndef ACP_ISS
+	/* Make all P2A access up to the ROM alias be 32b.  See BZ 32127. */
+	/*dcr_write(0x00300000, 0x1000);*/
+#ifdef ACP_X1V1
+	dcr_write(0x00210000, 0x1000);
+#else
+	dcr_write(0x00214000, 0x1000);
+#endif
+
+	/* Initialize voltage, clocks, and system memory */
+	if( 0 != acp_init( ) ) {
+		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
+	}
+
+	/* Work around for syscache defect 30980 (only for X1). */
+#ifdef ACP_X1V1
+	dcr_write( 0x7f082600, 0xf03 );
+#endif
+
+	/*
+	  Update the TLB entry for system memory (change WIMG to 0010).
+
+	  Note that this should be 1G to allow the VxWorks 3rd stage
+	  to boot.
+	*/
+
+	__asm__ __volatile__ ("tlbwe		%1,%0,0\n" \
+			      "tlbwe		%2,%0,1\n" \
+			      "tlbwe		%3,%0,2\n" \
+			      "isync\n" : :
+			      "r" (0x80000000),
+			      "r" (0x00000bf0),
+			      "r" (0x00000000),
+			      "r" (ACP_CACHE_TLB));
+
+#endif /* ACP_ISS */
+#endif /* CONFIG_ACP2 */
+
+	/* Clear BSS */
+	memset((void *)&_bss_start, 0, (&_bss_end - &_bss_start));
+
+	/* Re-Initialize the serial port (since BSS just got cleared). */
+	serial_early_init();
+
+	/*
+	  Set up the board info, global data, and stack
+	*/
+
+	addr = CONFIG_SYS_MALLOC_BASE;
+	addr -= sizeof( bd_t );
+	bd = ( bd_t * ) addr;
+	addr -= sizeof( gd_t );
+	gd = ( gd_t * ) addr;
+	addr -= 16;
+	addr &= ~0xf;
+	s = ( unsigned long * ) addr;
+	* s -- = 0;
+	* s -- = 0;
+	addr = ( unsigned long ) s;
+	__asm__ __volatile__( "" : : : "memory" );
+	memset( ( void * ) gd, 0, sizeof( gd_t ) );
+	gd->bd = bd;
+
+	/*
+	  Get the size of memory...
+	*/
+
+	gd->ram_size = ( 256 * 1024 * 1024 );
+	bd->bi_memstart = 0;
+	bd->bi_memsize = gd->ram_size;
+
+	/* Set up the Stack */
+	acp_mem_init(addr, 0, ( unsigned long ) acp_init_r);
+
+	return;
 }
 
 /*
@@ -632,6 +865,7 @@ void board_init_f(ulong bootflag)
  */
 void board_init_r(gd_t *id, ulong dest_addr)
 {
+#ifndef CONFIG_ACP
 	bd_t *bd;
 	ulong malloc_start;
 
@@ -1053,6 +1287,667 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	}
 
 	/* NOTREACHED - no way out of command loop except booting */
+#endif /* CONFIG_ACP */
+}
+
+/*
+  ----------------------------------------------------------------------
+  acp_init_r
+
+  ACP late initialization routine.
+*/
+
+void nic_loopback_test( void );
+volatile uchar * PktBuf;
+
+void
+acp_init_r( void )
+{
+	bd_t *bd;
+	int core;
+	int group;
+	unsigned long cold_start;
+	unsigned char *buf;
+#if defined(ACP_25xx) && !defined(ACP_ISS) && defined(CONFIG_ACP2)
+	unsigned long *phyRegs = (unsigned long *)CANNED_PHY_REGS_ADDRESS;
+#endif
+
+	bd = gd->bd;
+
+	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
+
+#if defined(ACP_25xx) && !defined(ACP_EMU)
+	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
+	cold_start = (0 != cold_start);
+#else
+	cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
+#endif
+
+	/*
+	  Enable Machine Checks.
+	*/
+
+	{
+		unsigned long value;
+
+		__asm__ __volatile__ ("mfspr %0,0x23c" : "=r" (value));
+		__asm__ __volatile__ ("mtspr 0x33c,%0" : : "r" (value));	
+		__asm__ __volatile__ ("mfmsr %0" : "=r" (value));
+		value |= 0x1000;
+		__asm__ __volatile__ ("mtmsr %0" : : "r" (value));
+	}
+
+	/* Set up memory allocation. */
+	mem_malloc_init(CONFIG_SYS_MALLOC_BASE, CONFIG_SYS_MALLOC_SIZE);
+
+	/* Set up the environment */
+	if( 0 != env_init( ) ) {
+		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
+	}
+	
+	/* Set up the time base */
+	if( 0 != init_timebase( ) ) {
+		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
+	}
+
+#ifdef CONFIG_ACP2
+	if( ( volatile uchar * ) 0 == 
+	    ( PktBuf = ( volatile uchar * )
+	      malloc( (PKTBUFSRX+1) * PKTSIZE_ALIGN + PKTALIGN ) ) ) {
+	  printf( "%s:%s:%d - malloc() failed!\n",
+		  __FILE__, __FUNCTION__, __LINE__ );
+	}
+#endif
+
+	/*
+	  Initialize MDIO
+	*/
+#ifndef ACP_ISS
+	mdio_initialize( );
+#ifndef CONFIG_ACP2
+	i2c_init(CONFIG_SYS_I2C_SPEED, 0);
+#endif
+#endif
+
+#ifdef ACP_25xx
+	/*
+	  On the 2500, IO pins get shared.  To use the FEMAC, the pins
+	  must be connected.  So, connect the pins.
+	*/
+	writel(0x0c0c0c0c, 0xf0801064);
+	writel(0x180c0c0c, 0xf0801068);
+	writel(0x04181818, 0xf0801074);
+	writel(0x18181800, 0xf0801078);
+	writel(0x00180070, 0xf0801060);
+#endif
+
+	/* NAND */
+#if defined(CONFIG_LSI_NAND)
+	nand_init( );
+#endif
+	env_relocate( );
+
+	printf("Updating the Environment...\n");	/* ZZZ */
+
+	/* Update "baudrate" now that the environment is available. */
+	{
+		char *env_baudrate;
+
+		env_baudrate = getenv("baudrate");
+
+		if ((char *)0 == env_baudrate) {
+			gd->baudrate = CONFIG_BAUDRATE;
+		} else {
+			gd->baudrate = simple_strtoul(env_baudrate, NULL, 10);
+		}
+	}
+
+	/*
+	  Update the environment, if needed.
+	*/
+
+#ifndef ACP_ISS
+	{
+		int env_save = 0;
+		char * env_value;
+		unsigned long temp;
+		char buffer [ 80 ];
+
+#ifdef CONFIG_ACP2
+		env_value = getenv( "memory" );
+		sprintf( buffer, "%d", 1 << ( sysmem_size - 20 ) );
+
+		if( ( char * ) 0 == env_value ||
+		    0 != strcmp( env_value, buffer ) ) {
+			setenv( "memory", buffer );
+			env_save = 1;
+		}
+
+		env_value = getenv( "version2" );
+		strcpy( buffer, get_lsi_version( ) );
+
+		if( ( char * ) 0 == env_value ||
+		    0 != strcmp( env_value, buffer ) ) {
+			setenv( "version2", buffer );
+			env_save = 1;
+		}
+
+#if defined(ACP_25xx)
+
+		/*
+		 * check if LCM has an updated set of sysmem PHY registers
+		 * that need to be stored 
+		 */
+#define SECTOR_SIZE 0x10000
+#define SECTOR_BASE_ADDR(n) ( SECTOR_SIZE * (n) )
+
+		ssp_init(0, 0);
+		if (*phyRegs == CANNED_PHY_REGS_TAG_SAVE) {
+			unsigned long *pCRC;
+			/* TODO : make sure sysmem really works!! */
+
+			/* write to PROM/FLASH */
+			*phyRegs = CANNED_PHY_REGS_TAG_PROM;
+
+			buf = malloc(SECTOR_SIZE);
+			if (buf == 0) {
+				printf("malloc failed - "
+				       "couldn't write PHY regs\n");
+				return;
+			}
+
+			printf("writing sysmem PHY regs to PROM!\n");
+			/*
+			  read the second sector (where u-boot parameters lives)
+			*/
+			ssp_read(buf, SECTOR_BASE_ADDR(1),  SECTOR_SIZE);
+			memcpy(&buf[0xfe00],
+			       (const void *)CANNED_PHY_REGS_ADDRESS, 464);
+
+			pCRC = (unsigned long *) &buf[0xfff4];
+			*pCRC = crc32(0, &buf[0xfc00], 1012);
+
+			ssp_write(buf, SECTOR_BASE_ADDR(1), SECTOR_SIZE, 1);
+
+		}
+#endif
+#else
+		env_value = getenv( "version3" );
+		strcpy( buffer, get_lsi_version( ) );
+
+		if( ( char * ) 0 == env_value ||
+		    0 != strcmp( env_value, buffer ) ) {
+			setenv( "version3", buffer );
+			env_save = 1;
+		}
+
+		if (cold_start) {
+			int rc;
+
+			rc = acp_osg_readenv();
+
+			if (-1 == rc)
+				acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+			if (1 == rc)
+				env_save = 1;
+		}
+
+		/* Set the PLB6 hang pulse count. */
+		env_value = getenv("plb6_hpc");
+
+		if ((char *)0 == env_value) {
+			temp = 0x1000;
+			sprintf(buffer, "0x%lx", temp);
+			setenv("plb6_hpc", buffer);
+			env_save = 1;
+		} else {
+			temp = simple_strtoul(env_value, NULL, 0);
+		}
+
+		dcr_write(temp, 0x10d);
+		dcr_write(0xffffffff, 0x10e);
+		dcr_write(0xffffffff, 0x10f);
+		dcr_write(0xffffffff, 0x110);
+
+		/* Set the PLB6 paam value. */
+		env_value = getenv("plb6_paam");
+
+		if ((char *)0 == env_value) {
+			temp = 1;
+			sprintf(buffer, "%lu", temp);
+			setenv("plb6_paam", buffer);
+			env_save = 1;
+		} else {
+			temp = simple_strtoul(env_value, NULL, 0);
+		}
+
+		dcr_write((temp << 30), 0x103);
+#endif
+
+		if (0 != env_save)
+			saveenv();
+	}
+#endif
+
+#ifdef CONFIG_ACP3
+	/* Set the FDT address to the builtin flattened device tree. */
+	working_fdt = (struct fdt_header *)get_acp_fdt(acp_osg_get_group(core));
+#endif /* CONFIG_ACP3 */
+
+	interrupt_init();
+
+#ifdef CONFIG_ACP3
+	/* Clear the Reset Status Register. */
+#ifdef ACP_25xx
+	dcr_write(0xf, (DCR_RESET_BASE + 0xe));
+	dcr_write(0x3, (DCR_RESET_BASE + 0x8));
+	dcr_write(0x3, (DCR_RESET_BASE + 0x6));
+#else
+	dcr_write(0xffffe000, (DCR_RESET_BASE + 1));
+#endif
+
+	/*
+	  If this is the initial boot, bring up the other OS boot cores.
+
+	  In all cases, bring up the secondary cores associated with
+	  this OS group.
+	*/
+
+	printf("Bringing Up Other Cores...\n");	/* ZZZ */
+
+	{
+		int i;
+		char *testmode;
+
+		/*
+		  Core 0 has to have access to the memory of every group...
+		*/
+		for (i = 0; i < ACP_MAX_OS_GROUPS; ++i) {
+			if (-1 == acp_osg_map(i))
+				acp_failure(__FILE__, __FUNCTION__, __LINE__);
+		}
+
+		for (i = 0; i < ACP_NR_CORES; ++i) {
+			int group;
+			unsigned long os_base;
+			unsigned long cores;
+
+			if (i == core)
+				continue;
+
+			if (-1 == (group = acp_osg_get_group(i)))
+				continue;
+
+			cores = acp_osg_group_get_res(group, ACP_OS_CORES);
+
+			if (0 == (cores & (1 << i)))
+				continue;
+
+			if (acp_osg_is_boot_core(i) && cold_start) {
+				dcr_write((1 << i), 0xffc00040);
+			} else {
+				os_base =
+					(acp_osg_group_get_res(group,
+							       ACP_OS_BASE) *
+					 1024 * 1024);
+				acp_spintable_init(i, cold_start, os_base);
+			}
+		}
+
+		testmode = getenv("testmode");
+
+		if (((char *)0 != testmode) && (0 == strcmp("on", testmode))) {
+			printf("Test Mode: Spintables at 0x%x 0x%x 0x%x\n",
+			       (unsigned int)acp_spintable[1],
+			       (unsigned int)acp_spintable[2],
+			       (unsigned int)acp_spintable[3]);
+		}
+	}
+
+	/* Update the device trees for all groups. */
+	if (0 != acp_osg_initialize())
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+#endif
+
+	eth_initialize(bd);
+	serial_init();
+	acp_splash();
+
+#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+	{
+		int rc;
+		unsigned long ncp_denali_ctl_20;
+		unsigned long ncp_denali_ctl_31;
+		unsigned long debug;
+		unsigned long system_pll;
+		unsigned long ppc_pll;
+		unsigned long ddr_pll;
+		unsigned long peripheral_clock;
+		unsigned long l2_0_sleep_state;
+		unsigned long l2_1_sleep_state;
+
+		ncr_read32(NCP_REGION_ID(0x22, 0), 0x50, &ncp_denali_ctl_20);
+		ncr_read32(NCP_REGION_ID(0x22, 0), 0x7c, &ncp_denali_ctl_31);
+		ncr_read32(NCP_REGION_ID(0x20, 0), 0x100, &debug);
+
+		dcr_write(0x80, 0x300);
+		l2_0_sleep_state = dcr_read(0x304);
+		dcr_write(0x80, 0x400);
+		l2_1_sleep_state = dcr_read(0x404);
+
+		printf("--------------- AXM2500 Settings ---------------\n"
+		       "               L2 State: %d %d\n"
+		       "   Reset instead of IPI: %s\n"
+		       "                    ECC: %s\n"
+		       "                 Memory: %s\n"
+		       "               SysCache: %s\n"
+		       "                  Reset: %s\n"
+#ifdef NCP_SM_PHY_REG_RESTORE
+		       "SM PHY Register Restore: %s\n"
+#endif
+		       "         PCIe Test Mode: %s\n\n",
+		       l2_0_sleep_state, l2_1_sleep_state,
+#ifdef RESET_INSTEAD_OF_IPI
+		       "Enabled",
+#else
+		       "Disabled",
+#endif
+		       (0x300 ==
+			(ncp_denali_ctl_20 & 0x300)) ? "On" : "Off",
+		       (0x300 ==
+			(ncp_denali_ctl_31 & 0x300)) ? "Dual" : "Single",
+		       (0x1 ==
+			(debug & 0x1)) ? "Disabled" : "Enabled",
+		       (0 == reset_enabled) ? "Disabled" : "Enabled",
+#ifdef NCP_SM_PHY_REG_RESTORE
+		       (0 == ncp_sm_phy_reg_restore) ? "Disabled" : "Enabled",
+#endif
+#ifdef ACP2_PCIE_TEST
+		       "Enabled"
+#else
+		       "Disabled"
+#endif
+		       );
+
+		rc = acp_clock_get(clock_sys, &system_pll);
+		rc |= acp_clock_get(clock_ppc, &ppc_pll);
+		rc |= acp_clock_get(clock_ddr, &ddr_pll);
+		rc |= acp_clock_get(clock_peripheral, &peripheral_clock);
+
+		if (0 != rc)
+			printf("Error Getting PLL/Clock Frequencies!\n");
+		else
+			printf("      System PLL: %04d MHz\n"
+			       "         PPC PLL: %04d MHz\n"
+			       "         DDR PLL: %04d MHz\n"
+			       "Peripheral Clock: %04d MHz\n\n",
+			       system_pll / 1000,
+			       ppc_pll / 1000,
+			       ddr_pll / 2000,
+			       peripheral_clock / 1000);
+	}
+#endif
+
+#if defined(CONFIG_ACP2) || defined(CONFIG_ACP3)
+	/*
+	  Only set up PCI when in internal boot mode, in control of
+	  one of the PEIs, and the root complex.
+	*/
+
+	{	
+		int boot_mode;
+		unsigned long control;
+		int pci_rc = 0;
+		int group;
+		int pei_mask = 0;
+
+#if defined(CONFIG_ACP3)	
+		group = acp_osg_get_group(core);
+#endif
+
+#if defined(ACP_25xx)
+		control = dcr_read(0xd0f);
+		boot_mode = (control & 0x100) >> 8;
+		if (0 != ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &control)) {
+			printf("Error Reading PHY Control: "
+			       "Skipping PCI setup.\n");
+			control = 0;
+		}
+
+#if defined (CONFIG_ACP2)
+		if (0 != (control & 0x00400000))
+			pci_rc = 1;
+		if (0 != (control & 0x00080000))
+			pci_rc = 1;
+#elif defined (CONFIG_ACP3)
+		if (0 != (control & 0x00400000) 
+			&& 0 != acp_osg_group_get_res(group, ACP_OS_PCIE0)) {
+			pci_rc = 1;
+			pei_mask |= 1;
+		}
+
+		if (0 != (control & 0x00080000) &&
+		    0 != acp_osg_group_get_res(group, ACP_OS_PCIE1)) {
+			pci_rc = 1;
+			pei_mask |= 2;
+		}
+#endif
+#else
+#if defined (CONFIG_ACP3)
+		control = dcr_read(DCR_RESET_BASE);
+		boot_mode = (control & 0x80000000) >> 31;
+		control = acpreadio((void *)GPREG_PHY_CTRL0);
+
+		if (0 != (control & 0x1000) &&
+		    0 != acp_osg_group_get_res(group, ACP_OS_PCIE0)) {
+			pci_rc = 1;
+			pei_mask |= 1;
+		}
+#endif
+#endif
+
+		if (0 == boot_mode && 1 == pci_rc) {
+#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+			{
+				char * env_value;
+				unsigned long pciStatus, linkState;
+				
+				pciStatus = acpreadio((void *)(PCIE0_CONFIG + 0x1004));
+				printk("PEI0 pciStatus = 0x%x\n", pciStatus);
+				linkState = (pciStatus & 0x3f00) >> 8;
+				if (linkState == 0xb) {
+					printf("PCIE0 link State UP = 0x%x\n", linkState);
+					env_value = getenv("pei0_speed");
+					if ((char *)0 != env_value) {
+						unsigned long pei0_speed;
+
+						pei0_speed = simple_strtoul(env_value, NULL, 0);
+						pci_speed_change(0, pei0_speed);
+					}
+				} else {
+					printf("PCIE0 link State DOWN = 0x%x\n", linkState);
+				}
+				pciStatus = acpreadio((void *)(PCIE1_CONFIG + 0x1004));
+				printk("PEI1 pciStatus = 0x%x\n", pciStatus);
+				linkState = (pciStatus & 0x3f00) >> 8;
+	
+				if (linkState == 0xb) {
+					printf("PCIE1 link State UP = 0x%x\n", linkState);
+					env_value = getenv("pei1_speed");
+					if ((char *)0 != env_value) {
+						unsigned long pei1_speed; 
+					
+						pei1_speed = simple_strtoul(env_value, NULL, 0); 
+						pci_speed_change(1, pei1_speed);
+					}
+				} else {
+					printf("PCIE1 link State DOWN = 0x%x\n", linkState);
+				}
+			}
+#endif
+#if defined(CONFIG_ACP3) && defined(CONFIG_PCI)
+				pci_init_board();
+#endif
+		}
+	}
+#endif
+
+#if 0
+	/* Display the Part Information. */
+
+	/*
+	  Here's how the RTE does it...
+
+	  1, 3, 4, or 5 => ACP344x
+	  2             => ACP342x
+	  6             => ACP25xx
+	*/
+
+	{
+		unsigned long value0;
+		unsigned long value1;
+
+		ncr_read32(NCP_REGION_ID(0xa, 0x10), 0x2c, &value0);
+	
+		switch (value0 & 0x1f) {
+		case 0:
+			printf("ACP3448V1\n");
+			break;
+		case 1:
+			printf("ACP3448V2\n");
+			break;
+		case 2:
+			ncr_read32(NCP_REGION_ID(0xa, 0x10), 0x20, &value1);
+
+			switch ((value1 & 0xf0000000) >> 28) {
+			case 0:
+				printf("ACP3421C\n");
+				break;
+			case 1:
+				printf("ACP3421D\n");
+				break;
+			default:
+				printf("ACP3421 Unexpected PackageType 0x%x\n",
+				       (value1 & 0xf0000000) >> 28);
+				break;
+			}
+			break;
+		case 3:
+			printf("ACP3442\n");
+			break;
+		case 4:
+			printf("ACP3440\n");
+			break;
+		case 5:
+			printf("ACP2500\n");
+			break;
+		default:
+			printf("Unknown chipType 0x%x\n", value0 & 0x1f);
+			break;
+		}
+	}
+#endif
+
+#if 0
+	{
+		unsigned long core_pvr;
+
+		__asm__ __volatile__ ("mfspr %0,0x11f" : "=r" (core_pvr));
+		printf("PVR:0x%lx\n", core_pvr);
+	}
+#endif
+
+#ifndef ACP_ISS
+	printf( "System Memory Size: %lu M\n", get_sysmem_size( ) );
+#endif
+	printf( "LSI Version: %s\n", get_lsi_version( ) );
+
+	/*ZZZ*/
+#if 0
+	{
+		unsigned long pvr_value;
+		unsigned long dbcr0_value;
+
+		__asm__ __volatile__ ("mfspr %0,0x11f" : "=r" (pvr_value));
+		__asm__ __volatile__ ("mfspr %0,0x134" : "=r" (dbcr0_value));
+
+		printf("** PVR: 0x%08x  DBCR0: 0x%08x\n",
+		       pvr_value, dbcr0_value);
+	}
+#endif
+	/*ZZZ*/
+	       
+
+	/* IP Address */
+	/*gd->bd->bi_ip_addr = getenv_IPaddr ("ipaddr");*/
+
+#ifdef CONFIG_ACP3
+	/*
+	  Configure jumptable to allow standalone programs access to
+	  some functions.
+	*/
+ 	jumptable_init();
+#endif
+
+	/*ZZZ*/
+#if 0
+#define BURST_ADDRESS 0x400000
+#define BURST_SIZE 32
+	{
+		unsigned char *burst = (unsigned char *)BURST_ADDRESS;
+		unsigned char value = 0x01;
+		int i;
+		int iteration = 1;
+
+		/* A New Memory Test... */
+		printf("Starting the fake coarse write-leveling test.\n"
+		       "Ctrl-C to Stop the Test and Continue Booting...\n");
+
+		for (;;) {
+			/* Write the current value. */
+			for (i = 0; i < BURST_SIZE; i += 2)
+				burst[i] = value;
+
+			/* Read back and verify. */
+			for (i = 0; i < BURST_SIZE; i += 2) {
+				unsigned char compare;
+
+				compare = burst[i];
+
+				if (value != compare)
+					printf("ERROR: iteration %d i %d "
+					       "wrote 0x%02x read 0x%02x\n",
+					       iteration, i, value, compare);
+			}
+
+			/* Change the value. */
+			if (0x80 > value)
+				value = value << 1;
+			else
+				value = 0x01;
+
+			/* Check for Ctrl-C. */
+			if (ctrlc())
+				break;
+
+			++iteration;
+		}
+
+		printf("\nEnding the test after %d iterations.\n", iteration);
+	}
+#endif
+	/*ZZZ*/
+
+	/* Jump to the main loop... */
+	for (;;) {
+		main_loop();
+	}
+
+	return;
+
 }
 
 void hang(void)

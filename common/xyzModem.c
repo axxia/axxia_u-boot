@@ -54,6 +54,7 @@
  *
  *==========================================================================
  */
+
 #include <common.h>
 #include <xyzModem.h>
 #include <stdarg.h>
@@ -168,6 +169,7 @@ _tolower (char c)
 static bool
 parse_num (char *s, unsigned long *val, char **es, char *delim)
 {
+#ifndef CONFIG_ACP2
   bool first = true;
   int radix = 10;
   char c;
@@ -219,6 +221,7 @@ parse_num (char *s, unsigned long *val, char **es, char *delim)
     {
       *es = s;
     }
+#endif /* CONFIG_ACP2 */
   return true;
 }
 
@@ -805,6 +808,7 @@ xyzModem_stream_terminate (bool abort, int (*getc) (void))
 char *
 xyzModem_error (int err)
 {
+#ifndef CONFIG_ACP2
   switch (err)
     {
     case xyzModem_access:
@@ -835,6 +839,7 @@ xyzModem_error (int err)
       return "Unknown error";
       break;
     }
+#endif /* CONFIG_ACP2 */
 }
 
 /*

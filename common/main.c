@@ -276,6 +276,13 @@ int abortboot(int bootdelay)
 		gd->flags &= ~GD_FLG_SILENT;
 #endif
 
+#if defined( LSI_ARCH_APP3K ) || defined( LSI_ARCH_APP3 )
+    if (!abort) {
+      /* set up the pll if necessary */
+      pll_setup_clocks( );
+    }
+#endif  /* AGERE_ARCH_APP3K */
+
 	return abort;
 }
 # endif	/* CONFIG_AUTOBOOT_KEYED */
@@ -458,7 +465,11 @@ void main_loop (void)
 	}
 	else
 #endif /* CONFIG_BOOTCOUNT_LIMIT */
+#if defined(CONFIG_ACP)
+		s = getenv ("bootcmd3");
+#else
 		s = getenv ("bootcmd");
+#endif
 #ifdef CONFIG_OF_CONTROL
 	/* Allow the fdt to override the boot command */
 	env = fdtdec_get_config_string(gd->fdt_blob, "bootcmd");

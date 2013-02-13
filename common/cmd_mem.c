@@ -1151,7 +1151,6 @@ U_BOOT_CMD(
 	"[.b, .w, .l] address [# of objects]"
 );
 
-
 U_BOOT_CMD(
 	mm,	2,	1,	do_mem_mm,
 	"memory modify (auto-incrementing address)",

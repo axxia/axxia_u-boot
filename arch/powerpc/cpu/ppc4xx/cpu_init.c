@@ -25,6 +25,9 @@
 #include <watchdog.h>
 #include <asm/ppc4xx-emac.h>
 #include <asm/processor.h>
+#ifndef CONFIG_ACP
+#include <asm/gpio.h>
+#endif /* CONFIG_ACP */
 #include <asm/ppc4xx-gpio.h>
 #include <asm/ppc4xx.h>
 
