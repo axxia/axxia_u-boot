@@ -126,8 +126,6 @@
 
 #define	CONFIG_SYS_HZ		1000		/* decrementer freq: 1 ms ticks	*/
 
-#define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
-
 /*
  * Low Level Configuration Settings
  * (address mappings, register initial values, etc.)
@@ -314,6 +312,8 @@
  * IDE/ATA stuff
  *-----------------------------------------------------------------------
  */
+#define CONFIG_IDE_PREINIT	1	/* Use preinit IDE hook */
+#define CONFIG_IDE_INIT_POSTRESET	1	/* Use postreset IDE hook */
 #define CONFIG_IDE_8xx_DIRECT	1	/* PCMCIA interface required	*/
 #define CONFIG_IDE_RESET	1	/* reset for ide supported	*/
 

@@ -24,13 +24,18 @@
  */
 
 #include <common.h>
+#include <div64.h>
 #include <asm/io.h>
 #include <asm/errno.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/crm_regs.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/sys_proto.h>
+#ifdef CONFIG_FSL_ESDHC
+#include <fsl_esdhc.h>
+#endif
 #include <netdev.h>
+#include <spl.h>
 
 #define CLK_CODE(arm, ahb, sel) (((arm) << 16) + ((ahb) << 8) + (sel))
 #define CLK_CODE_ARM(c)		(((c) >> 16) & 0xFF)
@@ -126,15 +131,17 @@ static int get_ahb_div(u32 pdr0)
 static u32 decode_pll(u32 reg, u32 infreq)
 {
 	u32 mfi = (reg >> 10) & 0xf;
-	u32 mfn = reg & 0x3f;
-	u32 mfd = (reg >> 16) & 0x3f;
+	s32 mfn = reg & 0x3ff;
+	u32 mfd = (reg >> 16) & 0x3ff;
 	u32 pd = (reg >> 26) & 0xf;
 
 	mfi = mfi <= 5 ? 5 : mfi;
+	mfn = mfn >= 512 ? mfn - 1024 : mfn;
 	mfd += 1;
 	pd += 1;
 
-	return ((2 * (infreq / 1000) * (mfi * mfd + mfn)) / (mfd * pd)) * 1000;
+	return lldiv(2 * (u64)infreq * (mfi * mfd + mfn),
+		mfd * pd);
 }
 
 static u32 get_mcu_main_clk(void)
@@ -143,9 +150,7 @@ static u32 get_mcu_main_clk(void)
 	struct ccm_regs *ccm =
 		(struct ccm_regs *)IMX_CCM_BASE;
 	arm_div = get_arm_div(readl(&ccm->pdr0), &fi, &fd);
-	fi *=
-		decode_pll(readl(&ccm->mpctl),
-			CONFIG_MX35_HCLK_FREQ);
+	fi *= decode_pll(readl(&ccm->mpctl), MXC_HCLK);
 	return fi / (arm_div * fd);
 }
 
@@ -168,17 +173,14 @@ static u32 get_ipg_per_clk(void)
 	u32 pdr4 = readl(&ccm->pdr4);
 	u32 div;
 	if (pdr0 & MXC_CCM_PDR0_PER_SEL) {
-		div = (CCM_GET_DIVIDER(pdr4,
-			MXC_CCM_PDR4_PER0_PRDF_MASK,
-			MXC_CCM_PDR4_PER0_PODF_OFFSET) + 1) *
-			(CCM_GET_DIVIDER(pdr4,
+		div = CCM_GET_DIVIDER(pdr4,
 			MXC_CCM_PDR4_PER0_PODF_MASK,
-			MXC_CCM_PDR4_PER0_PODF_OFFSET) + 1);
+			MXC_CCM_PDR4_PER0_PODF_OFFSET) + 1;
 	} else {
 		div = CCM_GET_DIVIDER(pdr0,
 			MXC_CCM_PDR0_PER_PODF_MASK,
 			MXC_CCM_PDR0_PER_PODF_OFFSET) + 1;
-		freq /= get_ahb_div(pdr0);
+		div *= get_ahb_div(pdr0);
 	}
 	return freq / div;
 }
@@ -190,25 +192,20 @@ u32 imx_get_uartclk(void)
 		(struct ccm_regs *)IMX_CCM_BASE;
 	u32 pdr4 = readl(&ccm->pdr4);
 
-	if (readl(&ccm->pdr3) & MXC_CCM_PDR3_UART_M_U) {
+	if (readl(&ccm->pdr3) & MXC_CCM_PDR3_UART_M_U)
 		freq = get_mcu_main_clk();
-	} else {
-		freq = decode_pll(readl(&ccm->ppctl),
-			CONFIG_MX35_HCLK_FREQ);
-	}
-	freq /= ((CCM_GET_DIVIDER(pdr4,
-			MXC_CCM_PDR4_UART_PRDF_MASK,
-			MXC_CCM_PDR4_UART_PRDF_OFFSET) + 1) *
-		(CCM_GET_DIVIDER(pdr4,
+	else
+		freq = decode_pll(readl(&ccm->ppctl), MXC_HCLK);
+	freq /= CCM_GET_DIVIDER(pdr4,
 			MXC_CCM_PDR4_UART_PODF_MASK,
-			MXC_CCM_PDR4_UART_PODF_OFFSET) + 1));
+			MXC_CCM_PDR4_UART_PODF_OFFSET) + 1;
 	return freq;
 }
 
-unsigned int mxc_get_main_clock(enum mxc_main_clocks clk)
+unsigned int mxc_get_main_clock(enum mxc_main_clock clk)
 {
 	u32 nfc_pdf, hsp_podf;
-	u32 pll, ret_val = 0, usb_prdf, usb_podf;
+	u32 pll, ret_val = 0, usb_podf;
 	struct ccm_regs *ccm =
 		(struct ccm_regs *)IMX_CCM_BASE;
 
@@ -252,16 +249,13 @@ unsigned int mxc_get_main_clock(enum mxc_main_clocks clk)
 		ret_val = pll / (nfc_pdf + 1);
 		break;
 	case USB_CLK:
-		usb_prdf = (reg4 >> 25) & 0x7;
-		usb_podf = (reg4 >> 22) & 0x7;
-		if (reg4 & 0x200) {
+		usb_podf = (reg4 >> 22) & 0x3F;
+		if (reg4 & 0x200)
 			pll = get_mcu_main_clk();
-		} else {
-			pll = decode_pll(readl(&ccm->ppctl),
-				CONFIG_MX35_HCLK_FREQ);
-		}
+		else
+			pll = decode_pll(readl(&ccm->ppctl), MXC_HCLK);
 
-		ret_val = pll / ((usb_prdf + 1) * (usb_podf + 1));
+		ret_val = pll / (usb_podf + 1);
 		break;
 	default:
 		printf("Unknown clock: %d\n", clk);
@@ -270,7 +264,7 @@ unsigned int mxc_get_main_clock(enum mxc_main_clocks clk)
 
 	return ret_val;
 }
-unsigned int mxc_get_peri_clock(enum mxc_peri_clocks clk)
+unsigned int mxc_get_peri_clock(enum mxc_peri_clock clk)
 {
 	u32 ret_val = 0, pdf, pre_pdf, clk_sel;
 	struct ccm_regs *ccm =
@@ -284,18 +278,16 @@ unsigned int mxc_get_peri_clock(enum mxc_peri_clocks clk)
 	case UART2_BAUD:
 	case UART3_BAUD:
 		clk_sel = mpdr3 & (1 << 14);
-		pre_pdf = (mpdr4 >> 13) & 0x7;
-		pdf = (mpdr4 >> 10) & 0x7;
+		pdf = (mpdr4 >> 10) & 0x3F;
 		ret_val = ((clk_sel != 0) ? mxc_get_main_clock(CPU_CLK) :
-			decode_pll(readl(&ccm->ppctl), CONFIG_MX35_HCLK_FREQ)) /
-				((pre_pdf + 1) * (pdf + 1));
+			decode_pll(readl(&ccm->ppctl), MXC_HCLK)) / (pdf + 1);
 		break;
 	case SSI1_BAUD:
 		pre_pdf = (mpdr2 >> 24) & 0x7;
 		pdf = mpdr2 & 0x3F;
 		clk_sel = mpdr2 & (1 << 6);
 		ret_val = ((clk_sel != 0) ? mxc_get_main_clock(CPU_CLK) :
-			decode_pll(readl(&ccm->ppctl), CONFIG_MX35_HCLK_FREQ)) /
+			decode_pll(readl(&ccm->ppctl), MXC_HCLK)) /
 				((pre_pdf + 1) * (pdf + 1));
 		break;
 	case SSI2_BAUD:
@@ -303,16 +295,14 @@ unsigned int mxc_get_peri_clock(enum mxc_peri_clocks clk)
 		pdf = (mpdr2 >> 8) & 0x3F;
 		clk_sel = mpdr2 & (1 << 6);
 		ret_val = ((clk_sel != 0) ? mxc_get_main_clock(CPU_CLK) :
-			decode_pll(readl(&ccm->ppctl), CONFIG_MX35_HCLK_FREQ)) /
+			decode_pll(readl(&ccm->ppctl), MXC_HCLK)) /
 				((pre_pdf + 1) * (pdf + 1));
 		break;
 	case CSI_BAUD:
 		clk_sel = mpdr2 & (1 << 7);
-		pre_pdf = (mpdr2 >> 16) & 0x7;
-		pdf = (mpdr2 >> 19) & 0x7;
+		pdf = (mpdr2 >> 16) & 0x3F;
 		ret_val = ((clk_sel != 0) ? mxc_get_main_clock(CPU_CLK) :
-			decode_pll(readl(&ccm->ppctl), CONFIG_MX35_HCLK_FREQ)) /
-				((pre_pdf + 1) * (pdf + 1));
+			decode_pll(readl(&ccm->ppctl), MXC_HCLK)) / (pdf + 1);
 		break;
 	case MSHC_CLK:
 		pre_pdf = readl(&ccm->pdr1);
@@ -320,39 +310,33 @@ unsigned int mxc_get_peri_clock(enum mxc_peri_clocks clk)
 		pdf = (pre_pdf >> 22) & 0x3F;
 		pre_pdf = (pre_pdf >> 28) & 0x7;
 		ret_val = ((clk_sel != 0) ? mxc_get_main_clock(CPU_CLK) :
-			decode_pll(readl(&ccm->ppctl), CONFIG_MX35_HCLK_FREQ)) /
+			decode_pll(readl(&ccm->ppctl), MXC_HCLK)) /
 				((pre_pdf + 1) * (pdf + 1));
 		break;
 	case ESDHC1_CLK:
 		clk_sel = mpdr3 & 0x40;
-		pre_pdf = mpdr3 & 0x7;
-		pdf = (mpdr3>>3) & 0x7;
+		pdf = mpdr3 & 0x3F;
 		ret_val = ((clk_sel != 0) ? mxc_get_main_clock(CPU_CLK) :
-			decode_pll(readl(&ccm->ppctl), CONFIG_MX35_HCLK_FREQ)) /
-				((pre_pdf + 1) * (pdf + 1));
+			decode_pll(readl(&ccm->ppctl), MXC_HCLK)) / (pdf + 1);
 		break;
 	case ESDHC2_CLK:
 		clk_sel = mpdr3 & 0x40;
-		pre_pdf = (mpdr3 >> 8) & 0x7;
-		pdf = (mpdr3 >> 11) & 0x7;
+		pdf = (mpdr3 >> 8) & 0x3F;
 		ret_val = ((clk_sel != 0) ? mxc_get_main_clock(CPU_CLK) :
-			decode_pll(readl(&ccm->ppctl), CONFIG_MX35_HCLK_FREQ)) /
-				((pre_pdf + 1) * (pdf + 1));
+			decode_pll(readl(&ccm->ppctl), MXC_HCLK)) / (pdf + 1);
 		break;
 	case ESDHC3_CLK:
 		clk_sel = mpdr3 & 0x40;
-		pre_pdf = (mpdr3 >> 16) & 0x7;
-		pdf = (mpdr3 >> 19) & 0x7;
+		pdf = (mpdr3 >> 16) & 0x3F;
 		ret_val = ((clk_sel != 0) ? mxc_get_main_clock(CPU_CLK) :
-			decode_pll(readl(&ccm->ppctl), CONFIG_MX35_HCLK_FREQ)) /
-				((pre_pdf + 1) * (pdf + 1));
+			decode_pll(readl(&ccm->ppctl), MXC_HCLK)) / (pdf + 1);
 		break;
 	case SPDIF_CLK:
 		clk_sel = mpdr3 & 0x400000;
 		pre_pdf = (mpdr3 >> 29) & 0x7;
 		pdf = (mpdr3 >> 23) & 0x3F;
 		ret_val = ((clk_sel != 0) ? mxc_get_main_clock(CPU_CLK) :
-			decode_pll(readl(&ccm->ppctl), CONFIG_MX35_HCLK_FREQ)) /
+			decode_pll(readl(&ccm->ppctl), MXC_HCLK)) /
 				((pre_pdf + 1) * (pdf + 1));
 		break;
 	default:
@@ -374,11 +358,16 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	case MXC_IPG_CLK:
 		return get_ipg_clk();
 	case MXC_IPG_PERCLK:
+	case MXC_I2C_CLK:
 		return get_ipg_per_clk();
 	case MXC_UART_CLK:
 		return imx_get_uartclk();
-	case MXC_ESDHC_CLK:
+	case MXC_ESDHC1_CLK:
 		return mxc_get_peri_clock(ESDHC1_CLK);
+	case MXC_ESDHC2_CLK:
+		return mxc_get_peri_clock(ESDHC2_CLK);
+	case MXC_ESDHC3_CLK:
+		return mxc_get_peri_clock(ESDHC3_CLK);
 	case MXC_USB_CLK:
 		return mxc_get_main_clock(USB_CLK);
 	case MXC_FEC_CLK:
@@ -463,7 +452,6 @@ int print_cpuinfo(void)
  * Initializes on-chip ethernet controllers.
  * to override, implement board_eth_init()
  */
-
 int cpu_eth_init(bd_t *bis)
 {
 	int rc = -ENODEV;
@@ -475,16 +463,101 @@ int cpu_eth_init(bd_t *bis)
 	return rc;
 }
 
+#ifdef CONFIG_FSL_ESDHC
+/*
+ * Initializes on-chip MMC controllers.
+ * to override, implement board_mmc_init()
+ */
+int cpu_mmc_init(bd_t *bis)
+{
+	return fsl_esdhc_mmc_init(bis);
+}
+#endif
+
 int get_clocks(void)
 {
 #ifdef CONFIG_FSL_ESDHC
-	gd->sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK);
+#if CONFIG_SYS_FSL_ESDHC_ADDR == MMC_SDHC2_BASE_ADDR
+	gd->sdhc_clk = mxc_get_clock(MXC_ESDHC2_CLK);
+#elif CONFIG_SYS_FSL_ESDHC_ADDR == MMC_SDHC3_BASE_ADDR
+	gd->sdhc_clk = mxc_get_clock(MXC_ESDHC3_CLK);
+#else
+	gd->sdhc_clk = mxc_get_clock(MXC_ESDHC1_CLK);
+#endif
 #endif
 	return 0;
 }
 
-void reset_cpu(ulong addr)
+#define RCSR_MEM_CTL_WEIM	0
+#define RCSR_MEM_CTL_NAND	1
+#define RCSR_MEM_CTL_ATA	2
+#define RCSR_MEM_CTL_EXPANSION	3
+#define RCSR_MEM_TYPE_NOR	0
+#define RCSR_MEM_TYPE_ONENAND	2
+#define RCSR_MEM_TYPE_SD	0
+#define RCSR_MEM_TYPE_I2C	2
+#define RCSR_MEM_TYPE_SPI	3
+
+u32 spl_boot_device(void)
 {
-	struct wdog_regs *wdog = (struct wdog_regs *)WDOG_BASE_ADDR;
-	writew(4, &wdog->wcr);
+	struct ccm_regs *ccm =
+		(struct ccm_regs *)IMX_CCM_BASE;
+
+	u32 rcsr = readl(&ccm->rcsr);
+	u32 mem_type, mem_ctl;
+
+	/* In external mode, no boot device is returned */
+	if ((rcsr >> 10) & 0x03)
+		return BOOT_DEVICE_NONE;
+
+	mem_ctl = (rcsr >> 25) & 0x03;
+	mem_type = (rcsr >> 23) & 0x03;
+
+	switch (mem_ctl) {
+	case RCSR_MEM_CTL_WEIM:
+		switch (mem_type) {
+		case RCSR_MEM_TYPE_NOR:
+			return BOOT_DEVICE_NOR;
+		case RCSR_MEM_TYPE_ONENAND:
+			return BOOT_DEVICE_ONE_NAND;
+		default:
+			return BOOT_DEVICE_NONE;
+		}
+	case RCSR_MEM_CTL_NAND:
+		return BOOT_DEVICE_NAND;
+	case RCSR_MEM_CTL_EXPANSION:
+		switch (mem_type) {
+		case RCSR_MEM_TYPE_SD:
+			return BOOT_DEVICE_MMC1;
+		case RCSR_MEM_TYPE_I2C:
+			return BOOT_DEVICE_I2C;
+		case RCSR_MEM_TYPE_SPI:
+			return BOOT_DEVICE_SPI;
+		default:
+			return BOOT_DEVICE_NONE;
+		}
+	}
+
+	return BOOT_DEVICE_NONE;
 }
+
+#ifdef CONFIG_SPL_BUILD
+u32 spl_boot_mode(void)
+{
+	switch (spl_boot_device()) {
+	case BOOT_DEVICE_MMC1:
+#ifdef CONFIG_SPL_FAT_SUPPORT
+		return MMCSD_MODE_FAT;
+#else
+		return MMCSD_MODE_RAW;
+#endif
+		break;
+	case BOOT_DEVICE_NAND:
+		return 0;
+		break;
+	default:
+		puts("spl: ERROR:  unsupported device\n");
+		hang();
+	}
+}
+#endif

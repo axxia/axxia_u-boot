@@ -47,8 +47,8 @@ extern void ft_srio_setup(void *blob);
 void ft_fixup_cpu(void *blob, u64 memory_limit)
 {
 	int off;
-	ulong spin_tbl_addr = get_spin_phys_addr();
-	u32 bootpg = determine_mp_bootpg();
+	phys_addr_t spin_tbl_addr = get_spin_phys_addr();
+	u32 bootpg = determine_mp_bootpg(NULL);
 	u32 id = get_my_id();
 	const char *enable_method;
 
@@ -57,8 +57,9 @@ void ft_fixup_cpu(void *blob, u64 memory_limit)
 		u32 *reg = (u32 *)fdt_getprop(blob, off, "reg", 0);
 
 		if (reg) {
-			u64 val = *reg * SIZE_BOOT_ENTRY + spin_tbl_addr;
-			val = cpu_to_fdt32(val);
+			u32 phys_cpu_id = thread_to_core(*reg);
+			u64 val = phys_cpu_id * SIZE_BOOT_ENTRY + spin_tbl_addr;
+			val = cpu_to_fdt64(val);
 			if (*reg == id) {
 				fdt_setprop_string(blob, off, "status",
 								"okay");
@@ -96,7 +97,16 @@ void ft_fixup_cpu(void *blob, u64 memory_limit)
 	if ((u64)bootpg < memory_limit) {
 		off = fdt_add_mem_rsv(blob, bootpg, (u64)4096);
 		if (off < 0)
-			printf("%s: %s\n", __FUNCTION__, fdt_strerror(off));
+			printf("Failed to reserve memory for bootpg: %s\n",
+				fdt_strerror(off));
+	}
+	/* Reserve spin table page */
+	if (spin_tbl_addr < memory_limit) {
+		off = fdt_add_mem_rsv(blob,
+			(spin_tbl_addr & ~0xffful), 4096);
+		if (off < 0)
+			printf("Failed to reserve memory for spin table: %s\n",
+				fdt_strerror(off));
 	}
 }
 #endif
@@ -139,16 +149,14 @@ static inline u32 l2cache_size(void)
 		break;
 	case 0x1:
 		if (ver == SVR_8540 || ver == SVR_8560   ||
-		    ver == SVR_8541 || ver == SVR_8541_E ||
-		    ver == SVR_8555 || ver == SVR_8555_E)
+		    ver == SVR_8541 || ver == SVR_8555)
 			return 128;
 		else
 			return 256;
 		break;
 	case 0x2:
 		if (ver == SVR_8540 || ver == SVR_8560   ||
-		    ver == SVR_8541 || ver == SVR_8541_E ||
-		    ver == SVR_8555 || ver == SVR_8555_E)
+		    ver == SVR_8541 || ver == SVR_8555)
 			return 256;
 		else
 			return 512;
@@ -221,18 +229,24 @@ static inline void ft_fixup_l2cache(void *blob)
 
 	/* we dont bother w/L3 since no platform of this type has one */
 }
-#elif defined(CONFIG_BACKSIDE_L2_CACHE)
+#elif defined(CONFIG_BACKSIDE_L2_CACHE) || \
+	defined(CONFIG_SYS_FSL_QORIQ_CHASSIS2)
 static inline void ft_fixup_l2cache(void *blob)
 {
 	int off, l2_off, l3_off = -1;
 	u32 *ph;
+#ifdef	CONFIG_BACKSIDE_L2_CACHE
 	u32 l2cfg0 = mfspr(SPRN_L2CFG0);
+#else
+	struct ccsr_cluster_l2 *l2cache =
+		(struct ccsr_cluster_l2 __iomem *)(CONFIG_SYS_FSL_CLUSTER_1_L2);
+	u32 l2cfg0 = in_be32(&l2cache->l2cfg0);
+#endif
 	u32 size, line_size, num_ways, num_sets;
 	int has_l2 = 1;
 
 	/* P2040/P2040E has no L2, so dont set any L2 props */
-	if ((SVR_SOC_VER(get_svr()) == SVR_P2040) ||
-	    (SVR_SOC_VER(get_svr()) == SVR_P2040_E))
+	if (SVR_SOC_VER(get_svr()) == SVR_P2040)
 		has_l2 = 0;
 
 	size = (l2cfg0 & 0x3fff) * 64 * 1024;
@@ -259,7 +273,12 @@ static inline void ft_fixup_l2cache(void *blob)
 		if (has_l2) {
 #ifdef CONFIG_SYS_CACHE_STASHING
 			u32 *reg = (u32 *)fdt_getprop(blob, off, "reg", 0);
+#ifdef CONFIG_SYS_FSL_QORIQ_CHASSIS2
+			/* Only initialize every eighth thread */
+			if (reg && !((*reg) % 8))
+#else
 			if (reg)
+#endif
 				fdt_setprop_cell(blob, l2_off, "cache-stash-id",
 					 (*reg * 2) + 32 + 1);
 #endif
@@ -392,6 +411,11 @@ static void ft_fixup_dpaa_clks(void *blob)
 #endif
 #endif
 
+#ifdef CONFIG_SYS_DPAA_QBMAN
+	do_fixup_by_compat_u32(blob, "fsl,qman",
+			"clock-frequency", sysinfo.freqQMAN, 1);
+#endif
+
 #ifdef CONFIG_SYS_DPAA_PME
 	do_fixup_by_compat_u32(blob, "fsl,pme",
 		"clock-frequency", sysinfo.freqPME, 1);
@@ -407,7 +431,7 @@ static void ft_fixup_qe_snum(void *blob)
 	unsigned int svr;
 
 	svr = mfspr(SPRN_SVR);
-	if (SVR_SOC_VER(svr) == SVR_8569_E) {
+	if (SVR_SOC_VER(svr) == SVR_8569) {
 		if(IS_SVR_REV(svr, 1, 0))
 			do_fixup_by_compat_u32(blob, "fsl,qe",
 				"fsl,qe-num-snums", 46, 1);
@@ -537,7 +561,7 @@ void fdt_fixup_fman_firmware(void *blob)
 #define fdt_fixup_fman_firmware(x)
 #endif
 
-#if defined(CONFIG_PPC_P4080) || defined(CONFIG_PPC_P3060)
+#if defined(CONFIG_PPC_P4080)
 static void fdt_fixup_usb(void *fdt)
 {
 	ccsr_gur_t *gur = (void *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);

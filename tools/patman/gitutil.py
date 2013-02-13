@@ -38,7 +38,7 @@ def CountCommitsToBranch():
     Return:
         Number of patches that exist on top of the branch
     """
-    pipe = [['git', 'log', '--oneline', '@{upstream}..'],
+    pipe = [['git', 'log', '--no-color', '--oneline', '@{upstream}..'],
             ['wc', '-l']]
     stdout = command.RunPipe(pipe, capture=True, oneline=True)
     patch_count = int(stdout)
@@ -356,6 +356,24 @@ def GetAliasFile():
     if fname:
         fname = os.path.join(GetTopLevel(), fname.strip())
     return fname
+
+def GetDefaultUserName():
+    """Gets the user.name from .gitconfig file.
+
+    Returns:
+        User name found in .gitconfig file, or None if none
+    """
+    uname = command.OutputOneLine('git', 'config', '--global', 'user.name')
+    return uname
+
+def GetDefaultUserEmail():
+    """Gets the user.email from the global .gitconfig file.
+
+    Returns:
+        User's email found in .gitconfig file, or None if none
+    """
+    uemail = command.OutputOneLine('git', 'config', '--global', 'user.email')
+    return uemail
 
 def Setup():
     """Set up git utils, by reading the alias files."""

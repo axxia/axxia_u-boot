@@ -55,6 +55,15 @@ extern void lcd_initcolregs (void);
 
 /* gunzip_bmp used if CONFIG_VIDEO_BMP_GZIP */
 extern struct bmp_image *gunzip_bmp(unsigned long addr, unsigned long *lenp);
+extern int bmp_display(ulong addr, int x, int y);
+
+/**
+ * Set whether we need to flush the dcache when changing the LCD image. This
+ * defaults to off.
+ *
+ * @param flush		non-zero to flush cache after update, 0 to skip
+ */
+void lcd_set_flush_dcache(int flush);
 
 #if defined CONFIG_MPC823
 /*
@@ -157,7 +166,7 @@ typedef struct vidinfo {
 	struct	pxafb_info pxa;
 } vidinfo_t;
 
-#elif defined(CONFIG_ATMEL_LCD)
+#elif defined(CONFIG_ATMEL_LCD) || defined(CONFIG_ATMEL_HLCD)
 
 typedef struct vidinfo {
 	ushort vl_col;		/* Number of columns (i.e. 640) */
@@ -169,6 +178,7 @@ typedef struct vidinfo {
 	u_long vl_bpix;		/* Bits per pixel, 0 = 1, 1 = 2, 2 = 4, 3 = 8, 4 = 16 */
 	u_long vl_tft;		/* 0 = passive, 1 = TFT */
 	u_long vl_cont_pol_low;	/* contrast polarity is low */
+	u_long vl_clk_pol;	/* clock polarity */
 
 	/* Horizontal control register. */
 	u_long vl_hsync_len;	/* Length of horizontal sync */
@@ -182,6 +192,84 @@ typedef struct vidinfo {
 
 	u_long	mmio;		/* Memory mapped registers */
 } vidinfo_t;
+
+#elif defined(CONFIG_EXYNOS_FB)
+
+enum {
+	FIMD_RGB_INTERFACE = 1,
+	FIMD_CPU_INTERFACE = 2,
+};
+
+enum exynos_fb_rgb_mode_t {
+	MODE_RGB_P = 0,
+	MODE_BGR_P = 1,
+	MODE_RGB_S = 2,
+	MODE_BGR_S = 3,
+};
+
+typedef struct vidinfo {
+	ushort vl_col;		/* Number of columns (i.e. 640) */
+	ushort vl_row;		/* Number of rows (i.e. 480) */
+	ushort vl_width;	/* Width of display area in millimeters */
+	ushort vl_height;	/* Height of display area in millimeters */
+
+	/* LCD configuration register */
+	u_char vl_freq;		/* Frequency */
+	u_char vl_clkp;		/* Clock polarity */
+	u_char vl_oep;		/* Output Enable polarity */
+	u_char vl_hsp;		/* Horizontal Sync polarity */
+	u_char vl_vsp;		/* Vertical Sync polarity */
+	u_char vl_dp;		/* Data polarity */
+	u_char vl_bpix;		/* Bits per pixel */
+
+	/* Horizontal control register. Timing from data sheet */
+	u_char vl_hspw;		/* Horz sync pulse width */
+	u_char vl_hfpd;		/* Wait before of line */
+	u_char vl_hbpd;		/* Wait end of line */
+
+	/* Vertical control register. */
+	u_char	vl_vspw;	/* Vertical sync pulse width */
+	u_char	vl_vfpd;	/* Wait before of frame */
+	u_char	vl_vbpd;	/* Wait end of frame */
+	u_char  vl_cmd_allow_len; /* Wait end of frame */
+
+	void (*cfg_gpio)(void);
+	void (*backlight_on)(unsigned int onoff);
+	void (*reset_lcd)(void);
+	void (*lcd_power_on)(void);
+	void (*cfg_ldo)(void);
+	void (*enable_ldo)(unsigned int onoff);
+	void (*mipi_power)(void);
+	void (*backlight_reset)(void);
+
+	unsigned int win_id;
+	unsigned int init_delay;
+	unsigned int power_on_delay;
+	unsigned int reset_delay;
+	unsigned int interface_mode;
+	unsigned int mipi_enabled;
+	unsigned int dp_enabled;
+	unsigned int cs_setup;
+	unsigned int wr_setup;
+	unsigned int wr_act;
+	unsigned int wr_hold;
+	unsigned int logo_on;
+	unsigned int logo_width;
+	unsigned int logo_height;
+	unsigned long logo_addr;
+	unsigned int rgb_mode;
+	unsigned int resolution;
+
+	/* parent clock name(MPLL, EPLL or VPLL) */
+	unsigned int pclk_name;
+	/* ratio value for source clock from parent clock. */
+	unsigned int sclk_div;
+
+	unsigned int dual_lcd_enabled;
+
+} vidinfo_t;
+
+void init_panel_info(vidinfo_t *vid);
 
 #else
 
@@ -214,8 +302,47 @@ void	lcd_printf	(const char *fmt, ...);
 void	lcd_clear(void);
 int	lcd_display_bitmap(ulong bmp_image, int x, int y);
 
+/**
+ * Get the width of the LCD in pixels
+ *
+ * @return width of LCD in pixels
+ */
+int lcd_get_pixel_width(void);
+
+/**
+ * Get the height of the LCD in pixels
+ *
+ * @return height of LCD in pixels
+ */
+int lcd_get_pixel_height(void);
+
+/**
+ * Get the number of text lines/rows on the LCD
+ *
+ * @return number of rows
+ */
+int lcd_get_screen_rows(void);
+
+/**
+ * Get the number of text columns on the LCD
+ *
+ * @return number of columns
+ */
+int lcd_get_screen_columns(void);
+
+/**
+ * Set the position of the text cursor
+ *
+ * @param col	Column to place cursor (0 = left side)
+ * @param row	Row to place cursor (0 = top line)
+ */
+void lcd_position_cursor(unsigned col, unsigned row);
+
 /* Allow boards to customize the information displayed */
 void lcd_show_board_info(void);
+
+/* Return the size of the LCD frame buffer, and the line length */
+int lcd_get_size(int *line_length);
 
 /************************************************************************/
 /* ** BITMAP DISPLAY SUPPORT						*/

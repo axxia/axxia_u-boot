@@ -44,7 +44,7 @@ int board_early_init_f(void)
 			DNS325_OE_LOW, DNS325_OE_HIGH);
 
 	/* Multi-Purpose Pins Functionality configuration */
-	u32 kwmpp_config[] = {
+	static const u32 kwmpp_config[] = {
 		MPP0_NF_IO2,
 		MPP1_NF_IO3,
 		MPP2_NF_IO4,
@@ -97,7 +97,7 @@ int board_early_init_f(void)
 		MPP49_GPIO,		/* thermal sensor */
 		0
 	};
-	kirkwood_mpp_conf(kwmpp_config);
+	kirkwood_mpp_conf(kwmpp_config, NULL);
 
 	kw_gpio_set_blink(DNS325_GPIO_LED_POWER , 1);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 Freescale Semiconductor, Inc.
+ * Copyright 2010-2012 Freescale Semiconductor, Inc.
  *
  * Authors:  Roy Zang <tie-fei.zang@freescale.com>
  *           Chunhe Lan <b25806@freescale.com>
@@ -74,7 +74,7 @@ int checkboard(void)
 phys_size_t fixed_sdram(void)
 {
 #ifndef CONFIG_SYS_RAMBOOT
-	ccsr_ddr_t *ddr = (ccsr_ddr_t *)CONFIG_SYS_MPC85xx_DDR_ADDR;
+	ccsr_ddr_t *ddr = (ccsr_ddr_t *)CONFIG_SYS_MPC8xxx_DDR_ADDR;
 
 	set_next_law(0, LAW_SIZE_2G, LAW_TRGT_IF_DDR_1);
 
@@ -196,6 +196,15 @@ void ft_board_setup(void *blob, bd_t *bd)
 	size = getenv_bootm_size();
 
 	fdt_fixup_memory(blob, (u64)base, (u64)size);
+
+	/* By default NOR is on, and NAND is disabled */
+#ifdef CONFIG_NAND_U_BOOT
+	do_fixup_by_path_string(blob, "nor_flash", "status", "disabled");
+	do_fixup_by_path_string(blob, "nand_flash", "status", "okay");
+#endif
+#ifdef CONFIG_HAS_FSL_DR_USB
+	fdt_fixup_dr_usb(blob, bd);
+#endif
 
 	fdt_fixup_fman_ethernet(blob);
 }

@@ -27,15 +27,16 @@ LIB	= $(obj)lib$(BOARD).o
 SOBJS	:= lowlevel_init.o
 
 COBJS	:= clock_init.o
-COBJS	+= dmc_init.o
+COBJS	+= dmc_common.o dmc_init_ddr3.o
 COBJS	+= tzpc_init.o
+COBJS	+= smdk5250_spl.o
 
 ifndef CONFIG_SPL_BUILD
 COBJS	+= smdk5250.o
 endif
 
 ifdef CONFIG_SPL_BUILD
-COBJS	+= mmc_boot.o
+COBJS	+= spl_boot.o
 endif
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)

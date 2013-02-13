@@ -158,7 +158,6 @@
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE	1
 #define CONFIG_SYS_NS16550_CLK		get_serial_clock()
-#define CONFIG_SERIAL_MULTI   1
 #define CONFIG_BAUDRATE	      9600
 
 #define CONFIG_SYS_BAUDRATE_TABLE  \
@@ -288,7 +287,6 @@
 #define CONFIG_SYS_PROMPT	      "MetroBox=> "  /* Monitor Command Prompt	*/
 
 #define CONFIG_SYS_HUSH_PARSER	       1	     /* HUSH for ext'd cli	*/
-#define CONFIG_SYS_PROMPT_HUSH_PS2    "> "
 
 
 /*-----------------------------------------------------------------------

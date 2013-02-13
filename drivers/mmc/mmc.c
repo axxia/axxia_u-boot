@@ -47,103 +47,13 @@ int __board_mmc_getcd(struct mmc *mmc) {
 int board_mmc_getcd(struct mmc *mmc)__attribute__((weak,
 	alias("__board_mmc_getcd")));
 
-#ifdef CONFIG_MMC_BOUNCE_BUFFER
-static int mmc_bounce_need_bounce(struct mmc_data *orig)
-{
-	ulong addr, len;
-
-	if (orig->flags & MMC_DATA_READ)
-		addr = (ulong)orig->dest;
-	else
-		addr = (ulong)orig->src;
-
-	if (addr % ARCH_DMA_MINALIGN) {
-		debug("MMC: Unaligned data destination address %08lx!\n", addr);
-		return 1;
-	}
-
-	len = (ulong)(orig->blocksize * orig->blocks);
-	if (len % ARCH_DMA_MINALIGN) {
-		debug("MMC: Unaligned data destination length %08lx!\n", len);
-		return 1;
-	}
-
-	return 0;
-}
-
-static int mmc_bounce_buffer_start(struct mmc_data *backup,
-					struct mmc_data *orig)
-{
-	ulong origlen, len;
-	void *buffer;
-
-	if (!orig)
-		return 0;
-
-	if (!mmc_bounce_need_bounce(orig))
-		return 0;
-
-	memcpy(backup, orig, sizeof(struct mmc_data));
-
-	origlen = orig->blocksize * orig->blocks;
-	len = roundup(origlen, ARCH_DMA_MINALIGN);
-	buffer = memalign(ARCH_DMA_MINALIGN, len);
-	if (!buffer) {
-		puts("MMC: Error allocating MMC bounce buffer!\n");
-		return 1;
-	}
-
-	if (orig->flags & MMC_DATA_READ) {
-		orig->dest = buffer;
-	} else {
-		memcpy(buffer, orig->src, origlen);
-		orig->src = buffer;
-	}
-
-	return 0;
-}
-
-static void mmc_bounce_buffer_stop(struct mmc_data *backup,
-					struct mmc_data *orig)
-{
-	ulong len;
-
-	if (!orig)
-		return;
-
-	if (!mmc_bounce_need_bounce(backup))
-		return;
-
-	if (backup->flags & MMC_DATA_READ) {
-		len = backup->blocksize * backup->blocks;
-		memcpy(backup->dest, orig->dest, len);
-		free(orig->dest);
-		orig->dest = backup->dest;
-	} else {
-		free((void *)orig->src);
-		orig->src = backup->src;
-	}
-
-	return;
-
-}
-#else
-static inline int mmc_bounce_buffer_start(struct mmc_data *backup,
-					struct mmc_data *orig) { return 0; }
-static inline void mmc_bounce_buffer_stop(struct mmc_data *backup,
-					struct mmc_data *orig) { }
-#endif
-
-int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+static int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd,
+			struct mmc_data *data)
 {
 	struct mmc_data backup;
 	int ret;
 
 	memset(&backup, 0, sizeof(backup));
-
-	ret = mmc_bounce_buffer_start(&backup, data);
-	if (ret)
-		return ret;
 
 #ifdef CONFIG_MMC_TRACE
 	int i;
@@ -151,7 +61,6 @@ int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 
 	printf("CMD_SEND:%d\n", cmd->cmdidx);
 	printf("\t\tARG\t\t\t 0x%08X\n", cmd->cmdarg);
-	printf("\t\tFLAG\t\t\t %d\n", cmd->flags);
 	ret = mmc->send_cmd(mmc, cmd, data);
 	switch (cmd->resp_type) {
 		case MMC_RSP_NONE:
@@ -197,11 +106,10 @@ int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 #else
 	ret = mmc->send_cmd(mmc, cmd, data);
 #endif
-	mmc_bounce_buffer_stop(&backup, data);
 	return ret;
 }
 
-int mmc_send_status(struct mmc *mmc, int timeout)
+static int mmc_send_status(struct mmc *mmc, int timeout)
 {
 	struct mmc_cmd cmd;
 	int err, retries = 5;
@@ -213,7 +121,6 @@ int mmc_send_status(struct mmc *mmc, int timeout)
 	cmd.resp_type = MMC_RSP_R1;
 	if (!mmc_host_is_spi(mmc))
 		cmd.cmdarg = mmc->rca << 16;
-	cmd.flags = 0;
 
 	do {
 		err = mmc_send_cmd(mmc, &cmd, NULL);
@@ -238,7 +145,7 @@ int mmc_send_status(struct mmc *mmc, int timeout)
 	status = (cmd.response[0] & MMC_STATUS_CURR_STATE) >> 9;
 	printf("CURR STATE:%d\n", status);
 #endif
-	if (!timeout) {
+	if (timeout <= 0) {
 		printf("Timeout waiting card ready\n");
 		return TIMEOUT;
 	}
@@ -246,14 +153,13 @@ int mmc_send_status(struct mmc *mmc, int timeout)
 	return 0;
 }
 
-int mmc_set_blocklen(struct mmc *mmc, int len)
+static int mmc_set_blocklen(struct mmc *mmc, int len)
 {
 	struct mmc_cmd cmd;
 
 	cmd.cmdidx = MMC_CMD_SET_BLOCKLEN;
 	cmd.resp_type = MMC_RSP_R1;
 	cmd.cmdarg = len;
-	cmd.flags = 0;
 
 	return mmc_send_cmd(mmc, &cmd, NULL);
 }
@@ -299,7 +205,6 @@ static ulong mmc_erase_t(struct mmc *mmc, ulong start, lbaint_t blkcnt)
 	cmd.cmdidx = start_cmd;
 	cmd.cmdarg = start;
 	cmd.resp_type = MMC_RSP_R1;
-	cmd.flags = 0;
 
 	err = mmc_send_cmd(mmc, &cmd, NULL);
 	if (err)
@@ -333,6 +238,7 @@ mmc_berase(int dev_num, unsigned long start, lbaint_t blkcnt)
 	int err = 0;
 	struct mmc *mmc = find_mmc_device(dev_num);
 	lbaint_t blk = 0, blk_r = 0;
+	int timeout = 1000;
 
 	if (!mmc)
 		return -1;
@@ -352,6 +258,10 @@ mmc_berase(int dev_num, unsigned long start, lbaint_t blkcnt)
 			break;
 
 		blk += blk_r;
+
+		/* Waiting for the ready status */
+		if (mmc_send_status(mmc, timeout))
+			return 0;
 	}
 
 	return blk;
@@ -381,7 +291,6 @@ mmc_write_blocks(struct mmc *mmc, ulong start, lbaint_t blkcnt, const void*src)
 		cmd.cmdarg = start * mmc->write_bl_len;
 
 	cmd.resp_type = MMC_RSP_R1;
-	cmd.flags = 0;
 
 	data.src = src;
 	data.blocks = blkcnt;
@@ -400,7 +309,6 @@ mmc_write_blocks(struct mmc *mmc, ulong start, lbaint_t blkcnt, const void*src)
 		cmd.cmdidx = MMC_CMD_STOP_TRANSMISSION;
 		cmd.cmdarg = 0;
 		cmd.resp_type = MMC_RSP_R1b;
-		cmd.flags = 0;
 		if (mmc_send_cmd(mmc, &cmd, NULL)) {
 			printf("mmc fail to send stop cmd\n");
 			return 0;
@@ -438,7 +346,8 @@ mmc_bwrite(int dev_num, ulong start, lbaint_t blkcnt, const void*src)
 	return blkcnt;
 }
 
-int mmc_read_blocks(struct mmc *mmc, void *dst, ulong start, lbaint_t blkcnt)
+static int mmc_read_blocks(struct mmc *mmc, void *dst, ulong start,
+			   lbaint_t blkcnt)
 {
 	struct mmc_cmd cmd;
 	struct mmc_data data;
@@ -454,7 +363,6 @@ int mmc_read_blocks(struct mmc *mmc, void *dst, ulong start, lbaint_t blkcnt)
 		cmd.cmdarg = start * mmc->read_bl_len;
 
 	cmd.resp_type = MMC_RSP_R1;
-	cmd.flags = 0;
 
 	data.dest = dst;
 	data.blocks = blkcnt;
@@ -468,7 +376,6 @@ int mmc_read_blocks(struct mmc *mmc, void *dst, ulong start, lbaint_t blkcnt)
 		cmd.cmdidx = MMC_CMD_STOP_TRANSMISSION;
 		cmd.cmdarg = 0;
 		cmd.resp_type = MMC_RSP_R1b;
-		cmd.flags = 0;
 		if (mmc_send_cmd(mmc, &cmd, NULL)) {
 			printf("mmc fail to send stop cmd\n");
 			return 0;
@@ -510,7 +417,7 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 	return blkcnt;
 }
 
-int mmc_go_idle(struct mmc* mmc)
+static int mmc_go_idle(struct mmc *mmc)
 {
 	struct mmc_cmd cmd;
 	int err;
@@ -520,7 +427,6 @@ int mmc_go_idle(struct mmc* mmc)
 	cmd.cmdidx = MMC_CMD_GO_IDLE_STATE;
 	cmd.cmdarg = 0;
 	cmd.resp_type = MMC_RSP_NONE;
-	cmd.flags = 0;
 
 	err = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -532,8 +438,7 @@ int mmc_go_idle(struct mmc* mmc)
 	return 0;
 }
 
-int
-sd_send_op_cond(struct mmc *mmc)
+static int sd_send_op_cond(struct mmc *mmc)
 {
 	int timeout = 1000;
 	int err;
@@ -543,7 +448,6 @@ sd_send_op_cond(struct mmc *mmc)
 		cmd.cmdidx = MMC_CMD_APP_CMD;
 		cmd.resp_type = MMC_RSP_R1;
 		cmd.cmdarg = 0;
-		cmd.flags = 0;
 
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -584,7 +488,6 @@ sd_send_op_cond(struct mmc *mmc)
 		cmd.cmdidx = MMC_CMD_SPI_READ_OCR;
 		cmd.resp_type = MMC_RSP_R3;
 		cmd.cmdarg = 0;
-		cmd.flags = 0;
 
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -600,7 +503,7 @@ sd_send_op_cond(struct mmc *mmc)
 	return 0;
 }
 
-int mmc_send_op_cond(struct mmc *mmc)
+static int mmc_send_op_cond(struct mmc *mmc)
 {
 	int timeout = 10000;
 	struct mmc_cmd cmd;
@@ -613,7 +516,6 @@ int mmc_send_op_cond(struct mmc *mmc)
  	cmd.cmdidx = MMC_CMD_SEND_OP_COND;
  	cmd.resp_type = MMC_RSP_R3;
  	cmd.cmdarg = 0;
- 	cmd.flags = 0;
 
  	err = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -633,8 +535,6 @@ int mmc_send_op_cond(struct mmc *mmc)
 		if (mmc->host_caps & MMC_MODE_HC)
 			cmd.cmdarg |= OCR_HCS;
 
-		cmd.flags = 0;
-
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 
 		if (err)
@@ -650,7 +550,6 @@ int mmc_send_op_cond(struct mmc *mmc)
 		cmd.cmdidx = MMC_CMD_SPI_READ_OCR;
 		cmd.resp_type = MMC_RSP_R3;
 		cmd.cmdarg = 0;
-		cmd.flags = 0;
 
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -668,7 +567,7 @@ int mmc_send_op_cond(struct mmc *mmc)
 }
 
 
-int mmc_send_ext_csd(struct mmc *mmc, char *ext_csd)
+static int mmc_send_ext_csd(struct mmc *mmc, u8 *ext_csd)
 {
 	struct mmc_cmd cmd;
 	struct mmc_data data;
@@ -678,9 +577,8 @@ int mmc_send_ext_csd(struct mmc *mmc, char *ext_csd)
 	cmd.cmdidx = MMC_CMD_SEND_EXT_CSD;
 	cmd.resp_type = MMC_RSP_R1;
 	cmd.cmdarg = 0;
-	cmd.flags = 0;
 
-	data.dest = ext_csd;
+	data.dest = (char *)ext_csd;
 	data.blocks = 1;
 	data.blocksize = 512;
 	data.flags = MMC_DATA_READ;
@@ -691,7 +589,7 @@ int mmc_send_ext_csd(struct mmc *mmc, char *ext_csd)
 }
 
 
-int mmc_switch(struct mmc *mmc, u8 set, u8 index, u8 value)
+static int mmc_switch(struct mmc *mmc, u8 set, u8 index, u8 value)
 {
 	struct mmc_cmd cmd;
 	int timeout = 1000;
@@ -702,7 +600,6 @@ int mmc_switch(struct mmc *mmc, u8 set, u8 index, u8 value)
 	cmd.cmdarg = (MMC_SWITCH_MODE_WRITE_BYTE << 24) |
 				 (index << 16) |
 				 (value << 8);
-	cmd.flags = 0;
 
 	ret = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -714,9 +611,9 @@ int mmc_switch(struct mmc *mmc, u8 set, u8 index, u8 value)
 
 }
 
-int mmc_change_freq(struct mmc *mmc)
+static int mmc_change_freq(struct mmc *mmc)
 {
-	ALLOC_CACHE_ALIGN_BUFFER(char, ext_csd, 512);
+	ALLOC_CACHE_ALIGN_BUFFER(u8, ext_csd, 512);
 	char cardtype;
 	int err;
 
@@ -784,7 +681,7 @@ int mmc_getcd(struct mmc *mmc)
 	return cd;
 }
 
-int sd_switch(struct mmc *mmc, int mode, int group, u8 value, u8 *resp)
+static int sd_switch(struct mmc *mmc, int mode, int group, u8 value, u8 *resp)
 {
 	struct mmc_cmd cmd;
 	struct mmc_data data;
@@ -795,7 +692,6 @@ int sd_switch(struct mmc *mmc, int mode, int group, u8 value, u8 *resp)
 	cmd.cmdarg = (mode << 31) | 0xffffff;
 	cmd.cmdarg &= ~(0xf << (group * 4));
 	cmd.cmdarg |= value << (group * 4);
-	cmd.flags = 0;
 
 	data.dest = (char *)resp;
 	data.blocksize = 64;
@@ -806,7 +702,7 @@ int sd_switch(struct mmc *mmc, int mode, int group, u8 value, u8 *resp)
 }
 
 
-int sd_change_freq(struct mmc *mmc)
+static int sd_change_freq(struct mmc *mmc)
 {
 	int err;
 	struct mmc_cmd cmd;
@@ -824,7 +720,6 @@ int sd_change_freq(struct mmc *mmc)
 	cmd.cmdidx = MMC_CMD_APP_CMD;
 	cmd.resp_type = MMC_RSP_R1;
 	cmd.cmdarg = mmc->rca << 16;
-	cmd.flags = 0;
 
 	err = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -834,7 +729,6 @@ int sd_change_freq(struct mmc *mmc)
 	cmd.cmdidx = SD_CMD_APP_SEND_SCR;
 	cmd.resp_type = MMC_RSP_R1;
 	cmd.cmdarg = 0;
-	cmd.flags = 0;
 
 	timeout = 3;
 
@@ -947,7 +841,7 @@ static const int multipliers[] = {
 	80,
 };
 
-void mmc_set_ios(struct mmc *mmc)
+static void mmc_set_ios(struct mmc *mmc)
 {
 	mmc->set_ios(mmc);
 }
@@ -965,21 +859,21 @@ void mmc_set_clock(struct mmc *mmc, uint clock)
 	mmc_set_ios(mmc);
 }
 
-void mmc_set_bus_width(struct mmc *mmc, uint width)
+static void mmc_set_bus_width(struct mmc *mmc, uint width)
 {
 	mmc->bus_width = width;
 
 	mmc_set_ios(mmc);
 }
 
-int mmc_startup(struct mmc *mmc)
+static int mmc_startup(struct mmc *mmc)
 {
-	int err, width;
+	int err;
 	uint mult, freq;
 	u64 cmult, csize, capacity;
 	struct mmc_cmd cmd;
-	ALLOC_CACHE_ALIGN_BUFFER(char, ext_csd, 512);
-	ALLOC_CACHE_ALIGN_BUFFER(char, test_csd, 512);
+	ALLOC_CACHE_ALIGN_BUFFER(u8, ext_csd, 512);
+	ALLOC_CACHE_ALIGN_BUFFER(u8, test_csd, 512);
 	int timeout = 1000;
 
 #ifdef CONFIG_MMC_SPI_CRC_ON
@@ -987,7 +881,6 @@ int mmc_startup(struct mmc *mmc)
 		cmd.cmdidx = MMC_CMD_SPI_CRC_ON_OFF;
 		cmd.resp_type = MMC_RSP_R1;
 		cmd.cmdarg = 1;
-		cmd.flags = 0;
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 
 		if (err)
@@ -1000,7 +893,6 @@ int mmc_startup(struct mmc *mmc)
 		MMC_CMD_ALL_SEND_CID; /* cmd not supported in spi */
 	cmd.resp_type = MMC_RSP_R2;
 	cmd.cmdarg = 0;
-	cmd.flags = 0;
 
 	err = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -1018,7 +910,6 @@ int mmc_startup(struct mmc *mmc)
 		cmd.cmdidx = SD_CMD_SEND_RELATIVE_ADDR;
 		cmd.cmdarg = mmc->rca << 16;
 		cmd.resp_type = MMC_RSP_R6;
-		cmd.flags = 0;
 
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -1033,7 +924,6 @@ int mmc_startup(struct mmc *mmc)
 	cmd.cmdidx = MMC_CMD_SEND_CSD;
 	cmd.resp_type = MMC_RSP_R2;
 	cmd.cmdarg = mmc->rca << 16;
-	cmd.flags = 0;
 
 	err = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -1110,7 +1000,6 @@ int mmc_startup(struct mmc *mmc)
 		cmd.cmdidx = MMC_CMD_SELECT_CARD;
 		cmd.resp_type = MMC_RSP_R1;
 		cmd.cmdarg = mmc->rca << 16;
-		cmd.flags = 0;
 		err = mmc_send_cmd(mmc, &cmd, NULL);
 
 		if (err)
@@ -1125,7 +1014,7 @@ int mmc_startup(struct mmc *mmc)
 	if (!IS_SD(mmc) && (mmc->version >= MMC_VERSION_4)) {
 		/* check  ext_csd version and capacity */
 		err = mmc_send_ext_csd(mmc, ext_csd);
-		if (!err & (ext_csd[EXT_CSD_REV] >= 2)) {
+		if (!err && (ext_csd[EXT_CSD_REV] >= 2)) {
 			/*
 			 * According to the JEDEC Standard, the value of
 			 * ext_csd's capacity is valid if the value is more
@@ -1157,7 +1046,8 @@ int mmc_startup(struct mmc *mmc)
 		}
 
 		/* store the partition info of emmc */
-		if (ext_csd[EXT_CSD_PARTITIONING_SUPPORT] & PART_SUPPORT)
+		if ((ext_csd[EXT_CSD_PARTITIONING_SUPPORT] & PART_SUPPORT) ||
+		    ext_csd[EXT_CSD_BOOT_MULT])
 			mmc->part_config = ext_csd[EXT_CSD_PART_CONF];
 	}
 
@@ -1177,7 +1067,6 @@ int mmc_startup(struct mmc *mmc)
 			cmd.cmdidx = MMC_CMD_APP_CMD;
 			cmd.resp_type = MMC_RSP_R1;
 			cmd.cmdarg = mmc->rca << 16;
-			cmd.flags = 0;
 
 			err = mmc_send_cmd(mmc, &cmd, NULL);
 			if (err)
@@ -1186,7 +1075,6 @@ int mmc_startup(struct mmc *mmc)
 			cmd.cmdidx = SD_CMD_APP_SET_BUS_WIDTH;
 			cmd.resp_type = MMC_RSP_R1;
 			cmd.cmdarg = 2;
-			cmd.flags = 0;
 			err = mmc_send_cmd(mmc, &cmd, NULL);
 			if (err)
 				return err;
@@ -1195,23 +1083,48 @@ int mmc_startup(struct mmc *mmc)
 		}
 
 		if (mmc->card_caps & MMC_MODE_HS)
-			mmc_set_clock(mmc, 50000000);
+			mmc->tran_speed = 50000000;
 		else
-			mmc_set_clock(mmc, 25000000);
+			mmc->tran_speed = 25000000;
 	} else {
-		for (width = EXT_CSD_BUS_WIDTH_8; width >= 0; width--) {
-			/* Set the card to use 4 bit*/
+		int idx;
+
+		/* An array of possible bus widths in order of preference */
+		static unsigned ext_csd_bits[] = {
+			EXT_CSD_BUS_WIDTH_8,
+			EXT_CSD_BUS_WIDTH_4,
+			EXT_CSD_BUS_WIDTH_1,
+		};
+
+		/* An array to map CSD bus widths to host cap bits */
+		static unsigned ext_to_hostcaps[] = {
+			[EXT_CSD_BUS_WIDTH_4] = MMC_MODE_4BIT,
+			[EXT_CSD_BUS_WIDTH_8] = MMC_MODE_8BIT,
+		};
+
+		/* An array to map chosen bus width to an integer */
+		static unsigned widths[] = {
+			8, 4, 1,
+		};
+
+		for (idx=0; idx < ARRAY_SIZE(ext_csd_bits); idx++) {
+			unsigned int extw = ext_csd_bits[idx];
+
+			/*
+			 * Check to make sure the controller supports
+			 * this bus width, if it's more than 1
+			 */
+			if (extw != EXT_CSD_BUS_WIDTH_1 &&
+					!(mmc->host_caps & ext_to_hostcaps[extw]))
+				continue;
+
 			err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
-					EXT_CSD_BUS_WIDTH, width);
+					EXT_CSD_BUS_WIDTH, extw);
 
 			if (err)
 				continue;
 
-			if (!width) {
-				mmc_set_bus_width(mmc, 1);
-				break;
-			} else
-				mmc_set_bus_width(mmc, 4 * width);
+			mmc_set_bus_width(mmc, widths[idx]);
 
 			err = mmc_send_ext_csd(mmc, test_csd);
 			if (!err && ext_csd[EXT_CSD_PARTITIONING_SUPPORT] \
@@ -1225,38 +1138,43 @@ int mmc_startup(struct mmc *mmc)
 				 && memcmp(&ext_csd[EXT_CSD_SEC_CNT], \
 					&test_csd[EXT_CSD_SEC_CNT], 4) == 0) {
 
-				mmc->card_caps |= width;
+				mmc->card_caps |= ext_to_hostcaps[extw];
 				break;
 			}
 		}
 
 		if (mmc->card_caps & MMC_MODE_HS) {
 			if (mmc->card_caps & MMC_MODE_HS_52MHz)
-				mmc_set_clock(mmc, 52000000);
+				mmc->tran_speed = 52000000;
 			else
-				mmc_set_clock(mmc, 26000000);
-		} else
-			mmc_set_clock(mmc, 20000000);
+				mmc->tran_speed = 26000000;
+		}
 	}
+
+	mmc_set_clock(mmc, mmc->tran_speed);
 
 	/* fill in device description */
 	mmc->block_dev.lun = 0;
 	mmc->block_dev.type = 0;
 	mmc->block_dev.blksz = mmc->read_bl_len;
 	mmc->block_dev.lba = lldiv(mmc->capacity, mmc->read_bl_len);
-	sprintf(mmc->block_dev.vendor, "Man %06x Snr %08x", mmc->cid[0] >> 8,
-			(mmc->cid[2] << 8) | (mmc->cid[3] >> 24));
-	sprintf(mmc->block_dev.product, "%c%c%c%c%c", mmc->cid[0] & 0xff,
-			(mmc->cid[1] >> 24), (mmc->cid[1] >> 16) & 0xff,
-			(mmc->cid[1] >> 8) & 0xff, mmc->cid[1] & 0xff);
-	sprintf(mmc->block_dev.revision, "%d.%d", mmc->cid[2] >> 28,
-			(mmc->cid[2] >> 24) & 0xf);
+	sprintf(mmc->block_dev.vendor, "Man %06x Snr %04x%04x",
+		mmc->cid[0] >> 24, (mmc->cid[2] & 0xffff),
+		(mmc->cid[3] >> 16) & 0xffff);
+	sprintf(mmc->block_dev.product, "%c%c%c%c%c%c", mmc->cid[0] & 0xff,
+		(mmc->cid[1] >> 24), (mmc->cid[1] >> 16) & 0xff,
+		(mmc->cid[1] >> 8) & 0xff, mmc->cid[1] & 0xff,
+		(mmc->cid[2] >> 24) & 0xff);
+	sprintf(mmc->block_dev.revision, "%d.%d", (mmc->cid[2] >> 20) & 0xf,
+		(mmc->cid[2] >> 16) & 0xf);
+#if !defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_LIBDISK_SUPPORT)
 	init_part(&mmc->block_dev);
+#endif
 
 	return 0;
 }
 
-int mmc_send_if_cond(struct mmc *mmc)
+static int mmc_send_if_cond(struct mmc *mmc)
 {
 	struct mmc_cmd cmd;
 	int err;
@@ -1265,7 +1183,6 @@ int mmc_send_if_cond(struct mmc *mmc)
 	/* We set the bit if the host supports voltages between 2.7 and 3.6 V */
 	cmd.cmdarg = ((mmc->voltages & 0xff8000) != 0) << 8 | 0xaa;
 	cmd.resp_type = MMC_RSP_R7;
-	cmd.flags = 0;
 
 	err = mmc_send_cmd(mmc, &cmd, NULL);
 
@@ -1303,8 +1220,10 @@ int mmc_register(struct mmc *mmc)
 block_dev_desc_t *mmc_get_dev(int dev)
 {
 	struct mmc *mmc = find_mmc_device(dev);
+	if (!mmc || mmc_init(mmc))
+		return NULL;
 
-	return mmc ? &mmc->block_dev : NULL;
+	return &mmc->block_dev;
 }
 #endif
 

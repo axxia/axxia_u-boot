@@ -24,6 +24,7 @@
 #include <common.h>
 #include <command.h>
 #include <malloc.h>
+#include <serial.h>
 #include <stdio_dev.h>
 #include <version.h>
 #include <net.h>
@@ -38,13 +39,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-extern int timer_init(void);
-
-extern int incaip_set_cpuclk(void);
-
-extern ulong uboot_end_data;
-extern ulong uboot_end;
-
 ulong monitor_flash_len;
 
 static char *failed = "*** failed ***\n";
@@ -53,7 +47,7 @@ static char *failed = "*** failed ***\n";
  * mips_io_port_base is the begin of the address space to which x86 style
  * I/O ports are mapped.
  */
-unsigned long mips_io_port_base = -1;
+const unsigned long mips_io_port_base = -1;
 
 int __board_early_init_f(void)
 {
@@ -255,7 +249,6 @@ void board_init_r(gd_t *id, ulong dest_addr)
 #ifndef CONFIG_SYS_NO_FLASH
 	ulong size;
 #endif
-	extern void malloc_bin_reloc(void);
 #ifndef CONFIG_ENV_IS_NOWHERE
 	extern char *env_name_spec;
 #endif
@@ -270,12 +263,14 @@ void board_init_r(gd_t *id, ulong dest_addr)
 
 	monitor_flash_len = (ulong)&uboot_end_data - dest_addr;
 
+	serial_initialize();
+
 #if defined(CONFIG_NEEDS_MANUAL_RELOC)
 	/*
 	 * We have to relocate the command table manually
 	 */
-	fixup_cmdtable(&__u_boot_cmd_start,
-		(ulong)(&__u_boot_cmd_end - &__u_boot_cmd_start));
+	fixup_cmdtable(ll_entry_start(cmd_tbl_t, cmd),
+			ll_entry_count(cmd_tbl_t, cmd));
 #endif /* defined(CONFIG_NEEDS_MANUAL_RELOC) */
 
 	/* there are some other pointer constants we must deal with */
@@ -320,9 +315,6 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	/* relocate environment function pointers etc. */
 	env_relocate();
 
-	/* IP Address */
-	bd->bi_ip_addr = getenv_IPaddr("ipaddr");
-
 #if defined(CONFIG_PCI)
 	/*
 	 * Do pci configuration
@@ -342,14 +334,6 @@ void board_init_r(gd_t *id, ulong dest_addr)
 
 	/* Initialize from environment */
 	load_addr = getenv_ulong("loadaddr", 16, load_addr);
-#if defined(CONFIG_CMD_NET)
-	{
-		char *s = getenv("bootfile");
-
-		if (s != NULL)
-			copy_filename(BootFile, s, sizeof(BootFile));
-	}
-#endif
 
 #ifdef CONFIG_CMD_SPI
 	puts("SPI:   ");

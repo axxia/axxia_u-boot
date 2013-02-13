@@ -42,10 +42,11 @@
  */
 
 /**
- * Request ownership of a GPIO.
+ * Request a gpio. This should be called before any of the other functions
+ * are used on this gpio.
  *
- * @param gpio	GPIO number
- * @param label	Name given to the GPIO
+ * @param gp	GPIO number
+ * @param label	User label for this GPIO
  * @return 0 if ok, -1 on error
  */
 int gpio_request(unsigned gpio, const char *label);
@@ -93,5 +94,4 @@ int gpio_get_value(unsigned gpio);
  * @return 0 if ok, -1 on error
  */
 int gpio_set_value(unsigned gpio, int value);
-
 #endif	/* _ASM_GENERIC_GPIO_H_ */

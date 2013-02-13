@@ -33,12 +33,9 @@
 #include <dataflash.h>
 #endif
 #include <watchdog.h>
+#include <linux/compiler.h>
 
-#ifdef	CMD_MEM_DEBUG
-#define	PRINTF(fmt,args...)	printf (fmt ,##args)
-#else
-#define PRINTF(fmt,args...)
-#endif
+DECLARE_GLOBAL_DATA_PTR;
 
 static int mod_mem(cmd_tbl_t *, int, int, int, char * const []);
 
@@ -57,7 +54,7 @@ static	ulong	base_address = 0;
  *	md{.b, .w, .l} {addr} {len}
  */
 #define DISP_LINE_LEN	16
-int do_mem_md ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_mem_md(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong	addr, length;
 #if defined(CONFIG_HAS_DATAFLASH)
@@ -153,20 +150,16 @@ int do_mem_md ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return (rc);
 }
 
-#ifndef CONFIG_ACP2
-
-int do_mem_mm ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_mem_mm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	return mod_mem (cmdtp, 1, flag, argc, argv);
 }
-int do_mem_nm ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_mem_nm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	return mod_mem (cmdtp, 0, flag, argc, argv);
 }
 
-#endif	/* CONFIG_ACP2 */
-
-int do_mem_mw ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_mem_mw(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong	addr, writeval, count;
 	int	size;
@@ -206,8 +199,6 @@ int do_mem_mw ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 	return 0;
 }
-
-#ifndef CONFIG_ACP2
 
 #ifdef CONFIG_MX_CYCLIC
 int do_mem_mdc ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -265,11 +256,12 @@ int do_mem_mwc ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 }
 #endif /* CONFIG_MX_CYCLIC */
 
-int do_mem_cmp (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_mem_cmp(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong	addr1, addr2, count, ngood;
 	int	size;
 	int     rcode = 0;
+	const char *type;
 
 	if (argc != 4)
 		return CMD_RET_USAGE;
@@ -278,6 +270,7 @@ int do_mem_cmp (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	*/
 	if ((size = cmd_get_data_size(argv[0], 4)) < 0)
 		return 1;
+	type = size == 4 ? "word" : size == 2 ? "halfword" : "byte";
 
 	addr1 = simple_strtoul(argv[1], NULL, 16);
 	addr1 += base_address;
@@ -301,60 +294,39 @@ int do_mem_cmp (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 #endif
 
-	ngood = 0;
-
-	while (count-- > 0) {
+	for (ngood = 0; ngood < count; ++ngood) {
+		ulong word1, word2;
 		if (size == 4) {
-			ulong word1 = *(ulong *)addr1;
-			ulong word2 = *(ulong *)addr2;
-			if (word1 != word2) {
-				printf("word at 0x%08lx (0x%08lx) "
-					"!= word at 0x%08lx (0x%08lx)\n",
-					addr1, word1, addr2, word2);
-				rcode = 1;
-				break;
-			}
+			word1 = *(ulong *)addr1;
+			word2 = *(ulong *)addr2;
+		} else if (size == 2) {
+			word1 = *(ushort *)addr1;
+			word2 = *(ushort *)addr2;
+		} else {
+			word1 = *(u_char *)addr1;
+			word2 = *(u_char *)addr2;
 		}
-		else if (size == 2) {
-			ushort hword1 = *(ushort *)addr1;
-			ushort hword2 = *(ushort *)addr2;
-			if (hword1 != hword2) {
-				printf("halfword at 0x%08lx (0x%04x) "
-					"!= halfword at 0x%08lx (0x%04x)\n",
-					addr1, hword1, addr2, hword2);
-				rcode = 1;
-				break;
-			}
+		if (word1 != word2) {
+			printf("%s at 0x%08lx (%#0*lx) != %s at 0x%08lx (%#0*lx)\n",
+				type, addr1, size, word1,
+				type, addr2, size, word2);
+			rcode = 1;
+			break;
 		}
-		else {
-			u_char byte1 = *(u_char *)addr1;
-			u_char byte2 = *(u_char *)addr2;
-			if (byte1 != byte2) {
-				printf("byte at 0x%08lx (0x%02x) "
-					"!= byte at 0x%08lx (0x%02x)\n",
-					addr1, byte1, addr2, byte2);
-				rcode = 1;
-				break;
-			}
-		}
-		ngood++;
+
 		addr1 += size;
 		addr2 += size;
 
 		/* reset watchdog from time to time */
-		if ((count % (64 << 10)) == 0)
+		if ((ngood % (64 << 10)) == 0)
 			WATCHDOG_RESET();
 	}
 
-	printf("Total of %ld %s%s were the same\n",
-		ngood, size == 4 ? "word" : size == 2 ? "halfword" : "byte",
-		ngood == 1 ? "" : "s");
+	printf("Total of %ld %s(s) were the same\n", ngood, type);
 	return rcode;
 }
 
-#endif	/* CONFIG_ACP2 */
-
-int do_mem_cp ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_mem_cp(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong	addr, dest, count;
 	int	size;
@@ -464,7 +436,8 @@ int do_mem_cp ( cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return 0;
 }
 
-int do_mem_base (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_mem_base(cmd_tbl_t *cmdtp, int flag, int argc,
+		       char * const argv[])
 {
 	if (argc > 1) {
 		/* Set new base address.
@@ -477,7 +450,8 @@ int do_mem_base (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return 0;
 }
 
-int do_mem_loop (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_mem_loop(cmd_tbl_t *cmdtp, int flag, int argc,
+		       char * const argv[])
 {
 	ulong	addr, length, i;
 	int	size;
@@ -618,14 +592,13 @@ int do_mem_loopw (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 }
 #endif /* CONFIG_LOOPW */
 
-#ifndef CONFIG_ACP2
-
 /*
  * Perform a memory test. A more complete alternative test can be
  * configured using CONFIG_SYS_ALT_MEMTEST. The complete test loops until
  * interrupted by ctrl-c or by a failure of one of the sub-tests.
  */
-int do_mem_mtest (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
+			char * const argv[])
 {
 	vu_long	*addr, *start, *end;
 	ulong	val;
@@ -645,7 +618,7 @@ int do_mem_mtest (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #if defined(CONFIG_SYS_MEMTEST_SCRATCH)
 	vu_long *dummy = (vu_long*)CONFIG_SYS_MEMTEST_SCRATCH;
 #else
-	vu_long *dummy = 0;	/* yes, this is address 0x0, not NULL */
+	vu_long *dummy = NULL;	/* yes, this is address 0x0, not NULL */
 #endif
 	int	j;
 
@@ -686,7 +659,7 @@ int do_mem_mtest (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 #if defined(CONFIG_SYS_ALT_MEMTEST)
 	printf ("Testing %08x ... %08x:\n", (uint)start, (uint)end);
-	PRINTF("%s:%d: start 0x%p end 0x%p\n",
+	debug("%s:%d: start 0x%p end 0x%p\n",
 		__FUNCTION__, __LINE__, start, end);
 
 	for (;;) {
@@ -703,7 +676,7 @@ int do_mem_mtest (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		}
 
 		printf("Iteration: %6d\r", iterations);
-		PRINTF("\n");
+		debug("\n");
 		iterations++;
 
 		/*
@@ -794,7 +767,7 @@ int do_mem_mtest (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		pattern = (vu_long) 0xaaaaaaaa;
 		anti_pattern = (vu_long) 0x55555555;
 
-		PRINTF("%s:%d: length = 0x%.8lx\n",
+		debug("%s:%d: length = 0x%.8lx\n",
 			__FUNCTION__, __LINE__,
 			len);
 		/*
@@ -1087,7 +1060,7 @@ mod_mem(cmd_tbl_t *cmdtp, int incrflag, int flag, int argc, char * const argv[])
 
 #ifndef CONFIG_CRC32_VERIFY
 
-int do_mem_crc (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_mem_crc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong addr, length;
 	ulong crc;
@@ -1171,16 +1144,12 @@ usage:
 
 #endif
 
-#endif	/* CONFIG_ACP2 */
-
 /**************************************************/
 U_BOOT_CMD(
 	md,	3,	1,	do_mem_md,
 	"memory display",
 	"[.b, .w, .l] address [# of objects]"
 );
-
-#ifndef CONFIG_ACP2
 
 U_BOOT_CMD(
 	mm,	2,	1,	do_mem_mm,
@@ -1195,15 +1164,11 @@ U_BOOT_CMD(
 	"[.b, .w, .l] address"
 );
 
-#endif	/* CONFIG_ACP2 */
-
 U_BOOT_CMD(
 	mw,	4,	1,	do_mem_mw,
 	"memory write (fill)",
 	"[.b, .w, .l] address value [count]"
 );
-
-#ifndef CONFIG_ACP2
 
 U_BOOT_CMD(
 	cp,	4,	1,	do_mem_cp,
@@ -1240,6 +1205,22 @@ U_BOOT_CMD(
 
 #endif
 
+#ifdef CONFIG_CMD_MEMINFO
+__weak void board_show_dram(ulong size)
+{
+	puts("DRAM:  ");
+	print_size(size, "\n");
+}
+
+static int do_mem_info(cmd_tbl_t *cmdtp, int flag, int argc,
+		       char * const argv[])
+{
+	board_show_dram(gd->ram_size);
+
+	return 0;
+}
+#endif
+
 U_BOOT_CMD(
 	base,	2,	1,	do_mem_base,
 	"print or set address offset",
@@ -1267,8 +1248,6 @@ U_BOOT_CMD(
 	"[start [end [pattern [iterations]]]]"
 );
 
-#endif	/* CONFIG_ACP2 */
-
 #ifdef CONFIG_MX_CYCLIC
 U_BOOT_CMD(
 	mdc,	4,	1,	do_mem_mdc,
@@ -1282,3 +1261,11 @@ U_BOOT_CMD(
 	"[.b, .w, .l] address value delay(ms)"
 );
 #endif /* CONFIG_MX_CYCLIC */
+
+#ifdef CONFIG_CMD_MEMINFO
+U_BOOT_CMD(
+	meminfo,	3,	1,	do_mem_info,
+	"display memory information",
+	""
+);
+#endif

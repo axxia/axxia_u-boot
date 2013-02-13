@@ -51,8 +51,6 @@
 
 #include "macb.h"
 
-#define barrier() asm volatile("" ::: "memory")
-
 #define CONFIG_SYS_MACB_RX_BUFFER_SIZE		4096
 #define CONFIG_SYS_MACB_RX_RING_SIZE		(CONFIG_SYS_MACB_RX_BUFFER_SIZE / 128)
 #define CONFIG_SYS_MACB_TX_RING_SIZE		16
@@ -197,8 +195,7 @@ int macb_miiphy_write(const char *devname, u8 phy_adr, u8 reg, u16 value)
 
 #if defined(CONFIG_CMD_NET)
 
-static int macb_send(struct eth_device *netdev, volatile void *packet,
-		     int length)
+static int macb_send(struct eth_device *netdev, void *packet, int length)
 {
 	struct macb_device *macb = to_macb(netdev);
 	unsigned long paddr, ctrl;
@@ -365,7 +362,7 @@ static int macb_phy_find(struct macb_device *macb)
 	}
 
 	/* PHY isn't up to snuff */
-	printf("%s: PHY not found", macb->netdev.name);
+	printf("%s: PHY not found\n", macb->netdev.name);
 
 	return 0;
 }
@@ -472,7 +469,7 @@ static int macb_init(struct eth_device *netdev, bd_t *bd)
 #if	defined(CONFIG_AT91CAP9) || defined(CONFIG_AT91SAM9260) || \
 	defined(CONFIG_AT91SAM9263) || defined(CONFIG_AT91SAM9G20) || \
 	defined(CONFIG_AT91SAM9G45) || defined(CONFIG_AT91SAM9M10G45) || \
-	defined(CONFIG_AT91SAM9XE)
+	defined(CONFIG_AT91SAM9XE) || defined(CONFIG_AT91SAM9X5)
 	macb_writel(macb, USRIO, MACB_BIT(RMII) | MACB_BIT(CLKEN));
 #else
 	macb_writel(macb, USRIO, 0);
@@ -481,7 +478,7 @@ static int macb_init(struct eth_device *netdev, bd_t *bd)
 #if	defined(CONFIG_AT91CAP9) || defined(CONFIG_AT91SAM9260) || \
 	defined(CONFIG_AT91SAM9263) || defined(CONFIG_AT91SAM9G20) || \
 	defined(CONFIG_AT91SAM9G45) || defined(CONFIG_AT91SAM9M10G45) || \
-	defined(CONFIG_AT91SAM9XE)
+	defined(CONFIG_AT91SAM9XE) || defined(CONFIG_AT91SAM9X5)
 	macb_writel(macb, USRIO, MACB_BIT(CLKEN));
 #else
 	macb_writel(macb, USRIO, MACB_BIT(MII));

@@ -93,6 +93,9 @@
 #include <common.h>        /* readline */
 #include <hush.h>
 #include <command.h>        /* find_cmd */
+#ifndef CONFIG_SYS_PROMPT_HUSH_PS2
+#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
+#endif
 #endif
 #ifndef __U_BOOT__
 #include <ctype.h>     /* isalpha, isdigit */
@@ -125,6 +128,7 @@
 #endif
 #endif
 #define SPECIAL_VAR_SYMBOL 03
+#define SUBSTED_VAR_SYMBOL 04
 #ifndef __U_BOOT__
 #define FLAG_EXIT_FROM_LOOP 1
 #define FLAG_PARSE_SEMICOLON (1 << 1)		/* symbol ';' is special for parser */
@@ -286,8 +290,7 @@ struct variables {
 char **global_argv;
 unsigned int global_argc;
 #endif
-unsigned int last_return_code;
-int nesting_level;
+static unsigned int last_return_code;
 #ifndef __U_BOOT__
 extern char **environ; /* This is in <unistd.h>, but protected with __USE_GNU */
 #endif
@@ -497,6 +500,7 @@ static void remove_bg_job(struct pipe *pi);
 /*     local variable support */
 static char **make_list_in(char **inp, char *name);
 static char *insert_var_value(char *inp);
+static char *insert_var_value_sub(char *inp, int tag_subst);
 
 #ifndef __U_BOOT__
 /* Table of built-in functions.  They can be forked or not, depending on
@@ -2168,7 +2172,7 @@ int set_local_var(const char *s, int flg_export)
 	 * NAME=VALUE format.  So the first order of business is to
 	 * split 's' on the '=' into 'name' and 'value' */
 	value = strchr(name, '=');
-	if (value==0 && ++value==0) {
+	if (value == NULL && ++value == NULL) {
 		free(name);
 		return -1;
 	}
@@ -2203,13 +2207,13 @@ int set_local_var(const char *s, int flg_export)
 			result = -1;
 		} else {
 			cur->name = strdup(name);
-			if(cur->name == 0) {
+			if (cur->name == NULL) {
 				free(cur);
 				result = -1;
 			} else {
 				struct variables *bottom = top_vars;
 				cur->value = strdup(value);
-				cur->next = 0;
+				cur->next = NULL;
 				cur->flg_export = flg_export;
 				cur->flg_read_only = 0;
 				while(bottom->next) bottom=bottom->next;
@@ -2242,7 +2246,7 @@ void unset_local_var(const char *name)
 			if(strcmp(cur->name, name)==0)
 				break;
 		}
-		if(cur!=0) {
+		if (cur != NULL) {
 			struct variables *next = top_vars;
 			if(cur->flg_read_only) {
 				error_msg("%s: readonly variable", name);
@@ -2325,7 +2329,8 @@ static int setup_redirect(struct p_context *ctx, int fd, redir_type style,
 }
 #endif
 
-struct pipe *new_pipe(void) {
+static struct pipe *new_pipe(void)
+{
 	struct pipe *pi;
 	pi = xmalloc(sizeof(struct pipe));
 	pi->num_progs = 0;
@@ -2383,7 +2388,7 @@ static struct reserved_combo reserved_list[] = {
 };
 #define NRES (sizeof(reserved_list)/sizeof(struct reserved_combo))
 
-int reserved_word(o_string *dest, struct p_context *ctx)
+static int reserved_word(o_string *dest, struct p_context *ctx)
 {
 	struct reserved_combo *r;
 	for (r=reserved_list;
@@ -2741,13 +2746,50 @@ static int parse_group(o_string *dest, struct p_context *ctx,
 static char *lookup_param(char *src)
 {
 	char *p;
+	char *sep;
+	char *default_val = NULL;
+	int assign = 0;
+	int expand_empty = 0;
 
 	if (!src)
 		return NULL;
 
-		p = getenv(src);
-		if (!p)
-			p = get_local_var(src);
+	sep = strchr(src, ':');
+
+	if (sep) {
+		*sep = '\0';
+		if (*(sep + 1) == '-')
+			default_val = sep+2;
+		if (*(sep + 1) == '=') {
+			default_val = sep+2;
+			assign = 1;
+		}
+		if (*(sep + 1) == '+') {
+			default_val = sep+2;
+			expand_empty = 1;
+		}
+	}
+
+	p = getenv(src);
+	if (!p)
+		p = get_local_var(src);
+
+	if (!p || strlen(p) == 0) {
+		p = default_val;
+		if (assign) {
+			char *var = malloc(strlen(src)+strlen(default_val)+2);
+			if (var) {
+				sprintf(var, "%s=%s", src, default_val);
+				set_local_var(var, 0);
+			}
+			free(var);
+		}
+	} else if (expand_empty) {
+		p += strlen(p);
+	}
+
+	if (sep)
+		*sep = ':';
 
 	return p;
 }
@@ -2883,8 +2925,8 @@ int parse_string(o_string *dest, struct p_context *ctx, const char *src)
 #endif
 
 /* return code is 0 for normal exit, 1 for syntax error */
-int parse_stream(o_string *dest, struct p_context *ctx,
-	struct in_str *input, int end_trigger)
+static int parse_stream(o_string *dest, struct p_context *ctx,
+			struct in_str *input, int end_trigger)
 {
 	unsigned int ch, m;
 #ifndef __U_BOOT__
@@ -3049,6 +3091,21 @@ int parse_stream(o_string *dest, struct p_context *ctx,
 			return 1;
 			break;
 #endif
+		case SUBSTED_VAR_SYMBOL:
+			dest->nonnull = 1;
+			while (ch = b_getch(input), ch != EOF &&
+			    ch != SUBSTED_VAR_SYMBOL) {
+				debug_printf("subst, pass=%d\n", ch);
+				if (input->__promptme == 0)
+					return 1;
+				b_addchr(dest, ch);
+			}
+			debug_printf("subst, term=%d\n", ch);
+			if (ch == EOF) {
+				syntax();
+				return 1;
+			}
+			break;
 		default:
 			syntax();   /* this is really an internal logic error */
 			return 1;
@@ -3068,13 +3125,13 @@ int parse_stream(o_string *dest, struct p_context *ctx,
 	return 0;
 }
 
-void mapset(const unsigned char *set, int code)
+static void mapset(const unsigned char *set, int code)
 {
 	const unsigned char *s;
 	for (s=set; *s; s++) map[*s] = code;
 }
 
-void update_ifs_map(void)
+static void update_ifs_map(void)
 {
 	/* char *ifs and char map[256] are both globals. */
 	ifs = (uchar *)getenv("IFS");
@@ -3090,6 +3147,10 @@ void update_ifs_map(void)
 	mapset((uchar *)"\\$'\"`", 3);      /* never flow through */
 	mapset((uchar *)"<>;&|(){}#", 1);   /* flow through if quoted */
 #else
+	{
+		uchar subst[2] = {SUBSTED_VAR_SYMBOL, 0};
+		mapset(subst, 3);       /* never flow through */
+	}
 	mapset((uchar *)"\\$'\"", 3);       /* never flow through */
 	mapset((uchar *)";&|#", 1);         /* flow through if quoted */
 #endif
@@ -3098,7 +3159,7 @@ void update_ifs_map(void)
 
 /* most recursion does not come through here, the exeception is
  * from builtin_source() */
-int parse_stream_outer(struct in_str *inp, int flag)
+static int parse_stream_outer(struct in_str *inp, int flag)
 {
 
 	struct p_context ctx;
@@ -3232,7 +3293,7 @@ int u_boot_hush_start(void)
 		top_vars = malloc(sizeof(struct variables));
 		top_vars->name = "HUSH_VERSION";
 		top_vars->value = "0.01";
-		top_vars->next = 0;
+		top_vars->next = NULL;
 		top_vars->flg_export = 0;
 		top_vars->flg_read_only = 1;
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
@@ -3429,25 +3490,57 @@ final_return:
 
 static char *insert_var_value(char *inp)
 {
+	return insert_var_value_sub(inp, 0);
+}
+
+static char *insert_var_value_sub(char *inp, int tag_subst)
+{
 	int res_str_len = 0;
 	int len;
 	int done = 0;
 	char *p, *p1, *res_str = NULL;
 
 	while ((p = strchr(inp, SPECIAL_VAR_SYMBOL))) {
+		/* check the beginning of the string for normal charachters */
 		if (p != inp) {
+			/* copy any charachters to the result string */
 			len = p - inp;
 			res_str = xrealloc(res_str, (res_str_len + len));
 			strncpy((res_str + res_str_len), inp, len);
 			res_str_len += len;
 		}
 		inp = ++p;
+		/* find the ending marker */
 		p = strchr(inp, SPECIAL_VAR_SYMBOL);
 		*p = '\0';
+		/* look up the value to substitute */
 		if ((p1 = lookup_param(inp))) {
-			len = res_str_len + strlen(p1);
+			if (tag_subst)
+				len = res_str_len + strlen(p1) + 2;
+			else
+				len = res_str_len + strlen(p1);
 			res_str = xrealloc(res_str, (1 + len));
-			strcpy((res_str + res_str_len), p1);
+			if (tag_subst) {
+				/*
+				 * copy the variable value to the result
+				 * string
+				 */
+				strcpy((res_str + res_str_len + 1), p1);
+
+				/*
+				 * mark the replaced text to be accepted as
+				 * is
+				 */
+				res_str[res_str_len] = SUBSTED_VAR_SYMBOL;
+				res_str[res_str_len + 1 + strlen(p1)] =
+					SUBSTED_VAR_SYMBOL;
+			} else
+				/*
+				 * copy the variable value to the result
+				 * string
+				 */
+				strcpy((res_str + res_str_len), p1);
+
 			res_str_len = len;
 		}
 		*p = SPECIAL_VAR_SYMBOL;
@@ -3511,9 +3604,14 @@ static char * make_string(char ** inp)
 	char *str = NULL;
 	int n;
 	int len = 2;
+	char *noeval_str;
+	int noeval = 0;
 
+	noeval_str = get_local_var("HUSH_NO_EVAL");
+	if (noeval_str != NULL && *noeval_str != '0' && *noeval_str != '\0')
+		noeval = 1;
 	for (n = 0; inp[n]; n++) {
-		p = insert_var_value(inp[n]);
+		p = insert_var_value_sub(inp[n], noeval);
 		str = xrealloc(str, (len + strlen(p)));
 		if (n) {
 			strcat(str, " ");
@@ -3531,7 +3629,8 @@ static char * make_string(char ** inp)
 }
 
 #ifdef __U_BOOT__
-int do_showvar (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_showvar(cmd_tbl_t *cmdtp, int flag, int argc,
+		      char * const argv[])
 {
 	int i, k;
 	int rcode = 0;

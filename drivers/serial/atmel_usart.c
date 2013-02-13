@@ -20,6 +20,8 @@
  */
 #include <common.h>
 #include <watchdog.h>
+#include <serial.h>
+#include <linux/compiler.h>
 
 #include <asm/io.h>
 #include <asm/arch/clk.h>
@@ -29,7 +31,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-void serial_setbrg(void)
+static void atmel_serial_setbrg(void)
 {
 	atmel_usart3_t *usart = (atmel_usart3_t *)CONFIG_USART_BASE;
 	unsigned long divisor;
@@ -45,26 +47,35 @@ void serial_setbrg(void)
 	writel(USART3_BF(CD, divisor), &usart->brgr);
 }
 
-int serial_init(void)
+static int atmel_serial_init(void)
 {
 	atmel_usart3_t *usart = (atmel_usart3_t *)CONFIG_USART_BASE;
+
+	/*
+	 * Just in case: drain transmitter register
+	 * 1000us is enough for baudrate >= 9600
+	 */
+	if (!(readl(&usart->csr) & USART3_BIT(TXEMPTY)))
+		__udelay(1000);
 
 	writel(USART3_BIT(RSTRX) | USART3_BIT(RSTTX), &usart->cr);
 
 	serial_setbrg();
 
-	writel(USART3_BIT(RXEN) | USART3_BIT(TXEN), &usart->cr);
 	writel((USART3_BF(USART_MODE, USART3_USART_MODE_NORMAL)
 			   | USART3_BF(USCLKS, USART3_USCLKS_MCK)
 			   | USART3_BF(CHRL, USART3_CHRL_8)
 			   | USART3_BF(PAR, USART3_PAR_NONE)
 			   | USART3_BF(NBSTOP, USART3_NBSTOP_1)),
 			   &usart->mr);
+	writel(USART3_BIT(RXEN) | USART3_BIT(TXEN), &usart->cr);
+	/* 100us is enough for the new settings to be settled */
+	__udelay(100);
 
 	return 0;
 }
 
-void serial_putc(char c)
+static void atmel_serial_putc(char c)
 {
 	atmel_usart3_t *usart = (atmel_usart3_t *)CONFIG_USART_BASE;
 
@@ -75,13 +86,7 @@ void serial_putc(char c)
 	writel(c, &usart->thr);
 }
 
-void serial_puts(const char *s)
-{
-	while (*s)
-		serial_putc(*s++);
-}
-
-int serial_getc(void)
+static int atmel_serial_getc(void)
 {
 	atmel_usart3_t *usart = (atmel_usart3_t *)CONFIG_USART_BASE;
 
@@ -90,8 +95,29 @@ int serial_getc(void)
 	return readl(&usart->rhr);
 }
 
-int serial_tstc(void)
+static int atmel_serial_tstc(void)
 {
 	atmel_usart3_t *usart = (atmel_usart3_t *)CONFIG_USART_BASE;
 	return (readl(&usart->csr) & USART3_BIT(RXRDY)) != 0;
+}
+
+static struct serial_device atmel_serial_drv = {
+	.name	= "atmel_serial",
+	.start	= atmel_serial_init,
+	.stop	= NULL,
+	.setbrg	= atmel_serial_setbrg,
+	.putc	= atmel_serial_putc,
+	.puts	= default_serial_puts,
+	.getc	= atmel_serial_getc,
+	.tstc	= atmel_serial_tstc,
+};
+
+void atmel_serial_initialize(void)
+{
+	serial_register(&atmel_serial_drv);
+}
+
+__weak struct serial_device *default_serial_console(void)
+{
+	return &atmel_serial_drv;
 }

@@ -31,9 +31,9 @@
 #include <command.h>
 #include <asm/byteorder.h>
 #include <malloc.h>
+#include <video.h>
 
 static int bmp_info (ulong addr);
-static int bmp_display (ulong addr, int x, int y);
 
 /*
  * Allocate and decompress a BMP image using gunzip().
@@ -221,7 +221,7 @@ static int bmp_info(ulong addr)
  * Return:      None
  *
  */
-static int bmp_display(ulong addr, int x, int y)
+int bmp_display(ulong addr, int x, int y)
 {
 	int ret;
 	bmp_image_t *bmp = (bmp_image_t *)addr;
@@ -239,9 +239,7 @@ static int bmp_display(ulong addr, int x, int y)
 #if defined(CONFIG_LCD)
 	ret = lcd_display_bitmap((ulong)bmp, x, y);
 #elif defined(CONFIG_VIDEO)
-	extern int video_display_bitmap (ulong, int, int);
-
-	ret = video_display_bitmap ((unsigned long)bmp, x, y);
+	ret = video_display_bitmap((unsigned long)bmp, x, y);
 #else
 # error bmp_display() requires CONFIG_LCD or CONFIG_VIDEO
 #endif

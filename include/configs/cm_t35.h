@@ -37,6 +37,7 @@
  */
 #define CONFIG_OMAP	/* in a TI OMAP core */
 #define CONFIG_OMAP34XX	/* which is a 34XX */
+#define CONFIG_OMAP_GPIO
 #define CONFIG_CM_T3X	/* working with CM-T35 and CM-T3730 */
 
 #define CONFIG_SYS_TEXT_BASE	0x80008000
@@ -56,7 +57,6 @@
 #define V_OSCK			26000000	/* Clock output from T2 */
 #define V_SCLK			(V_OSCK >> 1)
 
-#undef CONFIG_USE_IRQ				/* no support for IRQs */
 #define CONFIG_MISC_INIT_R
 
 #define CONFIG_OF_LIBFDT		1
@@ -77,7 +77,7 @@
 /*
  * Size of malloc() pool
  */
-#define CONFIG_ENV_SIZE		(128 << 10)	/* 128 KiB */
+#define CONFIG_ENV_SIZE		(16 << 10)	/* 16 KiB */
 					/* Sector */
 #define CONFIG_SYS_MALLOC_LEN	(CONFIG_ENV_SIZE + (128 << 10))
 
@@ -114,9 +114,15 @@
 #define CONFIG_DOS_PARTITION
 
 /* USB */
-#define CONFIG_MUSB_UDC
 #define CONFIG_USB_OMAP3
+#define CONFIG_USB_EHCI
+#define CONFIG_USB_EHCI_OMAP
+#define CONFIG_USB_ULPI
+#define CONFIG_USB_ULPI_VIEWPORT_OMAP
+#define CONFIG_USB_STORAGE
+#define CONFIG_MUSB_UDC
 #define CONFIG_TWL4030_USB
+#define CONFIG_CMD_USB
 
 /* USB device configuration */
 #define CONFIG_USB_DEVICE
@@ -156,6 +162,7 @@
 #define CONFIG_DRIVER_OMAP34XX_I2C
 #define CONFIG_SYS_I2C_EEPROM_ADDR	0x50
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN	1
+#define CONFIG_I2C_MULTI_BUS
 
 /*
  * TWL4030
@@ -173,7 +180,7 @@
 #define CONFIG_SYS_NAND_BASE		NAND_BASE	/* physical address */
 							/* to access nand at */
 							/* CS0 */
-#define GPMC_NAND_ECC_LP_x16_LAYOUT
+#define GPMC_NAND_ECC_LP_x8_LAYOUT
 
 #define CONFIG_SYS_MAX_NAND_DEVICE	1		/* Max number of NAND */
 							/* devices */
@@ -187,6 +194,7 @@
 
 /* Environment information */
 #define CONFIG_BOOTDELAY		10
+#define CONFIG_ZERO_BOOTDELAY_CHECK
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
@@ -230,7 +238,7 @@
 		"bootm ${loadaddr}\0" \
 
 #define CONFIG_BOOTCOMMAND \
-	"if mmc rescan ${mmcdev}; then " \
+	"mmc dev ${mmcdev}; if mmc rescan; then " \
 		"if run loadbootscript; then " \
 			"run bootscript; " \
 		"else " \
@@ -250,7 +258,6 @@
 #define CONFIG_SYS_AUTOLOAD		"no"
 #define CONFIG_SYS_LONGHELP		/* undef to save memory */
 #define CONFIG_SYS_HUSH_PARSER		/* use "hush" command parser */
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_SYS_PROMPT		"CM-T3x # "
 #define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
 /* Print Buffer Size */
@@ -278,44 +285,25 @@
 #define CONFIG_SYS_HZ			1000
 
 /*-----------------------------------------------------------------------
- * Stack sizes
- *
- * The stack sizes are set up in start.S using the settings below
- */
-#define CONFIG_STACKSIZE	(128 << 10)	/* regular stack 128 KiB */
-
-/*-----------------------------------------------------------------------
  * Physical Memory Map
  */
 #define CONFIG_NR_DRAM_BANKS	1	/* CS1 is never populated */
 #define PHYS_SDRAM_1		OMAP34XX_SDRC_CS0
-#define PHYS_SDRAM_1_SIZE	(32 << 20)	/* at least 32 MiB */
 
 /*-----------------------------------------------------------------------
  * FLASH and environment organization
  */
 
 /* **** PISMO SUPPORT *** */
-
 /* Configure the PISMO */
 #define PISMO1_NAND_SIZE		GPMC_SIZE_128M
-#define PISMO1_ONEN_SIZE		GPMC_SIZE_128M
-
-#define CONFIG_SYS_MONITOR_LEN		(256 << 10)	/* Reserve 2 sectors */
-
-#if defined(CONFIG_CMD_NAND)
-#define CONFIG_SYS_FLASH_BASE		PISMO1_NAND_BASE
-#endif
 
 /* Monitor at start of flash */
 #define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_FLASH_BASE
-#define CONFIG_SYS_ONENAND_BASE		ONENAND_MAP
+#define CONFIG_SYS_MONITOR_LEN		(256 << 10)	/* Reserve 2 sectors */
 
 #define CONFIG_ENV_IS_IN_NAND
-#define ONENAND_ENV_OFFSET		0x260000 /* environment starts here */
 #define SMNAND_ENV_OFFSET		0x260000 /* environment starts here */
-
-#define CONFIG_SYS_ENV_SECT_SIZE	(128 << 10)	/* 128 KiB */
 #define CONFIG_ENV_OFFSET		SMNAND_ENV_OFFSET
 #define CONFIG_ENV_ADDR			SMNAND_ENV_OFFSET
 

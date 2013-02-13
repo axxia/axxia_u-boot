@@ -33,6 +33,8 @@
 #ifndef _CONFIG_ASTRO_MCF5373L_H
 #define _CONFIG_ASTRO_MCF5373L_H
 
+#include <linux/stringify.h>
+
 /*
  * set the card type to actually compile for; either of
  * the possibilities listed below has to be used!
@@ -105,7 +107,6 @@
 #define CONFIG_CMDLINE_EDITING
 
 #define CONFIG_SYS_HUSH_PARSER
-#define CONFIG_SYS_PROMPT_HUSH_PS2 "> "
 
 #define CONFIG_MCFRTC
 #undef RTC_DEBUG
@@ -147,7 +148,6 @@
  */
 
 #define CONFIG_BAUDRATE		115200
-#define CONFIG_SYS_BAUDRATE_TABLE { 9600 , 19200 , 38400 , 57600, 115200 }
 
 #define CONFIG_MCFUART
 #define CONFIG_SYS_UART_PORT		(2)
@@ -211,12 +211,9 @@
  * u-boot: 'set' command
  */
 
-#define _QUOTEME(x)	#x
-#define QUOTEME(x)	_QUOTEME(x)
-
 #define CONFIG_EXTRA_ENV_SETTINGS			\
 	"loaderversion=11\0"				\
-	"card_id="QUOTEME(ASTRO_ID)"\0"			\
+	"card_id="__stringify(ASTRO_ID)"\0"			\
 	"alterafile=0\0"				\
 	"xilinxfile=0\0"				\
 	"xilinxload=imxtract 0x540000 $xilinxfile 0x41000000&&"\

@@ -22,9 +22,8 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+#define CONFIG_MX6
 #define CONFIG_MX6Q
-#define CONFIG_SYS_MX6_HCLK		24000000
-#define CONFIG_SYS_MX6_CLK32		32768
 #define CONFIG_DISPLAY_CPUINFO
 #define CONFIG_DISPLAY_BOARDINFO
 
@@ -37,7 +36,6 @@
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
 
-#define CONFIG_ARCH_CPU_INIT
 #define CONFIG_BOARD_EARLY_INIT_F
 #define CONFIG_MXC_GPIO
 
@@ -53,6 +51,7 @@
 #define CONFIG_MMC
 #define CONFIG_CMD_MMC
 #define CONFIG_GENERIC_MMC
+#define CONFIG_BOUNCE_BUFFER
 #define CONFIG_CMD_FAT
 #define CONFIG_DOS_PARTITION
 
@@ -70,7 +69,6 @@
 #define CONFIG_ENV_OVERWRITE
 #define CONFIG_CONS_INDEX		1
 #define CONFIG_BAUDRATE			115200
-#define CONFIG_SYS_BAUDRATE_TABLE	{9600, 19200, 38400, 57600, 115200}
 
 /* Command definition */
 #include <config_cmd_default.h>
@@ -110,7 +108,7 @@
 
 #define CONFIG_BOOTCOMMAND \
 	"mmc dev ${mmcdev};" \
-	"if mmc rescan ${mmcdev}; then " \
+	"mmc dev ${mmcdev}; if mmc rescan; then " \
 		"if run loadbootscript; then " \
 			"run bootscript; " \
 		"else " \
@@ -126,7 +124,6 @@
 /* Miscellaneous configurable options */
 #define CONFIG_SYS_LONGHELP
 #define CONFIG_SYS_HUSH_PARSER
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_SYS_PROMPT		"MX6QARM2 U-Boot > "
 #define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_CBSIZE		256
@@ -143,7 +140,6 @@
 #define CONFIG_SYS_HZ			1000
 
 #define CONFIG_CMDLINE_EDITING
-#define CONFIG_STACKSIZE		(128 * 1024)
 
 /* Physical Memory Map */
 #define CONFIG_NR_DRAM_BANKS		1
@@ -168,7 +164,6 @@
 #define CONFIG_SYS_MMC_ENV_DEV		1
 
 #define CONFIG_OF_LIBFDT
-
-#define CONFIG_SYS_DCACHE_OFF
+#define CONFIG_CMD_BOOTZ
 
 #endif				/* __CONFIG_H */

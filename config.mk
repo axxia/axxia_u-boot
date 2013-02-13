@@ -23,6 +23,8 @@
 
 #########################################################################
 
+include $(TOPDIR)/helper.mk
+
 ifeq ($(CURDIR),$(SRCTREE))
 dir :=
 else
@@ -104,7 +106,7 @@ HOSTCFLAGS	+= -pedantic
 
 #########################################################################
 #
-# Option checker (courtesy linux kernel) to ensure
+# Option checker, gcc version (courtesy linux kernel) to ensure
 # only supported compiler options are used
 #
 CC_OPTIONS_CACHE_FILE := $(OBJTREE)/include/generated/cc_options.mk
@@ -125,11 +127,20 @@ cc-option = $(strip $(if $(findstring $1,$(CC_OPTIONS)),$1,\
 		$(if $(call cc-option-sys,$1),$1,$2)))
 endif
 
+# cc-version
+# Usage gcc-ver := $(call cc-version)
+cc-version = $(shell $(SHELL) $(SRCTREE)/tools/gcc-version.sh $(CC))
+binutils-version = $(shell $(SHELL) $(SRCTREE)/tools/binutils-version.sh $(AS))
+
 #
 # Include the make variables (CC, etc...)
 #
 AS	= $(CROSS_COMPILE)as
-LD	= $(CROSS_COMPILE)ld
+
+# Always use GNU ld
+LD	= $(shell if $(CROSS_COMPILE)ld.bfd -v > /dev/null 2>&1; \
+		then echo "$(CROSS_COMPILE)ld.bfd"; else echo "$(CROSS_COMPILE)ld"; fi;)
+
 CC	= $(CROSS_COMPILE)gcc
 CPP	= $(CC) -E
 AR	= $(CROSS_COMPILE)ar
@@ -140,6 +151,7 @@ OBJCOPY = $(CROSS_COMPILE)objcopy
 OBJDUMP = $(CROSS_COMPILE)objdump
 RANLIB	= $(CROSS_COMPILE)RANLIB
 DTC	= dtc
+CHECK	= sparse
 
 #########################################################################
 
@@ -199,6 +211,10 @@ endif
 
 ifneq ($(CONFIG_SPL_TEXT_BASE),)
 CPPFLAGS += -DCONFIG_SPL_TEXT_BASE=$(CONFIG_SPL_TEXT_BASE)
+endif
+
+ifneq ($(CONFIG_SPL_PAD_TO),)
+CPPFLAGS += -DCONFIG_SPL_PAD_TO=$(CONFIG_SPL_PAD_TO)
 endif
 
 ifeq ($(CONFIG_SPL_BUILD),y)
@@ -262,6 +278,10 @@ ifneq ($(CONFIG_SPL_TEXT_BASE),)
 LDFLAGS_u-boot-spl += -Ttext $(CONFIG_SPL_TEXT_BASE)
 endif
 
+# Linus' kernel sanity checking tool
+CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
+                  -Wbitwise -Wno-return-void -D__CHECK_ENDIAN__ $(CF)
+
 # Location of a usable BFD library, where we define "usable" as
 # "built for ${HOST}, supports ${TARGET}".  Sensible values are
 # - When cross-compiling: the root of the cross-environment
@@ -309,6 +329,9 @@ $(obj)%.s:	%.S
 $(obj)%.o:	%.S
 	$(CC)  $(ALL_AFLAGS) -o $@ $< -c
 $(obj)%.o:	%.c
+ifneq ($(CHECKSRC),0)
+	$(CHECK) $(CHECKFLAGS) $(ALL_CFLAGS) $<
+endif
 	$(CC)  $(ALL_CFLAGS) -o $@ $< -c
 $(obj)%.i:	%.c
 	$(CPP) $(ALL_CFLAGS) -o $@ $< -c

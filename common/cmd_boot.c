@@ -34,7 +34,8 @@
 
 /* Allow ports to override the default behavior */
 __attribute__((weak))
-unsigned long do_go_exec (ulong (*entry)(int, char * const []), int argc, char * const argv[])
+unsigned long do_go_exec(ulong (*entry)(int, char * const []), int argc,
+				 char * const argv[])
 {
 #ifdef CONFIG_ACP3
 	{
@@ -161,7 +162,7 @@ unsigned long do_go_exec (ulong (*entry)(int, char * const []), int argc, char *
 	return entry (argc, argv);
 }
 
-int do_go (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_go(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ulong	addr, rc;
 	int     rcode = 0;

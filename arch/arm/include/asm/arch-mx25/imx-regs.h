@@ -2,7 +2,7 @@
  * Copyright (C) 2009, DENX Software Engineering
  * Author: John Rigby <jcrigby@gmail.com
  *
- *   Based on arch-mx31/mx31-regs.h
+ *   Based on arch-mx31/imx-regs.h
  *	Copyright (C) 2009 Ilya Yanok,
  *		Emcraft Systems <yanok@emcraft.com>
  *   and arch-mx27/imx-regs.h
@@ -33,10 +33,8 @@
 #ifndef _IMX_REGS_H
 #define _IMX_REGS_H
 
-#ifndef __ASSEMBLY__
-#ifdef CONFIG_FEC_MXC
-extern void mx25_fec_init_pins(void);
-#endif
+#if !(defined(__KERNEL_STRICT_NAMES) || defined(__ASSEMBLY__))
+#include <asm/types.h>
 
 /* Clock Control Module (CCM) registers */
 struct ccm_regs {
@@ -169,6 +167,8 @@ struct aips_regs {
 
 #endif
 
+#define ARCH_MXC
+
 /* AIPS 1 */
 #define IMX_AIPS1_BASE		(0x43F00000)
 #define IMX_MAX_BASE		(0x43F04000)
@@ -241,6 +241,7 @@ struct aips_regs {
 #define IMX_RTIC_BASE		(0x53FEC000)
 #define IMX_IIM_BASE		(0x53FF0000)
 #define IMX_USB_BASE		(0x53FF4000)
+#define IMX_USB_PORT_OFFSET	0x200
 #define IMX_CSI_BASE		(0x53FF8000)
 #define IMX_DRYICE_BASE		(0x53FFC000)
 
@@ -249,6 +250,7 @@ struct aips_regs {
 
 /* 128K Internal Static RAM */
 #define IMX_RAM_BASE		(0x78000000)
+#define IMX_RAM_SIZE		(128 * 1024)
 
 /* SDRAM BANKS */
 #define IMX_SDRAM_BANK0_BASE	(0x80000000)
@@ -352,5 +354,6 @@ struct aips_regs {
 
 #define CHIP_REV_1_0		0x10
 #define CHIP_REV_1_1		0x11
+#define CHIP_REV_1_2		0x12
 
 #endif				/* _IMX_REGS_H */

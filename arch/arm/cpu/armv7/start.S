@@ -33,6 +33,7 @@
 #include <config.h>
 #include <version.h>
 #include <asm/system.h>
+#include <linux/linkage.h>
 
 .globl _start
 _start: b	reset
@@ -132,7 +133,6 @@ reset:
 	orr	r0, r0, #0xd3
 	msr	cpsr,r0
 
-#if !defined(CONFIG_TEGRA2)
 /*
  * Setup vector:
  * (OMAP4 spl TEXT_BASE is not 32 byte aligned.
@@ -148,7 +148,6 @@ reset:
 	ldr	r0, =_start
 	mcr	p15, 0, r0, c12, c0, 0	@Set VBAR
 #endif
-#endif	/* !Tegra2 */
 
 	/* the mask ROM code should have PLL and others stable */
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
@@ -156,15 +155,11 @@ reset:
 	bl	cpu_init_crit
 #endif
 
-/* Set stackpointer in internal RAM to call board_init_f */
-call_board_init_f:
-	ldr	sp, =(CONFIG_SYS_INIT_SP_ADDR)
-	bic	sp, sp, #7 /* 8-byte alignment for ABI compliance */
-	ldr	r0,=0x00000000
-	bl	board_init_f
+	bl	_main
 
 /*------------------------------------------------------------------------------*/
 
+#ifndef CONFIG_SPL_BUILD
 /*
  * void relocate_code (addr_sp, gd, addr_moni)
  *
@@ -172,20 +167,15 @@ call_board_init_f:
  * after relocating the monitor code.
  *
  */
-	.globl	relocate_code
-relocate_code:
+ENTRY(relocate_code)
 	mov	r4, r0	/* save addr_sp */
 	mov	r5, r1	/* save addr of gd */
 	mov	r6, r2	/* save addr of destination */
 
-	/* Set up the stack						    */
-stack_setup:
-	mov	sp, r4
-
 	adr	r0, _start
 	cmp	r0, r6
 	moveq	r9, #0		/* no relocation. relocation offset(r9) = 0 */
-	beq	clear_bss		/* skip relocation */
+	beq	relocate_done		/* skip relocation */
 	mov	r1, r6			/* r1 <- scratch for copy_loop */
 	ldr	r3, _image_copy_end_ofs
 	add	r2, r0, r3		/* r2 <- source end address	    */
@@ -196,7 +186,6 @@ copy_loop:
 	cmp	r0, r2			/* until source end address [r2]    */
 	blo	copy_loop
 
-#ifndef CONFIG_SPL_BUILD
 	/*
 	 * fix .rel.dyn relocations
 	 */
@@ -235,40 +224,22 @@ fixnext:
 	add	r2, r2, #8		/* each rel.dyn entry is 8 bytes */
 	cmp	r2, r3
 	blo	fixloop
-	b	clear_bss
+
+relocate_done:
+
+	bx	lr
+
 _rel_dyn_start_ofs:
 	.word __rel_dyn_start - _start
 _rel_dyn_end_ofs:
 	.word __rel_dyn_end - _start
 _dynsym_start_ofs:
 	.word __dynsym_start - _start
+ENDPROC(relocate_code)
 
-#endif	/* #ifndef CONFIG_SPL_BUILD */
-
-clear_bss:
-#ifdef CONFIG_SPL_BUILD
-	/* No relocation for SPL */
-	ldr	r0, =__bss_start
-	ldr	r1, =__bss_end__
-#else
-	ldr	r0, _bss_start_ofs
-	ldr	r1, _bss_end_ofs
-	mov	r4, r6			/* reloc addr */
-	add	r0, r0, r4
-	add	r1, r1, r4
 #endif
-	mov	r2, #0x00000000		/* clear			    */
 
-clbss_l:str	r2, [r0]		/* clear loop...		    */
-	add	r0, r0, #4
-	cmp	r0, r1
-	bne	clbss_l
-
-/*
- * We are done. Do not return, instead branch to second part of board
- * initialization, now running from RAM.
- */
-jump_2_ram:
+ENTRY(c_runtime_cpu_setup)
 /*
  * If I-cache is enabled invalidate it
  */
@@ -277,18 +248,33 @@ jump_2_ram:
 	mcr     p15, 0, r0, c7, c10, 4	@ DSB
 	mcr     p15, 0, r0, c7, c5, 4	@ ISB
 #endif
-	ldr	r0, _board_init_r_ofs
-	adr	r1, _start
-	add	lr, r0, r1
-	add	lr, lr, r9
-	/* setup parameters for board_init_r */
-	mov	r0, r5		/* gd_t */
-	mov	r1, r6		/* dest_addr */
-	/* jump to it ... */
-	mov	pc, lr
+/*
+ * Move vector table
+ */
+#if !defined(CONFIG_TEGRA20)
+	/* Set vector address in CP15 VBAR register */
+	ldr     r0, =_start
+	add     r0, r0, r9
+	mcr     p15, 0, r0, c12, c0, 0  @Set VBAR
+#endif /* !Tegra20 */
 
-_board_init_r_ofs:
-	.word board_init_r - _start
+	bx	lr
+
+ENDPROC(c_runtime_cpu_setup)
+
+/*************************************************************************
+ *
+ * void save_boot_params(u32 r0, u32 r1, u32 r2, u32 r3)
+ *	__attribute__((weak));
+ *
+ * Stack pointer is not yet initialized at this moment
+ * Don't save anything to stack even if compiled with -O0
+ *
+ *************************************************************************/
+ENTRY(save_boot_params)
+	bx	lr			@ back to my caller
+ENDPROC(save_boot_params)
+	.weak	save_boot_params
 
 /*************************************************************************
  *
@@ -298,8 +284,7 @@ _board_init_r_ofs:
  * CONFIG_SYS_ICACHE_OFF is defined.
  *
  *************************************************************************/
-.globl cpu_init_cp15
-cpu_init_cp15:
+ENTRY(cpu_init_cp15)
 	/*
 	 * Invalidate L1 I/D
 	 */
@@ -325,7 +310,7 @@ cpu_init_cp15:
 #endif
 	mcr	p15, 0, r0, c1, c0, 0
 	mov	pc, lr			@ back to my caller
-
+ENDPROC(cpu_init_cp15)
 
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
 /*************************************************************************
@@ -336,17 +321,15 @@ cpu_init_cp15:
  * setup memory timing
  *
  *************************************************************************/
-cpu_init_crit:
+ENTRY(cpu_init_crit)
 	/*
 	 * Jump to board specific initialization...
 	 * The Mask ROM will have already initialized
 	 * basic memory. Go here to bump up clock rate and handle
 	 * wake up conditions.
 	 */
-	mov	ip, lr			@ persevere link reg across call
-	bl	lowlevel_init		@ go setup pll,mux,memory
-	mov	lr, ip			@ restore link
-	mov	pc, lr			@ back to my caller
+	b	lowlevel_init		@ go setup pll,mux,memory
+ENDPROC(cpu_init_crit)
 #endif
 
 #ifndef CONFIG_SPL_BUILD

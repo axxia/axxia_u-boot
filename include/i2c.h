@@ -250,4 +250,42 @@ static inline void I2C_SET_BUS(unsigned int bus)
 		i2c_set_bus_num(bus);
 }
 
+/* Multi I2C definitions */
+enum {
+	I2C_0, I2C_1, I2C_2, I2C_3, I2C_4, I2C_5, I2C_6, I2C_7,
+	I2C_8, I2C_9, I2C_10,
+};
+
+/* Multi I2C busses handling */
+#ifdef CONFIG_SOFT_I2C_MULTI_BUS
+extern int get_multi_scl_pin(void);
+extern int get_multi_sda_pin(void);
+extern int multi_i2c_init(void);
+#endif
+
+/**
+ * Get FDT values for i2c bus.
+ *
+ * @param blob  Device tree blbo
+ * @return the number of I2C bus
+ */
+void board_i2c_init(const void *blob);
+
+/**
+ * Find the I2C bus number by given a FDT I2C node.
+ *
+ * @param blob  Device tree blbo
+ * @param node  FDT I2C node to find
+ * @return the number of I2C bus (zero based), or -1 on error
+ */
+int i2c_get_bus_num_fdt(int node);
+
+/**
+ * Reset the I2C bus represented by the given a FDT I2C node.
+ *
+ * @param blob  Device tree blbo
+ * @param node  FDT I2C node to find
+ * @return 0 if port was reset, -1 if not found
+ */
+int i2c_reset_port_fdt(const void *blob, int node);
 #endif	/* _I2C_H_ */

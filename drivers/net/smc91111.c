@@ -178,8 +178,6 @@ static void smc_phy_configure(struct eth_device *dev);
  * inx,outx functions fixed this problem.
  */
 
-#define barrier() __asm__ __volatile__("": : :"memory")
-
 static inline word SMC_inw(struct eth_device *dev, dword offset)
 {
 	word v;
@@ -426,8 +424,7 @@ static void smc_halt(struct eth_device *dev)
  .	Enable the transmit interrupt, so I know if it failed
  .	Free the kernel data if I actually sent it.
 */
-static int smc_send(struct eth_device *dev, volatile void *packet,
-	int packet_length)
+static int smc_send(struct eth_device *dev, void *packet, int packet_length)
 {
 	byte packet_no;
 	byte *buf;

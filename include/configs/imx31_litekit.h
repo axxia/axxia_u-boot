@@ -33,7 +33,6 @@
  /* High Level Configuration Options */
 #define CONFIG_ARM1136		1    /* This is an arm1136 CPU core */
 #define CONFIG_MX31		1    /* in a mx31 */
-#define CONFIG_MX31_HCLK_FREQ	26000000
 #define CONFIG_MX31_CLK32	32000
 
 #define CONFIG_DISPLAY_CPUINFO
@@ -73,9 +72,9 @@
 #define CONFIG_DEFAULT_SPI_MODE	(SPI_MODE_0 | SPI_CS_HIGH)
 
 /* PMIC Controller */
-#define CONFIG_PMIC
-#define CONFIG_PMIC_SPI
-#define CONFIG_PMIC_FSL
+#define CONFIG_POWER
+#define CONFIG_POWER_SPI
+#define CONFIG_POWER_FSL
 #define CONFIG_FSL_PMIC_BUS	1
 #define CONFIG_FSL_PMIC_CS	0
 #define CONFIG_FSL_PMIC_CLK	1000000
@@ -87,7 +86,6 @@
 #define CONFIG_ENV_OVERWRITE
 #define CONFIG_CONS_INDEX	1
 #define CONFIG_BAUDRATE		115200
-#define CONFIG_SYS_BAUDRATE_TABLE	{9600, 19200, 38400, 57600, 115200}
 
 /***********************************************************
  * Command definition
@@ -138,13 +136,6 @@
 #define CONFIG_SYS_HZ			1000
 
 #define CONFIG_CMDLINE_EDITING	1
-
-/*-----------------------------------------------------------------------
- * Stack sizes
- *
- * The stack sizes are set up in start.S using the settings below
- */
-#define CONFIG_STACKSIZE	(128 * 1024) /* regular stack */
 
 /*-----------------------------------------------------------------------
  * Physical Memory Map

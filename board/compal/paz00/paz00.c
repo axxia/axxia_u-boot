@@ -16,23 +16,16 @@
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/tegra2.h>
+#include <asm/arch/tegra.h>
 #include <asm/arch/pinmux.h>
-#include <asm/arch/mmc.h>
+#include <asm/arch-tegra/mmc.h>
 #include <asm/gpio.h>
-#ifdef CONFIG_TEGRA2_MMC
+#ifdef CONFIG_TEGRA_MMC
 #include <mmc.h>
 #endif
 
-/*
- * Routine: gpio_config_uart
- * Description: Does nothing on Paz00 - no conflict w/SPI.
- */
-void gpio_config_uart(void)
-{
-}
 
-#ifdef CONFIG_TEGRA2_MMC
+#ifdef CONFIG_TEGRA_MMC
 /*
  * Routine: pin_mux_mmc
  * Description: setup the pin muxes/tristate values for the SDMMC(s)
@@ -48,15 +41,15 @@ static void pin_mux_mmc(void)
 	pinmux_tristate_disable(PINGRP_GMA);
 	pinmux_tristate_disable(PINGRP_GME);
 
-	/* SDMMC1: SDIO1_CLK, SDIO1_CMD, SDIO1_DAT[3:0] */
-	pinmux_set_func(PINGRP_SDMMC1, PMUX_FUNC_SDIO1);
+	/* SDIO1: SDIO1_CLK, SDIO1_CMD, SDIO1_DAT[3:0] */
+	pinmux_set_func(PINGRP_SDIO1, PMUX_FUNC_SDIO1);
 
-	pinmux_tristate_disable(PINGRP_SDMMC1);
+	pinmux_tristate_disable(PINGRP_SDIO1);
 
 	/* For power GPIO PV1 */
 	pinmux_tristate_disable(PINGRP_UAC);
-	/* For CD GPIO PI5 */
-	pinmux_tristate_disable(PINGRP_ATC);
+	/* For CD GPIO PV5 */
+	pinmux_tristate_disable(PINGRP_GPV);
 }
 
 /* this is a weak define that we are overriding */
@@ -68,13 +61,12 @@ int board_mmc_init(bd_t *bd)
 	pin_mux_mmc();
 
 	debug("board_mmc_init: init eMMC\n");
-	/* init dev 0, eMMC chip, with 4-bit bus */
-	/* The board has an 8-bit bus, but 8-bit doesn't work yet */
-	tegra2_mmc_init(0, 4, -1, -1);
+	/* init dev 0, eMMC chip, with 8-bit bus */
+	tegra_mmc_init(0, 8, -1, -1);
 
 	debug("board_mmc_init: init SD slot\n");
 	/* init dev 3, SD slot, with 4-bit bus */
-	tegra2_mmc_init(3, 4, GPIO_PV1, GPIO_PI5);
+	tegra_mmc_init(3, 4, GPIO_PV1, GPIO_PV5);
 
 	return 0;
 }

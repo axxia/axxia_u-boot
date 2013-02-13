@@ -23,26 +23,23 @@
 #include <usb.h>
 
 #include "ehci.h"
-#include "ehci-core.h"
 
 /*
  * Create the appropriate control structures to manage
  * a new EHCI host controller.
  */
-int ehci_hcd_init(void)
+int ehci_hcd_init(int index, struct ehci_hccr **hccr, struct ehci_hcor **hcor)
 {
-	u32 vct_hccr;
-	u32 vct_hcor;
 	int ret;
-       int USB_TXFIFOTHRES, VUSB_HS_TX_BURST;
+	int USB_TXFIFOTHRES, VUSB_HS_TX_BURST;
 	int hwtxbuf, txfulltuning;
 
-      /* Setup GPREG for USB to enable the 6-bit address line */
+	/* Setup GPREG for USB to enable the 6-bit address line */
         writel(0x0, GPREG_USB);
 
-	hccr = (struct ehci_hccr *)(CONFIG_SYS_PPC4XX_USB_ADDR+0x100);
-        hcor = (struct ehci_hcor *)((uint32_t) hccr +
-                HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
+	*hccr = (struct ehci_hccr *)(CONFIG_SYS_PPC4XX_USB_ADDR+0x100);
+        *hcor = (struct ehci_hcor *)((uint32_t) *hccr +
+				     HC_LENGTH(ehci_readl(&(*hccr)->cr_capbase)));
 
 	hwtxbuf = ehci_readl(CONFIG_SYS_PPC4XX_USB_ADDR+0x10);
 	txfulltuning = ehci_readl(CONFIG_SYS_PPC4XX_USB_ADDR+0x164);
@@ -61,7 +58,7 @@ int ehci_hcd_init(void)
  * Destroy the appropriate control structures corresponding
  * the the EHCI host controller.
  */
-int ehci_hcd_stop(void)
+int ehci_hcd_stop(int index)
 {
 	return 0;
 }

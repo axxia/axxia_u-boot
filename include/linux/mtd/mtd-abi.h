@@ -8,8 +8,10 @@
 #define __MTD_ABI_H__
 
 #if 1
-#include <linux/mtd/compat.h>
+#include <linux/compat.h>
 #endif
+
+#include <linux/compiler.h>
 
 struct erase_info_user {
 	uint32_t start;

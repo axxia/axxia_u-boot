@@ -19,8 +19,9 @@
 #ifndef __AM33XX_HARDWARE_H
 #define __AM33XX_HARDWARE_H
 
+#include <asm/arch/omap.h>
+
 /* Module base addresses */
-#define LOW_LEVEL_SRAM_STACK		0x4030B7FC
 #define UART0_BASE			0x44E09000
 
 /* DM Timer base addresses */
@@ -46,6 +47,7 @@
 
 /* Control Module Base Address */
 #define CTRL_BASE			0x44E10000
+#define CTRL_DEVICE_BASE		0x44E10600
 
 /* PRCM Base Address */
 #define PRCM_BASE			0x44E00000
@@ -53,13 +55,13 @@
 /* EMIF Base address */
 #define EMIF4_0_CFG_BASE		0x4C000000
 #define EMIF4_1_CFG_BASE		0x4D000000
-#define DMM_BASE			0x4E000000
 
 /* PLL related registers */
 #define CM_PER				0x44E00000
 #define CM_WKUP				0x44E00400
 #define CM_DPLL				0x44E00500
 #define CM_DEVICE			0x44E00700
+#define CM_RTC				0x44E00800
 #define CM_CEFUSE			0x44E00A00
 #define PRM_DEVICE			0x44E00F00
 
@@ -77,5 +79,19 @@
 
 #define DDRPHY_0_CONFIG_BASE		(CTRL_BASE + 0x1400)
 #define DDRPHY_CONFIG_BASE		DDRPHY_0_CONFIG_BASE
+
+/* GPMC Base address */
+#define GPMC_BASE			0x50000000
+
+/* CPSW Config space */
+#define AM335X_CPSW_BASE		0x4A100000
+#define AM335X_CPSW_MDIO_BASE		0x4A101000
+
+/* RTC base address */
+#define AM335X_RTC_BASE			0x44E3E000
+
+/* OTG */
+#define AM335X_USB0_OTG_BASE		0x47401000
+#define AM335X_USB1_OTG_BASE		0x47401800
 
 #endif /* __AM33XX_HARDWARE_H */

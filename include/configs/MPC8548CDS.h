@@ -189,8 +189,7 @@ extern unsigned long get_clock_freq(void);
 #endif
 
 #define CONFIG_SYS_BR0_PRELIM \
-	(BR_PHYS_ADDR((CONFIG_SYS_FLASH_BASE_PHYS + 0x800000)) \
-	| BR_PS_16 | BR_V)
+	(BR_PHYS_ADDR(CONFIG_SYS_FLASH_BASE_PHYS + 0x800000) | BR_PS_16 | BR_V)
 #define CONFIG_SYS_BR1_PRELIM \
 	(BR_PHYS_ADDR(CONFIG_SYS_FLASH_BASE_PHYS) | BR_PS_16 | BR_V)
 
@@ -349,9 +348,6 @@ extern unsigned long get_clock_freq(void);
 
 /* Use the HUSH parser */
 #define CONFIG_SYS_HUSH_PARSER
-#ifdef	CONFIG_SYS_HUSH_PARSER
-#define CONFIG_SYS_PROMPT_HUSH_PS2 "> "
-#endif
 
 /* pass open firmware flat tree */
 #define CONFIG_OF_LIBFDT		1
@@ -597,13 +593,18 @@ extern unsigned long get_clock_freq(void);
 #define	CONFIG_EXTRA_ENV_SETTINGS		\
 	"hwconfig=fsl_ddr:ecc=off\0"		\
 	"netdev=eth0\0"				\
-	"uboot=" MK_STR(CONFIG_UBOOTPATH) "\0"	\
+	"uboot=" __stringify(CONFIG_UBOOTPATH) "\0"	\
 	"tftpflash=tftpboot $loadaddr $uboot; "	\
-		"protect off " MK_STR(CONFIG_SYS_TEXT_BASE) " +$filesize; "   \
-		"erase " MK_STR(CONFIG_SYS_TEXT_BASE) " +$filesize; "	      \
-		"cp.b $loadaddr " MK_STR(CONFIG_SYS_TEXT_BASE) " $filesize; " \
-		"protect on " MK_STR(CONFIG_SYS_TEXT_BASE) " +$filesize; "    \
-		"cmp.b $loadaddr " MK_STR(CONFIG_SYS_TEXT_BASE) " $filesize\0"\
+		"protect off " __stringify(CONFIG_SYS_TEXT_BASE)	\
+			" +$filesize; "	\
+		"erase " __stringify(CONFIG_SYS_TEXT_BASE)		\
+			" +$filesize; "	\
+		"cp.b $loadaddr " __stringify(CONFIG_SYS_TEXT_BASE)	\
+			" $filesize; "	\
+		"protect on " __stringify(CONFIG_SYS_TEXT_BASE)		\
+			" +$filesize; "	\
+		"cmp.b $loadaddr " __stringify(CONFIG_SYS_TEXT_BASE)	\
+			" $filesize\0"	\
 	"consoledev=ttyS1\0"			\
 	"ramdiskaddr=2000000\0"			\
 	"ramdiskfile=ramdisk.uboot\0"		\

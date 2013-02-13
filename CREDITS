@@ -79,11 +79,6 @@ N: Oliver Brown
 E: obrown@adventnetworks.com
 D: Port to the gw8260 board
 
-N: Curt Brune
-E: curt@cucy.com
-D: Added support for Samsung S3C4510B CPU (ARM7tdmi based SoC)
-W: http://www.cucy.com
-
 N: Jonathan De Bruyne
 E: jonathan.debruyne@siemens.atea.be
 D: Port to Siemens IAD210 board
@@ -427,6 +422,11 @@ N: Art Shipkowski
 E: art@videon-central.com
 D: Support for NetSilicon NS7520
 D: Support for ColdFire MCF5275
+
+N: Jeremy C. Andrus
+E: jeremy@jeremya.com
+D: ColdFire MCF5249 initialization code
+W: jeremya.com
 
 N: Michal Simek
 E: monstr@monstr.eu

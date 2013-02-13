@@ -27,11 +27,14 @@
 #include <asm/errno.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/crm_regs.h>
+#include <asm/arch/clock.h>
 #include <asm/arch/mx35_pins.h>
 #include <asm/arch/iomux.h>
 #include <i2c.h>
-#include <pmic.h>
+#include <power/pmic.h>
 #include <fsl_pmic.h>
+#include <mmc.h>
+#include <fsl_esdhc.h>
 #include <mc9sdz60.h>
 #include <mc13892.h>
 #include <linux/types.h>
@@ -93,6 +96,26 @@ static void setup_iomux_spi(void)
 	mxc_request_iomux(MX35_PIN_CSPI1_SS0, MUX_CONFIG_SION);
 	mxc_request_iomux(MX35_PIN_CSPI1_SS1, MUX_CONFIG_SION);
 	mxc_request_iomux(MX35_PIN_CSPI1_SCLK, MUX_CONFIG_SION);
+}
+
+static void setup_iomux_usbotg(void)
+{
+	int in_pad, out_pad;
+
+	/* Set up pins for USBOTG. */
+	mxc_request_iomux(MX35_PIN_USBOTG_PWR,
+			  MUX_CONFIG_SION | MUX_CONFIG_FUNC);
+	mxc_request_iomux(MX35_PIN_USBOTG_OC,
+			  MUX_CONFIG_SION | MUX_CONFIG_FUNC);
+
+	in_pad = PAD_CTL_DRV_3_3V | PAD_CTL_HYS_SCHMITZ | PAD_CTL_PKE_ENABLE |
+		PAD_CTL_PUE_PUD | PAD_CTL_100K_PD | PAD_CTL_ODE_CMOS |
+		PAD_CTL_DRV_NORMAL | PAD_CTL_SRE_SLOW;
+	out_pad = PAD_CTL_DRV_3_3V | PAD_CTL_HYS_CMOS | PAD_CTL_PKE_NONE |
+		PAD_CTL_ODE_CMOS | PAD_CTL_DRV_NORMAL | PAD_CTL_SRE_SLOW;
+
+	mxc_iomux_set_pad(MX35_PIN_USBOTG_PWR, out_pad);
+	mxc_iomux_set_pad(MX35_PIN_USBOTG_OC, in_pad);
 }
 
 static void setup_iomux_fec(void)
@@ -168,7 +191,7 @@ int board_early_init_f(void)
 	/* enable clocks */
 	writel(readl(&ccm->cgr0) |
 		MXC_CCM_CGR0_EMI_MASK |
-		MXC_CCM_CGR0_EDI0_MASK |
+		MXC_CCM_CGR0_EDIO_MASK |
 		MXC_CCM_CGR0_EPIT1_MASK,
 		&ccm->cgr0);
 
@@ -186,6 +209,7 @@ int board_early_init_f(void)
 	__raw_writel(readl(&ccm->rcsr) | MXC_CCM_RCSR_NFC_FMS, &ccm->rcsr);
 
 	setup_iomux_i2c();
+	setup_iomux_usbotg();
 	setup_iomux_fec();
 	setup_iomux_spi();
 
@@ -204,7 +228,9 @@ int board_init(void)
 static inline int pmic_detect(void)
 {
 	unsigned int id;
-	struct pmic *p = get_pmic();
+	struct pmic *p = pmic_get("FSL_PMIC");
+	if (!p)
+		return -ENODEV;
 
 	pmic_reg_read(p, REG_IDENTIFICATION, &id);
 
@@ -228,10 +254,14 @@ int board_late_init(void)
 	u8 val;
 	u32 pmic_val;
 	struct pmic *p;
+	int ret;
 
-	pmic_init();
+	ret = pmic_init(I2C_PMIC);
+	if (ret)
+		return ret;
+
 	if (pmic_detect()) {
-		p = get_pmic();
+		p = pmic_get("FSL_PMIC");
 		mxc_request_iomux(MX35_PIN_WATCHDOG_RST, MUX_CONFIG_SION |
 					MUX_CONFIG_ALT1);
 
@@ -244,7 +274,7 @@ int board_late_init(void)
 		mxc_request_iomux(MX35_PIN_COMPARE, MUX_CONFIG_GPIO);
 		mxc_iomux_set_input(MUX_IN_GPIO1_IN_5, INPUT_CTL_PATH0);
 
-		gpio_direction_output(37, 1);
+		gpio_direction_output(IMX_GPIO_NR(2, 5), 1);
 	}
 
 	val = mc9sdz60_reg_read(MC9SDZ60_REG_GPIO_1) | 0x04;
@@ -275,3 +305,27 @@ int board_eth_init(bd_t *bis)
 
 	return rc;
 }
+
+#if defined(CONFIG_FSL_ESDHC)
+
+struct fsl_esdhc_cfg esdhc_cfg = {MMC_SDHC1_BASE_ADDR};
+
+int board_mmc_init(bd_t *bis)
+{
+	/* configure pins for SDHC1 only */
+	mxc_request_iomux(MX35_PIN_SD1_CMD, MUX_CONFIG_FUNC);
+	mxc_request_iomux(MX35_PIN_SD1_CLK, MUX_CONFIG_FUNC);
+	mxc_request_iomux(MX35_PIN_SD1_DATA0, MUX_CONFIG_FUNC);
+	mxc_request_iomux(MX35_PIN_SD1_DATA1, MUX_CONFIG_FUNC);
+	mxc_request_iomux(MX35_PIN_SD1_DATA2, MUX_CONFIG_FUNC);
+	mxc_request_iomux(MX35_PIN_SD1_DATA3, MUX_CONFIG_FUNC);
+
+	esdhc_cfg.sdhc_clk = mxc_get_clock(MXC_ESDHC1_CLK);
+	return fsl_esdhc_initialize(bis, &esdhc_cfg);
+}
+
+int board_mmc_getcd(struct mmc *mmc)
+{
+	return !(mc9sdz60_reg_read(MC9SDZ60_REG_DES_FLAG) & 0x4);
+}
+#endif

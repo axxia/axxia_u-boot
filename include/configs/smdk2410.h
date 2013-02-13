@@ -45,8 +45,6 @@
 /* input clock of PLL (the SMDK2410 has 12MHz input clock) */
 #define CONFIG_SYS_CLK_FREQ	12000000
 
-#undef CONFIG_USE_IRQ		/* we don't need IRQ/FIQ stuff */
-
 #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
 #define CONFIG_SETUP_MEMORY_TAGS
 #define CONFIG_INITRD_TAG
@@ -68,6 +66,7 @@
  * USB support (currently only works with D-cache off)
  ************************************************************/
 #define CONFIG_USB_OHCI
+#define CONFIG_USB_OHCI_S3C24XX
 #define CONFIG_USB_KEYBOARD
 #define CONFIG_USB_STORAGE
 #define CONFIG_DOS_PARTITION
@@ -104,7 +103,6 @@
 #define CONFIG_CMD_USB
 
 #define CONFIG_SYS_HUSH_PARSER
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_CMDLINE_EDITING
 
 /* autoboot */
@@ -144,24 +142,10 @@
 
 #define CONFIG_SYS_HZ			1000
 
-/* valid baudrates */
-#define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
-
 /* support additional compression methods */
 #define CONFIG_BZIP2
 #define CONFIG_LZO
 #define CONFIG_LZMA
-
-/*-----------------------------------------------------------------------
- * Stack sizes
- *
- * The stack sizes are set up in start.S using the settings below
- */
-#define CONFIG_STACKSIZE	(128*1024)	/* regular stack */
-#ifdef CONFIG_USE_IRQ
-#define CONFIG_STACKSIZE_IRQ	(4*1024)	/* IRQ stack */
-#define CONFIG_STACKSIZE_FIQ	(4*1024)	/* FIQ stack */
-#endif
 
 /*-----------------------------------------------------------------------
  * Physical Memory Map

@@ -28,12 +28,13 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/mx5x_pins.h>
 #include <asm/arch/crm_regs.h>
+#include <asm/arch/clock.h>
 #include <asm/arch/iomux.h>
 #include <asm/gpio.h>
 #include <asm/arch/sys_proto.h>
 #include <i2c.h>
 #include <mmc.h>
-#include <pmic.h>
+#include <power/pmic.h>
 #include <fsl_esdhc.h>
 #include <fsl_pmic.h>
 #include <mc13892.h>
@@ -43,7 +44,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-static struct fb_videomode nec_nl6448bc26_09c = {
+static struct fb_videomode const nec_nl6448bc26_09c = {
 	"NEC_NL6448BC26-09C",
 	60,	/* Refresh */
 	640,	/* xres */
@@ -305,9 +306,15 @@ static void power_init_mx51(void)
 {
 	unsigned int val;
 	struct pmic *p;
+	int ret;
 
-	pmic_init();
-	p = get_pmic();
+	ret = pmic_init(I2C_PMIC);
+	if (ret)
+		return;
+
+	p = pmic_get("FSL_PMIC");
+	if (!p)
+		return;
 
 	/* Write needed to Power Gate 2 register */
 	pmic_reg_read(p, REG_POWER_MISC, &val);
@@ -521,7 +528,7 @@ static void setup_fec(void)
 }
 
 struct fsl_esdhc_cfg esdhc_cfg[1] = {
-	{MMC_SDHC1_BASE_ADDR, 1},
+	{MMC_SDHC1_BASE_ADDR},
 };
 
 int get_mmc_getcd(u8 *cd, struct mmc *mmc)
@@ -590,6 +597,7 @@ int board_mmc_init(bd_t *bis)
 	mxc_iomux_set_pad(MX51_PIN_GPIO1_1,
 		PAD_CTL_HYS_ENABLE);
 
+	esdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK);
 	return fsl_esdhc_initialize(bis, &esdhc_cfg[0]);
 }
 #endif
@@ -604,7 +612,7 @@ void lcd_enable(void)
 	gpio_set_value(2, 1);
 	mxc_request_iomux(MX51_PIN_GPIO1_2, IOMUX_CONFIG_ALT0);
 
-	ret = mx51_fb_init(&nec_nl6448bc26_09c, 0, IPU_PIX_FMT_RGB666);
+	ret = ipuv3_fb_init(&nec_nl6448bc26_09c, 0, IPU_PIX_FMT_RGB666);
 	if (ret)
 		puts("LCD cannot be configured\n");
 }
@@ -674,9 +682,16 @@ int board_late_init(void)
 	udelay(2000);
 #endif
 
-	setenv("stdout", "serial");
-
 	return 0;
+}
+
+/*
+ * Do not overwrite the console
+ * Use always serial for U-Boot console
+ */
+int overwrite_console(void)
+{
+	return 1;
 }
 
 int checkboard(void)

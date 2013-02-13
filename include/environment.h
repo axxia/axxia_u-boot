@@ -96,15 +96,6 @@ extern unsigned long nand_env_oob_offset;
 # endif
 #endif /* CONFIG_ENV_IS_IN_NAND */
 
-#if defined(CONFIG_ENV_IS_IN_MG_DISK)
-# ifndef CONFIG_ENV_ADDR
-#  error "Need to define CONFIG_ENV_ADDR when using CONFIG_ENV_IS_IN_MG_DISK"
-# endif
-# ifndef CONFIG_ENV_SIZE
-#  error "Need to define CONFIG_ENV_SIZE when using CONFIG_ENV_IS_IN_MG_DISK"
-# endif
-#endif /* CONFIG_ENV_IS_IN_MG_DISK */
-
 /* Embedded env is only supported for some flash types */
 #ifdef CONFIG_ENV_IS_EMBEDDED
 # if	!defined(CONFIG_ENV_IS_IN_FLASH)	&& \
@@ -173,6 +164,9 @@ extern void env_reloc(void);
 
 #ifndef DO_DEPS_ONLY
 
+#include <env_attr.h>
+#include <env_callback.h>
+#include <env_flags.h>
 #include <search.h>
 
 extern struct hsearch_data env_htab;
@@ -187,8 +181,14 @@ unsigned char env_get_char_memory(int index);
 /* Function that updates CRC of the enironment */
 void env_crc_update(void);
 
+/* Look up the variable from the default environment */
+char *getenv_default(const char *name);
+
 /* [re]set to the default environment */
 void set_default_env(const char *s);
+
+/* [re]set individual variables to their value in the default environment */
+int set_default_vars(int nvars, char * const vars[]);
 
 /* Import from binary representation into hash table */
 int env_import(const char *buf, int check);

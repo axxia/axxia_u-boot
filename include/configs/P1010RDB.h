@@ -181,7 +181,7 @@
 
 /* DDR Setup */
 #define CONFIG_FSL_DDR3
-#define CONFIG_DDR_RAW_TIMING
+#define CONFIG_SYS_DDR_RAW_TIMING
 #define CONFIG_DDR_SPD
 #define CONFIG_SYS_SPD_BUS_NUM		1
 #define SPD_EEPROM_ADDRESS		0x52
@@ -453,7 +453,6 @@ extern unsigned long get_sdram_size(void);
 #define CONFIG_NS16550_MIN_FUNCTIONS
 #endif
 
-#define CONFIG_SERIAL_MULTI		/* Enable both serial ports */
 #define CONFIG_SYS_CONSOLE_IS_IN_ENV	/* determine from environment */
 
 #define CONFIG_SYS_BAUDRATE_TABLE	\
@@ -464,9 +463,6 @@ extern unsigned long get_sdram_size(void);
 
 /* Use the HUSH parser */
 #define CONFIG_SYS_HUSH_PARSER
-#ifdef	CONFIG_SYS_HUSH_PARSER
-#define CONFIG_SYS_PROMPT_HUSH_PS2 "> "
-#endif
 
 /*
  * Pass open firmware flat tree
@@ -557,6 +553,7 @@ extern unsigned long get_sdram_size(void);
 
 /* SATA */
 #define CONFIG_FSL_SATA
+#define CONFIG_FSL_SATA_V2
 #define CONFIG_LIBATA
 
 #ifdef CONFIG_FSL_SATA
@@ -729,9 +726,9 @@ extern unsigned long get_sdram_size(void);
 #define CONFIG_BAUDRATE		115200
 
 #define	CONFIG_EXTRA_ENV_SETTINGS				\
-	"hwconfig=" MK_STR(CONFIG_DEF_HWCONFIG)  "\0"	\
+	"hwconfig=" __stringify(CONFIG_DEF_HWCONFIG)  "\0"	\
 	"netdev=eth0\0"						\
-	"uboot=" MK_STR(CONFIG_UBOOTPATH) "\0"				\
+	"uboot=" __stringify(CONFIG_UBOOTPATH) "\0"		\
 	"loadaddr=1000000\0"			\
 	"consoledev=ttyS0\0"				\
 	"ramdiskaddr=2000000\0"			\

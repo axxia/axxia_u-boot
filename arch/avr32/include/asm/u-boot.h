@@ -23,8 +23,7 @@
 #define __ASM_U_BOOT_H__ 1
 
 typedef struct bd_info {
-	unsigned long		bi_baudrate;
-	unsigned long		bi_ip_addr;
+	unsigned int		bi_baudrate;
 	unsigned char		bi_phy_id[4];
 	unsigned long		bi_board_number;
 	void			*bi_boot_params;

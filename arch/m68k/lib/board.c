@@ -29,6 +29,7 @@
 #include <command.h>
 #include <malloc.h>
 #include <stdio_dev.h>
+#include <linux/compiler.h>
 
 #include <asm/immap.h>
 
@@ -387,9 +388,8 @@ board_init_f (ulong bootflag)
  */
 void board_init_r (gd_t *id, ulong dest_addr)
 {
-	char *s;
+	char *s __maybe_unused;
 	bd_t *bd;
-	extern void malloc_bin_reloc (void);
 
 #ifndef CONFIG_ENV_IS_NOWHERE
 	extern char * env_name_spec;
@@ -402,15 +402,13 @@ void board_init_r (gd_t *id, ulong dest_addr)
 
 	gd->flags |= GD_FLG_RELOC;	/* tell others: relocation done */
 
-#ifdef CONFIG_SERIAL_MULTI
-	serial_initialize();
-#endif
-
 	debug ("Now running in RAM - U-Boot at: %08lx\n", dest_addr);
 
 	WATCHDOG_RESET ();
 
 	gd->reloc_off =  dest_addr - CONFIG_SYS_MONITOR_BASE;
+
+	serial_initialize();
 
 	monitor_flash_len = (ulong)&__init_end - dest_addr;
 
@@ -418,8 +416,8 @@ void board_init_r (gd_t *id, ulong dest_addr)
 	/*
 	 * We have to relocate the command table manually
 	 */
-	fixup_cmdtable(&__u_boot_cmd_start,
-		(ulong)(&__u_boot_cmd_end - &__u_boot_cmd_start));
+	fixup_cmdtable(ll_entry_start(cmd_tbl_t, cmd),
+			ll_entry_count(cmd_tbl_t, cmd));
 #endif /* defined(CONFIG_NEEDS_MANUAL_RELOC) */
 
 	/* there are some other pointer constants we must deal with */
@@ -464,8 +462,7 @@ void board_init_r (gd_t *id, ulong dest_addr)
 		 *
 		 * NOTE: Maybe we should add some WATCHDOG_RESET()? XXX
 		 */
-		s = getenv ("flashchecksum");
-		if (s && (*s == 'y')) {
+		if (getenv_yesno("flashchecksum") == 1) {
 			printf ("  CRC: %08X",
 					crc32 (0,
 						   (const unsigned char *) CONFIG_SYS_FLASH_BASE,
@@ -506,15 +503,6 @@ void board_init_r (gd_t *id, ulong dest_addr)
 
 	/* relocate environment function pointers etc. */
 	env_relocate ();
-
-	/*
-	 * Fill in missing fields of bd_info.
-	 * We do this here, where we have "normal" access to the
-	 * environment; we used to do this still running from ROM,
-	 * where had to use getenv_f(), which can be pretty slow when
-	 * the environment is in EEPROM.
-	 */
-	bd->bi_ip_addr = getenv_IPaddr ("ipaddr");
 
 	WATCHDOG_RESET ();
 
@@ -568,11 +556,6 @@ void board_init_r (gd_t *id, ulong dest_addr)
 
 	/* Initialize from environment */
 	load_addr = getenv_ulong("loadaddr", 16, load_addr);
-#if defined(CONFIG_CMD_NET)
-	if ((s = getenv ("bootfile")) != NULL) {
-		copy_filename (BootFile, s, sizeof (BootFile));
-	}
-#endif
 
 	WATCHDOG_RESET ();
 

@@ -91,7 +91,7 @@ int cpu_mmc_init(bd_t *bis)
 {
 	int rc = 0;
 #ifdef CONFIG_ARM_PL180_MMCI
-	rc = arm_pl180_mmci_init();
+	/*rc = arm_pl180_mmci_init();*/
 #endif
 	return rc;
 }

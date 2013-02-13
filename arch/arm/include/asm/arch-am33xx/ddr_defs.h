@@ -20,158 +20,105 @@
 #define _DDR_DEFS_H
 
 #include <asm/arch/hardware.h>
+#include <asm/emif.h>
 
 /* AM335X EMIF Register values */
-#define EMIF_SDMGT		0x80000000
-#define EMIF_SDRAM		0x00004650
-#define EMIF_PHYCFG		0x2
-#define DDR_PHY_RESET		(0x1 << 10)
-#define DDR_FUNCTIONAL_MODE_EN	0x1
-#define DDR_PHY_READY		(0x1 << 2)
 #define VTP_CTRL_READY		(0x1 << 5)
 #define VTP_CTRL_ENABLE		(0x1 << 6)
-#define VTP_CTRL_LOCK_EN	(0x1 << 4)
 #define VTP_CTRL_START_EN	(0x1)
-#define DDR2_RATIO		0x80
-#define CMD_FORCE		0x00
-#define CMD_DELAY		0x00
-
-#define EMIF_READ_LATENCY	0x05
-#define EMIF_TIM1		0x0666B3D6
-#define EMIF_TIM2		0x143731DA
-#define EMIF_TIM3		0x00000347
-#define EMIF_SDCFG		0x43805332
-#define EMIF_SDREF		0x0000081a
-#define DDR2_DLL_LOCK_DIFF	0x0
-#define DDR2_RD_DQS		0x12
-#define DDR2_PHY_FIFO_WE	0x80
-
-#define DDR2_INVERT_CLKOUT	0x00
-#define DDR2_WR_DQS		0x00
-#define DDR2_PHY_WRLVL		0x00
-#define DDR2_PHY_GATELVL	0x00
-#define DDR2_PHY_WR_DATA	0x40
-#define PHY_RANK0_DELAY		0x01
 #define PHY_DLL_LOCK_DIFF	0x0
-#define DDR_IOCTRL_VALUE	0x18B
+#define DDR_CKE_CTRL_NORMAL	0x1
 
-/**
- * This structure represents the EMIF registers on AM33XX devices.
- */
-struct emif_regs {
-	unsigned int sdrrev;		/* offset 0x00 */
-	unsigned int sdrstat;		/* offset 0x04 */
-	unsigned int sdrcr;		/* offset 0x08 */
-	unsigned int sdrcr2;		/* offset 0x0C */
-	unsigned int sdrrcr;		/* offset 0x10 */
-	unsigned int sdrrcsr;		/* offset 0x14 */
-	unsigned int sdrtim1;		/* offset 0x18 */
-	unsigned int sdrtim1sr;		/* offset 0x1C */
-	unsigned int sdrtim2;		/* offset 0x20 */
-	unsigned int sdrtim2sr;		/* offset 0x24 */
-	unsigned int sdrtim3;		/* offset 0x28 */
-	unsigned int sdrtim3sr;		/* offset 0x2C */
-	unsigned int res1[2];
-	unsigned int sdrmcr;		/* offset 0x38 */
-	unsigned int sdrmcsr;		/* offset 0x3C */
-	unsigned int res2[8];
-	unsigned int sdritr;		/* offset 0x60 */
-	unsigned int res3[32];
-	unsigned int ddrphycr;		/* offset 0xE4 */
-	unsigned int ddrphycsr;		/* offset 0xE8 */
-	unsigned int ddrphycr2;		/* offset 0xEC */
-};
+/* Micron MT47H128M16RT-25E */
+#define MT47H128M16RT25E_EMIF_READ_LATENCY	0x100005
+#define MT47H128M16RT25E_EMIF_TIM1		0x0666B3C9
+#define MT47H128M16RT25E_EMIF_TIM2		0x243631CA
+#define MT47H128M16RT25E_EMIF_TIM3		0x0000033F
+#define MT47H128M16RT25E_EMIF_SDCFG		0x41805332
+#define MT47H128M16RT25E_EMIF_SDREF		0x0000081a
+#define MT47H128M16RT25E_DLL_LOCK_DIFF		0x0
+#define MT47H128M16RT25E_RATIO			0x80
+#define MT47H128M16RT25E_INVERT_CLKOUT		0x00
+#define MT47H128M16RT25E_RD_DQS			0x12
+#define MT47H128M16RT25E_WR_DQS			0x00
+#define MT47H128M16RT25E_PHY_WRLVL		0x00
+#define MT47H128M16RT25E_PHY_GATELVL		0x00
+#define MT47H128M16RT25E_PHY_WR_DATA		0x40
+#define MT47H128M16RT25E_PHY_FIFO_WE		0x80
+#define MT47H128M16RT25E_PHY_RANK0_DELAY		0x1
+#define MT47H128M16RT25E_IOCTRL_VALUE		0x18B
 
-/**
- * Encapsulates DDR PHY control and corresponding shadow registers.
- */
-struct ddr_phy_control {
-	unsigned long	reg;
-	unsigned long	reg_sh;
-	unsigned long	reg2;
-};
-
-/**
- * Encapsulates SDRAM timing and corresponding shadow registers.
- */
-struct sdram_timing {
-	unsigned long	time1;
-	unsigned long	time1_sh;
-	unsigned long	time2;
-	unsigned long	time2_sh;
-	unsigned long	time3;
-	unsigned long	time3_sh;
-};
-
-/**
- * Encapsulates SDRAM configuration.
- * (Includes refresh control registers)  */
-struct sdram_config {
-	unsigned long	sdrcr;
-	unsigned long	sdrcr2;
-	unsigned long	refresh;
-	unsigned long	refresh_sh;
-};
+/* Micron MT41J128M16JT-125 */
+#define MT41J128MJT125_EMIF_READ_LATENCY	0x06
+#define MT41J128MJT125_EMIF_TIM1		0x0888A39B
+#define MT41J128MJT125_EMIF_TIM2		0x26337FDA
+#define MT41J128MJT125_EMIF_TIM3		0x501F830F
+#define MT41J128MJT125_EMIF_SDCFG		0x61C04AB2
+#define MT41J128MJT125_EMIF_SDREF		0x0000093B
+#define MT41J128MJT125_ZQ_CFG			0x50074BE4
+#define MT41J128MJT125_DLL_LOCK_DIFF		0x1
+#define MT41J128MJT125_RATIO			0x40
+#define MT41J128MJT125_INVERT_CLKOUT		0x1
+#define MT41J128MJT125_RD_DQS			0x3B
+#define MT41J128MJT125_WR_DQS			0x85
+#define MT41J128MJT125_PHY_WR_DATA		0xC1
+#define MT41J128MJT125_PHY_FIFO_WE		0x100
+#define MT41J128MJT125_IOCTRL_VALUE		0x18B
 
 /**
  * Configure SDRAM
  */
-int config_sdram(struct sdram_config *cfg);
+void config_sdram(const struct emif_regs *regs);
 
 /**
  * Set SDRAM timings
  */
-int set_sdram_timings(struct sdram_timing *val);
+void set_sdram_timings(const struct emif_regs *regs);
 
 /**
  * Configure DDR PHY
  */
-int config_ddr_phy(struct ddr_phy_control *cfg);
+void config_ddr_phy(const struct emif_regs *regs);
 
 /**
  * This structure represents the DDR registers on AM33XX devices.
+ * We make use of DDR_PHY_BASE_ADDR2 to address the DATA1 registers that
+ * correspond to DATA1 registers defined here.
  */
 struct ddr_regs {
 	unsigned int resv0[7];
 	unsigned int cm0csratio;	/* offset 0x01C */
-	unsigned int cm0csforce;	/* offset 0x020 */
-	unsigned int cm0csdelay;	/* offset 0x024 */
+	unsigned int resv1[2];
 	unsigned int cm0dldiff;		/* offset 0x028 */
 	unsigned int cm0iclkout;	/* offset 0x02C */
-	unsigned int resv1[8];
+	unsigned int resv2[8];
 	unsigned int cm1csratio;	/* offset 0x050 */
-	unsigned int cm1csforce;	/* offset 0x054 */
-	unsigned int cm1csdelay;	/* offset 0x058 */
+	unsigned int resv3[2];
 	unsigned int cm1dldiff;		/* offset 0x05C */
 	unsigned int cm1iclkout;	/* offset 0x060 */
-	unsigned int resv2[8];
+	unsigned int resv4[8];
 	unsigned int cm2csratio;	/* offset 0x084 */
-	unsigned int cm2csforce;	/* offset 0x088 */
-	unsigned int cm2csdelay;	/* offset 0x08C */
+	unsigned int resv5[2];
 	unsigned int cm2dldiff;		/* offset 0x090 */
 	unsigned int cm2iclkout;	/* offset 0x094 */
-	unsigned int resv3[12];
+	unsigned int resv6[12];
 	unsigned int dt0rdsratio0;	/* offset 0x0C8 */
-	unsigned int dt0rdsratio1;	/* offset 0x0CC */
-	unsigned int resv4[3];
-	unsigned int dt0wdsratio0;	/* offset 0x0DC */
-	unsigned int dt0wdsratio1;	/* offset 0x0E0 */
-	unsigned int resv5[3];
-	unsigned int dt0wiratio0;	/* offset 0x0F0 */
-	unsigned int dt0wiratio1;	/* offset 0x0F4 */
-	unsigned int dt0giratio0;	/* offset 0x0FC */
-	unsigned int dt0giratio1;	/* offset 0x100 */
-	unsigned int resv6[1];
-	unsigned int dt0fwsratio0;	/* offset 0x108 */
-	unsigned int dt0fwsratio1;	/* offset 0x10C */
 	unsigned int resv7[4];
+	unsigned int dt0wdsratio0;	/* offset 0x0DC */
+	unsigned int resv8[4];
+	unsigned int dt0wiratio0;	/* offset 0x0F0 */
+	unsigned int resv9;
+	unsigned int dt0wimode0;	/* offset 0x0F8 */
+	unsigned int dt0giratio0;	/* offset 0x0FC */
+	unsigned int resv10;
+	unsigned int dt0gimode0;	/* offset 0x104 */
+	unsigned int dt0fwsratio0;	/* offset 0x108 */
+	unsigned int resv11[4];
+	unsigned int dt0dqoffset;	/* offset 0x11C */
 	unsigned int dt0wrsratio0;	/* offset 0x120 */
-	unsigned int dt0wrsratio1;	/* offset 0x124 */
-	unsigned int resv8[3];
+	unsigned int resv12[4];
 	unsigned int dt0rdelays0;	/* offset 0x134 */
 	unsigned int dt0dldiff0;	/* offset 0x138 */
-	unsigned int resv9[39];
-	unsigned int dt1rdelays0;	/* offset 0x1D8 */
 };
 
 /**
@@ -200,29 +147,24 @@ struct cmd_control {
  */
 struct ddr_data {
 	unsigned long datardsratio0;
-	unsigned long datardsratio1;
 	unsigned long datawdsratio0;
-	unsigned long datawdsratio1;
 	unsigned long datawiratio0;
-	unsigned long datawiratio1;
 	unsigned long datagiratio0;
-	unsigned long datagiratio1;
 	unsigned long datafwsratio0;
-	unsigned long datafwsratio1;
 	unsigned long datawrsratio0;
-	unsigned long datawrsratio1;
+	unsigned long datauserank0delay;
 	unsigned long datadldiff0;
 };
 
 /**
  * Configure DDR CMD control registers
  */
-int config_cmd_ctrl(struct cmd_control *cmd);
+void config_cmd_ctrl(const struct cmd_control *cmd);
 
 /**
  * Configure DDR DATA registers
  */
-int config_ddr_data(int data_macrono, struct ddr_data *data);
+void config_ddr_data(int data_macrono, const struct ddr_data *data);
 
 /**
  * This structure represents the DDR io control on AM33XX devices.
@@ -238,20 +180,9 @@ struct ddr_cmdtctrl {
 };
 
 /**
- * Encapsulates DDR CMD & DATA io control registers.
- */
-struct ddr_ioctrl {
-	unsigned long cmd1ctl;
-	unsigned long cmd2ctl;
-	unsigned long cmd3ctl;
-	unsigned long data1ctl;
-	unsigned long data2ctl;
-};
-
-/**
  * Configure DDR io control registers
  */
-int config_io_ctrl(struct ddr_ioctrl *ioctrl);
+void config_io_ctrl(unsigned long val);
 
 struct ddr_ctrl {
 	unsigned int ddrioctrl;
@@ -259,6 +190,8 @@ struct ddr_ctrl {
 	unsigned int ddrckectrl;
 };
 
-void config_ddr(void);
+void config_ddr(unsigned int pll, unsigned int ioctrl,
+		const struct ddr_data *data, const struct cmd_control *ctrl,
+		const struct emif_regs *regs);
 
 #endif  /* _DDR_DEFS_H */

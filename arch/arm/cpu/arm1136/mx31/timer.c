@@ -23,6 +23,7 @@
 
 #include <common.h>
 #include <asm/arch/imx-regs.h>
+#include <asm/arch/clock.h>
 #include <div64.h>
 #include <watchdog.h>
 #include <asm/io.h>
@@ -53,28 +54,27 @@ DECLARE_GLOBAL_DATA_PTR;
 static inline unsigned long long tick_to_time(unsigned long long tick)
 {
 	tick *= CONFIG_SYS_HZ;
-	do_div(tick, CONFIG_MX31_CLK32);
+	do_div(tick, MXC_CLK32);
 	return tick;
 }
 
 static inline unsigned long long time_to_tick(unsigned long long time)
 {
-	time *= CONFIG_MX31_CLK32;
+	time *= MXC_CLK32;
 	do_div(time, CONFIG_SYS_HZ);
 	return time;
 }
 
 static inline unsigned long long us_to_tick(unsigned long long us)
 {
-	us = us * CONFIG_MX31_CLK32 + 999999;
+	us = us * MXC_CLK32 + 999999;
 	do_div(us, 1000000);
 	return us;
 }
 #else
 /* ~2% error */
-#define TICK_PER_TIME	((CONFIG_MX31_CLK32 + CONFIG_SYS_HZ / 2) \
-							/ CONFIG_SYS_HZ)
-#define US_PER_TICK	(1000000 / CONFIG_MX31_CLK32)
+#define TICK_PER_TIME	((MXC_CLK32 + CONFIG_SYS_HZ / 2) / CONFIG_SYS_HZ)
+#define US_PER_TICK	(1000000 / MXC_CLK32)
 
 static inline unsigned long long tick_to_time(unsigned long long tick)
 {
@@ -128,7 +128,7 @@ ulong get_timer_masked(void)
 {
 	/*
 	 * get_ticks() returns a long long (64 bit), it wraps in
-	 * 2^64 / CONFIG_MX31_CLK32 = 2^64 / 2^15 = 2^49 ~ 5 * 10^14 (s) ~
+	 * 2^64 / MXC_CLK32 = 2^64 / 2^15 = 2^49 ~ 5 * 10^14 (s) ~
 	 * 5 * 10^9 days... and get_ticks() * CONFIG_SYS_HZ wraps in
 	 * 5 * 10^6 days - long enough.
 	 */
@@ -159,44 +159,5 @@ void __udelay(unsigned long usec)
  */
 ulong get_tbclk(void)
 {
-	return CONFIG_MX31_CLK32;
+	return MXC_CLK32;
 }
-
-void reset_cpu(ulong addr)
-{
-	struct wdog_regs *wdog = (struct wdog_regs *)WDOG_BASE;
-	wdog->wcr = WDOG_ENABLE;
-	while (1)
-		;
-}
-
-#ifdef CONFIG_HW_WATCHDOG
-void mxc_hw_watchdog_enable(void)
-{
-	struct wdog_regs *wdog = (struct wdog_regs *)WDOG_BASE;
-	u16 secs;
-
-	/*
-	 * The timer watchdog can be set between
-	 * 0.5 and 128 Seconds. If not defined
-	 * in configuration file, sets 64 Seconds
-	 */
-#ifdef CONFIG_SYS_WD_TIMER_SECS
-	secs = (CONFIG_SYS_WD_TIMER_SECS << 1) & 0xFF;
-	if (!secs) secs = 1;
-#else
-	secs = 64;
-#endif
-	setbits_le16(&wdog->wcr, (secs << WDOG_WT_SHIFT) | WDOG_ENABLE
-							 | WDOG_WDZST);
-}
-
-
-void mxc_hw_watchdog_reset(void)
-{
-	struct wdog_regs *wdog = (struct wdog_regs *)WDOG_BASE;
-
-	writew(0x5555, &wdog->wsr);
-	writew(0xAAAA, &wdog->wsr);
-}
-#endif

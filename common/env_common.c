@@ -37,92 +37,11 @@ DECLARE_GLOBAL_DATA_PTR;
 /************************************************************************
  * Default settings to be used when no valid environment is found
  */
-#define XMK_STR(x)	#x
-#define MK_STR(x)	XMK_STR(x)
+#include <env_default.h>
 
-const uchar default_environment[] = {
-#ifdef	CONFIG_BOOTARGS
-	"bootargs="	CONFIG_BOOTARGS			"\0"
-#endif
-#ifdef	CONFIG_BOOTCOMMAND
-	"bootcmd="	CONFIG_BOOTCOMMAND		"\0"
-#endif
-#ifdef	CONFIG_RAMBOOTCOMMAND
-	"ramboot="	CONFIG_RAMBOOTCOMMAND		"\0"
-#endif
-#ifdef	CONFIG_NFSBOOTCOMMAND
-	"nfsboot="	CONFIG_NFSBOOTCOMMAND		"\0"
-#endif
-#if defined(CONFIG_BOOTDELAY) && (CONFIG_BOOTDELAY >= 0)
-	"bootdelay="	MK_STR(CONFIG_BOOTDELAY)	"\0"
-#endif
-#if defined(CONFIG_BAUDRATE) && (CONFIG_BAUDRATE >= 0)
-	"baudrate="	MK_STR(CONFIG_BAUDRATE)		"\0"
-#endif
-#ifdef	CONFIG_LOADS_ECHO
-	"loads_echo="	MK_STR(CONFIG_LOADS_ECHO)	"\0"
-#endif
-#ifdef	CONFIG_ETHADDR
-	"ethaddr="	MK_STR(CONFIG_ETHADDR)		"\0"
-#endif
-#ifdef	CONFIG_ETH1ADDR
-	"eth1addr="	MK_STR(CONFIG_ETH1ADDR)		"\0"
-#endif
-#ifdef	CONFIG_ETH2ADDR
-	"eth2addr="	MK_STR(CONFIG_ETH2ADDR)		"\0"
-#endif
-#ifdef	CONFIG_ETH3ADDR
-	"eth3addr="	MK_STR(CONFIG_ETH3ADDR)		"\0"
-#endif
-#ifdef	CONFIG_ETH4ADDR
-	"eth4addr="	MK_STR(CONFIG_ETH4ADDR)		"\0"
-#endif
-#ifdef	CONFIG_ETH5ADDR
-	"eth5addr="	MK_STR(CONFIG_ETH5ADDR)		"\0"
-#endif
-#ifdef	CONFIG_IPADDR
-	"ipaddr="	MK_STR(CONFIG_IPADDR)		"\0"
-#endif
-#ifdef	CONFIG_SERVERIP
-	"serverip="	MK_STR(CONFIG_SERVERIP)		"\0"
-#endif
-#ifdef	CONFIG_SYS_AUTOLOAD
-	"autoload="	CONFIG_SYS_AUTOLOAD		"\0"
-#endif
-#ifdef	CONFIG_PREBOOT
-	"preboot="	CONFIG_PREBOOT			"\0"
-#endif
-#ifdef	CONFIG_ROOTPATH
-	"rootpath="	CONFIG_ROOTPATH			"\0"
-#endif
-#ifdef	CONFIG_GATEWAYIP
-	"gatewayip="	MK_STR(CONFIG_GATEWAYIP)	"\0"
-#endif
-#ifdef	CONFIG_NETMASK
-	"netmask="	MK_STR(CONFIG_NETMASK)		"\0"
-#endif
-#ifdef	CONFIG_HOSTNAME
-	"hostname="	MK_STR(CONFIG_HOSTNAME)		"\0"
-#endif
-#ifdef	CONFIG_BOOTFILE
-	"bootfile="	CONFIG_BOOTFILE			"\0"
-#endif
-#ifdef	CONFIG_LOADADDR
-	"loadaddr="	MK_STR(CONFIG_LOADADDR)		"\0"
-#endif
-#ifdef	CONFIG_CLOCKS_IN_MHZ
-	"clocks_in_mhz=1\0"
-#endif
-#if defined(CONFIG_PCI_BOOTDELAY) && (CONFIG_PCI_BOOTDELAY > 0)
-	"pcidelay="	MK_STR(CONFIG_PCI_BOOTDELAY)	"\0"
-#endif
-#ifdef	CONFIG_EXTRA_ENV_SETTINGS
-	CONFIG_EXTRA_ENV_SETTINGS
-#endif
-	"\0"
+struct hsearch_data env_htab = {
+	.change_ok = env_flags_validate,
 };
-
-struct hsearch_data env_htab;
 
 static uchar __env_get_char_spec(int index)
 {
@@ -162,8 +81,42 @@ const uchar *env_get_addr(int index)
 		return &default_environment[index];
 }
 
+/*
+ * Read an environment variable as a boolean
+ * Return -1 if variable does not exist (default to true)
+ */
+int getenv_yesno(const char *var)
+{
+	char *s = getenv(var);
+
+	if (s == NULL)
+		return -1;
+	return (*s == '1' || *s == 'y' || *s == 'Y' || *s == 't' || *s == 'T') ?
+		1 : 0;
+}
+
+/*
+ * Look up the variable from the default environment
+ */
+char *getenv_default(const char *name)
+{
+	char *ret_val;
+	unsigned long really_valid = gd->env_valid;
+	unsigned long real_gd_flags = gd->flags;
+
+	/* Pretend that the image is bad. */
+	gd->flags &= ~GD_FLG_ENV_READY;
+	gd->env_valid = 0;
+	ret_val = getenv(name);
+	gd->env_valid = really_valid;
+	gd->flags = real_gd_flags;
+	return ret_val;
+}
+
 void set_default_env(const char *s)
 {
+	int flags = 0;
+
 	if (sizeof(default_environment) > ENV_SIZE) {
 		puts("*** Error - default environment is too large\n\n");
 		return;
@@ -175,6 +128,7 @@ void set_default_env(const char *s)
 				"using default environment\n\n",
 				s + 1);
 		} else {
+			flags = H_INTERACTIVE;
 			puts(s);
 		}
 	} else {
@@ -182,7 +136,8 @@ void set_default_env(const char *s)
 	}
 
 	if (himport_r(&env_htab, (char *)default_environment,
-			sizeof(default_environment), '\0', 0) == 0)
+			sizeof(default_environment), '\0', flags,
+			0, NULL) == 0)
 		error("Environment import failed: errno = %d\n", errno);
 
 	gd->flags |= GD_FLG_ENV_READY;
@@ -192,6 +147,20 @@ void set_default_env(const char *s)
 #endif
 }
 
+
+/* [re]set individual variables to their value in the default environment */
+int set_default_vars(int nvars, char * const vars[])
+{
+	/*
+	 * Special use-case: import from default environment
+	 * (and use \0 as a separator)
+	 */
+	return himport_r(&env_htab, (const char *)default_environment,
+				sizeof(default_environment), '\0',
+				H_NOCLEAR | H_INTERACTIVE, nvars, vars);
+}
+
+#ifndef CONFIG_SPL_BUILD
 /*
  * Check if CRC is valid and (if yes) import the environment.
  * Note that "buf" may or may not be aligned.
@@ -211,7 +180,8 @@ int env_import(const char *buf, int check)
 		}
 	}
 
-	if (himport_r(&env_htab, (char *)ep->data, ENV_SIZE, '\0', 0)) {
+	if (himport_r(&env_htab, (char *)ep->data, ENV_SIZE, '\0', 0,
+			0, NULL)) {
 		gd->flags |= GD_FLG_ENV_READY;
 		return 1;
 	}
@@ -222,14 +192,17 @@ int env_import(const char *buf, int check)
 
 	return 0;
 }
+#endif
 
 void env_relocate(void)
 {
 #if defined(CONFIG_NEEDS_MANUAL_RELOC)
 	env_reloc();
+	env_htab.change_ok += gd->reloc_off;
 #endif
 	if (gd->env_valid == 0) {
-#if defined(CONFIG_ENV_IS_NOWHERE)	/* Environment not changable */
+#if defined(CONFIG_ENV_IS_NOWHERE) || defined(CONFIG_SPL_BUILD)
+		/* Environment not changable */
 		set_default_env(NULL);
 #else
 		bootstage_error(BOOTSTAGE_ID_NET_CHECKSUM);
@@ -240,7 +213,7 @@ void env_relocate(void)
 	}
 }
 
-#ifdef CONFIG_AUTO_COMPLETE
+#if defined(CONFIG_AUTO_COMPLETE) && !defined(CONFIG_SPL_BUILD)
 int env_complete(char *var, int maxv, char *cmdv[], int bufsz, char *buf)
 {
 	ENTRY *match;

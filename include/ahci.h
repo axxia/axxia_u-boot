@@ -30,12 +30,13 @@
 #define AHCI_PCI_BAR		0x24
 #define AHCI_MAX_SG		56 /* hardware max is 64K */
 #define AHCI_CMD_SLOT_SZ	32
+#define AHCI_MAX_CMD_SLOT	32
 #define AHCI_RX_FIS_SZ		256
 #define AHCI_CMD_TBL_HDR	0x80
 #define AHCI_CMD_TBL_CDB	0x40
 #define AHCI_CMD_TBL_SZ		AHCI_CMD_TBL_HDR + (AHCI_MAX_SG * 16)
-#define AHCI_PORT_PRIV_DMA_SZ	AHCI_CMD_SLOT_SZ + AHCI_CMD_TBL_SZ	\
-				+ AHCI_RX_FIS_SZ
+#define AHCI_PORT_PRIV_DMA_SZ	(AHCI_CMD_SLOT_SZ * AHCI_MAX_CMD_SLOT + \
+				AHCI_CMD_TBL_SZ	+ AHCI_RX_FIS_SZ)
 #define AHCI_CMD_ATAPI		(1 << 5)
 #define AHCI_CMD_WRITE		(1 << 6)
 #define AHCI_CMD_PREFETCH	(1 << 7)
@@ -50,6 +51,7 @@
 #define HOST_IRQ_STAT		0x08 /* interrupt status */
 #define HOST_PORTS_IMPL		0x0c /* bitmap of implemented ports */
 #define HOST_VERSION		0x10 /* AHCI spec. version compliancy */
+#define HOST_CAP2		0x24 /* host capabilities, extended */
 
 /* HOST_CTL bits */
 #define HOST_RESET		(1 << 0)  /* reset controller; self-clear */

@@ -36,7 +36,7 @@ typedef struct block_dev_desc {
 #ifdef CONFIG_LBA48
 	unsigned char	lba48;		/* device can use 48bit addr (ATA/ATAPI v7) */
 #endif
-	lbaint_t		lba;		/* number of blocks */
+	lbaint_t	lba;		/* number of blocks */
 	unsigned long	blksz;		/* block size */
 	char		vendor [40+1];	/* IDE model, SCSI Vendor */
 	char		product[20+1];	/* IDE Serial no, SCSI product */
@@ -93,11 +93,15 @@ typedef struct disk_partition {
 	ulong	blksz;		/* block size in bytes			*/
 	uchar	name[32];	/* partition name			*/
 	uchar	type[32];	/* string type description		*/
+	int	bootable;	/* Active/Bootable flag is set		*/
+#ifdef CONFIG_PARTITION_UUIDS
+	char	uuid[37];	/* filesystem UUID as string, if exists	*/
+#endif
 } disk_partition_t;
 
 /* Misc _get_dev functions */
 #ifdef CONFIG_PARTITIONS
-block_dev_desc_t* get_dev(char* ifname, int dev);
+block_dev_desc_t *get_dev(const char *ifname, int dev);
 block_dev_desc_t* ide_get_dev(int dev);
 block_dev_desc_t* sata_get_dev(int dev);
 block_dev_desc_t* scsi_get_dev(int dev);
@@ -111,8 +115,14 @@ int get_partition_info (block_dev_desc_t * dev_desc, int part, disk_partition_t 
 void print_part (block_dev_desc_t *dev_desc);
 void  init_part (block_dev_desc_t *dev_desc);
 void dev_print(block_dev_desc_t *dev_desc);
+int get_device(const char *ifname, const char *dev_str,
+	       block_dev_desc_t **dev_desc);
+int get_device_and_partition(const char *ifname, const char *dev_part_str,
+			     block_dev_desc_t **dev_desc,
+			     disk_partition_t *info, int allow_whole_dev);
 #else
-static inline block_dev_desc_t* get_dev(char* ifname, int dev) { return NULL; }
+static inline block_dev_desc_t *get_dev(const char *ifname, int dev)
+{ return NULL; }
 static inline block_dev_desc_t* ide_get_dev(int dev) { return NULL; }
 static inline block_dev_desc_t* sata_get_dev(int dev) { return NULL; }
 static inline block_dev_desc_t* scsi_get_dev(int dev) { return NULL; }
@@ -126,6 +136,15 @@ static inline int get_partition_info (block_dev_desc_t * dev_desc, int part,
 static inline void print_part (block_dev_desc_t *dev_desc) {}
 static inline void  init_part (block_dev_desc_t *dev_desc) {}
 static inline void dev_print(block_dev_desc_t *dev_desc) {}
+static inline int get_device(const char *ifname, const char *dev_str,
+	       block_dev_desc_t **dev_desc)
+{ return -1; }
+static inline int get_device_and_partition(const char *ifname,
+					   const char *dev_part_str,
+					   block_dev_desc_t **dev_desc,
+					   disk_partition_t *info,
+					   int allow_whole_dev)
+{ *dev_desc = NULL; return -1; }
 #endif
 
 #ifdef CONFIG_MAC_PARTITION
@@ -157,10 +176,62 @@ int   test_part_amiga (block_dev_desc_t *dev_desc);
 #endif
 
 #ifdef CONFIG_EFI_PARTITION
+#include <part_efi.h>
 /* disk/part_efi.c */
 int get_partition_info_efi (block_dev_desc_t * dev_desc, int part, disk_partition_t *info);
 void print_part_efi (block_dev_desc_t *dev_desc);
 int   test_part_efi (block_dev_desc_t *dev_desc);
+
+/**
+ * write_gpt_table() - Write the GUID Partition Table to disk
+ *
+ * @param dev_desc - block device descriptor
+ * @param gpt_h - pointer to GPT header representation
+ * @param gpt_e - pointer to GPT partition table entries
+ *
+ * @return - zero on success, otherwise error
+ */
+int write_gpt_table(block_dev_desc_t *dev_desc,
+		  gpt_header *gpt_h, gpt_entry *gpt_e);
+
+/**
+ * gpt_fill_pte(): Fill the GPT partition table entry
+ *
+ * @param gpt_h - GPT header representation
+ * @param gpt_e - GPT partition table entries
+ * @param partitions - list of partitions
+ * @param parts - number of partitions
+ *
+ * @return zero on success
+ */
+int gpt_fill_pte(gpt_header *gpt_h, gpt_entry *gpt_e,
+		disk_partition_t *partitions, int parts);
+
+/**
+ * gpt_fill_header(): Fill the GPT header
+ *
+ * @param dev_desc - block device descriptor
+ * @param gpt_h - GPT header representation
+ * @param str_guid - disk guid string representation
+ * @param parts_count - number of partitions
+ *
+ * @return - error on str_guid conversion error
+ */
+int gpt_fill_header(block_dev_desc_t *dev_desc, gpt_header *gpt_h,
+		char *str_guid, int parts_count);
+
+/**
+ * gpt_restore(): Restore GPT partition table
+ *
+ * @param dev_desc - block device descriptor
+ * @param str_disk_guid - disk GUID
+ * @param partitions - list of partitions
+ * @param parts - number of partitions
+ *
+ * @return zero on success
+ */
+int gpt_restore(block_dev_desc_t *dev_desc, char *str_disk_guid,
+		disk_partition_t *partitions, const int parts_count);
 #endif
 
 #endif /* _PART_H */

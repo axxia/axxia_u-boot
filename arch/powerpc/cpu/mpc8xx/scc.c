@@ -65,7 +65,7 @@ typedef volatile struct CommonBufferDescriptor {
 
 static RTXBD *rtx;
 
-static int scc_send(struct eth_device* dev, volatile void *packet, int length);
+static int scc_send(struct eth_device *dev, void *packet, int length);
 static int scc_recv(struct eth_device* dev);
 static int scc_init (struct eth_device* dev, bd_t * bd);
 static void scc_halt(struct eth_device* dev);
@@ -90,7 +90,7 @@ int scc_initialize(bd_t *bis)
 	return 1;
 }
 
-static int scc_send(struct eth_device* dev, volatile void *packet, int length)
+static int scc_send(struct eth_device *dev, void *packet, int length)
 {
 	int i, j=0;
 #if 0
@@ -473,20 +473,6 @@ static int scc_init (struct eth_device *dev, bd_t * bis)
 	*((uint *) BCSR1) &= ~BCSR1_ETHEN;
 #endif /* MPC860ADS */
 
-#if defined(CONFIG_AMX860)
-	/*
-	 * Port B is used to control the PHY,MC68160.
-	 */
-	immr->im_cpm.cp_pbdir |=
-		(PB_ENET_ETHLOOP | PB_ENET_TPFLDL | PB_ENET_TPSQEL);
-
-	immr->im_cpm.cp_pbdat |= PB_ENET_TPFLDL;
-	immr->im_cpm.cp_pbdat &= ~(PB_ENET_ETHLOOP | PB_ENET_TPSQEL);
-
-	immr->im_ioport.iop_pddir |= PD_ENET_ETH_EN;
-	immr->im_ioport.iop_pddat &= ~PD_ENET_ETH_EN;
-#endif /* AMX860 */
-
 #ifdef CONFIG_RPXCLASSIC
 	*((uchar *) BCSR0) &= ~BCSR0_ETHLPBK;
 	*((uchar *) BCSR0) |= (BCSR0_ETHEN | BCSR0_COLTEST | BCSR0_FULLDPLX);
@@ -542,7 +528,7 @@ static int scc_init (struct eth_device *dev, bd_t * bis)
 	 */
 #if defined (CONFIG_FADS)
 	udelay (10000);		/* wait 10 ms */
-#elif defined (CONFIG_AMX860) || defined(CONFIG_RPXCLASSIC)
+#elif defined(CONFIG_RPXCLASSIC)
 	udelay (100000);	/* wait 100 ms */
 #endif
 

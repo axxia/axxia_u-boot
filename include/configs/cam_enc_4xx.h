@@ -37,7 +37,7 @@
 
 #define CONFIG_HOSTNAME			cam_enc_4xx
 
-#define	BOARD_LATE_INIT
+#define	CONFIG_BOARD_LATE_INIT
 #define CONFIG_CAM_ENC_LED_MASK		0x0fc00000
 
 /* Memory Info */
@@ -54,7 +54,6 @@
 #define CONFIG_SYS_NS16550_REG_SIZE	-4
 #define CONFIG_SYS_NS16550_COM1		0x01c20000
 #define CONFIG_SYS_NS16550_CLK		CONFIG_SYS_HZ_CLOCK
-#define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
 #define CONFIG_CONS_INDEX		1
 #define CONFIG_BAUDRATE			115200
 
@@ -147,7 +146,6 @@
 #define CONFIG_MX_CYCLIC
 
 /* U-Boot general configuration */
-#undef CONFIG_USE_IRQ				/* No IRQ/FIQ in U-Boot */
 #define CONFIG_BOOTFILE		"uImage"	/* Boot file name */
 #define CONFIG_SYS_PROMPT	"cam_enc_4xx> "	/* Monitor Command Prompt */
 #define CONFIG_SYS_CBSIZE	1024		/* Console I/O Buffer Size  */
@@ -155,7 +153,6 @@
 		(CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
 #define CONFIG_SYS_MAXARGS	16		/* max number of command args */
 #define CONFIG_SYS_HUSH_PARSER
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_SYS_LONGHELP
 
 #define CONFIG_MENU
@@ -193,7 +190,6 @@
 #define CONFIG_TIMESTAMP
 
 /* U-Boot memory configuration */
-#define CONFIG_STACKSIZE		(256 << 10)	/* 256 KiB */
 #define CONFIG_SYS_MALLOC_LEN		(1 << 20)	/* 1 MiB */
 #define CONFIG_SYS_MEMTEST_START	0x80000000	/* physical address */
 #define CONFIG_SYS_MEMTEST_END		0x81000000	/* test 16MB RAM */
@@ -219,10 +215,14 @@
 
 /* Defines for SPL */
 #define CONFIG_SPL
+#define CONFIG_SPL_FRAMEWORK
+#define CONFIG_SPL_BOARD_INIT
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
 #define CONFIG_SPL_NAND_SUPPORT
+#define CONFIG_SPL_NAND_BASE
+#define CONFIG_SPL_NAND_DRIVERS
+#define CONFIG_SPL_NAND_ECC
 #define CONFIG_SPL_NAND_SIMPLE
-#define CONFIG_SPL_NAND_LOAD
 #define CONFIG_SYS_NAND_HW_ECC_OOBFIRST
 #define CONFIG_SPL_SERIAL_SUPPORT
 #define CONFIG_SPL_POST_MEM_SUPPORT
@@ -405,8 +405,6 @@
 /*
  * Default environment settings
  */
-#define xstr(s)	str(s)
-#define str(s)	#s
 
 #define DVN4XX_UBOOT_ADDR_R_RAM		0x80000000
 /* (DVN4XX_UBOOT_ADDR_R_RAM + CONFIG_SYS_NAND_PAGE_SIZE) */
@@ -418,22 +416,22 @@
 #define DVN4XX_UBOOT_ADDR_R_UBOOT	0x80003800
 
 #define	CONFIG_EXTRA_ENV_SETTINGS					\
-	"u_boot_addr_r=" xstr(DVN4XX_UBOOT_ADDR_R_RAM) "\0"		\
-	"u-boot=" xstr(CONFIG_HOSTNAME) "/u-boot.ubl\0"			\
+	"u_boot_addr_r=" __stringify(DVN4XX_UBOOT_ADDR_R_RAM) "\0"	\
+	"u-boot=" __stringify(CONFIG_HOSTNAME) "/u-boot.ubl\0"		\
 	"load=tftp ${u_boot_addr_r} ${u-boot}\0"			\
-	"pagesz=" xstr(CONFIG_SYS_NAND_PAGE_SIZE) "\0"			\
+	"pagesz=" __stringify(CONFIG_SYS_NAND_PAGE_SIZE) "\0"		\
 	"writeheader=nandrbl rbl;nand erase 20000 ${pagesz};"		\
 		"nand write ${u_boot_addr_r} 20000 ${pagesz};"		\
 		"nandrbl uboot\0"					\
 	"writenand_spl=nandrbl rbl;nand erase 0 3000;"			\
-		"nand write " xstr(DVN4XX_UBOOT_ADDR_R_NAND_SPL)	\
+		"nand write " __stringify(DVN4XX_UBOOT_ADDR_R_NAND_SPL)	\
 		" 0 3000;nandrbl uboot\0"				\
 	"writeuboot=nandrbl uboot;"					\
-		"nand erase " xstr(CONFIG_SYS_NAND_U_BOOT_OFFS) " "	\
-		 xstr(CONFIG_SYS_NAND_U_BOOT_ERA_SIZE)			\
-		";nand write " xstr(DVN4XX_UBOOT_ADDR_R_UBOOT)		\
-		" " xstr(CONFIG_SYS_NAND_U_BOOT_OFFS) " "		\
-		xstr(CONFIG_SYS_NAND_U_BOOT_SIZE) "\0"			\
+		"nand erase " __stringify(CONFIG_SYS_NAND_U_BOOT_OFFS) " "\
+		 __stringify(CONFIG_SYS_NAND_U_BOOT_ERA_SIZE)		\
+		";nand write " __stringify(DVN4XX_UBOOT_ADDR_R_UBOOT)	\
+		" " __stringify(CONFIG_SYS_NAND_U_BOOT_OFFS) " "	\
+		__stringify(CONFIG_SYS_NAND_U_BOOT_SIZE) "\0"		\
 	"update=run load writenand_spl writeuboot\0"			\
 	"bootcmd=run net_nfs\0"						\
 	"rootpath=/opt/eldk-arm/arm\0"					\
@@ -450,14 +448,14 @@
 	"rootpath=/opt/eldk-arm/arm\0"					\
 	"nfsargs=setenv bootargs root=/dev/nfs rw "			\
 		"nfsroot=${serverip}:${rootpath}\0"			\
-	"bootfile=" xstr(CONFIG_HOSTNAME) "/uImage \0"			\
+	"bootfile=" __stringify(CONFIG_HOSTNAME) "/uImage \0"		\
 	"kernel_addr_r=80600000\0"					\
 	"load_kernel=tftp ${kernel_addr_r} ${bootfile}\0"		\
 	"ubi_load_kernel=ubi part ubi 2048;ubifsmount ${img_volume};"	\
 		"ubifsload ${kernel_addr_r} boot/uImage\0"		\
-	"fit_addr_r=" xstr(CONFIG_BOARD_IMG_ADDR_R) "\0"		\
-	"img_addr_r=" xstr(CONFIG_BOARD_IMG_ADDR_R) "\0"		\
-	"img_file=" xstr(CONFIG_HOSTNAME) "/ait.itb\0"			\
+	"fit_addr_r=" __stringify(CONFIG_BOARD_IMG_ADDR_R) "\0"		\
+	"img_addr_r=" __stringify(CONFIG_BOARD_IMG_ADDR_R) "\0"		\
+	"img_file=" __stringify(CONFIG_HOSTNAME) "/ait.itb\0"		\
 	"header_addr=20000\0"						\
 	"img_writeheader=nandrbl rbl;"					\
 		"nand erase ${header_addr} ${pagesz};"			\
@@ -466,11 +464,11 @@
 	"img_writespl=nandrbl rbl;nand erase 0 3000;"			\
 		"nand write ${img_addr_r} 0 3000;nandrbl uboot\0"	\
 	"img_writeuboot=nandrbl uboot;"					\
-		"nand erase " xstr(CONFIG_SYS_NAND_U_BOOT_OFFS) " "	\
-		 xstr(CONFIG_SYS_NAND_U_BOOT_ERA_SIZE)			\
+		"nand erase " __stringify(CONFIG_SYS_NAND_U_BOOT_OFFS) " "\
+		 __stringify(CONFIG_SYS_NAND_U_BOOT_ERA_SIZE)		\
 		";nand write ${img_addr_r} "				\
-		xstr(CONFIG_SYS_NAND_U_BOOT_OFFS) " "			\
-		xstr(CONFIG_SYS_NAND_U_BOOT_SIZE) "\0"			\
+		__stringify(CONFIG_SYS_NAND_U_BOOT_OFFS) " "		\
+		__stringify(CONFIG_SYS_NAND_U_BOOT_SIZE) "\0"		\
 	"img_writedfenv=ubi part ubi 2048;"				\
 		"ubi write ${img_addr_r} default ${filesize}\0"		\
 	"img_volume=rootfs1\0"						\

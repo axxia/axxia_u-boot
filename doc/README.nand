@@ -94,19 +94,22 @@ Commands:
       of data for one 512-byte page or 2 256-byte pages. There is no check
       for bad blocks.
 
-   nand read.raw addr ofs|partition
-      Read page from `ofs' in NAND flash to `addr'. This reads the raw page,
-      so ECC is avoided and the OOB area is read as well.
-
-   nand write.raw addr ofs|partition
-      Write page from `addr' to `ofs' in NAND flash. This writes the raw page,
-      so ECC is avoided and the OOB area is written as well, making the whole
-      page written as-is.
+   nand read.raw addr ofs|partition [count]
+   nand write.raw addr ofs|partition [count]
+      Read or write one or more pages at "ofs" in NAND flash, from or to
+      "addr" in memory.  This is a raw access, so ECC is avoided and the
+      OOB area is transferred as well.  If count is absent, it is assumed
+      to be one page.  As with .yaffs2 accesses, the data is formatted as
+      a packed sequence of "data, oob, data, oob, ..." -- no alignment of
+      individual pages is maintained.
 
 Configuration Options:
 
    CONFIG_CMD_NAND
       Enables NAND support and commmands.
+
+   CONFIG_CMD_NAND_TORTURE
+      Enables the torture command (see description of this command below).
 
    CONFIG_MTD_NAND_ECC_JFFS2
       Define this if you want the Error Correction Code information in
@@ -213,6 +216,24 @@ Miscellaneous and testing commands:
   DANGEROUS!!! Factory set bad blocks will be lost. Use only
   to remove artificial bad blocks created with the "markbad" command.
 
+  "torture offset"
+  Torture block to determine if it is still reliable.
+  Enabled by the CONFIG_CMD_NAND_TORTURE configuration option.
+  This command returns 0 if the block is still reliable, else 1.
+  If the block is detected as unreliable, it is up to the user to decide to
+  mark this block as bad.
+  The analyzed block is put through 3 erase / write cycles (or less if the block
+  is detected as unreliable earlier).
+  This command can be used in scripts, e.g. together with the markbad command to
+  automate retries and handling of possibly newly detected bad blocks if the
+  nand write command fails.
+  It can also be used manually by users having seen some NAND errors in logs to
+  search the root cause of these errors.
+  The underlying nand_torture() function is also useful for code willing to
+  automate actions following a nand->write() error. This would e.g. be required
+  in order to program or update safely firmware to NAND, especially for the UBI
+  part of such firmware.
+
 
 NAND locking command (for chips with active LOCKPRE pin)
 
@@ -228,6 +249,8 @@ NAND locking command (for chips with active LOCKPRE pin)
   "nand unlock [offset] [size]"
   unlock consecutive area (can be called multiple times for different areas)
 
+  "nand unlock.allexcept [offset] [size]"
+  unlock all except specified consecutive area
 
 I have tested the code with board containing 128MiB NAND large page chips
 and 32MiB small page chips.

@@ -177,7 +177,7 @@ void board_gpio_init(void)
 	 */
 
 	setbits_be32(&pgpio->gpdir, 0x02130000);
-#ifndef CONFIG_SYS_RAMBOOT
+#if !defined(CONFIG_SYS_RAMBOOT) && !defined(CONFIG_SPL)
 	/* init DDR3 reset signal */
 	setbits_be32(&pgpio->gpdir, 0x00200000);
 	setbits_be32(&pgpio->gpodr, 0x00200000);
@@ -225,13 +225,7 @@ int checkboard(void)
 	ccsr_gur_t *gur = (void *)(CONFIG_SYS_MPC85xx_GUTS_ADDR);
 	u8 in, out, io_config, val;
 
-	printf("Board: %s ", CONFIG_BOARDNAME);
-
-#ifdef CONFIG_PHYS_64BIT
-	puts("(36-bit addrmap) ");
-#endif
-
-	printf("CPLD: V%d.%d PCBA: V%d.0\n",
+	printf("Board: %s CPLD: V%d.%d PCBA: V%d.0\n", CONFIG_BOARDNAME,
 		in_8(&cpld_data->cpld_rev_major) & 0x0F,
 		in_8(&cpld_data->cpld_rev_minor) & 0x0F,
 		in_8(&cpld_data->pcba_rev) & 0x0F);

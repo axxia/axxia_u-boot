@@ -25,11 +25,15 @@
 #ifndef __ASM_ARCH_MX35_H
 #define __ASM_ARCH_MX35_H
 
+#define ARCH_MXC
+
 /*
  * IRAM
  */
 #define IRAM_BASE_ADDR		0x10000000	/* internal ram */
 #define IRAM_SIZE		0x00020000	/* 128 KB */
+
+#define LOW_LEVEL_SRAM_STACK	0x1001E000
 
 /*
  * AIPS 1
@@ -39,7 +43,7 @@
 #define MAX_BASE_ADDR           0x43F04000
 #define EVTMON_BASE_ADDR        0x43F08000
 #define CLKCTL_BASE_ADDR        0x43F0C000
-#define I2C_BASE_ADDR           0x43F80000
+#define I2C1_BASE_ADDR		0x43F80000
 #define I2C3_BASE_ADDR          0x43F84000
 #define ATA_BASE_ADDR           0x43F8C000
 #define UART1_BASE		0x43F90000
@@ -72,15 +76,16 @@
 #define MMC_SDHC2_BASE_ADDR	0x53FB8000
 #define MMC_SDHC3_BASE_ADDR	0x53FBC000
 #define IPU_CTRL_BASE_ADDR	0x53FC0000
-#define GPIO3_BASE_ADDR		0x53FA4000
 #define GPIO1_BASE_ADDR		0x53FCC000
 #define GPIO2_BASE_ADDR		0x53FD0000
 #define SDMA_BASE_ADDR		0x53FD4000
 #define RTC_BASE_ADDR		0x53FD8000
-#define WDOG_BASE_ADDR		0x53FDC000
+#define WDOG1_BASE_ADDR		0x53FDC000
 #define PWM_BASE_ADDR		0x53FE0000
 #define RTIC_BASE_ADDR		0x53FEC000
 #define IIM_BASE_ADDR		0x53FF0000
+#define IMX_USB_BASE		0x53FF4000
+#define IMX_USB_PORT_OFFSET	0x400
 
 #define IMX_CCM_BASE		CCM_BASE_ADDR
 
@@ -177,7 +182,7 @@
 #define IPU_CONF_PF_EN		(1<<3)
 #define IPU_CONF_ROT_EN		(1<<2)
 #define IPU_CONF_IC_EN		(1<<1)
-#define IPU_CONF_SCI_EN		(1<<0)
+#define IPU_CONF_CSI_EN		(1<<0)
 
 /*
  * CSPI register definitions
@@ -215,32 +220,6 @@
 
 #if !(defined(__KERNEL_STRICT_NAMES) || defined(__ASSEMBLY__))
 #include <asm/types.h>
-
-enum mxc_main_clocks {
-	CPU_CLK,
-	AHB_CLK,
-	IPG_CLK,
-	IPG_PER_CLK,
-	NFC_CLK,
-	USB_CLK,
-	HSP_CLK,
-};
-
-enum mxc_peri_clocks {
-	UART1_BAUD,
-	UART2_BAUD,
-	UART3_BAUD,
-	SSI1_BAUD,
-	SSI2_BAUD,
-	CSI_BAUD,
-	MSHC_CLK,
-	ESDHC1_CLK,
-	ESDHC2_CLK,
-	ESDHC3_CLK,
-	SPDIF_CLK,
-	SPI1_CLK,
-	SPI2_CLK,
-};
 
 /* Clock Control Module (CCM) registers */
 struct ccm_regs {
@@ -313,15 +292,6 @@ struct cspi_regs {
 	u32 test;
 };
 
-/* Watchdog Timer (WDOG) registers */
-struct wdog_regs {
-	u16 wcr;	/* Control */
-	u16 wsr;	/* Service */
-	u16 wrsr;	/* Reset Status */
-	u16 wicr;	/* Interrupt Control */
-	u16 wmcr;	/* Misc Control */
-};
-
 struct esdc_regs {
 	u32	esdctl0;
 	u32	esdcfg0;
@@ -338,6 +308,58 @@ struct esdc_regs {
 #define ESDC_MISC_MDDR_DL_RST	(1 << 3)
 #define ESDC_MISC_DDR_EN	(1 << 8)
 #define ESDC_MISC_DDR2_EN	(1 << 9)
+
+/* Multi-Layer AHB Crossbar Switch (MAX) registers */
+struct max_regs {
+	u32 mpr0;
+	u32 pad00[3];
+	u32 sgpcr0;
+	u32 pad01[59];
+	u32 mpr1;
+	u32 pad02[3];
+	u32 sgpcr1;
+	u32 pad03[59];
+	u32 mpr2;
+	u32 pad04[3];
+	u32 sgpcr2;
+	u32 pad05[59];
+	u32 mpr3;
+	u32 pad06[3];
+	u32 sgpcr3;
+	u32 pad07[59];
+	u32 mpr4;
+	u32 pad08[3];
+	u32 sgpcr4;
+	u32 pad09[251];
+	u32 mgpcr0;
+	u32 pad10[63];
+	u32 mgpcr1;
+	u32 pad11[63];
+	u32 mgpcr2;
+	u32 pad12[63];
+	u32 mgpcr3;
+	u32 pad13[63];
+	u32 mgpcr4;
+	u32 pad14[63];
+	u32 mgpcr5;
+};
+
+/* AHB <-> IP-Bus Interface (AIPS) */
+struct aips_regs {
+	u32 mpr_0_7;
+	u32 mpr_8_15;
+	u32 pad0[6];
+	u32 pacr_0_7;
+	u32 pacr_8_15;
+	u32 pacr_16_23;
+	u32 pacr_24_31;
+	u32 pad1[4];
+	u32 opacr_0_7;
+	u32 opacr_8_15;
+	u32 opacr_16_23;
+	u32 opacr_24_31;
+	u32 opacr_32_39;
+};
 
 /*
  * NFMS bit in RCSR register for pagesize of nandflash

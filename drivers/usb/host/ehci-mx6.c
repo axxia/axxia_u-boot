@@ -22,10 +22,9 @@
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/mx6x_pins.h>
-#include <asm/arch/iomux-v3.h>
+#include <asm/imx-common/iomux-v3.h>
 
 #include "ehci.h"
-#include "ehci-core.h"
 
 #define USB_OTGREGS_OFFSET	0x000
 #define USB_H1REGS_OFFSET	0x200
@@ -73,7 +72,8 @@ static void usbh1_internal_phy_clock_gate(int on)
 
 static void usbh1_power_config(void)
 {
-	struct anatop_regs *anatop = (struct anatop_regs *)ANATOP_BASE_ADDR;
+	struct anatop_regs __iomem *anatop =
+		(struct anatop_regs __iomem *)ANATOP_BASE_ADDR;
 	/*
 	 * Some phy and power's special controls for host1
 	 * 1. The external charger detector needs to be disabled
@@ -87,7 +87,7 @@ static void usbh1_power_config(void)
 		     &anatop->usb2_chrg_detect);
 
 	__raw_writel(ANADIG_USB2_PLL_480_CTRL_BYPASS,
-		     &anatop->usb2_pll_480_ctrl);
+		     &anatop->usb2_pll_480_ctrl_clr);
 
 	__raw_writel(ANADIG_USB2_PLL_480_CTRL_ENABLE |
 		     ANADIG_USB2_PLL_480_CTRL_POWER |
@@ -159,7 +159,12 @@ static void usbh1_oc_config(void)
 	__raw_writel(val, usbother_base + USB_H1_CTRL_OFFSET);
 }
 
-int ehci_hcd_init(void)
+int __weak board_ehci_hcd_init(int port)
+{
+	return 0;
+}
+
+int ehci_hcd_init(int index, struct ehci_hccr **hccr, struct ehci_hcor **hcor)
 {
 	struct usb_ehci *ehci;
 
@@ -181,9 +186,9 @@ int ehci_hcd_init(void)
 
 	ehci = (struct usb_ehci *)(USBOH3_USB_BASE_ADDR +
 		(0x200 * CONFIG_MXC_USB_PORT));
-	hccr = (struct ehci_hccr *)((uint32_t)&ehci->caplength);
-	hcor = (struct ehci_hcor *)((uint32_t)hccr +
-			HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
+	*hccr = (struct ehci_hccr *)((uint32_t)&ehci->caplength);
+	*hcor = (struct ehci_hcor *)((uint32_t)*hccr +
+			HC_LENGTH(ehci_readl(&(*hccr)->cr_capbase)));
 	setbits_le32(&ehci->usbmode, CM_HOST);
 
 	__raw_writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
@@ -194,7 +199,7 @@ int ehci_hcd_init(void)
 	return 0;
 }
 
-int ehci_hcd_stop(void)
+int ehci_hcd_stop(int index)
 {
 	return 0;
 }

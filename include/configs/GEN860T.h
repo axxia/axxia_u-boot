@@ -64,16 +64,6 @@
 #define CONFIG_BAUDRATE			38400
 
 /*
- * Set allowable console baud rates
- */
-#define CONFIG_SYS_BAUDRATE_TABLE		{ 9600,		\
-					  19200,	\
-					  38400,	\
-					  57600,	\
-					  115200,	\
-					}
-
-/*
  * Print console information
  */
 #undef	 CONFIG_SYS_CONSOLE_INFO_QUIET
@@ -104,11 +94,6 @@
  */
 #undef	CONFIG_LOADS_ECHO
 #define	CONFIG_SYS_LOADS_BAUD_CHANGE
-
-/*
- * Set default load address for tftp network downloads
- */
-#define	CONFIG_SYS_TFTP_LOADADDR				0x01000000
 
 /*
  * Turn off the watchdog timer
@@ -292,7 +277,6 @@
  * Use the "hush" command parser
  */
 #define	CONFIG_SYS_HUSH_PARSER
-#define	CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 
 /*
  * Set buffer size for console I/O

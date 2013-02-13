@@ -1,4 +1,7 @@
 /*
+ * (C) Copyright 2011
+ * Joe Hershberger, National Instruments, joe.hershberger@ni.com
+ *
  * (C) Copyright 2000
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
  *
@@ -23,31 +26,45 @@
 
 #include <common.h>
 #include <command.h>
+#include <hash.h>
 #include <sha1.h>
 
-static int do_sha1sum(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+int do_sha1sum(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned long addr, len;
-	unsigned int i;
-	u8 output[20];
+	int verify = 0;
+	int ac;
+	char * const *av;
 
 	if (argc < 3)
 		return CMD_RET_USAGE;
 
-	addr = simple_strtoul(argv[1], NULL, 16);
-	len = simple_strtoul(argv[2], NULL, 16);
+	av = argv + 1;
+	ac = argc - 1;
+#ifdef CONFIG_SHA1SUM_VERIFY
+	if (strcmp(*av, "-v") == 0) {
+		verify = 1;
+		av++;
+		ac--;
+	}
+#endif
 
-	sha1_csum_wd((unsigned char *) addr, len, output, CHUNKSZ_SHA1);
-	printf("SHA1 for %08lx ... %08lx ==> ", addr, addr + len - 1);
-	for (i = 0; i < 20; i++)
-		printf("%02x", output[i]);
-	printf("\n");
-
-	return 0;
+	return hash_command("sha1", verify, cmdtp, flag, ac, av);
 }
 
+#ifdef CONFIG_SHA1SUM_VERIFY
 U_BOOT_CMD(
-	sha1sum,	3,	1,	do_sha1sum,
+	sha1sum,	5,	1,	do_sha1sum,
 	"compute SHA1 message digest",
-	"address count"
+	"address count [[*]sum]\n"
+		"    - compute SHA1 message digest [save to sum]\n"
+	"sha1sum -v address count [*]sum\n"
+		"    - verify sha1sum of memory area"
 );
+#else
+U_BOOT_CMD(
+	sha1sum,	4,	1,	do_sha1sum,
+	"compute SHA1 message digest",
+	"address count [[*]sum]\n"
+		"    - compute SHA1 message digest [save to sum]"
+);
+#endif

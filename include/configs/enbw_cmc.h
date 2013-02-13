@@ -71,7 +71,6 @@
 #define CONFIG_SYS_MEMTEST_END	(PHYS_SDRAM_1 + 0x2000000 + 16*1024*1024)
 
 #define CONFIG_NR_DRAM_BANKS	1 /* we have 1 bank of DRAM */
-#define CONFIG_STACKSIZE	(256*1024) /* regular stack */
 
 /*
  * Serial Driver info
@@ -83,7 +82,6 @@
 #define CONFIG_SYS_NS16550_CLK	clk_get(DAVINCI_UART2_CLKID)
 #define CONFIG_CONS_INDEX	1		/* use UART0 for console */
 #define CONFIG_BAUDRATE		115200		/* Default baud rate */
-#define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
 
 /*
  * I2C Configuration
@@ -101,6 +99,14 @@
 #define CONFIG_SYS_DTT_MAX_TEMP	70
 #define CONFIG_SYS_DTT_LOW_TEMP	-30
 #define CONFIG_SYS_DTT_HYSTERESIS	3
+
+/*
+ * SPI Configuration
+ */
+#define CONFIG_DAVINCI_SPI
+#define CONFIG_SYS_SPI_BASE		DAVINCI_SPI1_BASE
+#define CONFIG_SYS_SPI_CLK		clk_get(DAVINCI_SPI1_CLKID)
+#define CONFIG_CMD_SPI
 
 /*
  * Flash & Environment
@@ -176,18 +182,15 @@
 #define CONFIG_DEFAULT_SETTINGS_ADDR	(CONFIG_ENV_ADDR_REDUND + \
 						CONFIG_ENV_SECT_SIZE)
 
-#define xstr(s)	str(s)
-#define str(s)	#s
-
 #define	CONFIG_EXTRA_ENV_SETTINGS					\
 	"u-boot_addr_r=c0000000\0"					\
-	"u-boot=" xstr(CONFIG_HOSTNAME) "/u-boot.bin\0"			\
+	"u-boot=" __stringify(CONFIG_HOSTNAME) "/u-boot.bin\0"		\
 	"load=tftp ${u-boot_addr_r} ${u-boot}\0"			\
-	"update=protect off " xstr(CONFIG_SYS_FLASH_BASE) " +${filesize};"\
-		"erase " xstr(CONFIG_SYS_FLASH_BASE) " +${filesize};"	\
-		"cp.b ${u-boot_addr_r} " xstr(CONFIG_SYS_FLASH_BASE)	\
+	"update=protect off " __stringify(CONFIG_SYS_FLASH_BASE) " +${filesize};"\
+		"erase " __stringify(CONFIG_SYS_FLASH_BASE) " +${filesize};"	\
+		"cp.b ${u-boot_addr_r} " __stringify(CONFIG_SYS_FLASH_BASE)	\
 		" ${filesize};"						\
-		"protect on " xstr(CONFIG_SYS_FLASH_BASE) " +${filesize}\0"\
+		"protect on " __stringify(CONFIG_SYS_FLASH_BASE) " +${filesize}\0"\
 	"netdev=eth0\0"							\
 	"rootpath=/opt/eldk-arm/arm\0"					\
 	"nfsargs=setenv bootargs root=/dev/nfs rw "			\
@@ -199,9 +202,9 @@
 	"kernel_addr_r=c0700000\0"					\
 	"fdt_addr_r=c0600000\0"						\
 	"ramdisk_addr_r=c0b00000\0"					\
-	"fdt_file=" xstr(CONFIG_HOSTNAME) "/"				\
-		xstr(CONFIG_HOSTNAME) ".dtb\0"				\
-	"kernel_file=" xstr(CONFIG_HOSTNAME) "/uImage \0"		\
+	"fdt_file=" __stringify(CONFIG_HOSTNAME) "/"			\
+		__stringify(CONFIG_HOSTNAME) ".dtb\0"			\
+	"kernel_file=" __stringify(CONFIG_HOSTNAME) "/uImage \0"	\
 	"nand_ld_ramdsk=nand read ${ramdisk_addr_r} 320000 400000\0"	\
 	"nand_ld_kernel=nand read ${kernel_addr_r} 20000 300000\0"	\
 	"nand_ld_fdt=nand read ${fdt_addr_r} 0 2000\0"			\
@@ -226,9 +229,9 @@
 	"key_magic_2=2\0"						\
 	"key_magic_3=3\0"						\
 	"magic_keys=0123\0"						\
-	"hwconfig=switch:lan=on,pwl=off\0"				\
+	"hwconfig=switch:lan=on,pwl=off,config=0x60100000\0"		\
 	"addmtd=setenv bootargs ${bootargs} ${mtdparts}\0"		\
-	"addmisc=setenv bootargs ${bootargs} davinci_mmc.use_dma=0\0"	\
+	"addmisc=setenv bootargs ${bootargs}\0"				\
 	"mtdids=" MTDIDS_DEFAULT "\0"					\
 	"mtdparts=" MTDPARTS_DEFAULT "\0"				\
 	"logversion=2\0"						\
@@ -247,7 +250,6 @@
 #define CONFIG_VERSION_VARIABLE
 #define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_HUSH_PARSER
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_CMDLINE_EDITING
 #define CONFIG_SYS_LONGHELP
 #define CONFIG_CRC32_VERIFY
@@ -338,6 +340,11 @@
 #define CONFIG_CMD_FAT
 #define CONFIG_CMD_MMC
 
+/* GPIO */
+#define CONFIG_ENBW_CMC_BOARD_TYPE	57
+#define CONFIG_ENBW_CMC_HW_ID_BIT0	39
+#define CONFIG_ENBW_CMC_HW_ID_BIT1	38
+#define CONFIG_ENBW_CMC_HW_ID_BIT2	35
 
 /* FDT support */
 #define CONFIG_OF_LIBFDT
@@ -440,12 +447,14 @@
 #define CONFIG_SYS_DV_NOR_BOOT_CFG	(0x11)
 
 #define CONFIG_POST	(CONFIG_SYS_POST_MEMORY)
-#define CONFIG_SYS_POST_WORD_ADDR 0x8001FFF0
+#define CONFIG_POST_EXTERNAL_WORD_FUNCS
+#define CONFIG_SYS_POST_WORD_ADDR DAVINCI_RTC_BASE
 #define CONFIG_LOGBUFFER
 #define CONFIG_SYS_CONSOLE_IS_IN_ENV
 
 #define CONFIG_BOOTCOUNT_LIMIT
 #define CONFIG_SYS_BOOTCOUNT_ADDR	DAVINCI_RTC_BASE
+#define CONFIG_SYS_BOOTCOUNT_BE
 
 #define CONFIG_SYS_NAND_U_BOOT_DST	0xc0080000
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	0x60004000

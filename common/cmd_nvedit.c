@@ -47,47 +47,30 @@
 #include <errno.h>
 #include <malloc.h>
 #include <watchdog.h>
-#include <serial.h>
 #include <linux/stddef.h>
 #include <asm/byteorder.h>
-#if defined(CONFIG_CMD_NET)
-#include <net.h>
-#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
 #if	!defined(CONFIG_ENV_IS_IN_EEPROM)	&& \
 	!defined(CONFIG_ENV_IS_IN_FLASH)	&& \
 	!defined(CONFIG_ENV_IS_IN_DATAFLASH)	&& \
-	!defined(CONFIG_ENV_IS_IN_MG_DISK)	&& \
 	!defined(CONFIG_ENV_IS_IN_MMC)		&& \
 	!defined(CONFIG_ENV_IS_IN_FAT)		&& \
 	!defined(CONFIG_ENV_IS_IN_NAND)		&& \
 	!defined(CONFIG_ENV_IS_IN_NVRAM)	&& \
 	!defined(CONFIG_ENV_IS_IN_ONENAND)	&& \
 	!defined(CONFIG_ENV_IS_IN_SPI_FLASH)	&& \
+	!defined(CONFIG_ENV_IS_IN_REMOTE)	&& \
 	!defined(CONFIG_ENV_IS_NOWHERE)
 # error Define one of CONFIG_ENV_IS_IN_{EEPROM|FLASH|DATAFLASH|ONENAND|\
-SPI_FLASH|MG_DISK|NVRAM|MMC|FAT} or CONFIG_ENV_IS_NOWHERE
+SPI_FLASH|NVRAM|MMC|FAT|REMOTE} or CONFIG_ENV_IS_NOWHERE
 #endif
-
-#define XMK_STR(x)	#x
-#define MK_STR(x)	XMK_STR(x)
 
 /*
  * Maximum expected input data size for import command
  */
 #define	MAX_ENV_SIZE	(1 << 20)	/* 1 MiB */
-
-ulong load_addr = CONFIG_SYS_LOAD_ADDR;	/* Default Load Address */
-ulong save_addr;			/* Default Save Address */
-ulong save_size;			/* Default Save Size (in bytes) */
-
-/*
- * Table with supported baudrates (defined in config_xyz.h)
- */
-static const unsigned long baudrate_table[] = CONFIG_SYS_BAUDRATE_TABLE;
-#define	N_BAUDRATES (sizeof(baudrate_table) / sizeof(baudrate_table[0]))
 
 /*
  * This variable is incremented on each do_env_set(), so it can
@@ -103,12 +86,13 @@ int get_env_id(void)
 	return env_id;
 }
 
+#ifndef CONFIG_SPL_BUILD
 /*
  * Command interface: print one or all environment variables
  *
  * Returns 0 in case of error, or length of printed string
  */
-static int env_print(char *name)
+static int env_print(char *name, int flag)
 {
 	char *res = NULL;
 	size_t len;
@@ -118,7 +102,7 @@ static int env_print(char *name)
 
 		e.key = name;
 		e.data = NULL;
-		hsearch_r(e, FIND, &ep, &env_htab);
+		hsearch_r(e, FIND, &ep, &env_htab, flag);
 		if (ep == NULL)
 			return 0;
 		len = printf("%s=%s\n", ep->key, ep->data);
@@ -126,7 +110,7 @@ static int env_print(char *name)
 	}
 
 	/* print whole list */
-	len = hexport_r(&env_htab, '\n', &res, 0, 0, NULL);
+	len = hexport_r(&env_htab, '\n', flag, &res, 0, 0, NULL);
 
 	if (len > 0) {
 		puts(res);
@@ -138,14 +122,22 @@ static int env_print(char *name)
 	return 0;
 }
 
-int do_env_print (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_env_print(cmd_tbl_t *cmdtp, int flag, int argc,
+			char * const argv[])
 {
 	int i;
 	int rcode = 0;
+	int env_flag = H_HIDE_DOT;
+
+	if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'a') {
+		argc--;
+		argv++;
+		env_flag &= ~H_HIDE_DOT;
+	}
 
 	if (argc == 1) {
 		/* print all env vars */
-		rcode = env_print(NULL);
+		rcode = env_print(NULL, env_flag);
 		if (!rcode)
 			return 1;
 		printf("\nEnvironment size: %d/%ld bytes\n",
@@ -154,8 +146,9 @@ int do_env_print (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 
 	/* print selected env vars */
+	env_flag &= ~H_HIDE_DOT;
 	for (i = 1; i < argc; ++i) {
-		int rc = env_print(argv[i]);
+		int rc = env_print(argv[i], env_flag);
 		if (!rc) {
 			printf("## Error: \"%s\" not defined\n", argv[i]);
 			++rcode;
@@ -196,117 +189,49 @@ static int do_env_grep(cmd_tbl_t *cmdtp, int flag,
 	return rcode;
 }
 #endif
+#endif /* CONFIG_SPL_BUILD */
 
 /*
  * Set a new environment variable,
  * or replace or delete an existing one.
  */
-int _do_env_set(int flag, int argc, char * const argv[])
+static int _do_env_set(int flag, int argc, char * const argv[])
 {
-	bd_t  *bd = gd->bd;
 	int   i, len;
-	int   console = -1;
 	char  *name, *value, *s;
 	ENTRY e, *ep;
+	int env_flag = H_INTERACTIVE;
 
+	debug("Initial value for argc=%d\n", argc);
+	while (argc > 1 && **(argv + 1) == '-') {
+		char *arg = *++argv;
+
+		--argc;
+		while (*++arg) {
+			switch (*arg) {
+			case 'f':		/* force */
+				env_flag |= H_FORCE;
+				break;
+			default:
+				return CMD_RET_USAGE;
+			}
+		}
+	}
+	debug("Final value for argc=%d\n", argc);
 	name = argv[1];
+	value = argv[2];
 
 	if (strchr(name, '=')) {
-		printf("## Error: illegal character '=' in variable name"
-		       "\"%s\"\n", name);
+		printf("## Error: illegal character '='"
+		       "in variable name \"%s\"\n", name);
 		return 1;
 	}
 
 	env_id++;
-	/*
-	 * search if variable with this name already exists
-	 */
-	e.key = name;
-	e.data = NULL;
-	hsearch_r(e, FIND, &ep, &env_htab);
-
-#ifndef CONFIG_ACP
-
-	/* Check for console redirection */
-	if (strcmp(name, "stdin") == 0)
-		console = stdin;
-	else if (strcmp(name, "stdout") == 0)
-		console = stdout;
-	else if (strcmp(name, "stderr") == 0)
-		console = stderr;
-
-	if (console != -1) {
-		if (argc < 3) {		/* Cannot delete it! */
-			printf("Can't delete \"%s\"\n", name);
-			return 1;
-		}
-
-#ifdef CONFIG_CONSOLE_MUX
-		i = iomux_doenv(console, argv[2]);
-		if (i)
-			return i;
-#else
-		/* Try assigning specified device */
-		if (console_assign(console, argv[2]) < 0)
-			return 1;
-
-#ifdef CONFIG_SERIAL_MULTI
-		if (serial_assign(argv[2]) < 0)
-			return 1;
-#endif
-#endif /* CONFIG_CONSOLE_MUX */
-	}
-#endif	/* CONFIG_ACP */
-
-	/*
-	 * Some variables like "ethaddr" and "serial#" can be set only
-	 * once and cannot be deleted; also, "ver" is readonly.
-	 */
-	if (ep) {		/* variable exists */
-#ifndef CONFIG_ENV_OVERWRITE
-		if (strcmp(name, "serial#") == 0 ||
-		    (strcmp(name, "ethaddr") == 0
-#if defined(CONFIG_OVERWRITE_ETHADDR_ONCE) && defined(CONFIG_ETHADDR)
-		     && strcmp(ep->data, MK_STR(CONFIG_ETHADDR)) != 0
-#endif	/* CONFIG_OVERWRITE_ETHADDR_ONCE && CONFIG_ETHADDR */
-			)) {
-			printf("Can't overwrite \"%s\"\n", name);
-			return 1;
-		}
-#endif
-		/*
-		 * Switch to new baudrate if new baudrate is supported
-		 */
-		if (strcmp(name, "baudrate") == 0) {
-			int baudrate = simple_strtoul(argv[2], NULL, 10);
-			int i;
-			for (i = 0; i < N_BAUDRATES; ++i) {
-				if (baudrate == baudrate_table[i])
-					break;
-			}
-			if (i == N_BAUDRATES) {
-				printf("## Baudrate %d bps not supported\n",
-					baudrate);
-				return 1;
-			}
-			printf("## Switch baudrate to %d bps and"
-			       "press ENTER ...\n", baudrate);
-			udelay(50000);
-			gd->baudrate = baudrate;
-#if defined(CONFIG_PPC) || defined(CONFIG_MCF52x2)
-			gd->bd->bi_baudrate = baudrate;
-#endif
-
-			serial_setbrg();
-			udelay(50000);
-			while (getc() != '\r')
-				;
-		}
-	}
 
 	/* Delete only ? */
 	if (argc < 3 || argv[2] == NULL) {
-		int rc = hdelete_r(name, &env_htab);
+		int rc = hdelete_r(name, &env_htab, env_flag);
 		return !rc;
 	}
 
@@ -333,7 +258,7 @@ int _do_env_set(int flag, int argc, char * const argv[])
 
 	e.key	= name;
 	e.data	= value;
-	hsearch_r(e, ENTER, &ep, &env_htab);
+	hsearch_r(e, ENTER, &ep, &env_htab, env_flag);
 	free(value);
 	if (!ep) {
 		printf("## Error inserting \"%s\" variable, errno=%d\n",
@@ -341,34 +266,6 @@ int _do_env_set(int flag, int argc, char * const argv[])
 		return 1;
 	}
 
-	/*
-	 * Some variables should be updated when the corresponding
-	 * entry in the environment is changed
-	 */
-	if (strcmp(name, "ipaddr") == 0) {
-		char *s = argv[2];	/* always use only one arg */
-		char *e;
-		unsigned long addr;
-		bd->bi_ip_addr = 0;
-		for (addr = 0, i = 0; i < 4; ++i) {
-			ulong val = s ? simple_strtoul(s, &e, 10) : 0;
-			addr <<= 8;
-			addr  |= val & 0xFF;
-			if (s)
-				s = *e ? e + 1 : e;
-		}
-		bd->bi_ip_addr = htonl(addr);
-		return 0;
-	} else if (strcmp(argv[1], "loadaddr") == 0) {
-		load_addr = simple_strtoul(argv[2], NULL, 16);
-		return 0;
-	}
-#if defined(CONFIG_CMD_NET)
-	else if (strcmp(argv[1], "bootfile") == 0) {
-		copy_filename(BootFile, argv[2], sizeof(BootFile));
-		return 0;
-	}
-#endif
 	return 0;
 }
 
@@ -412,7 +309,8 @@ int setenv_addr(const char *varname, const void *addr)
 	return setenv(varname, str);
 }
 
-int do_env_set(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+#ifndef CONFIG_SPL_BUILD
+static int do_env_set(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	if (argc < 2)
 		return CMD_RET_USAGE;
@@ -487,11 +385,159 @@ int do_env_ask(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 }
 #endif
 
+#if defined(CONFIG_CMD_ENV_CALLBACK)
+static int print_static_binding(const char *var_name, const char *callback_name)
+{
+	printf("\t%-20s %-20s\n", var_name, callback_name);
+
+	return 0;
+}
+
+static int print_active_callback(ENTRY *entry)
+{
+	struct env_clbk_tbl *clbkp;
+	int i;
+	int num_callbacks;
+
+	if (entry->callback == NULL)
+		return 0;
+
+	/* look up the callback in the linker-list */
+	num_callbacks = ll_entry_count(struct env_clbk_tbl, env_clbk);
+	for (i = 0, clbkp = ll_entry_start(struct env_clbk_tbl, env_clbk);
+	     i < num_callbacks;
+	     i++, clbkp++) {
+#if defined(CONFIG_NEEDS_MANUAL_RELOC)
+		if (entry->callback == clbkp->callback + gd->reloc_off)
+#else
+		if (entry->callback == clbkp->callback)
+#endif
+			break;
+	}
+
+	if (i == num_callbacks)
+		/* this should probably never happen, but just in case... */
+		printf("\t%-20s %p\n", entry->key, entry->callback);
+	else
+		printf("\t%-20s %-20s\n", entry->key, clbkp->name);
+
+	return 0;
+}
+
+/*
+ * Print the callbacks available and what they are bound to
+ */
+int do_env_callback(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	struct env_clbk_tbl *clbkp;
+	int i;
+	int num_callbacks;
+
+	/* Print the available callbacks */
+	puts("Available callbacks:\n");
+	puts("\tCallback Name\n");
+	puts("\t-------------\n");
+	num_callbacks = ll_entry_count(struct env_clbk_tbl, env_clbk);
+	for (i = 0, clbkp = ll_entry_start(struct env_clbk_tbl, env_clbk);
+	     i < num_callbacks;
+	     i++, clbkp++)
+		printf("\t%s\n", clbkp->name);
+	puts("\n");
+
+	/* Print the static bindings that may exist */
+	puts("Static callback bindings:\n");
+	printf("\t%-20s %-20s\n", "Variable Name", "Callback Name");
+	printf("\t%-20s %-20s\n", "-------------", "-------------");
+	env_attr_walk(ENV_CALLBACK_LIST_STATIC, print_static_binding);
+	puts("\n");
+
+	/* walk through each variable and print the callback if it has one */
+	puts("Active callback bindings:\n");
+	printf("\t%-20s %-20s\n", "Variable Name", "Callback Name");
+	printf("\t%-20s %-20s\n", "-------------", "-------------");
+	hwalk_r(&env_htab, print_active_callback);
+	return 0;
+}
+#endif
+
+#if defined(CONFIG_CMD_ENV_FLAGS)
+static int print_static_flags(const char *var_name, const char *flags)
+{
+	enum env_flags_vartype type = env_flags_parse_vartype(flags);
+	enum env_flags_varaccess access = env_flags_parse_varaccess(flags);
+
+	printf("\t%-20s %-20s %-20s\n", var_name,
+		env_flags_get_vartype_name(type),
+		env_flags_get_varaccess_name(access));
+
+	return 0;
+}
+
+static int print_active_flags(ENTRY *entry)
+{
+	enum env_flags_vartype type;
+	enum env_flags_varaccess access;
+
+	if (entry->flags == 0)
+		return 0;
+
+	type = (enum env_flags_vartype)
+		(entry->flags & ENV_FLAGS_VARTYPE_BIN_MASK);
+	access = env_flags_parse_varaccess_from_binflags(entry->flags);
+	printf("\t%-20s %-20s %-20s\n", entry->key,
+		env_flags_get_vartype_name(type),
+		env_flags_get_varaccess_name(access));
+
+	return 0;
+}
+
+/*
+ * Print the flags available and what variables have flags
+ */
+int do_env_flags(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	/* Print the available variable types */
+	printf("Available variable type flags (position %d):\n",
+		ENV_FLAGS_VARTYPE_LOC);
+	puts("\tFlag\tVariable Type Name\n");
+	puts("\t----\t------------------\n");
+	env_flags_print_vartypes();
+	puts("\n");
+
+	/* Print the available variable access types */
+	printf("Available variable access flags (position %d):\n",
+		ENV_FLAGS_VARACCESS_LOC);
+	puts("\tFlag\tVariable Access Name\n");
+	puts("\t----\t--------------------\n");
+	env_flags_print_varaccess();
+	puts("\n");
+
+	/* Print the static flags that may exist */
+	puts("Static flags:\n");
+	printf("\t%-20s %-20s %-20s\n", "Variable Name", "Variable Type",
+		"Variable Access");
+	printf("\t%-20s %-20s %-20s\n", "-------------", "-------------",
+		"---------------");
+	env_attr_walk(ENV_FLAGS_LIST_STATIC, print_static_flags);
+	puts("\n");
+
+	/* walk through each variable and print the flags if non-default */
+	puts("Active flags:\n");
+	printf("\t%-20s %-20s %-20s\n", "Variable Name", "Variable Type",
+		"Variable Access");
+	printf("\t%-20s %-20s %-20s\n", "-------------", "-------------",
+		"---------------");
+	hwalk_r(&env_htab, print_active_flags);
+	return 0;
+}
+#endif
+
 /*
  * Interactively edit an environment variable
  */
 #if defined(CONFIG_CMD_EDITENV)
-int do_env_edit(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_env_edit(cmd_tbl_t *cmdtp, int flag, int argc,
+		       char * const argv[])
 {
 	char buffer[CONFIG_SYS_CBSIZE];
 	char *init_val;
@@ -511,6 +557,7 @@ int do_env_edit(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return setenv(argv[1], buffer);
 }
 #endif /* CONFIG_CMD_EDITENV */
+#endif /* CONFIG_SPL_BUILD */
 
 /*
  * Look up variable from environment,
@@ -526,7 +573,7 @@ char *getenv(const char *name)
 
 		e.key	= name;
 		e.data	= NULL;
-		hsearch_r(e, FIND, &ep, &env_htab);
+		hsearch_r(e, FIND, &ep, &env_htab, 0);
 
 		return ep ? ep->data : NULL;
 	}
@@ -596,8 +643,10 @@ ulong getenv_ulong(const char *name, int base, ulong default_val)
 	return str ? simple_strtoul(str, NULL, base) : default_val;
 }
 
+#ifndef CONFIG_SPL_BUILD
 #if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
-int do_env_save(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_env_save(cmd_tbl_t *cmdtp, int flag, int argc,
+		       char * const argv[])
 {
 	printf("Saving Environment to %s...\n", env_name_spec);
 
@@ -610,6 +659,7 @@ U_BOOT_CMD(
 	""
 );
 #endif
+#endif /* CONFIG_SPL_BUILD */
 
 
 /*
@@ -621,6 +671,9 @@ U_BOOT_CMD(
  */
 int envmatch(uchar *s1, int i2)
 {
+	if (s1 == NULL)
+		return -1;
+
 	while (*s1 == env_get_char(i2++))
 		if (*s1++ == '=')
 			return i2;
@@ -631,21 +684,77 @@ int envmatch(uchar *s1, int i2)
 	return -1;
 }
 
-static int do_env_default(cmd_tbl_t *cmdtp, int flag,
+#ifndef CONFIG_SPL_BUILD
+static int do_env_default(cmd_tbl_t *cmdtp, int __flag,
 			  int argc, char * const argv[])
 {
-	if (argc != 2 || strcmp(argv[1], "-f") != 0)
-		return CMD_RET_USAGE;
+	int all = 0, flag = 0;
 
-	set_default_env("## Resetting to default environment\n");
-	return 0;
+	debug("Initial value for argc=%d\n", argc);
+	while (--argc > 0 && **++argv == '-') {
+		char *arg = *argv;
+
+		while (*++arg) {
+			switch (*arg) {
+			case 'a':		/* default all */
+				all = 1;
+				break;
+			case 'f':		/* force */
+				flag |= H_FORCE;
+				break;
+			default:
+				return cmd_usage(cmdtp);
+			}
+		}
+	}
+	debug("Final value for argc=%d\n", argc);
+	if (all && (argc == 0)) {
+		/* Reset the whole environment */
+		set_default_env("## Resetting to default environment\n");
+		return 0;
+	}
+	if (!all && (argc > 0)) {
+		/* Reset individual variables */
+		set_default_vars(argc, argv);
+		return 0;
+	}
+
+	return cmd_usage(cmdtp);
 }
 
 static int do_env_delete(cmd_tbl_t *cmdtp, int flag,
 			 int argc, char * const argv[])
 {
-	printf("Not implemented yet\n");
-	return 0;
+	int env_flag = H_INTERACTIVE;
+	int ret = 0;
+
+	debug("Initial value for argc=%d\n", argc);
+	while (argc > 1 && **(argv + 1) == '-') {
+		char *arg = *++argv;
+
+		--argc;
+		while (*++arg) {
+			switch (*arg) {
+			case 'f':		/* force */
+				env_flag |= H_FORCE;
+				break;
+			default:
+				return CMD_RET_USAGE;
+			}
+		}
+	}
+	debug("Final value for argc=%d\n", argc);
+
+	env_id++;
+
+	while (--argc > 0) {
+		char *name = *++argv;
+
+		if (!hdelete_r(name, &env_htab, env_flag))
+			ret = 1;
+	}
+
+	return ret;
 }
 
 #ifdef CONFIG_CMD_EXPORTENV
@@ -752,7 +861,7 @@ NXTARG:		;
 	argv++;
 
 	if (sep) {		/* export as text file */
-		len = hexport_r(&env_htab, sep, &addr, size, argc, argv);
+		len = hexport_r(&env_htab, sep, 0, &addr, size, argc, argv);
 		if (len < 0) {
 			error("Cannot export environment: errno = %d\n", errno);
 			return 1;
@@ -770,7 +879,7 @@ NXTARG:		;
 	else			/* export as raw binary data */
 		res = addr;
 
-	len = hexport_r(&env_htab, '\0', &res, ENV_SIZE, argc, argv);
+	len = hexport_r(&env_htab, '\0', 0, &res, ENV_SIZE, argc, argv);
 	if (len < 0) {
 		error("Cannot export environment: errno = %d\n", errno);
 		return 1;
@@ -890,7 +999,8 @@ static int do_env_import(cmd_tbl_t *cmdtp, int flag,
 		addr = (char *)ep->data;
 	}
 
-	if (himport_r(&env_htab, addr, size, sep, del ? 0 : H_NOCLEAR) == 0) {
+	if (himport_r(&env_htab, addr, size, sep, del ? 0 : H_NOCLEAR,
+			0, NULL) == 0) {
 		error("Environment import failed: errno = %d\n", errno);
 		return 1;
 	}
@@ -913,9 +1023,15 @@ static cmd_tbl_t cmd_env_sub[] = {
 	U_BOOT_CMD_MKENT(ask, CONFIG_SYS_MAXARGS, 1, do_env_ask, "", ""),
 #endif
 	U_BOOT_CMD_MKENT(default, 1, 0, do_env_default, "", ""),
-	U_BOOT_CMD_MKENT(delete, 2, 0, do_env_delete, "", ""),
+	U_BOOT_CMD_MKENT(delete, CONFIG_SYS_MAXARGS, 0, do_env_delete, "", ""),
 #if defined(CONFIG_CMD_EDITENV)
 	U_BOOT_CMD_MKENT(edit, 2, 0, do_env_edit, "", ""),
+#endif
+#if defined(CONFIG_CMD_ENV_CALLBACK)
+	U_BOOT_CMD_MKENT(callbacks, 1, 0, do_env_callback, "", ""),
+#endif
+#if defined(CONFIG_CMD_ENV_FLAGS)
+	U_BOOT_CMD_MKENT(flags, 1, 0, do_env_flags, "", ""),
 #endif
 #if defined(CONFIG_CMD_EXPORTENV)
 	U_BOOT_CMD_MKENT(export, 4, 0, do_env_export, "", ""),
@@ -962,29 +1078,45 @@ static int do_env(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return CMD_RET_USAGE;
 }
 
-U_BOOT_CMD(
-	env, CONFIG_SYS_MAXARGS, 1, do_env,
-	"environment handling commands",
+#ifdef CONFIG_SYS_LONGHELP
+static char env_help_text[] =
 #if defined(CONFIG_CMD_ASKENV)
 	"ask name [message] [size] - ask for environment variable\nenv "
 #endif
-	"default -f - reset default environment\n"
+#if defined(CONFIG_CMD_ENV_CALLBACK)
+	"callbacks - print callbacks and their associated variables\nenv "
+#endif
+	"default [-f] -a - [forcibly] reset default environment\n"
+	"env default [-f] var [...] - [forcibly] reset variable(s) to their default values\n"
+	"env delete [-f] var [...] - [forcibly] delete variable(s)\n"
 #if defined(CONFIG_CMD_EDITENV)
 	"env edit name - edit environment variable\n"
 #endif
+#if defined(CONFIG_CMD_EXPORTENV)
 	"env export [-t | -b | -c] [-s size] addr [var ...] - export environment\n"
+#endif
+#if defined(CONFIG_CMD_ENV_FLAGS)
+	"env flags - print variables that have non-default flags\n"
+#endif
 #if defined(CONFIG_CMD_GREPENV)
 	"env grep string [...] - search environment\n"
 #endif
+#if defined(CONFIG_CMD_IMPORTENV)
 	"env import [-d] [-t | -b | -c] addr [size] - import environment\n"
-	"env print [name ...] - print environment\n"
+#endif
+	"env print [-a | name ...] - print environment\n"
 #if defined(CONFIG_CMD_RUN)
 	"env run var [...] - run commands in an environment variable\n"
 #endif
 #if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
 	"env save - save environment\n"
 #endif
-	"env set [-f] name [arg ...]\n"
+	"env set [-f] name [arg ...]\n";
+#endif
+
+U_BOOT_CMD(
+	env, CONFIG_SYS_MAXARGS, 1, do_env,
+	"environment handling commands", env_help_text
 );
 
 /*
@@ -1004,7 +1136,7 @@ U_BOOT_CMD_COMPLETE(
 U_BOOT_CMD_COMPLETE(
 	printenv, CONFIG_SYS_MAXARGS, 1,	do_env_print,
 	"print environment variables",
-	"\n    - print values of all environment variables\n"
+	"[-a]\n    - print [all] values of all environment variables\n"
 	"printenv name ...\n"
 	"    - print value of environment variable 'name'",
 	var_complete
@@ -1023,10 +1155,10 @@ U_BOOT_CMD_COMPLETE(
 U_BOOT_CMD_COMPLETE(
 	setenv, CONFIG_SYS_MAXARGS, 0,	do_env_set,
 	"set environment variables",
-	"name value ...\n"
-	"    - set environment variable 'name' to 'value ...'\n"
-	"setenv name\n"
-	"    - delete environment variable 'name'",
+	"[-f] name value ...\n"
+	"    - [forcibly] set environment variable 'name' to 'value ...'\n"
+	"setenv [-f] name\n"
+	"    - [forcibly] delete environment variable 'name'",
 	var_complete
 );
 
@@ -1056,3 +1188,4 @@ U_BOOT_CMD_COMPLETE(
 	var_complete
 );
 #endif
+#endif /* CONFIG_SPL_BUILD */

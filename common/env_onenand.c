@@ -33,13 +33,13 @@
 #include <errno.h>
 #include <onenand_uboot.h>
 
-#include <linux/mtd/compat.h>
+#include <linux/compat.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/onenand.h>
 
 char *env_name_spec = "OneNAND";
 
-#define ONENAND_MAX_ENV_SIZE	4096
+#define ONENAND_MAX_ENV_SIZE	CONFIG_ENV_SIZE
 #define ONENAND_ENV_SIZE(mtd)	(ONENAND_MAX_ENV_SIZE - ENV_HEADER_SIZE)
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -95,7 +95,7 @@ int saveenv(void)
 	};
 
 	res = (char *)&env_new.data;
-	len = hexport_r(&env_htab, '\0', &res, ENV_SIZE, 0, NULL);
+	len = hexport_r(&env_htab, '\0', 0, &res, ENV_SIZE, 0, NULL);
 	if (len < 0) {
 		error("Cannot export environment: errno = %d\n", errno);
 		return 1;

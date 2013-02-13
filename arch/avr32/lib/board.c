@@ -250,11 +250,9 @@ void board_init_f(ulong board_type)
 
 void board_init_r(gd_t *new_gd, ulong dest_addr)
 {
-	extern void malloc_bin_reloc (void);
 #ifndef CONFIG_ENV_IS_NOWHERE
 	extern char * env_name_spec;
 #endif
-	char *s;
 	bd_t *bd;
 
 	gd = new_gd;
@@ -274,8 +272,8 @@ void board_init_r(gd_t *new_gd, ulong dest_addr)
 	/*
 	 * We have to relocate the command table manually
 	 */
-	fixup_cmdtable(&__u_boot_cmd_start,
-		(ulong)(&__u_boot_cmd_end - &__u_boot_cmd_start));
+	fixup_cmdtable(ll_entry_start(cmd_tbl_t, cmd),
+			ll_entry_count(cmd_tbl_t, cmd));
 #endif /* defined(CONFIG_NEEDS_MANUAL_RELOC) */
 
 	/* there are some other pointer constants we must deal with */
@@ -316,8 +314,6 @@ void board_init_r(gd_t *new_gd, ulong dest_addr)
 	/* initialize environment */
 	env_relocate();
 
-	bd->bi_ip_addr = getenv_IPaddr ("ipaddr");
-
 	stdio_init();
 	jumptable_init();
 	console_init_r();
@@ -329,9 +325,6 @@ void board_init_r(gd_t *new_gd, ulong dest_addr)
 	bb_miiphy_init();
 #endif
 #if defined(CONFIG_CMD_NET)
-	s = getenv("bootfile");
-	if (s)
-		copy_filename(BootFile, s, sizeof(BootFile));
 	puts("Net:   ");
 	eth_initialize(gd->bd);
 #endif

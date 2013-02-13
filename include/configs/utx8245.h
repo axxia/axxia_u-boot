@@ -58,7 +58,6 @@
 
 #define CONFIG_CONS_INDEX	1
 #define CONFIG_BAUDRATE		57600
-#define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
 
 #define CONFIG_BOOTDELAY	2
 #define CONFIG_AUTOBOOT_PROMPT	"autoboot in %d seconds\n", bootdelay
@@ -66,7 +65,6 @@
 #define CONFIG_BOOTARGS		"root=/dev/ram console=ttyS0,57600" /* RAMdisk */
 #define CONFIG_ETHADDR		00:AA:00:14:00:05	/* UTX5 */
 #define CONFIG_SERVERIP		10.8.17.105	/* Spree */
-#define CONFIG_SYS_TFTP_LOADADDR	10000
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"kernel_addr=FFA00000\0" \

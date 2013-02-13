@@ -242,7 +242,6 @@
 
 /* Use the HUSH parser */
 #define CONFIG_SYS_HUSH_PARSER
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 
 /* I2C */
 #define CONFIG_HARD_I2C		/* I2C with hardware support*/
@@ -538,19 +537,21 @@
 #define CONFIG_BOOTCOMMAND	"nand read $loadaddr kernel 600000;" \
 					"bootm $loadaddr - $fdtaddr"
 
-#define XMK_STR(x)	#x
-#define MK_STR(x)	XMK_STR(x)
-
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"netdev=" CONFIG_NETDEV "\0"					\
 	"ethprime=TSEC1\0"						\
 	"uboot=" CONFIG_UBOOTPATH "\0"					\
 	"tftpflash=tftpboot $loadaddr $uboot; "				\
-		"protect off " MK_STR(CONFIG_SYS_TEXT_BASE) " +$filesize; " \
-		"erase " MK_STR(CONFIG_SYS_TEXT_BASE) " +$filesize; "	\
-		"cp.b $loadaddr " MK_STR(CONFIG_SYS_TEXT_BASE) " $filesize; " \
-		"protect on " MK_STR(CONFIG_SYS_TEXT_BASE) " +$filesize; " \
-		"cmp.b $loadaddr " MK_STR(CONFIG_SYS_TEXT_BASE) " $filesize\0" \
+		"protect off " __stringify(CONFIG_SYS_TEXT_BASE)	\
+			" +$filesize; "	\
+		"erase " __stringify(CONFIG_SYS_TEXT_BASE)		\
+			" +$filesize; "	\
+		"cp.b $loadaddr " __stringify(CONFIG_SYS_TEXT_BASE)	\
+			" $filesize; "	\
+		"protect on " __stringify(CONFIG_SYS_TEXT_BASE)		\
+			" +$filesize; "	\
+		"cmp.b $loadaddr " __stringify(CONFIG_SYS_TEXT_BASE)	\
+			" $filesize\0"	\
 	"fdtaddr=ae0000\0"						\
 	"fdtfile=" CONFIG_FDTFILE "\0"					\
 	"console=ttyS0\0"						\
@@ -592,8 +593,5 @@
 	"tftp $loadaddr $bootfile;"					\
 	"tftp $fdtaddr $fdtfile;"					\
 	"bootm $loadaddr $ramdiskaddr $fdtaddr"
-
-#undef MK_STR
-#undef XMK_STR
 
 #endif	/* __CONFIG_H */

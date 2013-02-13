@@ -272,7 +272,11 @@ static int setup_phy(struct eth_device *dev)
 	phydev->advertising = phydev->supported;
 	priv->phydev = phydev;
 	phy_config(phydev);
-	phy_startup(phydev);
+	if (phy_startup(phydev)) {
+		printf("axiemac: could not initialize PHY %s\n",
+		       phydev->dev->name);
+		return 0;
+	}
 
 	switch (phydev->speed) {
 	case 1000:
@@ -468,7 +472,7 @@ static int axiemac_init(struct eth_device *dev, bd_t * bis)
 	return 0;
 }
 
-static int axiemac_send(struct eth_device *dev, volatile void *ptr, int len)
+static int axiemac_send(struct eth_device *dev, void *ptr, int len)
 {
 	struct axidma_priv *priv = dev->priv;
 	u32 timeout;

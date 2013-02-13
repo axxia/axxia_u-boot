@@ -28,6 +28,9 @@
 #include <config.h>
 #include <malloc.h>
 #include <asm/io.h>
+#include <fdtdec.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 #undef DEBUG
 
@@ -199,7 +202,7 @@ static int xemaclite_txbufferavailable(struct eth_device *dev)
 	return !(txpingbusy && txpongbusy);
 }
 
-static int emaclite_send(struct eth_device *dev, volatile void *ptr, int len)
+static int emaclite_send(struct eth_device *dev, void *ptr, int len)
 {
 	u32 reg;
 	u32 baseaddress;
@@ -240,7 +243,7 @@ static int emaclite_send(struct eth_device *dev, volatile void *ptr, int len)
 
 		debug("Send packet from 0x%x\n", baseaddress);
 		/* Write the frame to the buffer */
-		xemaclite_alignedwrite((void *) ptr, baseaddress, len);
+		xemaclite_alignedwrite(ptr, baseaddress, len);
 		out_be32 (baseaddress + XEL_TPLR_OFFSET,(len &
 			(XEL_TPLR_LENGTH_MASK_HI | XEL_TPLR_LENGTH_MASK_LO)));
 		reg = in_be32 (baseaddress + XEL_TSR_OFFSET);
@@ -261,7 +264,7 @@ static int emaclite_send(struct eth_device *dev, volatile void *ptr, int len)
 				& XEL_TSR_XMIT_ACTIVE_MASK) == 0)) {
 			debug("Send packet from 0x%x\n", baseaddress);
 			/* Write the frame to the buffer */
-			xemaclite_alignedwrite((void *) ptr, baseaddress, len);
+			xemaclite_alignedwrite(ptr, baseaddress, len);
 			out_be32 (baseaddress + XEL_TPLR_OFFSET, (len &
 				(XEL_TPLR_LENGTH_MASK_HI |
 					XEL_TPLR_LENGTH_MASK_LO)));
@@ -375,3 +378,30 @@ int xilinx_emaclite_initialize(bd_t *bis, unsigned long base_addr,
 
 	return 1;
 }
+
+#ifdef CONFIG_OF_CONTROL
+int xilinx_emaclite_init(bd_t *bis)
+{
+	int offset = 0;
+	u32 ret = 0;
+	u32 reg;
+
+	do {
+		offset = fdt_node_offset_by_compatible(gd->fdt_blob, offset,
+					"xlnx,xps-ethernetlite-1.00.a");
+		if (offset != -1) {
+			reg = fdtdec_get_addr(gd->fdt_blob, offset, "reg");
+			if (reg != FDT_ADDR_T_NONE) {
+				u32 rxpp = fdtdec_get_int(gd->fdt_blob, offset,
+							"xlnx,rx-ping-pong", 0);
+				u32 txpp = fdtdec_get_int(gd->fdt_blob, offset,
+							"xlnx,tx-ping-pong", 0);
+				ret |= xilinx_emaclite_initialize(bis, reg,
+								txpp, rxpp);
+			}
+		}
+	} while (offset != -1);
+
+	return ret;
+}
+#endif

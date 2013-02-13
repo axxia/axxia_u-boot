@@ -135,7 +135,6 @@ struct stdio_dev* stdio_clone(struct stdio_dev *dev)
 		return NULL;
 
 	memcpy(_dev, dev, sizeof(struct stdio_dev));
-	strncpy(_dev->name, dev->name, 16);
 
 	return _dev;
 }
@@ -191,6 +190,7 @@ int stdio_deregister(const char *devname)
 }
 #endif	/* CONFIG_SYS_STDIO_DEREGISTER */
 
+#ifndef CONFIG_ACP
 int stdio_init (void)
 {
 #if defined(CONFIG_NEEDS_MANUAL_RELOC)
@@ -227,9 +227,7 @@ int stdio_init (void)
 	drv_logbuff_init ();
 #endif
 	drv_system_init ();
-#ifdef CONFIG_SERIAL_MULTI
 	serial_stdio_init ();
-#endif
 #ifdef CONFIG_USB_TTY
 	drv_usbtty_init ();
 #endif
@@ -239,6 +237,9 @@ int stdio_init (void)
 #ifdef CONFIG_JTAG_CONSOLE
 	drv_jtag_console_init ();
 #endif
-
+#ifdef CONFIG_CBMEM_CONSOLE
+	cbmemc_init();
+#endif
 	return (0);
 }
+#endif	/* CONFIG_ACP */

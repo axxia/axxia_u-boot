@@ -26,6 +26,7 @@
 #include <asm/arch/mx5x_pins.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/arch/crm_regs.h>
+#include <asm/arch/clock.h>
 #include <asm/arch/iomux.h>
 #include <asm/errno.h>
 #include <netdev.h>
@@ -129,20 +130,22 @@ static void setup_iomux_fec(void)
 
 #ifdef CONFIG_FSL_ESDHC
 struct fsl_esdhc_cfg esdhc_cfg[1] = {
-	{MMC_SDHC1_BASE_ADDR, 1},
+	{MMC_SDHC1_BASE_ADDR},
 };
 
 int board_mmc_getcd(struct mmc *mmc)
 {
 	mxc_request_iomux(MX53_PIN_EIM_DA13, IOMUX_CONFIG_ALT1);
-	gpio_direction_input(77);
-	return !gpio_get_value(77); /* GPIO3_13 */
+	gpio_direction_input(IMX_GPIO_NR(3, 13));
+	return !gpio_get_value(IMX_GPIO_NR(3, 13));
 }
 
 int board_mmc_init(bd_t *bis)
 {
 	u32 index;
 	s32 status = 0;
+
+	esdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK);
 
 	for (index = 0; index < CONFIG_SYS_FSL_ESDHC_NUM; index++) {
 		switch (index) {
