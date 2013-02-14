@@ -291,7 +291,7 @@ sysmem_init(void)
 	 * with valid info
 	 */
 	for (count = i2c_chip; count <= i2c_chip_limit; count++) {
-		if (i2c_read(0x50, 0x2, 1, &buffer, 1) != -1) {
+		if (i2c_read(count, 0x2, 1, &buffer, 1) != -1) {
 			spd_memType = buffer;
 			if (spd_memType == 0xb) {
 				/* DDR3 memory type detected */
@@ -304,7 +304,7 @@ sysmem_init(void)
 		printf("SPD not detected in i2c chip range 0x%x-0x%x\n", i2c_chip, i2c_chip_limit);
 	} else{
 		/* Read the number of Ranks per Interface and device width*/
-		if (i2c_read(0x50, 0x7, 1, &buffer, 1) != -1) {
+		if (i2c_read(count, 0x7, 1, &buffer, 1) != -1) {
 			/* byte 7 bits 5:3 and add 1 to it*/
 			spd_num_ranks_per_interface = ((buffer >> 3) & 0x7) + 0x1;
 			sysmem->num_ranks_per_interface = spd_num_ranks_per_interface;
@@ -323,19 +323,19 @@ sysmem_init(void)
 		}
 
 		/* Read the Device Density */
-		if (i2c_read(0x50, 0x4, 1, &buffer, 1) != -1) {
+		if (i2c_read(count, 0x4, 1, &buffer, 1) != -1) {
 			/* byte 4 bits 3:0 */
 			spd_device_density = (buffer & 0xf);
 			sysmem->sdram_device_density = spd_device_density;
 		}
 		/* Read the Temperature */
-		if (i2c_read(0x50, 0x1f, 1, &buffer, 1) != -1) {
+		if (i2c_read(count, 0x1f, 1, &buffer, 1) != -1) {
 			/* byte 31 bit 0 */
 			spd_high_temp_dram = (buffer & 0x1);
 			sysmem->high_temp_dram = spd_high_temp_dram;
 		}
 		/* Read the Address Mirroring */
-		if (i2c_read(0x50, 0x3f, 1, &buffer, 1) != -1) {
+		if (i2c_read(count, 0x3f, 1, &buffer, 1) != -1) {
 			/* byte 63 bit 0 */
 			spd_address_mirroring = (buffer & 0x1);
 			sysmem->address_mirroring = spd_address_mirroring;
