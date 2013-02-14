@@ -185,6 +185,7 @@ flash_write (char *src, ulong addr, ulong cnt)
 #endif /* CONFIG_SPD823TS */
 }
 
+
 /*-----------------------------------------------------------------------
  */
 

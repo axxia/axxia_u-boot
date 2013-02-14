@@ -36,6 +36,7 @@
 int _do_help (cmd_tbl_t *cmd_start, int cmd_items, cmd_tbl_t * cmdtp, int
 	      flag, int argc, char *argv[])
 {
+#ifndef CFG_NOHELP
 	int i;
 	int rcode = 0;
 
@@ -59,6 +60,11 @@ int _do_help (cmd_tbl_t *cmd_start, int cmd_items, cmd_tbl_t * cmdtp, int
 					tmp = cmd_array[j];
 					cmd_array[j] = cmd_array[j + 1];
 					cmd_array[j + 1] = tmp;
+#ifdef ZDEBUG
+					printf( "%s:%d - i=%d j=%d 0x%x 0x%x\n",
+						__FILE__, __LINE__, i, j,
+						cmd_array[j], cmd_array[j+1] );
+#endif
 					++swaps;
 				}
 			}
@@ -95,6 +101,9 @@ int _do_help (cmd_tbl_t *cmd_start, int cmd_items, cmd_tbl_t * cmdtp, int
 		}
 	}
 	return rcode;
+#else
+	return 0;
+#endif
 }
 
 /***************************************************************************
@@ -140,6 +149,7 @@ cmd_tbl_t *find_cmd (const char *cmd)
 
 int cmd_usage(cmd_tbl_t *cmdtp)
 {
+#ifndef CFG_NOHELP
 	printf("%s - %s\n\n", cmdtp->name, cmdtp->usage);
 
 #ifdef	CONFIG_SYS_LONGHELP
@@ -153,6 +163,7 @@ int cmd_usage(cmd_tbl_t *cmdtp)
 	puts (cmdtp->help);
 	putc ('\n');
 #endif	/* CONFIG_SYS_LONGHELP */
+#endif /* CFG_NOHELP */
 	return 0;
 }
 

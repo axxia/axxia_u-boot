@@ -344,8 +344,9 @@ static inline int is_end_point(int port)
 	char s[10], *tk;
 	char *pcie_mode = getenv("pcie_mode");
 
-	if (pcie_mode == NULL)
+	if (pcie_mode == NULL) {
 		return 0;
+	}
 
 	strcpy(s, pcie_mode);
 	tk = strtok(s, ":");
@@ -389,6 +390,7 @@ static inline int is_end_point(int port)
 	return 0;
 }
 
+#if 0
 static inline void mdelay(int n)
 {
 	u32 ms = n;
@@ -396,6 +398,7 @@ static inline void mdelay(int n)
 	while (ms--)
 		udelay(1000);
 }
+#endif
 
 #if defined(PCIE0_SDR)
 static inline u32 sdr_base(int port)

@@ -205,6 +205,18 @@ struct tag_memclk {
 	u32 fmemclk;
 };
 
+/* APP specific information*/
+#define ATAG_APP 0x41000202
+
+struct tag_app {
+  u32 core_speed;
+  u32 host_speed;
+  u32 uboot_size;
+  u32 ubootenv0_size;
+  u32 ubootenv1_size;
+  u32 pci_sm;
+};
+
 struct tag {
 	struct tag_header hdr;
 	union {
@@ -227,6 +239,11 @@ struct tag {
 		 * DC21285 specific
 		 */
 		struct tag_memclk	memclk;
+
+        /*
+         * APP specific
+         */
+        struct tag_app      app;
 	} u;
 };
 

@@ -42,6 +42,20 @@
 
 #define USB_CNTL_TIMEOUT 100 /* 100ms timeout */
 
+#ifdef CONFIG_ACP3
+/*
+ * Errors we can report, e.g. return USB_EDEVCRITICAL
+ * Use -ve numbers to fit in with usb_storage
+ * U-Boot needs some unified numbers
+ */
+#define USB_EOK			0	/* ok, no error */
+#define USB_EFAIL		-1	/* general failure(!) */
+#define USB_EDEVCRITICAL	-2	/* must reset device on hub */
+#define USB_ENEXTFREE		-3	/* next free error number */
+#endif
+
+
+
 /* device request (setup) */
 struct devrequest {
 	unsigned char	requesttype;
@@ -198,6 +212,12 @@ int usb_get_class_descriptor(struct usb_device *dev, int ifnum,
 int usb_clear_halt(struct usb_device *dev, int pipe);
 int usb_string(struct usb_device *dev, int index, char *buf, size_t size);
 int usb_set_interface(struct usb_device *dev, int interface, int alternate);
+
+#ifdef CONFIG_ACP3
+int usb_restart_device(struct usb_device *dev);
+#endif
+
+
 
 /* big endian -> little endian conversion */
 /* some CPUs are already little endian e.g. the ARM920T */

@@ -39,7 +39,9 @@ COBJS-y += memsize.o
 COBJS-y += s_record.o
 COBJS-$(CONFIG_SERIAL_MULTI) += serial.o
 COBJS-y += stdio.o
+ifndef CONFIG_ACP2
 COBJS-y += xyzModem.o
+endif
 
 # core command
 COBJS-y += cmd_boot.o
@@ -63,6 +65,8 @@ COBJS-$(CONFIG_ENV_IS_IN_NVRAM) += env_nvram.o
 COBJS-$(CONFIG_ENV_IS_IN_ONENAND) += env_onenand.o
 COBJS-$(CONFIG_ENV_IS_IN_SPI_FLASH) += env_sf.o
 COBJS-$(CONFIG_ENV_IS_NOWHERE) += env_nowhere.o
+#jl
+COBJS-$(CONFIG_ENV_IS_IN_SERIAL_FLASH) += env_serial_flash.o
 
 # command
 COBJS-$(CONFIG_CMD_AMBAPP) += cmd_ambapp.o
@@ -165,7 +169,14 @@ COBJS-$(CONFIG_LYNXKDI) += lynxkdi.o
 COBJS-$(CONFIG_MODEM_SUPPORT) += modem.o
 COBJS-$(CONFIG_UPDATE_TFTP) += update.o
 COBJS-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
-
+COBJS-$(CONFIG_LSI_NET) += cmd_lsi_net.o
+COBJS-$(CONFIG_LSI_SSP) += cmd_lsi_ssp.o
+COBJS-$(CONFIG_LSI_NCR) += cmd_lsi_ncr.o
+COBJS-$(CONFIG_LSI_MDIO) += cmd_lsi_mdio.o
+COBJS-$(CONFIG_LSI_IO) += cmd_lsi_io.o
+COBJS-$(CONFIG_LSI_TEST) += cmd_lsi_test.o
+COBJS-$(CONFIG_LSI_OSG) += cmd_lsi_osg.o
+COBJS-$(CONFIG_LSI_SBB) += cmd_lsi_sbb.o
 
 COBJS	:= $(sort $(COBJS-y))
 SRCS	:= $(AOBJS:.o=.S) $(COBJS:.o=.c)

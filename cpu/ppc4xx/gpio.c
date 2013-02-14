@@ -21,6 +21,8 @@
  * MA 02111-1307 USA
  */
 
+#ifndef ACP
+
 #include <common.h>
 #include <asm/processor.h>
 #include <asm/io.h>
@@ -253,3 +255,5 @@ void gpio_set_chip_configuration(void)
 	}
 }
 #endif /* CONFIG_SYS_4xx_GPIO_TABLE */
+
+#endif /* ACP */

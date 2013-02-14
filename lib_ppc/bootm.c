@@ -33,13 +33,16 @@
 #include <bzlib.h>
 #include <environment.h>
 #include <asm/byteorder.h>
+#include <asm/processor.h>
+#include <asm/io.h>
 
 #if defined(CONFIG_OF_LIBFDT)
 #include <fdt.h>
 #include <libfdt.h>
 #include <fdt_support.h>
-
 #endif
+
+#define DEBUG
 
 #ifdef CONFIG_SYS_INIT_RAM_LOCK
 #include <asm/cache.h>
@@ -55,6 +58,221 @@ static void set_clocks_in_mhz (bd_t *kbd);
 #ifndef CONFIG_SYS_LINUX_LOWMEM_MAX_SIZE
 #define CONFIG_SYS_LINUX_LOWMEM_MAX_SIZE	(768*1024*1024)
 #endif
+
+#ifndef CONFIG_ACP2
+
+#ifdef CONFIG_ACP3
+
+void board_reset(void);
+
+static void
+boot_jump_linux(bootm_headers_t *images)
+{
+	char *new_commandline;
+	char *bootargs;
+	char *mtdparts = getenv("mtdparts");
+	char *baudrate = getenv("baudrate");
+	int group;
+	int core;
+	int cores;
+	unsigned long os_base;
+	char *ccr0_env;
+	char *ccr1_env;
+	char *ccr2_env;
+	unsigned long ccr0_val;
+	unsigned long ccr1_val;
+	unsigned long ccr2_val;
+	void (*kernel)(bd_t *, ulong, ulong, ulong, ulong);
+	int rc;
+	struct fdt_header *dt;
+
+	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
+	group = acp_osg_get_current();
+	dt = get_acp_fdt(group);
+	os_base = (acp_osg_group_get_res(group, ACP_OS_BASE) * 1024 * 1024);
+	printf("Booting OS Group: core %d, group %d, fdt 0x%08x\n",
+	       core, group, dt);
+
+	/* Update the command line */
+	new_commandline = calloc(512, 1);
+
+	if ((char *)0 == new_commandline) {
+		printf("Unable to update the command line.\n");
+		goto error;
+	}
+
+	switch (group) {
+	case 0:
+		bootargs = getenv("osgroup0_bootargs");
+		break;
+	case 1:
+		bootargs = getenv("osgroup1_bootargs");
+		break;
+	case 2:
+		bootargs = getenv("osgroup2_bootargs");
+		break;
+	case 3:
+		bootargs = getenv("osgroup3_bootargs");
+		break;
+	default:
+		goto error;
+		break;
+	}
+
+	if (NULL == bootargs)
+		bootargs = getenv("bootargs3");
+
+	if ((char *)0 != bootargs) {
+		strcat(new_commandline, bootargs);
+
+		if((char *)0 != mtdparts) {
+			strcat(new_commandline, " ");
+			strcat(new_commandline, mtdparts);
+		}
+	}
+
+	printf("Linux Command Line: %s\n", new_commandline);
+
+	rc = fdt_find_and_setprop(dt, "/chosen", "bootargs",
+				  new_commandline,
+				  strlen(new_commandline) + 1, 1);
+
+	if(0 != rc) {
+		printf("Unable to set bootargs: %d.\n", rc);
+		goto error;
+	}
+
+	free(new_commandline);
+
+	/* Set up the memory definition in the device tree. */
+	printf("Updating /memory reg\n");
+	{
+		unsigned long value[3];
+
+		value[0] = 0x00000000;
+		value[1] = os_base;
+		value[2] =
+		  (acp_osg_group_get_res(group, ACP_OS_SIZE) * 1024 * 1024);
+
+		rc = fdt_find_and_setprop(dt, "/memory", "reg",
+					  (void *)value, sizeof(value), 1);
+
+		if(0 != rc) {
+			printf("Unable to set /memory reg: %d.\n", rc);
+			goto error;
+		}
+	}
+
+	if (0 != images->initrd_start && 0 != images->initrd_end) {
+		rc = fdt_find_and_setprop(dt, "/chosen",
+					  "linux,initrd-start",
+					  (void *)&images->initrd_start,
+					  sizeof(unsigned long), 1);
+		rc |= fdt_find_and_setprop(dt, "/chosen",
+					   "linux,initrd-end",
+					   (void *)&images->initrd_end,
+					   sizeof(unsigned long), 1);
+
+		if (0 != rc) {
+			printf("Unable to set up the ramdisk.\n");
+			goto error;
+		}
+	}
+
+	/* Set up secondary cores. */
+	cores = acp_osg_group_get_res(group, ACP_OS_CORES);
+	cores &= ~acp_osg_group_get_res(group, ACP_OS_BOOT_CORE);
+
+	if (NULL != (ccr0_env = getenv("ccr0")))
+	  ccr0_val = simple_strtoul(ccr0_env, NULL, 16);
+	else
+	  ccr0_val = CCR0_DEFAULT;
+
+	if (NULL != (ccr1_env = getenv("ccr1")))
+	  ccr1_val = simple_strtoul(ccr1_env, NULL, 16);
+	else
+	  ccr1_val = CCR1_DEFAULT;
+
+	if (NULL != (ccr2_env = getenv("ccr2")))
+	  ccr2_val = simple_strtoul(ccr2_env, NULL, 16);
+	else
+	  ccr2_val = CCR2_DEFAULT;
+
+	printf("CCR0=0x%08lx CCR1=0x%08lx CCR2=0x%08lx\n",
+	       ccr0_val, ccr1_val, ccr2_val );
+
+	if (0 != cores) {
+		for (core = 0; core < ACP_NR_CORES; ++core) {
+			if (0 == ((1 << core) & cores))
+				continue;
+			(acp_spintable[core])->ccr0_value = ccr0_val;
+			(acp_spintable[core])->ccr1_value = ccr1_val;
+			(acp_spintable[core])->ccr2_value = ccr2_val;
+		}
+	}
+
+	/* Remove unused cores from the device tree. */
+	for (core = 0; core < ACP_NR_CORES; ++core) {
+		int nodeoffset;
+		char buffer[20];
+
+		if ((0 != ((1 << core) & cores)) ||
+		    ((1 << core) ==
+		     acp_osg_group_get_res(group, ACP_OS_BOOT_CORE)))
+			continue;
+
+		sprintf(buffer, "/cpus/cpu@%d", core);
+		nodeoffset = fdt_path_offset(dt, buffer);
+
+		if (0 > nodeoffset) {
+			printf("Error Getting Offset of %s.\n", buffer);
+			goto error;
+		}
+
+		fdt_del_node(dt, nodeoffset);
+	}
+
+	/* Update the CCRn values for the boot core. */
+	mtspr( ccr0, ccr0_val );
+	mtspr( ccr1, ccr1_val );
+	mtspr( ccr2, ccr2_val );
+	isync( );
+
+	/* Boot Linux */
+	kernel = (void (*)(bd_t *, ulong, ulong, ulong, ulong))images->ep;
+#ifdef CONFIG_ACP3
+	/* If necessary, Copy the device tree. */
+	if (0 != os_base) {
+		rc = fdt_open_into(dt,
+				   os_base,
+				   fdt_totalsize(dt));
+
+		if (0 != rc) {
+			printf("Unable to copy device tree!\n");
+			goto error;
+		}
+
+		dt = (struct fdt_header *)os_base;
+	}
+
+	acp_osg_set_os(group, kernel, (unsigned long)dt,
+		       (unsigned long)kernel, 0, 0, 0);
+#else
+	/* Release the stage 3 lock. */
+	acp_unlock_stage3();
+
+	(*kernel)((bd_t *)dt, (ulong)kernel, 0, 0, 0);
+#endif
+
+ error:
+
+#ifndef CONFIG_ACP
+	board_reset();
+#endif
+	return;
+}
+
+#else  /* CONFIG_ACP3 */
 
 static void boot_jump_linux(bootm_headers_t *images)
 {
@@ -92,7 +310,6 @@ static void boot_jump_linux(bootm_headers_t *images)
 #else
  #define EPAPR_MAGIC	(0x65504150)
 #endif
-
 		debug ("   Booting using OF flat tree...\n");
 		WATCHDOG_RESET ();
 		(*kernel) ((bd_t *)of_flat_tree, 0, 0, EPAPR_MAGIC,
@@ -125,6 +342,7 @@ static void boot_jump_linux(bootm_headers_t *images)
 	}
 	return ;
 }
+#endif /* CONFIG_ACP3 */
 
 void arch_lmb_reserve(struct lmb *lmb)
 {
@@ -296,9 +514,12 @@ static int boot_body_linux(bootm_headers_t *images)
 	return 0;
 }
 
+#endif /* CONFIG_ACP2 */
+
 __attribute__((noinline))
 int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	int	ret;
 
 	if (flag & BOOTM_STATE_OS_CMDLINE) {
@@ -327,8 +548,33 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 		return ret;
 	boot_jump_linux(images);
 
+#endif /* CONFIG_ACP2 */
 	return 0;
 }
+
+#ifdef CONFIG_BOOTM_UBOOT
+__attribute__((noinline)) int
+do_bootm_uboot(int flag, int argc, char *argv[], bootm_headers_t *images)
+{
+	int ret = 0;
+	void (*uboot)(void);
+
+	uboot = (void (*)(void))images->ep;
+#ifdef ACP
+	__asm__ __volatile__ ("lis            6,0\n"   \
+			      "mtspr          27,6\n"  \
+			      "mtspr          26,%0\n" \
+			      "iccci          %0,%0\n" \
+			      "dccci          %0,%0\n" \
+			      "rfi\n" : :
+			      "r" (uboot));
+#else
+	(*uboot)();
+#endif
+
+	return ret;
+}
+#endif /* CONFIG_BOOTM_UBOOT */
 
 static ulong get_sp (void)
 {

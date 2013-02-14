@@ -158,6 +158,7 @@ int do_mem_md ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	return (rc);
 }
 
+#ifndef CONFIG_ACP
 int do_mem_mm ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	return mod_mem (cmdtp, 1, flag, argc, argv);
@@ -166,6 +167,7 @@ int do_mem_nm ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	return mod_mem (cmdtp, 0, flag, argc, argv);
 }
+#endif /* CONFIG_ACP2 */
 
 int do_mem_mw ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
@@ -210,6 +212,7 @@ int do_mem_mw ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	return 0;
 }
 
+#ifndef CONFIG_ACP2
 #ifdef CONFIG_MX_CYCLIC
 int do_mem_mdc ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
@@ -354,6 +357,7 @@ int do_mem_cmp (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		ngood == 1 ? "" : "s");
 	return rcode;
 }
+#endif /* CONFIG_ACP2 */
 
 int do_mem_cp ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
@@ -621,6 +625,10 @@ int do_mem_loopw (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 }
 #endif /* CONFIG_LOOPW */
 
+#ifdef CONFIG_CMD_MTEST
+#ifdef CONFIG_ACP
+static vu_long memtest_scratch;
+#endif
 /*
  * Perform a memory test. A more complete alternative test can be
  * configured using CONFIG_SYS_ALT_MEMTEST. The complete test loops until
@@ -643,10 +651,14 @@ int do_mem_mtest (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	vu_long	temp;
 	vu_long	anti_pattern;
 	vu_long	num_words;
+#ifdef CONFIG_ACP
+	vu_long *dummy = &memtest_scratch;
+#else
 #if defined(CONFIG_SYS_MEMTEST_SCRATCH)
 	vu_long *dummy = (vu_long*)CONFIG_SYS_MEMTEST_SCRATCH;
 #else
 	vu_long *dummy = 0;	/* yes, this is address 0x0, not NULL */
+#endif
 #endif
 	int	j;
 
@@ -976,7 +988,6 @@ int do_mem_mtest (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	return 0;	/* not reached */
 }
 
-
 /* Modify memory.
  *
  * Syntax:
@@ -1245,8 +1256,9 @@ int do_unzip ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 	return !!gunzip((void *) dst, dst_len, (void *) src, &src_len);
 }
-#endif /* CONFIG_CMD_UNZIP */
 
+#endif /* CONFIG_CMD_UNZIP */
+#endif /* CONFIG_ACP2 */
 
 /**************************************************/
 U_BOOT_CMD(
@@ -1255,7 +1267,7 @@ U_BOOT_CMD(
 	"[.b, .w, .l] address [# of objects]"
 );
 
-
+#ifndef CONFIG_ACP
 U_BOOT_CMD(
 	mm,	2,	1,	do_mem_mm,
 	"memory modify (auto-incrementing address)",
@@ -1268,6 +1280,7 @@ U_BOOT_CMD(
 	"memory modify (constant address)",
 	"[.b, .w, .l] address"
 );
+#endif /* CONFIG_ACP2 */
 
 U_BOOT_CMD(
 	mw,	4,	1,	do_mem_mw,
@@ -1275,6 +1288,7 @@ U_BOOT_CMD(
 	"[.b, .w, .l] address value [count]"
 );
 
+#ifndef CONFIG_ACP2
 U_BOOT_CMD(
 	cp,	4,	1,	do_mem_cp,
 	"memory copy",
@@ -1289,11 +1303,13 @@ U_BOOT_CMD(
 
 #ifndef CONFIG_CRC32_VERIFY
 
+#ifndef CONFIG_ACP
 U_BOOT_CMD(
 	crc32,	4,	1,	do_mem_crc,
 	"checksum calculation",
 	"address count [addr]\n    - compute CRC32 checksum [save at addr]"
 );
+#endif
 
 #else	/* CONFIG_CRC32_VERIFY */
 
@@ -1326,12 +1342,6 @@ U_BOOT_CMD(
 	"[.b, .w, .l] address number_of_objects data_to_write"
 );
 #endif /* CONFIG_LOOPW */
-
-U_BOOT_CMD(
-	mtest,	5,	1,	do_mem_mtest,
-	"simple RAM read/write test",
-	"[start [end [pattern [iterations]]]]"
-);
 
 #ifdef CONFIG_MX_CYCLIC
 U_BOOT_CMD(
@@ -1370,3 +1380,12 @@ U_BOOT_CMD(
 	"srcaddr dstaddr [dstsize]"
 );
 #endif /* CONFIG_CMD_UNZIP */
+#endif /* CONFIG_ACP2 */
+
+#ifdef CONFIG_CMD_MTEST
+U_BOOT_CMD(
+	mtest,	5,	1,	do_mem_mtest,
+	"simple RAM read/write test",
+	"[start [end [pattern [iterations]]]]"
+);
+#endif

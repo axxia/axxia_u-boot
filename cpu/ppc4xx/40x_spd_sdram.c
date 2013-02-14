@@ -42,6 +42,8 @@
  * MA 02111-1307 USA
  */
 
+#ifndef ACP
+
 #include <common.h>
 #include <asm/processor.h>
 #include <i2c.h>
@@ -462,3 +464,5 @@ int spd_read(uint addr)
 }
 
 #endif /* CONFIG_SPD_EEPROM */
+
+#endif /* ACP */

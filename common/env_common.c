@@ -57,6 +57,7 @@ static uchar env_get_char_init (int index);
 #define XMK_STR(x)	#x
 #define MK_STR(x)	XMK_STR(x)
 
+
 uchar default_environment[] = {
 #ifdef	CONFIG_BOOTARGS
 	"bootargs="	CONFIG_BOOTARGS			"\0"
@@ -216,7 +217,8 @@ void set_default_env(void)
 	memcpy(env_ptr->data, default_environment,
 	       sizeof(default_environment));
 #ifdef CONFIG_SYS_REDUNDAND_ENVIRONMENT
-	env_ptr->flags = 0xFF;
+//jl Changed to 32 bit value
+	env_ptr->flags = 0xFFFFFFFF;
 #endif
 	env_crc_update ();
 	gd->env_valid = 1;
@@ -258,6 +260,9 @@ void env_relocate (void)
 		show_boot_progress (-60);
 #endif
 		set_default_env();
+#if defined(CONFIG_ACP) && defined(ACP_ISS)
+		saveenv();
+#endif
 	}
 	else {
 		env_relocate_spec ();

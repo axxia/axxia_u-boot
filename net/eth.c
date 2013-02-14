@@ -21,6 +21,10 @@
  * MA 02111-1307 USA
  */
 
+#include <config.h>
+
+#ifndef CONFIG_ACP2
+
 #include <common.h>
 #include <command.h>
 #include <net.h>
@@ -183,6 +187,8 @@ int eth_register(struct eth_device* dev)
 	return 0;
 }
 
+#ifndef CONFIG_ACP
+
 int eth_initialize(bd_t *bis)
 {
 	unsigned char env_enetaddr[6];
@@ -261,6 +267,8 @@ int eth_initialize(bd_t *bis)
 
 	return eth_number;
 }
+
+#endif /* CONFIG_ACP */
 
 #ifdef CONFIG_MCAST_TFTP
 /* Multicast.
@@ -499,7 +507,7 @@ extern int at91rm9200_miiphy_initialize(bd_t *bis);
 extern int mcf52x2_miiphy_initialize(bd_t *bis);
 extern int ns7520_miiphy_initialize(bd_t *bis);
 
-
+#ifndef CONFIG_ACP
 int eth_initialize(bd_t *bis)
 {
 #if defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
@@ -517,4 +525,7 @@ int eth_initialize(bd_t *bis)
 #endif
 	return 0;
 }
+#endif /* CONFIG_ACP */
 #endif
+
+#endif /* CONFIG_ACP2 */

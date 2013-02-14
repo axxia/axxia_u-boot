@@ -67,7 +67,11 @@
 # define PKTBUFSRX	4
 #endif
 
+#ifdef CONFIG_SYS_PKTALIGN
+#define PKTALIGN        CONFIG_SYS_PKTALIGN
+#else
 #define PKTALIGN	32
+#endif
 
 typedef ulong		IPaddr_t;
 

@@ -26,6 +26,7 @@
 #include <image.h>
 #include <u-boot/zlib.h>
 #include <asm/byteorder.h>
+#include <asm/io.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -65,7 +66,16 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 
 #ifdef CONFIG_CMDLINE_TAG
 	char *commandline = getenv ("bootargs");
-#endif
+#ifdef CONFIG_APP
+    char full_command_line [ 512 ];
+    char *mtdparts = getenv ("mtdparts");
+    memset( full_command_line, 0, 512 );
+    strcpy( full_command_line, commandline );
+    strcat( full_command_line, " " );
+    strcat( full_command_line, mtdparts );
+    commandline = full_command_line;
+#endif  /* CONFIG_APP */
+#endif  /* CONFIG_CMDLINE_TAG */
 
 	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
 		return 1;
@@ -110,7 +120,72 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 #if defined (CONFIG_VFD) || defined (CONFIG_LCD)
 	setup_videolfb_tag ((gd_t *) gd);
 #endif
+#ifdef CONFIG_APP
+    setup_app_tag (bd);
+#endif  /* CONFIG_APP */
 	setup_end_tag (bd);
+#endif
+
+#ifdef LSI_ARCH_APP3K
+
+    {
+
+      int cores_ [ 4 ] = { 0, 0, 0, 0 };
+      unsigned long temp_;
+      int index_;
+      extern unsigned long _secondary_start_address;
+      extern volatile unsigned long _secondary_in_progress;
+
+      _secondary_start_address = ep;
+      temp_ = ( readl( CONFIG_NORMAL_AEI_BASE ) & 0xf );
+      if( 0 != ( temp_ & 0x1 ) ) { cores_ [ 0 ] = 1; }
+      if( 0 != ( temp_ & 0x2 ) ) { cores_ [ 1 ] = 1; }
+      if( 0 != ( temp_ & 0x4 ) ) { cores_ [ 2 ] = 1; }
+      if( 0 != ( temp_ & 0x8 ) ) { cores_ [ 3 ] = 1; }
+
+      if( ( 0 != cores_ [ 1 ] ) ||
+          ( 0 != cores_ [ 2 ] ) ||
+          ( 0 != cores_ [ 3 ] ) ) {
+
+        writel( 1, PMR_CII_CONTROL );
+        writel( 1, PMR_GID_CONTROL );
+
+        for( index_ = 1; index_ < 4; ++ index_ ) {
+
+          if( 0 == cores_ [ index_ ] ) { continue; }
+          printf( "Starting core %d\n", index_ );
+          _secondary_in_progress = 0;
+          writel( 1, ( CONFIG_NORMAL_PMR_BASE + 0x300 ) );
+          writel( ( ( 1 << ( 16 + index_ ) ) | 1 ),
+                  PMR_GID_SOFTWARE_INTERRUPT );
+          printf( "Interrupted core %d\n", index_ );
+
+          while( 1 != _secondary_in_progress ) {
+
+            writel( ( ( 1 << ( 16 + index_ ) ) | 1 ),
+                    PMR_GID_SOFTWARE_INTERRUPT );
+
+          }
+
+          _secondary_in_progress = 2;
+          printf( "Sent core %d to Linux\n", index_ );
+
+          while( 0 != _secondary_in_progress ) {
+
+            unsigned long temp_ = readl( ( CONFIG_NORMAL_ASI_BASE + 0x180 ) );
+            ++ temp_;
+            writel( temp_, ( CONFIG_NORMAL_ASI_BASE + 0x180 ) );
+
+          }
+
+          printf( "Started core %d\n", index_ );
+
+        }
+
+      }
+
+    }
+
 #endif
 
 	/* we assume that the kernel is in place */
@@ -124,6 +199,10 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 #endif
 
 	cleanup_before_linux ();
+
+#ifdef LSI_ARCH_APP3
+    REMAP_RESET( );
+#endif
 
 	theKernel (0, machid, bd->bi_boot_params);
 	/* does not return */
@@ -269,6 +348,31 @@ void setup_revision_tag(struct tag **in_params)
 }
 #endif  /* CONFIG_REVISION_TAG */
 
+#ifdef CONFIG_APP
+static void setup_app_tag(bd_t *bd)
+{
+  params->hdr.tag = ATAG_APP;
+  params->hdr.size = tag_size(tag_app);
+#if defined( LSI_ARCH_APP3K )
+  params->u.app.core_speed = ( pll_get_clock( axi ) * 2 );
+  params->u.app.host_speed = pll_get_clock( ipsec );
+#elif defined( LSI_ARCH_APP3 )
+  params->u.app.core_speed = pll_get_clock( arm_core );
+  params->u.app.host_speed = pll_get_clock( host );
+#else
+#error "Unknown Architecture"
+#endif
+  params->u.app.uboot_size = CFG_MONITOR_LEN;
+  params->u.app.ubootenv0_size = CFG_ENV_SIZE;
+#ifdef CFG_ENV_ADDR_REDUND
+  params->u.app.ubootenv1_size = CFG_ENV_SIZE_REDUND;
+#else  /* CFG_ENV_ADDR_REDUND */
+  params->u.app.ubootenv1_size = 0;
+#endif /* CFG_ENV_ADDR_REDUND */
+  params->u.app.pci_sm = ( u32 ) app_is_pci_sm( );
+  params = tag_next(params);
+}
+#endif /* CONFIG_APP */
 
 static void setup_end_tag (bd_t *bd)
 {

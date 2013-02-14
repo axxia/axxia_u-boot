@@ -557,6 +557,7 @@ extern int num_tlb_entries;
 #endif
 
 #ifdef CONFIG_440
+
 /* General */
 #define TLB_VALID   0x00000200
 
@@ -760,4 +761,55 @@ void change_tlb(u32 vaddr, u32 size, u32 tlb_word2_i_value);
 #endif /* __ASSEMBLY__ */
 
 #endif /* CONFIG_440 */
+
+#ifdef CONFIG_47x
+
+/* 47x bits */
+#define PPC47x_MMUCR_TID	0x0000ffff
+#define PPC47x_MMUCR_STS	0x00010000
+
+/* Page identification fields */
+#define PPC47x_TLB0_EPN_MASK	0xfffff000      /* Effective Page Number */
+#define PPC47x_TLB0_VALID	0x00000800      /* Valid flag */
+#define PPC47x_TLB0_TS		0x00000400	/* Translation address space */
+#define PPC47x_TLB0_4K		0x00000000
+#define PPC47x_TLB0_16K		0x00000010
+#define PPC47x_TLB0_64K		0x00000030
+#define PPC47x_TLB0_1M		0x00000070
+#define PPC47x_TLB0_16M		0x000000f0
+#define PPC47x_TLB0_256M	0x000001f0
+#define PPC47x_TLB0_1G		0x000003f0
+#define PPC47x_TLB0_BOLTED_R	0x00000008	/* tlbre only */
+
+/* Translation fields */
+#define PPC47x_TLB1_RPN_MASK	0xfffff000      /* Real Page Number */
+#define PPC47x_TLB1_ERPN_MASK	0x000003ff
+
+/* Storage attribute and access control fields */
+#define PPC47x_TLB2_ATTR_MASK	0x0003ff80
+#define PPC47x_TLB2_IL1I	0x00020000      /* Memory is guarded */
+#define PPC47x_TLB2_IL1D	0x00010000      /* Memory is guarded */
+#define PPC47x_TLB2_U0		0x00008000      /* User 0 */
+#define PPC47x_TLB2_U1		0x00004000      /* User 1 */
+#define PPC47x_TLB2_U2		0x00002000      /* User 2 */
+#define PPC47x_TLB2_U3		0x00001000      /* User 3 */
+#define PPC47x_TLB2_W		0x00000800      /* Caching is write-through */
+#define PPC47x_TLB2_I		0x00000400      /* Caching is inhibited */
+#define PPC47x_TLB2_M		0x00000200      /* Memory is coherent */
+#define PPC47x_TLB2_G		0x00000100      /* Memory is guarded */
+#define PPC47x_TLB2_E		0x00000080      /* Memory is little endian */
+#define PPC47x_TLB2_PERM_MASK	0x0000003f
+#define PPC47x_TLB2_UX		0x00000020      /* User execution */
+#define PPC47x_TLB2_UW		0x00000010      /* User write */
+#define PPC47x_TLB2_UR		0x00000008      /* User read */
+#define PPC47x_TLB2_SX		0x00000004      /* Super execution */
+#define PPC47x_TLB2_SW		0x00000002      /* Super write */
+#define PPC47x_TLB2_SR		0x00000001      /* Super read */
+#define PPC47x_TLB2_U_RWX	(PPC47x_TLB2_UX|PPC47x_TLB2_UW|PPC47x_TLB2_UR)
+#define PPC47x_TLB2_S_RWX	(PPC47x_TLB2_SX|PPC47x_TLB2_SW|PPC47x_TLB2_SR)
+#define PPC47x_TLB2_S_RW	(PPC47x_TLB2_SW | PPC47x_TLB2_SR)
+#define PPC47x_TLB2_IMG		(PPC47x_TLB2_I | PPC47x_TLB2_M | PPC47x_TLB2_G)
+
+#endif /* CONFIG_47x */
+
 #endif /* _PPC_MMU_H_ */

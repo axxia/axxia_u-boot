@@ -49,9 +49,11 @@ struct cmd_tbl_s {
 	int		repeatable;	/* autorepeat allowed?		*/
 					/* Implementation function	*/
 	int		(*cmd)(struct cmd_tbl_s *, int, int, char *[]);
+#ifndef CFG_NOHELP
 	char		*usage;		/* Usage message	(short)	*/
 #ifdef	CONFIG_SYS_LONGHELP
 	char		*help;		/* Help  message	(long)	*/
+#endif
 #endif
 #ifdef CONFIG_AUTO_COMPLETE
 	/* do auto completion on the arguments */
@@ -117,11 +119,23 @@ cmd_tbl_t __u_boot_cmd_##name Struct_Section = {#name, maxargs, rep, cmd, usage,
 
 #else	/* no long help info */
 
+#ifndef CFG_NOHELP
+
 #define U_BOOT_CMD(name,maxargs,rep,cmd,usage,help) \
 cmd_tbl_t __u_boot_cmd_##name Struct_Section = {#name, maxargs, rep, cmd, usage}
 
 #define U_BOOT_CMD_MKENT(name,maxargs,rep,cmd,usage,help) \
 {#name, maxargs, rep, cmd, usage}
+
+#else
+
+#define U_BOOT_CMD(name,maxargs,rep,cmd,usage,help) \
+cmd_tbl_t __u_boot_cmd_##name Struct_Section = {#name, maxargs, rep, cmd}
+
+#define U_BOOT_CMD_MKENT(name,maxargs,rep,cmd,usage,help) \
+{#name, maxargs, rep, cmd}
+
+#endif
 
 #endif	/* CONFIG_SYS_LONGHELP */
 

@@ -38,20 +38,31 @@ unsigned long set_dcr (unsigned short, unsigned long);
  */
 int do_getdcr ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[] )
 {
+#ifdef CONFIG_ACP
+	unsigned long dcrn;	/* Device Control Register Num */
+#else
 	unsigned short dcrn;	/* Device Control Register Num */
+#endif
 	unsigned long value;	/* DCR's value */
 
 	unsigned long get_dcr (unsigned short);
 
 	/* Validate arguments */
 	if (argc < 2) {
+#ifndef CFG_NOHELP
 		cmd_usage(cmdtp);
+#endif
 		return 1;
 	}
 
 	/* Get a DCR */
+#ifdef CONFIG_ACP
+	dcrn = simple_strtoul (argv[1], NULL, 16);
+	value = dcr_read (dcrn);
+#else  /* CONFIG_ACP */
 	dcrn = (unsigned short) simple_strtoul (argv[1], NULL, 16);
 	value = get_dcr (dcrn);
+#endif /* CONFIG_ACP */
 
 	printf ("%04x: %08lx\n", dcrn, value);
 
@@ -65,7 +76,11 @@ int do_getdcr ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[] )
 */
 int do_setdcr (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 {
+#ifdef CONFIG_ACP
+	unsigned long dcrn;	/* Device Control Register Num */
+#else
 	unsigned short dcrn;	/* Device Control Register Num */
+#endif
 	unsigned long value;
 
 	/* DCR's value */
@@ -74,36 +89,63 @@ int do_setdcr (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 
 	/* Validate arguments */
 	if (argc < 2) {
+#ifndef CFG_NOHELP
 		cmd_usage(cmdtp);
+#endif
 		return 1;
 	}
 
 	/* Set a DCR */
+#ifdef CONFIG_ACP
+	dcrn = simple_strtoul (argv[1], NULL, 16);
+#else
 	dcrn = (unsigned short) simple_strtoul (argv[1], NULL, 16);
-	do {
-		value = get_dcr (dcrn);
-		printf ("%04x: %08lx", dcrn, value);
-		nbytes = readline (" ? ");
-		if (nbytes == 0) {
-			/*
-			 * <CR> pressed as only input, don't modify current
-			 * location and exit command.
-			 */
-			nbytes = 1;
-			return 0;
-		} else {
-			unsigned long i;
-			char *endp;
+#endif
 
-			i = simple_strtoul (console_buffer, &endp, 16);
-			nbytes = endp - console_buffer;
-			if (nbytes)
-				set_dcr (dcrn, i);
-		}
-	} while (nbytes);
+	if (3 == argc) {
+		value = simple_strtoul (argv[2], NULL, 16);
+#ifdef CONFIG_ACP
+		dcr_write (value, dcrn);
+#else
+		set_dcr (dcrn, value);
+#endif
+	} else {
+		do {
+#ifdef CONFIG_ACP
+			value = dcr_read (dcrn);
+#else
+			value = get_dcr (dcrn);
+#endif
+			value = get_dcr (dcrn);
+			printf ("%04x: %08lx", dcrn, value);
+			nbytes = readline (" ? ");
+			if (nbytes == 0) {
+				/*
+				 * <CR> pressed as only input, don't modify
+				 * current location and exit command.
+				 */
+				nbytes = 1;
+				return 0;
+			} else {
+				unsigned long i;
+				char *endp;
+				
+				i = simple_strtoul (console_buffer, &endp, 16);
+				nbytes = endp - console_buffer;
+				if (nbytes)
+#ifdef CONFIG_ACP
+					dcr_write (i, dcrn);
+#else
+					set_dcr (dcrn, i);
+#endif
+			}
+		} while (nbytes);
+	}
 
 	return 0;
 }
+
+#ifndef CONFIG_ACP
 
 /* =======================================================================
  * Interpreter command to retrieve an register value through AMCC PPC 4xx
@@ -219,6 +261,8 @@ int do_setidcr (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	return 0;
 }
 
+#endif /* CONFIG_ACP */
+
 /***************************************************/
 
 U_BOOT_CMD(
@@ -227,11 +271,12 @@ U_BOOT_CMD(
 	"dcrn - return a DCR's value."
 );
 U_BOOT_CMD(
-	setdcr,	2,	1,	do_setdcr,
+	setdcr,	3,	1,	do_setdcr,
 	"Set an AMCC PPC 4xx DCR's value",
 	"dcrn - set a DCR's value."
 );
 
+#ifndef CONFIG_ACP
 U_BOOT_CMD(
 	getidcr,	3,	1,	do_getidcr,
 	"Get a register value via indirect DCR addressing",
@@ -243,3 +288,4 @@ U_BOOT_CMD(
 	"Set a register value via indirect DCR addressing",
 	"adr_dcrn[.dat_dcrn] offset value - write offset to adr_dcrn, write value to dat_dcrn."
 );
+#endif /* CONFIG_ACP */

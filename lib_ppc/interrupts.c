@@ -91,6 +91,22 @@ int disable_interrupts (void)
 	ulong msr = get_msr ();
 
 	set_msr (msr & ~MSR_EE);
+
+#ifdef CONFIG_ACP
+	/* Turn off the decrementer and clear any pending exceptions. */
+	{
+		unsigned long tcr_value;
+		unsigned long tsr_value;
+
+		tcr_value = mfspr(SPRN_TCR);
+		tcr_value &= ~0x04000000;
+		mtspr(SPRN_TCR, tcr_value);
+		tsr_value = mfspr(SPRN_TSR);
+		tsr_value |= 0x08000000;
+		mtspr(SPRN_TSR, tsr_value);
+	}
+#endif
+
 	return ((msr & MSR_EE) != 0);
 }
 
@@ -122,6 +138,17 @@ void timer_interrupt (struct pt_regs *regs)
 	set_dec (decrementer_count);
 
 	timestamp++;
+
+#ifdef CONFIG_ACP
+	/* Clear TSR[DIS] */
+	{
+		unsigned long tsr_value;
+
+		tsr_value = mfspr(SPRN_TSR);
+		tsr_value |= 0x08000000;
+		mtspr(SPRN_TSR, tsr_value);
+	}
+#endif
 
 #if defined(CONFIG_WATCHDOG) || defined (CONFIG_HW_WATCHDOG)
 	if ((timestamp % (CONFIG_SYS_WATCHDOG_FREQ)) == 0)

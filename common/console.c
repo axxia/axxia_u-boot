@@ -48,9 +48,12 @@ extern int overwrite_console(void);
 
 #endif /* CONFIG_SYS_CONSOLE_IS_IN_ENV */
 
+#ifndef CONFIG_ACP
+
 static int console_setfile(int file, struct stdio_dev * dev)
 {
 	int error = 0;
+#ifndef CONFIG_ACP2
 
 	if (dev == NULL)
 		return -1;
@@ -90,6 +93,7 @@ static int console_setfile(int file, struct stdio_dev * dev)
 	default:		/* Invalid file ID */
 		error = -1;
 	}
+#endif
 	return error;
 }
 
@@ -290,6 +294,7 @@ void fprintf(int file, const char *fmt, ...)
 	/* Send to desired file */
 	fputs(file, printbuffer);
 }
+#endif
 
 /** U-Boot INITIAL CONSOLE-COMPATIBLE FUNCTION *****************************/
 
@@ -300,10 +305,12 @@ int getc(void)
 		return 0;
 #endif
 
+#ifndef CONFIG_ACP
 	if (gd->flags & GD_FLG_DEVINIT) {
 		/* Get from the standard input */
 		return fgetc(stdin);
 	}
+#endif
 
 	/* Send directly to the handler */
 	return serial_getc();
@@ -316,10 +323,12 @@ int tstc(void)
 		return 0;
 #endif
 
+#ifndef CONFIG_ACP
 	if (gd->flags & GD_FLG_DEVINIT) {
 		/* Test the standard input */
 		return ftstc(stdin);
 	}
+#endif
 
 	/* Send directly to the handler */
 	return serial_tstc();
@@ -337,6 +346,9 @@ void putc(const char c)
 		return;
 #endif
 
+#ifdef CONFIG_ACP
+	serial_putc(c);
+#else
 	if (gd->flags & GD_FLG_DEVINIT) {
 		/* Send to the standard output */
 		fputc(stdout, c);
@@ -344,6 +356,7 @@ void putc(const char c)
 		/* Send directly to the handler */
 		serial_putc(c);
 	}
+#endif
 }
 
 void puts(const char *s)
@@ -358,6 +371,9 @@ void puts(const char *s)
 		return;
 #endif
 
+#ifdef CONFIG_ACP
+	serial_puts(s);
+#else
 	if (gd->flags & GD_FLG_DEVINIT) {
 		/* Send to the standard output */
 		fputs(stdout, s);
@@ -365,6 +381,7 @@ void puts(const char *s)
 		/* Send directly to the handler */
 		serial_puts(s);
 	}
+#endif
 }
 
 void printf(const char *fmt, ...)
@@ -404,6 +421,17 @@ static int ctrlc_disabled = 0;	/* see disable_ctrl() */
 static int ctrlc_was_pressed = 0;
 int ctrlc(void)
 {
+#ifdef CONFIG_ACP
+	if (tstc()) {
+		switch (getc()) {
+		case 0x03:		/* ^C - Control C */
+			ctrlc_was_pressed = 1;
+			return 1;
+		default:
+			break;
+		}
+	}
+#else
 	if (!ctrlc_disabled && gd->have_console) {
 		if (tstc()) {
 			switch (getc()) {
@@ -416,6 +444,7 @@ int ctrlc(void)
 		}
 	}
 	return 0;
+#endif
 }
 
 /* pass 1 to disable ctrlc() checking, 0 to enable.
@@ -477,6 +506,8 @@ inline void dbg(const char *fmt, ...)
 }
 #endif
 
+#ifndef CONFIG_ACP
+
 /** U-Boot INIT FUNCTIONS *************************************************/
 
 struct stdio_dev *search_device(int flags, char *name)
@@ -534,6 +565,7 @@ int console_init_f(void)
 
 void stdio_print_current_devices(void)
 {
+#ifndef CONFIG_ACP2
 #ifndef CONFIG_SYS_CONSOLE_INFO_QUIET
 	/* Print information */
 	puts("In:    ");
@@ -557,12 +589,14 @@ void stdio_print_current_devices(void)
 		printf ("%s\n", stdio_devices[stderr]->name);
 	}
 #endif /* CONFIG_SYS_CONSOLE_INFO_QUIET */
+#endif
 }
 
 #ifdef CONFIG_SYS_CONSOLE_IS_IN_ENV
 /* Called after the relocation - use desired console functions */
 int console_init_r(void)
 {
+#ifndef CONFIG_ACP2
 	char *stdinname, *stdoutname, *stderrname;
 	struct stdio_dev *inputdev = NULL, *outputdev = NULL, *errdev = NULL;
 #ifdef CONFIG_SYS_CONSOLE_ENV_OVERWRITE
@@ -642,6 +676,7 @@ done:
 	if ((stdio_devices[stdin] == NULL) && (stdio_devices[stdout] == NULL))
 		return 0;
 #endif
+#endif
 	return 0;
 }
 
@@ -720,3 +755,4 @@ int console_init_r(void)
 }
 
 #endif /* CONFIG_SYS_CONSOLE_IS_IN_ENV */
+#endif

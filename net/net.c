@@ -183,7 +183,11 @@ void NcStart(void);
 int nc_input_packet(uchar *pkt, unsigned dest, unsigned src, unsigned len);
 #endif
 
+#ifdef CONFIG_ACP2
+volatile uchar * PktBuf;
+#else
 volatile uchar	PktBuf[(PKTBUFSRX+1) * PKTSIZE_ALIGN + PKTALIGN];
+#endif
 
 volatile uchar *NetRxPackets[PKTBUFSRX]; /* Receive packets			*/
 
@@ -307,7 +311,6 @@ int
 NetLoop(proto_t protocol)
 {
 	bd_t *bd = gd->bd;
-
 #ifdef CONFIG_NET_MULTI
 	NetRestarted = 0;
 	NetDevExists = 0;
@@ -353,7 +356,7 @@ restart:
 #ifdef CONFIG_NET_MULTI
 	memcpy (NetOurEther, eth_get_dev()->enetaddr, 6);
 #else
-	eth_getenv_enetaddr("ethaddr", NetOurEther);
+	eth_getenv_enetaddrg("ethaddr", NetOurEther);
 #endif
 
 	NetState = NETLOOP_CONTINUE;
@@ -512,7 +515,6 @@ restart:
 			(*x)();
 		}
 
-
 		switch (NetState) {
 
 		case NETLOOP_RESTART:
@@ -584,6 +586,10 @@ void NetStartAgain (void)
 	NetTryCount++;
 
 #ifndef CONFIG_NET_MULTI
+#ifdef CONFIG_ACP
+	eth_halt();
+	eth_init(gd->bd);
+#endif
 	NetSetTimeout (10000UL, startAgainTimeout);
 	NetSetHandler (startAgainHandler);
 #else	/* !CONFIG_NET_MULTI*/

@@ -99,14 +99,18 @@
 
 #endif /* 440EP/EPX 440GR/GRX 440SP/SPE 460EX/GT/SX 405EX*/
 
-#if defined(CONFIG_440)
+#if defined(CONFIG_47x)
+#include <ppc47x.h>
+#elif defined(CONFIG_440)
 #include <ppc440.h>
 #else
 #include <ppc405.h>
 #endif
 
 #include <asm/ppc4xx-sdram.h>
+#ifndef CONFIG_47x
 #include <asm/ppc4xx-ebc.h>
+#endif /* CONFIG_47x */
 #if !defined(CONFIG_XILINX_440)
 #include <asm/ppc4xx-uic.h>
 #endif

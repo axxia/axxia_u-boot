@@ -254,6 +254,10 @@ LIBS := $(addprefix $(obj),$(LIBS))
 LIBBOARD = board/$(BOARDDIR)/lib$(BOARD).a
 LIBBOARD := $(addprefix $(obj),$(LIBBOARD))
 
+ifeq ($(BOARD),axxia-ppc)
+LIBBOARD += board/$(BOARDDIR)/brs.o board/$(BOARDDIR)/util.o
+endif
+
 # Add GCC lib
 ifdef USE_PRIVATE_LIBGCC
 ifeq ("$(USE_PRIVATE_LIBGCC)", "yes")
@@ -293,9 +297,12 @@ __LIBS := $(subst $(obj),,$(LIBS)) $(subst $(obj),,$(LIBBOARD))
 #########################################################################
 
 # Always append ALL so that arch config.mk's can add custom ones
-ALL += $(obj)u-boot.srec $(obj)u-boot.bin $(obj)System.map $(U_BOOT_NAND) $(U_BOOT_ONENAND)
+ALL += $(obj)u-boot.srec $(obj)u-boot.bin $(obj)System.map $(U_BOOT_NAND) $(U_BOOT_ONENAND) u-boot.img
 
 all:		$(ALL)
+
+$(obj)u-boot.S:		$(obj)u-boot
+		$(OBJDUMP) -DS $< > $@
 
 $(obj)u-boot.hex:	$(obj)u-boot
 		$(OBJCOPY) ${OBJCFLAGS} -O ihex $< $@
@@ -316,12 +323,31 @@ $(obj)u-boot.ldr.hex:	$(obj)u-boot.ldr
 $(obj)u-boot.ldr.srec:	$(obj)u-boot.ldr
 		$(OBJCOPY) ${OBJCFLAGS} -O srec $< $@ -I binary
 
+#$(obj)u-boot.img:	$(obj)u-boot.bin
+#		./tools/mkimage -A $(ARCH) -T firmware -C none \
+#		-a $(TEXT_BASE) -e 0 \
+#		-n $(shell sed -n -e 's/.*U_BOOT_VERSION//p' $(VERSION_FILE) | \
+#			sed -e 's/"[	 ]*$$/ for $(BOARD) board"/') \
+#		-d $< $@
+#$(obj)u-boot.img:	$(obj)u-boot.bin
+#		cp $< temp.bin
+#		gzip -9 temp.bin
+#		mkimage -A ppc -O u-boot -C gzip \
+#			-n $(shell sed -n -e 's/.*U_BOOT_VERSION//p' \
+#				$(VERSION_FILE) | \
+#				sed -e 's/"[	 ]*$$/ for $(BOARD) board"/') \
+#			-a 0 -e 0 -d temp.bin.gz $@
+#		rm -f temp.bin.gz
+#
 $(obj)u-boot.img:	$(obj)u-boot.bin
-		./tools/mkimage -A $(ARCH) -T firmware -C none \
-		-a $(TEXT_BASE) -e 0 \
-		-n $(shell sed -n -e 's/.*U_BOOT_VERSION//p' $(VERSION_FILE) | \
+	mkimage -A ppc -O u-boot -C none \
+		-n $(shell sed -n -e 's/.*U_BOOT_VERSION//p' \
+			$(VERSION_FILE) | \
 			sed -e 's/"[	 ]*$$/ for $(BOARD) board"/') \
-		-d $< $@
+		-a 0 -e 0 -d $< $@
+	rm -f temp.bin.gz
+
+$(obj)u-boot.simg:	$(obj)u-boot.img
 
 $(obj)u-boot.imx:       $(obj)u-boot.bin
 		$(obj)tools/mkimage -n $(IMX_CONFIG) -T imximage \
@@ -342,7 +368,9 @@ GEN_UBOOT = \
 		sed  -n -e 's/.*\($(SYM_PREFIX)__u_boot_cmd_.*\)/-u\1/p'|sort|uniq`;\
 		cd $(LNDIR) && $(LD) $(LDFLAGS) $$UNDEF_SYM $(__OBJS) \
 			--start-group $(__LIBS) --end-group $(PLATFORM_LIBS) \
-			-Map u-boot.map -o u-boot
+			-Map u-boot.map -o u-boot;\
+		$(OBJDUMP) -DS u-boot > u-boot.S
+
 $(obj)u-boot:	depend $(SUBDIRS) $(OBJS) $(LIBBOARD) $(LIBS) $(LDSCRIPT) $(obj)u-boot.lds
 		$(GEN_UBOOT)
 ifeq ($(CONFIG_KALLSYMS),y)
@@ -411,6 +439,16 @@ TAG_SUBDIRS = $(SUBDIRS)
 TAG_SUBDIRS += $(dir $(__LIBS))
 TAG_SUBDIRS += include
 
+.PHONY: rw.path
+
+rw.path:
+		@rm -f $@
+		@echo "srchpath add u-boot" >> $@
+		@for directory in $(SUBDIRS) $(TAG_SUBDIRS) ; \
+		do \
+			echo "srchpath add u-boot/$$directory" >> $@ ; \
+		done
+
 tags ctags:
 		ctags -w -o $(obj)ctags `find $(TAG_SUBDIRS) \
 						-name '*.[chS]' -print`
@@ -419,7 +457,9 @@ etags:
 		etags -a -o $(obj)etags `find $(TAG_SUBDIRS) \
 						-name '*.[chS]' -print`
 cscope:
-		find $(TAG_SUBDIRS) -name '*.[chS]' -print > cscope.files
+		find $(TAG_SUBDIRS) -name '*.[chS]' -print > cscope.files0
+		cat cscope.files0 | sort | uniq > cscope.files
+		rm -f cscopes.files0
 		cscope -b -q -k
 
 SYSTEM_MAP = \
@@ -3725,6 +3765,203 @@ grsim_leon2_config : unconfig
 	@$(MKCONFIG) $(@:_config=) sparc leon2 grsim_leon2 gaisler
 
 #########################################################################
+## APP and Axxia, LSI Logic
+#########################################################################
+
+app3_config: unconfig
+	@./mkconfig app3 arm arm926ejs app lsi app3
+	@pushd board/lsi/app >/dev/null ; \
+		rm -f u-boot.lds ; \
+		ln -s u-boot-app3.lds u-boot.lds ; \
+		rm -f config.mk ; \
+		ln -s config-app3.mk config.mk ; \
+	popd > /dev/null
+
+app3k_config: unconfig
+	@./mkconfig app3k arm arm11mp app lsi app3k
+	@pushd board/lsi/app >/dev/null ; \
+		rm -f u-boot.lds ; \
+		ln -s u-boot-app3k.lds u-boot.lds ; \
+		rm -f config.mk ; \
+		ln -s config-app3k.mk config.mk ; \
+	popd > /dev/null
+
+ACP342xC_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP342xC_stage2.mk config.mk ; \
+	popd >/dev/null
+
+ACP342xC_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP342xC_stage3.mk config.mk ; \
+	popd >/dev/null
+
+ACP342xD_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP342xD_stage2.mk config.mk ; \
+	popd >/dev/null
+
+ACP342xD_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP342xD_stage3.mk config.mk ; \
+	popd >/dev/null
+
+ACP342x_emu_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP342x_emu_stage2.mk config.mk; \
+	popd >/dev/null
+
+ACP342x_emu_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP342x_emu_stage3.mk config.mk ; \
+	popd >/dev/null
+
+ACP344xV1_emu_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP344xV1_emu_stage2.mk config.mk ; \
+	popd >/dev/null
+
+ACP344xV1_emu_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP344xV1_emu_stage3.mk config.mk ; \
+	popd >/dev/null
+
+ACP344xV1_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP344xV1_stage2.mk config.mk ; \
+	popd >/dev/null
+
+ACP344xV1_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP344xV1_stage3.mk config.mk ; \
+	popd >/dev/null
+
+ACP344xV2_emu_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP344xV2_emu_stage2.mk config.mk ; \
+	popd >/dev/null
+
+ACP344xV2_emu_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP344xV2_emu_stage3.mk config.mk ; \
+	popd >/dev/null
+
+ACP344xV2_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP344xV2_stage2.mk config.mk ; \
+	popd >/dev/null
+
+ACP344xV2_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-ACP344xV2_stage3.mk config.mk ; \
+	popd >/dev/null
+
+AXM25xx_emu_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM25xx_emu_stage2.mk config.mk ; \
+	popd >/dev/null
+
+AXM25xx_emu_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM25xx_emu_stage3.mk config.mk ; \
+	popd >/dev/null
+
+AXM25xx_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM25xx_stage2.mk config.mk ; \
+	popd >/dev/null
+
+AXM25xx_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM25xx_stage3.mk config.mk ; \
+	popd >/dev/null
+
+AXM35xx_emu_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM35xx_emu_stage2.mk config.mk ; \
+	popd >/dev/null
+
+AXM35xx_emu_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM35xx_emu_stage3.mk config.mk ; \
+	popd >/dev/null
+
+AXM35xx_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM35xx_stage2.mk config.mk ; \
+	popd >/dev/null
+
+AXM35xx_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM35xx_stage3.mk config.mk ; \
+	popd >/dev/null
+
+AXM55xx_emu_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-arm-stage2 arm arm_cortexa15 axxia-arm lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM35xx_emu_stage2.mk config.mk ; \
+	popd >/dev/null
+
+iss_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-iss_stage2.mk config.mk ; \
+	popd >/dev/null
+
+iss_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-iss_stage3.mk config.mk ; \
+	popd >/dev/null
+
+#########################################################################
 #########################################################################
 #########################################################################
 
@@ -3764,6 +4001,9 @@ clean:
 		\( -name 'core' -o -name '*.bak' -o -name '*~' \
 		-o -name '*.o'	-o -name '*.a' -o -name '*.exe'	\) -print \
 		| xargs rm -f
+	@rm -f board/lsi/axxia-ppc/u-boot.lds
+	@rm -f board/lsi/axxia-ppc/config.mk
+	@rm -f u-boot.S rw.path
 
 clobber:	clean
 	@find $(OBJTREE) -type f \( -name .depend \

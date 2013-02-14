@@ -57,3 +57,12 @@ int  env_init(void)
 
 	return (0);
 }
+
+
+//jl added to remove some compile fails
+int saveenv(void)
+{
+
+	return 0;
+}
+

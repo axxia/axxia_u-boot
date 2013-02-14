@@ -146,12 +146,12 @@ else
 LDSCRIPT := $(TOPDIR)/board/$(BOARDDIR)/u-boot.lds
 endif
 endif
-OBJCFLAGS += --gap-fill=0xff
+#OBJCFLAGS += --gap-fill=0xff
+OBJCFLAGS += --gap-fill=0x55
 
 gccincdir := $(shell $(CC) -print-file-name=include)
 
-CPPFLAGS := $(DBGFLAGS) $(OPTFLAGS) $(RELFLAGS)		\
-	-D__KERNEL__
+CPPFLAGS := $(DBGFLAGS) $(OPTFLAGS) $(RELFLAGS)	-D__KERNEL__ -DUBOOT
 ifneq ($(TEXT_BASE),)
 CPPFLAGS += -DTEXT_BASE=$(TEXT_BASE)
 endif
@@ -164,7 +164,7 @@ ifneq ($(OBJTREE),$(SRCTREE))
 CPPFLAGS += -I$(OBJTREE)/include2 -I$(OBJTREE)/include
 endif
 
-CPPFLAGS += -I$(TOPDIR)/include
+CPPFLAGS += -I$(TOPDIR)/include -I$(IBB_INCLUDES)
 CPPFLAGS += -fno-builtin -ffreestanding -nostdinc	\
 	-isystem $(gccincdir) -pipe $(PLATFORM_CPPFLAGS)
 

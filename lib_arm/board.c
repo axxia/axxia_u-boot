@@ -54,6 +54,10 @@
 #include <miiphy.h>
 #endif
 
+#ifdef CONFIG_APP
+extern int app_init( void );
+#endif  /* CONFIG_APP */
+
 #ifdef CONFIG_DRIVER_SMC91111
 #include "../drivers/net/smc91111.h"
 #endif
@@ -135,7 +139,18 @@ static int init_baudrate (void)
 
 static int display_banner (void)
 {
+#ifdef CONFIG_APP
+    printf( "\n%s (%s - %s)\nAPP3 %s Release:0x%lx Revision:0x%lx\n",
+            U_BOOT_VERSION, __DATE__, __TIME__,
+            ( IS_ASIC ? "ASIC" : "FPGA" ),
+            APP3XX_RELEASE, APP3XX_REVISION );
+    printf( "Agere Version %s\n", get_lsi_version( ) );
+    printf( "%s\n", board_env_size_info );
+    printf( "%s\n", board_memory_type_info );
+    printf( "%s\n", board_memory_density_info );
+#else  /* CONFIG_APP */
 	printf ("\n\n%s\n\n", version_string);
+#endif  /* CONFIG_APP */
 	debug ("U-Boot code: %08lX -> %08lX  BSS: -> %08lX\n",
 	       _armboot_start, _bss_start, _bss_end);
 #ifdef CONFIG_MODEM_SUPPORT
@@ -265,6 +280,9 @@ init_fnc_t *init_sequence[] = {
 	arm_pci_init,
 #endif
 	display_dram_config,
+#ifdef CONFIG_APP
+    app_init,
+#endif  /* CONFIG_APP */
 	NULL,
 };
 
@@ -276,6 +294,7 @@ void start_armboot (void)
 	unsigned long addr;
 #endif
 
+    REMAP_NORMAL( );
 	/* Pointer is writable since we allocated a register for it */
 	gd = (gd_t*)(_armboot_start - CONFIG_SYS_MALLOC_LEN - sizeof(gd_t));
 	/* compiler optimization barrier needed for GCC >= 3.4 */
@@ -334,7 +353,6 @@ void start_armboot (void)
 #endif /* CONFIG_LCD */
 
 #if defined(CONFIG_CMD_NAND)
-	puts ("NAND:  ");
 	nand_init();		/* go init the NAND */
 #endif
 
@@ -349,6 +367,31 @@ void start_armboot (void)
 
 	/* initialize environment */
 	env_relocate ();
+
+#ifdef CONFIG_APP
+    if( 0 == _started_in_ram ) {
+
+      char * value_string_;
+
+      /*
+        make sure the version is in FLASH
+      */
+
+      value_string_ = getenv( "version" );
+
+      if( ( ( char * ) 0 == value_string_ ) ||
+          ( 0 != strcmp( value_string_, get_lsi_version( ) ) ) ) {
+
+        printf( "'version' not set or incorrect; setting\n" );
+        setenv( "version", get_lsi_version( ) );
+        saveenv( );
+
+      }
+
+      pll_display( );
+
+    }
+#endif  /* CONFIG_APP */
 
 #ifdef CONFIG_VFD
 	/* must do this after the framebuffer is allocated */
@@ -437,6 +480,17 @@ extern void davinci_eth_set_mac_addr (const u_int8_t *addr);
 	reset_phy();
 #endif
 #endif
+
+#ifdef LSI_ARCH_APP3K
+
+    if( 0 != ( ( * ( ( unsigned long * ) 0xc0008000 ) ) & 0x00200000 ) ) {
+
+      boot_linux( );
+
+    }
+
+#endif  /* LSI_ARCH_APP3K */
+
 	/* main_loop() can return to retry autoboot, if so just run it again. */
 	for (;;) {
 		main_loop ();

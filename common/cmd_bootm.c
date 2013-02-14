@@ -118,6 +118,12 @@ extern void lynxkdi_boot (image_header_t *);
 #ifdef CONFIG_BOOTM_RTEMS
 static boot_os_fn do_bootm_rtems;
 #endif
+#ifdef CONFIG_BOOTM_UBOOT
+extern boot_os_fn do_bootm_uboot;
+#endif
+#if defined(CONFIG_BOOTM_OSE)
+static boot_os_fn do_bootm_ose;
+#endif
 #if defined(CONFIG_CMD_ELF)
 static boot_os_fn do_bootm_vxworks;
 static boot_os_fn do_bootm_qnxelf;
@@ -129,6 +135,7 @@ static boot_os_fn do_bootm_integrity;
 #endif
 
 static boot_os_fn *boot_os[] = {
+#ifndef CONFIG_ACP2
 #ifdef CONFIG_BOOTM_LINUX
 	[IH_OS_LINUX] = do_bootm_linux,
 #endif
@@ -141,12 +148,19 @@ static boot_os_fn *boot_os[] = {
 #ifdef CONFIG_BOOTM_RTEMS
 	[IH_OS_RTEMS] = do_bootm_rtems,
 #endif
+#if defined(CONFIG_BOOTM_OSE)
+	[IH_OS_OSE] = do_bootm_ose,
+#endif
 #if defined(CONFIG_CMD_ELF)
 	[IH_OS_VXWORKS] = do_bootm_vxworks,
 	[IH_OS_QNX] = do_bootm_qnxelf,
 #endif
 #ifdef CONFIG_INTEGRITY
 	[IH_OS_INTEGRITY] = do_bootm_integrity,
+#endif
+#endif /* CONFIG_ACP2 */
+#ifdef CONFIG_BOOTM_UBOOT
+	[IH_OS_U_BOOT] = do_bootm_uboot
 #endif
 };
 
@@ -218,6 +232,37 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 	bootm_start_lmb();
 
+#if 0
+	/*#ifdef CONFIG_ACP3*/
+	if (0 != acp_osg_group_get_res(0, ACP_OS_BASE)) {
+		unsigned long utlb1;
+		unsigned long utlb2;
+		unsigned long os_base;
+
+		os_base = acp_osg_group_get_res(acp_osg_get_current(),
+						ACP_OS_BASE) * 1024 * 1024;
+
+		if (0 != (os_base % 0x10000000)) {
+			puts("ERROR: OS Groups Must Start on a 256M Boundary\n");
+			return 1;
+		}
+
+		utlb1 = (os_base | 0x9f0);
+		utlb2 = os_base;
+		printf("--> Creating UTLB Entry: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+		       0x80000000, utlb1, utlb2, 0x00030207);
+
+		__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
+				       "tlbwe %2,%0,1\n"               \
+				       "tlbwe %3,%0,2\n"               \
+				       "isync\n" : :
+				       "r" (0x80000000),
+				       "r" (utlb1),
+				       "r" (utlb2),
+				       "r" (0x00030207));
+	}
+#endif
+
 	/* get kernel image header, start address and length */
 	os_hdr = boot_get_kernel (cmdtp, flag, argc, argv,
 			&images, &images.os.image_start, &images.os.image_len);
@@ -234,19 +279,28 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		images.os.os = image_get_os (os_hdr);
 
 		images.os.end = image_get_image_end (os_hdr);
+#ifndef CONFIG_ACP3
 		images.os.load = image_get_load (os_hdr);
+#else
+		images.os.load =
+		       (acp_osg_group_get_res(acp_osg_get_current(),
+					      ACP_OS_BASE) * 1024 * 1024) +
+		       image_get_load(os_hdr);
+#endif
 		break;
 #if defined(CONFIG_FIT)
 	case IMAGE_FORMAT_FIT:
 		if (fit_image_get_type (images.fit_hdr_os,
-					images.fit_noffset_os, &images.os.type)) {
+					images.fit_noffset_os,
+					&images.os.type)) {
 			puts ("Can't get image type!\n");
 			show_boot_progress (-109);
 			return 1;
 		}
 
 		if (fit_image_get_comp (images.fit_hdr_os,
-					images.fit_noffset_os, &images.os.comp)) {
+					images.fit_noffset_os,
+					&images.os.comp)) {
 			puts ("Can't get image compression!\n");
 			show_boot_progress (-110);
 			return 1;
@@ -276,7 +330,14 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 	/* find kernel entry point */
 	if (images.legacy_hdr_valid) {
+#ifndef CONFIG_ACP3
 		images.ep = image_get_ep (&images.legacy_hdr_os_copy);
+#else
+		images.ep =
+			(acp_osg_group_get_res(acp_osg_get_current(),
+					       ACP_OS_BASE) * 1024 * 1024) +
+			image_get_ep(&images.legacy_hdr_os_copy);
+#endif
 #if defined(CONFIG_FIT)
 	} else if (images.fit_uname_os) {
 		ret = fit_image_get_entry (images.fit_hdr_os,
@@ -302,6 +363,7 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			return 1;
 		}
 
+#ifndef CONFIG_ACP
 #if defined(CONFIG_OF_LIBFDT)
 #if defined(CONFIG_PPC) || defined(CONFIG_M68K) || defined(CONFIG_SPARC)
 		/* find flattened device tree */
@@ -313,6 +375,7 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		}
 
 		set_working_fdt_addr(images.ft_addr);
+#endif
 #endif
 #endif
 	}
@@ -481,6 +544,7 @@ cmd_tbl_t cmd_bootm_sub[] = {
 int do_bootm_subcommand (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	int ret = 0;
+#ifndef NCR_TRACER
 	int state;
 	cmd_tbl_t *c;
 	boot_os_fn *boot_fn;
@@ -573,7 +637,7 @@ int do_bootm_subcommand (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			boot_fn(BOOTM_STATE_OS_GO, argc, argv, &images);
 			break;
 	}
-
+#endif
 	return ret;
 }
 
@@ -587,6 +651,9 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	ulong		load_end = 0;
 	int		ret;
 	boot_os_fn	*boot_fn;
+#ifdef CONFIG_ACP3
+	int             group;
+#endif
 #ifndef CONFIG_RELOC_FIXUP_WORKS
 	static int relocated = 0;
 
@@ -706,6 +773,7 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 	boot_fn(0, argc, argv, &images);
 
+#ifndef CONFIG_ACP3
 	show_boot_progress (-9);
 #ifdef DEBUG
 	puts ("\n## Control returned to monitor - resetting...\n");
@@ -713,6 +781,9 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	do_reset (cmdtp, flag, argc, argv);
 
 	return 1;
+#else
+	return 0;
+#endif
 }
 
 /**
@@ -1031,8 +1102,18 @@ int do_bootd (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	int rcode = 0;
 
 #ifndef CONFIG_SYS_HUSH_PARSER
+#ifdef CONFIG_ACP
+#ifdef CONFIG_ACP3
+	if (run_command (getenv ("bootcmd3"), flag) < 0)
+		rcode = 1;
+#else
+	if (run_command (getenv ("bootcmd2"), flag) < 0)
+		rcode = 1;
+#endif
+#else
 	if (run_command (getenv ("bootcmd"), flag) < 0)
 		rcode = 1;
+#endif
 #else
 	if (parse_string_outer (getenv ("bootcmd"),
 			FLAG_PARSE_SEMICOLON | FLAG_EXIT_FROM_LOOP) != 0)
@@ -1053,9 +1134,7 @@ U_BOOT_CMD(
 	"boot default, i.e., run 'bootcmd'",
 	""
 );
-
 #endif
-
 
 /*******************************************************************/
 /* iminfo - print header info for a requested image */
@@ -1254,6 +1333,7 @@ static void fixup_silent_linux ()
 static int do_bootm_netbsd (int flag, int argc, char *argv[],
 			    bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	void (*loader)(bd_t *, image_header_t *, char *, char *);
 	image_header_t *os_hdr, *hdr;
 	ulong kernel_data, kernel_len;
@@ -1334,6 +1414,7 @@ static int do_bootm_netbsd (int flag, int argc, char *argv[],
 	 */
 	(*loader) (gd->bd, os_hdr, consdev, cmdline);
 
+#endif /* CONFIG_ACP2 */
 	return 1;
 }
 #endif /* CONFIG_BOOTM_NETBSD*/
@@ -1342,6 +1423,7 @@ static int do_bootm_netbsd (int flag, int argc, char *argv[],
 static int do_bootm_lynxkdi (int flag, int argc, char *argv[],
 			     bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	image_header_t *hdr = &images->legacy_hdr_os_copy;
 
 	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
@@ -1356,6 +1438,7 @@ static int do_bootm_lynxkdi (int flag, int argc, char *argv[],
 
 	lynxkdi_boot ((image_header_t *)hdr);
 
+#endif /* CONFIG_ACP2 */
 	return 1;
 }
 #endif /* CONFIG_LYNXKDI */
@@ -1364,6 +1447,7 @@ static int do_bootm_lynxkdi (int flag, int argc, char *argv[],
 static int do_bootm_rtems (int flag, int argc, char *argv[],
 			   bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	void (*entry_point)(bd_t *);
 
 	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
@@ -1389,14 +1473,54 @@ static int do_bootm_rtems (int flag, int argc, char *argv[],
 	 */
 	(*entry_point)(gd->bd);
 
+#endif /* CONFIG_ACP2 */
 	return 1;
 }
 #endif /* CONFIG_BOOTM_RTEMS */
+
+#if defined(CONFIG_BOOTM_OSE)
+static int do_bootm_ose (int flag, int argc, char *argv[],
+                          bootm_headers_t *images)
+{
+#ifndef CONFIG_ACP2
+       void (*entry_point)(void);
+
+       if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
+               return 1;
+
+#if defined(CONFIG_FIT)
+       if (!images->legacy_hdr_valid) {
+               fit_unsupported_reset ("OSE");
+               return 1;
+       }
+#endif
+
+       entry_point = (void (*)(void))images->ep;
+
+#ifdef CONFIG_ACP3
+       do_go_exec(entry_point, 0, NULL);
+#else
+       printf ("## Transferring control to OSE (at address %08lx) ...\n",
+               (ulong)entry_point);
+
+       show_boot_progress (15);
+
+       /*
+        * OSE Parameters:
+        *   None
+        */
+       (*entry_point)();
+#endif /* CONFIG_ACP3 */
+#endif /* CONFIG_ACP2 */
+       return 1;
+}
+#endif /* CONFIG_BOOTM_OSE */
 
 #if defined(CONFIG_CMD_ELF)
 static int do_bootm_vxworks (int flag, int argc, char *argv[],
 			     bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	char str[80];
 
 	if ((flag != 0) && (flag != BOOTM_STATE_OS_GO))
@@ -1413,12 +1537,14 @@ static int do_bootm_vxworks (int flag, int argc, char *argv[],
 	setenv("loadaddr", str);
 	do_bootvx(NULL, 0, 0, NULL);
 
+#endif
 	return 1;
 }
 
 static int do_bootm_qnxelf(int flag, int argc, char *argv[],
 			    bootm_headers_t *images)
 {
+#ifndef CONFIG_ACP2
 	char *local_args[2];
 	char str[16];
 
@@ -1437,6 +1563,7 @@ static int do_bootm_qnxelf(int flag, int argc, char *argv[],
 	local_args[1] = str;	/* and provide it via the arguments */
 	do_bootelf(NULL, 0, 2, local_args);
 
+#endif /* CONFIG_ACP2 */
 	return 1;
 }
 #endif

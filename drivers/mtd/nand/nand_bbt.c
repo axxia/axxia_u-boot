@@ -182,19 +182,23 @@ static int read_bbt(struct mtd_info *mtd, uint8_t *buf, int page, int num,
 				if (tmp == msk)
 					continue;
 				if (reserved_block_code && (tmp == reserved_block_code)) {
+#ifndef CONFIG_LSI
 					printk(KERN_DEBUG "nand_read_bbt: Reserved block at 0x%012llx\n",
 						(loff_t)((offs << 2) +
 						(act >> 1)) <<
 						this->bbt_erase_shift);
+#endif
 					this->bbt[offs + (act >> 3)] |= 0x2 << (act & 0x06);
 					mtd->ecc_stats.bbtblocks++;
 					continue;
 				}
 				/* Leave it for now, if its matured we can move this
 				 * message to MTD_DEBUG_LEVEL0 */
+#ifndef CONFIG_LSI
 				printk(KERN_DEBUG "nand_read_bbt: Bad block at 0x%012llx\n",
 					(loff_t)((offs << 2) + (act >> 1)) <<
 					this->bbt_erase_shift);
+#endif
 				/* Factory marked bad or worn out ? */
 				if (tmp == 0)
 					this->bbt[offs + (act >> 3)] |= 0x3 << (act & 0x06);
@@ -301,8 +305,10 @@ static int read_abs_bbts(struct mtd_info *mtd, uint8_t *buf,
 		scan_read_raw(mtd, buf, (loff_t)td->pages[0] <<
 				this->page_shift, mtd->writesize);
 		td->version[0] = buf[mtd->writesize + td->veroffs];
+#ifndef CONFIG_LSI
 		printk(KERN_DEBUG "Bad block table at page %d, version 0x%02X\n",
 		       td->pages[0], td->version[0]);
+#endif
 	}
 
 	/* Read the mirror version, if available */
@@ -310,8 +316,10 @@ static int read_abs_bbts(struct mtd_info *mtd, uint8_t *buf,
 		scan_read_raw(mtd, buf, (loff_t)md->pages[0] <<
 				this->page_shift, mtd->writesize);
 		md->version[0] = buf[mtd->writesize + md->veroffs];
+#ifndef CONFIG_LSI
 		printk(KERN_DEBUG "Bad block table at page %d, version 0x%02X\n",
 		       md->pages[0], md->version[0]);
+#endif
 	}
 	return 1;
 }
@@ -528,9 +536,11 @@ static int search_bbt(struct mtd_info *mtd, uint8_t *buf, struct nand_bbt_descr 
 	for (i = 0; i < chips; i++) {
 		if (td->pages[i] == -1)
 			printk(KERN_WARNING "Bad block table not found for chip %d\n", i);
+#ifndef CONFIG_LSI
 		else
 			printk(KERN_DEBUG "Bad block table found at page %d, version 0x%02X\n", td->pages[i],
 			       td->version[i]);
+#endif
 	}
 	return 0;
 }
@@ -589,6 +599,7 @@ static int write_bbt(struct mtd_info *mtd, uint8_t *buf,
 	ops.datbuf = NULL;
 	ops.mode = MTD_OOB_PLACE;
 
+
 	if (!rcode)
 		rcode = 0xff;
 	/* Write bad block table per chip rather than per device ? */
@@ -608,7 +619,6 @@ static int write_bbt(struct mtd_info *mtd, uint8_t *buf,
 
 	/* Loop through the chips */
 	for (; chip < nrchips; chip++) {
-
 		/* There was already a version of the table, reuse the page
 		 * This applies for absolute placement too, as we have the
 		 * page nr. in td->pages.
@@ -630,6 +640,7 @@ static int write_bbt(struct mtd_info *mtd, uint8_t *buf,
 
 		for (i = 0; i < td->maxblocks; i++) {
 			int block = startblock + dir * i;
+
 			/* Check, if the block is bad */
 			switch ((this->bbt[block >> 2] >>
 				 (2 * (block & 0x03))) & 0x03) {
@@ -639,6 +650,7 @@ static int write_bbt(struct mtd_info *mtd, uint8_t *buf,
 			}
 			page = block <<
 				(this->bbt_erase_shift - this->page_shift);
+
 			/* Check, if the block is used by the mirror table */
 			if (!md || md->pages[chip] != page)
 				goto write;
@@ -1104,14 +1116,25 @@ static struct nand_bbt_descr largepage_memorybased = {
 };
 
 static struct nand_bbt_descr smallpage_flashbased = {
+#ifndef CONFIG_ACP
 	.options = NAND_BBT_SCAN2NDPAGE,
+#else
+	/*.options = (NAND_BBT_SCAN2NDPAGE | NAND_BBT_CREATE | NAND_BBT_WRITE),*/
+	/*.options = NAND_BBT_SCAN2NDPAGE,*/
+	.options = NAND_BBT_SCAN2NDPAGE,
+#endif
 	.offs = 5,
 	.len = 1,
 	.pattern = scan_ff_pattern
 };
 
 static struct nand_bbt_descr largepage_flashbased = {
+#ifndef CONFIG_ACP
 	.options = NAND_BBT_SCAN2NDPAGE,
+#else
+	/*.options = (NAND_BBT_CREATE | NAND_BBT_WRITE),*/
+	.options = NAND_BBT_SCAN2NDPAGE,
+#endif
 	.offs = 0,
 	.len = 2,
 	.pattern = scan_ff_pattern
@@ -1198,6 +1221,7 @@ int nand_default_bbt(struct mtd_info *mtd)
 			    &largepage_memorybased : &smallpage_memorybased;
 		}
 	}
+
 	return nand_scan_bbt(mtd, this->badblock_pattern);
 }
 

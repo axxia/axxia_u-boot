@@ -29,6 +29,9 @@
  * PCI routines
  */
 
+#define CONFIG_PCI 1
+#ifdef CONFIG_PCI
+
 #include <common.h>
 #include <command.h>
 #include <asm/processor.h>
@@ -557,3 +560,5 @@ U_BOOT_CMD(
 	"pci write[.b, .w, .l] b.d.f address value\n"
 	"    - write to CFG address"
 );
+
+#endif /* CONFIG_PCI */

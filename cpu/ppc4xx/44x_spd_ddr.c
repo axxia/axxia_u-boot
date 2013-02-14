@@ -42,6 +42,8 @@
  * MA 02111-1307 USA
  */
 
+#ifndef ACP
+
 /* define DEBUG for debugging output (obviously ;-)) */
 #if 0
 #define DEBUG
@@ -1246,3 +1248,5 @@ static unsigned long program_bxcr(unsigned long *dimm_populated,
 	return(bank_base_addr);
 }
 #endif /* CONFIG_SPD_EEPROM */
+
+#endif /* ACP */

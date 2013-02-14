@@ -25,7 +25,9 @@
 #include <watchdog.h>
 #include <ppc4xx_enet.h>
 #include <asm/processor.h>
+#ifndef CONFIG_ACP
 #include <asm/gpio.h>
+#endif /* CONFIG_ACP */
 #include <ppc4xx.h>
 
 #if defined(CONFIG_405GP)  || defined(CONFIG_405EP)

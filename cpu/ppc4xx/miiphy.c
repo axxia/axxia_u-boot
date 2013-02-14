@@ -37,6 +37,9 @@
 #endif
 
 #include <common.h>
+
+#ifndef CONFIG_ACP
+
 #include <asm/processor.h>
 #include <asm/io.h>
 #include <ppc_asm.tmpl>
@@ -364,3 +367,5 @@ int emac4xx_miiphy_write (char *devname, unsigned char addr, unsigned char reg,
 {
 	return emac_miiphy_command(addr, reg, EMAC_STACR_WRITE, value);
 }
+
+#endif /* CONFIG_ACP */

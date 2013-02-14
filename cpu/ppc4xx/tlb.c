@@ -25,7 +25,11 @@
 
 #if defined(CONFIG_440)
 
+#if defined(CONFIG_47x)
+#include <ppc47x.h>
+#else
 #include <ppc440.h>
+#endif
 #include <asm/cache.h>
 #include <asm/io.h>
 #include <asm/mmu.h>
@@ -38,6 +42,7 @@ typedef struct region {
 
 void remove_tlb(u32 vaddr, u32 size)
 {
+#if defined(CONFIG_440)
 	int i;
 	u32 tlb_word0_value;
 	u32 tlb_vaddr;
@@ -91,6 +96,8 @@ void remove_tlb(u32 vaddr, u32 size)
 				mttlb1(i, 0);
 		}
 	}
+#elif defined(CONFIG_47x)
+#endif
 
 	/* Execute an ISYNC instruction so that the new TLB entry takes effect */
 	asm("isync");
@@ -103,6 +110,7 @@ void remove_tlb(u32 vaddr, u32 size)
  */
 void change_tlb(u32 vaddr, u32 size, u32 tlb_word2_i_value)
 {
+#if defined(CONFIG_440)
 	int i;
 	u32 tlb_word0_value;
 	u32 tlb_word2_value;
@@ -179,6 +187,8 @@ void change_tlb(u32 vaddr, u32 size, u32 tlb_word2_i_value)
 			}
 		}
 	}
+#elif defined(CONFIG_47x)
+#endif
 
 	/* Execute an ISYNC instruction so that the new TLB entry takes effect */
 	asm("isync");
@@ -189,6 +199,7 @@ static int add_tlb_entry(u64 phys_addr,
 			 u32 tlb_word0_size_value,
 			 u32 tlb_word2_i_value)
 {
+#if defined(CONFIG_440)
 	int i;
 	unsigned long tlb_word0_value;
 	unsigned long tlb_word1_value;
@@ -224,6 +235,8 @@ static int add_tlb_entry(u64 phys_addr,
 	mttlb1(i, tlb_word0_value);
 	mttlb2(i, tlb_word1_value);
 	mttlb3(i, tlb_word2_value);
+#elif defined(CONFIG_47x)
+#endif
 
 	/* Execute an ISYNC instruction so that the new TLB entry takes effect */
 	asm("isync");
@@ -236,6 +249,7 @@ static void program_tlb_addr(u64 phys_addr,
 			     u32 mem_size,
 			     u32 tlb_word2_i_value)
 {
+#if defined(CONFIG_440)
 	int rc;
 	int tlb_i;
 
@@ -324,6 +338,8 @@ static void program_tlb_addr(u64 phys_addr,
 			printf("ERROR: no TLB entries available for the base addr 0x%llx.\n",
 				phys_addr);
 	}
+#elif defined(CONFIG_47x)
+#endif
 
 	return;
 }

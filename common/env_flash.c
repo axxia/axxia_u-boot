@@ -95,13 +95,16 @@ uchar env_get_char_spec (int index)
 int  env_init(void)
 {
 	int crc1_ok = 0, crc2_ok = 0;
+	ulong flag1, flag2, addr_default, addr1, addr2;
 
-	uchar flag1 = flash_addr->flags;
-	uchar flag2 = flash_addr_new->flags;
-
-	ulong addr_default = (ulong)&default_environment[0];
-	ulong addr1 = (ulong)&(flash_addr->data);
-	ulong addr2 = (ulong)&(flash_addr_new->data);
+#ifdef CONFIG_APP
+    app3xx_flash_update_ram( );
+#endif
+	flag1 = flash_addr->flags;
+	flag2 = flash_addr_new->flags;
+	addr_default = (ulong)&default_environment[0];
+	addr1 = (ulong)&(flash_addr->data);
+	addr2 = (ulong)&(flash_addr_new->data);
 
 	crc1_ok = (crc32(0, flash_addr->data, ENV_SIZE) == flash_addr->crc);
 	crc2_ok = (crc32(0, flash_addr_new->data, ENV_SIZE) == flash_addr_new->crc);
@@ -124,13 +127,29 @@ int  env_init(void)
 	} else if (flag1 == flag2) {
 		gd->env_addr  = addr1;
 		gd->env_valid = 2;
-	} else if (flag1 == 0xFF) {
+	} else if (flag1 == 0xFFFFFFFF) {
 		gd->env_addr  = addr1;
 		gd->env_valid = 2;
-	} else if (flag2 == 0xFF) {
+	} else if (flag2 == 0xFFFFFFFF) {
 		gd->env_addr  = addr2;
 		gd->env_valid = 2;
 	}
+
+#ifdef CONFIG_APP3XX
+
+    if( gd->env_addr == addr2 ) {
+
+      env_t * etmp = flash_addr;
+      flash_addr = flash_addr_new;
+      flash_addr_new = etmp;
+      env_ptr = flash_addr;
+      etmp = flash_addr_real;
+      flash_addr_real = flash_addr_new_real;
+      flash_addr_new_real = etmp;
+      
+    }
+
+#endif /* CONFIG_APP3XX */
 
 	return (0);
 }
@@ -177,28 +196,50 @@ int saveenv(void)
 #endif
 	puts ("Erasing Flash...");
 	debug (" %08lX ... %08lX ...",
-		(ulong)flash_addr_new, end_addr_new);
+		(ulong)flash_addr_new_real, end_addr_new);
 
+#ifdef CONFIG_APP
+	if (flash_sect_erase ((ulong)flash_addr_new_real, end_addr_new)) {
+#else  /* CONFIG_APP */
 	if (flash_sect_erase ((ulong)flash_addr_new, end_addr_new)) {
+#endif  /* CONFIG_APP */
 		goto Done;
 	}
 
 	puts ("Writing to Flash... ");
 	debug (" %08lX ... %08lX ...",
-		(ulong)&(flash_addr_new->data),
-		sizeof(env_ptr->data)+(ulong)&(flash_addr_new->data));
+		(ulong)&(flash_addr_new_real->data),
+		sizeof(env_ptr->data)+(ulong)&(flash_addr_new_real->data));
 	if ((rc = flash_write((char *)env_ptr->data,
+#ifdef CONFIG_APP
+			(ulong)&(flash_addr_new_real->data),
+#else  /* CONFIG_APP */
 			(ulong)&(flash_addr_new->data),
+#endif  /* CONFIG_APP */
 			sizeof(env_ptr->data))) ||
 	    (rc = flash_write((char *)&(env_ptr->crc),
+#ifdef CONFIG_APP
+			(ulong)&(flash_addr_new_real->crc),
+#else  /* CONFIG_APP */
 			(ulong)&(flash_addr_new->crc),
+#endif  /* CONFIG_APP */
 			sizeof(env_ptr->crc))) ||
-	    (rc = flash_write(&flag,
+	    (rc = flash_write((char *)&flag,
+#ifdef CONFIG_APP
+			(ulong)&(flash_addr_real->flags),
+			sizeof(flash_addr_real->flags))) ||
+#else  /* CONFIG_APP */
 			(ulong)&(flash_addr->flags),
 			sizeof(flash_addr->flags))) ||
-	    (rc = flash_write(&new_flag,
+#endif  /* CONFIG_APP */
+        (rc = flash_write((char *)&new_flag,
+#ifdef CONFIG_APP
+			(ulong)&(flash_addr_new_real->flags),
+			sizeof(flash_addr_new_real->flags))))
+#else  /* CONFIG_APP */
 			(ulong)&(flash_addr_new->flags),
 			sizeof(flash_addr_new->flags))))
+#endif  /* CONFIG_APP */
 	{
 		flash_perror (rc);
 		goto Done;
@@ -219,23 +260,40 @@ int saveenv(void)
 #endif
 	{
 		env_t * etmp = flash_addr;
-		ulong ltmp = end_addr;
-
+#ifdef CONFIG_APP
 		flash_addr = flash_addr_new;
 		flash_addr_new = etmp;
-
+        env_ptr = flash_addr;
+        etmp = flash_addr_real;
+        flash_addr_real = flash_addr_new_real;
+        flash_addr_new_real = etmp;
+		end_addr = (ulong)flash_addr_real + CFG_ENV_SECT_SIZE - 1;
+		end_addr_new = (ulong)flash_addr_new_real + CFG_ENV_SECT_SIZE - 1;
+#else  /* CONFIG_APP */
+		ulong ltmp = end_addr;
+		flash_addr = flash_addr_new;
+		flash_addr_new = etmp;
 		end_addr = end_addr_new;
 		end_addr_new = ltmp;
+#endif  /* CONFIG_APP */
 	}
 
 	rc = 0;
+#ifdef CONFIG_APP
+    app3xx_flash_update_ram( );
+#endif  /* CONFIG_APP */
 Done:
 
 	if (saved_data)
 		free (saved_data);
 	/* try to re-protect */
+#ifdef CONFIG_APP
+	(void) flash_sect_protect (1, (ulong)flash_addr_real, end_addr);
+	(void) flash_sect_protect (1, (ulong)flash_addr_new_real, end_addr_new);
+#else  /* CONFIG_APP */
 	(void) flash_sect_protect (1, (ulong)flash_addr, end_addr);
 	(void) flash_sect_protect (1, (ulong)flash_addr_new, end_addr_new);
+#endif  /* CONFIG_APP */
 
 	return rc;
 }
@@ -245,6 +303,9 @@ Done:
 
 int  env_init(void)
 {
+
+  app3xx_flash_update_ram( );
+
 	if (crc32(0, env_ptr->data, ENV_SIZE) == env_ptr->crc) {
 		gd->env_addr  = (ulong)&(env_ptr->data);
 		gd->env_valid = 1;
@@ -302,6 +363,11 @@ int saveenv(void)
 	end_addr = flash_sect_addr + 0x20000 - 1;
 #endif
 
+#ifdef CONFIG_APP
+    flash_sect_addr = CFG_ENV_ADDR;
+    end_addr = flash_sect_addr + CFG_ENV_SIZE - 1;
+#endif
+
 	debug ("Protect off %08lX ... %08lX\n",
 		(ulong)flash_sect_addr, end_addr);
 
@@ -319,6 +385,7 @@ int saveenv(void)
 		rcode = 1;
 	} else {
 		puts ("done\n");
+        app3xx_flash_update_ram( );
 	}
 
 	/* try to re-protect */
@@ -348,26 +415,42 @@ void env_relocate_spec (void)
 	if (flash_addr_new->flags != OBSOLETE_FLAG &&
 	    crc32(0, flash_addr_new->data, ENV_SIZE) ==
 	    flash_addr_new->crc) {
-		char flag = OBSOLETE_FLAG;
+        unsigned long flag = OBSOLETE_FLAG;
 
 		gd->env_valid = 2;
-		flash_sect_protect (0, (ulong)flash_addr_new, end_addr_new);
+#ifdef CONFIG_APP
+		flash_sect_protect (0, (ulong)flash_addr_new_real, end_addr_new);
 		flash_write(&flag,
+			    (ulong)&(flash_addr_new_real->flags),
+			    sizeof(flash_addr_new_real->flags));
+		flash_sect_protect (1, (ulong)flash_addr_new_real, end_addr_new);
+#else  /* CONFIG_APP */
+		flash_sect_protect (0, (ulong)flash_addr_new, end_addr_new);
+		flash_write((char *)&flag,
 			    (ulong)&(flash_addr_new->flags),
 			    sizeof(flash_addr_new->flags));
 		flash_sect_protect (1, (ulong)flash_addr_new, end_addr_new);
+#endif  /* CONFIG_APP */
 	}
 
 	if (flash_addr->flags != ACTIVE_FLAG &&
 	    (flash_addr->flags & ACTIVE_FLAG) == ACTIVE_FLAG) {
-		char flag = ACTIVE_FLAG;
+        unsigned long flag = ACTIVE_FLAG;
 
 		gd->env_valid = 2;
+#ifdef CONFIG_APP
+		flash_sect_protect (0, (ulong)flash_addr_real, end_addr);
+		flash_write(&flag,
+			    (ulong)&(flash_addr_real->flags),
+			    sizeof(flash_addr_real->flags));
+		flash_sect_protect (1, (ulong)flash_addr_real, end_addr);
+#else  /* CONFIG_APP */
 		flash_sect_protect (0, (ulong)flash_addr, end_addr);
 		flash_write(&flag,
 			    (ulong)&(flash_addr->flags),
 			    sizeof(flash_addr->flags));
 		flash_sect_protect (1, (ulong)flash_addr, end_addr);
+#endif  /* CONFIG_APP */
 	}
 
 	if (gd->env_valid == 2)

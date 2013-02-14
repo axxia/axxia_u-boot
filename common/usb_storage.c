@@ -159,8 +159,17 @@ static struct us_data usb_stor[USB_MAX_STOR_DEV];
 
 
 #define USB_STOR_TRANSPORT_GOOD	   0
+
+#ifdef CONFIG_ACP3
 #define USB_STOR_TRANSPORT_FAILED -1
 #define USB_STOR_TRANSPORT_ERROR  -2
+#else
+#define USB_STOR_TRANSPORT_FAILED (USB_ENEXTFREE)
+#define USB_STOR_TRANSPORT_ERROR  (USB_ENEXTFREE-1)
+#endif
+
+
+
 
 int usb_stor_get_info(struct usb_device *dev, struct us_data *us,
 		      block_dev_desc_t *dev_desc);
@@ -213,6 +222,10 @@ int usb_stor_scan(int mode)
 {
 	unsigned char i;
 	struct usb_device *dev;
+#ifdef CONFIG_ACP3
+	int result;
+#endif
+	
 
 	/* GJ */
 	memset(usb_stor_buf, 0, sizeof(usb_stor_buf));
@@ -243,8 +256,27 @@ int usb_stor_scan(int mode)
 			/* ok, it is a storage devices
 			 * get info and fill it in
 			 */
-			if (usb_stor_get_info(dev, &usb_stor[usb_max_devs],
+
+#ifdef CONFIG_ACP3
+			result = usb_stor_get_info(dev, &usb_stor[usb_max_devs],
+						&usb_dev_desc[usb_max_devs]);
+			if (result == USB_EDEVCRITICAL) {
+				/*
+				 * Something there, but failed badly.
+				 * Retry one more time. This happens
+				 * sometimes with some USB sticks,
+				 * e.g. Patriot Rage ID 13fe:3800
+				 */
+				printf (".");
+				usb_restart_device(dev);  /* ignore return value */
+				result = usb_stor_get_info(dev, &usb_stor[usb_max_devs],
+						&usb_dev_desc[usb_max_devs]);
+			}
+			if (result == 1)
+#else
+			if(usb_stor_get_info(dev, &usb_stor[usb_max_devs],
 						&usb_dev_desc[usb_max_devs]))
+#endif
 				usb_max_devs++;
 		}
 		/* if storage device */
@@ -327,9 +359,16 @@ static int us_one_transfer(struct us_data *us, int pipe, char *buf, int length)
 			/* transfer the data */
 			USB_STOR_PRINTF("Bulk xfer 0x%x(%d) try #%d\n",
 				  (unsigned int)buf, this_xfer, 11 - maxtry);
+#ifdef CONFIG_ACP3
 			result = usb_bulk_msg(us->pusb_dev, pipe, buf,
 					      this_xfer, &partial,
-					      USB_CNTL_TIMEOUT * 5);
+					      USB_CNTL_TIMEOUT);
+#else
+			result = usb_bulk_msg(us->pusb_dev, pipe, buf,
+					      this_xfer, &partial,
+					      USB_CNTL_TIMEOUT*5);
+#endif
+
 			USB_STOR_PRINTF("bulk_msg returned %d xferred %d/%d\n",
 				  result, partial, this_xfer);
 			if (us->pusb_dev->status != 0) {
@@ -398,18 +437,25 @@ static int usb_stor_BBB_reset(struct us_data *us)
 	 * This comment stolen from FreeBSD's /sys/dev/usb/umass.c.
 	 */
 	USB_STOR_PRINTF("BBB_reset\n");
+#ifdef CONFIG_ACP3
 	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
 				 US_BBB_RESET,
 				 USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-				 0, us->ifnum, 0, 0, USB_CNTL_TIMEOUT * 5);
+				 0, us->ifnum, 0, 0, USB_CNTL_TIMEOUT);
+#else
+	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
+				 US_BBB_RESET,
+				 USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+				 0, us->ifnum, 0, 0, USB_CNTL_TIMEOUT*5);
+#endif
 
-	if ((result < 0) && (us->pusb_dev->status & USB_ST_STALLED)) {
+	/* long wait for reset */
+	wait_ms(150);
+	if ((result < 0) && (us->pusb_dev->status & (USB_ST_STALLED | USB_ST_CRC_ERR))) {
 		USB_STOR_PRINTF("RESET:stall\n");
 		return -1;
 	}
 
-	/* long wait for reset */
-	wait_ms(150);
 	USB_STOR_PRINTF("BBB_reset result %d: status %X reset\n", result,
 			us->pusb_dev->status);
 	pipe = usb_rcvbulkpipe(us->pusb_dev, us->ep_in);
@@ -442,11 +488,19 @@ static int usb_stor_CB_reset(struct us_data *us)
 	memset(cmd, 0xff, sizeof(cmd));
 	cmd[0] = SCSI_SEND_DIAG;
 	cmd[1] = 4;
+#ifdef CONFIG_ACP3
 	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
 				 US_CBI_ADSC,
 				 USB_TYPE_CLASS | USB_RECIP_INTERFACE,
 				 0, us->ifnum, cmd, sizeof(cmd),
-				 USB_CNTL_TIMEOUT * 5);
+				 USB_CNTL_TIMEOUT);
+#else
+	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
+				 US_CBI_ADSC,
+				 USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+				 0, us->ifnum, cmd, sizeof(cmd),
+				 USB_CNTL_TIMEOUT*5);
+#endif
 
 	/* long wait for reset */
 	wait_ms(1500);
@@ -502,8 +556,13 @@ int usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 	/* copy the command data into the CBW command data buffer */
 	/* DST SRC LEN!!! */
 	memcpy(cbw.CBWCDB, srb->cmd, srb->cmdlen);
+#ifdef CONFIG_ACP3
 	result = usb_bulk_msg(us->pusb_dev, pipe, &cbw, UMASS_BBB_CBW_SIZE,
-			      &actlen, USB_CNTL_TIMEOUT * 5);
+			      &actlen, USB_CNTL_TIMEOUT);
+#else
+	result = usb_bulk_msg(us->pusb_dev, pipe, &cbw, UMASS_BBB_CBW_SIZE,
+			      &actlen, USB_CNTL_TIMEOUT*5);
+#endif
 	if (result < 0)
 		USB_STOR_PRINTF("usb_stor_BBB_comdat:usb_bulk_msg error\n");
 	return result;
@@ -533,13 +592,23 @@ int usb_stor_CB_comdat(ccb *srb, struct us_data *us)
 		usb_show_srb(srb);
 #endif
 		/* let's send the command via the control pipe */
+#ifdef CONFIG_ACP3
 		result = usb_control_msg(us->pusb_dev,
 					 usb_sndctrlpipe(us->pusb_dev , 0),
 					 US_CBI_ADSC,
 					 USB_TYPE_CLASS | USB_RECIP_INTERFACE,
 					 0, us->ifnum,
 					 srb->cmd, srb->cmdlen,
-					 USB_CNTL_TIMEOUT * 5);
+					 USB_CNTL_TIMEOUT);
+#else
+		result = usb_control_msg(us->pusb_dev,
+					 usb_sndctrlpipe(us->pusb_dev , 0),
+					 US_CBI_ADSC,
+					 USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+					 0, us->ifnum,
+					 srb->cmd, srb->cmdlen,
+					 USB_CNTL_TIMEOUT*5);
+#endif
 		USB_STOR_PRINTF("CB_transport: control msg returned %d,"
 				" status %X\n", result, us->pusb_dev->status);
 		/* check the return code for the command */
@@ -634,9 +703,15 @@ int usb_stor_BBB_clear_endpt_stall(struct us_data *us, __u8 endpt)
 	int result;
 
 	/* ENDPOINT_HALT = 0, so set value to 0 */
+#ifdef CONFIG_ACP3
 	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
 				USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT,
-				0, endpt, 0, 0, USB_CNTL_TIMEOUT * 5);
+				0, endpt, 0, 0, USB_CNTL_TIMEOUT);
+#else
+	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
+				USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT,
+				0, endpt, 0, 0, USB_CNTL_TIMEOUT*5);
+#endif
 	return result;
 }
 
@@ -658,10 +733,17 @@ int usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	USB_STOR_PRINTF("COMMAND phase\n");
 	result = usb_stor_BBB_comdat(srb, us);
 	if (result < 0) {
-		USB_STOR_PRINTF("failed to send CBW status %ld\n",
+		USB_STOR_PRINTF("usb_stor_BBB_comdat -- failed to send CBW status 0x%08x return from usb_stor_BBB_transport\n",
 			us->pusb_dev->status);
 		usb_stor_BBB_reset(us);
+		/* if we got a critical device error, report it specially */
+#ifdef ACP_CONFIG3
+		return result == USB_EDEVCRITICAL ? result
+				: USB_STOR_TRANSPORT_FAILED;
+#else
 		return USB_STOR_TRANSPORT_FAILED;
+#endif
+
 	}
 	wait_ms(5);
 	pipein = usb_rcvbulkpipe(us->pusb_dev, us->ep_in);
@@ -676,8 +758,13 @@ int usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 		pipe = pipein;
 	else
 		pipe = pipeout;
+#ifdef CONFIG_ACP3
 	result = usb_bulk_msg(us->pusb_dev, pipe, srb->pdata, srb->datalen,
-			      &data_actlen, USB_CNTL_TIMEOUT * 5);
+			      &data_actlen, USB_CNTL_TIMEOUT);
+#else
+	result = usb_bulk_msg(us->pusb_dev, pipe, srb->pdata, srb->datalen,
+			      &data_actlen, USB_CNTL_TIMEOUT*5);
+#endif
 	/* special handling of STALL in DATA phase */
 	if ((result < 0) && (us->pusb_dev->status & USB_ST_STALLED)) {
 		USB_STOR_PRINTF("DATA:stall\n");
@@ -704,8 +791,13 @@ st:
 	retry = 0;
 again:
 	USB_STOR_PRINTF("STATUS phase\n");
+#ifdef CONFIG_ACP3
+	result = usb_bulk_msg(us->pusb_dev, pipein, &csw, UMASS_BBB_CSW_SIZE,
+				&actlen, USB_CNTL_TIMEOUT);
+#else
 	result = usb_bulk_msg(us->pusb_dev, pipein, &csw, UMASS_BBB_CSW_SIZE,
 				&actlen, USB_CNTL_TIMEOUT*5);
+#endif
 
 	/* special handling of STALL in STATUS phase */
 	if ((result < 0) && (retry < 1) &&
@@ -885,7 +977,7 @@ static int usb_inquiry(ccb *srb, struct us_data *ss)
 		srb->datalen = 36;
 		srb->cmdlen = 12;
 		i = ss->transport(srb, ss);
-		USB_STOR_PRINTF("inquiry returns %d\n", i);
+		USB_STOR_PRINTF("usb_inquiry returns %d\n", i);
 		if (i == 0)
 			break;
 	} while (retry--);
@@ -900,6 +992,9 @@ static int usb_inquiry(ccb *srb, struct us_data *ss)
 static int usb_request_sense(ccb *srb, struct us_data *ss)
 {
 	char *ptr;
+#ifdef CONFIG_ACP3
+	int result;
+#endif
 
 	ptr = (char *)srb->pdata;
 	memset(&srb->cmd[0], 0, 12);
@@ -908,7 +1003,19 @@ static int usb_request_sense(ccb *srb, struct us_data *ss)
 	srb->datalen = 18;
 	srb->pdata = &srb->sense_buf[0];
 	srb->cmdlen = 12;
+#ifdef CONFIG_ACP3
+	result = ss->transport(srb, ss);
+	if (result < 0) {
+		if (result != USB_EDEVCRITICAL)
+			USB_STOR_PRINTF("Request Sense failed\n");
+		return result;
+	}
+#else
 	ss->transport(srb, ss);
+#endif
+
+
+
 	USB_STOR_PRINTF("Request Sense returned %02X %02X %02X\n",
 			srb->sense_buf[2], srb->sense_buf[12],
 			srb->sense_buf[13]);
@@ -919,6 +1026,9 @@ static int usb_request_sense(ccb *srb, struct us_data *ss)
 static int usb_test_unit_ready(ccb *srb, struct us_data *ss)
 {
 	int retries = 10;
+#ifdef CONFIG_ACP3
+	int result;
+#endif
 
 	do {
 		memset(&srb->cmd[0], 0, 12);
@@ -927,7 +1037,13 @@ static int usb_test_unit_ready(ccb *srb, struct us_data *ss)
 		srb->cmdlen = 12;
 		if (ss->transport(srb, ss) == USB_STOR_TRANSPORT_GOOD)
 			return 0;
+#ifdef CONFIG_ACP3
+		result = usb_request_sense(srb, ss);
+		if (result == USB_EDEVCRITICAL)
+			return result;
+#else
 		usb_request_sense(srb, ss);
+#endif
 		wait_ms(100);
 	} while (retries--);
 
@@ -1313,6 +1429,9 @@ int usb_stor_get_info(struct usb_device *dev, struct us_data *ss,
 	unsigned long cap[2];
 	unsigned long *capacity, *blksz;
 	ccb *pccb = &usb_ccb;
+#ifdef CONFIG_ACP3
+	int result;
+#endif
 
 	/* for some reasons a couple of devices would not survive this reset */
 	if (
@@ -1371,7 +1490,15 @@ int usb_stor_get_info(struct usb_device *dev, struct us_data *ss,
 #endif /* CONFIG_USB_BIN_FIXUP */
 	USB_STOR_PRINTF("ISO Vers %X, Response Data %X\n", usb_stor_buf[2],
 			usb_stor_buf[3]);
+#ifdef CONFIG_ACP3
+	result = usb_test_unit_ready(pccb, ss);
+	if (result) {
+		if (result == USB_EDEVCRITICAL)
+			return result;
+#else
 	if (usb_test_unit_ready(pccb, ss)) {
+#endif
+
 		printf("Device NOT ready\n"
 		       "   Request Sense returned %02X %02X %02X\n",
 		       pccb->sense_buf[2], pccb->sense_buf[12],

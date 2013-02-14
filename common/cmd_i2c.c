@@ -634,8 +634,39 @@ int do_i2c_loop(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	 * Run the loop...
 	 */
 	while (1) {
-		if (i2c_read(chip, addr, alen, bytes, length) != 0)
+		if (i2c_read(chip, addr, alen, bytes, length) != 0) {
 			puts ("Error reading the chip.\n");
+		} else {
+			unsigned char *cp;
+			int i;
+			int address;
+
+			address = addr;
+			printf("%04x:", address);
+			cp = bytes;
+
+			for (i=0; i<16; i++) {
+				printf(" %02x", *cp++);
+				address++;
+			}
+
+			puts ("    ");
+			cp = bytes;
+
+			for (i=0; i<16; i++) {
+				if ((*cp < 0x20) || (*cp > 0x7e))
+					puts (".");
+				else
+					printf("%c", *cp);
+				cp++;
+			}
+
+			putc ('\n');
+		}
+
+		if (ctrlc())
+			break;
+
 		udelay(delay);
 	}
 

@@ -105,11 +105,12 @@ struct nand_flash_dev nand_flash_ids[] = {
 	{"NAND 1GiB 3,3V 16-bit",	0xC3, 0, 1024, 0, LP_OPTIONS16},
 
 	/* 16 Gigabit */
+	{"NAND 2Gib 3.3V 8bit",         0x2C, 0, 2048, 0, LP_OPTIONS},
 	{"NAND 2GiB 1,8V 8-bit",	0xA5, 0, 2048, 0, LP_OPTIONS},
 	{"NAND 2GiB 3,3V 8-bit",	0xD5, 0, 2048, 0, LP_OPTIONS},
 	{"NAND 2GiB 1,8V 16-bit",	0xB5, 0, 2048, 0, LP_OPTIONS16},
 	{"NAND 2GiB 3,3V 16-bit",	0xC5, 0, 2048, 0, LP_OPTIONS16},
-
+	{"NAND 2GiB 3,3V 8-bit",        0x48, 0, 2048, 0, LP_OPTIONS},
 	/*
 	 * Renesas AND 1 Gigabit. Those chips do not support extended id and
 	 * have a strange page/block layout !  The chosen minimum erasesize is

@@ -37,7 +37,14 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-#if defined(CONFIG_405GP) || defined(CONFIG_405CR)
+#if defined(CONFIG_47x)
+
+void
+get_sys_info(PPC4xx_SYS_INFO * sysInfo)
+{
+}
+
+#elif defined(CONFIG_405GP) || defined(CONFIG_405CR)
 
 void get_sys_info (PPC4xx_SYS_INFO * sysInfo)
 {
@@ -1155,6 +1162,10 @@ ulong get_bus_freq (ulong dummy)
 	val = sys_info.freqPLB;
 
 #elif defined(CONFIG_IOP480)
+
+	val = 66;
+
+#elif defined(CONFIG_ACP)
 
 	val = 66;
 

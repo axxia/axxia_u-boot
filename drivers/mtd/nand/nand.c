@@ -74,7 +74,6 @@ static void nand_init_chip(struct mtd_info *mtd, struct nand_chip *nand,
 		mtd->name = NULL;
 		mtd->size = 0;
 	}
-
 }
 
 void nand_init(void)
@@ -87,7 +86,10 @@ void nand_init(void)
 		if (nand_curr_device == -1)
 			nand_curr_device = i;
 	}
+
+#ifndef CONFIG_ACP
 	printf("%u MiB\n", size / 1024);
+#endif
 
 #ifdef CONFIG_SYS_NAND_SELECT_DEVICE
 	/*

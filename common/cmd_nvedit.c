@@ -55,6 +55,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+//jl 
 #if !defined(CONFIG_ENV_IS_IN_EEPROM)	&& \
     !defined(CONFIG_ENV_IS_IN_FLASH)	&& \
     !defined(CONFIG_ENV_IS_IN_DATAFLASH)	&& \
@@ -63,7 +64,9 @@ DECLARE_GLOBAL_DATA_PTR;
     !defined(CONFIG_ENV_IS_IN_NVRAM)	&& \
     !defined(CONFIG_ENV_IS_IN_ONENAND)	&& \
     !defined(CONFIG_ENV_IS_IN_SPI_FLASH)	&& \
-    !defined(CONFIG_ENV_IS_NOWHERE)
+    !defined(CONFIG_ENV_IS_NOWHERE)	&&\
+    !defined(CONFIG_ENV_IS_IN_SERIAL_FLASH)
+
 # error Define one of CONFIG_ENV_IS_IN_{EEPROM|FLASH|DATAFLASH|ONENAND|\
 SPI_FLASH|MG_DISK|NVRAM|NOWHERE}
 #endif
@@ -205,6 +208,7 @@ int _do_setenv (int flag, int argc, char *argv[])
 			break;
 	}
 
+#ifndef CONFIG_ACP
 	/* Check for console redirection */
 	if (strcmp(name,"stdin") == 0) {
 		console = stdin;
@@ -225,9 +229,13 @@ int _do_setenv (int flag, int argc, char *argv[])
 		if (i)
 			return i;
 #else
+#ifndef CONFIG_ACP
 		/* Try assigning specified device */
 		if (console_assign (console, argv[2]) < 0)
 			return 1;
+#else
+		return 1;
+#endif
 
 #ifdef CONFIG_SERIAL_MULTI
 		if (serial_assign (argv[2]) < 0)
@@ -235,6 +243,7 @@ int _do_setenv (int flag, int argc, char *argv[])
 #endif
 #endif /* CONFIG_CONSOLE_MUX */
 	}
+#endif /* CONFIG_ACP */
 
 	/*
 	 * Delete any existing definition

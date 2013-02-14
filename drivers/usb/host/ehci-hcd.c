@@ -318,15 +318,20 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 	uint32_t c, toggle;
 	uint32_t cmd;
 	int ret = 0;
+#ifdef CONFIG_ACP3
+	int result = USB_EFAIL;
+#endif
 
 	debug("dev=%p, pipe=%lx, buffer=%p, length=%d, req=%p\n", dev, pipe,
 	      buffer, length, req);
-	if (req != NULL)
+
+	if (req != NULL) {
 		debug("req=%u (%#x), type=%u (%#x), value=%u (%#x), index=%u\n",
 		      req->request, req->request,
 		      req->requesttype, req->requesttype,
 		      le16_to_cpu(req->value), le16_to_cpu(req->value),
 		      le16_to_cpu(req->index));
+	}
 
 	qh = ehci_alloc(sizeof(struct QH), 32);
 	if (qh == NULL) {
@@ -443,7 +448,10 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		goto fail;
 	}
 
-	/* Wait for TDs to be processed. */
+	/*
+	 * Wait for TDs to be processed. We wait 3s since some USB
+	 * sticks can take a long time immediately after system reset
+	 */
 	ts = get_timer(0);
 	vtd = td;
 	do {
@@ -452,7 +460,11 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		token = hc32_to_cpu(vtd->qt_token);
 		if (!(token & 0x80))
 			break;
+#ifdef CONFIG_ACP3
+	} while (get_timer(ts) < CONFIG_SYS_HZ*3);
+#else
 	} while (get_timer(ts) < CONFIG_SYS_HZ);
+#endif
 
 	/* Disable async schedule. */
 	cmd = ehci_readl(&hcor->or_usbcmd);
@@ -465,6 +477,18 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		printf("EHCI fail timeout STD_ASS reset\n");
 		goto fail;
 	}
+
+#ifdef CONFIG_ACP3
+	token = hc32_to_cpu(vtd->qt_token);
+	/* check that the TD processing happened */
+	if (token & 0x80) {
+		printf("EHCI timed out on TD - token=%#x\n", token);
+		result = USB_EDEVCRITICAL;
+		goto fail;
+	}
+#endif
+
+	
 
 	qh_list.qh_link = cpu_to_hc32((uint32_t)&qh_list | QH_LINK_TYPE_QH);
 
@@ -512,7 +536,11 @@ fail:
 		td = (void *)hc32_to_cpu(qh->qh_overlay.qt_next);
 	}
 	ehci_free(qh, sizeof(*qh));
+#ifdef CONFIG_ACP3
+	return result;
+#else
 	return -1;
+#endif
 }
 
 static inline int min3(int a, int b, int c)
@@ -785,6 +813,10 @@ int usb_lowlevel_init(void)
 {
 	uint32_t reg;
 	uint32_t cmd;
+#ifdef CONFIG_ACP3
+	u32 port_status;
+	unsigned burst_size;
+#endif
 
 	if (ehci_hcd_init() != 0)
 		return -1;
@@ -796,6 +828,15 @@ int usb_lowlevel_init(void)
 #if defined(CONFIG_EHCI_HCD_INIT_AFTER_RESET)
 	if (ehci_hcd_init() != 0)
 		return -1;
+#endif
+
+#ifdef CONFIG_ACP3
+	port_status = ehci_readl(&hcor->or_portsc[0]);
+	if (port_status & 0x100) {
+		printf(KERN_ERR "USB port is in reset status, not able to "
+			 "change host controller status to run\n");
+		return -1;
+	}
 #endif
 
 	/* Set head of reclaim list */
@@ -839,6 +880,12 @@ int usb_lowlevel_init(void)
 	wait_ms(5);
 	reg = HC_VERSION(ehci_readl(&hccr->cr_capbase));
 	printf("USB EHCI %x.%02x\n", reg >> 8, reg & 0xff);
+
+#ifdef CONFIG_ACP3
+	burst_size = ehci_readl(&hcor->_reserved_[1]);
+	burst_size = (burst_size & 0xffff00ff) | 0x4000;        /* TXPBURST */
+	ehci_writel(&hcor->_reserved_[1], burst_size);
+#endif
 
 	rootdev = 0;
 

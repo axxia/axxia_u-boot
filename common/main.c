@@ -264,6 +264,13 @@ static __inline__ int abortboot(int bootdelay)
 		gd->flags &= ~GD_FLG_SILENT;
 #endif
 
+#if defined( LSI_ARCH_APP3K ) || defined( LSI_ARCH_APP3 )
+    if (!abort) {
+      /* set up the pll if necessary */
+      pll_setup_clocks( );
+    }
+#endif  /* AGERE_ARCH_APP3K */
+
 	return abort;
 }
 # endif	/* CONFIG_AUTOBOOT_KEYED */
@@ -393,7 +400,13 @@ void main_loop (void)
 	}
 	else
 #endif /* CONFIG_BOOTCOUNT_LIMIT */
+#if defined( CONFIG_ACP2 )
+		s = getenv ("bootcmd2");
+#elif defined( CONFIG_ACP3 )
+		s = getenv ("bootcmd3");
+#else
 		s = getenv ("bootcmd");
+#endif
 
 	debug ("### main_loop: bootcmd=\"%s\"\n", s ? s : "<UNDEFINED>");
 
@@ -1379,11 +1392,14 @@ int run_command (const char *cmd, int flag)
 
 		/* found - check max args */
 		if (argc > cmdtp->maxargs) {
+#ifndef CFG_NOHELP
 			cmd_usage(cmdtp);
+#endif
 			rc = -1;
 			continue;
 		}
 
+#ifndef CONFIG_ACP2
 #if defined(CONFIG_CMD_BOOTD)
 		/* avoid "bootd" recursion */
 		if (cmdtp->cmd == do_bootd) {
@@ -1398,6 +1414,7 @@ int run_command (const char *cmd, int flag)
 				flag |= CMD_FLAG_BOOTD;
 			}
 		}
+#endif
 #endif
 
 		/* OK - call function to do the command */
@@ -1423,7 +1440,9 @@ int do_run (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
 	int i;
 
 	if (argc < 2) {
+#ifndef CFG_NOHELP
 		cmd_usage(cmdtp);
+#endif
 		return 1;
 	}
 

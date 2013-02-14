@@ -226,6 +226,7 @@ netboot_common (proto_t proto, cmd_tbl_t *cmdtp, int argc, char *argv[])
 		show_boot_progress (-83);
 	else
 		show_boot_progress (84);
+
 	return rcode;
 }
 

@@ -7,10 +7,12 @@
 
 /* These are declarations of exported functions available in C code */
 unsigned long get_version(void);
+#ifndef CONFIG_ACP
 int  getc(void);
 int  tstc(void);
 void putc(const char);
 void puts(const char*);
+#endif
 void printf(const char* fmt, ...);
 void install_hdlr(int, interrupt_handler_t*, void*);
 void free_hdlr(int);
