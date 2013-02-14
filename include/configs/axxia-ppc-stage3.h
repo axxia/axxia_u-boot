@@ -385,7 +385,7 @@ int acp_clock_update_dt(void);
   ======================================================================
 */
 
-/*#define CONFIG_LSI_EIOA*/
+#define CONFIG_LSI_EIOA
 
 #ifndef __ASSEMBLY__
 int eioa_ethernet_configure(void);
