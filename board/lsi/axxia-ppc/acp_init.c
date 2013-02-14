@@ -21,9 +21,6 @@
  */
 
 #include <common.h>
-
-#ifdef CONFIG_ACP2
-
 #include <asm/io.h>
 
 #if defined (ACP_X1V2) | defined (CONFIG_AXXIA_342X)
@@ -1732,5 +1729,3 @@ acp_init( void )
 
 	return returnCode;
 }
-
-#endif

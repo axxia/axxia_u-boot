@@ -25,12 +25,6 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(BOARD).o
 
-ifndef ACP_ISS
-COBJS = acp_init.o
-else
-COBJS =
-endif
-
 COBJS += acp_failure.o dcr.o nand.o ssp.o mdio.o io.o splash.o
 COBJS += ncr.o version.o reset.o clocks.o pciesrio.o sbb.o
 SOBJS = acp_start.o util.o ipi.o
@@ -45,22 +39,23 @@ ifdef CONFIG_AXXIA_EIOA
 COBJS  += eioa.o
 endif
 
-SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
-OBJS	:= $(addprefix $(obj),$(COBJS))
-SOBJS	:= $(addprefix $(obj),$(SOBJS))
-
-OBJS += brs.o
-
 ifdef CONFIG_ACP3
-OBJS += ipi.o
+COBJS += ipi.o
 endif
 
-$(LIB):	$(OBJS) $(SOBJS)
+ifdef CONFIG_SPL_BUILD
+COBJS = acp_init.o
+SOBJS = brs.o
+endif
+
+COBJS	:= $(addprefix $(obj),$(COBJS))
+SOBJS	:= $(addprefix $(obj),$(SOBJS))
+
+$(LIB):	$(COBJS) $(SOBJS)
 	$(call cmd_link_o_target, $(COBJS) $(SOBJS))
-#	$(AR) $(ARFLAGS) $@ $(OBJS) acp_start.o brs.o
 
 clean:
-	rm -f $(SOBJS) $(OBJS)
+	rm -f $(SOBJS) $(COBJS)
 
 distclean:	clean
 	rm -f $(LIB) core *.bak $(obj).depend

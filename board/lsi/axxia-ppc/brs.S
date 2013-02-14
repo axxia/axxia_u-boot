@@ -25,9 +25,7 @@
 
 #include <config.h>
 
-#ifdef CONFIG_ACP2
-
-#include <ppc4xx.h>
+#include <asm/ppc4xx.h>
 #include <ppc_asm.tmpl>
 #include <ppc_defs.h>
 
@@ -528,8 +526,6 @@ jump_to_the_2nd_stage:
 brs_vector:
 
 	b		brs
-
-#endif
 
 ###
 ### Local Variables:

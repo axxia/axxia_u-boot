@@ -26,31 +26,15 @@ OUTPUT_ARCH(powerpc)
    __DYNAMIC = 0;    */
 SECTIONS
 {
-  .resetvec 0x00000000 :
+  .resetvec 0xf0a00000 :
   {
     *(.resetvec)
   } = 0xffff
 
-  . = 0x1000;
-  PROVIDE (_ose_strings_0 = .);
-  .ose_strings_0_section : { *(.ose_strings_0_section) }
-
-  . = 0x1400;
-  PROVIDE (_ose_strings_1 = .);
-  .ose_strings_1_section : { *(.ose_strings_1_section) }
-
-  . = 0x1800;
-  PROVIDE (_ose_strings_2 = .);
-  .ose_strings_2_section : { *(.ose_strings_2_section) }
-
-  . = 0x1c00;
-  PROVIDE (_ose_strings_3 = .);
-  .ose_strings_3_section : { *(.ose_strings_3_section) }
-
-  .bootpg 0x00002000 :
+  .bootpg 0xf0a00010 :
   {
     arch/powerpc/cpu/ppc4xx/start.o	(.bootpg)
-  } = 0xffff
+  } = 0xfffff
 
   /* Read-only sections, merged into text segment: */
   . = + SIZEOF_HEADERS;
@@ -76,36 +60,16 @@ SECTIONS
   .rela.plt      : { *(.rela.plt)		}
   .init          : { *(.init)	}
   .plt : { *(.plt) }
-  .text      :
+  .text :
   {
     /* WARNING - the following is hand-optimized to fit within	*/
     /* the sector layout of our flash chips!	XXX FIXME XXX	*/
-
-    arch/powerpc/cpu/ppc4xx/start.o	(.text)
-
+    arch/powerpc/cpu/ppc4xx/start.o (.text)
     *(.text)
     *(.fixup)
-    *(.got1)
   }
   _etext = .;
   PROVIDE (etext = .);
-
-  . = 0x60000;
-  __acp_osg_cores = .;
-  .acp_osg_cores_section : { *(.acp_osg_cores_section) }
-  . += 0x100;
-
-  __acp_osg_groups = .;
-  .acp_osg_groups_section : { *(.acp_osg_groups_section) }
-  . += 0x100;
-
-  __acp_system_section = .;
-  .acp_system_section : { *(.acp_system_secion) }
-  . += 0x100;
-
-  . = ALIGN(256);
-  _core_copy_beginning = .;
-
   .rodata    :
   {
     *(.rodata)
@@ -121,16 +85,6 @@ SECTIONS
   . = (. + 0x00FF) & 0xFFFFFF00;
   _erotext = .;
   PROVIDE (erotext = .);
-  .reloc   :
-  {
-    *(.got)
-    _GOT2_TABLE_ = .;
-    *(.got2)
-    _FIXUP_TABLE_ = .;
-    *(.fixup)
-  }
-  __got2_entries = (_FIXUP_TABLE_ - _GOT2_TABLE_) >>2;
-  __fixup_entries = (. - _FIXUP_TABLE_)>>2;
 
   .data    :
   {
@@ -141,15 +95,8 @@ SECTIONS
     *(.dynamic)
     CONSTRUCTORS
   }
-
-  .u_boot_list : {
-    #include "u-boot.lst"
-  }
-
-  . = .;
-  __start___ex_table = .;
-  __ex_table : { *(__ex_table) }
-  __stop___ex_table = .;
+  _edata  =  .;
+  PROVIDE (edata = .);
 
   . = ALIGN(256);
   __init_begin = .;
@@ -157,36 +104,29 @@ SECTIONS
   .data.init : { *(.data.init) }
   . = ALIGN(256);
   __init_end = .;
-  _core_copy_end = .;
 
+  /*
+   * BootROM Simulator.
+   */
+
+  . = 0xf0a1fc00;
+  /*. = 0xf0a2fc00;*/
+  .brs : { *(.brs) }
+  . = 0xf0a1fffc;
+  /*. = 0xf0a2fffc;*/
+  .brs_vector : { *(.brs_vector) }
+
+  . = 0x00300000;
+  __bss_start = .;
   PROVIDE (_bss_start = .);
   .bss (NOLOAD)       :
   {
-   *(.sbss)
-   *(.scommon)
+   *(.sbss) *(.scommon)
    *(.dynbss)
    *(.bss)
    *(COMMON)
   }
-  . = ALIGN(256);
   PROVIDE (_bss_end = . );
-
-  . = ALIGN(256);
-  _core_copy_core0 = .;
-  . = (. + (_core_copy_end - _core_copy_beginning));
-
-  . = ALIGN(256);
-  _core_copy_core1 = .;
-  . = (. + (_core_copy_end - _core_copy_beginning));
-
-  . = ALIGN(256);
-  _core_copy_core2 = .;
-  . = (. + (_core_copy_end - _core_copy_beginning));
-
-  . = ALIGN(256);
-  _core_copy_core3 = .;
-  . = (. + (_core_copy_end - _core_copy_beginning));
-
   _end = . ;
   PROVIDE (end = .);
 }
