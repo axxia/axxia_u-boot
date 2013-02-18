@@ -1739,7 +1739,7 @@ acp_init_r( void )
 #if defined (CONFIG_ACP3)
 		control = dcr_read(DCR_RESET_BASE);
 		boot_mode = (control & 0x80000000) >> 31;
-		control = acpreadio((void *)GPREG_PHY_CTRL0);
+		control = readl((void *)GPREG_PHY_CTRL0);
 
 		if (0 != (control & 0x1000) &&
 		    0 != acp_osg_group_get_res(group, ACP_OS_PCIE0)) {
@@ -1755,7 +1755,7 @@ acp_init_r( void )
 				char * env_value;
 				unsigned long pciStatus, linkState;
 				
-				pciStatus = acpreadio((void *)(PCIE0_CONFIG + 0x1004));
+				pciStatus = readl((void *)(PCIE0_CONFIG + 0x1004));
 				printk("PEI0 pciStatus = 0x%x\n", pciStatus);
 				linkState = (pciStatus & 0x3f00) >> 8;
 				if (linkState == 0xb) {
@@ -1770,7 +1770,7 @@ acp_init_r( void )
 				} else {
 					printf("PCIE0 link State DOWN = 0x%x\n", linkState);
 				}
-				pciStatus = acpreadio((void *)(PCIE1_CONFIG + 0x1004));
+				pciStatus = readl((void *)(PCIE1_CONFIG + 0x1004));
 				printk("PEI1 pciStatus = 0x%x\n", pciStatus);
 				linkState = (pciStatus & 0x3f00) >> 8;
 	

@@ -30,16 +30,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifdef ACP_ISS
-#define	_writel(v,a)	(*(volatile unsigned long*)(a)) = (v)
-#define	_readl(a)	(*(volatile unsigned long*)(a))
-#else
-#define _readl( address ) \
-acpreadio( ( unsigned long * ) ( address ) )
-#define _writel( value, address ) \
-acpwriteio( ( value ), ( unsigned long * ) ( address ) )
-#endif
-
 #ifdef CONFIG_ACP3
 ACP_DEFINE_SPINLOCK(uart_lock);
 #define ACP_LOCK() acp_spin_lock(&uart_lock)
@@ -197,9 +187,9 @@ acp_serial_init(unsigned long divisor, unsigned long ibrd, unsigned long fbrd)
 		return;
 
 	/* Set up the timer. */
-	_writel(0, (uart.timer + TIMER_CONTROL));
-	_writel(divisor, (uart.timer + TIMER_LOAD));
-	_writel((TIMER_CONTROL_ENABLE | TIMER_CONTROL_MODE),
+	writel(0, (uart.timer + TIMER_CONTROL));
+	writel(divisor, (uart.timer + TIMER_LOAD));
+	writel((TIMER_CONTROL_ENABLE | TIMER_CONTROL_MODE),
 	       (uart.timer + TIMER_CONTROL));
 
 	/*
@@ -208,24 +198,24 @@ acp_serial_init(unsigned long divisor, unsigned long ibrd, unsigned long fbrd)
 
 	  How should this be done for reception?
 	*/
-	while (0 == (_readl(uart.uart + UART_FR) & FR_TXFE));
-	while (0 != (_readl(uart.uart + UART_FR) & FR_BUSY));
+	while (0 == (readl(uart.uart + UART_FR) & FR_TXFE));
+	while (0 != (readl(uart.uart + UART_FR) & FR_BUSY));
 
 	/* Disable the UART. */
-	_writel(0, uart.uart + UART_CR);
+	writel(0, uart.uart + UART_CR);
 
 	/* Flush the transmit fifo. */
-	lcr_h = _readl(uart.uart + UART_LCR_H);
+	lcr_h = readl(uart.uart + UART_LCR_H);
 	lcr_h &= ~0x10;
-	_writel(lcr_h, uart.uart + UART_LCR_H);
+	writel(lcr_h, uart.uart + UART_LCR_H);
 
 	/* Reprogram. */
-  	_writel(ibrd, uart.uart + UART_IBRD);
-	_writel(fbrd, uart.uart + UART_FBRD);
-	_writel(0x70, uart.uart + UART_LCR_H);
+  	writel(ibrd, uart.uart + UART_IBRD);
+	writel(fbrd, uart.uart + UART_FBRD);
+	writel(0x70, uart.uart + UART_LCR_H);
 
 	/* Enable */
-	_writel(0x301, uart.uart + UART_CR);
+	writel(0x301, uart.uart + UART_CR);
 #endif
 	return;
 }
@@ -281,25 +271,25 @@ serial_putc( const char c )
 	if (0 == uart.uart)
 		return;
 
-	while (0 != (_readl(uart.uart + UART_FR) & FR_TXFF))
+	while (0 != (readl(uart.uart + UART_FR) & FR_TXFF))
 		;
 
 	if ('\n' == c) {
-		_writel('\r', uart.uart + UART_DR);
-		while (0 != (_readl(uart.uart + UART_FR) & FR_TXFF))
+		writel('\r', uart.uart + UART_DR);
+		while (0 != (readl(uart.uart + UART_FR) & FR_TXFF))
 			;
 	}
 
-	_writel(c, uart.uart + UART_DR);
+	writel(c, uart.uart + UART_DR);
 
 	/*
 	  The following is useful for printf debugging; get all the
 	  characters out!
 	*/
-	while (0 == (_readl(uart.uart + UART_FR) & FR_TXFE))
+	while (0 == (readl(uart.uart + UART_FR) & FR_TXFE))
 		;
 
-	while (0 != (_readl(uart.uart + UART_FR) & FR_BUSY))
+	while (0 != (readl(uart.uart + UART_FR) & FR_BUSY))
 		;
 #endif
 
@@ -345,10 +335,10 @@ serial_getc(void)
 		for (;;)
 			;
 
-	while (0 != (_readl(uart.uart + UART_FR) & FR_RXFE))
+	while (0 != (readl(uart.uart + UART_FR) & FR_RXFE))
 		;
 
-	character = _readl(uart.uart + UART_DR);
+	character = readl(uart.uart + UART_DR);
 
 	return character;
 #endif
@@ -369,7 +359,7 @@ serial_tstc(void)
 #else
 	if (0 != uart.uart)
 		return_value =
-			(FR_RXFE != (_readl(uart.uart + UART_FR) & FR_RXFE));
+			(FR_RXFE != (readl(uart.uart + UART_FR) & FR_RXFE));
 #endif
 
 	return return_value;
@@ -399,14 +389,14 @@ serial_exit(void)
 		return;
 
 	/* Disable the UART. */
-	_writel(0, (uart.uart + UART_CR));
+	writel(0, (uart.uart + UART_CR));
 
 	/* Make sure all transmissions are finished. */
-	while (0 == (_readl(uart.uart + UART_FR) & FR_TXFE));
-	while (0 != (_readl(uart.uart + UART_FR) & FR_BUSY));
+	while (0 == (readl(uart.uart + UART_FR) & FR_TXFE));
+	while (0 != (readl(uart.uart + UART_FR) & FR_BUSY));
 
 	/* Turn off the timer. */
-	_writel(0, (uart.timer + TIMER_CONTROL));
+	writel(0, (uart.timer + TIMER_CONTROL));
 
 	uart.uart = 0;
 #endif

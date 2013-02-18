@@ -75,22 +75,22 @@ pcie_lsdq_workaround(int pei)
 	}
 
 	/* soft reset the PEI */
-	peiConfig = acpreadio((void *)(addr + 0x1000));
+	peiConfig = readl((void *)(addr + 0x1000));
 	peiConfig = peiConfig | 0x1;
-	acpwriteio(peiConfig, (void *)(addr + 0x1000));
+	writel(peiConfig, (void *)(addr + 0x1000));
 
 	/* Set bit 4 to 0x1 */
-	ltssmConfig = acpreadio((void *)(addr + 0x3300));
+	ltssmConfig = readl((void *)(addr + 0x3300));
 	ltssmConfig = ltssmConfig | (0x1 << 4);
-	acpwriteio(ltssmConfig, (void *)(addr + 0x3300));
+	writel(ltssmConfig, (void *)(addr + 0x3300));
 
 	/* delay for 10ms */
 	mdelay(10);
 
 	/* clear bit 4 */
-	ltssmConfig = acpreadio((void *)(addr + 0x3300));
+	ltssmConfig = readl((void *)(addr + 0x3300));
 	ltssmConfig = (ltssmConfig & 0xffffffef);
-	acpwriteio(ltssmConfig, (void *)(addr + 0x3300));
+	writel(ltssmConfig, (void *)(addr + 0x3300));
 
 	return;
 }
@@ -127,7 +127,7 @@ pciesrio_setcontrol_acp34xx(unsigned long new_control)
 		return -1;
 	}
 
-	old_control = acpreadio((void *)GPREG_PHY_CTRL0);
+	old_control = readl((void *)GPREG_PHY_CTRL0);
 
 	if (0 != old_control) {
 		printf("Old PHY0 Controler MSUT be 0!\n");
@@ -139,18 +139,18 @@ pciesrio_setcontrol_acp34xx(unsigned long new_control)
 	       old_control, new_control);
 
 	/* Write bits 12:8. (step 2.) */
-	acpwriteio((new_control & 0x1f00), (void *)GPREG_PHY_CTRL0);
+	writel((new_control & 0x1f00), (void *)GPREG_PHY_CTRL0);
 
 	/* Write bit 31. (step 3.) */
-	acpwriteio(((new_control & 0x1f00) | 0x80000000),
+	writel(((new_control & 0x1f00) | 0x80000000),
 		   (void *)GPREG_PHY_CTRL0);
 
 	/* Clear bit 31. (step 4.) */
-	acpwriteio((new_control & 0x1f00), (void *)GPREG_PHY_CTRL0);
+	writel((new_control & 0x1f00), (void *)GPREG_PHY_CTRL0);
 	udelay(1000);
 
 	/* Enable MACs that are specified in the parameter. (step 5.) */
-	acpwriteio((new_control & 0x1f0f), (void *)GPREG_PHY_CTRL0);
+	writel((new_control & 0x1f0f), (void *)GPREG_PHY_CTRL0);
 
 	/* Check for Link Detection Problems (Advisory 37842). */
 	mdelay(500);
@@ -158,7 +158,7 @@ pciesrio_setcontrol_acp34xx(unsigned long new_control)
 	if ((new_control & 0x1) && (new_control & 0x1000)) {
 		/* PEI0 is enabled  and in RC mode */
 		/* check Link status */
-		linkStatus = acpreadio(PCIE0_CONFIG+0x1004);
+		linkStatus = readl(PCIE0_CONFIG+0x1004);
 		printf("PEI0 Status = 0x%x\n", linkStatus);
 		linkStatus = (linkStatus & 0x3f00) >> 8;
 
@@ -171,7 +171,7 @@ pciesrio_setcontrol_acp34xx(unsigned long new_control)
 	if (new_control & 0x2) {
 		/* PEI1 is enabled */
 		/* check Link status */
-		linkStatus = acpreadio(PCIE1_CONFIG+0x1004);
+		linkStatus = readl(PCIE1_CONFIG+0x1004);
 		printf("PEI1 Status = 0x%x\n", linkStatus);
 		linkStatus = (linkStatus & 0x3f00) >> 8;
 
@@ -184,7 +184,7 @@ pciesrio_setcontrol_acp34xx(unsigned long new_control)
 	if (new_control & 0x4) {
 		/* PEI2 is enabled */
 		/* check Link status */
-		linkStatus = acpreadio(PCIE2_CONFIG+0x1004);
+		linkStatus = readl(PCIE2_CONFIG+0x1004);
 		printf("PEI2 Status = 0x%x\n", linkStatus);
 		linkStatus = (linkStatus & 0x3f00) >> 8;
 

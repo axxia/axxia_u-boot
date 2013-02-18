@@ -29,7 +29,7 @@ endif
 
 LIB	= $(obj)lib$(VENDOR).o
 
-COBJS   := phy.o version.o femac.o
+COBJS   := phy.o version.o femac.o lsi.o
 
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

@@ -25,7 +25,7 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(BOARD).o
 
-COBJS += acp_failure.o dcr.o nand.o ssp.o mdio.o io.o splash.o
+COBJS += acp_failure.o dcr.o nand.o ssp.o mdio.o splash.o
 COBJS += ncr.o version.o reset.o clocks.o pciesrio.o sbb.o
 SOBJS = acp_start.o util.o ipi.o
 
@@ -44,7 +44,7 @@ COBJS += ipi.o
 endif
 
 ifdef CONFIG_SPL_BUILD
-COBJS = acp_init.o
+COBJS = acp_init.o ncr.o acp_failure.o
 SOBJS = brs.o
 endif
 

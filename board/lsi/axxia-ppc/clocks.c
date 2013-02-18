@@ -339,30 +339,30 @@ acp_clock_set_gpio(int value)
 	static int last_value = 0x10;
 
 	if (1 == first_time) {
-		acpwriteio(0x0, (IO + 0x0410));	/* Disable Interrupts */
-		acpwriteio(0x0, (IO + 0x1410));
-		acpwriteio(0x0, (IO + 0x0420));	/* Disable Hardware Control */
-		acpwriteio(0x0, (IO + 0x1420));
-		acpwriteio(0x0d, (IO + 0x0400)); /* Set [3:2] to Output */
-		acpwriteio(0x06, (IO + 0x1400)); /* Set [2:1] to Output */
+		writel(0x0, (IO + 0x0410));	/* Disable Interrupts */
+		writel(0x0, (IO + 0x1410));
+		writel(0x0, (IO + 0x0420));	/* Disable Hardware Control */
+		writel(0x0, (IO + 0x1420));
+		writel(0x0d, (IO + 0x0400)); /* Set [3:2] to Output */
+		writel(0x06, (IO + 0x1400)); /* Set [2:1] to Output */
 		first_time = 0;
 		last_value = 0xf;
 	}
 
 	if ((value & 0x1) != (last_value & 0x1))
-		acpwriteio((0 == (value & 0x1)) ? 0x0 : 0x4,
+		writel((0 == (value & 0x1)) ? 0x0 : 0x4,
 			   (IO + (0x4 << 2)));
 
 	if ((value & 0x2) != (last_value & 0x2))
-		acpwriteio((0 == (value & 0x2)) ? 0x0 : 0x8,
+		writel((0 == (value & 0x2)) ? 0x0 : 0x8,
 			   (IO + (0x8 << 2)));
 
 	if ((value & 0x4) != (last_value & 0x4))
-		acpwriteio((0 == (value & 0x4)) ? 0x0 : 0x2,
+		writel((0 == (value & 0x4)) ? 0x0 : 0x2,
 			   (IO + 0x1000 + (0x2 << 2)));
 
 	if ((value & 0x8) != (last_value & 0x8))
-		acpwriteio((0 == (value & 0x8)) ? 0x0 : 0x4,
+		writel((0 == (value & 0x8)) ? 0x0 : 0x4,
 			   (IO + 0x1000 + (0x4 << 2)));
 
 	last_value = value;
@@ -411,14 +411,14 @@ acp_clock_lock_verify(int max_errors, int max_reads)
 	}
 
 #ifdef CLOCK_LOCK_VERIFY_GPIO
-	acpwriteio(toggle, (IO + (0x01 << 2)));
+	writel(toggle, (IO + (0x01 << 2)));
 #endif /* CLOCK_LOCK_VERIFY_GPIO */
 	toggle ^= 1;
 	sysppc = dcr_read(0xd01);
 	ncr_read32(NCP_REGION_ID(0x23, 0), 0x1c, &ddr0);
 	ncr_read32(NCP_REGION_ID(0xd, 0), 0x1c, &ddr1);
 #ifndef ACP_X1V1
-	phy_pei_sta0 = acpreadio((void *)(PCIE0_CONFIG + 0x10cc));
+	phy_pei_sta0 = readl((void *)(PCIE0_CONFIG + 0x10cc));
 #else
 	phy_pei_sta0 = 0;
 #endif

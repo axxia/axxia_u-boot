@@ -1,9 +1,7 @@
 /*
- * io.c
+ * board/lsi/common/lsi.c
  *
- * IO routines for LSI's ACP.
- *
- * Copyright (C) 2009 LSI Corporation
+ * Copyright (C) 2013 LSI Corporation
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -24,37 +22,11 @@
  * MA 02111-1307 USA
  */
 
-#include <common.h>
-#ifdef CONFIG_ACP
-#include <asm/io.h>
+#include <config.h>
 
-int lsi_debug_enable = 1;
-int lsi_logio_enable = 1;
+#ifdef CONFIG_LSI
 
-unsigned long
-acpreadio( const volatile unsigned long * address )
-{
-        unsigned value;
+int lsi_logio_enable = -1;
+int lsi_debug_enable = -1;
 
-        __asm__ __volatile__( "sync; \n"
-			      "lwbrx %0,0,%1;\n"
-			      "twi 0,%0,0;\n"
-			      "isync"
-			      : "=r" ( value )
-			      : "r" ( address ), "m" ( * address ) );
-
-        return value;
-}
-
-void
-acpwriteio( unsigned long value, volatile unsigned long * address )
-{
-        __asm__ __volatile__( "sync; \n"
-			      "stwbrx %1,0,%2;\n"
-			      : "=m" ( * address )
-			      : "r" ( value ), "r" ( address ) );
-	__asm__ __volatile__ ( "sync" : : : "memory" );
-	eieio( );
-}
-
-#endif /* CONFIG_ACP */
+#endif	/* CONFIG_LSI */

@@ -176,22 +176,22 @@ static inline unsigned long
 readio( unsigned long address )
 {
 	unsigned long value;
-	value = acpreadio( ( unsigned * ) address );
+	value = readl( ( unsigned * ) address );
 	printf( " read: 0x%08lx from 0x%08lx\n", value, address );
 	return value;
 }
 static inline void
 writeio( unsigned long value, unsigned long address )
 {
-	acpwriteio( value, ( unsigned * ) address );
+	writel( value, ( unsigned * ) address );
 	printf( "wrote: 0x%08lx   to 0x%08lx\n", value, address );
 	return;
 }
 #else  /* LOG_IO_ACCESS */
 #define readio( address ) \
-acpreadio( ( unsigned long * ) ( address ) )
+readl( ( unsigned long * ) ( address ) )
 #define writeio( value, address ) \
-acpwriteio( ( value ), ( unsigned long * ) ( address ) )
+writel( ( value ), ( unsigned long * ) ( address ) )
 #endif /* LOG_IO_ACCESS */
 
 /* -- -- */

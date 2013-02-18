@@ -395,10 +395,10 @@ extern int lsi_debug_enable;
 
 #ifdef LSI_DEBUG
 #define LSI_DEBUG_ENABLE() {lsi_debug_enable = 1;}
-#define LSI_DEBUG_DISABLE() {lsi_debug_enable = 0;}
+#define LSI_DEBUG_DISABLE() {lsi_debug_enable = -1;}
 #define LSI_DEBUG_ENABLED() (1 == lsi_debug_enable)
 #define DEBUG_PRINT( format, args... ) do { \
-if (0 != lsi_debug_enable) { ;\
+if (LSI_DEBUG_ENABLED()) { ;				   \
 printf( "%s:%s:%d - DEBUG - ", __FILE__, __FUNCTION__, __LINE__ ); \
 printf( format, ##args ); \
 } ; \
@@ -435,7 +435,7 @@ extern int lsi_logio_enable;
 
 #ifdef LSI_LOGIO
 #define LSI_LOGIO_ENABLE() {lsi_logio_enable = 1;}
-#define LSI_LOGIO_DISABLE() {lsi_logio_enable = 0;}
+#define LSI_LOGIO_DISABLE() {lsi_logio_enable = -1;}
 #define LSI_LOGIO_ENABLED() (1 == lsi_logio_enable)
 static inline unsigned long _READL(const char *, int, unsigned long);
 static inline unsigned long
@@ -444,7 +444,7 @@ _READL(const char *file, int line, unsigned long address)
 	unsigned long value;
 	value = readl(address);
 
-	if (0 != lsi_logio_enable)
+	if (LSI_LOGIO_ENABLED())
 		printf("%s:%d - Read 0x%08lx from 0x%08lx\n",
 		       file, line, value, address);
 
@@ -457,7 +457,7 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
 {
 	writel(value, address);
 
-	if (0 != lsi_logio_enable)
+	if (LSI_LOGIO_ENABLEd())
 		printf( "%s:%d - Wrote 0x%08lx to 0x%08lx\n",
 			file, line, value, address);
 

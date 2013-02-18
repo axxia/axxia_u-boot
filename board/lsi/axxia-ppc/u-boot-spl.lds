@@ -21,112 +21,65 @@
  * MA 02111-1307 USA
  */
 
+MEMORY { .lsm : ORIGIN = 0xf0a00000, LENGTH = 0x020000 }
+
+MEMORY { .sys : ORIGIN = 0x00000000, LENGTH = 0x400000 }
+
 OUTPUT_ARCH(powerpc)
-/* Do we need any of these for elf?
-   __DYNAMIC = 0;    */
+
 SECTIONS
 {
-  .resetvec 0xf0a00000 :
-  {
-    *(.resetvec)
-  } = 0xffff
+	
+	.brs :
+	{
+		*(.brs*)
+	} > .lsm
 
-  .bootpg 0xf0a00010 :
-  {
-    arch/powerpc/cpu/ppc4xx/start.o	(.bootpg)
-  } = 0xfffff
+	.text :
+	{
+		*(.text*)
+	} > .lsm
 
-  /* Read-only sections, merged into text segment: */
-  . = + SIZEOF_HEADERS;
-  .interp : { *(.interp) }
-  .hash          : { *(.hash)		}
-  .dynsym        : { *(.dynsym)		}
-  .dynstr        : { *(.dynstr)		}
-  .rel.text      : { *(.rel.text)		}
-  .rela.text     : { *(.rela.text)	}
-  .rel.data      : { *(.rel.data)		}
-  .rela.data     : { *(.rela.data)	}
-  .rel.rodata    : { *(.rel.rodata)	}
-  .rela.rodata   : { *(.rela.rodata)	}
-  .rel.got       : { *(.rel.got)		}
-  .rela.got      : { *(.rela.got)		}
-  .rel.ctors     : { *(.rel.ctors)	}
-  .rela.ctors    : { *(.rela.ctors)	}
-  .rel.dtors     : { *(.rel.dtors)	}
-  .rela.dtors    : { *(.rela.dtors)	}
-  .rel.bss       : { *(.rel.bss)		}
-  .rela.bss      : { *(.rela.bss)		}
-  .rel.plt       : { *(.rel.plt)		}
-  .rela.plt      : { *(.rela.plt)		}
-  .init          : { *(.init)	}
-  .plt : { *(.plt) }
-  .text :
-  {
-    /* WARNING - the following is hand-optimized to fit within	*/
-    /* the sector layout of our flash chips!	XXX FIXME XXX	*/
-    arch/powerpc/cpu/ppc4xx/start.o (.text)
-    *(.text)
-    *(.fixup)
-  }
-  _etext = .;
-  PROVIDE (etext = .);
-  .rodata    :
-  {
-    *(.rodata)
-    *(.rodata1)
-    *(.rodata.str1.4)
-    *(.eh_frame)
-  }
-  .fini      : { *(.fini)    } =0
-  .ctors     : { *(.ctors)   }
-  .dtors     : { *(.dtors)   }
+	.data :
+	{
+		*(.rodata*)
+		*(.sdata*)
+		*(.data*)
+	} > .lsm
 
-  /* Read-write section, merged into data segment: */
-  . = (. + 0x00FF) & 0xFFFFFF00;
-  _erotext = .;
-  PROVIDE (erotext = .);
+	.got2 :
+	{
+		*(.got2*)
+	} > .lsm
 
-  .data    :
-  {
-    *(.data)
-    *(.data1)
-    *(.sdata)
-    *(.sdata2)
-    *(.dynamic)
-    CONSTRUCTORS
-  }
-  _edata  =  .;
-  PROVIDE (edata = .);
+	.bootpg :
+	{
+		*(.bootpg)
+	} >.lsm
 
-  . = ALIGN(256);
-  __init_begin = .;
-  .text.init : { *(.text.init) }
-  .data.init : { *(.data.init) }
-  . = ALIGN(256);
-  __init_end = .;
+	.resetvec :
+	{
+		*(.resetvec)
+	} > .lsm
 
-  /*
-   * BootROM Simulator.
-   */
+	.fixup :
+	{
+		*(.fixup)
+	} > .lsm
 
-  . = 0xf0a1fc00;
-  /*. = 0xf0a2fc00;*/
-  .brs : { *(.brs) }
-  . = 0xf0a1fffc;
-  /*. = 0xf0a2fffc;*/
-  .brs_vector : { *(.brs_vector) }
+	.eh_frame :
+	{
+		*(.eh_frame)
+	} > .lsm
 
-  . = 0x00300000;
-  __bss_start = .;
-  PROVIDE (_bss_start = .);
-  .bss (NOLOAD)       :
-  {
-   *(.sbss) *(.scommon)
-   *(.dynbss)
-   *(.bss)
-   *(COMMON)
-  }
-  PROVIDE (_bss_end = . );
-  _end = . ;
-  PROVIDE (end = .);
+	.bss :
+	{
+		*(.bss*)
+		*(.sbss*)
+	} > .lsm
+
+	.u_boot_list :
+	{
+		#include "u-boot.lst"
+	} > .lsm
 }
