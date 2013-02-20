@@ -1,5 +1,9 @@
 /*
- * Copyright (C) 2010 LSI Corporation
+ * boot.c
+ *
+ * Axxia boot code for non-spl builds.
+ *
+ * Copyright (C) 2013 LSI Corporation
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -20,43 +24,19 @@
  * MA 02111-1307 USA
  */
 
-#include <config.h>
-
-extern unsigned long sysmem_size;
-
 /*
-  is_asic
+  ==============================================================================
+  ==============================================================================
+  Private
+  ==============================================================================
+  ==============================================================================
 */
 
-int
-is_asic(void)
-{
-#if !defined(ACP_ISS) && !defined(ACP_EMU)
-	return 1;
-#else
-	return 0;
-#endif
-}
+/*
+  ==============================================================================
+  ==============================================================================
+  Public
+  ==============================================================================
+  ==============================================================================
+*/
 
-unsigned long
-get_sysmem_size(void)
-{
-#if defined(ACP_ISS)
-	return 256 * 1024;
-#else
-	unsigned long size = 0;
-
-#if !defined(CONFIG_SPL_BUILD)
-	char *env_memory;
-
-	env_memory = getenv("memory");
-
-	if ((char *)0 != env_memory) {
-		size = simple_strtoul(env_memory, (char **)0, 0);
-	}
-#else
-	size = (1 << (sysmem_size - 20));
-#endif
-	return size;
-#endif
-}

@@ -23,10 +23,9 @@
  * MA 02111-1307 USA
  */
 
+#ifndef CONFIG_SPL_BUILD
+
 #include <config.h>
-
-#ifdef CONFIG_ACP
-
 #include <common.h>
 #include <command.h>
 
@@ -128,4 +127,4 @@ U_BOOT_CMD( net, 2, 0, do_net,
 	    "r,ecevie packets, and dump them to the screen\n"
 	    "s,end send one packet\n" );
 
-#endif /* CONFIG_ACP */
+#endif /* CONFIG_SPL_BUILD */

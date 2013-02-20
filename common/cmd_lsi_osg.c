@@ -25,7 +25,7 @@
 
 #include <config.h>
 
-#ifdef CONFIG_ACP
+#ifndef CONFIG_SPL_BUILD
 
 #include <common.h>
 #include <command.h>
@@ -101,4 +101,4 @@ U_BOOT_CMD(osg, CONFIG_SYS_MAXARGS, 0, do_osg,
 	   "osg s,et - set the current group (for bootm etc.).\n" \
 	   "osg g,et - get the current group.\n");
 
-#endif /* CONFIG_ACP */
+#endif /* CONFIG_SPL_BUILD */

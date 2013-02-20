@@ -29,16 +29,28 @@ OUTPUT_ARCH(powerpc)
 
 SECTIONS
 {
-	
-	.brs :
+	.resetvec 0xf0a00000 :
 	{
-		*(.brs*)
-	} > .lsm
+		*(.resetvec)
+	} = 0xffff
+
+	.bootpg 0xf0a00010 :
+	{
+		arch/powerpc/cpu/ppc4xx/start.o	(.bootpg)
+	} = 0xfffff
 
 	.text :
 	{
+		arch/powerpc/cpu/ppc4xx/start.o	(.text)
 		*(.text*)
 	} > .lsm
+
+	__start___ex_table = .;
+	__ex_table :
+	{
+		*(__ex_table)
+	}
+	__stop___ex_table = .;
 
 	.data :
 	{
@@ -52,16 +64,6 @@ SECTIONS
 		*(.got2*)
 	} > .lsm
 
-	.bootpg :
-	{
-		*(.bootpg)
-	} >.lsm
-
-	.resetvec :
-	{
-		*(.resetvec)
-	} > .lsm
-
 	.fixup :
 	{
 		*(.fixup)
@@ -72,14 +74,27 @@ SECTIONS
 		*(.eh_frame)
 	} > .lsm
 
-	.bss :
+	PROVIDE(_bss_start = .);
+	.bss (NOLOAD):
 	{
 		*(.bss*)
 		*(.sbss*)
-	} > .lsm
+	}
+	. = ALIGN(256);
+	PROVIDE(_bss_end = . );
 
 	.u_boot_list :
 	{
 		#include "u-boot.lst"
 	} > .lsm
+
+	.brs 0xf0a1fc00 :
+	{
+		*(.brs)
+	}
+
+	.brs_vector 0xf0a2fffc :
+	{
+		*(.brs_vector)
+	}
 }

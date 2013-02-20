@@ -62,7 +62,13 @@ COBJS-$(CONFIG_USB_TTY) += usbtty.o
 endif
 
 ifdef CONFIG_ACP
-COBJS-y += acp.o
+COBJS-y += axxia.o
+endif
+
+ifdef CONFIG_SPL_BUILD
+ifdef CONFIG_ACP
+COBJS-y += axxia.o
+endif
 endif
 
 COBJS	:= $(sort $(COBJS-y))

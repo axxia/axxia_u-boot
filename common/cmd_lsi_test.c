@@ -23,12 +23,11 @@
  * MA 02111-1307 USA
  */
 
+#ifndef CONFIG_SPL_BUILD
+
 #define LSI_DEBUG
 #define LSI_LOGIO
 #include <config.h>
-
-#ifdef CONFIG_ACP
-
 #include <common.h>
 #include <command.h>
 #include <malloc.h>
@@ -494,4 +493,4 @@ U_BOOT_CMD(test, 5, 0, do_test,
 	   "m,emory -- Verify the memory fault trigger.\n" \
 	   "h,elp   -- This Wonderful Help Screen\n");
 
-#endif /* CONFIG_ACP */
+#endif /* CONFIG_SPL_BUILD */

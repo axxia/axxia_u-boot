@@ -44,7 +44,7 @@
 
 #endif
 
-#define DEBUG
+/*#define DEBUG*/
 
 #ifdef CONFIG_SYS_INIT_RAM_LOCK
 #include <asm/cache.h>
@@ -52,7 +52,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-extern ulong get_effective_memsize(void);
+/*extern ulong get_effective_memsize(void);*/
 static ulong get_sp (void);
 static void set_clocks_in_mhz (bd_t *kbd);
 
@@ -60,7 +60,7 @@ static void set_clocks_in_mhz (bd_t *kbd);
 #define CONFIG_SYS_LINUX_LOWMEM_MAX_SIZE	(768*1024*1024)
 #endif
 
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 
 void board_reset(void);
 
@@ -239,7 +239,7 @@ boot_jump_linux(bootm_headers_t *images)
 
 	/* Boot Linux */
 	kernel = (void (*)(bd_t *, ulong, ulong, ulong, ulong))images->ep;
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 	/* If necessary, Copy the device tree. */
 	if (0 != os_base) {
 		rc = fdt_open_into(dt,
@@ -271,7 +271,7 @@ boot_jump_linux(bootm_headers_t *images)
 	return;
 }
 
-#else  /* CONFIG_ACP3 */
+#else  /* CONFIG_SPL_BUILD */
 
 static void boot_jump_linux(bootm_headers_t *images)
 {
@@ -336,7 +336,7 @@ static void boot_jump_linux(bootm_headers_t *images)
 	}
 	return ;
 }
-#endif /* CONFIG_ACP3 */
+#endif /* CONFIG_SPL_BUILD */
 
 void arch_lmb_reserve(struct lmb *lmb)
 {

@@ -47,7 +47,7 @@ acp_spintable_jump:
 	.section	.bootpg,"ax"
 
 #ifdef CLEAR_UTLB
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 
 	#; ------------------------------------------------------------
 	#; Define all the UTLB entries that need to be added.
@@ -275,7 +275,7 @@ _start_acp:
 	ori		r0,r0,acp_debug@l
 	mtspr		ivor15,r0
 
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 #ifdef CLEAR_UTLB
 
 set_up_utlb:
@@ -676,7 +676,7 @@ clear_all_fp_done:
 	mtspr		ccr1, r0
 	isync
 
-#ifdef ACP3
+#ifndef CONFIG_SPL_BUILD
 acp_icache_init:
 
 	#; Create a 64K page at virtual=0x40000000/physical=0x003f0000
@@ -910,7 +910,7 @@ stackstuff:
 	#; Initial setup.
 	#; ------------------------------------------------------------
 
-	bl		acp_init_f
+	bl		axxia_init_f
 
 	#; ------------------------------------------------------------
 	#; Since the above call should never return, getting here at
@@ -967,7 +967,7 @@ acp_mem_init:
 	#; Jump to the final initialization function
 	#; ------------------------------------------------------------
 
-	bl		acp_init_r
+	bl		axxia_init_r
 
 	#; ------------------------------------------------------------
 	#; Exception Handlers

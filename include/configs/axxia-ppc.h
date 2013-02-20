@@ -133,6 +133,10 @@
 #define CFG_BARGSIZE		CFG_CBSIZE
 #define CONFIG_SYS_BARGSIZE	CONFIG_SYS_CBSIZE
 
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_LSI_TEST)
+#error "CONFIG_LSI_TEST IS DEFINED!!!"
+#endif
+
 /*
   ----------------------------------------------------------------------
   Memory Layout
@@ -239,11 +243,13 @@ int i2c_write(unsigned char, unsigned int, int, unsigned char *, int);
   ======================================================================
 */
 
+#ifndef CONFIG_SPL_BUILD
 #define CONFIG_OF_LIBFDT
 #define CONFIG_FIT
 #ifndef __ASSEMBLY__
 unsigned long *get_acp_fdt(int);
 #endif
+#endif	/* CONFIG_SPL_BUILD */
 
 /*
   ======================================================================
@@ -264,6 +270,7 @@ unsigned long *get_acp_fdt(int);
 #define OS_MEMORY_DEFAULT 0x100
 
 #ifndef __ASSEMBLY__
+#ifndef CONFIG_SPL_BUILD
 
 typedef struct {
 	volatile unsigned int lock;
@@ -374,7 +381,10 @@ void acp_osg_set_current(int);
 int acp_osg_initialize(void);
 int acp_osg_map(int);
 
-#endif
+#define CONFIG_LSI_OSG 1
+
+#endif	/* CONFIG_SPL_BUILD */
+#endif	/* __ASSEMBLY__ */
 
 /*
   ======================================================================
@@ -487,6 +497,7 @@ int eioa_ethernet_configure(void);
   ======================================================================
 */
 
+#ifndef CONFIG_SPL_BUILD
 #define CONFIG_LSI_NET
 
 #if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
@@ -502,6 +513,7 @@ int eioa_ethernet_configure(void);
 #endif
 
 /*#define CONFIG_LSI_EIOA*/
+#endif	/* CONFIG_SPL_BUILD */
 
 /*
   ======================================================================
@@ -516,6 +528,18 @@ int eioa_ethernet_configure(void);
 #define FALSE 0
 #define TRUE (!FALSE)
 #define NCP_TASKIO_UBOOT_ENV
+
+/*
+  ======================================================================
+  ======================================================================
+  System Memory Initialization (SPL Only)
+  ======================================================================
+  ======================================================================
+*/
+
+#ifdef CONFIG_SPL_BUILD
+#define NCR_TRACE(format, args...) {}
+#endif
 
 /*
   ======================================================================
@@ -536,10 +560,11 @@ int eioa_ethernet_configure(void);
 #define CONFIG_LIBATA
 #endif
 
-#define CONFIG_LSI_OSG 1
 #define CONFIG_MTD_DEVICE 1
 #define CONFIG_CMD_MTDPARTS 1
+#ifndef CONFIG_SPL_BUILD
 #define CONFIG_LSI_TEST 1
+#endif
 #define CONFIG_CMD_DBG 1
 
 #define CFG_LONGHELP
@@ -1306,7 +1331,9 @@ extern unsigned long _bss_end;
 
 /*
   ==============================================================================
+  ==============================================================================
   SPL
+  ==============================================================================
   ==============================================================================
 */
 

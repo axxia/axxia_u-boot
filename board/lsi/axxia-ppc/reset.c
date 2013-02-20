@@ -34,17 +34,17 @@
 void
 acp_reset(int argc, char *argv[])
 {
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 	unsigned long value;
 #endif
 
-#if defined(CONFIG_ACP3) && defined(ACP_25xx) && defined(WA_BZ42743)
+#if !defined(CONFIG_SPL_BUILD) && defined(ACP_25xx) && defined(WA_BZ42743)
 	value = dcr_read(0xd00);
 	value |= 0xab;
 	dcr_write(value, 0xd00);
 #endif
 
-#ifdef CONFIG_ACP2
+#ifdef CONFIG_SPL_BUILD
 	mtspr(dbcr0, 0x30000000);
 #else
 

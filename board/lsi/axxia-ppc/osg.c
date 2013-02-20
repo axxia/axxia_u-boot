@@ -24,7 +24,7 @@
 /*#define LSI_DEBUG*/
 #define LSI_WARN
 #include <config.h>
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 #include <common.h>
 #include <exports.h>
 
@@ -1127,4 +1127,4 @@ acp_osg_map(int group_index)
 	return 0;
 }
 
-#endif /* CONFIG_ACP3 */
+#endif /* CONFIG_SPL_BUILD */

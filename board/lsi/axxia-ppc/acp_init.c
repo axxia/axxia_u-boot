@@ -1719,7 +1719,7 @@ acp_init( void )
 	}
 #endif
 
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 	pci_init_board();
 #endif
 

@@ -21,16 +21,23 @@
  */
 
 #include <config.h>
-
-#ifdef CFG_ACP_SERIAL
-
 #include <common.h>
 #include <asm/byteorder.h>
 #include <serial.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifdef CONFIG_ACP3
+#ifdef ACP_ISS
+#define	_writel(v,a)	(*(volatile unsigned long*)(a)) = (v)
+#define	_readl(a)	(*(volatile unsigned long*)(a))
+#else
+#define _readl( address ) \
+readl( ( unsigned long * ) ( address ) )
+#define _writel( value, address ) \
+writel( ( value ), ( unsigned long * ) ( address ) )
+#endif
+
+#ifndef CONFIG_SPL_BUILD
 ACP_DEFINE_SPINLOCK(uart_lock);
 #define ACP_LOCK() acp_spin_lock(&uart_lock)
 #define ACP_UNLOCK() acp_spin_unlock(&uart_lock)
@@ -187,9 +194,9 @@ acp_serial_init(unsigned long divisor, unsigned long ibrd, unsigned long fbrd)
 		return;
 
 	/* Set up the timer. */
-	writel(0, (uart.timer + TIMER_CONTROL));
-	writel(divisor, (uart.timer + TIMER_LOAD));
-	writel((TIMER_CONTROL_ENABLE | TIMER_CONTROL_MODE),
+	_writel(0, (uart.timer + TIMER_CONTROL));
+	_writel(divisor, (uart.timer + TIMER_LOAD));
+	_writel((TIMER_CONTROL_ENABLE | TIMER_CONTROL_MODE),
 	       (uart.timer + TIMER_CONTROL));
 
 	/*
@@ -198,24 +205,24 @@ acp_serial_init(unsigned long divisor, unsigned long ibrd, unsigned long fbrd)
 
 	  How should this be done for reception?
 	*/
-	while (0 == (readl(uart.uart + UART_FR) & FR_TXFE));
-	while (0 != (readl(uart.uart + UART_FR) & FR_BUSY));
+	while (0 == (_readl(uart.uart + UART_FR) & FR_TXFE));
+	while (0 != (_readl(uart.uart + UART_FR) & FR_BUSY));
 
 	/* Disable the UART. */
-	writel(0, uart.uart + UART_CR);
+	_writel(0, uart.uart + UART_CR);
 
 	/* Flush the transmit fifo. */
-	lcr_h = readl(uart.uart + UART_LCR_H);
+	lcr_h = _readl(uart.uart + UART_LCR_H);
 	lcr_h &= ~0x10;
-	writel(lcr_h, uart.uart + UART_LCR_H);
+	_writel(lcr_h, uart.uart + UART_LCR_H);
 
 	/* Reprogram. */
-  	writel(ibrd, uart.uart + UART_IBRD);
-	writel(fbrd, uart.uart + UART_FBRD);
-	writel(0x70, uart.uart + UART_LCR_H);
+  	_writel(ibrd, uart.uart + UART_IBRD);
+	_writel(fbrd, uart.uart + UART_FBRD);
+	_writel(0x70, uart.uart + UART_LCR_H);
 
 	/* Enable */
-	writel(0x301, uart.uart + UART_CR);
+	_writel(0x301, uart.uart + UART_CR);
 #endif
 	return;
 }
@@ -271,25 +278,25 @@ serial_putc( const char c )
 	if (0 == uart.uart)
 		return;
 
-	while (0 != (readl(uart.uart + UART_FR) & FR_TXFF))
+	while (0 != (_readl(uart.uart + UART_FR) & FR_TXFF))
 		;
 
 	if ('\n' == c) {
-		writel('\r', uart.uart + UART_DR);
-		while (0 != (readl(uart.uart + UART_FR) & FR_TXFF))
+		_writel('\r', uart.uart + UART_DR);
+		while (0 != (_readl(uart.uart + UART_FR) & FR_TXFF))
 			;
 	}
 
-	writel(c, uart.uart + UART_DR);
+	_writel(c, uart.uart + UART_DR);
 
 	/*
 	  The following is useful for printf debugging; get all the
 	  characters out!
 	*/
-	while (0 == (readl(uart.uart + UART_FR) & FR_TXFE))
+	while (0 == (_readl(uart.uart + UART_FR) & FR_TXFE))
 		;
 
-	while (0 != (readl(uart.uart + UART_FR) & FR_BUSY))
+	while (0 != (_readl(uart.uart + UART_FR) & FR_BUSY))
 		;
 #endif
 
@@ -335,10 +342,10 @@ serial_getc(void)
 		for (;;)
 			;
 
-	while (0 != (readl(uart.uart + UART_FR) & FR_RXFE))
+	while (0 != (_readl(uart.uart + UART_FR) & FR_RXFE))
 		;
 
-	character = readl(uart.uart + UART_DR);
+	character = _readl(uart.uart + UART_DR);
 
 	return character;
 #endif
@@ -359,7 +366,7 @@ serial_tstc(void)
 #else
 	if (0 != uart.uart)
 		return_value =
-			(FR_RXFE != (readl(uart.uart + UART_FR) & FR_RXFE));
+			(FR_RXFE != (_readl(uart.uart + UART_FR) & FR_RXFE));
 #endif
 
 	return return_value;
@@ -389,14 +396,14 @@ serial_exit(void)
 		return;
 
 	/* Disable the UART. */
-	writel(0, (uart.uart + UART_CR));
+	_writel(0, (uart.uart + UART_CR));
 
 	/* Make sure all transmissions are finished. */
-	while (0 == (readl(uart.uart + UART_FR) & FR_TXFE));
-	while (0 != (readl(uart.uart + UART_FR) & FR_BUSY));
+	while (0 == (_readl(uart.uart + UART_FR) & FR_TXFE));
+	while (0 != (_readl(uart.uart + UART_FR) & FR_BUSY));
 
 	/* Turn off the timer. */
-	writel(0, (uart.timer + TIMER_CONTROL));
+	_writel(0, (uart.timer + TIMER_CONTROL));
 
 	uart.uart = 0;
 #endif
@@ -439,7 +446,7 @@ serial_init()
 {
 #ifndef ACP_ISS
 	clock_stuff_t clock_stuff;
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 	unsigned long core;
 	int group;
 #endif
@@ -447,7 +454,7 @@ serial_init()
 	memset((void *)printbuffer, 0, CFG_PBSIZE);
 	uart.uart = 0;
 
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
 	group = acp_osg_get_group(core);
 
@@ -465,12 +472,11 @@ serial_init()
 	uart.timer = TIMER2;
 #endif
 
-	get_clock_stuff(gd->baudrate, &clock_stuff);
+	/*get_clock_stuff(gd->baudrate, &clock_stuff);*/
+	get_clock_stuff(9600, &clock_stuff);
 	acp_serial_init(clock_stuff.divisor, clock_stuff.ibrd, clock_stuff.fbrd);
 #endif
 	acp_failure_enable_console();
 
 	return 0;
 }
-
-#endif /* CFG_ACP_SERIAL */

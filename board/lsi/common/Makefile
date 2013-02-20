@@ -1,9 +1,6 @@
+################################################################################
 #
-# (C) Copyright 2006
-# Wolfgang Denk, DENX Software Engineering, wd@denx.de.
-#
-# See file CREDITS for list of people who contributed to this
-# project.
+# Copyright (C) 2013 LSI Corporation (john.jacques@lsi.com)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -20,23 +17,36 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA 02111-1307 USA
 #
+################################################################################
 
 include $(TOPDIR)/config.mk
 
-ifneq ($(OBJTREE),$(SRCTREE))
-$(shell mkdir -p $(obj)board/$(VENDOR)/common)
-endif
-
 LIB	= $(obj)lib$(VENDOR).o
 
-COBJS   := phy.o version.o femac.o lsi.o
+ifndef CONFIG_SPL_BUILD
+
+################################################################################
+## Normal Build
+
+COBJS = phy.o femac.o
+
+else
+
+################################################################################
+## SPL Build
+
+endif
+
+################################################################################
+## All Builds
+
+COBJS += version.o lsi.o
 
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
 
 $(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS) $(SOBJS))
-#	$(AR) $(ARFLAGS) $@ $(OBJS)
 
 clean:
 	rm -f $(OBJS)
@@ -44,11 +54,6 @@ clean:
 distclean:	clean
 	rm -f $(LIB) core *.bak $(obj).depend
 
-#########################################################################
-
 # defines $(obj).depend target
 include $(SRCTREE)/rules.mk
-
 sinclude $(obj).depend
-
-#########################################################################

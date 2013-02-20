@@ -637,16 +637,16 @@ void board_init_f(ulong bootflag)
 
 /*
   ----------------------------------------------------------------------
-  acp_init_f
+  axxia_init_f
 
-  ACP early initialization routine.
+  Axxia early initialization routine.
 */
 
 void acp_mem_init( unsigned long, unsigned long, unsigned long );
-void acp_init_r( void );
+void axxia_init_r( void );
 
 void
-acp_init_f( void )
+axxia_init_f( void )
 {
 	bd_t *bd;
 	register unsigned long addr;
@@ -852,7 +852,7 @@ acp_init_f( void )
 	bd->bi_memsize = gd->ram_size;
 
 	/* Set up the Stack */
-	acp_mem_init(addr, 0, ( unsigned long ) acp_init_r);
+	acp_mem_init(addr, 0, ( unsigned long ) axxia_init_r);
 
 	return;
 }
@@ -1292,16 +1292,16 @@ void board_init_r(gd_t *id, ulong dest_addr)
 
 /*
   ----------------------------------------------------------------------
-  acp_init_r
+  axxia_init_r
 
-  ACP late initialization routine.
+  Axxia late initialization routine.
 */
 
 void nic_loopback_test( void );
 volatile uchar * PktBuf;
 
 void
-acp_init_r( void )
+axxia_init_r( void )
 {
 	bd_t *bd;
 	int core;

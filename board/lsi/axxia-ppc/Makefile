@@ -1,9 +1,6 @@
+################################################################################
 #
-# (C) Copyright 2002-2006
-# Wolfgang Denk, DENX Software Engineering, wd@denx.de.
-#
-# See file CREDITS for list of people who contributed to this
-# project.
+# Copyright (C) 2013 LSI Corporation (john.jacques@lsi.com)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -20,33 +17,45 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA 02111-1307 USA
 #
+################################################################################
 
 include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(BOARD).o
 
-COBJS += acp_failure.o dcr.o nand.o ssp.o mdio.o splash.o
-COBJS += ncr.o version.o reset.o clocks.o pciesrio.o sbb.o
-SOBJS = acp_start.o util.o ipi.o
+ifndef CONFIG_SPL_BUILD
 
-ifdef CONFIG_ACP3
-COBJS  += dt.o spintable.o os_access.o ose.o nvram.o osg.o locks.o i2c.o pcie.o
-COBJS  += ncp_task_lite.o ncp_task_lite_uboot.o
-SOBJS  += acp_static.o
-endif
+################################################################################
+## Normal Build
+
+COBJS = splash.o dt.o spintable.o os_access.o ipi.o
+COBJS += ose.o nvram.o osg.o locks.o i2c.o pcie.o ncp_task_lite.o
+COBJS += ncp_task_lite_uboot.o
 
 ifdef CONFIG_AXXIA_EIOA
 COBJS  += eioa.o
 endif
 
-ifdef CONFIG_ACP3
-COBJS += ipi.o
+SOBJS = util.o ipi.o acp_static.o
+
+else
+
+################################################################################
+## SPL Build
+
+COBJS = acp_init.o boot_spl.o
+
+SOBJS = brs.o
+
 endif
 
-ifdef CONFIG_SPL_BUILD
-COBJS = acp_init.o ncr.o acp_failure.o
-SOBJS = brs.o
-endif
+################################################################################
+## All Builds
+
+COBJS += dcr.o ncr.o ssp.o sbb.o reset.o clocks.o acp_failure.o mdio.o nand.o
+COBJS += pciesrio.o version.o
+
+SOBJS += acp_start.o
 
 COBJS	:= $(addprefix $(obj),$(COBJS))
 SOBJS	:= $(addprefix $(obj),$(SOBJS))
@@ -60,11 +69,6 @@ clean:
 distclean:	clean
 	rm -f $(LIB) core *.bak $(obj).depend
 
-#########################################################################
-
 # defines $(obj).depend target
 include $(SRCTREE)/rules.mk
-
 sinclude $(obj).depend
-
-#########################################################################

@@ -26,7 +26,7 @@
 
 #ifdef CONFIG_LSI
 
-#define LSI_VERSION "5.8.1.1.pre10"
+#define LSI_VERSION "5.8.1.1.pre11"
 
 const char * lsi_version = LSI_VERSION;
 

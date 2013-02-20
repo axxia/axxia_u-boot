@@ -278,7 +278,7 @@ void image_multi_getimg(const image_header_t *hdr, ulong idx,
 	}
 }
 
-#ifndef CONFIG_ACP2
+#ifndef CONFIG_SPL_BUILD
 
 static void image_print_type(const image_header_t *hdr)
 {
@@ -292,7 +292,7 @@ static void image_print_type(const image_header_t *hdr)
 	printf("%s %s %s (%s)\n", arch, os, type, comp);
 }
 
-#endif	/* CONFIG_ACP2 */
+#endif	/* CONFIG_SPL_BUILD */
 
 /**
  * image_print_contents - prints out the contents of the legacy format image
@@ -308,7 +308,7 @@ static void image_print_type(const image_header_t *hdr)
  */
 void image_print_contents(const void *ptr)
 {
-#ifndef CONFIG_ACP2
+#ifndef CONFIG_SPL_BUILD
 	const image_header_t *hdr = (const image_header_t *)ptr;
 	const char *p;
 
@@ -364,10 +364,10 @@ void image_print_contents(const void *ptr)
 			}
 		}
 	}
-#endif	/* CONFIG_ACP2 */
+#endif	/* CONFIG_SPL_BUILD */
 }
 
-#ifndef CONFIG_ACP2
+#ifndef CONFIG_SPL_BUILD
 #ifndef USE_HOSTCC
 /**
  * image_get_ramdisk - get and verify ramdisk image
@@ -431,7 +431,7 @@ static const image_header_t *image_get_ramdisk(ulong rd_addr, uint8_t arch,
 	return rd_hdr;
 }
 #endif /* !USE_HOSTCC */
-#endif	/* !CONFIG_ACP2 */
+#endif	/* !CONFIG_SPL_BUILD */
 
 /*****************************************************************************/
 /* Shared dual-format routines */
@@ -459,11 +459,13 @@ U_BOOT_ENV_CALLBACK(loadaddr, on_loadaddr);
 
 ulong getenv_bootm_low(void)
 {
+#ifndef CONFIG_SPL_BUILD
 	char *s = getenv("bootm_low");
 	if (s) {
 		ulong tmp = simple_strtoul(s, NULL, 16);
 		return tmp;
 	}
+#endif
 
 #if defined(CONFIG_SYS_SDRAM_BASE)
 	return CONFIG_SYS_SDRAM_BASE;
@@ -477,6 +479,7 @@ ulong getenv_bootm_low(void)
 phys_size_t getenv_bootm_size(void)
 {
 	phys_size_t tmp;
+#ifndef CONFIG_SPL_BUILD
 	char *s = getenv("bootm_size");
 	if (s) {
 		tmp = (phys_size_t)simple_strtoull(s, NULL, 16);
@@ -486,6 +489,7 @@ phys_size_t getenv_bootm_size(void)
 	if (s)
 		tmp = (phys_size_t)simple_strtoull(s, NULL, 16);
 	else
+#endif
 		tmp = 0;
 
 
@@ -498,12 +502,14 @@ phys_size_t getenv_bootm_size(void)
 
 phys_size_t getenv_bootm_mapsize(void)
 {
+#ifndef CONFIG_SPL_BUILD
 	phys_size_t tmp;
 	char *s = getenv("bootm_mapsize");
 	if (s) {
 		tmp = (phys_size_t)simple_strtoull(s, NULL, 16);
 		return tmp;
 	}
+#endif
 
 #if defined(CONFIG_SYS_BOOTMAPSZ)
 	return CONFIG_SYS_BOOTMAPSZ;
@@ -535,8 +541,10 @@ void memmove_wd(void *to, void *from, size_t len, ulong chunksz)
 void genimg_print_size(uint32_t size)
 {
 #ifndef USE_HOSTCC
+#ifndef CONFIG_SPL_BUILD
 	printf("%d Bytes = ", size);
 	print_size(size, "\n");
+#endif
 #else
 	printf("%d Bytes = %.2f kB = %.2f MB\n",
 			size, (double)size / 1.024e3,
@@ -830,7 +838,7 @@ int genimg_has_config(bootm_headers_t *images)
 int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 		uint8_t arch, ulong *rd_start, ulong *rd_end)
 {
-#ifndef CONFIG_ACP2
+#ifndef CONFIG_SPL_BUILD
 	ulong rd_addr, rd_load;
 	ulong rd_data, rd_len;
 	const image_header_t *rd_hdr;
@@ -1077,7 +1085,7 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 	debug("   ramdisk start = 0x%08lx, ramdisk end = 0x%08lx\n",
 			*rd_start, *rd_end);
 
-#endif	/* !CONFIG_ACP2 */
+#endif	/* !CONFIG_SPL_BUILD */
 	return 0;
 }
 
@@ -1106,7 +1114,7 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 int boot_ramdisk_high(struct lmb *lmb, ulong rd_data, ulong rd_len,
 		  ulong *initrd_start, ulong *initrd_end)
 {
-#ifndef CONFIG_ACP2
+#ifndef CONFIG_SPL_BUILD
 	char	*s;
 	ulong	initrd_high;
 	int	initrd_copy_to_ram = 1;
@@ -1184,7 +1192,7 @@ int boot_ramdisk_high(struct lmb *lmb, ulong rd_data, ulong rd_len,
 	return 0;
 
 error:
-#endif	/* !CONFIG_ACP2 */
+#endif	/* !CONFIG_SPL_BUILD */
 	return -1;
 }
 #endif /* CONFIG_SYS_BOOT_RAMDISK_HIGH */
@@ -1771,7 +1779,7 @@ error:
  */
 int boot_get_cmdline(struct lmb *lmb, ulong *cmd_start, ulong *cmd_end)
 {
-#ifndef CONFIG_ACP2
+#ifndef CONFIG_SPL_BUILD
 	char *cmdline;
 	char *s;
 
@@ -1791,7 +1799,7 @@ int boot_get_cmdline(struct lmb *lmb, ulong *cmd_start, ulong *cmd_end)
 
 	debug("## cmdline at 0x%08lx ... 0x%08lx\n", *cmd_start, *cmd_end);
 
-#endif	/* !CONFIG_ACP2 */
+#endif	/* !CONFIG_SPL_BUILD */
 	return 0;
 }
 #endif /* CONFIG_SYS_BOOT_GET_CMDLINE */
@@ -1812,7 +1820,7 @@ int boot_get_cmdline(struct lmb *lmb, ulong *cmd_start, ulong *cmd_end)
  */
 int boot_get_kbd(struct lmb *lmb, bd_t **kbd)
 {
-#ifndef CONFIG_ACP2
+#ifndef CONFIG_SPL_BUILD
 	*kbd = (bd_t *)(ulong)lmb_alloc_base(lmb, sizeof(bd_t), 0xf,
 				getenv_bootm_mapsize() + getenv_bootm_low());
 	if (*kbd == NULL)
@@ -1826,7 +1834,7 @@ int boot_get_kbd(struct lmb *lmb, bd_t **kbd)
 	do_bdinfo(NULL, 0, 0, NULL);
 #endif
 
-#endif	/* !CONFIG_ACP2 */
+#endif	/* !CONFIG_SPL_BUILD */
 	return 0;
 }
 #endif /* CONFIG_SYS_BOOT_GET_KBD */
