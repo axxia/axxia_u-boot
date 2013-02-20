@@ -31,7 +31,7 @@ SECTIONS
 {
 	.resetvec 0xf0a00000 :
 	{
-		*(.resetvec)
+		KEEP(*(.resetvec))
 	} = 0xffff
 
 	.bootpg 0xf0a00010 :

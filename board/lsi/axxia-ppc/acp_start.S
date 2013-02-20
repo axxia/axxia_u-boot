@@ -103,8 +103,7 @@ utlb_table:
 	#; Virtual Address - 0xf0b0_0000
 	#; Size - 32K (2 16K chunks)
 #ifdef ISS
-	.long		0x80000000,0xf0b0081000022294: 000000c7 abcd1234    .......4
-,0xffff802f,0x00030507
+	.long		0x80000000,0xf0b00810,0xffff802f,0x00030507
 	.long		0x80000000,0xf0b04810,0xffffc02f,0x00030507
 #else
 	.long		0x80000000,0xf0b00810,0xffff802f,0x00030505
