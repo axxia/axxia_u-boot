@@ -739,7 +739,7 @@ acp_icache_init:
 	#; Set up the inital stack.
 	#; ------------------------------------------------------------
 
-#ifdef CONFIG_ACP2
+#ifdef CONFIG_SPL_BUILD
 
 #ifdef ACP_25xx
 

@@ -159,11 +159,19 @@
 
 #define CONFIG_SYS_MALLOC_LEN (CONFIG_SYS_MALLOC_SIZE)
 
+#ifdef CONFIG_SPL_BUILD
+#ifdef ACP_25xx
+#define CFG_INIT_RAM_ADDR   0xf0a24000
+#else
+#define CFG_INIT_RAM_ADDR   0xf0a1fc00
+#endif
+#else
 /* Early stack for each core. */
 #define CFG_INIT_RAM_ADDR0  (CONFIG_SYS_STACK_BASE - 0x0000)
 #define CFG_INIT_RAM_ADDR1  (CONFIG_SYS_STACK_BASE - 0x4000)
 #define CFG_INIT_RAM_ADDR2  (CONFIG_SYS_STACK_BASE - 0x8000)
 #define CFG_INIT_RAM_ADDR3  (CONFIG_SYS_STACK_BASE - 0xc000)
+#endif
 
 /*
   ----------------------------------------------------------------------
