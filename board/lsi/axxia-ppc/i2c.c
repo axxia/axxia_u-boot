@@ -84,23 +84,23 @@ _i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 
 		/* stop, moc, mma */
 		if (2 == alen)
-			WRITEL(0x20000580, I2C_MTC);
+			WRITEL(0x20000580, I2C0 + I2C_MTC);
 		else
-			WRITEL(0x20000500, I2C_MTC);
+			WRITEL(0x20000500, I2C0 + I2C_MTC);
 
 		/* constants for clocks... */
-		WRITEL(mcc_value, I2C_MCC);
-		WRITEL(0x00800000, I2C_MSTSHC);
-		WRITEL(0x00000080, I2C_MSPSHC);
-		WRITEL(0x00140014, I2C_MDSHC);
+		WRITEL(mcc_value, I2C0 + I2C_MCC);
+		WRITEL(0x00800000, I2C0 + I2C_MSTSHC);
+		WRITEL(0x00000080, I2C0 + I2C_MSPSHC);
+		WRITEL(0x00140014, I2C0 + I2C_MDSHC);
 
 		/* stop, mma */
 		if (2 == alen)
-			WRITEL(0x20000100, I2C_MTC);
+			WRITEL(0x20000100, I2C0 + I2C_MTC);
 		else
-			WRITEL(0x20000180, I2C_MTC);
+			WRITEL(0x20000180, I2C0 + I2C_MTC);
 
-		WRITEL(chip, I2C_MSLVADDR);
+		WRITEL(chip, I2C0 + I2C_MSLVADDR);
 
 		memset(input, 0, sizeof(input));
 		DEBUG_PRINT("buffer[] = "
@@ -131,8 +131,8 @@ _i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 			    input[0], input[1], input[2], input[3],
 			    input[4], input[5], input[6], input[7],
 			    value[0], value[1]);
-		WRITEL(value[1], I2C_TXD0);
-		WRITEL(value[0], I2C_TXD1);
+		WRITEL(value[1], I2C0 + I2C_TXD0);
+		WRITEL(value[0], I2C0 + I2C_TXD1);
 
 		/* stop, mma, this_len bytes, tr */
 		if (2 == alen)
@@ -140,7 +140,7 @@ _i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 		else
 			control = 0x20000101 | (this_len << 1);
 
-		WRITEL(control, I2C_MTC);
+		WRITEL(control, I2C0 + I2C_MTC);
 
 		/* wait for completion and verify that te is clear. */
 		retries = I2C_MAX_TX_RETRIES;
@@ -150,7 +150,7 @@ _i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 			  TODO: Why is this delay needed?
 			*/
 			udelay(I2C_STATUS_READ_DELAY);
-			status = READL(I2C_MTS);
+			status = READL(I2C0 + I2C_MTS);
 			--retries;
 		} while ((0 == status) && (0 < retries));
 
@@ -205,6 +205,14 @@ i2c_set_bus_speed(unsigned int speed)
 	WRITEL(load_value, (TIMER1 + TIMER_LOAD));
 	WRITEL(load_value, (TIMER1 + TIMER_VALUE));
 	WRITEL(0xc0, (TIMER1 + TIMER_CONTROL));
+
+#ifdef ACP_25xx
+	WRITEL(0, (TIMER0 + TIMER_CONTROL));
+	WRITEL(load_value, (TIMER0 + TIMER_LOAD));
+	WRITEL(load_value, (TIMER0 + TIMER_VALUE));
+	WRITEL(0xc0, (TIMER0 + TIMER_CONTROL));
+#endif
+
 
 	do {
 		for (;;) {
@@ -319,32 +327,32 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 
 		/* stop, moc, mma */
 		if (2 == alen)
-			WRITEL(0x20000580, I2C_MTC);
+			WRITEL(0x20000580, I2C0 + I2C_MTC);
 		else
-			WRITEL(0x20000500, I2C_MTC);
+			WRITEL(0x20000500, I2C0 + I2C_MTC);
 
 		/* constants for clocks... */
-		WRITEL(mcc_value, I2C_MCC);
-		WRITEL(0x00800000, I2C_MSTSHC);
-		WRITEL(0x00000080, I2C_MSPSHC);
-		WRITEL(0x00140014, I2C_MDSHC);
+		WRITEL(mcc_value, I2C0 + I2C_MCC);
+		WRITEL(0x00800000, I2C0 + I2C_MSTSHC);
+		WRITEL(0x00000080, I2C0 + I2C_MSPSHC);
+		WRITEL(0x00140014, I2C0 + I2C_MDSHC);
 
 		/* stop, mma */
 		if (2 == alen)
-			WRITEL(0x20000180, I2C_MTC);
+			WRITEL(0x20000180, I2C0 + I2C_MTC);
 		else
-			WRITEL(0x20000100, I2C_MTC);
+			WRITEL(0x20000100, I2C0 + I2C_MTC);
 
-		WRITEL(chip, I2C_MSLVADDR);
+		WRITEL(chip, I2C0 + I2C_MSLVADDR);
 
-		WRITEL(addr, I2C_TXD0);
-		WRITEL(0x00000000, I2C_TXD1);
+		WRITEL(addr, I2C0 + I2C_TXD0);
+		WRITEL(0x00000000, I2C0 + I2C_TXD1);
 
 		/* stop, mma, one byte, tr */
 		if (2 == alen)
-			WRITEL(0x20000183, I2C_MTC);
+			WRITEL(0x20000183, I2C0 + I2C_MTC);
 		else
-			WRITEL(0x20000103, I2C_MTC);
+			WRITEL(0x20000103, I2C0 + I2C_MTC);
 
 		/* wait for completion and verify that te is clear. */
 		retries = I2C_MAX_TX_RETRIES;
@@ -354,7 +362,7 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 			  TODO: Why is this delay needed?
 			*/
 			udelay(I2C_STATUS_READ_DELAY);
-			status = READL(I2C_MTS);
+			status = READL(I2C0 + I2C_MTS);
 			--retries;
 		} while ((0 == status) && (0 < retries));
 
@@ -362,36 +370,36 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 			return -1;
 
 		if (2 == alen)
-			WRITEL(0x20000580, I2C_MTC);
+			WRITEL(0x20000580, I2C0 + I2C_MTC);
 		else
-			WRITEL(0x20000500, I2C_MTC);
+			WRITEL(0x20000500, I2C0 + I2C_MTC);
 
-		WRITEL(mcc_value, I2C_MCC);
-		WRITEL(0x00800000, I2C_MSTSHC);
-		WRITEL(0x00000080, I2C_MSPSHC);
-		WRITEL(0x00140014, I2C_MDSHC);
-		WRITEL(0x00000000, I2C_MIE);
+		WRITEL(mcc_value, I2C0 + I2C_MCC);
+		WRITEL(0x00800000, I2C0 + I2C_MSTSHC);
+		WRITEL(0x00000080, I2C0 + I2C_MSPSHC);
+		WRITEL(0x00140014, I2C0 + I2C_MDSHC);
+		WRITEL(0x00000000, I2C0 + I2C_MIE);
 
 		if (2 == alen)
-			WRITEL(0x20000180, I2C_MTC);
+			WRITEL(0x20000180, I2C0 + I2C_MTC);
 		else
-			WRITEL(0x20000100, I2C_MTC);
+			WRITEL(0x20000100, I2C0 + I2C_MTC);
 
-		WRITEL(chip, I2C_MSLVADDR);
-		WRITEL((this_len << 1) | 1, I2C_MRC);
-		WRITEL(0x20000301, I2C_MTC);
+		WRITEL(chip, I2C0 + I2C_MSLVADDR);
+		WRITEL((this_len << 1) | 1, I2C0 + I2C_MRC);
+		WRITEL(0x20000301, I2C0 + I2C_MTC);
 
 		/* wait for completion and verify that te is clear. */
 		do {
 			udelay(I2C_STATUS_READ_DELAY);
-			status = READL(I2C_MRS);
+			status = READL(I2C0 + I2C_MRS);
 		} while (1 != (status & 1));
 
 		if (1 != (status & 0x3))
 			return -1;
 
-		value[1] = READL(I2C_RXD0);
-		value[0] = READL(I2C_RXD1);
+		value[1] = READL(I2C0 + I2C_RXD0);
+		value[0] = READL(I2C0 + I2C_RXD1);
 		DEBUG_PRINT("value[] = {0x%lx 0x%lx}\n"
 			    "input[] = "
 			    "{0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x}\n",

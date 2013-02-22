@@ -768,23 +768,31 @@ extern unsigned long _bss_end;
   ======================================================================
 */
 
-#define I2C_MTC      (IO + 0x3000)
-#define I2C_MRC      (IO + 0x3004)
-#define I2C_MTS      (IO + 0x3008)
-#define I2C_MRS      (IO + 0x300c)
-#define I2C_MIE      (IO + 0x3010)
-#define I2C_MIC      (IO + 0x3014)
-#define I2C_MIS      (IO + 0x3018)
-#define I2C_MCC      (IO + 0x301c)
-#define I2C_MSTSHC   (IO + 0x3020)
-#define I2C_MSPSHC   (IO + 0x3024)
-#define I2C_MDSHC    (IO + 0x3028)
-#define I2C_MBPM     (IO + 0x302c)
-#define I2C_MSLVADDR (IO + 0x3030)
-#define I2C_TXD0     (IO + 0x3034)
-#define I2C_TXD1     (IO + 0x3038)
-#define I2C_RXD0     (IO + 0x303c)
-#define I2C_RXD1     (IO + 0x3040)
+#ifdef ACP_25xx
+#define I2C0 (IO + 0x27000)
+#define I2C1 (IO + 0x28000)
+#else
+#define I2C0 (IO + 0x3000)
+#endif
+
+
+#define I2C_MTC		0x00
+#define I2C_MRC		0x04
+#define I2C_MTS		0x08
+#define I2C_MRS		0x0c
+#define I2C_MIE		0x10
+#define I2C_MIC		0x14
+#define I2C_MIS		0x18
+#define I2C_MCC		0x1c
+#define I2C_MSTSHC	0x20
+#define I2C_MSPSHC	0x24
+#define I2C_MDSHC	0x28
+#define I2C_MBPM	0x2c
+#define I2C_MSLVADDR	0x30
+#define I2C_TXD0	0x34
+#define I2C_TXD1	0x38
+#define I2C_RXD0 	0x3c
+#define I2C_RXD1	0x40
 
 #define CONFIG_SYS_I2C_SPEED 300000
 #define CONFIG_SYS_I2C_SLAVE 0x50
