@@ -74,15 +74,6 @@ SECTIONS
 		*(.eh_frame)
 	} > .lsm
 
-	PROVIDE(_bss_start = .);
-	.bss (NOLOAD):
-	{
-		*(.bss*)
-		*(.sbss*)
-	}
-	. = ALIGN(256);
-	PROVIDE(_bss_end = . );
-
 	.u_boot_list :
 	{
 		#include "u-boot.lst"
@@ -93,8 +84,17 @@ SECTIONS
 		*(.brs)
 	}
 
-	.brs_vector 0xf0a2fffc :
+	.brs_vector 0xf0a1fffc :
 	{
-		*(.brs_vector)
+		KEEP(*(.brs_vector))
 	}
+
+	PROVIDE(_bss_start = .);
+	.bss (NOLOAD):
+	{
+		*(.bss*)
+		*(.sbss*)
+	}
+	. = ALIGN(256);
+	PROVIDE(_bss_end = . );
 }
