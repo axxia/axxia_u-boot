@@ -1315,57 +1315,6 @@ typedef enum {
 	PEI_5G = 2
 } peiSpeed_t;
 
-void gpio_setup() {
-	unsigned long cfgVal, enbVal;
-	unsigned long addr = (IO + 0x1000);
-	
-	printf("GPIO start addr = 0x%lx\n", addr);
-
-	cfgVal = acpreadio((void *)(addr + 0x74));
-	cfgVal = ((cfgVal & 0xffffff00) | 0x00000018);
-	acpwriteio(cfgVal, (void *)(addr + 0x74));
-
-	printf("GPIO val written to 0x74 = 0x%x\n", cfgVal);
-	cfgVal = acpreadio((void *)(addr + 0x74));
-	printf("GPIO val read from 0x74 = 0x%x\n", cfgVal);
-
-	enbVal = acpreadio((void *)(addr + 0x60));
-	enbVal = ((enbVal & 0xfffeffff) | 0x00010000);
-	acpwriteio(enbVal, (void *)(addr + 0x60));
-
-	printf("GPIO val written to 0x60 = 0x%x\n", enbVal);
-	enbVal = acpreadio((void *)(addr + 0x60));
-	printf("GPIO val read from 0x60 = 0x%x\n", cfgVal);
-
-#if 0
-	ncr_read32(NCP_REGION_ID(0x1D3, 0x0), 0x74, &cfgVal);
-	cfgVal = ((cfgVal & 0xffffff00) | 0x00000018);
-	ncr_write32( NCP_REGION_ID( 0x1D3, 0x0 ), 0x74, cfgVal);
-
-	printf("GPIO val written to 0x74 = 0x%x\n", cfgVal);
-	ncr_read32(NCP_REGION_ID(0x1D3, 0x0), 0x74, &cfgVal);
-	printf("GPIO val read from 0x74 = 0x%x\n", cfgVal);
-
-	ncr_read32(NCP_REGION_ID(0x1D3, 0x0), 0x60, &enbVal);
-	enbVal = ((enbVal & 0xfffeffff) | 0x00010000);
-	ncr_write32(NCP_REGION_ID(0x1D3, 0x0), 0x60, enbVal);
-
-	printf("GPIO val written to 0x60 = 0x%x\n", enbVal);
-	ncr_read32(NCP_REGION_ID(0x1D3, 0x0), 0x60, &enbVal);
-	printf("GPIO val read = 0x%x\n", enbVal);
-#endif
-	
-}
-void gpio_toggle() {
-	char * env_value;
-	unsigned long addr = (IO + 0x1000);
-
-	/* ncpWrite 0x1d3.0x0.0x60 0x01190070
-	ncpWrite 0x1d3.0x0.0x60 0x00190070 */
-	acpwriteio(0x01190070, (void *)(addr + 0x60));
-	acpwriteio(0x00190070, (void *)(addr + 0x60));
-}
-
 void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 	unsigned long lnkStatus, addr;
 	unsigned width;
@@ -1444,110 +1393,10 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 			printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
 		}
 	} else if (changeSpeed == PEI_5G) {
-#if 0
-		if (peiCore == 0) {
-			/* set up pipe debug field */
-			/* ncr w 0x115.0x2.0x4 0xfa000026 */	
-			ncr_write32( NCP_REGION_ID( 0x115, 0x2 ), 0x4, 0xfa000026 );
-#if 0
-			ncr_read32(NCP_REGION_ID(0x115, 0x2), 0x4, &regValue);
-			printf("SR -- expected 0x115.0x2.0x4 0xfa000026 = 0x%x\n", regValue);
-#endif
-
-			/* ncr w 0x115.0x1.0x42e 0x0052 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x42e, 0x52 );
-#if 0
-			ncr_read16(NCP_REGION_ID(0x115, 0x1), 0x42e, &regValue);
-			printf("SR -- expected 0x115.0x1.0x42e 0x0052 = 0x%x\n", regValue);
-#endif
-		}
-#endif
-
-#if 0	
-		if (peiCore == 0) {
-			/* start polling pipe for rx_ready deassertion 
-			 * lane 0
-			 * bit 27 is [s2p_rx_ready_i] <<<<<<< maybe this too from debug field?
-			 * bit 10 is [rx_rdy] <<<<<<<<<<< I think this is what we want to see go low
-			 */
-			/* ncr r 0x115.0x2.0x64; */
-#if 0
-			ncr_read32(NCP_REGION_ID(0x115, 0x2), 0x64, &ln0PipeStatus);
-			printf("for PEI0 Initial ln0PipeStatus = 0x%x\n", ln0PipeStatus);
-#endif
-			for (count = 0; count < 1000; count++) { 
-				ncr_read32(NCP_REGION_ID(0x115, 0x2), 0x64, &ln0PipeStatus);
-				if ((ln0PipeStatus & (1 << 10)) != (1 << 10)) {
-					printf("for PEI0 ln0PipeStatus rx_rdy deasserted = 0x%x\n", ln0PipeStatus);
-					/* rx_rdy is deasserted change rx clock rates */
-					/* txanarate_override[2:0] = 111; 11: Analog quarter rate; 1: Double-pump analog clockm
-					 * txdigrate_override[2:0] = 000; 000: Digital full rate
-					 * rxanarate_override[2:0] = 000; 00: Analog full rate; 0: Do not double-pump analog clock 
-					 * rxdigrate_override[2:0] = 000; 000: Digital full rate
-					 */
-					/* ncr w 0x115.1.0x08e 0x0406 */
-					ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x8e, 0x0406 );
-#if 0
-					ncr_read16(NCP_REGION_ID(0x115, 0x1), 0x8e, &regValue);
-					printf("SR -- expected 0x115.1.0x08e 0x0406 = 0x%x\n", regValue);
-#endif
-
-					/* ncr w 0x115.1.0x28e 0x0406 */
-					ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x28e, 0x0406 );
-#if 0
-					ncr_read16(NCP_REGION_ID(0x115, 0x1), 0x28e, &regValue);
-					printf("SR -- expected 0x115.1.0x28e 0x0406 = 0x%x\n", regValue);
-#endif
-
-					/* ncr w 0x115.1.0x68e 0x0406 */
-					ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
-#if 0
-					ncr_read16(NCP_REGION_ID(0x115, 0x1), 0x68e, &regValue);
-					printf("SR -- expected 0x115.1.0x68e 0x0406 = 0x%x\n", regValue);
-#endif
-
-					/* ncr w 0x115.1.0x88e 0x0406 */
-					ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
-#if 0
-					ncr_read16(NCP_REGION_ID(0x115, 0x1), 0x88e, &regValue);
-					printf("SR -- expected 0x115.1.0x88e 0x0406 = 0x%x\n", regValue);
-#endif
-
-
-					/* toggle rx_ratechange_r2d for a 4 lanes, only for PLLa at this time */
-					/* ncr w 0x115.0x1.0x42a 0xd80f */
-					ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x42a, 0xd80f );
-#if 0
-					ncr_read16(NCP_REGION_ID(0x115, 0x1), 0x42a, &regValue);
-					printf("SR -- expected 0x115.1.0x42a 0xd80f = 0x%x\n", regValue);
-#endif
-
-					/* ncr w 0x115.0x1.0x42a 0xd800 */
-					ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x42a, 0xd800 );
-#if 0
-					ncr_read16(NCP_REGION_ID(0x115, 0x1), 0x42a, &regValue);
-					printf("SR -- expected 0x115.1.0x42a 0xd800 = 0x%x\n", regValue);
-#endif
-					break;
-				}
-			}
-			if (count == 100) {
-				ncr_read32(NCP_REGION_ID(0x115, 0x2), 0x64, &ln0PipeStatus);
-				printf("for PEI0 ---- TIMEOUT rx_rdy ----- ln0PipeStatus = 0x%x\n", ln0PipeStatus);
-				/* clear speed change initiation bit */
-				lnkStatus = acpreadio((void *)(addr + 0x117c));
-				if (lnkStatus & 0x10000) {
-					acpwriteio(0x20000, (void *)(addr + 0x117c));
-				}
-				return;
-			}
-		}
-#endif
 		if ((peiCore == 0) && (peiControl == 0x00480003) && (width == 0x2)) {
 		
 			/* Change PEI speed to Gen 2 */
 			acpwriteio(0x2, (void *)(addr + 0x90));
-			gpio_toggle();	
 			acpwriteio(0x10000, (void *)(addr + 0x117c));
 			udelay(pei_delay);
 
@@ -1559,7 +1408,6 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 		} else if ((peiCore == 1) && (peiControl == 0x00480003) && (width == 0x2)) {
 			/* Change PEI speed to Gen 2 */
 			acpwriteio(0x2, (void *)(addr + 0x90));
-			gpio_toggle();	
 			acpwriteio(0x10000, (void *)(addr + 0x117c));
 			udelay(pei_delay);
 
@@ -1571,7 +1419,6 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 		} else if ((peiCore == 0) && (peiControl == 0x00400001) && (width == 0x4)) {
 			/* Change PEI speed to Gen 2 */
 			acpwriteio(0x2, (void *)(addr + 0x90));
-			gpio_toggle();	
 			acpwriteio(0x10000, (void *)(addr + 0x117c));
 			udelay(pei_delay);
 
@@ -2080,9 +1927,6 @@ acp_init_r( void )
 			{
 				char * env_value;
 				unsigned long pciStatus, linkState;
-				
-				/* one time thing for debug */
-				gpio_setup();
 				
 				pciStatus = acpreadio((void *)(PCIE0_CONFIG + 0x1004));
 				printf("PEI0 pciStatus = 0x%x\n", pciStatus);

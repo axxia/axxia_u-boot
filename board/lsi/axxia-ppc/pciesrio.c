@@ -370,7 +370,7 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0x77ff77ff);
 		udelay(100000);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000400);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000000);
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control);
 		udelay(100000);
