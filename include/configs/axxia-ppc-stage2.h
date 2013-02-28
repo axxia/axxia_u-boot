@@ -35,7 +35,7 @@
   Special Functionality for Testing...
 */
 
-#define NCR_TRACER
+//#define NCR_TRACER
 /*#define ACP2_SYSMEM_TEST*/
 #ifdef ACP_25xx
 #define ACP2_PCIE_TEST
