@@ -185,6 +185,10 @@
 #define CONFIG_SYS_I2C_MULTI_EEPROMS
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN 1
 #define CONFIG_CMD_EEPROM
+#if defined(ACP_25xx)
+#define CONFIG_I2C_MULTI_BUS
+#define CONFIG_SYS_MAX_I2C_BUS 2
+#endif
 #endif
 
 
