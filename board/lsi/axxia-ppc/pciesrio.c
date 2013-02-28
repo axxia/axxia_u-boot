@@ -312,8 +312,6 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		{0x02a4, 0x3001},
 		{0x06a4, 0x3001},
 		{0x08a4, 0x3001},
-#if 0
-		/* RX/TX Clock Changes */
 		{0x008e, 0x0487},
 		{0x028e, 0x0487},
 		{0x068e, 0x0487},
@@ -322,7 +320,6 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		{0x021e, 0xc000},
 		{0x061e, 0xc000},
 		{0x081e, 0xc000},
-#endif
 		{0x009a, 0x5320},
 		{0x029a, 0x5320},
 		{0x069a, 0x5320},
@@ -345,19 +342,35 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 			    rx_serdes_values[i].value);
 	}
 
+	/*
+	set 26 R/W dsbl_g12_rx_p1_pd Disable the Gen1/Gen2 configuration RX_P1_PD signal. 0x0
+	for pipe0 and pipe 1
+	*/
+	ncr_write32(NCP_REGION_ID(0x115, 2), 0x02c, 0x05008249);
+	ncr_write32(NCP_REGION_ID(0x115, 3), 0x02c, 0x05008249);
+
 	udelay(100000);
 
 	switch (new_control) {
 		/* PCIe Only Modes */
 	case 0x00000001:
-	case 0x00080003:
 	case 0x00400001:
-	case 0x00480003:
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x20);
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000000);
+		udelay(100000);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control);
+		udelay(100000);
+		break;
+	case 0x00080003:
+	case 0x00480003:
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x20);
+		udelay(100000);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0x77ff77ff);
+		udelay(100000);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000400);
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control);
 		udelay(100000);
