@@ -215,7 +215,7 @@
  */
 #define CONFIG_NR_DRAM_BANKS	1
 
-#define CONFIG_SYS_SDRAM_BASE		0x80000000
+#define CONFIG_SYS_SDRAM_BASE		0x00000000
 #define CONFIG_SYS_INIT_SP_ADDR         (NON_SECURE_SRAM_END - \
 					 GENERATED_GBL_DATA_SIZE)
 
@@ -230,7 +230,7 @@
 /* Defines for SPL */
 #define CONFIG_SPL
 #define CONFIG_SPL_FRAMEWORK
-#define CONFIG_SPL_TEXT_BASE		0x40300350
+#define CONFIG_SPL_TEXT_BASE		0x20000000
 #define CONFIG_SPL_MAX_SIZE		0x19000	/* 100K */
 #define CONFIG_SPL_STACK		CONFIG_SYS_INIT_SP_ADDR
 #define CONFIG_SPL_DISPLAY_PRINT
@@ -254,7 +254,7 @@
  * header. That is 80E7FFC0--0x80E80000 should not be used for any
  * other needs.
  */
-#define CONFIG_SYS_TEXT_BASE		0x80E80000
+#define CONFIG_SYS_TEXT_BASE		0x00000000
 
 /*
  * BSS and malloc area 64MB into memory to allow enough
