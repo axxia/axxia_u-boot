@@ -125,16 +125,6 @@ static int pcie_read_config(struct pci_controller *hose, unsigned int devfn,
 		return 0;		/* No upstream config access */
 
 	/*
-	 * NOTICE: configuration space ranges are currently mapped only for
-	 * the first 16 buses, so such limit must be imposed. In case more
-	 * buses are required the TLB settings in board/amcc/<board>/init.S
-	 * need to be altered accordingly (one bus takes 1 MB of memory space).
-	 */
-	if (PCI_BUS(devfn) >= 16) {
-		return 0;
-	}
-
-	/*
 	 * Only single device/single function is supported for the primary and
 	 * secondary buses of the 440SPe host bridge.
 	 */
@@ -235,12 +225,6 @@ static int pcie_write_config(struct pci_controller *hose, unsigned int devfn,
 
 	if (validate_endpoint(hose))
 		return 0;		/* No upstream config access */
-
-	/*
-	 * Same constraints as in pcie_read_config().
-	 */
-	if (PCI_BUS(devfn) >= 16)
-		return 0;
 
 	if (((!((PCI_FUNC(devfn) == 0) && (PCI_DEV(devfn) == 0))) &&
 		(PCI_BUS(devfn) == 0)) || (!(PCI_DEV(devfn) == 0) &&

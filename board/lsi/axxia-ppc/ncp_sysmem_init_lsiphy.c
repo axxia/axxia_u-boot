@@ -894,16 +894,7 @@ ncp_sm_lsiphy_static_init(
 
     phyconfig1.rdranksw  = 0; /* TODO: Do these need to be set later on?? */
     phyconfig1.wrranksw  = 0;
-    /*phyconfig1.wrlatrank = 5;*/
-    /*
-      write latency - 3 - casx - 2 * rank high freq
-
-      casx = 1
-      rank high freq = 0
-
-      In our case 4
-     */
-    phyconfig1.wrlatrank = 4;
+    phyconfig1.wrlatrank = 5;
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG1, 
                         *(ncp_uint32_t *) &phyconfig1);
 
@@ -1103,7 +1094,7 @@ ncp_sm_sysmem_phy_training_run(
 
     int i;
     ncp_uint32_t mask, value;
-    ncp_uint32_t offset;
+    ncp_uint32_t offset = 0;
     ncp_uint32_t reg32;
     ncp_uint32_t            phyconfig2;
     ncp_uint32_t  dp_en;
@@ -1688,8 +1679,8 @@ NCP_RETURN_LABEL
     return ncpStatus;
 }
 
-#if defined(UBOOT) || defined(NCP_SM_WRLVL_DUP)
 
+#ifdef NCP_SM_WRLVL_DUP
 /* 
  *  copy a set of write levling registers
  *  from one rank to another
@@ -1757,10 +1748,11 @@ NCP_RETURN_LABEL
 
     return ncpStatus;
 }
+#endif
 
-#endif	/* UBOOT || NCP_SM_WRLVL_DUP */
 
-/*#define SM_BYTELANE_TEST_DEBUG*/
+
+/* #define SM_BYTELANE_TEST_DEBUG  */
 
 /*
  *------------------------------------------------------------------------------
@@ -1788,20 +1780,35 @@ sm_bytelane_test(ncp_dev_hdl_t dev, unsigned long address, int pattern,
     ncp_uint8_t   compare_value;
 	ncp_uint32_t  offset = num_bls * 2;
     ncp_uint32_t  *pTmp;
+
+    ncp_uint32_t  burstSize;
+    ncp_uint32_t  blockSize;
+    ncp_uint32_t  cmpOff; 
+
 #ifdef UBOOT
 	ncp_uint32_t  *p32 = (unsigned long *)(NCA + 0x1000);
-	ncp_uint8_t   *p8 = (unsigned char *)(NCA + 0x1060);
+	ncp_uint8_t   *p8 = (unsigned char *)(NCA + 0x1000);
 #else
     ncp_uint8_t   wbuf[NCP_SM_BURST_SIZE];
     ncp_uint8_t   rbuf[NCP_SM_BURST_SIZE];
     ncp_uint32_t  *p32 = (ncp_uint32_t *) wbuf;
-    ncp_uint8_t   *p8 = &rbuf[0x60];
+    ncp_uint8_t   *p8 = &rbuf[0x00];
 #endif
 
+    /*
+     * calculate the block size for this test. 
+     * One DDR burst is 8 beats, or 8 bytes per bytelane.
+     * We will write two bursts, read two bursts, and compare
+     * the data from the middle of the second burst.
+     */
+    burstSize = num_bls * 8;
+    blockSize = burstSize * 2; 
+    cmpOff    = burstSize + (burstSize / 2);
+    p8       += cmpOff;
 
 	/* Build buffer */
     pTmp = p32;
-	for (i = 0; i < (128 / num_bls); ++i) {
+	for (i = 0; i < (blockSize / num_bls); ++i) {
 		unsigned long temp;
 
 		if (0 == pattern)
@@ -1842,7 +1849,7 @@ sm_bytelane_test(ncp_dev_hdl_t dev, unsigned long address, int pattern,
 		int index;
 
         pTmp = p32;
-		for (index = 0; index < (128 / 4); ++index) {
+		for (index = 0; index < (blockSize / 4); ++index) {
 			printf("<%03d:0x%08x>", (index * 4), *pTmp++);
 		}
 
@@ -1852,7 +1859,7 @@ sm_bytelane_test(ncp_dev_hdl_t dev, unsigned long address, int pattern,
 
     /* write it out and save the comparison value from the write buffer*/
 #ifdef UBOOT
-	if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), address, 128, NULL )) {
+	if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), address, blockSize, NULL )) {
 	  printf("%d : ncr_write() failed: 0x%08lx 0x%08lx\n",
 		 __LINE__, in_be32(NCA + 0xe4), in_be32(NCA + 0xe8));
 	  return -1;
@@ -1861,9 +1868,9 @@ sm_bytelane_test(ncp_dev_hdl_t dev, unsigned long address, int pattern,
 #else 
 
     NCP_CALL(ncp_block_write8(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
-                                wbuf, NCP_SM_BURST_SIZE, 0));
+                                wbuf, blockSize, 0));
 
-    compare_value = wbuf[0x60];
+    compare_value = wbuf[cmpOff];
 #endif
 
 	if (0 != (pattern & 0x2))
@@ -1871,7 +1878,7 @@ sm_bytelane_test(ncp_dev_hdl_t dev, unsigned long address, int pattern,
 
 	/* Read back and compare. */
 #ifdef UBOOT
-	if (0 != ncr_read( NCP_REGION_ID( 512, 1 ), address, 128, NULL )) {
+	if (0 != ncr_read( NCP_REGION_ID( 512, 1 ), address, blockSize, NULL )) {
 	  printf("%d : ncr_read() failed: 0x%08lx 0x%08lx\n",
 		 __LINE__, in_be32(NCA + 0xe4), in_be32(NCA + 0xe8));
 	}
@@ -1879,14 +1886,14 @@ sm_bytelane_test(ncp_dev_hdl_t dev, unsigned long address, int pattern,
     pTmp = p32;
 #else 
     NCP_CALL(ncp_block_read8(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
-                                rbuf, NCP_SM_BURST_SIZE, 0));
+                                rbuf, blockSize, 0));
     
     pTmp = (ncp_uint32_t *) rbuf;
 #endif
 
 #ifdef SM_BYTELANE_TEST_DEBUG
 	{
-		for (i = 0; i < (128 / 4); ++i) {
+		for (i = 0; i < (blockSize / 4); ++i) {
 			printf("(%03d:0x%08x)", (i * 4), *pTmp++);
 		}
 		printf("\n");
@@ -1924,14 +1931,14 @@ sm_bytelane_test(ncp_dev_hdl_t dev, unsigned long address, int pattern,
     	}
     } else {
 #ifndef UBOOT
-        if (memcmp(rbuf, wbuf, NCP_SM_BURST_SIZE)) {
+        if (memcmp(rbuf, wbuf, blockSize)) {
             *bad_bl_bad = 0x1ff;
     	}
 #else
 	value32 = 0x01010101UL;
 	pTmp = p32;
 
-	for (i = 0; i < (128 / num_bls); ++i) {
+	for (i = 0; i < (blockSize / num_bls); ++i) {
 	  unsigned long temp;
 
 	  if (0 == pattern)
@@ -1978,13 +1985,14 @@ NCP_RETURN_LABEL
   ------------------------------------------------------------------------------
   sm_ecc_bytelane_test
 */
-/* #define SM_ECC_BYTELANE_TEST_DEBUG */
+/* #define SM_ECC_BYTELANE_TEST_DEBUG  */
 
 #include "ncp_sm_ecc_test_buffer.h"
 
 static int
 sm_ecc_bytelane_test(ncp_dev_hdl_t dev, unsigned long region, unsigned long address,
 		     unsigned long node, int pattern, unsigned long ecc_mask,
+             ncp_uint32_t  num_bls,
 		     ncp_uint32_t *bad_bl)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
@@ -1999,6 +2007,10 @@ sm_ecc_bytelane_test(ncp_dev_hdl_t dev, unsigned long region, unsigned long addr
     ncp_uint32_t  *p32 = (ncp_uint32_t *) wbuf;
 #endif
 
+    ncp_uint32_t  burstSize = num_bls * 8;
+    ncp_uint32_t  blockSize = burstSize * 2; 
+    ncp_uint32_t  blockSizeWords = blockSize / 4;
+
 	int i;
 	int rc;
 
@@ -2011,7 +2023,12 @@ sm_ecc_bytelane_test(ncp_dev_hdl_t dev, unsigned long region, unsigned long addr
 	ncr_write32( region, NCP_DENALI_CTL_89, value );
 
     /* copy the ECC test data buffer */		
-	for (i = 0; i < 16 ; i++) {
+    /* TODO!! 
+     * for ACP2500 we only have four data bytelanes, so this is
+     * two bursts of data. Need another 16 words of ecc_test_data
+     * to support chips with eight bytelanes
+     */
+	for (i = 0; i < blockSizeWords ; i++) {
 
 		this_value = ecc_test_data[pattern][i];
 		*p32++ = this_value;
@@ -2027,29 +2044,29 @@ sm_ecc_bytelane_test(ncp_dev_hdl_t dev, unsigned long region, unsigned long addr
 
     /* write it out */
 #ifdef UBOOT 
+	if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), address, blockSize, NULL )) {
+	  printf("%d : ncr_write() failed!\n", __LINE__);
+	  return -1;
+	}
+    p32 = (NCA + 0x1000); 
+#else 
+    NCP_CALL(ncp_block_write8(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
+                                wbuf, blockSize, 0));
+    p32 = (ncp_uint32_t *)wbuf;
+#endif
+
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG
 	{
 		int index;
 
-		for (index = 0; index < (128 / 4); ++index) {
-			printf("<%03d:0x%08lx>", (index * 4),
-			       *((unsigned long *)(NCA + 0x1000 + (index * 4))));
+		for (index = 0; index < (blockSizeWords); ++index) {
+			printf("<%03d:0x%08lx>", (index * 4), p32[index]);
 		}
 
 		printf("\n");
 	}
 #endif /* SM_ECC_BYTELANE_TEST_DEBUG */
 
-	if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), address, 128, NULL )) {
-	  printf("%d : ncr_write() failed!\n", __LINE__);
-	  return -1;
-	}
-
-
-#else 
-    NCP_CALL(ncp_block_write8(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
-                                wbuf, NCP_SM_BURST_SIZE, 0));
-#endif
 	/*
 	  ncr_read() returns the contents of "CFG Ring Command Error
 	  Status Register 0" after the operation.
@@ -2082,28 +2099,30 @@ sm_ecc_bytelane_test(ncp_dev_hdl_t dev, unsigned long region, unsigned long addr
      * This may fail if the ECC bytelane is out of level
      */
 #ifdef UBOOT
-        rc = ncr_read( NCP_REGION_ID( node, 5 ), (address >> 2), 128/4, NULL );
+        rc = ncr_read( NCP_REGION_ID( node, 5 ), (address >> 2), blockSizeWords, NULL );
 
 	if (-1 == rc)
 		rc = in_be32(NCA + 0xe4);
 
 	NCR_TRACE( "ncpRead    0.%lu.5.0x%010x 32\n", node, (address >> 2) );
+    p32 = (NCA + 0x1000); 
+#else
+    rc = ncp_block_read32(dev, NCP_REGION_ID(node, 5), (address >> 2), 
+                                (ncp_uint32_t *)rbuf, blockSizeWords, 0);
+    p32 = (ncp_uint32_t *)rbuf;
+#endif
+
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG
 	{
 		int index;
 
-		for (index = 0; index < (128 / 4); ++index) {
-			printf("(%03d:0x%08lx)", (index * 4),
-			       *((unsigned long *)(NCA + 0x1000 + (index * 4))));
+		for (index = 0; index < (blockSizeWords); ++index) {
+			printf("(%03d:0x%08lx)", (index * 4), p32[index]);
 		}
 
 		printf("\n");
 	}
 #endif /* SM_ECC_BYTELANE_TEST_DEBUG */
-#else
-    rc = ncp_block_read32(dev, NCP_REGION_ID(node, 5), (address >> 2), 
-                                (ncp_uint32_t *)rbuf, NCP_SM_BURST_SIZE/4, 0);
-#endif
 
 #if 1
 	if ((0 != rc) &&
@@ -2129,7 +2148,7 @@ sm_ecc_bytelane_test(ncp_dev_hdl_t dev, unsigned long region, unsigned long addr
 		value = 0x01010101;
 		rc = 0;
 
-		for (i = 0; i < 16 ; i++) {
+		for (i = 0; i < blockSizeWords ; i++) {
 			temp = *((unsigned long *)(NCA + 0x1000 + (i * 4)));
 			if (temp != ecc_test_data[pattern][i]) {
 				rc = 0x1ff;
@@ -2137,7 +2156,7 @@ sm_ecc_bytelane_test(ncp_dev_hdl_t dev, unsigned long region, unsigned long addr
 		}
 #else
     	/* Read back and compare. */
-        if (memcmp(rbuf, wbuf, NCP_SM_BURST_SIZE)) 
+        if (memcmp(rbuf, wbuf, blockSize)) 
         {
 #if 0
             int i;
@@ -2145,7 +2164,7 @@ sm_ecc_bytelane_test(ncp_dev_hdl_t dev, unsigned long region, unsigned long addr
             ncp_uint32_t *pw = (ncp_uint32_t *) wbuf;
             printf("memcmp failed!\n");
 
-            for ( i = 0; i < NCP_SM_BURST_SIZE/4; i++) {
+            for ( i = 0; i < blockSizeWords; i++) {
                 printf (" %08x : %08x\n", *pw++, *pr++);
             }
 #endif
@@ -2205,6 +2224,7 @@ ncp_sm_sm_coarse_write_leveling(
     int     adj;
 
  
+    /* TODO: TEMP for ACP2500 only! 3500 will have all eight!! */
     ncp_uint32_t    num_bls = 4;
 
 
@@ -2414,10 +2434,10 @@ ncp_sm_sm_coarse_write_leveling(
         ncr_modify32( ctlRegion, NCP_DENALI_CTL_20, mask, value );
 
         NCP_CALL(sm_ecc_bytelane_test(dev, ctlRegion, addr, sc_node, 
-                                         1, ecc_mask, &bad_bl[0]));
+                                         1, ecc_mask, num_bls, &bad_bl[0]));
         bad_bl[0] = 0;
         NCP_CALL(sm_ecc_bytelane_test(dev, ctlRegion, addr, sc_node, 
-                                         0, ecc_mask, &bad_bl[0]));
+                                         0, ecc_mask, num_bls, &bad_bl[0]));
 
         /* for now assume ECC is always the last BL */
         bl = num_bls ;
@@ -2462,10 +2482,10 @@ ncp_sm_sm_coarse_write_leveling(
                        ldly + adj);
 
                 NCP_CALL(sm_ecc_bytelane_test(dev, ctlRegion, addr, sc_node, 
-                                             1, ecc_mask, &bad_bl[0]));
+                                             1, ecc_mask, num_bls, &bad_bl[0]));
                 bad_bl[0] = 0;
                 NCP_CALL(sm_ecc_bytelane_test(dev, ctlRegion, addr, sc_node, 
-                                         0, ecc_mask, &bad_bl[0]));
+                                         0, ecc_mask, num_bls, &bad_bl[0]));
 
                 if (bad_bl[0] == 0) {
                     /* it worked - we're done */
@@ -2491,10 +2511,10 @@ ncp_sm_sm_coarse_write_leveling(
                        ldly + adj);
 
                 NCP_CALL(sm_ecc_bytelane_test(dev, ctlRegion, addr, sc_node, 
-                                             1, ecc_mask, &bad_bl[0]));
+                                             1, ecc_mask, num_bls, &bad_bl[0]));
                 bad_bl[0] = 0;
                 NCP_CALL(sm_ecc_bytelane_test(dev, ctlRegion, addr, sc_node, 
-                                         0, ecc_mask, &bad_bl[0]));
+                                         0, ecc_mask, num_bls, &bad_bl[0]));
 
                 if (bad_bl[0] == 0) {
                     /* it worked - we're done */
@@ -2950,28 +2970,6 @@ ncp_sysmem_init_lsiphy(
                 if (do_wr_lvl) {
                     /* fine write leveling */
                     /* printf("wrlvl smId %d rank %d\n", smId, rank); */
-#ifdef UBOOT
-		    unsigned long rcfg;
-
-		    rcfg = dcr_read(0xd0f);
-
-		    if (0 != (rcfg & 0x1000)) {
-                        printf("Duplicating Write Leveling!\n");
-
-		        if (rank > 0 ) {
-			    NCP_CALL(ncp_sm_lsiphy_wrlvl_dup(dev, smId, 0, 1));
-			} else {
-				NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId,
-				    rank, 0, NCP_SYSMEM_PHY_WRITE_LEVELING,
-				    parms));
-			}
-		    } else {
-                        printf("Not Duplicating Write Leveling!\n");
-		        NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId,
-			    rank, 0, NCP_SYSMEM_PHY_WRITE_LEVELING,
-			    parms));
-		    }
-#else
 #ifdef NCP_SM_WRLVL_DUP
                     if (rank > 0 ) 
                     {
@@ -2984,7 +2982,6 @@ ncp_sysmem_init_lsiphy(
                              NCP_SYSMEM_PHY_WRITE_LEVELING,
                              parms));
                     }
-#endif
                 }
 
                 if (do_gt_trn) {
@@ -3078,7 +3075,7 @@ ncp_sysmem_init_lsiphy(
         /*
          * save these PHY training values for next time
          */
-        ncp_sm_lsiphy_reg_save(dev, NCP_REGION_ID(34,1));
+        ncpStatus = ncp_sm_lsiphy_reg_save(dev, NCP_REGION_ID(34,1));
     }
 
     NCP_CALL(ncp_sm_lsiphy_runtime_adj(dev, smId, parms));
