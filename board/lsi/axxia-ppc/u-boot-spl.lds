@@ -79,6 +79,8 @@ SECTIONS
 		#include "u-boot.lst"
 	} > .lsm
 
+	__end_of_spl = .;
+
 	.brs 0xf0a1fc00 :
 	{
 		*(.brs)
@@ -89,12 +91,13 @@ SECTIONS
 		KEEP(*(.brs_vector))
 	}
 
+	. = 0x300000;
 	PROVIDE(_bss_start = .);
-	.bss (NOLOAD):
+	.bss 0x300000:
 	{
 		*(.bss*)
 		*(.sbss*)
-	}
+	} > .sys
 	. = ALIGN(256);
 	PROVIDE(_bss_end = . );
 }

@@ -25,6 +25,7 @@
  */
 
 #include <common.h>
+#include <nand.h>
 
 void acp_mem_init(unsigned long, unsigned long, unsigned long);
 void axxia_init_r(void);
@@ -300,7 +301,7 @@ axxia_init_r(void)
 
 	/* NAND */
 #if defined(CONFIG_LSI_NAND)
-	/*nand_init( );*/
+	nand_init( );
 #endif
 	/*env_relocate( );*/
 
@@ -424,6 +425,17 @@ axxia_init_r(void)
 
 	printf( "System Memory Size: %lu M\n", get_sysmem_size( ) );
 	printf( "LSI Version: %s\n", get_lsi_version( ) );
+
+	/*
+	  Load the 3rd stage from NAND.
+	*/
+
+	nand_boot();
+
+	printf("Loaded the 3rd stage...\n");
+
+	for (;;)
+		;
 
 	return;
 }

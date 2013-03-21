@@ -1130,7 +1130,7 @@ sm_bytelane_test(void * foo, unsigned long address, int pattern, unsigned long *
 		*cdar32++ = temp;
 
 		NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
-			  "0x%02x 0x%02x 0x%02x 0x%02x",
+			  "0x%02x 0x%02x 0x%02x 0x%02x\n",
 			  (address + (num_bls * i)),
 			  (unsigned char )((temp & 0xff000000) >> 24),
 			  (unsigned char )((temp & 0x00ff0000) >> 16),
@@ -1140,7 +1140,7 @@ sm_bytelane_test(void * foo, unsigned long address, int pattern, unsigned long *
 		if (num_bls == 8) {
 			*cdar32++ = temp;
 			NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
-				  "0x%02x 0x%02x 0x%02x 0x%02x",
+				  "0x%02x 0x%02x 0x%02x 0x%02x\n",
 				  (address + 4 + (8 * i)),
 				  (unsigned char )((temp & 0xff000000) >> 24),
 				  (unsigned char )((temp & 0x00ff0000) >> 16),
@@ -1175,7 +1175,7 @@ sm_bytelane_test(void * foo, unsigned long address, int pattern, unsigned long *
 
 	/* Read back and compare. */
 	ncr_read( NCP_REGION_ID( 512, 1 ), address, 128, NULL );
-	NCR_TRACE("ncpRead   -w8 0.512.1.0x00%08lx 128", address);
+	NCR_TRACE("ncpRead   -w8 0.512.1.0x00%08lx 128\n", address);
 
 #ifdef SM_BYTELANE_TEST_DEBUG
 	{
@@ -1265,14 +1265,14 @@ sm_ecc_bytelane_test(void *foo, unsigned long region, unsigned long address,
 		*((unsigned long *)(NCA + 0x1000 + i)) = this_value;
 		*((unsigned long *)(NCA + 0x1004 + i)) = this_value;
 		NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
-			  "0x%02x 0x%02x 0x%02x 0x%02x",
+			  "0x%02x 0x%02x 0x%02x 0x%02x\n",
 			  (address + i),
 			  (unsigned char )((this_value & 0xff000000) >> 24),
 			  (unsigned char )((this_value & 0x00ff0000) >> 16),
 			  (unsigned char )((this_value & 0x0000ff00) >>  8),
 			  (unsigned char )(this_value & 0x000000ff));
 		NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%08lx " \
-			  "0x%02x 0x%02x 0x%02x 0x%02x",
+			  "0x%02x 0x%02x 0x%02x 0x%02x\n",
 			  (address + 4 + i),
 			  (unsigned char )((this_value & 0xff000000) >> 24),
 			  (unsigned char )((this_value & 0x00ff0000) >> 16),
@@ -1332,7 +1332,7 @@ sm_ecc_bytelane_test(void *foo, unsigned long region, unsigned long address,
 	if (-1 == rc)
 		rc = in_be32(NCA + 0xe4);
 
-	NCR_TRACE( "ncpRead    0.%lu.5.0x0000000000 32", node );
+	NCR_TRACE( "ncpRead    0.%lu.5.0x0000000000 32\n", node );
 
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG
 	{

@@ -26,6 +26,11 @@
 #define CONFIG_SYS_LDSCRIPT "board/lsi/axxia-ppc/u-boot.lds"
 #define CONFIG_SYS_TEXT_BASE 0x00004000
 
+#ifdef CONFIG_SPL_BUILD
+/*#define NCR_TRACER*/
+#define CONFIG_LSI_NAND
+#endif
+
 /*
   ==============================================================================
   Even though the hardware type should be defined in acp.h, the U-Boot config.mk
@@ -556,7 +561,21 @@ int eioa_ethernet_configure(void);
 */
 
 #ifdef CONFIG_SPL_BUILD
-#define NCR_TRACE(format, args...) {}
+#ifdef NCR_TRACER
+#define NCR_TRACE( format, args... ) do { \
+if( 0 != ncr_tracer_is_enabled( ) ) { \
+printf( format, ##args ); \
+} \
+} while( 0 );
+#define NCP_COMMENT( format, args... ) do { \
+if( 0 != ncr_tracer_is_enabled( ) ) { \
+printf( "# " format "\n", ##args ); \
+} \
+} while( 0 );
+#else
+#define NCR_TRACE( format, args... )
+#define NCP_COMMENT( format, args... )
+#endif
 #endif
 
 /*
@@ -1380,6 +1399,32 @@ extern unsigned long _bss_end;
 #define CONFIG_SPL_BSS_MAX_SIZE		0x00100000
 #define CONFIG_SYS_SPL_MALLOC_START	0x00300000
 #define CONFIG_SYS_SPL_MALLOC_SIZE	0x00100000
+
+/*
+  Boot From NAND
+*/
+
+#define CONFIG_SPL_NAND_SUPPORT
+#define CONFIG_SPL_NAND_SIMPLE
+#define CONFIG_SPL_NAND_LOAD
+/*#define CONFIG_SPL_NAND_ECC*/
+/*#define CONFIG_SPL_NAND_BASE*/
+
+#define CONFIG_SYS_NAND_U_BOOT_OFFS 0x180000
+#define CONFIG_SYS_NAND_U_BOOT_START 0
+#define CONFIG_SYS_NAND_U_BOOT_SIZE 0x200000
+#define CONFIG_SYS_NAND_U_BOOT_DST  0x400000
+#define CONFIG_SYS_NAND_PAGE_SIZE   0x40000
+#define CONFIG_SYS_NAND_BLOCK_SIZE  0x40000
+
+#define CONFIG_SYS_NAND_ECCSIZE 512
+#define CONFIG_SYS_NAND_ECCBYTES 32
+#define CONFIG_SYS_NAND_ECCPOS { 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63}
+#define CONFIG_SYS_NAND_PAGE_COUNT 32
+#define CONFIG_SYS_NAND_BAD_BLOCK_POS 0
+#define CONFIG_SYS_NAND_OOBSIZE 16
+#define CFG_NAND_BASE              (IO+0x40000)
+#define CONFIG_SYS_NAND_BASE       (IO+0x40000)
 
 /*
   ----------------------------------------------------------------------
