@@ -49,7 +49,7 @@ SECTIONS
 	.data : { *(SORT_BY_ALIGNMENT(.data*)) } >.sram
 
 	.u_boot_list : {
-		#include <u-boot.lst>
+		*(SORT(.u_boot_list*));
 	}
 
 	. = ALIGN(4);

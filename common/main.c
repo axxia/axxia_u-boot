@@ -535,8 +535,9 @@ void main_loop (void)
 		len = readline (CONFIG_SYS_PROMPT);
 
 		flag = 0;	/* assume no special flags for now */
-		if (len > 0)
+		if (len > 0) {
 			strcpy (lastcommand, console_buffer);
+		}
 		else if (len == 0)
 			flag |= CMD_FLAG_REPEAT;
 #ifdef CONFIG_BOOT_RETRY_TIME

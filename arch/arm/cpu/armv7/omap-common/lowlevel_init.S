@@ -31,6 +31,7 @@
 #include <linux/linkage.h>
 
 ENTRY(save_boot_params)
+
 	/*
 	 * See if the rom code passed pointer is valid:
 	 * It is not valid if it is not in non-secure SRAM

@@ -118,6 +118,14 @@ static int init_baudrate(void)
 
 static int display_banner(void)
 {
+#ifdef CONFIG_AXXIA_ARM
+static char * splash_string = \
+"     __    _   _  __   _         __          __                     \n" \
+" /  (  /  /_| / )/__)  _) _ _/  ( _/_ _ _   / _)   _/  /    _ _/_ _ \n" \
+"(____)(  (  |(__/     __)/ (/  __)/(/(/(-  /(_)()()/  (__()(/(/(-/  \n" \
+"                                    _/                              \n";
+printf( "\n%s\n", splash_string );
+#endif
 	printf("\n\n%s\n\n", version_string);
 	debug("U-Boot code: %08lX -> %08lX  BSS: -> %08lX\n",
 	       _TEXT_BASE,
@@ -249,7 +257,7 @@ init_fnc_t *init_sequence[] = {
 #if defined(CONFIG_BOARD_EARLY_INIT_F)
 	board_early_init_f,
 #endif
-	timer_init,		/* initialize timer */
+	//timer_init,		/* initialize timer */
 #ifdef CONFIG_BOARD_POSTCLK_INIT
 	board_postclk_init,
 #endif
@@ -259,7 +267,9 @@ init_fnc_t *init_sequence[] = {
 	env_init,		/* initialize environment */
 	init_baudrate,		/* initialze baudrate settings */
 	serial_init,		/* serial communications setup */
+#ifndef CONFIG_AXXIA_ARM
 	console_init_f,		/* stage 1 init of console */
+#endif
 	display_banner,		/* say that we are here */
 #if defined(CONFIG_DISPLAY_CPUINFO)
 	print_cpuinfo,		/* display cpu info (and speed) */
@@ -270,7 +280,9 @@ init_fnc_t *init_sequence[] = {
 #if defined(CONFIG_HARD_I2C) || defined(CONFIG_SOFT_I2C)
 	init_func_i2c,
 #endif
+#if 0
 	dram_init,		/* configure available RAM banks */
+#endif
 	NULL,
 };
 
@@ -283,6 +295,7 @@ void board_init_f(ulong bootflag)
 #ifdef CONFIG_PRAM
 	ulong reg;
 #endif
+
 	void *new_fdt = NULL;
 	size_t fdt_size = 0;
 
@@ -305,6 +318,8 @@ void board_init_f(ulong bootflag)
 			hang ();
 		}
 	}
+
+#if 0
 
 #ifdef CONFIG_OF_CONTROL
 	/* For now, put this check after the console is ready */
@@ -454,6 +469,7 @@ void board_init_f(ulong bootflag)
 	post_run(NULL, POST_ROM | post_bootmode_get(0));
 #endif
 
+	printf("SR -- 2 %d\n", gd->baudrate);
 	gd->bd->bi_baudrate = gd->baudrate;
 	/* Ram ist board specific, so move it to board code ... */
 	dram_init_banksize();
@@ -468,6 +484,8 @@ void board_init_f(ulong bootflag)
 		gd->fdt_blob = new_fdt;
 	}
 	memcpy(id, (void *)gd, sizeof(gd_t));
+
+#endif
 }
 
 #if !defined(CONFIG_SYS_NO_FLASH)
@@ -523,13 +541,20 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	ulong flash_size;
 #endif
 
+#if 0
+extern unsigned long _u_boot_list_cmd__start; /* SR */
+extern unsigned long _u_boot_list__start; /* SR */
+#endif
+
 	gd->flags |= GD_FLG_RELOC;	/* tell others: relocation done */
 	bootstage_mark_name(BOOTSTAGE_ID_START_UBOOT_R, "board_init_r");
 
 	monitor_flash_len = _end_ofs;
 
+#ifndef CONFIG_AXXIA_ARM
 	/* Enable caches */
 	enable_caches();
+#endif
 
 	debug("monitor flash len: %08lX\n", monitor_flash_len);
 	board_init();	/* Setup chipselects */
@@ -542,7 +567,12 @@ void board_init_r(gd_t *id, ulong dest_addr)
 #ifdef CONFIG_CLOCKS
 	set_cpu_clk_info(); /* Setup clock information */
 #endif
+
+#ifndef CONFIG_AXXIA_ARM
 	serial_initialize();
+#else
+	serial_init();
+#endif
 
 	debug("Now running in RAM - U-Boot at: %08lx\n", dest_addr);
 
@@ -553,9 +583,15 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	post_output_backlog();
 #endif
 
+#ifdef CONFIG_AXXIA_ARM
+	/* The Malloc area is immediately below the monitor copy in DRAM */
+	malloc_start = CONFIG_SYS_MALLOC_BASE;
+	mem_malloc_init (malloc_start, TOTAL_MALLOC_LEN);
+#else
 	/* The Malloc area is immediately below the monitor copy in DRAM */
 	malloc_start = dest_addr - TOTAL_MALLOC_LEN;
 	mem_malloc_init (malloc_start, TOTAL_MALLOC_LEN);
+#endif
 
 #ifdef CONFIG_ARCH_EARLY_INIT_R
 	arch_early_init_r();
@@ -598,14 +634,28 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	onenand_init();
 #endif
 
+#if 0
 #ifdef CONFIG_GENERIC_MMC
 	puts("MMC:   ");
 	mmc_initialize(gd->bd);
+#endif
 #endif
 
 #ifdef CONFIG_HAS_DATAFLASH
 	AT91F_DataflashInit();
 	dataflash_print_info();
+#endif
+
+#if 0
+#ifndef CONFIG_AXXIA_ARM
+
+	/* initialize environment */
+	if (should_load_env())
+		env_relocate();
+	else
+#endif
+	/* SR env */
+		set_default_env(NULL);
 #endif
 
 	/* initialize environment */
@@ -618,7 +668,9 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	arm_pci_init();
 #endif
 
+#ifndef CONFIG_AXXIA_ARM
 	stdio_init();	/* get the devices list going. */
+#endif
 
 	jumptable_init();
 
@@ -627,7 +679,9 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	api_init();
 #endif
 
+#ifndef CONFIG_AXXIA_ARM
 	console_init_r();	/* fully init console as a device */
+#endif
 
 #ifdef CONFIG_DISPLAY_BOARDINFO_LATE
 # ifdef CONFIG_OF_CONTROL
@@ -647,6 +701,7 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	misc_init_r();
 #endif
 
+#ifndef CONFIG_AXXIA_ARM
 	 /* set up exceptions */
 	interrupt_init();
 	/* enable exceptions */
@@ -654,6 +709,7 @@ void board_init_r(gd_t *id, ulong dest_addr)
 
 	/* Initialize from environment */
 	load_addr = getenv_ulong("loadaddr", 16, load_addr);
+#endif
 
 #ifdef CONFIG_BOARD_LATE_INIT
 	board_late_init();
@@ -696,6 +752,11 @@ void board_init_r(gd_t *id, ulong dest_addr)
 		sprintf((char *)memsz, "%ldk", (gd->ram_size / 1024) - pram);
 		setenv("mem", (char *)memsz);
 	}
+#endif
+
+#if 0
+printf("SR -- _u_boot_list_cmd__start %08lx  %08lx\n", (unsigned long)_u_boot_list_cmd__start, (unsigned long)&_u_boot_list_cmd__start);
+printf("SR -- _u_boot_list__start %08lx  %08lx\n", (unsigned long)_u_boot_list__start, (unsigned long)&_u_boot_list__start);
 #endif
 
 	/* main_loop() can return to retry autoboot, if so just run it again. */

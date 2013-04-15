@@ -591,11 +591,7 @@ $(SUBDIR_EXAMPLES): $(obj)u-boot
 $(LDSCRIPT):	depend
 		$(MAKE) -C $(dir $@) $(notdir $@)
 
-# The following line expands into whole rule which generates u-boot.lst,
-# the file containing u-boots LG-array linker section. This is included into
-# $(LDSCRIPT). The function make_u_boot_list is defined in helper.mk file.
-$(eval $(call make_u_boot_list, $(obj)include/u-boot.lst, $(LIBBOARD) $(LIBS)))
-$(obj)u-boot.lds: $(LDSCRIPT) $(obj)include/u-boot.lst
+$(obj)u-boot.lds: $(LDSCRIPT)
 		$(CPP) $(CPPFLAGS) $(LDPPFLAGS) -ansi -D__ASSEMBLY__ -P - <$< >$@
 
 nand_spl:	$(TIMESTAMP_FILE) $(VERSION_FILE) depend

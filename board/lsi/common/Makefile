@@ -28,7 +28,7 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-COBJS = phy.o femac.o
+#COBJS = phy.o femac.o
 
 else
 
@@ -40,6 +40,7 @@ endif
 ################################################################################
 ## All Builds
 
+#COBJS += version.o lsi.o phy.o femac.o
 COBJS += version.o lsi.o
 
 SRCS	:= $(COBJS:.o=.c)
