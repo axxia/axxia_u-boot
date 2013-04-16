@@ -1680,7 +1680,7 @@ NCP_RETURN_LABEL
 }
 
 
-#ifdef NCP_SM_WRLVL_DUP
+#if defined(NCP_SM_WRLVL_DUP) || defined(UBOOT)
 /* 
  *  copy a set of write levling registers
  *  from one rank to another
@@ -1699,6 +1699,9 @@ ncp_sm_lsiphy_wrlvl_dup(
     ncp_uint32_t            from, to;
     int i;
 
+#ifdef UBOOT
+    printf("Duplicating Write Levelling from Rank 0.\n");
+#endif
 
     phyRegion = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_PHY);
 
@@ -2970,6 +2973,25 @@ ncp_sysmem_init_lsiphy(
                 if (do_wr_lvl) {
                     /* fine write leveling */
                     /* printf("wrlvl smId %d rank %d\n", smId, rank); */
+#ifdef UBOOT
+		    unsigned long rcfg;
+
+		    rcfg = dcr_read(0xd0f);
+
+		    if (0 != (rcfg & 0x1000)) {
+		        if (rank > 0 ) {
+			    NCP_CALL(ncp_sm_lsiphy_wrlvl_dup(dev, smId, 0, 1));
+			} else {
+				NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId,
+				    rank, 0, NCP_SYSMEM_PHY_WRITE_LEVELING,
+				    parms));
+			}
+		    } else {
+		        NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId,
+			    rank, 0, NCP_SYSMEM_PHY_WRITE_LEVELING,
+			    parms));
+		    }
+#else
 #ifdef NCP_SM_WRLVL_DUP
                     if (rank > 0 ) 
                     {
@@ -2983,6 +3005,7 @@ ncp_sysmem_init_lsiphy(
                              parms));
                     }
                 }
+#endif
 
                 if (do_gt_trn) {
                     /* gate training */
