@@ -331,6 +331,8 @@ void image_print_contents(const void *ptr)
 	printf("%sLoad Address: %08x\n", p, image_get_load(hdr));
 	printf("%sEntry Point:  %08x\n", p, image_get_ep(hdr));
 #else  /* CONFIG_ACP */
+	printf("SR -- commented out Load Address for now \n");
+#if 0
 	printf("%sLoad Address: %08x\n",
 	       p, ((acp_osg_group_get_res(acp_osg_get_current(), ACP_OS_BASE) *
 		    1024 * 1024) +
@@ -339,6 +341,7 @@ void image_print_contents(const void *ptr)
 	       p, ((acp_osg_group_get_res(acp_osg_get_current(), ACP_OS_BASE) *
 		    1024 * 1024) +
 		   image_get_ep(hdr)));
+#endif
 #endif	/* CONFIG_ACP */
 
 	if (image_check_type(hdr, IH_TYPE_MULTI) ||
