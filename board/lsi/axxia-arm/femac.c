@@ -1261,7 +1261,7 @@ dump_descriptor_( unsigned long line, void * address )
 	if( 0 == dump_descriptors ) { return; }
 	readdescriptor( ( unsigned long ) address, & descriptor );
 
-	if( ( void * ) rx_descriptors_ < address &&
+	if( ( void * ) rx_descriptors_ <= address &&
 	    address <
 	    ( void * ) ( (unsigned long)rx_descriptors_ +
 			 ( rx_number_of_descriptors *
