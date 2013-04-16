@@ -47,7 +47,10 @@ SECTIONS
   PROVIDE (_ose_strings_3 = .);
   .ose_strings_3_section : { *(.ose_strings_3_section) }
 
-  .bootpg 0x00002000 :
+  . = 0x2000;
+  PROVIDE (_spintables = .);
+
+  .bootpg 0x00003000 :
   {
     cpu/ppc4xx/start.o	(.bootpg)
   } = 0xffff

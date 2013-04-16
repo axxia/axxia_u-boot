@@ -595,6 +595,11 @@ acp_osg_jump_to_os(int group)
 
 	os = acp_osg_groups[group]->os;
 
+	/*ZZZ*/
+	set_working_fdt_addr((void *)acp_osg_groups[group]->arguments[0]);
+	fdt_print("/", NULL, 32);
+	/*ZZZ*/
+
 	/* Release the stage 3 lock. */
 	acp_unlock_stage3();
 

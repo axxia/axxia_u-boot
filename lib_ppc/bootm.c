@@ -250,6 +250,11 @@ boot_jump_linux(bootm_headers_t *images)
 	kernel = (void (*)(bd_t *, ulong, ulong, ulong, ulong))images->ep;
 
 	if (0 != dt_specified) {
+		/*ZZZ*/
+		set_working_fdt_addr((void *)dt);
+		fdt_print("/", NULL, 32);
+		/*ZZZ*/
+
 		/* Release the stage 3 lock. */
 		acp_unlock_stage3();
 

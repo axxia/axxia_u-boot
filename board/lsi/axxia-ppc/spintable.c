@@ -38,6 +38,7 @@
 
 acp_spintable_t *acp_spintable[ACP_NR_CORES];
 static int core_up[] = {0, 0, 0, 0};
+extern unsigned long _spintables;
 
 /*
   ----------------------------------------------------------------------
@@ -118,25 +119,7 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 	if (-1 == acp_osg_map(group))
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
-	if (0 == os_base_address) {
-		/* Allocate a spin table */
-		if ((acp_spintable_t *) 0 ==
-		    (spintable = malloc(sizeof(acp_spintable_t) + ALIGNMENT))) {
-			printf("Error allocating memory for %s.\n", nodes[core]);
-			return -1;
-		}
-
-		spintable = (acp_spintable_t *)
-			((((unsigned long) (spintable) +
-			   (ALIGNMENT - 1UL)) & ~(ALIGNMENT - 1UL)));
-	} else {
-		/*
-		  Otherwise, put at 1K above os_base_address.
-		*/
-		spintable = (acp_spintable_t *)
-			((unsigned long)os_base_address + 0x2000 +
-			 (core * ALIGNMENT));
-	}
+	spintable = (acp_spintable_t *)(0x2000 + (core * 0x40));
 
 	/* Get the "reg" property */
 	if (0 > (nodeoffset = fdt_path_offset(dt, nodes[core]))) {
