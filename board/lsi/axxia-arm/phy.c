@@ -73,11 +73,7 @@ static phy_ops_t * phy_ops [ NUM_PHYS ] = { ( phy_ops_t * ) 0 };
 
 /* -- -- */
 
-#ifndef CONFIG_AXXIA_ARM
-#define MICREL_PHY_AUXILIARY_CONTROL_STATUS 0x1f
-#else
 #define MICREL_PHY_AUXILIARY_CONTROL_STATUS 0x1e
-#endif
 
 typedef union {
 	unsigned short raw;
@@ -135,6 +131,8 @@ micrel_phy_duplex( int phy )
 	unsigned short duplex;
 	
 	aux.raw = mdio_read( phy, MICREL_PHY_AUXILIARY_CONTROL_STATUS );
+	printf("%s:%d - aux.raw = 0x%x\n", __FILE__, __LINE__, aux.raw); /* ZZZ */
+
 #ifndef CONFIG_AXXIA_ARM
 	DEBUG_PRINT( "aux.raw=0x%x aux.bits.op_mode_indication=%d " \
 		     "aux.bits.isolate=%d aux.bits.enable_pause=%d " \
@@ -168,6 +166,7 @@ micrel_phy_speed( int phy )
 	unsigned short speed;
 
 	aux.raw = mdio_read( phy, MICREL_PHY_AUXILIARY_CONTROL_STATUS );
+	printf("%s:%d - aux.raw = 0x%x\n", __FILE__, __LINE__, aux.raw); /* ZZZ */
 
 #ifndef CONFIG_AXXIA_ARM
 	DEBUG_PRINT( "aux.raw=0x%x aux.bits.op_mode_indication=%d " \
@@ -420,6 +419,8 @@ phy_renegotiate( int phy, int ad_value )
 	int autoneg_complete_retries = PHY_RETRIES;
 
 	DEBUG_PRINT( "\n" );
+	printf("%s:%d - writing autoneg_advertise (0x%x)\n",
+	       __FILE__, __LINE__, ad_value); /* ZZZ */
 	mdio_write( phy, PHY_AUTONEG_ADVERTISE, ad_value );
 
 	do {
@@ -430,6 +431,8 @@ phy_renegotiate( int phy, int ad_value )
 		do {
 			udelay( 500000 );
 			status.raw = mdio_read( phy, PHY_STATUS );
+			printf("%s:%d - read 0x%x\n",
+			       __FILE__, __LINE__, status.raw); /* ZZZ */
 		} while( ( 0 < -- autoneg_complete_retries ) &&
 			 ( 0 == status.bits.autoneg_comp ) );
 

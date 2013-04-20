@@ -1952,6 +1952,8 @@ lsi_femac_eth_init(bd_t *board_info)
 	  Enable the PHY, RX, and TX, unless booting in band.
 	*/
 
+	mdio_initialize();
+
 	{
 
 		int retries_ = 10;

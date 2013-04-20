@@ -32,10 +32,8 @@
 #include <asm/io.h>
 
 
-#define LSI_LOGIO
-
-int si_logio_enable=0;
-
+#ifdef LSI_LOGIO
+int si_logio_enable=1;
 #define LSI_LOGIO_ENABLE() {si_logio_enable = 1;}
 #define LSI_LOGIO_DISABLE() {si_logio_enable = 0;}
 #define LSI_LOGIO_ENABLED() (1 == si_logio_enable)
@@ -68,6 +66,10 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
         return;
 }
 #define WRITEL(value, address) _WRITEL(__FILE__, __LINE__, (value), (address))
+#else
+#define READL(address) readl((address))
+#define WRITEL(value, address) writel((value), (address))
+#endif
 
 #undef DEBUG
 /*#define DEBUG*/
@@ -109,23 +111,8 @@ printf( format, ##args ); \
 int
 mdio_initialize(void)
 {
-
-#if 0
-	if (is_asic()) {
-		WRITEL(0x10, MDIO_CLK_OFFSET);
-		WRITEL(0x2c, MDIO_CLK_PERIOD);
-	} else {
-		WRITEL(5, MDIO_CLK_OFFSET);
-		WRITEL(0x0c, MDIO_CLK_PERIOD);
-	}
-#else
-#if 0
-		WRITEL(0x10, MDIO_CLK_OFFSET);
-		WRITEL(0x2c, MDIO_CLK_PERIOD);
-#endif
-		WRITEL(5, MDIO_CLK_OFFSET);
-		WRITEL(0x0c, MDIO_CLK_PERIOD);
-#endif
+	WRITEL(0x10, MDIO_CLK_OFFSET);
+	WRITEL(0x2c, MDIO_CLK_PERIOD);
 
 	return 0;
 }
@@ -142,42 +129,27 @@ mdio_read(int phy, int reg)
 	unsigned long status;
 
 	DEBUG_PRINT("phy=0x%x reg=0x%x\n", phy, reg);
-#if 0
-
-	/* Wait for mdio_busy (control) to be clear. */
-
-	do {
-		command = READL(MDIO_CONTROL_RD_DATA);
-	} while(0 != (command & 0x80000000));
-#endif
 
 #if defined(BZ33327_WA)
-
 	/* Set the mdio_busy (status) bit. */
 	status = READL(MDIO_STATUS_RD_DATA);
 	status |= 0x40000000;
 	WRITEL(status, MDIO_STATUS_RD_DATA);
-
 #endif /* BZ33327_WA */
 
 	/* Write the command.*/
 	command = 0x10000000;	/* op_code: read */
-	command |= (reg & 0x1f) << 21; /* device_addr (target register) */
 	command |= (phy & 0x1f) << 16; /* port_addr (target device) */
+	command |= (reg & 0x1f) << 21; /* device_addr (target register) */
 	WRITEL(command, MDIO_CONTROL_RD_DATA);
 
 #if defined(BZ33327_WA)
-
 	/* Wait for the mdio_busy (status) bit to clear. */
-
 	do {
 		status = READL(MDIO_STATUS_RD_DATA);
 	} while(0 != (status & 0x40000000));
-
 #endif /* BZ33327_WA */
-
 	/* Wait for the mdio_busy (control) bit to clear. */
-
 	do {
 		command = READL(MDIO_CONTROL_RD_DATA);
 	} while(0 != (command & 0x80000000));
@@ -205,33 +177,27 @@ mdio_write(int phy, int reg, unsigned short value)
 	} while (0 != (command & 0x80000000));
 
 #if defined(BZ33327_WA)
-
 	/* Set the mdio_busy (status) bit. */
 	status = READL(MDIO_STATUS_RD_DATA);
 	status |= 0x40000000;
 	WRITEL(status, MDIO_STATUS_RD_DATA);
-
 #endif /* BZ33327_WA */
 
 	/* Write the command. */
 	command = 0x08000000;	/* op_code: write */
-	command |= (reg & 0x1f) << 21; /* device_addr (target register) */
 	command |= (phy & 0x1f) << 16; /* port_addr (target device) */
+	command |= (reg & 0x1f) << 21; /* device_addr (target register) */
 	command |= (value & 0xffff); /* value */
 	WRITEL(command, MDIO_CONTROL_RD_DATA);
 
 #if defined(BZ33327_WA)
-
 	/* Wait for the mdio_busy (status) bit to clear. */
-
 	do {
 		status = READL(MDIO_STATUS_RD_DATA);
 	} while (0 != (status & 0x40000000));
-
 #endif /* BZ33327_WA */
 
 	/* Wait for the mdio_busy (control) bit to clear. */
-
 	do {
 		command = READL(MDIO_CONTROL_RD_DATA);
 	} while (0 != (command & 0x80000000));
