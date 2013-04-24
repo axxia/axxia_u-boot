@@ -2395,7 +2395,7 @@ lsi_femac_eth_send( volatile void * packet, int length )
 		TX_DEBUG_PRINT( "Waiting for transmit to finish.\n" );
 
 		{
-			int tries_ = 1000;
+			int tries_ = 10000;
 
 #if 0
 			invalidate_dcache_range( ( unsigned long ) tx_tail_,
@@ -2417,7 +2417,7 @@ lsi_femac_eth_send( volatile void * packet, int length )
 				 /* equivalent is DMB */
                                 asm("DMB");
 
-				udelay( 100 );
+				udelay( 1000 );
 			}
 
 			if( 0 == tries_ ) {
