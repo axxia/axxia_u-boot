@@ -48,8 +48,10 @@ int timer_init(void)
 unsigned long long get_ticks(void)
 {
         u32 cvall, cvalh;
+
         asm volatile("mrrc p15, 0, %0, %1, c14" : "=r" (cvall), "=r" (cvalh));
-        return (cvalh << 32) | cvall;
+
+        return (unsigned long long)((unsigned long long)cvalh << 32 | cvall);
 }
 
 /*
