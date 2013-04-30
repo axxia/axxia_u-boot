@@ -681,26 +681,26 @@ void dump_packet(const char *, void *, int);
 #include <asm/types.h>
 #include <asm/u-boot.h>
 
-void eth_getenv_enetaddrg(const char *, unsigned char [6]);
+struct eth_device;
 
-int lsi_femac_eth_init(bd_t *);
-int acp_eioa_eth_init(bd_t *);
+int lsi_femac_eth_init(struct eth_device *, bd_t *);
+int acp_eioa_eth_init(struct eth_device *, bd_t *);
 
-void lsi_femac_eth_halt(void);
-void acp_eioa_eth_halt(void);
-int lsi_femac_eth_send(volatile void *, int);
-int acp_eioa_eth_send(volatile void *, int);
+void lsi_femac_eth_halt(struct eth_device *);
+void acp_eioa_eth_halt(struct eth_device *);
+int lsi_femac_eth_send(struct eth_device *, volatile void *, int);
+int acp_eioa_eth_send(struct eth_device *, volatile void *, int);
 
-int lsi_femac_eth_rx(void);
-int acp_eioa_eth_rx(void);
+int lsi_femac_eth_rx(struct eth_device *);
+int acp_eioa_eth_rx(struct eth_device *);
 
-void lsi_net_receive_test(void);
-void lsi_net_loopback_test(void);
+void lsi_net_receive_test(struct eth_device *);
+void lsi_net_loopback_test(struct eth_device *);
 
-void lsi_femac_receive_test(void);
-void acp_eioa_receive_test(void);
-void lsi_femac_loopback_test(void);
-void acp_eioa_loopback_test(void);
+void lsi_femac_receive_test(struct eth_device *);
+void acp_eioa_receive_test(struct eth_device *);
+void lsi_femac_loopback_test(struct eth_device *);
+void acp_eioa_loopback_test(struct eth_device *);
 
 #if 0
 int axxia_eth_init(bd_t *);

@@ -102,8 +102,8 @@ static int eh_stats_initialized = 0;
 */
 
 #undef DUMP_DESCRIPTOR
-#define DUMP_DESCRIPTOR
-#define DUMP_DESCRIPTOR_COMPACT
+/*#define DUMP_DESCRIPTOR*/
+/*#define DUMP_DESCRIPTOR_COMPACT*/
 #ifdef DUMP_DESCRIPTOR
 #define DUMP_DESCRIPTOR_( address ) dump_descriptor_( __LINE__, ( address ) )
 #else  /* DUMP_DESCRIPTOR */
@@ -124,7 +124,7 @@ dump_packet_( direction, data, length );
 */
 
 #undef DEBUG
-#define DEBUG
+/*#define DEBUG*/
 #ifdef DEBUG
 #define DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -135,7 +135,7 @@ printf( format, ##args ); \
 #endif /* DEBUG */
 
 #undef TX_DEBUG
-#define TX_DEBUG
+/*#define TX_DEBUG*/
 #ifdef TX_DEBUG
 #define TX_DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - TX_DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -146,7 +146,7 @@ printf( format, ##args ); \
 #endif /* TX_DEBUG */
 
 #undef RX_DEBUG
-#define RX_DEBUG
+/*#define RX_DEBUG*/
 #ifdef RX_DEBUG
 #define RX_DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - RX_DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -192,33 +192,6 @@ DECLARE_GLOBAL_DATA_PTR;
   ======================================================================
 */
 int test( void );
-
-#if 0
-#undef LOG_IO_ACCESS
-/*#define LOG_IO_ACCESS*/
-#ifdef LOG_IO_ACCESS
-static inline unsigned long
-readio( unsigned long address )
-{
-	unsigned long value;
-	value = acpreadio( ( unsigned * ) address );
-	printf( " read: 0x%08lx from 0x%08lx\n", value, address );
-	return value;
-}
-static inline void
-writeio( unsigned long value, unsigned long address )
-{
-	acpwriteio( value, ( unsigned * ) address );
-	printf( "wrote: 0x%08lx   to 0x%08lx\n", value, address );
-	return;
-}
-#else  /* LOG_IO_ACCESS */
-#define readio( address ) \
-acpreadio( ( unsigned long * ) ( address ) )
-#define writeio( value, address ) \
-acpwriteio( ( value ), ( unsigned long * ) ( address ) )
-#endif /* LOG_IO_ACCESS */
-#endif
 
 #define readio(address) readl((address))
 #define writeio(value, address) writel((value), (address))
@@ -683,15 +656,15 @@ static void
 dump_configuration(void)
 {
 	printf("RX: CONF:0x%lx MODE:0x%lx VLAN:0x%lx\n",
-	       readio(APP3XXNIC_RX_CONF),
-	       readio(APP3XXNIC_RX_MODE),
-	       readio(APP3XXNIC_RX_BASE+0x1d0));
+	       (unsigned long)readio(APP3XXNIC_RX_CONF),
+	       (unsigned long)readio(APP3XXNIC_RX_MODE),
+	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x1d0));
 	printf("TX: WM:0x%lx EXCONF:0x%lx CONF:0x%lx TVCONF:0x%lx MODE:0x%lx\n",
-	       readio(APP3XXNIC_TX_WATERMARK),
-	       readio(APP3XXNIC_TX_EXTENDED_CONF),
-	       readio(APP3XXNIC_TX_CONF),
-	       readio(APP3XXNIC_TX_TIME_VALUE_CONF),
-	       readio(APP3XXNIC_TX_MODE));
+	       (unsigned long)readio(APP3XXNIC_TX_WATERMARK),
+	       (unsigned long)readio(APP3XXNIC_TX_EXTENDED_CONF),
+	       (unsigned long)readio(APP3XXNIC_TX_CONF),
+	       (unsigned long)readio(APP3XXNIC_TX_TIME_VALUE_CONF),
+	       (unsigned long)readio(APP3XXNIC_TX_MODE));
 }
 
 static void
@@ -699,22 +672,22 @@ dump_rx_stats(void)
 {
 	printf("RX: SMII:0x%lx VLAN:0x%lx OK:0x%lx OV:0x%lx CRC:0x%lx "
 	       "ALIGN:0x%lx US:0x%lx\n",
-	       readio(APP3XXNIC_RX_SMII_STATUS),
-	       readio(APP3XXNIC_RX_BASE+0x270),
-	       readio(APP3XXNIC_RX_STAT_PACKET_OK),
-	       readio(APP3XXNIC_RX_STAT_OVERFLOW),
-	       readio(APP3XXNIC_RX_STAT_CRC_ERROR),
-	       readio(APP3XXNIC_RX_STAT_ALIGN_ERROR),
-	       readio(APP3XXNIC_RX_BASE+0x280));
+	       (unsigned long)readio(APP3XXNIC_RX_SMII_STATUS),
+	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x270),
+	       (unsigned long)readio(APP3XXNIC_RX_STAT_PACKET_OK),
+	       (unsigned long)readio(APP3XXNIC_RX_STAT_OVERFLOW),
+	       (unsigned long)readio(APP3XXNIC_RX_STAT_CRC_ERROR),
+	       (unsigned long)readio(APP3XXNIC_RX_STAT_ALIGN_ERROR),
+	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x280));
 	printf("RX counts: 64:0x%lx 65_127:0x%lx 128_255:0x%lx 256_511:0x%lx "
 	       "512_1023:0x%lx 1024_MAX:0x%lx OV:0x%lx\n",
-	       readio(APP3XXNIC_RX_BASE+0x288),
-	       readio(APP3XXNIC_RX_BASE+0x290),
-	       readio(APP3XXNIC_RX_BASE+0x298),
-	       readio(APP3XXNIC_RX_BASE+0x2a0),
-	       readio(APP3XXNIC_RX_BASE+0x2a8),
-	       readio(APP3XXNIC_RX_BASE+0x2b0),
-	       readio(APP3XXNIC_RX_BASE+0x2b8));
+	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x288),
+	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x290),
+	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x298),
+	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x2a0),
+	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x2a8),
+	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x2b0),
+	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x2b8));
 }
 
 /*
@@ -723,7 +696,7 @@ dump_rx_stats(void)
 */
 
 void
-lsi_femac_receive_test( void )
+lsi_femac_receive_test(struct eth_device *dev)
 {
 
 	bd_t * bd = gd->bd;
@@ -773,7 +746,7 @@ typedef struct {
 #define PACKET_LOG_NUMBER 100
 
 void
-lsi_femac_loopback_test( void )
+lsi_femac_loopback_test(struct eth_device *dev)
 {
 
 	bd_t * bd = gd->bd;
@@ -1157,8 +1130,8 @@ void rx_disable_( void ) {
 */
 
 static int
-tx_enable_( void ) {
-
+tx_enable_(struct eth_device *device)
+{
 	unsigned long tx_configuration_;
 	unsigned long swap_source_address_;
 
@@ -1173,19 +1146,17 @@ tx_enable_( void ) {
 		( APP3XXNIC_TX_CONF_APP_CRC_ENABLE |
 		  APP3XXNIC_TX_CONF_PAD_ENABLE );
 
-	if( 0 == loopback ) {
-
+	if (0 == loopback) {
 		tx_configuration_ |= APP3XXNIC_TX_CONF_ENABLE_SWAP_SA;
 		swap_source_address_ =
-			( ( ethernet_address [ 4 ] ) << 8 ) | ethernet_address [ 5 ];
-		writeio( swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_2 );
+			((device->enetaddr[4]) << 8) | device->enetaddr[5];
+		writeio(swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_2);
 		swap_source_address_ =
-			( ( ethernet_address [ 2 ] ) << 8 ) | ethernet_address [ 3 ];
-		writeio( swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_1 );
+			((device->enetaddr[2]) << 8) | device->enetaddr[3];
+		writeio(swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_1);
 		swap_source_address_ =
-			( ( ethernet_address [ 0 ] ) << 8 ) | ethernet_address [ 1 ];
-		writeio( swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_0 );
-
+			((device->enetaddr[0]) << 8) | device->enetaddr[1];
+		writeio(swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_0);
 	}
 
 	TX_CONF_SET_IFG( tx_configuration_, 0xf );
@@ -1713,7 +1684,7 @@ static void app3xxnic_display_( void ) {
 */
 
 int
-lsi_femac_eth_init(bd_t *board_info)
+lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 {
 	size_t memory_needed;
 	void * temp;
@@ -1773,10 +1744,14 @@ lsi_femac_eth_init(bd_t *board_info)
 		( TX_BUFFER_SIZE + BUFFER_GRANULARITY ) + /* TX Buffers */
 		( 2 * sizeof( app3xxnic_queue_pointer_t ) ); /* Tail Pointers */
 
+#if 0
 	if( ( void * ) 0 == ( memory = malloc( memory_needed ) ) ) {
 		ERROR_PRINT( "Unable to allocate space for descriptors and buffers\n" );
 		return 1;
 	}
+#else
+	memory = (void *)0x40000000UL;
+#endif
 
 	/*
 	  Set the zone to allow access by non-secure masters (the FEMAC).
@@ -1972,15 +1947,13 @@ lsi_femac_eth_init(bd_t *board_info)
 
 		}
 
-		if( 0 != tx_enable_( ) ) {
+		if( 0 != tx_enable_(dev) ) {
 
 			WARN_PRINT( "Transmitter not enabled, link down?\n" );
 
 		}
 
 	}
-	/* SR */
-	dump_configuration( );
 
 #ifdef EH_STATS
 	if(0 == eh_stats_initialized) {
@@ -2004,7 +1977,7 @@ lsi_femac_eth_init(bd_t *board_info)
   lsi_femac_eth_halt
 */
 
-void lsi_femac_eth_halt( void ) {
+void lsi_femac_eth_halt(struct eth_device *device) {
 
 	TRACE_BEGINNING( "\n" );
 
@@ -2047,7 +2020,7 @@ void lsi_femac_eth_halt( void ) {
 */
 
 int
-lsi_femac_eth_rx( void )
+lsi_femac_eth_rx(struct eth_device *dev)
 {
 	int bytes_received_ = 0;
 
@@ -2062,6 +2035,7 @@ lsi_femac_eth_rx( void )
 		app3xxnic_queue_pointer_t queue_;
 
 		queue_.raw = rx_tail_copy_.raw;
+#if 0
 		printf( "\t * %s:%d - 0x%lx 0x%lx/0x%lx/0x%lx/0x%lx 0x%lx 0x%lx 0x%lx %d\n",
 			__FILE__, __LINE__,
 			( unsigned long ) rx_descriptors_,
@@ -2073,6 +2047,7 @@ lsi_femac_eth_rx( void )
 			( swab_queue_pointer( rx_tail_ ) ).raw,
 			queue_initialized_( swab_queue_pointer( rx_tail_ ),
 					    queue_, rx_number_of_descriptors ) );
+#endif
 		readdescriptor( ( ( unsigned long ) rx_descriptors_ +
 				  ( swab_queue_pointer( rx_tail_ ) ).bits.offset ),
 				& descriptor );
@@ -2180,12 +2155,16 @@ lsi_femac_eth_rx( void )
 #endif
 #endif
 
-			if( ( 0 == descriptor_.end_of_packet ) || ( 0 != overflow_ ) ||
-			    ( 0 != crc_ ) || ( 0 != align_ ) ) {
+			if( ( 0 == descriptor_.end_of_packet ) ||
+			    ( 0 != overflow_ ) ||
+			    ( 0 != crc_ ) ||
+			    ( 0 != align_ ) ) {
 
 				printf( "Bad Packet: "
-					"bytes=%d ovf=%ld ok=%ld crc=%ld align=%ld\n",
-					bytes_received_, overflow_, ok_, crc_, align_ );
+					"bytes=%d ovf=%ld ok=%ld "
+					"crc=%ld align=%ld\n",
+					bytes_received_, overflow_, ok_,
+					crc_, align_ );
 				WARN_PRINT( "Bad Packet: "
 					    "bytes=%d ovf=%ld ok=%ld crc=%ld align=%ld\n",
 					    bytes_received_, overflow_, ok_, crc_, align_ );
@@ -2197,9 +2176,26 @@ lsi_femac_eth_rx( void )
 				unsigned char * destination_ =
 					( unsigned char * ) NetRxPackets [ 0 ];
 
+				printf("%s:%d - \n"
+				       "DEST:%02x:%02x:%02x:%02x:%02x:%02x\n"
+				       " DEV:%02x:%02x:%02x:%02x:%02x:%02x\n",
+				       __FILE__, __LINE__,
+				       destination_[0],
+				       destination_[1],
+				       destination_[2],
+				       destination_[3],
+				       destination_[4],
+				       destination_[5],
+				       dev->enetaddr[0],
+				       dev->enetaddr[1],
+				       dev->enetaddr[2],
+				       dev->enetaddr[3],
+				       dev->enetaddr[4],
+				       dev->enetaddr[5]); /* ZZZ */
+
 				if( ( 0 != rx_allow_all ) ||
 				    ( ( 0 == memcmp( ( const void * ) & ( destination_ [ 0 ] ),
-						     ( const void * ) & ( ethernet_address [ 0 ] ),
+						     ( const void * ) & ( dev->enetaddr [ 0 ] ),
 						     6 ) ) ||
 				      ( 0 == memcmp( ( const void * ) & ( destination_ [ 0 ] ),
 						     ( const void * ) & ( broadcast_ [ 0 ] ),
@@ -2298,12 +2294,12 @@ lsi_femac_eth_rx( void )
 */
 
 int
-lsi_femac_eth_send( volatile void * packet, int length )
+lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 {
 	int bytes_sent_ = 0;
 
 	TRACE_BEGINNING( "packet=0x%p length=%d\n", packet, length );
-	DUMP_PACKET( 1, (void *)packet, length );
+	/*DUMP_PACKET( 1, (void *)packet, length );*/
 	TX_DEBUG_PRINT( "Sending %d byte packet\n", length );
 	TX_DEBUG_PRINT( "tail=0x%x/%d tail_copy=0x%x/%d\n",
 			tx_tail_->bits.offset, tx_tail_->bits.generation_bit,
@@ -2313,8 +2309,6 @@ lsi_femac_eth_send( volatile void * packet, int length )
 #ifdef DUMP_STATS
 #ifdef EH_STATS
 	++eh_stats->tx_calls;
-#else
-	printf("TX: %d bytes\n", length);
 #endif
 #endif
 
@@ -2358,8 +2352,8 @@ lsi_femac_eth_send( volatile void * packet, int length )
 				"head=0x%x/%d tail=0x%x/%d\n",
 				tx_head_.bits.offset,
 				tx_head_.bits.generation_bit, 
-				rx_head_.bits.offset,
-				rx_head_.bits.generation_bit );
+				tx_tail_->bits.offset,
+				tx_tail_->bits.generation_bit );
 		memcpy( tx_buffer_, ( void * ) packet, length );
 #if 0
 		flush_dcache_range( ( unsigned long ) tx_buffer_,
@@ -2435,8 +2429,6 @@ lsi_femac_eth_send( volatile void * packet, int length )
 #ifdef DUMP_STATS
 #ifdef EH_STATS
 				++eh_stats->tx_packet_sent;
-#else
-				printf( "TX stats: OK=%d\n", packets_sent_ );
 #endif
 #endif
 			}

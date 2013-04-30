@@ -23,8 +23,6 @@
 #include <malloc.h>
 #include <net.h>
 
-unsigned char ethernet_address[6];
-
 #ifdef CONFIG_AXXIA_ARM
 /* Error */
 #define ERROR_PRINT( format, args... ) do { \
@@ -50,8 +48,8 @@ printf( format, ##args ); \
   Debugging...
 */
 
-/* #undef DEBUG */
-#define DEBUG
+#undef DEBUG
+/*#define DEBUG*/
 #ifdef DEBUG
 #define DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -82,8 +80,6 @@ printf( format, ##args ); \
 #else  /* RX_DEBUG */
 #define RX_DEBUG_PRINT( format, args... )
 #endif /* RX_DEBUG */
-
-
 
 /*
   ===============================================================================
@@ -144,13 +140,13 @@ _eth_halt(struct eth_device *dev)
 static int
 _eth_init(struct eth_device *dev, bd_t *bd)
 {
-	return lsi_femac_eth_init(bd);
+	return lsi_femac_eth_init(dev, bd);
 }
 
 static void
 _eth_halt(struct eth_device *dev)
 {
-	lsi_femac_eth_halt();
+	lsi_femac_eth_halt(dev);
 
 	return;
 }
@@ -201,7 +197,7 @@ dump_packet(const char *header, void *packet, int length)
 */
 
 void
-lsi_net_receive_test(void)
+lsi_net_receive_test(struct eth_device *dev)
 {
 #if defined(CONFIG_AXXIA_EIOA)
 	update_femac();
@@ -211,7 +207,7 @@ lsi_net_receive_test(void)
 	else
 		acp_eioa_receive_test();
 #else
-	lsi_femac_receive_test();
+	lsi_femac_receive_test(dev);
 #endif
 }
 
@@ -221,7 +217,7 @@ lsi_net_receive_test(void)
 */
 
 void
-lsi_net_loopback_test(void)
+lsi_net_loopback_test(struct eth_device *dev)
 {
 #if defined(CONFIG_AXXIA_EIOA)
 	update_femac();
@@ -231,7 +227,7 @@ lsi_net_loopback_test(void)
 	else
 		acp_eioa_loopback_test();
 #else
-	lsi_femac_loopback_test();
+	lsi_femac_loopback_test(dev);
 #endif
 }
 
@@ -282,7 +278,7 @@ lsi_eth_send(struct eth_device *dev, volatile void *packet, int length)
 	else
 		return acp_eioa_eth_send(packet, length);
 #else
-	return lsi_femac_eth_send(packet, length);
+	return lsi_femac_eth_send(dev, packet, length);
 #endif
 }
 
@@ -307,7 +303,7 @@ lsi_eth_recv(struct eth_device *dev)
 	else
 		return acp_eioa_eth_recv();
 #else
-	return lsi_femac_eth_rx();
+	return lsi_femac_eth_rx(dev);
 #endif
 }
 
@@ -330,7 +326,7 @@ lsi_eth_halt(struct eth_device *dev)
 	}
 #else
 	if (0 != initialized)
-		lsi_femac_eth_halt();
+		lsi_femac_eth_halt(dev);
 #endif
 
 	return;
@@ -355,18 +351,18 @@ lsi_eth_write_hwaddr(struct eth_device *dev)
 int
 board_eth_init(bd_t *bd)
 {
-	int i;
+	int rc;
 	char *ethaddr = NULL;
-	char ethaddr1[6];
 	char *endp;
 
 	/*
 	  Allocate a device structure and clear it.
 	*/
 
-	if (NULL ==
-	    (device = (struct eth_device *)malloc(sizeof(struct eth_device)))) {
-		ERROR_PRINT("unable to allocate memory\n");
+	device = (struct eth_device *)malloc(sizeof(struct eth_device));
+
+	if (NULL == device) {
+		printf("Unable to allocate memory for eth_device.\n");
 		return -1;
 	}
 
@@ -375,37 +371,14 @@ board_eth_init(bd_t *bd)
 	/*
 	  Get the Ethernet address from the environment.
 	*/
-#if 0
-	ethaddr = getenv("ethaddr");
-#endif
 
-#if 1
-	ethaddr = ethaddr1;
-	//strcpy(ethaddr, "00:02:2d:84:12:fa");
-	strcpy(ethaddr, "00:02:2d:84:11:f8");
-#endif
+	rc = eth_getenv_enetaddr("ethaddr", device->enetaddr);
 
-	if (NULL == ethaddr) {
-		ERROR_PRINT("ethaddr is not set.\n");
+	if (0 == rc) {		/* returns is_valid... 1=true, 0=false */
+		printf("Error getting Ethernet address.\n");
+		free(device);
 		return -1;
 	}
-
-	for (i = 0; i < 6; ++i) {
-		device->enetaddr[i] = simple_strtoul(ethaddr, &endp, 16);
-
-		if (endp == ethaddr) {
-			ERROR_PRINT("Error parsing ethaddr.\n");
-			return -1;
-		}
-
-		if (0 != *endp)
-			ethaddr = (endp + 1);
-	}
-
-#if 0
-	for (i = 0; i < 6; ++i)
-		bd->bi_enetaddr[i] = device->enetaddr[i];
-#endif
 
 	/*
 	  Set up the reset of the eth_device structure and register it.

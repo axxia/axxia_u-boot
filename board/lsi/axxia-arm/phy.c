@@ -442,10 +442,6 @@ phy_renegotiate( int phy, int ad_value )
 		return -1;
 	}
 
-	printf("PHY 0x0 = 0x%x\n", mdio_read(phy, PHY_CONTROL)); 
-	printf("PHY 0x1 = 0x%x\n", mdio_read(phy, PHY_STATUS)); 
-	printf("PHY 0x1e = 0x%x\n", mdio_read( phy, MICREL_PHY_AUXILIARY_CONTROL_STATUS ));
-
 	return 0;
 }
 

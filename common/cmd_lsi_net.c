@@ -74,14 +74,14 @@ do_net( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 
 	if( 0 == strncmp( argv[1], "l", strlen( "l" ) ) ) {
 		printf( "Starting Loopback Test -- Ctrl-C to Exit.\n" );
-		lsi_net_loopback_test( );
+		lsi_net_loopback_test(eth_get_dev());
 
 		return 0;
 	}
 
 	if( 0 == strncmp( argv[1], "r", strlen( "r" ) ) ) {
 		printf( "Receiving Packets -- Ctrl-C to Exit.\n" );
-		lsi_net_receive_test( );
+		lsi_net_receive_test(eth_get_dev());
 
 		return 0;
 	}
