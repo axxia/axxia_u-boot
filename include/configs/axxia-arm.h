@@ -71,6 +71,9 @@ int is_asic( void );
 #define IO      0x80080000
 /* #define LCM     0xf0a00000
 #define ROM     0xf0b00000 */
+#define SYSCON  0x10030000
+
+#define CONFIG_BOARD_EARLY_INIT_F
 
 #if 0
 
