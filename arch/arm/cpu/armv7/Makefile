@@ -33,7 +33,7 @@ COBJS	+= cpu.o
 COBJS	+= syslib.o
 
 ifneq ($(CONFIG_AM33XX)$(CONFIG_OMAP44XX)$(CONFIG_OMAP54XX)$(CONFIG_TEGRA20),)
-SOBJS	+= lowlevel_init.o
+#SOBJS	+= lowlevel_init.o
 endif
 
 SRCS	:= $(START:.o=.S) $(COBJS:.o=.c)

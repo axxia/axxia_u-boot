@@ -29,14 +29,17 @@ COBJS	:= evm.o
 #COBJS	+= phy.o femac.o ssp.o version.o
 COBJS	+= mdio.o phy.o femac.o ssp.o version.o axxia.o
 
-SRCS	:= $(COBJS:.o=.c)
-OBJS	:= $(addprefix $(obj),$(COBJS))
+SOBJS   := axxia_lowlevel.o
 
-$(LIB):	$(obj).depend $(OBJS)
-	$(call cmd_link_o_target, $(OBJS))
+SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
+OBJS	:= $(addprefix $(obj),$(COBJS))
+SOBJS   := $(addprefix $(obj),$(SOBJS))
+
+$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
+	$(call cmd_link_o_target, $(OBJS) $(SOBJS))
 
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) $(SOBJS)
 
 distclean:	clean
 	rm -f $(LIB) core *.bak $(obj).depend

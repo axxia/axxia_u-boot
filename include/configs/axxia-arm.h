@@ -75,6 +75,8 @@ int is_asic( void );
 
 #define CONFIG_BOARD_EARLY_INIT_F
 
+#define LDSSCRIPT "board/lsi/axxia-arm/u-boot.lds"
+
 #if 0
 
 #ifndef __ASSEMBLY__

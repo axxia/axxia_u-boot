@@ -36,7 +36,7 @@
 #include <linux/linkage.h>
 
 .globl _start
-_start: b	reset
+_start:	b	reset
 	ldr	pc, _undefined_instruction
 	ldr	pc, _software_interrupt
 	ldr	pc, _prefetch_abort
@@ -124,10 +124,10 @@ IRQ_STACK_START_IN:
  */
 
 reset:
-@zero:
-@        ldr r0, =0
-@        CMP r0, #0x0
-@        beq zero
+
+#ifdef CONFIG_SPL_BUILD
+	b	reset
+#endif
 
 	bl	save_boot_params
 
@@ -162,7 +162,7 @@ reset:
 	/* the mask ROM code should have PLL and others stable */
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
 	bl	cpu_init_cp15
-	@bl	cpu_init_crit
+	bl	cpu_init_crit
 #endif
 
 	/* Try accessing the UART */
@@ -317,94 +317,6 @@ ENDPROC(save_boot_params)
  *
  *************************************************************************/
 ENTRY(cpu_init_cp15)
-
-#if 1
-	/* L2ACTLR setting */
-	mrc p15, 1, r0, c15, c0, 0 @Read L2ACTLR 
-	orr r0, r0, #(0x1 << 3) @Set bit 3 disable clean/evict push to external
-	orr r0, r0, #(0x1 << 12)@Set bit 12 disable multiple outstanding WriteClean/WriteBack/Evicts using same AWID
-	orr r0, r0, #(0x1 << 13) @Set bit 13 disable SharedClean data transfers
-	orr r0, r0, #(0x1 << 14) @Set bit 14 enable Unique Clean evictions with data
-	mcr p15, 1, r0, c15, c0, 0 @Write L2ACTLR
-
-	/* Auxiliary control register 2 */
-	mrc p15, 1, r0, c15, c0, 4 @Read Auxiliary Control Register 2
-	orr r0, r0, #(0x1 << 0) @Set bit 0 execute data cache clean as data cache clean/invalidate
-	mcr p15, 1, r0, c15, c0, 4 @Write Auxiliary Control Register 2 
-#endif
-	
-	mov r12, lr
-
-	/* Setup MMU */
-
-#if 0
-	sub     r3, r4, #16384          @ Page directory size
-	bic     r3, r3, #0xff           @ Align the pointer
-	bic     r3, r3, #0x3f00
-#endif
-
-	/*
-	 * Clear the level 1 page table.
-	 */
-	mov     r0, #0
-	mov 	r3, #0x40000
-	mov     r1, r3
-	add     r2, r3, #0x4000
-1:	str     r0, [r1], #4
-	cmp     r1, r2
-	blt     1b
-
-	/*
-	 * First 1G of RAM, cacheable and bufferable.
-	 */
-
-        ldr     r0, =0x40c1e
-        mov     r1, r3
-        add     r2, r3, #0x1000
-1:    	mov     r9, #0
-2:      str     r0, [r1], #4            @ Each supersection is repeated	
-        add     r9, r9, #1              @ 16 times.
-        cmp     r9, #16
-        blt     2b
-        add     r0, r0, #0x1000000      @ 16M
-        cmp     r1, r2
-        blt     1b
-
-	/*
-	 * Second 1G of RAM, not cacheable and not bufferable.
-	 */
-
-        ldr     r0, =0x40040c12
-        add     r1, r3, #0x1000
-        add     r2, r3, #0x2000
-1:    	mov     r9, #0
-2:      str     r0, [r1], #4            @ Each supersection is repeated	
-        add     r9, r9, #1              @ 16 times.
-        cmp     r9, #16
-        blt     2b
-        add     r0, r0, #0x1000000      @ 16M
-        cmp     r1, r2
-        blt     1b
-
-	/*
-	 * Third 1G is IO, not cacheable or bufferable.
-	 *
-	 * Uses supersections to access IO beyond 4G physical address.
-	 */
-        ldr     r0,=0x10040c52          @ Start at 0x20_1000_0000
-        add     r1, r3, #0x2000
-        add     r2, r3, #0x3000
-1:      mov     r9, #0
-2:      str     r0, [r1], #4            @ Each supersection is repeated
-        add     r9, r9, #1              @ 16 times.
-        cmp     r9, #16
-        blt     2b
-        add     r0, r0, #0x1000000      @ 16M
-        cmp     r1, r2
-        blt     1b
-
-
-#if 0
 	/*
 	 * Invalidate L1 I/D
 	 */
@@ -423,69 +335,13 @@ ENTRY(cpu_init_cp15)
 	bic	r0, r0, #0x00000007	@ clear bits 2:0 (-CAM)
 	orr	r0, r0, #0x00000002	@ set bit 1 (--A-) Align
 	orr	r0, r0, #0x00000800	@ set bit 11 (Z---) BTB
-
-#endif
-
-#if 0
 #ifdef CONFIG_SYS_ICACHE_OFF
 	bic	r0, r0, #0x00001000	@ clear bit 12 (I) I-cache
 #else
 	orr	r0, r0, #0x00001000	@ set bit 12 (I) I-cache
 #endif
 	mcr	p15, 0, r0, c1, c0, 0
-#endif
-
-#if 0
-	/* L2ACTLR setting */
-	mrc p15, 1, r0, c15, c0, 0 @Read L2ACTLR 
-	orr r0, r0, #(0x1 << 3) @Set bit 3 disable clean/evict push to external
-	orr r0, r0, #(0x1 << 12)@Set bit 12 disable multiple outstanding WriteClean/WriteBack/Evicts using same AWID
-	orr r0, r0, #(0x1 << 13) @Set bit 13 disable SharedClean data transfers
-	orr r0, r0, #(0x1 << 14) @Set bit 14 enable Unique Clean evictions with data
-	mcr p15, 1, r0, c15, c0, 0 @Write L2ACTLR
-
-	/* Auxiliary control register 2 */
-	mrc p15, 1, r0, c15, c0, 4 @Read Auxiliary Control Register 2
-	orr r0, r0, #(0x1 << 0) @Set bit 0 execute data cache clean as data cache clean/invalidate
-	mcr p15, 1, r0, c15, c0, 4 @Write Auxiliary Control Register 2 
-#endif
-
-	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
-	tst     r11, #0xf               @ VMSA
-
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
-	tst     r11, #0xf               @ VMSA
-	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
-	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
-	bic     r0, r0, #1 << 28        @ clear SCTLR.TRE
-	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
-	orr     r0, r0, #0x003c         @ write buffer
-
-#if 0
-	/* Enable MMU */
-	MRC     p15, 0, r0, c1, c0, 0      @ Read CP15 System Control register
-	ORR     r0, r0, #(0x1 << 12)       @ Set I bit 12 to enable I Cache
-	ORR     r0, r0, #(0x1 <<  2)       @ Set C bit  2 to enable D Cache
-	ORR     r0, r0, #0x1               @ Set M bit 0 to enable MMU before scatter loading
-	ORR     r0, r0, #(0x1 << 11)       @ Set Z bit 11 to enable branch prediction
-	MCR     p15, 0, r0, c1, c0, 0      @ Write CP15 System Control register
-
-#endif
-
-	/* Load page table pointer */
-	orrne   r0, r0, #1              @ MMU enabled
-	movne   r1, #-1
-	mcrne   p15, 0, r3, c2, c0, 0   @ load page table pointer
-	mcrne   p15, 0, r1, c3, c0, 0   @ load domain access control
-
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-	mcr     p15, 0, r0, c1, c0, 0   @ load control register
-	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-
-	mov pc, r12			@ back to my caller
+	mov	pc, lr			@ back to my caller
 ENDPROC(cpu_init_cp15)
 
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
