@@ -26,8 +26,6 @@ include $(TOPDIR)/config.mk
 LIB	= $(obj)lib$(BOARD).o
 
 COBJS	:= evm.o
-#COBJS	+= phy.o femac.o ssp.o version.o
-COBJS	+= mdio.o phy.o femac.o ssp.o version.o
 
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

@@ -179,7 +179,6 @@ serial_initfunc(pl01x_serial_initialize);
 serial_initfunc(s3c44b0_serial_initialize);
 serial_initfunc(sa1100_serial_initialize);
 serial_initfunc(sh_serial_initialize);
-serial_initfunc(axxia_serial_initialize);
 
 /**
  * serial_register() - Register serial driver with serial driver core
@@ -225,7 +224,6 @@ void serial_register(struct serial_device *dev)
  */
 void serial_initialize(void)
 {
-	axxia_serial_init();
 	mpc8xx_serial_initialize();
 	ns16550_serial_initialize();
 	pxa_serial_initialize();

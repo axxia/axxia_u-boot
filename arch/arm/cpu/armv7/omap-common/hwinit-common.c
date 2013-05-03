@@ -248,7 +248,7 @@ u32 get_device_type(void)
 int print_cpuinfo(void)
 {
 	puts("CPU  : ");
-//	omap_rev_string();
+	omap_rev_string();
 
 	return 0;
 }

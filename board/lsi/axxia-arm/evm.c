@@ -42,22 +42,17 @@ const struct omap_sysinfo sysinfo = {
  */
 int board_init(void)
 {
-
-#if 0
 	gpmc_init();
 	gd->bd->bi_arch_number = MACH_TYPE_OMAP5_SEVM;
 	gd->bd->bi_boot_params = (0x80000000 + 0x100); /* boot param addr */
-#endif
 
 	return 0;
 }
 
-#if 0
 int board_eth_init(bd_t *bis)
 {
 	return 0;
 }
-#endif
 
 /**
  * @brief misc_init_r - Configure EVM board specific configurations

@@ -30,6 +30,17 @@
 #include <common.h>
 #include <command.h>
 
+#undef DEBUG
+/*#define DEBUG*/
+#ifdef DEBUG
+#define DEBUG_PRINT( format, args... ) do { \
+printf( "cmd_ssp:%s:%d - ", __FUNCTION__, __LINE__ ); \
+printf( format, ##args ); \
+} while( 0 );
+#else
+#define DEBUG_PRINT( format, args... )
+#endif
+
 /*
   ======================================================================
   Local Stuff
@@ -37,16 +48,45 @@
 
 /*
   ----------------------------------------------------------------------
+  dump
+*/
+
+static int
+dump( unsigned long offset, unsigned long length )
+{
+	DEBUG_PRINT( "offset=0x%lx/%ld length=%ld\n", offset, offset, length );
+
+	return 0;
+}
+
+/*
+  ----------------------------------------------------------------------
+  fill
+*/
+
+static int
+fill( unsigned long offset, unsigned long length, unsigned char pattern )
+{
+	DEBUG_PRINT( "offset=0x%lx/%ld length=%ld pattern=0x%x\n",
+		     offset, offset, length, pattern );
+
+	
+
+	return 0;
+}
+
+/*
+  ----------------------------------------------------------------------
   read
 */
 
 static int
-read(unsigned long device,
-     unsigned long address, unsigned long offset, unsigned long size)
+read( unsigned long offset, unsigned long address, unsigned long length )
 {
-	ssp_init(device, 1);
-	printf("SR -- address = 0x%x, offset = 0x%x, size = 0x%x\n", address, offset, size); 
-	ssp_read((void *)address, offset, size);
+	DEBUG_PRINT( "offset=0x%lx/%ld address=0x%lx/%ld length=%ld\n",
+		     offset, offset, address, address, length );
+	ssp_init(0, 0);
+	ssp_read( ( void * ) address, offset, length );
 
 	return 0;
 }
@@ -57,12 +97,13 @@ read(unsigned long device,
 */
 
 static int
-write( unsigned long device,
-       unsigned long address, unsigned long offset, unsigned long size )
+write( unsigned long address, unsigned long offset, unsigned long length )
 {
-	ssp_init(device, 0);
-	printf("SR -- address = 0x%x, offset = 0x%x, size = 0x%x\n", address, offset, size); 
-	return ssp_write((void *)address, offset, size, 0);
+	DEBUG_PRINT( "address=0x%lx/%ld offset=0x%lx/%ld length=%ld\n",
+		     address, address, offset, offset, length );
+
+	ssp_init(0, 0);
+	return ssp_write((void *)address, offset, length, 0);
 }
 
 
@@ -80,45 +121,63 @@ write( unsigned long device,
 int
 do_ssp( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 {
-	unsigned long device;
-	unsigned long address;
 	unsigned long offset;
-	unsigned long size;
+	unsigned long address;
+	unsigned long length;
+	unsigned char pattern;
 	int return_code = 1;
 
-	if( 0 == strncmp( argv[1], "h", strlen( "h" ) ) ) {
-#ifndef CFG_NOHELP
+	DEBUG_PRINT( "flag=%d argc=%d\n", flag, argc );
+
+	if( 0 == strncmp( argv[1], "d", strlen( "d" ) ) ) {
+		if( 4 == argc ) {
+			offset = simple_strtoul( argv[2], NULL, 16 );
+			length = simple_strtoul( argv[3], NULL, 16 );
+			return_code = dump( offset, length );
+		}
+	} else if( 0 == strncmp( argv[1], "f", strlen( "f" ) ) ) {
+		if( 0 == strncmp( argv[2], "a", strlen( "a" ) ) &&
+		    4 == argc ) {
+			offset = simple_strtoul( argv[3], NULL, 16 );
+			pattern = ( unsigned char ) ( offset & 0xff );
+			offset = 0;
+			length = 128 * 1024;
+		} else if( 5 == argc ) {
+			offset = simple_strtoul( argv[4], NULL, 16 );
+			pattern = ( unsigned char ) ( offset & 0xff );
+			offset = simple_strtoul( argv[2], NULL, 16 );
+			length = simple_strtoul( argv[3], NULL, 16 );
+		}
+		return_code = fill( offset, length, pattern );
+	} else if( 0 == strncmp( argv[1], "h", strlen( "h" ) ) ) {
 #ifdef CFG_LONGHELP
 		printf( "%s", cmdtp->help );
 #else
 		printf( "%s", cmdtp->usage );
 #endif
-#endif
 		return_code = 0;
+	} else if( 0 == strncmp( argv[1], "i", strlen( "i" ) ) ) {
+		return_code = ssp_init(0, 0);
 	} else if( 0 == strncmp( argv[1], "r", strlen( "r" ) ) ) {
-		if( 6 == argc ) {
-			device = simple_strtoul( argv[2], NULL, 16 );
+		if( 5 == argc ) {
+			offset = simple_strtoul( argv[2], NULL, 16 );
 			address = simple_strtoul( argv[3], NULL, 16 );
-			offset = simple_strtoul( argv[4], NULL, 16 );
-			size = simple_strtoul( argv[5], NULL, 16 );
-			return_code = read( device, address, offset, size );
+			length = simple_strtoul( argv[4], NULL, 16 );
+			return_code = read( offset, address, length );
 		}
 	} else if( 0 == strncmp( argv[1], "w", strlen( "w" ) ) ) {
-		if( 6 == argc ) {
-			device = simple_strtoul( argv[2], NULL, 16 );
-			address = simple_strtoul( argv[3], NULL, 16 );
-			offset = simple_strtoul( argv[4], NULL, 16 );
-			size = simple_strtoul( argv[5], NULL, 16 );
-			return_code = write( device, address, offset, size );
+		if( 5 == argc ) {
+			address = simple_strtoul( argv[2], NULL, 16 );
+			offset = simple_strtoul( argv[3], NULL, 16 );
+			length = simple_strtoul( argv[4], NULL, 16 );
+			return_code = write( address, offset, length );
 		}
 
 
 	}
 
 	if( 0 != return_code ) {
-#ifndef CFG_NOHELP
 		printf( "%s", cmdtp->usage );
-#endif
 	}
 
 	return return_code;
@@ -130,13 +189,18 @@ do_ssp( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
   ======================================================================
 */
 
-U_BOOT_CMD( ssp, 6, 0, do_ssp,
-	    "ssp help|read|write [arguments]\n",
+U_BOOT_CMD( ssp, 5, 0, do_ssp,
+	    "ssp dump|fill|help|read|write [arguments]\n",
+	    "d,ump offset length\n" \
+	    "\tdump length bytes starting at offset\n" \
+	    "f,ill [all | offset length] pattern\n" \
+	    "\tfill the device with the given pattern\n" \
 	    "h,elp\n" \
+	    "i,nitialize\n" \
 	    "\tdisplay this help screen\n" \
-	    "r,ead device address offset size\n" \
-	    "\tread size bytes from offset to address\n" \
-	    "w,rite device address offset size\n" \
-	    "\twrite size bytes from address to offset\n");
+	    "r,ead offset address length\n" \
+	    "\tread length bytes from offset to address\n" \
+	    "w,rite address offset length\n" \
+	    "\twrite length bytes from address to offset\n");
 
 #endif /* CONFIG_ACP */

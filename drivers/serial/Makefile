@@ -25,8 +25,7 @@ include $(TOPDIR)/config.mk
 
 LIB	:= $(obj)libserial.o
 
-#ifndef CONFIG_ACP
-ifndef CONFIG_AXXIA_ARM
+ifndef CONFIG_ACP
 COBJS-y += serial.o
 endif
 
@@ -63,12 +62,12 @@ COBJS-$(CONFIG_USB_TTY) += usbtty.o
 endif
 
 ifdef CONFIG_ACP
-COBJS-y += axxia_uart.o
+COBJS-y += axxia.o
 endif
 
-ifdef CONFIG_SPL_BUILD 
+ifdef CONFIG_SPL_BUILD
 ifdef CONFIG_ACP
-COBJS-y += axxia_uart.o
+COBJS-y += axxia.o
 endif
 endif
 

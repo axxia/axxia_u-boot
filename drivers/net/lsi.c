@@ -23,68 +23,6 @@
 #include <malloc.h>
 #include <net.h>
 
-unsigned char ethernet_address[6];
-
-#ifdef CONFIG_AXXIA_ARM
-/* Error */
-#define ERROR_PRINT( format, args... ) do { \
-printf( "%s:%s:%d - ERROR - ", __FILE__, __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#define ERROR_CODE( code ) { code }
-
-/* Warning */
-#ifdef LSI_WARN
-#define WARN_PRINT( format, args... ) do { \
-printf( "%s:%s:%d - WARN - ", __FILE__, __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#define WARN_CODE( code ) { code }
-#else  /* LSI_WARN */
-#define WARN_PRINT( format, args... )
-#define WARN_CODE( code )
-#endif /* LSI_WARN */
-#endif
-
-/*
-  Debugging...
-*/
-
-/* #undef DEBUG */
-#define DEBUG
-#ifdef DEBUG
-#define DEBUG_PRINT( format, args... ) do { \
-printf( "app3_nic:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#else  /* DEBUG */
-#define DEBUG_PRINT( format, args... )
-#endif /* DEBUG */
-
-#undef TX_DEBUG
-/*#define TX_DEBUG*/
-#ifdef TX_DEBUG
-#define TX_DEBUG_PRINT( format, args... ) do { \
-printf( "app3_nic:%s:%d - TX_DEBUG - ", __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#else  /* TX_DEBUG */
-#define TX_DEBUG_PRINT( format, args... )
-#endif /* TX_DEBUG */
-
-#undef RX_DEBUG
-/*#define RX_DEBUG*/
-#ifdef RX_DEBUG
-#define RX_DEBUG_PRINT( format, args... ) do { \
-printf( "app3_nic:%s:%d - RX_DEBUG - ", __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#else  /* RX_DEBUG */
-#define RX_DEBUG_PRINT( format, args... )
-#endif /* RX_DEBUG */
-
-
-
 /*
   ===============================================================================
   ===============================================================================
@@ -123,9 +61,9 @@ _eth_init(struct eth_device *dev, bd_t *bd)
 	update_femac();
 
 	if (0 != femac)
-		rc = lsi_femac_eth_init(bd);
+		rc = lsi_femac_eth_init(dev, bd);
 	else
-		rc = acp_eioa_eth_init(bd);
+		rc = acp_eioa_eth_init(dev, bd);
 
 	return rc;
 }
@@ -134,9 +72,9 @@ static void
 _eth_halt(struct eth_device *dev)
 {
 	if (0 != femac)
-		lsi_femac_eth_halt();
+		lsi_femac_eth_halt(struct eth_device *dev);
 	else
-		acp_eioa_eth_halt();
+		acp_eioa_eth_halt(struct eth_device *dev);
 
 	return;
 }
@@ -144,13 +82,13 @@ _eth_halt(struct eth_device *dev)
 static int
 _eth_init(struct eth_device *dev, bd_t *bd)
 {
-	return lsi_femac_eth_init(bd);
+	return lsi_femac_eth_init(dev, bd);
 }
 
 static void
 _eth_halt(struct eth_device *dev)
 {
-	lsi_femac_eth_halt();
+	lsi_femac_eth_halt(dev);
 
 	return;
 }
@@ -207,11 +145,11 @@ lsi_net_receive_test(void)
 	update_femac();
 
 	if (0 != femac)
-		lsi_femac_receive_test();
+		lsi_femac_receive_test(device);
 	else
-		acp_eioa_receive_test();
+		acp_eioa_receive_test(device);
 #else
-	lsi_femac_receive_test();
+	lsi_femac_receive_test(device);
 #endif
 }
 
@@ -227,11 +165,11 @@ lsi_net_loopback_test(void)
 	update_femac();
 
 	if (0 != femac)
-		lsi_femac_loopback_test();
+		lsi_femac_loopback_test(device);
 	else
-		acp_eioa_loopback_test();
+		acp_eioa_loopback_test(device);
 #else
-	lsi_femac_loopback_test();
+	lsi_femac_loopback_test(device);
 #endif
 }
 
@@ -282,7 +220,7 @@ lsi_eth_send(struct eth_device *dev, volatile void *packet, int length)
 	else
 		return acp_eioa_eth_send(packet, length);
 #else
-	return lsi_femac_eth_send(packet, length);
+	return lsi_femac_eth_send(dev, packet, length);
 #endif
 }
 
@@ -294,7 +232,7 @@ lsi_eth_send(struct eth_device *dev, volatile void *packet, int length)
 static int
 lsi_eth_recv(struct eth_device *dev)
 {
-	/* DEBUG_PRINT("\n"); */
+	DEBUG_PRINT("\n");
 
 	if (0 == initialized) {
 		ERROR_PRINT("Networking Isn't Initialized!\n");
@@ -303,11 +241,11 @@ lsi_eth_recv(struct eth_device *dev)
 
 #if defined(CONFIG_AXXIA_EIOA)
 	if (0 != femac)
-		return lsi_femac_eth_rx();
+		return lsi_femac_eth_recv(dev);
 	else
-		return acp_eioa_eth_recv();
+		return acp_eioa_eth_recv(dev);
 #else
-	return lsi_femac_eth_rx();
+	return lsi_femac_eth_recv(dev);
 #endif
 }
 
@@ -324,13 +262,13 @@ lsi_eth_halt(struct eth_device *dev)
 #if defined(CONFIG_AXXIA_EIOA)
 	if (0 != initialized) {
 		if (0 != femac)
-			lsi_femac_eth_halt();
+			lsi_femac_eth_halt(dev);
 		else
 			acp_eioa_eth_halt(dev);
 	}
 #else
 	if (0 != initialized)
-		lsi_femac_eth_halt();
+		lsi_femac_eth_halt(dev);
 #endif
 
 	return;
@@ -357,7 +295,6 @@ board_eth_init(bd_t *bd)
 {
 	int i;
 	char *ethaddr = NULL;
-	char ethaddr1[6];
 	char *endp;
 
 	/*
@@ -375,15 +312,8 @@ board_eth_init(bd_t *bd)
 	/*
 	  Get the Ethernet address from the environment.
 	*/
-#if 0
-	ethaddr = getenv("ethaddr");
-#endif
 
-#if 1
-	ethaddr = ethaddr1;
-	//strcpy(ethaddr, "00:02:2d:84:12:fa");
-	strcpy(ethaddr, "00:02:2d:84:11:f8");
-#endif
+	ethaddr = getenv("ethaddr");
 
 	if (NULL == ethaddr) {
 		ERROR_PRINT("ethaddr is not set.\n");
@@ -402,10 +332,8 @@ board_eth_init(bd_t *bd)
 			ethaddr = (endp + 1);
 	}
 
-#if 0
 	for (i = 0; i < 6; ++i)
 		bd->bi_enetaddr[i] = device->enetaddr[i];
-#endif
 
 	/*
 	  Set up the reset of the eth_device structure and register it.

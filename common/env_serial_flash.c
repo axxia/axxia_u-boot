@@ -61,22 +61,16 @@
 #endif
 
 /* references to names in env_common.c */
-#if 0
 extern uchar default_environment[];
-#endif
-extern const unsigned char default_environment[];
 
 char * env_name_spec = "Serial Flash";
 
 
 #if defined(ENV_IS_EMBEDDED)
-#if 0
 extern uchar environment[];
-#endif
-extern unsigned char environment[];
 env_t *env_ptr = (env_t *)(&environment[0]);
 #else /* ! ENV_IS_EMBEDDED */
-env_t *env_ptr = (env_t *)CONFIG_ENV_OFFSET;
+env_t *env_ptr = 0;
 #endif /* ENV_IS_EMBEDDED */
 
 
@@ -172,35 +166,19 @@ int writeenv(size_t offset, u_char *buf)
 int saveenv(void)
 {
 	int ret = 0;
-	env_t   env_new;
-        ssize_t len;
-        char    *res, *saved_data = NULL;
 	
 
-    res = (char *)&env_new.data;
-        len = hexport_r(&env_htab, '\0', 0, &res, ENV_SIZE, 0, NULL);
-        if (len < 0) {
-                printf("Cannot export environment\n");
-		return 1;
-        }
-
-	env_new.flags++;
-#if 0
+	env_ptr->flags++;
 	env_crc_update ();
-#endif
-	env_new.crc = crc32(0, env_new.data, ENV_SIZE);
-#if 0
-	env_import ((unsigned char *)env_ptr, 1);
-#endif
 	
 	if (CONFIG_ENV_RANGE < CONFIG_ENV_SIZE)
 		return 1;
 	if(gd->env_valid == 1) {
 		puts ("Writing to redundant seeprom... ");
-		ret = writeenv(CONFIG_ENV_OFFSET_REDUND, (u_char *) &env_new);
+		ret = writeenv(CONFIG_ENV_OFFSET_REDUND, (u_char *) env_ptr);
 	} else {
 		puts ("Writing to seeprom... ");
-		ret = writeenv(CONFIG_ENV_OFFSET, (u_char *) &env_new);
+		ret = writeenv(CONFIG_ENV_OFFSET, (u_char *) env_ptr);
 	}
 	if (ret) {
 		puts("FAILED!\n");
@@ -216,24 +194,8 @@ int saveenv(void)
 int saveenv(void)
 {
 	int ret = 0;
-	env_t   env_new;
-        ssize_t len;
-        char    *res, *saved_data = NULL;
 
-
-    res = (char *)&env_new.data;
-        len = hexport_r(&env_htab, '\0', 0, &res, ENV_SIZE, 0, NULL);
-        if (len < 0) {
-                printf("Cannot export environment\n");
-		return 1;
-        }
-#if 0
 	env_crc_update ();
-#endif
-	env_new.crc = crc32(0, env_new.data, ENV_SIZE);
-#if 0
-	env_import ((unsigned char *)env_ptr, 1);
-#endif
 
 	if (CONFIG_ENV_RANGE < CONFIG_ENV_SIZE)
 		return 1;
@@ -241,7 +203,7 @@ int saveenv(void)
 	if (seeprom_sector_erase(CONFIG_ENV_OFFSET))
 		return 1;
 	puts ("Writing to seeprom... ");
-	if (writeenv(CONFIG_ENV_OFFSET, (u_char *) env_new)) {
+	if (writeenv(CONFIG_ENV_OFFSET, (u_char *) env_ptr)) {
 		puts("FAILED!\n");
 		return 1;
 	}
@@ -280,14 +242,8 @@ void env_relocate_spec (void)
 	if (readenv(CONFIG_ENV_OFFSET_REDUND, (u_char *) tmp_env2))
 		puts("No Valid Reundant Environment Area Found\n");
 
-#if 1
 	crc1_ok = (crc32(0, tmp_env1->data, ENV_SIZE) == tmp_env1->crc);
 	crc2_ok = (crc32(0, tmp_env2->data, ENV_SIZE) == tmp_env2->crc);
-#endif
-#if 0
-	crc1_ok = 1;
-	crc2_ok = 1;
-#endif
 
 	if(!crc1_ok && !crc2_ok) {
 		free(tmp_env1);
@@ -312,7 +268,7 @@ void env_relocate_spec (void)
 
 	}
 
-	//free(env_ptr);
+	free(env_ptr);
 	if(gd->env_valid == 1) {
 		env_ptr = tmp_env1;
 		free(tmp_env2);
@@ -320,8 +276,6 @@ void env_relocate_spec (void)
 		env_ptr = tmp_env2;
 		free(tmp_env1);
 	}
-
-	env_import((char *)env_ptr, 0);
 
 #endif /* ! ENV_IS_EMBEDDED */
 }
@@ -341,8 +295,6 @@ printf("In env_relocate no redund! \n\r";
 	if (crc32(0, env_ptr->data, ENV_SIZE) != env_ptr->crc)
 		return use_default();
 
-	env_import((char *)env_ptr, 0);
-
 #endif /* ! ENV_IS_EMBEDDED */
 }
 #endif /* CONFIG_ENV_OFFSET_REDUND */
@@ -351,6 +303,6 @@ printf("In env_relocate no redund! \n\r";
 static void use_default()
 {
 	puts ("*** Warning - bad CRC or NAND, using default environment\n\n");
-	set_default_env(NULL);
+	set_default_env();
 }
 #endif

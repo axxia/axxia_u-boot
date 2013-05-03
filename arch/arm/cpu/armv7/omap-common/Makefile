@@ -26,18 +26,15 @@ include $(TOPDIR)/config.mk
 LIB	= $(obj)libomap-common.o
 
 COBJS	:= reset.o
+COBJS	+= timer.o
 COBJS	+= utils.o
 
-ifneq ($(CONFIG_OMAP44XX)$(CONFIG_OMAP54XX)$(CONFIG_AXXIA_ARM),)
+ifneq ($(CONFIG_OMAP44XX)$(CONFIG_OMAP54XX),)
 COBJS	+= hwinit-common.o
 COBJS	+= clocks-common.o
 COBJS	+= emif-common.o
 COBJS	+= vc.o
 endif
-
-#ifndef CONFIG_AXXIA_ARM
-#COBJS	+= timer.o
-#endif
 
 ifneq ($(CONFIG_AM33XX)$(CONFIG_OMAP44XX)$(CONFIG_OMAP54XX),)
 COBJS	+= boot-common.o

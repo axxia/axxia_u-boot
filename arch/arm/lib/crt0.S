@@ -114,7 +114,7 @@ _main:
 	mov	r0, #0
 	bl	board_init_f
 
-#if (!defined(CONFIG_SPL_BUILD) && !defined (CONFIG_AXXIA_ARM))
+#if ! defined(CONFIG_SPL_BUILD)
 
 /*
  * Set up intermediate environment (new sp and gd) and call
@@ -171,8 +171,3 @@ clbss_l:cmp	r0, r1			/* while not at end of BSS */
 	/* we should not return here. */
 
 #endif
-
-#if 0
-	ldr	pc, =board_init_r	/* this is auto-relocated! */
-#endif
-	bl	board_init_r
