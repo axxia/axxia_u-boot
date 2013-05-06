@@ -125,10 +125,6 @@ IRQ_STACK_START_IN:
 
 reset:
 
-#ifdef CONFIG_SPL_BUILD
-	b	reset
-#endif
-
 	bl	save_boot_params
 
 	setend  be
@@ -161,31 +157,9 @@ reset:
 
 	/* the mask ROM code should have PLL and others stable */
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
-	bl	cpu_init_cp15
+	@bl	cpu_init_cp15
 	bl	cpu_init_crit
 #endif
-
-	/* Try accessing the UART */
-                ldr     r0, =0x80080000
-                ldr     r1, [r0, #0xfe0]
-                ldr     r1, [r0, #0xfe4]
-                ldr     r1, [r0, #0xfe8]
-                ldr     r1, [r0, #0xfec]
-                ldr     r1, [r0, #0xff0]
-                ldr     r1, [r0, #0xff4]
-                ldr     r1, [r0, #0xff8]
-                ldr     r1, [r0, #0xffc]
-
-	/* Try accessing the SSP */
-                ldr     r0, =0x80088000
-                ldr     r1, [r0, #0xfe0]
-                ldr     r1, [r0, #0xfe4]
-                ldr     r1, [r0, #0xfe8]
-                ldr     r1, [r0, #0xfec]
-                ldr     r1, [r0, #0xff0]
-                ldr     r1, [r0, #0xff4]
-                ldr     r1, [r0, #0xff8]
-                ldr     r1, [r0, #0xffc]
 
 	bl	_main
 
