@@ -1744,6 +1744,8 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		( TX_BUFFER_SIZE + BUFFER_GRANULARITY ) + /* TX Buffers */
 		( 2 * sizeof( app3xxnic_queue_pointer_t ) ); /* Tail Pointers */
 
+	printf("%s:%d - memory_needed=0x%x\n", __FILE__, __LINE__, memory_needed);
+
 #if 0
 	if( ( void * ) 0 == ( memory = malloc( memory_needed ) ) ) {
 		ERROR_PRINT( "Unable to allocate space for descriptors and buffers\n" );
@@ -1997,7 +1999,9 @@ void lsi_femac_eth_halt(struct eth_device *device) {
 	tx_disable_( );
 
 	/* free memory */
+#if 0
 	free( memory );
+#endif
 
 	/* disable the MAC */
 	writeio( 0, APP3XXNIC_RX_MODE );

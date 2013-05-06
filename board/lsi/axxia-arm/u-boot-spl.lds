@@ -1,32 +1,70 @@
-MEMORY { .sram : ORIGIN = 0x20000000, LENGTH = 0x19000 }
-MEMORY { .sdram : ORIGIN = 0x84000000, LENGTH = 0x100000 }
+MEMORY { .lsm : ORIGIN = 0x20000000, LENGTH = 0x3c000 }
+
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
+
 OUTPUT_ARCH(arm)
+
 ENTRY(_start)
+
 SECTIONS
 {
- .text :
- {
-  __start = .;
-  arch/arm/cpu/armv7/start.o (.text)
-  *(.text*)
- } >.sram
- . = ALIGN(4);
- .rodata : { *(SORT_BY_ALIGNMENT(.rodata*)) } >.sram
- . = ALIGN(4);
- .data : { *(SORT_BY_ALIGNMENT(.data*)) } >.sram
- .u_boot_list : {
-  *(SORT(.u_boot_list*));
- }
- . = ALIGN(4);
- __image_copy_end = .;
- _end = .;
- .bss :
- {
-  . = ALIGN(4);
-  __bss_start = .;
-  *(.bss*)
-  . = ALIGN(4);
-  __bss_end__ = .;
- } >.sdram
+	.text :
+	{
+		arch/arm/cpu/armv7/start.o (.text);
+		*(.text*);
+	} >.lsm
+
+	. = ALIGN(4);
+
+	__start___ex_table = .;
+	__ex_table :
+	{
+		*(__ex_table)
+	}
+	__stop___ex_table = .;
+
+	.data :
+	{
+		*(.rodata*)
+		*(.sdata*)
+		*(.data*)
+	} > .lsm
+
+	.got2 :
+	{
+		*(.got2*)
+	} > .lsm
+
+	.fixup :
+	{
+		*(.fixup)
+	} > .lsm
+
+	.eh_frame :
+	{
+		*(.eh_frame)
+	} > .lsm
+
+	__end_of_spl = .;
+
+	. = ALIGN(4);
+	__image_copy_end = .;
+	_end = .;
+
+	/*
+	 * Provide space for a page table (0x4000 bytes).
+ 	 */
+
+	. = ALIGN(0x4000);
+	PROVIDE(__page_table = .);
+	. += 0x4000;
+
+	.bss :
+	{
+		. = ALIGN(4);
+		__bss_start = .;
+		*(.bss*)
+		. = ALIGN(4);
+		__bss_end__ = .;
+	} >.lsm
 }

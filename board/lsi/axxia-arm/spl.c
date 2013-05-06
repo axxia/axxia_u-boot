@@ -1,5 +1,5 @@
 /*
- *  board/lsi/axxia-arm/axxia.c
+ *  board/lsi/axxia-arm/spl.c
  *
  *  Copyright (C) 2013 LSI (john.jacques@lsi.com)
  *
@@ -19,6 +19,8 @@
  */
 
 #include <config.h>
+
+extern void *_page_table_base;
 
 /*
   ==============================================================================
@@ -48,8 +50,6 @@ static int test_value;
 
   Does not return!
 */
-
-#ifdef CONFIG_SPL_BUILD
 
 void
 reset_cpu_fabric(void)
@@ -90,27 +90,18 @@ reset_cpu_fabric(void)
 	return;
 }
 
-#endif	/* CONFIG_SPL_BUILD */
-
 /*
   ------------------------------------------------------------------------------
-  board_early_init_f
+  board_init_f
 
-  Called quite early as part of the init sequence.
+  This function is declared "void __weak" in arch/arm/lib/spl.c.  It's
+  overridden here to handle the SPL boot on Axxia ARM systems.
 */
 
-int
-board_early_init_f(void)
+void
+board_init_f(ulong bootflag)
 {
-#ifdef CONFIG_SPL_BUILD
-	/*
-	  Initialize System Memory.
-	*/
-
 	asm volatile ("1: b 1b");
 
-	reset_cpu_fabric();
-#endif	/* CONFIG_SPL_BUILD */
-
-	return 0;
+	return;
 }

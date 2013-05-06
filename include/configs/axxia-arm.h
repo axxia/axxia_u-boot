@@ -67,13 +67,28 @@ int is_asic( void );
 #define CONFIG_SYS_HZ           1000    /* decrementer freq: 1 ms ticks */
 #define SYSTIMER_RATE		4096000
 
+/*
+  ======================================================================
+  ======================================================================
+  IO
+  ======================================================================
+  ======================================================================
+*/
+
+#ifdef CONFIG_SPL_BUILD
+#define IO 0x10080000
+#else
+#define IO 0x80080000
+#endif
+
+
+
 #define SYSMEM  0x00000000
-#define IO      0x80080000
 /* #define LCM     0xf0a00000
 #define ROM     0xf0b00000 */
 #define SYSCON  0x10030000
 
-#define CONFIG_BOARD_EARLY_INIT_F
+/*#define CONFIG_BOARD_EARLY_INIT_F*/
 
 #define LDSSCRIPT "board/lsi/axxia-arm/u-boot.lds"
 
@@ -743,7 +758,7 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_SPL_FAT_SUPPORT
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
 #define CONFIG_SPL_SERIAL_SUPPORT
-#define CONFIG_SPL_LDSCRIPT "$(CPUDIR)/omap-common/u-boot-spl.lds"
+#define CONFIG_SPL_LDSCRIPT "board/lsi/axxia-arm/u-boot-spl.lds"
 
 /*
  * 64 bytes before this address should be set aside for u-boot.img's

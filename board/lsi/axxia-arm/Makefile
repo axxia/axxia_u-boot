@@ -24,31 +24,44 @@
 include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(BOARD).o
+COBJS   =
+SOBJS   =
 
-COBJS	:= evm.o
-#COBJS	+= phy.o femac.o ssp.o version.o
-COBJS	+= mdio.o phy.o femac.o ssp.o version.o axxia.o
+ifndef CONFIG_SPL_BUILD
 
-SOBJS   := axxia_lowlevel.o
+################################################################################
+## Normal Build
 
-SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
-OBJS	:= $(addprefix $(obj),$(COBJS))
-SOBJS   := $(addprefix $(obj),$(SOBJS))
+COBJS	+= evm.o mdio.o phy.o femac.o ssp.o version.o
 
-$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
-	$(call cmd_link_o_target, $(OBJS) $(SOBJS))
+else
+
+################################################################################
+## SPL Build
+
+COBJS   += spl.o
+
+endif
+
+################################################################################
+## All Builds
+
+SOBJS   := lowlevel.o
+
+################################################################################
+
+COBJS	:= $(addprefix $(obj),$(COBJS))
+SOBJS	:= $(addprefix $(obj),$(SOBJS))
+
+$(LIB):	$(obj).depend $(COBJS) $(SOBJS)
+	$(call cmd_link_o_target, $(COBJS) $(SOBJS))
 
 clean:
-	rm -f $(OBJS) $(SOBJS)
+	rm -f $(COBJS) $(SOBJS)
 
 distclean:	clean
 	rm -f $(LIB) core *.bak $(obj).depend
 
-#########################################################################
-
 # defines $(obj).depend target
 include $(SRCTREE)/rules.mk
-
 sinclude $(obj).depend
-
-#########################################################################
