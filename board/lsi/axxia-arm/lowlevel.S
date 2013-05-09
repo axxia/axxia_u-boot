@@ -58,10 +58,13 @@ lowlevel_init:
 	cmp     r1, r2
 	blt     1b
 
-	@ First 1G of memory, not cachable or bufferable.
-	@ Covers this code (the SPL or 2nd stage) and peripherals.
+	@ First 1G as a 1:1 mapping.  Covers the SPL.  Cachable and bufferable.
+	@
+	@ Physical: 0x00_0000_0000
+	@  Virtual: 0x0000_0000
+	@     Size: 1G
 
-        ldr     r0, =0x40c12		@ Start at 0x00_0000_0000
+        ldr     r0, =0x40c1e		@ Start at 0x00_0000_0000
         mov     r1, r3
         add     r2, r3, #0x1000
 1:    	mov     r9, #0
@@ -73,8 +76,11 @@ lowlevel_init:
         cmp     r1, r2
         blt     1b
 
-	@ Second 1G is system memory, not cacheable and not bufferable.
-	@ A place to write the 3rd stage.
+	@ System Memory.  Cachable and bufferable.
+	@
+	@ Physical: 0x20_0000_0000
+	@  Virtual: 0x4000_0000
+	@     Size: 1G
 
         ldr     r0, =0x40c52		@ Start at 0x20_0000_0000
         add     r1, r3, #0x1000
@@ -88,29 +94,23 @@ lowlevel_init:
         cmp     r1, r2
         blt     1b
 
-	@@ Turn it all on...
+	@ IO.  Not cachable or bufferable.
+	@
+	@ Physical: 0x00_0000_0000
+	@  Virtual: 0x8000_0000
+	@     Size: 1G
 
-	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
-	tst     r11, #0xf               @ VMSA
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
-	tst     r11, #0xf               @ VMSA
-	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
-	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
-	bic     r0, r0, #1 << 28        @ clear SCTLR.TRE
-	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
-	orr     r0, r0, #0x003c         @ write buffer
-
-	@ Load page table pointer
-	orrne   r0, r0, #1              @ MMU enabled
-	movne   r1, #-1
-	mcrne   p15, 0, r3, c2, c0, 0   @ load page table pointer
-	mcrne   p15, 0, r1, c3, c0, 0   @ load domain access control
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-	mcr     p15, 0, r0, c1, c0, 0   @ load control register
-	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+        ldr     r0, =0x40c12		@ Start at 0x00_0000_0000
+        add     r1, r3, #0x2000
+        add     r2, r3, #0x3000
+1:    	mov     r9, #0
+2:      str     r0, [r1], #4            @ Each supersection is repeated	
+        add     r9, r9, #1              @ 16 times.
+        cmp     r9, #16
+        blt     2b
+        add     r0, r0, #0x1000000      @ 16M
+        cmp     r1, r2
+        blt     1b
 
 #else
 
@@ -159,7 +159,7 @@ lowlevel_init:
 
 	@ Third 1G is IO, not cacheable or bufferable.
 
-        ldr     r0,=0x10040c52          @ Start at 0x20_1000_0000
+        ldr     r0,=0x40c52		@ Start at 0x20_0000_0000
         add     r1, r3, #0x2000
         add     r2, r3, #0x3000
 1:      mov     r9, #0
@@ -171,8 +171,9 @@ lowlevel_init:
         cmp     r1, r2
         blt     1b
 
-	@@ Turn it all on...
+#endif
 
+	@ Turn it all on...
 	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
 	tst     r11, #0xf               @ VMSA
 	mov     r0, #0
@@ -183,8 +184,6 @@ lowlevel_init:
 	bic     r0, r0, #1 << 28        @ clear SCTLR.TRE
 	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
 	orr     r0, r0, #0x003c         @ write buffer
-
-	@ Load page table pointer
 	orrne   r0, r0, #1              @ MMU enabled
 	movne   r1, #-1
 	mcrne   p15, 0, r3, c2, c0, 0   @ load page table pointer
@@ -194,8 +193,6 @@ lowlevel_init:
 	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
 	mov     r0, #0
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-
-#endif
 
 	mov	pc, lr
 

@@ -40,8 +40,9 @@ endif
 ################################################################################
 ## All Builds
 
-#COBJS += version.o lsi.o phy.o femac.o
-COBJS += version.o lsi.o
+COBJS += version.o lsi.o ncr.o
+
+################################################################################
 
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

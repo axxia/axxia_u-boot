@@ -1,4 +1,4 @@
-/* 1
+/*
  * (C) Copyright 2010
  * Texas Instruments Incorporated.
  * Sricharan R	  <r.sricharan@ti.com>
@@ -34,9 +34,46 @@
 #include <linux/types.h>
 #endif
 
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define NCP_BIG_ENDIAN
+#warning "SETTING NCP_BIG_ENDIAN!!!"
+#endif
 
 #if 0
 #include <configs/axxia.h>
+#else
+/*
+  ======================================================================
+  ======================================================================
+  Nuevo Conf Ring Access, see board/lsi/axxia-ppc/ncr.c for the implementation
+  ======================================================================
+  ======================================================================
+*/
+
+#ifndef __ASSEMBLY__
+#define NCP_REGION_ID( node, target ) \
+( unsigned long ) ( ( ( ( node ) & 0xffff ) << 16 ) | ( ( target ) & 0xffff ) )
+#define NCP_NODE_ID( region ) ( ( ( region ) >> 16 ) & 0xffff )
+#define NCP_TARGET_ID( region ) ( ( region ) & 0xffff )
+int ncr_read(unsigned long, unsigned long, int, void *);
+int ncr_read8( unsigned long, unsigned long, unsigned char * );
+int ncr_read16( unsigned long, unsigned long, unsigned short * );
+int ncr_read32( unsigned long, unsigned long, unsigned long * );
+int ncr_write(unsigned long, unsigned long, int, void *);
+int ncr_write8( unsigned long, unsigned long, unsigned char );
+int ncr_write16( unsigned long, unsigned long, unsigned short );
+int ncr_write32( unsigned long, unsigned long, unsigned long );
+int ncr_modify32( unsigned long, unsigned long, unsigned long, unsigned long );
+int ncr_and( unsigned long, unsigned long, unsigned long );
+int ncr_or( unsigned long, unsigned long, unsigned long );
+int ncr_poll( unsigned long, unsigned long, unsigned long,
+              unsigned long, unsigned long, unsigned long );
+void ncr_tracer_enable( void );
+void ncr_tracer_disable( void );
+int ncr_tracer_is_enabled( void );
+void ncr_enable( void );
+void ncr_disable( void );
+#endif
 #endif
 
 
@@ -70,23 +107,43 @@ int is_asic( void );
 /*
   ======================================================================
   ======================================================================
-  IO
+  IO (Peripheral Mapping)
   ======================================================================
   ======================================================================
 */
 
-#ifdef CONFIG_SPL_BUILD
-#define IO 0x10080000
-#else
-#define IO 0x80080000
-#endif
+#define IO 0x90000000
 
+#define UART0_ADDRESS (IO + 0x80000)
+#define UART1_ADDRESS (IO + 0x81000)
+#define UART2_ADDRESS (IO + 0x82000)
+#define UART3_ADDRESS (IO + 0x83000)
 
+#define NCA (IO + 0x10100000)
+
+#define ELM0 (IO + 0x60000)
+#define ELM1 (IO + 0x70000)
+
+#define SYSCON  (IO + 0x30000)
+
+/*
+  ==============================================================================
+  ==============================================================================
+  Memory
+  ==============================================================================
+  ==============================================================================
+*/
 
 #define SYSMEM  0x00000000
-/* #define LCM     0xf0a00000
-#define ROM     0xf0b00000 */
-#define SYSCON  0x10030000
+
+#ifndef __ASSEMBLY__
+int sysmem_init(void);
+#endif
+
+#ifdef CONFIG_SPL_BUILD
+#define LSM     0x20000000
+#endif
+
 
 /*#define CONFIG_BOARD_EARLY_INIT_F*/
 
@@ -266,11 +323,6 @@ int serial_early_init(void);
 #define MCRVAL (MCR_DTR | MCR_RTS) /* RTS/DTR */
 #define FCRVAL (FCR_FIFO_EN | FCR_RXSR | FCR_TXSR) /* Clear & enable FIFOs */
 
-#define UART0_ADDRESS (IO+0x0)
-#define UART1_ADDRESS (IO+0x1000)
-#define UART2_ADDRESS (IO+0x2000)
-#define UART3_ADDRESS (IO+0x3000)
-
 #define CONFIG_LSI_SSP 1
 #define CONFIG_SYS_MAX_FLASH_SECT    1024
 #define CONFIG_LSI_SERIAL_FLASH 1
@@ -320,10 +372,7 @@ int serial_early_init(void);
 #define TIMER_MIS                      0x14
 #define TIMER_BGLOAD                   0x18
 
-
-
-
-#define SSP (IO+0x8000)
+#define SSP (IO+0x88000)
 
 #define SSP_CR0       0x000
 #define SSP_CR1       0x004
@@ -743,7 +792,7 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_SPL_FRAMEWORK
 #define CONFIG_SPL_TEXT_BASE		0x20000000
 #define CONFIG_SPL_MAX_SIZE		0x19000	/* 100K */
-#define CONFIG_SPL_STACK		CONFIG_SYS_INIT_SP_ADDR
+#define CONFIG_SPL_STACK		(LSM + (256 * 1024))
 #define CONFIG_SPL_DISPLAY_PRINT
 
 #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	0x300 /* address 0x60000 */
@@ -787,7 +836,7 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_SYS_REDUNDAND_ENVIRONMENT 1
 #define CONFIG_ENV_OFFSET                (512*1024)
 /* #define CONFIG_ENV_SIZE                  (128*1024) */
-#define CONFIG_ENV_RANGE                 (512*1024)
+#define CONFIG_ENV_RANGE                 (256*1024)
 #define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
 #define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
 #endif

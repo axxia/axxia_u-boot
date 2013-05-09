@@ -32,21 +32,22 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-COBJS	+= evm.o mdio.o phy.o femac.o ssp.o version.o
+COBJS	+= evm.o mdio.o phy.o femac.o
 
 else
 
 ################################################################################
 ## SPL Build
 
-COBJS   += spl.o
+COBJS   += spl.o axxia_initialize.o
 
 endif
 
 ################################################################################
 ## All Builds
 
-SOBJS   := lowlevel.o
+COBJS   += failure.o version.o ssp.o
+SOBJS   += lowlevel.o
 
 ################################################################################
 

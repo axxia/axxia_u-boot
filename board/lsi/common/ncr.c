@@ -38,6 +38,9 @@ void ncr_sysmem_init_mode_enable(void) { ncr_sysmem_mode_disabled = 0; }
 void ncr_sysmem_init_mode_disable(void) { ncr_sysmem_mode_disabled = 1; }
 #endif
 
+static __inline__ unsigned long ncr_register_read(unsigned *);
+static __inline__ void ncr_register_write(const unsigned, unsigned *);
+
 static int
 ncr_fail(const char *file, const char *function, const int line)
 {
@@ -45,7 +48,8 @@ ncr_fail(const char *file, const char *function, const int line)
 		return -1;
 	
 	printf("Config Ring Access Failed: 0x%08x 0x%08x\n",
-	       in_be32((u32 *)(NCA + 0xe4)), in_be32((u32 *)(NCA + 0xe8)));
+	       ncr_register_read((u32 *)(NCA + 0xe4)),
+	       ncr_register_read((u32 *)(NCA + 0xe8)));
 	acp_failure(file, function, line);
 
 	return -1;
@@ -211,19 +215,27 @@ ncr_trace_poll(region, loops, delay, offset, mask, value); } \
 typedef union {
 	unsigned long raw;
 	struct {
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+		unsigned long dbs                 : 16;
+		unsigned long cmd_type            : 4;
+		unsigned long cfg_cmpl_int_enable : 1;
+		unsigned long byte_swap_enable    : 1;
+		unsigned long status              : 2;
+		unsigned long local_bit           : 1;
+		unsigned long sysmem_access_type  : 4;
+		unsigned long                     : 2;
 		unsigned long start_done          : 1;
-#ifndef ACP_X1V1
+#else
+		unsigned long start_done          : 1;
 		unsigned long                     : 2;
 		unsigned long sysmem_access_type  : 4;
-#else
-		unsigned long                     : 6;
-#endif
 		unsigned long local_bit           : 1;
 		unsigned long status              : 2;
 		unsigned long byte_swap_enable    : 1;
 		unsigned long cfg_cmpl_int_enable : 1;
 		unsigned long cmd_type            : 4;
 		unsigned long dbs                 : 16;
+#endif
 	} __attribute__ ( ( packed ) ) bits;
 } __attribute__ ( ( packed ) ) command_data_register_0_t;
 
@@ -237,9 +249,15 @@ typedef union {
 typedef union {
 	unsigned long raw;
 	struct {
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+		unsigned long target_id_address_upper : 8;
+		unsigned long target_node_id          : 8;
+		unsigned long                         : 16;
+#else
 		unsigned long                         : 16;
 		unsigned long target_node_id          : 8;
 		unsigned long target_id_address_upper : 8;
+#endif
 	} __attribute__ ( ( packed ) ) bits;
 } __attribute__ ( ( packed ) ) command_data_register_2_t;
 
@@ -281,7 +299,11 @@ ncr_lock(int domain)
 	offset=(0xff80 + (domain * 4));
 
 	do {
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+		value = readl((unsigned *)(NCA + offset));
+#else
 		value = in_be32((unsigned *)(NCA + offset));
+#endif
 	} while ((0 != value) && (0 < --loops));
 
 	if (0 == loops)
@@ -302,7 +324,11 @@ ncr_unlock(int domain)
 	unsigned long offset;
 
 	offset=(0xff80 + (domain * 4));
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+	writel(0, (unsigned *)(NCA + offset));
+#else
 	out_be32((unsigned *)(NCA + offset), 0);
+#endif
 #endif
 	return;
 }
@@ -363,9 +389,7 @@ ncr_read(unsigned long region, unsigned long address, int number, void *buffer)
 
 	if( NCP_REGION_ID( 512, 1 ) == region ) {
 		cdr0.bits.cmd_type = 0xc;
-#ifndef ACP_X1V1
 		cdr0.bits.sysmem_access_type = 2;
-#endif
 	} else {
 		cdr0.bits.cmd_type = 0x4;
 	}
@@ -689,9 +713,7 @@ ncr_write(unsigned long region, unsigned long address, int number, void *buffer)
 
 	if( NCP_REGION_ID( 512, 1 ) == region ) {
 		cdr0.bits.cmd_type = 0xd;
-#ifndef ACP_X1V1
 		cdr0.bits.sysmem_access_type = 2;
-#endif
 	} else {
 		cdr0.bits.cmd_type = 0x5;
 	}
