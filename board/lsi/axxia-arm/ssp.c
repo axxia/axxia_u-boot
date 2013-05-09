@@ -37,43 +37,6 @@
 #include <exports.h>
 #include <asm/io.h>
 
-//#define LSI_LOGIO
-
-int lsi_logio_enable=0;
-
-#define LSI_LOGIO_ENABLE() {lsi_logio_enable = 1;}
-#define LSI_LOGIO_DISABLE() {lsi_logio_enable = 0;}
-#define LSI_LOGIO_ENABLED() (1 == lsi_logio_enable)
-static inline unsigned long _READL(const char *, int, unsigned long);
-static inline unsigned long
-_READL(const char *file, int line, unsigned long address)
-{
-        unsigned long value;
-        value = readl(address);
-
-        if (0 != lsi_logio_enable)
-                printf("%s:%d - Read 0x%08lx from 0x%08lx\n",
-                       file, line, value, address);
-
-        return value;
-}
-#define READL(address) _READL(__FILE__, __LINE__, (address))
-
-static inline void _WRITEL(const char *, int, unsigned long, unsigned long);
-static inline void
-_WRITEL(const char *file, int line, unsigned long value, unsigned long address)
-{
-        writel(value, address);
-
-        if (0 != lsi_logio_enable)
-                printf( "%s:%d - Wrote 0x%08lx to 0x%08lx\n",
-                        file, line, value, address);
-
-        return;
-}
-#define WRITEL(value, address) _WRITEL(__FILE__, __LINE__, (value), (address))
-
-
 #define SECTOR_SIZE 0x10000 
 
 static int device = -1;
@@ -103,7 +66,7 @@ ssp_failure(const char *file, const char *function, const int line)
 static void
 ssp_select_device(void)
 {
-	WRITEL((0x1f &~ (1 << device)), (unsigned long *)(SSP + SSP_CSR));
+	writel((0x1f &~ (1 << device)), (unsigned long *)(SSP + SSP_CSR));
 }
 
 /*
@@ -114,7 +77,7 @@ ssp_select_device(void)
 static void
 ssp_deselect_all(void)
 {
-	WRITEL(0x1f, (unsigned long *)(SSP + SSP_CSR));
+	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
 }
 
 /*
@@ -129,17 +92,17 @@ ssp_write_device(unsigned short input, unsigned char *output)
 	unsigned long value;
 
 	/* Send the command to the device. */
-	WRITEL(input, (unsigned long *)(SSP + SSP_DR));
+	writel(input, (unsigned long *)(SSP + SSP_DR));
 
 	/* Get the response from the receive buffer. */
-	while (0 == (READL((unsigned long *)(SSP + SSP_SR)) & 4) &&
+	while (0 == (readl((unsigned long *)(SSP + SSP_SR)) & 4) &&
 	       0 < --retries)
 		;
 
 	if (0 == retries)
 		return SSP_FAILURE();
 
-	value = READL((unsigned long *)(SSP + SSP_DR));
+	value = readl((unsigned long *)(SSP + SSP_DR));
 
 	if (NULL != output)
 		*output = (unsigned char)(value & 0xff);
@@ -209,15 +172,8 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 {
 	int rc;
 	unsigned char *input = (unsigned char *)buffer;
-	int reenable_logio = 0;
 
 	printf("Writing 0x%lx bytes to offset 0x%lx\n", length, offset);
-
-	if (LSI_LOGIO_ENABLED()) {
-		printf("Writing 0x%lx bytes to offset 0x%lx\n", length, offset);
-		reenable_logio = 1;
-		LSI_LOGIO_DISABLE();
-	}
 
 	while (0 < length) {
 		int this_write;
@@ -279,11 +235,6 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 		} else {
 			udelay( 5000 );	/* TODO: Why the delay? */
 		}
-	}
-
-	if (0 != reenable_logio) {
-		printf("Write completed.\n");
-		LSI_LOGIO_ENABLE();
 	}
 
 	return 0;
@@ -430,14 +381,6 @@ ssp_read(void *buffer, unsigned long offset, unsigned long length)
 {
 	int rc;
 	unsigned char *output = (unsigned char *)buffer;
-	int reenable_logio = 0;
-
-	if (LSI_LOGIO_ENABLED()) {
-		printf("Reading 0x%lx bytes from offset 0x%lx\n",
-		       length, offset);
-		reenable_logio = 1;
-		LSI_LOGIO_DISABLE();
-	}
 
 	ssp_select_device();
 	rc = ssp_write_device(3, NULL);
@@ -469,10 +412,6 @@ ssp_read(void *buffer, unsigned long offset, unsigned long length)
 
 	if (0 != rc)
 		return SSP_FAILURE();
-
-	if (0 != reenable_logio) {
-		LSI_LOGIO_ENABLE();
-	}
 
 	return 0;
 }
@@ -562,32 +501,32 @@ ssp_init(int input_device, int input_read_only)
 	int i;
 	unsigned char value[3];
 #endif
-	int reenable_logio = 0;
 
 	device = input_device;
 
-#if (!defined(ACP_25xx) && !defined(CONFIG_AXXIA_ARM))
 	/*
 	  Set up timer 0.
 	*/
 
-	WRITEL(0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
-	WRITEL(1, (unsigned long *)(TIMER0 + TIMER_LOAD));
-	WRITEL(0xc0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
+#if (!defined(ACP_25xx) && !defined(CONFIG_AXXIA_ARM))
+	writel(0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
+	writel(1, (unsigned long *)(TIMER0 + TIMER_LOAD));
+	writel(0xc0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
 #endif
 
 	/*
 	  Set up the SSP.
 	*/
+
 #if defined(CONFIG_AXXIA_ARM) 
-	WRITEL(0x7, (unsigned long *)(SSP + SSP_CR0));
-	WRITEL(2, (unsigned long *)(SSP + SSP_CPSR));
+	writel(0x7, (unsigned long *)(SSP + SSP_CR0));
+	writel(2, (unsigned long *)(SSP + SSP_CPSR));
 #else
-	WRITEL(0x3107, (unsigned long *)(SSP + SSP_CR0));
-	WRITEL(2, (unsigned long *)(SSP + SSP_CPSR));
+	writel(0x3107, (unsigned long *)(SSP + SSP_CR0));
+	writel(2, (unsigned long *)(SSP + SSP_CPSR));
 #endif
-	WRITEL(2, (unsigned long *)(SSP + SSP_CR1));
-	WRITEL(0x1f, (unsigned long *)(SSP + SSP_CSR));
+	writel(2, (unsigned long *)(SSP + SSP_CR1));
+	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
 
 	if (0 != input_read_only) {
 		read_only = 1;
@@ -596,17 +535,10 @@ ssp_init(int input_device, int input_read_only)
 
 	read_only = 0;
 
-	LSI_LOGIO_DISABLE();
-
 #if defined(CONFIG_LSI_SERIAL_FLASH)
 	/*
 	  In order to write, decide if this is EEPROM or serial flash.
 	*/
-
-	if (LSI_LOGIO_ENABLED()) {
-		reenable_logio = 1;
-		LSI_LOGIO_DISABLE();
-	}
 
 	ssp_select_device();
 	rc = ssp_write_device(0x9f, NULL);
@@ -620,17 +552,7 @@ ssp_init(int input_device, int input_read_only)
 	rc |= ssp_write_device(0, &value[1]);
 	rc |= ssp_write_device(0, &value[2]);
 
-#if 0	
-	printf("values are 0x%x, %c\n", value[0], value[0]);
-	printf("values are 0x%x, %c\n", value[1], value[1]);
-	printf("values are 0x%x, %c\n", value[2], value[2]);
-#endif
-
 	ssp_deselect_all();
-
-	if (0 != reenable_logio) {
-		LSI_LOGIO_ENABLE();
-	}
 
 	if (0 != rc)
 		return SSP_FAILURE();
@@ -641,7 +563,7 @@ ssp_init(int input_device, int input_read_only)
 		is_flash = 0;
 
 	if (0 != is_flash)
-		WRITEL(0x907, (unsigned long *)(SSP + SSP_CR0));
+		writel(0x907, (unsigned long *)(SSP + SSP_CR0));
 #endif
 
 
