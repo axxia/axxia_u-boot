@@ -127,9 +127,11 @@ reset:
 
 	bl	save_boot_params
 
+#if 0
 	setend  be
 	ldr     r0, [r0, #0]
 	setend  le
+#endif
 	
 	/*
 	 * set the cpu to SVC32 mode
