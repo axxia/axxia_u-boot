@@ -36,8 +36,8 @@
 */
 
 /* Debugging */
-/* #undef DEBUG */
-/* #define DEBUG */
+#undef DEBUG
+/*#define DEBUG*/
 #if defined( DEBUG )
 #define DEBUG_PRINT( format, args... ) do { \
 printf( "phy:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -418,11 +418,14 @@ phy_renegotiate( int phy, int ad_value )
 
 	DEBUG_PRINT( "\n" );
 	mdio_write( phy, PHY_AUTONEG_ADVERTISE, ad_value );
+	DEBUG_PRINT( "\n" );
 
 	do {
 		control.raw = mdio_read( phy, PHY_CONTROL );
 		control.bits.restart_autoneg = 1;
+	DEBUG_PRINT( "\n" );
 		mdio_write( phy, PHY_CONTROL, control.raw );
+	DEBUG_PRINT( "\n" );
 
 		do {
 			udelay( 500000 );
@@ -430,6 +433,7 @@ phy_renegotiate( int phy, int ad_value )
 		} while( ( 0 < -- autoneg_complete_retries ) &&
 			 ( 0 == status.bits.autoneg_comp ) );
 
+	DEBUG_PRINT( "\n" );
 		if( 0 == status.bits.autoneg_comp ) {
 			puts( "." );
 		} else {
@@ -437,6 +441,7 @@ phy_renegotiate( int phy, int ad_value )
 		}
 	} while( 0 < -- autoneg_retries );
 
+	DEBUG_PRINT( "\n" );
 	if( 0 == status.bits.autoneg_comp ) {
 		printf( "Auto Negotiation Failed\n" );
 		return -1;

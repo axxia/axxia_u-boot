@@ -111,10 +111,10 @@ static int eh_stats_initialized = 0;
 #endif /* DUMP_DESCRIPTOR */
 
 #undef DUMP_PACKETS
-#define DUMP_PACKETS
+/*#define DUMP_PACKETS*/
 #ifdef DUMP_PACKETS
-#define DUMP_PACKET( direction, data, length ) \
-dump_packet_( direction, data, length );
+#define DUMP_PACKET(header, data, length) \
+dump_packet_(header, data, length);
 #else  /* DUMP_PACKETS */
 #define DUMP_PACKET( description, data, length )
 #endif /* DUMP_PACKETS */
@@ -177,7 +177,7 @@ printf( format, ##args ); \
 #endif /* TRACE */
 
 static int initialized_ = 0;
-static int rx_debug = 1;
+static int rx_debug = 0;
 static int rx_allow_all = 0;
 static int dump_packets = 1;
 static int dump_descriptors = 1;
@@ -192,10 +192,6 @@ DECLARE_GLOBAL_DATA_PTR;
   ======================================================================
 */
 int test( void );
-
-#define readio(address) readl((address))
-#define writeio(value, address) writel((value), (address))
-
 
 /* -- -- */
 
@@ -656,15 +652,15 @@ static void
 dump_configuration(void)
 {
 	printf("RX: CONF:0x%lx MODE:0x%lx VLAN:0x%lx\n",
-	       (unsigned long)readio(APP3XXNIC_RX_CONF),
-	       (unsigned long)readio(APP3XXNIC_RX_MODE),
-	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x1d0));
+	       (unsigned long)readl(APP3XXNIC_RX_CONF),
+	       (unsigned long)readl(APP3XXNIC_RX_MODE),
+	       (unsigned long)readl(APP3XXNIC_RX_BASE+0x1d0));
 	printf("TX: WM:0x%lx EXCONF:0x%lx CONF:0x%lx TVCONF:0x%lx MODE:0x%lx\n",
-	       (unsigned long)readio(APP3XXNIC_TX_WATERMARK),
-	       (unsigned long)readio(APP3XXNIC_TX_EXTENDED_CONF),
-	       (unsigned long)readio(APP3XXNIC_TX_CONF),
-	       (unsigned long)readio(APP3XXNIC_TX_TIME_VALUE_CONF),
-	       (unsigned long)readio(APP3XXNIC_TX_MODE));
+	       (unsigned long)readl(APP3XXNIC_TX_WATERMARK),
+	       (unsigned long)readl(APP3XXNIC_TX_EXTENDED_CONF),
+	       (unsigned long)readl(APP3XXNIC_TX_CONF),
+	       (unsigned long)readl(APP3XXNIC_TX_TIME_VALUE_CONF),
+	       (unsigned long)readl(APP3XXNIC_TX_MODE));
 }
 
 static void
@@ -672,22 +668,22 @@ dump_rx_stats(void)
 {
 	printf("RX: SMII:0x%lx VLAN:0x%lx OK:0x%lx OV:0x%lx CRC:0x%lx "
 	       "ALIGN:0x%lx US:0x%lx\n",
-	       (unsigned long)readio(APP3XXNIC_RX_SMII_STATUS),
-	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x270),
-	       (unsigned long)readio(APP3XXNIC_RX_STAT_PACKET_OK),
-	       (unsigned long)readio(APP3XXNIC_RX_STAT_OVERFLOW),
-	       (unsigned long)readio(APP3XXNIC_RX_STAT_CRC_ERROR),
-	       (unsigned long)readio(APP3XXNIC_RX_STAT_ALIGN_ERROR),
-	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x280));
+	       (unsigned long)readl(APP3XXNIC_RX_SMII_STATUS),
+	       (unsigned long)readl(APP3XXNIC_RX_BASE+0x270),
+	       (unsigned long)readl(APP3XXNIC_RX_STAT_PACKET_OK),
+	       (unsigned long)readl(APP3XXNIC_RX_STAT_OVERFLOW),
+	       (unsigned long)readl(APP3XXNIC_RX_STAT_CRC_ERROR),
+	       (unsigned long)readl(APP3XXNIC_RX_STAT_ALIGN_ERROR),
+	       (unsigned long)readl(APP3XXNIC_RX_BASE+0x280));
 	printf("RX counts: 64:0x%lx 65_127:0x%lx 128_255:0x%lx 256_511:0x%lx "
 	       "512_1023:0x%lx 1024_MAX:0x%lx OV:0x%lx\n",
-	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x288),
-	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x290),
-	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x298),
-	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x2a0),
-	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x2a8),
-	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x2b0),
-	       (unsigned long)readio(APP3XXNIC_RX_BASE+0x2b8));
+	       (unsigned long)readl(APP3XXNIC_RX_BASE+0x288),
+	       (unsigned long)readl(APP3XXNIC_RX_BASE+0x290),
+	       (unsigned long)readl(APP3XXNIC_RX_BASE+0x298),
+	       (unsigned long)readl(APP3XXNIC_RX_BASE+0x2a0),
+	       (unsigned long)readl(APP3XXNIC_RX_BASE+0x2a8),
+	       (unsigned long)readl(APP3XXNIC_RX_BASE+0x2b0),
+	       (unsigned long)readl(APP3XXNIC_RX_BASE+0x2b8));
 }
 
 /*
@@ -709,7 +705,7 @@ lsi_femac_receive_test(struct eth_device *dev)
 	eth_halt( );
 
 	if( 0 > eth_init( bd ) ) { eth_halt( ); return; }
-	dump_configuration( );
+	/*dump_configuration( );*/
 
 	for( ; ; ) {
 
@@ -773,7 +769,7 @@ lsi_femac_loopback_test(struct eth_device *dev)
 
 	eth_halt( );
 	if( 0 > eth_init( bd ) ) { eth_halt( ); return; }
-	dump_configuration( );
+	/*dump_configuration( );*/
 
 	for( ; ; ) {
 
@@ -1052,7 +1048,7 @@ static int rx_enable_( void ) {
 	*/
 
 	rx_configuration_ = APP3XXNIC_RX_CONF_STRIPCRC;
-	DEBUG_PRINT( "smii_status_=0x%x\n",
+	DEBUG_PRINT( "smii_status_=0x%lx\n",
 		     * ( ( volatile unsigned long * )
 			 APP3XXNIC_RX_SMII_STATUS ) );
 	DEBUG_PRINT( "phy_link=%d phy_speed=%d phy_duplex=%d\n",
@@ -1086,7 +1082,7 @@ static int rx_enable_( void ) {
 	}
 
 	rx_configuration_ |= 0x4;
-	writeio( rx_configuration_, APP3XXNIC_RX_CONF );
+	writel( rx_configuration_, APP3XXNIC_RX_CONF );
 
 	/* that's all */
 	TRACE_ENDING( "\n" );
@@ -1105,9 +1101,9 @@ void rx_disable_( void ) {
 
 	TRACE_BEGINNING( "\n" );
 
-	rx_configuration_ = readio( APP3XXNIC_RX_CONF );
+	rx_configuration_ = readl( APP3XXNIC_RX_CONF );
 	rx_configuration_ &= ~ APP3XXNIC_RX_CONF_ENABLE;
-	writeio( rx_configuration_, APP3XXNIC_RX_CONF );
+	writel( rx_configuration_, APP3XXNIC_RX_CONF );
 	rx_enabled_ = 0;
 
 	/*
@@ -1150,13 +1146,13 @@ tx_enable_(struct eth_device *device)
 		tx_configuration_ |= APP3XXNIC_TX_CONF_ENABLE_SWAP_SA;
 		swap_source_address_ =
 			((device->enetaddr[4]) << 8) | device->enetaddr[5];
-		writeio(swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_2);
+		writel(swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_2);
 		swap_source_address_ =
 			((device->enetaddr[2]) << 8) | device->enetaddr[3];
-		writeio(swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_1);
+		writel(swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_1);
 		swap_source_address_ =
 			((device->enetaddr[0]) << 8) | device->enetaddr[1];
-		writeio(swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_0);
+		writel(swap_source_address_, APP3XXNIC_SWAP_SOURCE_ADDRESS_0);
 	}
 
 	TX_CONF_SET_IFG( tx_configuration_, 0xf );
@@ -1185,7 +1181,7 @@ tx_enable_(struct eth_device *device)
 
 	}
 
-	writeio( tx_configuration_, APP3XXNIC_TX_CONF );
+	writel( tx_configuration_, APP3XXNIC_TX_CONF );
 
 	/* that's all */
 	TRACE_ENDING( "\n" );
@@ -1203,9 +1199,9 @@ void tx_disable_( void ) {
 	unsigned long tx_configuration_;
 
 	TRACE_BEGINNING( "\n" );
-	tx_configuration_ = readio( APP3XXNIC_TX_CONF );
+	tx_configuration_ = readl( APP3XXNIC_TX_CONF );
 	tx_configuration_ &= ~ APP3XXNIC_TX_CONF_ENABLE;
-	writeio( tx_configuration_, APP3XXNIC_TX_CONF );
+	writel( tx_configuration_, APP3XXNIC_TX_CONF );
 	tx_enabled_ = 0;
 
 	/* that's all */
@@ -1292,36 +1288,33 @@ dump_descriptor_( unsigned long line, void * address )
 
 #ifdef DUMP_PACKETS
 
-static void dump_packet_( int direction, void * data, int length ) {
+static void dump_packet_(const char *header, void *packet, int length)
+{
+	char buffer[256];
+	char *string;
+	unsigned long offset = 0;
+	int i;
+	unsigned char *data = packet;
 
-	int data_index_ = 0;
+	printf("---- %s (%d bytes)\n", header, length);
 
-	if( 0 == dump_packets) { return; }
-	printf( "\n ---------- %s: address:0x%lx length=%d conf=0x%lx\n",
-		( 0 == direction ) ? "RX" : "TX", ( unsigned long ) data, length,
-		( 0 == direction ) ? readio( APP3XXNIC_RX_CONF ) :
-		readio( APP3XXNIC_TX_CONF ) );
+	while (0 < length) {
+		int this_line;
 
-	while( data_index_ < ( length / 2 ) ) {
+		string = buffer;
+		string += sprintf(string, "%06lx ", offset);
+		this_line = (16 > length) ? length : 16;
 
-		int output_index_;
-		unsigned short * data_ =
-			& ( ( ( unsigned short * ) data ) [ data_index_ ] );
-
-		for( output_index_ = 0;
-		     ( output_index_ < 8 ) && ( data_index_ < length );
-		     ++ output_index_, ++ data_index_ ) {
-
-			printf( "%04x ", htons( data_ [ output_index_ ] ) );
-
+		for (i = 0; i < this_line; ++i) {
+			string += sprintf(string, "%02x ", *data++);
+			--length;
+			++offset;
 		}
 
-		printf( "\n" );
-
+		printf("%s\n", buffer);
 	}
 
-	printf( " ----------\n\n" );
-
+	printf("\n");
 }
 
 #endif /* DUMP_PACKETS */
@@ -1437,7 +1430,9 @@ get_env_ad_value( void )
 	  0x041 - 10 half
 	*/
 
+	DEBUG_PRINT( "\n");
 	ad_value_string_ = getenv( "ad_value" );
+	DEBUG_PRINT( "\n");
 
 	if( ( char * ) 0 != ad_value_string_ ) {
 
@@ -1469,6 +1464,7 @@ get_env_ad_value( void )
 
 	}
 
+	DEBUG_PRINT( "\n");
 	/* that's all */
 	return return_value_;
 }
@@ -1539,11 +1535,13 @@ phy_enable_( int phy )
 	/*
 	  Set up the link.
 	*/
-
+	
+	DEBUG_PRINT( "\n");
 	if (0 != phy_renegotiate(phy_address_, get_env_ad_value())) {
 		ERROR_PRINT( "PHY: Auto Negotiation Failed.\n" );
 	}
 
+	DEBUG_PRINT( "\n");
 	printf("%s %s\n",
 	       0 == phy_speed(phy_address_) ? "10M" : "100M",
 	       0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
@@ -1584,7 +1582,7 @@ static unsigned long app3xxnic_tx_packets_( void ) {
 	for( index_ = 0; index_ < ( sizeof( registers_ ) / sizeof( int ) );
 	     ++ index_ ) {
 
-		tx_packets_ += readio( registers_ [ index_ ] );
+		tx_packets_ += readl( registers_ [ index_ ] );
 
 	}
 
@@ -1614,7 +1612,7 @@ static unsigned long app3xxnic_tx_bytes_( void ) {
 	for( index_ = 0; index_ < ( sizeof( registers_ ) / sizeof( int ) );
 	     ++ index_ ) {
 
-		tx_bytes_ += readio( registers_ [ index_ ] );
+		tx_bytes_ += readl( registers_ [ index_ ] );
 
 	}
 
@@ -1663,9 +1661,9 @@ static void app3xxnic_display_( void ) {
 	for( index_ = 0; index_ < ( sizeof( registers_ ) / sizeof( int ) );
 	     ++ index_ ) {
 
-		unsigned long value_ = readio( registers_ [ index_ ] );
+		unsigned long value_ = readl( registers_ [ index_ ] );
 
-		printf( " 0x%x:0x%x\n", registers_ [ index_ ], value_ );
+		printf( " 0x%x:0x%lx\n", registers_ [ index_ ], value_ );
 
 	}
 
@@ -1697,7 +1695,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	}
 
 	/* Reset the MAC */
-	writeio( 0x80000000, APP3XXNIC_DMA_PCI_CONTROL );
+	writel( 0x80000000, APP3XXNIC_DMA_PCI_CONTROL );
 
 	/*
 	  Decide which interface to use, ARM attached MAC or the Management Port
@@ -1744,15 +1742,13 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		( TX_BUFFER_SIZE + BUFFER_GRANULARITY ) + /* TX Buffers */
 		( 2 * sizeof( app3xxnic_queue_pointer_t ) ); /* Tail Pointers */
 
-	printf("%s:%d - memory_needed=0x%x\n", __FILE__, __LINE__, memory_needed);
-
 #if 0
 	if( ( void * ) 0 == ( memory = malloc( memory_needed ) ) ) {
 		ERROR_PRINT( "Unable to allocate space for descriptors and buffers\n" );
 		return 1;
 	}
 #else
-	memory = (void *)0x40000000UL;
+	memory = (void *)0x3c0000UL;
 #endif
 
 	/*
@@ -1780,9 +1776,9 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	    ++tzc_size_field;
 	  }
 
-	  writeio(tzc_address, 0xf0941110);
-	  writeio(0, 0xf0941114);
-	  writeio(0xf0000001 | (tzc_size_field << 1), 0xf0941118);
+	  writel(tzc_address, 0xf0941110);
+	  writel(0, 0xf0941114);
+	  writel(0xf0000001 | (tzc_size_field << 1), 0xf0941118);
 	}
 #endif
 #endif
@@ -1793,34 +1789,35 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	temp = ( void * )
 		( ( unsigned long ) rx_descriptors_ + 
 		  ( rx_number_of_descriptors * sizeof( app3xxnic_dma_descriptor_t ) ) );
-	DEBUG_PRINT( "temp=0x%x rx_descriptors_=0x%08x\n", temp, rx_descriptors_ );
+	DEBUG_PRINT( "temp=0x%p rx_descriptors_=0x%p\n",
+		     temp, rx_descriptors_ );
 	/*printf( "rx_descriptors_=0x%08x\n", rx_descriptors_ );*/
 
 	tx_descriptors_ = ( app3xxnic_dma_descriptor_t * ) ALIGN64B( temp );
 	temp = ( void * )
 		( ( unsigned long ) tx_descriptors_ + 
 		  ( TX_NUMBER_OF_DESCRIPTORS * sizeof( app3xxnic_dma_descriptor_t ) ) );
-	DEBUG_PRINT( "temp=0x%x tx_descriptors_=0x%08x\n", temp, tx_descriptors_ );
+	DEBUG_PRINT( "temp=0x%p tx_descriptors_=0x%p\n", temp, tx_descriptors_ );
 	/*printf( "tx_descriptors_=0x%08x\n", tx_descriptors_ );*/
 
 	rx_buffer_ = ( void * ) ALIGN64B( temp );
 	temp = ( void * ) ( ( unsigned long ) rx_buffer_ + rx_buffer_size );
-	DEBUG_PRINT( "rx_buffer_=0x%x\n", rx_buffer_ );
+	DEBUG_PRINT( "rx_buffer_=0x%p\n", rx_buffer_ );
 	/*printf( "rx_buffer_=0x%x\n", rx_buffer_ );*/
 
 	tx_buffer_ = ( void * ) ALIGN64B( temp );
 	temp = ( void * ) ( ( unsigned long ) tx_buffer_ + TX_BUFFER_SIZE );
-	DEBUG_PRINT( "tx_buffer_=0x%x\n", tx_buffer_ );
+	DEBUG_PRINT( "tx_buffer_=0x%p\n", tx_buffer_ );
 	/*printf( "tx_buffer_=0x%x\n", tx_buffer_ );*/
 
 	rx_tail_ = ( void * ) ALIGN( temp, sizeof( app3xxnic_queue_pointer_t ) );
 	temp = ( void * ) ( rx_tail_ + sizeof( app3xxnic_queue_pointer_t ) );
-	DEBUG_PRINT( "rx_tail_=0x%x\n", rx_tail_ );
+	DEBUG_PRINT( "rx_tail_=0x%p\n", rx_tail_ );
 	/*printf( "rx_tail_=0x%x\n", rx_tail_ );*/
 
 	tx_tail_ = ( void * ) ALIGN( temp, sizeof( app3xxnic_queue_pointer_t ) );
 	temp = ( void * ) ( tx_tail_ + sizeof( app3xxnic_queue_pointer_t ) );
-	DEBUG_PRINT( "tx_tail_=0x%x\n", tx_tail_ );
+	DEBUG_PRINT( "tx_tail_=0x%p\n", tx_tail_ );
 	/*printf( "tx_tail_=0x%x\n", tx_tail_ );*/
 
 	/* Initialize descriptors. */
@@ -1854,35 +1851,35 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		     rx_number_of_descriptors, TX_NUMBER_OF_DESCRIPTORS );
 	DEBUG_PRINT( "Receive Buffer Size : %d\n", rx_buffer_size );
 	DEBUG_PRINT( "Enabling the MAC.\n" );
-	writeio( 0x0, APP3XXNIC_RX_SOFT_RESET );
-	writeio( 0x1, APP3XXNIC_RX_MODE );
-	writeio( 0x0, APP3XXNIC_TX_SOFT_RESET );
-	writeio( 0x1, APP3XXNIC_TX_MODE );
+	writel( 0x0, APP3XXNIC_RX_SOFT_RESET );
+	writel( 0x1, APP3XXNIC_RX_MODE );
+	writel( 0x0, APP3XXNIC_TX_SOFT_RESET );
+	writel( 0x1, APP3XXNIC_TX_MODE );
 	if( is_asic( ) ) {
-		writeio( 0x300a, APP3XXNIC_TX_WATERMARK );
+		writel( 0x300a, APP3XXNIC_TX_WATERMARK );
 	} else {
-		/* writeio( 0xc00096, APP3XXNIC_TX_WATERMARK ); */
-		writeio( 0x7f007f, APP3XXNIC_TX_WATERMARK );
+		/* writel( 0xc00096, APP3XXNIC_TX_WATERMARK ); */
+		writel( 0x7f007f, APP3XXNIC_TX_WATERMARK );
 	}
-	writeio( 0x1, APP3XXNIC_TX_HALF_DUPLEX_CONF );
-	writeio( 0xffff, APP3XXNIC_TX_TIME_VALUE_CONF );
-	writeio( 0x1, APP3XXNIC_TX_INTERRUPT_CONTROL );
-	writeio( 0x5275, APP3XXNIC_TX_EXTENDED_CONF );
-	writeio( 0x1, APP3XXNIC_RX_INTERNAL_INTERRUPT_CONTROL );
-	writeio( 0x1, APP3XXNIC_RX_EXTERNAL_INTERRUPT_CONTROL );
-	writeio( 0x40010000, APP3XXNIC_DMA_PCI_CONTROL );
-	writeio( 0x30000, APP3XXNIC_DMA_CONTROL );
-	writeio( 0x280044, APP3XXNIC_DMA_BASE + 0x60 );
-	writeio( 0xc0, APP3XXNIC_DMA_BASE + 0x64 );
+	writel( 0x1, APP3XXNIC_TX_HALF_DUPLEX_CONF );
+	writel( 0xffff, APP3XXNIC_TX_TIME_VALUE_CONF );
+	writel( 0x1, APP3XXNIC_TX_INTERRUPT_CONTROL );
+	writel( 0x5275, APP3XXNIC_TX_EXTENDED_CONF );
+	writel( 0x1, APP3XXNIC_RX_INTERNAL_INTERRUPT_CONTROL );
+	writel( 0x1, APP3XXNIC_RX_EXTERNAL_INTERRUPT_CONTROL );
+	writel( 0x40010000, APP3XXNIC_DMA_PCI_CONTROL );
+	writel( 0x30000, APP3XXNIC_DMA_CONTROL );
+	writel( 0x280044, APP3XXNIC_DMA_BASE + 0x60 );
+	writel( 0xc0, APP3XXNIC_DMA_BASE + 0x64 );
 
 	/*
 	  Update the tail pointer addresses and queue sizes.  The transmit
 	  head pointer will be updated when there is something to transmit.
 	*/
 
-	writeio( ( unsigned int ) rx_descriptors_,
+	writel( ( unsigned int ) rx_descriptors_,
 		 APP3XXNIC_DMA_RX_QUEUE_BASE_ADDRESS );
-	writeio( ( unsigned int )
+	writel( ( unsigned int )
 		 ( ( rx_number_of_descriptors *
 		     sizeof( app3xxnic_dma_descriptor_t ) ) / 1024 ),
 		 APP3XXNIC_DMA_RX_QUEUE_SIZE );
@@ -1891,13 +1888,13 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		sizeof( app3xxnic_queue_pointer_t ) );
 
 	memset( ( void * ) rx_tail_, 0, sizeof( app3xxnic_queue_pointer_t ) );
-	writeio( ( unsigned long ) rx_tail_, APP3XXNIC_DMA_RX_TAIL_POINTER_ADDRESS );
+	writel( ( unsigned long ) rx_tail_, APP3XXNIC_DMA_RX_TAIL_POINTER_ADDRESS );
 
-	writeio( 3, APP3XXNIC_DMA_BASE + 0x1c );
+	writel( 3, APP3XXNIC_DMA_BASE + 0x1c );
 
-	writeio( ( unsigned int ) tx_descriptors_,
+	writel( ( unsigned int ) tx_descriptors_,
 		 APP3XXNIC_DMA_TX_QUEUE_BASE_ADDRESS );
-	writeio( ( unsigned int )
+	writel( ( unsigned int )
 		 ( TX_NUMBER_OF_DESCRIPTORS *
 		   sizeof( app3xxnic_dma_descriptor_t ) / 1024 ),
 		 APP3XXNIC_DMA_TX_QUEUE_SIZE );
@@ -1906,35 +1903,38 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		sizeof( app3xxnic_queue_pointer_t ) );
 
 	memset( ( void * ) tx_tail_, 0, sizeof( app3xxnic_queue_pointer_t ) );
-	writeio( ( unsigned long ) tx_tail_, APP3XXNIC_DMA_TX_TAIL_POINTER_ADDRESS );
+	writel( ( unsigned long ) tx_tail_, APP3XXNIC_DMA_TX_TAIL_POINTER_ADDRESS );
 
-	rx_tail_->raw = readio( APP3XXNIC_DMA_RX_TAIL_POINTER_LOCAL_COPY );
+	rx_tail_->raw = readl( APP3XXNIC_DMA_RX_TAIL_POINTER_LOCAL_COPY );
 	rx_tail_copy_.raw = rx_tail_->raw;
 	rx_head_.raw = rx_tail_->raw;
 	queue_decrement_( & rx_head_, rx_number_of_descriptors );
 	rx_head_.bits.generation_bit =
 		( 0 == rx_head_.bits.generation_bit ) ? 1 : 0;
-	DEBUG_PRINT( "rx_head_.raw=0x%x rx_tail_->raw=0x%x "
-		     "rx_tail_copy_.raw=0x%x\n",
+	DEBUG_PRINT( "rx_head_.raw=0x%p rx_tail_->raw=0x%p "
+		     "rx_tail_copy_.raw=0x%p\n",
 		     rx_head_.raw, rx_tail_->raw, rx_tail_copy_.raw );
-	writeio( rx_head_.raw, APP3XXNIC_DMA_RX_HEAD_POINTER );
+	writel( rx_head_.raw, APP3XXNIC_DMA_RX_HEAD_POINTER );
 
-	tx_tail_->raw = readio( APP3XXNIC_DMA_TX_TAIL_POINTER_LOCAL_COPY );
+	tx_tail_->raw = readl( APP3XXNIC_DMA_TX_TAIL_POINTER_LOCAL_COPY );
 	tx_tail_copy_.raw = tx_tail_->raw;
 	tx_head_.raw = tx_tail_->raw;
 	DEBUG_PRINT( "tx_head_.raw=0x%08lx\n", tx_head_.raw );
-	writeio( tx_head_.raw, APP3XXNIC_DMA_TX_HEAD_POINTER );
+	writel( tx_head_.raw, APP3XXNIC_DMA_TX_HEAD_POINTER );
 
 	/*
 	  Enable the PHY, RX, and TX, unless booting in band.
 	*/
 
+	DEBUG_PRINT( "tx_head_.raw=0x%08lx\n", tx_head_.raw );
 	mdio_initialize();
+	DEBUG_PRINT( "tx_head_.raw=0x%08lx\n", tx_head_.raw );
 
 	{
 
 		int retries_ = 10;
 
+		DEBUG_PRINT( "\n");
 		while( 0 != phy_enable_( phy_address_ ) ) {
 
 			WARN_PRINT( "Failed to initialize the PHY, retrying!\n" );
@@ -1943,12 +1943,14 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 
 		}
 
+		DEBUG_PRINT( "\n");
 		if( 0 != rx_enable_( ) ) {
 
 			WARN_PRINT( "Receiver not enabled, link down?\n" );
 
 		}
 
+		DEBUG_PRINT( "\n");
 		if( 0 != tx_enable_(dev) ) {
 
 			WARN_PRINT( "Transmitter not enabled, link down?\n" );
@@ -1957,6 +1959,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 
 	}
 
+		DEBUG_PRINT( "\n");
 #ifdef EH_STATS
 	if(0 == eh_stats_initialized) {
 		printf("Clearing the eh_stats structure.\n");
@@ -1965,11 +1968,13 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	}
 #endif /* EH_STATS */
 
-	/* set the "initialized" flag */
-	initialized_ = 1;
+	/* set the "initialized" flag */	
+		DEBUG_PRINT( "\n");
+		initialized_ = 1;
 
-	/* that's all */
-	TRACE_ENDING( "\n" );
+	/* that's all */	
+		DEBUG_PRINT( "\n");
+		TRACE_ENDING( "\n" );
 	return 0;
 
 }
@@ -2004,10 +2009,10 @@ void lsi_femac_eth_halt(struct eth_device *device) {
 #endif
 
 	/* disable the MAC */
-	writeio( 0, APP3XXNIC_RX_MODE );
-	writeio( 1, APP3XXNIC_RX_SOFT_RESET );
-	writeio( 0, APP3XXNIC_TX_MODE );
-	writeio( 1, APP3XXNIC_TX_SOFT_RESET );
+	writel( 0, APP3XXNIC_RX_MODE );
+	writel( 1, APP3XXNIC_RX_SOFT_RESET );
+	writel( 0, APP3XXNIC_TX_MODE );
+	writel( 1, APP3XXNIC_TX_SOFT_RESET );
 
 	/* set the "initialized" flag */
 	initialized_ = 0;
@@ -2043,10 +2048,10 @@ lsi_femac_eth_rx(struct eth_device *dev)
 		printf( "\t * %s:%d - 0x%lx 0x%lx/0x%lx/0x%lx/0x%lx 0x%lx 0x%lx 0x%lx %d\n",
 			__FILE__, __LINE__,
 			( unsigned long ) rx_descriptors_,
-			readio( APP3XXNIC_RX_STAT_PACKET_OK ),
-			readio( APP3XXNIC_RX_STAT_OVERFLOW ),
-			readio( APP3XXNIC_RX_STAT_CRC_ERROR ),
-			readio( APP3XXNIC_RX_STAT_ALIGN_ERROR ),
+			readl( APP3XXNIC_RX_STAT_PACKET_OK ),
+			readl( APP3XXNIC_RX_STAT_OVERFLOW ),
+			readl( APP3XXNIC_RX_STAT_CRC_ERROR ),
+			readl( APP3XXNIC_RX_STAT_ALIGN_ERROR ),
 			rx_head_.raw, rx_tail_copy_.raw,
 			( swab_queue_pointer( rx_tail_ ) ).raw,
 			queue_initialized_( swab_queue_pointer( rx_tail_ ),
@@ -2144,10 +2149,10 @@ lsi_femac_eth_rx(struct eth_device *dev)
 
 			unsigned long overflow_, ok_, crc_, align_;
 
-			overflow_ = readio( APP3XXNIC_RX_STAT_OVERFLOW );
-			ok_ = readio( APP3XXNIC_RX_STAT_PACKET_OK );
-			crc_ = readio( APP3XXNIC_RX_STAT_CRC_ERROR );
-			align_ = readio( APP3XXNIC_RX_STAT_ALIGN_ERROR );
+			overflow_ = readl( APP3XXNIC_RX_STAT_OVERFLOW );
+			ok_ = readl( APP3XXNIC_RX_STAT_PACKET_OK );
+			crc_ = readl( APP3XXNIC_RX_STAT_CRC_ERROR );
+			align_ = readl( APP3XXNIC_RX_STAT_ALIGN_ERROR );
 
 #ifdef DUMP_STATS
 #ifdef EH_STATS
@@ -2180,22 +2185,9 @@ lsi_femac_eth_rx(struct eth_device *dev)
 				unsigned char * destination_ =
 					( unsigned char * ) NetRxPackets [ 0 ];
 
-				printf("%s:%d - \n"
-				       "DEST:%02x:%02x:%02x:%02x:%02x:%02x\n"
-				       " DEV:%02x:%02x:%02x:%02x:%02x:%02x\n",
-				       __FILE__, __LINE__,
-				       destination_[0],
-				       destination_[1],
-				       destination_[2],
-				       destination_[3],
-				       destination_[4],
-				       destination_[5],
-				       dev->enetaddr[0],
-				       dev->enetaddr[1],
-				       dev->enetaddr[2],
-				       dev->enetaddr[3],
-				       dev->enetaddr[4],
-				       dev->enetaddr[5]); /* ZZZ */
+					DUMP_PACKET( "RX",
+						     ( void * ) ( NetRxPackets [ 0 ] ),
+						     bytes_received_ );
 
 				if( ( 0 != rx_allow_all ) ||
 				    ( ( 0 == memcmp( ( const void * ) & ( destination_ [ 0 ] ),
@@ -2205,18 +2197,9 @@ lsi_femac_eth_rx(struct eth_device *dev)
 						     ( const void * ) & ( broadcast_ [ 0 ] ),
 						     6 ) ) ) ) {
 
-					DUMP_PACKET( 0,
-						     ( void * ) ( NetRxPackets [ 0 ] ),
-						     bytes_received_ );
-
 					if( 0 == rx_debug ) {
-
-#if 0
-					  dump_packet("RX", (void *)destination_, bytes_received_);
-#endif
 						NetReceive( NetRxPackets[ 0 ],
 							    bytes_received_ );
-
 					}
 
 				} else {
@@ -2224,8 +2207,6 @@ lsi_femac_eth_rx(struct eth_device *dev)
 #ifdef DUMP_STATS
 #ifdef EH_STATS
 					++eh_stats->rx_packet_bad_address;
-#else
-					printf( "Dumping Packet Not Addressed to Us.\n" );
 #endif
 #endif
 
@@ -2271,7 +2252,7 @@ lsi_femac_eth_rx(struct eth_device *dev)
 
 		if( 0 != head_changed_ ) {
 
-			writeio( rx_head_.raw, APP3XXNIC_DMA_RX_HEAD_POINTER );
+			writel( rx_head_.raw, APP3XXNIC_DMA_RX_HEAD_POINTER );
 
 		}
 
@@ -2303,7 +2284,7 @@ lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 	int bytes_sent_ = 0;
 
 	TRACE_BEGINNING( "packet=0x%p length=%d\n", packet, length );
-	/*DUMP_PACKET( 1, (void *)packet, length );*/
+	DUMP_PACKET( "TX", (void *)packet, length );
 	TX_DEBUG_PRINT( "Sending %d byte packet\n", length );
 	TX_DEBUG_PRINT( "tail=0x%x/%d tail_copy=0x%x/%d\n",
 			tx_tail_->bits.offset, tx_tail_->bits.generation_bit,
@@ -2384,7 +2365,7 @@ lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
                              readl( APP3XXNIC_DMA_TX_TAIL_POINTER_ADDRESS ),
                              readl( APP3XXNIC_DMA_TX_TAIL_POINTER_LOCAL_COPY ) );
 
-		writeio( tx_head_.raw, APP3XXNIC_DMA_TX_HEAD_POINTER );
+		writel( tx_head_.raw, APP3XXNIC_DMA_TX_HEAD_POINTER );
 		DEBUG_PRINT( "Before writing head ptr -- TX_HEAD=0x%08lx TX_TAIL=0x%08lx, TX_TAIL_LC=0x%08lx\n",
                              readl( APP3XXNIC_DMA_TX_HEAD_POINTER ),
                              readl( APP3XXNIC_DMA_TX_TAIL_POINTER_ADDRESS ),
@@ -2429,7 +2410,7 @@ lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 				return 0;
 
 			} else {
-				packets_sent_ = readio( APP3XXNIC_TX_STAT_PACKET_OK );
+				packets_sent_ = readl( APP3XXNIC_TX_STAT_PACKET_OK );
 #ifdef DUMP_STATS
 #ifdef EH_STATS
 				++eh_stats->tx_packet_sent;

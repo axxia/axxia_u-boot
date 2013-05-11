@@ -340,14 +340,14 @@ int serial_early_init(void);
 #endif
 
 
-#define TIMER0 (IO+0x1000)
-#define TIMER1 (IO+0x1020)
-#define TIMER2 (IO+0x1040)
-#define TIMER3 (IO+0x1060)
-#define TIMER4 (IO+0x1080)
-#define TIMER5 (IO+0x10a0)
-#define TIMER6 (IO+0x10c0)
-#define TIMER7 (IO+0x10e0)
+#define TIMER0 (IO+0x91000)
+#define TIMER1 (IO+0x91020)
+#define TIMER2 (IO+0x91040)
+#define TIMER3 (IO+0x91060)
+#define TIMER4 (IO+0x91080)
+#define TIMER5 (IO+0x910a0)
+#define TIMER6 (IO+0x910c0)
+#define TIMER7 (IO+0x910e0)
 
 /*
   ======================================================================
@@ -537,9 +537,9 @@ int ssp_init(int, int);
 #define CONFIG_SYS_SDRAM_BASE		0x00000000
 
 /*#define CONFIG_SYS_INIT_SP_ADDR         (NON_SECURE_SRAM_END - GENERATED_GBL_DATA_SIZE) */
-#define CONFIG_SYS_INIT_SP_ADDR         0x300000
+#define CONFIG_SYS_INIT_SP_ADDR         0x280000
 #define CONFIG_SYS_MALLOC_BASE		CONFIG_SYS_INIT_SP_ADDR
-#define CONFIG_SYS_MALLOC_SIZE (0x400000 - CONFIG_SYS_MALLOC_BASE)
+#define CONFIG_SYS_MALLOC_SIZE (0x400000 - CONFIG_SYS_MALLOC_BASE - 0x40000)
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_SYS_MALLOC_SIZE)
 
 #define CONFIG_SYS_EMIF_PRECALCULATED_TIMING_REGS
@@ -559,10 +559,10 @@ int ssp_init(int, int);
   ======================================================================
 */
 
-#define MDIO_CONTROL_RD_DATA (IO+0x10000)
-#define MDIO_STATUS_RD_DATA  (IO+0x10004)
-#define MDIO_CLK_OFFSET      (IO+0x10008)
-#define MDIO_CLK_PERIOD      (IO+0x1000c)
+#define MDIO_CONTROL_RD_DATA (IO+0x90000)
+#define MDIO_STATUS_RD_DATA  (IO+0x90004)
+#define MDIO_CLK_OFFSET      (IO+0x90008)
+#define MDIO_CLK_PERIOD      (IO+0x9000c)
 
 #ifndef __ASSEMBLY__
 int mdio_initialize( void );
@@ -592,9 +592,9 @@ extern unsigned char ethernet_address[6];
 #define CONFIG_CMD_NET
 #define CONFIG_CMD_DHCP
 #define CONFIG_CMD_PING
-#define APP3XXNIC_RX_BASE  (IO+0xA0000)
-#define APP3XXNIC_TX_BASE  (IO+0xA1000)
-#define APP3XXNIC_DMA_BASE (IO+0xA2000)
+#define APP3XXNIC_RX_BASE  (IO+0x120000)
+#define APP3XXNIC_TX_BASE  (IO+0x121000)
+#define APP3XXNIC_DMA_BASE (IO+0x122000)
 #endif
 
 /*
