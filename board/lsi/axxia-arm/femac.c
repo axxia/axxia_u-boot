@@ -610,7 +610,7 @@ swab_queue_pointer(const app3xxnic_queue_pointer_t *old_queue)
   for now, keep one descriptor between them always.
 */
 
-#define RX_NUMBER_OF_DESCRIPTORS 1024
+#define RX_NUMBER_OF_DESCRIPTORS 128
 #define RX_BUFFER_SIZE ( 128 * 1024 )
 #define RX_BUFFER_PER_DESCRIPTOR \
 ( RX_BUFFER_SIZE / RX_NUMBER_OF_DESCRIPTORS )
@@ -988,22 +988,18 @@ static int queue_uninitialzed_( app3xxnic_queue_pointer_t head,
   queue_increment_
 */
 
-static void queue_increment_( app3xxnic_queue_pointer_t * queue,
-			      int size ) {
+static void
+queue_increment_(app3xxnic_queue_pointer_t *queue, int size)
+{
+	queue->bits.offset += sizeof(app3xxnic_dma_descriptor_t);
 
-	queue->bits.offset += sizeof( app3xxnic_dma_descriptor_t );
-
-	if( ( size * sizeof( app3xxnic_dma_descriptor_t ) ) ==
-	    queue->bits.offset ) {
-
+	if ((size * sizeof(app3xxnic_dma_descriptor_t)) == queue->bits.offset) {
 		queue->bits.offset = 0;
 		queue->bits.generation_bit =
-			( 0 == queue->bits.generation_bit ) ? 1 : 0;
-
+			(0 == queue->bits.generation_bit) ? 1 : 0;
 	}
 
 	return;
-
 }
 
 /*
@@ -1286,8 +1282,6 @@ dump_descriptor_( unsigned long line, void * address )
   dump_packet_
 */
 
-#ifdef DUMP_PACKETS
-
 static void dump_packet_(const char *header, void *packet, int length)
 {
 	char buffer[256];
@@ -1316,8 +1310,6 @@ static void dump_packet_(const char *header, void *packet, int length)
 
 	printf("\n");
 }
-
-#endif /* DUMP_PACKETS */
 
 /*
   ======================================================================
@@ -2032,245 +2024,115 @@ int
 lsi_femac_eth_rx(struct eth_device *dev)
 {
 	int bytes_received_ = 0;
+	app3xxnic_queue_pointer_t queue_;
+	app3xxnic_dma_descriptor_t descriptor_;
+	int packet_available_ = 0;
+	void *destination_;
+	unsigned long overflow_, ok_, crc_, align_;
+	int head_changed_;
 
-	TRACE_BEGINNING( "\n" );
+	/* If no packet is available, return 0.	*/
+	queue_.raw = rx_tail_copy_.raw;
 
-#ifdef DUMP_STATS
-#ifdef EH_STATS
-	++eh_stats->rx_calls;
-#else
-	{
-		app3xxnic_dma_descriptor_t descriptor;
-		app3xxnic_queue_pointer_t queue_;
+	while (0 < queue_initialized_(swab_queue_pointer(rx_tail_),
+				      queue_, rx_number_of_descriptors)) {
+		readdescriptor(((unsigned long)rx_descriptors_ +
+				queue_.bits.offset), &descriptor_);
 
-		queue_.raw = rx_tail_copy_.raw;
+		if (0 != descriptor_.end_of_packet) {
+			packet_available_ = 1;
+			break;
+		} else {
+			queue_increment_(&queue_, rx_number_of_descriptors);
+		}
+	}
+
+	if (0 == packet_available_)
+		return 0;
+
+	/* Get the packet. */
+	destination_ = (void *)(NetRxPackets[0]);
+
+	readdescriptor(((unsigned long)rx_descriptors_ +
+			rx_tail_copy_.bits.offset), &descriptor_);
+
+	while (0 < queue_initialized_(swab_queue_pointer(rx_tail_),
+				      rx_tail_copy_, rx_number_of_descriptors)) {
+		memcpy(destination_, (void *)descriptor_.host_data_memory_pointer,
+		       descriptor_.pdu_length);
+		destination_ += descriptor_.pdu_length;
+		bytes_received_ += descriptor_.pdu_length;
+		queue_increment_(&rx_tail_copy_, rx_number_of_descriptors);
+
+		if (0 != descriptor_.end_of_packet)
+			break;
+
+		readdescriptor(((unsigned long) rx_descriptors_ +
+				rx_tail_copy_.bits.offset), &descriptor_);
+	}
+
+	overflow_ = readl(APP3XXNIC_RX_STAT_OVERFLOW);
+	ok_ = readl(APP3XXNIC_RX_STAT_PACKET_OK);
+	crc_ = readl(APP3XXNIC_RX_STAT_CRC_ERROR);
+	align_ = readl(APP3XXNIC_RX_STAT_ALIGN_ERROR);
+
+	if (0 == descriptor_.end_of_packet ||
+	    0 != overflow_ ||
+	    0 != crc_ ||
+	    0 != align_) {
+		printf("Bad Packet: "
+		       "bytes=%d ovf=%ld ok=%ld "
+		       "crc=%ld align=%ld\n",
+		       bytes_received_, overflow_, ok_,
+		       crc_, align_ );
+	} else {
+		unsigned char broadcast_[] = {
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+		};
+		destination_ = (unsigned char *)NetRxPackets[0];
+
+		if (0 != rx_allow_all ||
+		    0 == memcmp((const void *)&(destination_[0]),
+				(const void *)&(dev->enetaddr[0]), 6) ||
+		    0 == memcmp((const void *)&(destination_[0]),
+				(const void *)&(broadcast_[0]), 6)) {
+			if (0 == rx_debug) {
 #if 0
-		printf( "\t * %s:%d - 0x%lx 0x%lx/0x%lx/0x%lx/0x%lx 0x%lx 0x%lx 0x%lx %d\n",
-			__FILE__, __LINE__,
-			( unsigned long ) rx_descriptors_,
-			readl( APP3XXNIC_RX_STAT_PACKET_OK ),
-			readl( APP3XXNIC_RX_STAT_OVERFLOW ),
-			readl( APP3XXNIC_RX_STAT_CRC_ERROR ),
-			readl( APP3XXNIC_RX_STAT_ALIGN_ERROR ),
-			rx_head_.raw, rx_tail_copy_.raw,
-			( swab_queue_pointer( rx_tail_ ) ).raw,
-			queue_initialized_( swab_queue_pointer( rx_tail_ ),
-					    queue_, rx_number_of_descriptors ) );
-#endif
-		readdescriptor( ( ( unsigned long ) rx_descriptors_ +
-				  ( swab_queue_pointer( rx_tail_ ) ).bits.offset ),
-				& descriptor );
-		DUMP_DESCRIPTOR_( ( void * )
-				  ( ( unsigned long ) rx_descriptors_ +
-				    ( swab_queue_pointer( rx_tail_ ) ).bits.offset ) );
-		mdelay( 500 );
-	}
-#endif
+				unsigned short *ps;
+				unsigned char *pc;
+
+				ps = (unsigned short *)&NetRxPackets[0];
+				pc = (unsigned char *)&NetRxPackets[0];
+				dump_packet_("RX", NetRxPackets[0],
+					     bytes_received_);
 #endif
 
-	/*
-	  If no packet is available, return 0;
-	*/
-
-	{
-
-		app3xxnic_queue_pointer_t queue_;
-		app3xxnic_dma_descriptor_t descriptor_;
-		int packet_available_ = 0;
-
-		queue_.raw = rx_tail_copy_.raw;
-
-		while( 0 <
-		       queue_initialized_( swab_queue_pointer( rx_tail_ ),
-					   queue_, rx_number_of_descriptors ) ) {
-			readdescriptor( ( ( unsigned long ) rx_descriptors_ +
-					  queue_.bits.offset ), & descriptor_ );
-			DUMP_DESCRIPTOR_( ( void * ) ( ( unsigned long ) rx_descriptors_ +
-						       queue_.bits.offset ) );
-
-			if( 0 != descriptor_.end_of_packet ) {
-				packet_available_ = 1;
-				break;
-			} else {
-				queue_increment_( & queue_, rx_number_of_descriptors );
+				NetReceive(NetRxPackets[0], bytes_received_);
 			}
-
 		}
-
-		if( 0 == packet_available_ ) {
-			TRACE_ENDING( "\n" );
-			return 0;
-		}
-
 	}
 
-#ifdef DUMP_STATS
-#ifdef EH_STATS
-	++eh_stats->rx_packet_available;
-#else
-#endif
-#endif
+	/* Update the rx descriptor queue. */
+	head_changed_ = 0;
 
-	RX_DEBUG_PRINT( "head=0x%x/%d tail=0x%x/%d tail_copy=0x%x/%d\n",
-			rx_head_.bits.offset, rx_head_.bits.generation_bit,
-			rx_tail_->bits.offset, rx_tail_->bits.generation_bit,
-			rx_tail_copy_.bits.offset,
-			rx_tail_copy_.bits.generation_bit );
-
-	/*
-	  Get the packet.
-	*/
-
-	{
-
-		void * destination_ = ( void * ) ( NetRxPackets [ 0 ] );
-		app3xxnic_dma_descriptor_t descriptor_;
-
-		readdescriptor( ( ( unsigned long ) rx_descriptors_ +
-				  rx_tail_copy_.bits.offset ), & descriptor_ );
-
-		while( 0 <
-		       queue_initialized_( swab_queue_pointer( rx_tail_ ),
-					   rx_tail_copy_, rx_number_of_descriptors ) ) {
-			memcpy( destination_,
-				( void * ) descriptor_.host_data_memory_pointer,
-				descriptor_.pdu_length );
-			destination_ += descriptor_.pdu_length;
-			bytes_received_ += descriptor_.pdu_length;
-			DUMP_DESCRIPTOR_( ( void * ) ( ( unsigned long ) rx_descriptors_ +
-						       rx_tail_copy_.bits.offset ) );
-			queue_increment_( & rx_tail_copy_, rx_number_of_descriptors );
-			if( 0 != descriptor_.end_of_packet ) { break; }
-			readdescriptor( ( ( unsigned long ) rx_descriptors_ +
-					  rx_tail_copy_.bits.offset ), & descriptor_ );
-		}
-
-		{
-
-			unsigned long overflow_, ok_, crc_, align_;
-
-			overflow_ = readl( APP3XXNIC_RX_STAT_OVERFLOW );
-			ok_ = readl( APP3XXNIC_RX_STAT_PACKET_OK );
-			crc_ = readl( APP3XXNIC_RX_STAT_CRC_ERROR );
-			align_ = readl( APP3XXNIC_RX_STAT_ALIGN_ERROR );
-
-#ifdef DUMP_STATS
-#ifdef EH_STATS
-			eh_stats->rx_packet_ok += ok_;
-			eh_stats->rx_packet_overflow += overflow_;
-			eh_stats->rx_packet_crc += crc_;
-			eh_stats->rx_packet_alignment += align_;
-#else
-#endif
-#endif
-
-			if( ( 0 == descriptor_.end_of_packet ) ||
-			    ( 0 != overflow_ ) ||
-			    ( 0 != crc_ ) ||
-			    ( 0 != align_ ) ) {
-
-				printf( "Bad Packet: "
-					"bytes=%d ovf=%ld ok=%ld "
-					"crc=%ld align=%ld\n",
-					bytes_received_, overflow_, ok_,
-					crc_, align_ );
-				WARN_PRINT( "Bad Packet: "
-					    "bytes=%d ovf=%ld ok=%ld crc=%ld align=%ld\n",
-					    bytes_received_, overflow_, ok_, crc_, align_ );
-
-			} else {
-
-				unsigned char broadcast_ [ ] =
-					{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-				unsigned char * destination_ =
-					( unsigned char * ) NetRxPackets [ 0 ];
-
-					DUMP_PACKET( "RX",
-						     ( void * ) ( NetRxPackets [ 0 ] ),
-						     bytes_received_ );
-
-				if( ( 0 != rx_allow_all ) ||
-				    ( ( 0 == memcmp( ( const void * ) & ( destination_ [ 0 ] ),
-						     ( const void * ) & ( dev->enetaddr [ 0 ] ),
-						     6 ) ) ||
-				      ( 0 == memcmp( ( const void * ) & ( destination_ [ 0 ] ),
-						     ( const void * ) & ( broadcast_ [ 0 ] ),
-						     6 ) ) ) ) {
-
-					if( 0 == rx_debug ) {
-						NetReceive( NetRxPackets[ 0 ],
-							    bytes_received_ );
-					}
-
-				} else {
-
-#ifdef DUMP_STATS
-#ifdef EH_STATS
-					++eh_stats->rx_packet_bad_address;
-#endif
-#endif
-
-				}
-
-			}
-
-		}
-
+	while (1 < queue_uninitialzed_(rx_head_, rx_tail_copy_,
+				       rx_number_of_descriptors)) {
+		readdescriptor(((unsigned long)rx_descriptors_ +
+				rx_head_.bits.offset), &descriptor_);
+		descriptor_.data_transfer_length = rx_buffer_per_descriptor;
+		descriptor_.write = 1;
+		descriptor_.interrupt_on_completion = 1;
+		descriptor_.byte_swapping_on = 0;
+		writedescriptor(((unsigned long)rx_descriptors_ +
+				 rx_head_.bits.offset), &descriptor_);
+		queue_increment_(&rx_head_, rx_number_of_descriptors);
+		head_changed_ = 1;
 	}
 
-	RX_DEBUG_PRINT( "head=0x%x/%d tail=0x%x/%d tail_copy=0x%x/%d\n",
-			rx_head_.bits.offset, rx_head_.bits.generation_bit,
-			rx_tail_->bits.offset, rx_tail_->bits.generation_bit,
-			rx_tail_copy_.bits.offset,
-			rx_tail_copy_.bits.generation_bit );
+	if (0 != head_changed_)
+		writel(rx_head_.raw, APP3XXNIC_DMA_RX_HEAD_POINTER);
 
-	/*
-	  Update the rx descriptor queue
-	*/
-
-	{
-
-		int head_changed_ = 0;
-
-		while( 1 < queue_uninitialzed_( rx_head_, rx_tail_copy_,
-						rx_number_of_descriptors ) ) {
-
-			app3xxnic_dma_descriptor_t descriptor_;
-
-			readdescriptor( ( ( unsigned long ) rx_descriptors_ +
-					  rx_head_.bits.offset ), & descriptor_ );
-			descriptor_.data_transfer_length = rx_buffer_per_descriptor;
-			descriptor_.write = 1;
-			descriptor_.interrupt_on_completion = 1;
-			descriptor_.byte_swapping_on = 0;
-			writedescriptor( ( ( unsigned long ) rx_descriptors_ +
-					   rx_head_.bits.offset ), & descriptor_ );
-			queue_increment_( & rx_head_, rx_number_of_descriptors );
-			head_changed_ = 1;
-
-		}
-
-		if( 0 != head_changed_ ) {
-
-			writel( rx_head_.raw, APP3XXNIC_DMA_RX_HEAD_POINTER );
-
-		}
-
-	}
-
-	RX_DEBUG_PRINT( "head=0x%x/%d tail=0x%x/%d tail_copy=0x%x/%d\n",
-			rx_head_.bits.offset, rx_head_.bits.generation_bit,
-			rx_tail_->bits.offset, rx_tail_->bits.generation_bit,
-			rx_tail_copy_.bits.offset,
-			rx_tail_copy_.bits.generation_bit );
-
-	/*
-	  That's all
-	*/
-
-	TRACE_ENDING( "bytes_received_=%d\n", bytes_received_ );
 	return bytes_received_;
-
 }
 
 /*
@@ -2282,25 +2144,9 @@ int
 lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 {
 	int bytes_sent_ = 0;
+	int tries_;
 
-	TRACE_BEGINNING( "packet=0x%p length=%d\n", packet, length );
-	DUMP_PACKET( "TX", (void *)packet, length );
-	TX_DEBUG_PRINT( "Sending %d byte packet\n", length );
-	TX_DEBUG_PRINT( "tail=0x%x/%d tail_copy=0x%x/%d\n",
-			tx_tail_->bits.offset, tx_tail_->bits.generation_bit,
-			tx_tail_copy_.bits.offset,
-			tx_tail_copy_.bits.generation_bit );
-
-#ifdef DUMP_STATS
-#ifdef EH_STATS
-	++eh_stats->tx_calls;
-#endif
-#endif
-
-#if 0
-	dump_packet("TX", packet, length);
-#endif
-				/* app3xxnic_display_( ); */
+	/*dump_packet_("TX", packet, length);*/
 
 	/*
 	  Update tx_tail_copy_
@@ -2312,21 +2158,11 @@ lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 		queue_increment_( & tx_tail_copy_, TX_NUMBER_OF_DESCRIPTORS );
 	}
 
-	TX_DEBUG_PRINT( "tail=0x%x/%d tail_copy=0x%x/%d\n",
-			tx_tail_->bits.offset, tx_tail_->bits.generation_bit,
-			tx_tail_copy_.bits.offset,
-			tx_tail_copy_.bits.generation_bit );
-
 	/*
 	  If a transmit descriptor is available, allocate space for the
 	  packet and initialize it.
 	*/
 
-#if 0
-	invalidate_dcache_range( ( unsigned long ) tx_tail_,
-				 ( ( unsigned long ) tx_tail_ +
-				   sizeof( app3xxnic_queue_pointer_t ) ) );
-#endif
 	if( TX_NUMBER_OF_DESCRIPTORS >
 	    queue_initialized_( tx_head_, swab_queue_pointer( tx_tail_ ),
 				TX_NUMBER_OF_DESCRIPTORS ) ) {
@@ -2340,10 +2176,6 @@ lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 				tx_tail_->bits.offset,
 				tx_tail_->bits.generation_bit );
 		memcpy( tx_buffer_, ( void * ) packet, length );
-#if 0
-		flush_dcache_range( ( unsigned long ) tx_buffer_,
-				    ( unsigned long ) ( tx_buffer_ + length ) );
-#endif
 		readdescriptor( ( ( unsigned long ) tx_descriptors_ +
 				  tx_head_.bits.offset ),
 				& descriptor_ );
@@ -2357,86 +2189,34 @@ lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 		descriptor_.byte_swapping_on = 0;
 		writedescriptor( ( ( unsigned long ) tx_descriptors_ +
 				   tx_head_.bits.offset ), & descriptor_ );
-		DUMP_DESCRIPTOR_( ( void * ) ( ( unsigned long ) tx_descriptors_ +
-					       tx_head_.bits.offset ) );
 		queue_increment_( & tx_head_, TX_NUMBER_OF_DESCRIPTORS );
-		DEBUG_PRINT( "Before writing head ptr -- TX_HEAD=0x%08lx TX_TAIL=0x%08lx, TX_TAIL_LC=0x%08lx\n",
-                             readl( APP3XXNIC_DMA_TX_HEAD_POINTER ),
-                             readl( APP3XXNIC_DMA_TX_TAIL_POINTER_ADDRESS ),
-                             readl( APP3XXNIC_DMA_TX_TAIL_POINTER_LOCAL_COPY ) );
-
 		writel( tx_head_.raw, APP3XXNIC_DMA_TX_HEAD_POINTER );
-		DEBUG_PRINT( "Before writing head ptr -- TX_HEAD=0x%08lx TX_TAIL=0x%08lx, TX_TAIL_LC=0x%08lx\n",
-                             readl( APP3XXNIC_DMA_TX_HEAD_POINTER ),
-                             readl( APP3XXNIC_DMA_TX_TAIL_POINTER_ADDRESS ),
-                             readl( APP3XXNIC_DMA_TX_TAIL_POINTER_LOCAL_COPY ) );
+
 		/* Wait for the transmit to finish. */
-		TX_DEBUG_PRINT( "Waiting for transmit to finish.\n" );
+		tries_ = 10000;
 
-		{
-			int tries_ = 10000;
-
-#if 0
-			invalidate_dcache_range( ( unsigned long ) tx_tail_,
-						 ( ( unsigned long ) tx_tail_ +
-						   sizeof( app3xxnic_queue_pointer_t ) ) );
-#endif
-			while( ( tx_head_.raw != ( tx_tail_->raw ) ) &&
-			       ( 0 < -- tries_ ) ) {
-#if 0
-				invalidate_dcache_range( ( unsigned long ) tx_tail_,
-							 ( ( unsigned long ) tx_tail_ +
-							   sizeof( app3xxnic_queue_pointer_t ) ) );
-#endif
-
+		while ((tx_head_.raw != (tx_tail_->raw)) &&
+		       (0 < --tries_)) {
 #ifndef CONFIG_AXXIA_ARM
-				 __asm__ __volatile__ ( "eieio" );
-				__asm__ __volatile__ ( "sync" );
+			__asm__ __volatile__ ( "eieio" );
+			__asm__ __volatile__ ( "sync" );
+#else
+			dmb();
 #endif
-				 /* equivalent is DMB */
-                                asm("DMB");
-
-				udelay( 1000 );
-			}
-
-			if( 0 == tries_ ) {
-				ERROR_PRINT( "TX timeout: tx_head_.raw=0x%08lx "
-					     "tx_tail_->raw=0x%08x/0x%08x\n",
-					     tx_head_.raw,
-					     ( tx_tail_->raw ),
-					     readl( APP3XXNIC_DMA_TX_TAIL_POINTER_LOCAL_COPY ) );
-				app3xxnic_display_( );
-				TRACE_ENDING( "\n" );
-				return 0;
-
-			} else {
-				packets_sent_ = readl( APP3XXNIC_TX_STAT_PACKET_OK );
-#ifdef DUMP_STATS
-#ifdef EH_STATS
-				++eh_stats->tx_packet_sent;
-#endif
-#endif
-			}
+			udelay( 1000 );
 		}
 
-		TX_DEBUG_PRINT( "Done, sent %d bytes.\n", length );
-		DEBUG_PRINT( "TX_HEAD=0x%08lx tx_tail_->raw = 0x%08lx TX_TAIL_LC=0x%08lx\n",
-			     readl( APP3XXNIC_DMA_TX_HEAD_POINTER ),
-					   ( tx_tail_->raw ),
-			     readl( APP3XXNIC_DMA_TX_TAIL_POINTER_LOCAL_COPY ) );
-		DEBUG_PRINT( "TX_HEAD=0x%08lx TX_TAIL=0x%08lx, TX_TAIL_LC=0x%08lx\n",
-                             readl( APP3XXNIC_DMA_TX_HEAD_POINTER ),
-                             readl( APP3XXNIC_DMA_TX_TAIL_POINTER_ADDRESS ),
-                             readl( APP3XXNIC_DMA_TX_TAIL_POINTER_LOCAL_COPY ) );
-				/* app3xxnic_display_( ); */
-		bytes_sent_ = length;
+		if (0 == tries_) {
+			printf("%s:%d - Transmit Timed Out!\n",
+			       __FILE__, __LINE__);
+			return -1;
+		} else {
+			packets_sent_ = readl( APP3XXNIC_TX_STAT_PACKET_OK );
+		}
 
+		bytes_sent_ = length;
 	}
 
-	/* That's all */
-
-	TX_DEBUG_PRINT( "Done, returning %d.\n", bytes_sent_ );
-	TRACE_ENDING( "bytes_sent_=%d\n", bytes_sent_ );
 	return bytes_sent_;
 }
 
