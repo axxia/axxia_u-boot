@@ -144,8 +144,10 @@ int sysmem_init(void);
 #define LSM     0x20000000
 #endif
 
+#define CONFIG_NET_RETRY_COUNT 20
+#define CONFIG_FIT
 
-/*#define CONFIG_BOARD_EARLY_INIT_F*/
+#define CONFIG_BOARD_EARLY_INIT_F
 
 #define LDSSCRIPT "board/lsi/axxia-arm/u-boot.lds"
 
@@ -223,7 +225,6 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
 #define CONFIG_CMDLINE_TAG /* enable passing of ATAGs */
 #define CONFIG_SETUP_MEMORY_TAGS
 #define CONFIG_INITRD_TAG
-
 /*
  * Size of malloc() pool
  * Total Size Environment - 128k
