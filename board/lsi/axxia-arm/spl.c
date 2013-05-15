@@ -18,9 +18,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <config.h>
-
-extern void *_page_table_base;
+#include <common.h>
 
 /*
   ==============================================================================
@@ -31,6 +29,12 @@ extern void *_page_table_base;
 */
 
 static int test_value;
+
+static const char *spl_splash =
+  "    ___             _        __  __    ___            __    _______ __\n"
+  "   / _ |__ ____ __ (_)__ _  / / / /___/ _ )___  ___  / /_  / __/ _ \/ /\n"
+  "  / __ |\ \ /\ \ // / _ `/ / /_/ /___/ _  / _ \/ _ \/ __/ _\ \/ ___/ /__\n"
+  " /_/ |_/_\_\/_\_\/_/\_,_/  \____/   /____/\___/\___/\__/ /___/_/ /____/\n";
 
 /*
   ==============================================================================
@@ -109,7 +113,7 @@ board_init_f(ulong bootflag)
 	unsigned long value32;
 
 	serial_early_init();
-	printf("** SPL Boot **\n");
+	puts(spl_splash);
 
 	rc = axxia_initialize();
 
