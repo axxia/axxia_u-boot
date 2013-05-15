@@ -17,9 +17,16 @@ SECTIONS
  .data : {
   *(.data*)
  }
+
+  . = ALIGN(0x10);
+  __parameter_start = .;
+  . += 0x1000;
+  __parameter_end = .;  
+
  . = 0x40000;
- __page_table = .;
+ __page_table_start = .;
  . += 0x8000;
+ __page_table_end = .;
  . = ALIGN(4);
  . = .;
  . = ALIGN(4);
