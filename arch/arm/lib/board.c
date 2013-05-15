@@ -119,12 +119,22 @@ static int init_baudrate(void)
 static int display_banner(void)
 {
 #ifdef CONFIG_AXXIA_ARM
-static char * splash_string = \
-"     __    _   _  __   _         __          __                     \n" \
-" /  (  /  /_| / )/__)  _) _ _/  ( _/_ _ _   / _)   _/  /    _ _/_ _ \n" \
-"(____)(  (  |(__/     __)/ (/  __)/(/(/(-  /(_)()()/  (__()(/(/(-/  \n" \
-"                                    _/                              \n";
-printf( "\n%s\n", splash_string );
+  puts("\n"
+       "   ____  __ __  __ __  ____   ____ \n"
+       "  /    T|  T  T|  T  Tl    j /    T\n"
+       " Y  o  ||  |  ||  |  | |  T Y  o  |\n"
+       " |     |l_   _jl_   _j |  | |     |\n"
+       " |  _  ||     ||     | |  | |  _  |\n"
+       " |  |  ||  |  ||  |  | j  l |  |  |\n"
+       " l__j__j|__j__||__j__||____jl__j__j\n"
+       "                                   \n"
+       "  __ __         ____    ___    ___   ______ \n"
+       " |  T  T       |    \  /   \  /   \ |      T\n"
+       " |  |  | _____ |  o  )Y     YY     Y|      |\n"
+       " |  |  ||     ||     T|  O  ||  O  |l_j  l_j\n"
+       " |  :  |l_____j|  O  ||     ||     |  |  |  \n"
+       " l     |       |     |l     !l     !  |  |  \n"
+       "  \__,_j       l_____j \___/  \___/   l__j  \n");
 #endif
 	printf("\n\n%s\n\n", version_string);
 	debug("U-Boot code: %08lX -> %08lX  BSS: -> %08lX\n",
@@ -319,8 +329,6 @@ void board_init_f(ulong bootflag)
 		}
 	}
 
-#if 0
-
 #ifdef CONFIG_OF_CONTROL
 	/* For now, put this check after the console is ready */
 	if (fdtdec_prepare_fdt()) {
@@ -369,6 +377,7 @@ void board_init_f(ulong bootflag)
 #endif /* CONFIG_PRAM */
 
 #if !(defined(CONFIG_SYS_ICACHE_OFF) && defined(CONFIG_SYS_DCACHE_OFF))
+#ifndef CONFIG_AXXIA_ARM
 	/* reserve TLB table */
 	gd->tlb_size = 4096 * 4;
 	addr -= gd->tlb_size;
@@ -378,6 +387,7 @@ void board_init_f(ulong bootflag)
 
 	gd->tlb_addr = addr;
 	debug("TLB table from %08lx to %08lx\n", addr, addr + gd->tlb_size);
+#endif
 #endif
 
 	/* round down to next 4 kB limit */
@@ -484,8 +494,6 @@ void board_init_f(ulong bootflag)
 		gd->fdt_blob = new_fdt;
 	}
 	memcpy(id, (void *)gd, sizeof(gd_t));
-
-#endif
 }
 
 #if !defined(CONFIG_SYS_NO_FLASH)
