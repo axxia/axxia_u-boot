@@ -77,7 +77,6 @@ static const image_header_t *image_get_ramdisk(ulong rd_addr, uint8_t arch,
 
 static const table_entry_t uimage_arch[] = {
 	{	IH_ARCH_INVALID,	NULL,		"Invalid ARCH",	},
-#ifndef CONFIG_ACP
 	{	IH_ARCH_ALPHA,		"alpha",	"Alpha",	},
 	{	IH_ARCH_ARM,		"arm",		"ARM",		},
 	{	IH_ARCH_I386,		"x86",		"Intel x86",	},
@@ -95,7 +94,6 @@ static const table_entry_t uimage_arch[] = {
 	{	IH_ARCH_AVR32,		"avr32",	"AVR32",	},
 	{	IH_ARCH_NDS32,		"nds32",	"NDS32",	},
 	{	IH_ARCH_OPENRISC,	"or1k",		"OpenRISC 1000",},
-#endif	/* CONFIG_ACP */
 	{	IH_ARCH_PPC,		"powerpc",	"PowerPC",	},
 	{	IH_ARCH_PPC,		"ppc",		"PowerPC",	},
 	{	-1,			"",		"",		},
@@ -327,22 +325,8 @@ void image_print_contents(const void *ptr)
 	image_print_type(hdr);
 	printf("%sData Size:    ", p);
 	genimg_print_size(image_get_data_size(hdr));
-#ifndef CONFIG_ACP
 	printf("%sLoad Address: %08x\n", p, image_get_load(hdr));
 	printf("%sEntry Point:  %08x\n", p, image_get_ep(hdr));
-#else  /* CONFIG_ACP */
-	printf("SR -- commented out Load Address for now \n");
-#if 0
-	printf("%sLoad Address: %08x\n",
-	       p, ((acp_osg_group_get_res(acp_osg_get_current(), ACP_OS_BASE) *
-		    1024 * 1024) +
-		   image_get_load(hdr)));
-	printf("%sEntry Point:  %08x\n",
-	       p, ((acp_osg_group_get_res(acp_osg_get_current(), ACP_OS_BASE) *
-		    1024 * 1024) +
-		   image_get_ep(hdr)));
-#endif
-#endif	/* CONFIG_ACP */
 
 	if (image_check_type(hdr, IH_TYPE_MULTI) ||
 			image_check_type(hdr, IH_TYPE_SCRIPT)) {
@@ -1150,7 +1134,6 @@ int boot_ramdisk_high(struct lmb *lmb, ulong rd_data, ulong rd_len,
 			*initrd_end = rd_data + rd_len;
 			lmb_reserve(lmb, rd_data, rd_len);
 		} else {
-#ifndef CONFIG_ACP
 			if (initrd_high)
 				*initrd_start = (ulong)lmb_alloc_base(lmb,
 						rd_len, 0x1000, initrd_high);
@@ -1162,9 +1145,6 @@ int boot_ramdisk_high(struct lmb *lmb, ulong rd_data, ulong rd_len,
 				puts("ramdisk - allocation error\n");
 				goto error;
 			}
-#else  /* !CONFIG_ACP */
-			*initrd_start = initrd_high;
-#endif	/* !CONFIG_ACP */
 
 			bootstage_mark(BOOTSTAGE_ID_COPY_RAMDISK);
 
