@@ -56,8 +56,9 @@ SECTIONS
  	 */
 
 	. = ALIGN(0x4000);
-	PROVIDE(__page_table = .);
+	__page_table_start = .;
 	. += 0x4000;
+	__page_table_end = .;
 
 	.bss :
 	{
