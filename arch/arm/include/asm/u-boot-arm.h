@@ -31,8 +31,16 @@
 
 /* for the following variables, see start.S */
 extern ulong _bss_start_ofs;	/* BSS start relative to _start */
-extern ulong _bss_end_ofs;		/* BSS end relative to _start */
+extern ulong _bss_end_ofs;	/* BSS end relative to _start */
 extern ulong _end_ofs;		/* end of image relative to _start */
+#ifdef CONFIG_AXXIA_ARM
+#ifndef CONFIG_SPL_BUILD
+extern ulong _parameters_start_ofs;
+extern ulong _parameters_end_ofs;
+#endif
+extern ulong _page_table_start_ofs;
+extern ulong _page_table_end_ofs;
+#endif
 extern ulong IRQ_STACK_START;	/* top of IRQ stack */
 extern ulong FIQ_STACK_START;	/* top of FIQ stack */
 extern ulong _TEXT_BASE;	/* code start */
