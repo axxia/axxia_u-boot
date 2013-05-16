@@ -28,18 +28,57 @@
 
 lowlevel_init:
 
-	@@
-	@ Iniitalize auxiliary control register 2.
+#ifndef CONFIG_SPL_BUILD
 
-	@ Read Auxiliary Control Register 2
+	@@
+	@ Get the CPU number.
+	mrc	p15, 0, r0, c0, c0, 5
+	and	r0, r0, #0x3
+	cmp	r0, #0
+	bne	set_actlr2
+
+#endif
+
+	@@
+	@ Initialize the L2CTLR register (primary core in each cluster).
+
+set_l2ctlr:
+
+	mrc	p15, 1, r0, c9, c0, 2
+	orr	r0, r0, #(1 << 1)
+	mcr	p15, 1, r0, c9, c0, 2
+
+	@@
+	@ Initialize the L2ACTLR register (primary core in each cluster).
+
+set_l2actlr:
+
+	mrc	p15, 1, r0, c15, c0, 0
+	orr	r0, r0, #(1 << 3)
+	orr	r0, r0, #(1 << 12)
+	orr	r0, r0, #(1 << 13)
+	orr	r0, r0, #(1 << 14)
+	mcr	p15, 1, r0, c15, c0, 0
+
+	@@
+	@ Iniitalize the ACTLR2 register (all cores).
+
+set_actlr2:
+
 	mrc 	p15, 1, r0, c15, c0, 4
-	@ Set bit 0 execute data cache clean as data cache clean/invalidate
-	orr 	r0, r0, #(0x1 << 0)
-	@ Write Auxiliary Control Register 2
+	orr 	r0, r0, #(1 << 0)
 	mcr 	p15, 1, r0, c15, c0, 4
 
 	@@
+	@ Set the CNTFRQ
+
+	ldr	r0, =4096000
+	mcr	p15, 0, r0, c14, c0, 0
+
+	@@
 	@ Clear the page table(s).
+
+clear_page_tables:
 
 	mov     r0, #0
 	ldr 	r3, =_page_table_start_ofs
