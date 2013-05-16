@@ -137,7 +137,6 @@ static boot_os_fn do_bootm_integrity;
 #endif
 
 static boot_os_fn *boot_os[] = {
-#ifndef CONFIG_ACP2
 #ifdef CONFIG_BOOTM_LINUX
 	[IH_OS_LINUX] = do_bootm_linux,
 #endif
@@ -160,7 +159,6 @@ static boot_os_fn *boot_os[] = {
 #ifdef CONFIG_INTEGRITY
 	[IH_OS_INTEGRITY] = do_bootm_integrity,
 #endif
-#endif	/* CONFIG_ACP2 */
 #ifdef CONFIG_BOOTM_UBOOT
 	[IH_OS_U_BOOT] = do_bootm_uboot
 #endif
@@ -226,14 +224,7 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 		images.os.os = image_get_os(os_hdr);
 
 		images.os.end = image_get_image_end(os_hdr);
-#ifndef CONFIG_ACP3
 		images.os.load = image_get_load(os_hdr);
-#else
-		images.os.load =
-		       (acp_osg_group_get_res(acp_osg_get_current(),
-					      ACP_OS_BASE) * 1024 * 1024) +
-		       image_get_load(os_hdr);
-#endif
 		break;
 #if defined(CONFIG_FIT)
 	case IMAGE_FORMAT_FIT:
@@ -275,14 +266,7 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 
 	/* find kernel entry point */
 	if (images.legacy_hdr_valid) {
-#ifndef CONFIG_ACP3
 		images.ep = image_get_ep(&images.legacy_hdr_os_copy);
-#else
-		images.ep =
-			(acp_osg_group_get_res(acp_osg_get_current(),
-					       ACP_OS_BASE) * 1024 * 1024) +
-			image_get_ep(&images.legacy_hdr_os_copy);
-#endif
 #if defined(CONFIG_FIT)
 	} else if (images.fit_uname_os) {
 		ret = fit_image_get_entry(images.fit_hdr_os,
@@ -314,7 +298,6 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 			return 1;
 		}
 
-#ifndef CONFIG_ACP
 #if defined(CONFIG_OF_LIBFDT)
 		/* find flattened device tree */
 		ret = boot_get_fdt(flag, argc, argv, &images,
@@ -325,7 +308,6 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 		}
 
 		set_working_fdt_addr(images.ft_addr);
-#endif
 #endif
 	}
 
@@ -615,9 +597,6 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	ulong		load_end = 0;
 	int		ret;
 	boot_os_fn	*boot_fn;
-#ifdef CONFIG_ACP3
-	int             group;
-#endif
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
 	static int relocated = 0;
 
@@ -742,7 +721,6 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	boot_fn(0, argc, argv, &images);
 
-#ifndef CONFIG_ACP3
 	bootstage_error(BOOTSTAGE_ID_BOOT_OS_RETURNED);
 #ifdef DEBUG
 	puts("\n## Control returned to monitor - resetting...\n");
@@ -750,9 +728,6 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	do_reset(cmdtp, flag, argc, argv);
 
 	return 1;
-#else  /* !CONFIG_ACP3 */
-	return 0;
-#endif	/* !CONFIG_ACP3 */
 }
 
 int bootm_maybe_autostart(cmd_tbl_t *cmdtp, const char *cmd)
@@ -1113,18 +1088,8 @@ int do_bootd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int rcode = 0;
 
-#ifdef CONFIG_ACP
-#ifdef CONFIG_ACP3
-	if (run_command (getenv ("bootcmd3"), flag) < 0)
-		rcode = 1;
-#else  /* CONFIG_ACP3 */
-	if (run_command (getenv ("bootcmd2"), flag) < 0)
-		rcode = 1;
-#endif	/* CONFIG_ACP3 */
-#else  /* CONFIG_ACP */
 	if (run_command(getenv("bootcmd"), flag) < 0)
 		rcode = 1;
-#endif	/* CONFIG_ACP */
 	return rcode;
 }
 
@@ -1342,7 +1307,6 @@ static void fixup_silent_linux(void)
 static int do_bootm_netbsd(int flag, int argc, char * const argv[],
 			    bootm_headers_t *images)
 {
-#ifndef CONFIG_ACP2
 	void (*loader)(bd_t *, image_header_t *, char *, char *);
 	image_header_t *os_hdr, *hdr;
 	ulong kernel_data, kernel_len;
@@ -1424,7 +1388,6 @@ static int do_bootm_netbsd(int flag, int argc, char * const argv[],
 	 */
 	(*loader)(gd->bd, os_hdr, consdev, cmdline);
 
-#endif	/* CONFIG_ACP2 */
 	return 1;
 }
 #endif /* CONFIG_BOOTM_NETBSD*/
