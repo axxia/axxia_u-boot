@@ -35,6 +35,8 @@ extern ulong _bss_end_ofs;	/* BSS end relative to _start */
 extern ulong _end_ofs;		/* end of image relative to _start */
 #ifdef CONFIG_AXXIA_ARM
 #ifndef CONFIG_SPL_BUILD
+extern ulong _spin_table_start_ofs;
+extern ulong _spin_table_end_ofs;
 extern ulong _parameters_start_ofs;
 extern ulong _parameters_end_ofs;
 #endif

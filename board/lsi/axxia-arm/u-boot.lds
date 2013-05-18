@@ -18,6 +18,15 @@ SECTIONS
   *(.data*)
  }
 
+ /*
+  * Space for spin tables (0x20 bytes per core, 16 * 0x20 = 0x200).
+  */
+
+  . = ALIGN(0x4);
+  __spin_table_start = .;
+  . += 0x200;
+  __spin_table_end = .;  
+
   . = ALIGN(0x10);
   __parameter_start = .;
   . += 0x1000;
