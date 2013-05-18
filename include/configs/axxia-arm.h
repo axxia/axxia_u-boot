@@ -148,8 +148,13 @@ int sysmem_init(void);
 #define CONFIG_FIT
 
 #define CONFIG_BOARD_EARLY_INIT_F
+#define CONFIG_OF_BOARD_SETUP
 
 #define LDSSCRIPT "board/lsi/axxia-arm/u-boot.lds"
+
+#ifndef __ASSEMBLY__
+extern unsigned long spin_loop_release_offset;
+#endif
 
 #if 0
 
