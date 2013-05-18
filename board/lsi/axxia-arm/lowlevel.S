@@ -24,6 +24,39 @@
 @  MA 02111-1307 USA
 @
 
+#ifndef CONFIG_SPL_BUILD
+
+	@@
+	@ spin_loop
+
+spin_loop_start:
+
+	adr	r0, spin_loop_release
+1:	ldr	r1, [r0]
+	cmp	r1, #0
+	beq	1b
+	mov	pc, r1
+
+	.align	4
+
+spin_loop_release:
+
+	.word	0
+
+spin_loop_end:
+
+	.global	spin_loop_release_offset
+
+spin_loop_release_offset:
+
+	.word	(spin_loop_release - spin_loop_start)
+
+#endif
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@ lowlevel_init
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 	.global	lowlevel_init
 
 lowlevel_init:
@@ -32,10 +65,29 @@ lowlevel_init:
 
 	@@
 	@ Get the CPU number.
+
 	mrc	p15, 0, r0, c0, c0, 5
-	and	r0, r0, #0x3
-	cmp	r0, #0
+	ands	r10, r0, #3
 	bne	set_actlr2
+
+	@@
+	@ If this is core 0 of cluster 0, set up the spin loop.
+
+	lsr	r11, r0, #8
+	ands	r11, r11, #0xf
+	bne	set_l2ctlr
+
+	@ Copy spin_loop (above) to _spin_table_start_ofs
+
+	adr	r0, spin_loop_start
+	adr	r1, spin_loop_end
+	ldr	r2, =_spin_table_start_ofs
+	ldr	r2, [r2]
+1:	ldr	r3, [r0], #4
+	str	r3, [r2], #4
+	cmp	r0, r1
+	blt	1b
+	dsb
 
 #endif
 
@@ -74,6 +126,27 @@ set_actlr2:
 
 	ldr	r0, =4096000
 	mcr	p15, 0, r0, c14, c0, 0
+
+#ifndef CONFIG_SPL_BUILD
+
+	@@
+	@ The rest is only for core 0 of cluster 0.
+
+	orr	r0, r10, r11
+	cmp	r0, #0
+	bne	jump_to_spin_table
+	b	clear_page_tables
+
+	@@
+	@ All others, to the spin table.
+
+jump_to_spin_table:	
+
+	ldr	r0, =_spin_table_start_ofs
+	ldr	r0, [r0]
+	mov	pc, r0
+
+#endif
 
 	@@
 	@ Clear the page table(s).
