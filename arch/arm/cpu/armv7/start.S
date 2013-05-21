@@ -104,7 +104,17 @@ _end_ofs:
 
 #ifdef CONFIG_AXXIA_ARM
 
-#ifndef CONFIG_SPL_BUILD
+#ifdef CONFIG_SPL_BUILD
+
+.global	_page_table_start
+_page_table_start:
+	.word __page_table_start
+
+.global	_page_table_end
+_page_table_end:
+	.word __page_table_end
+
+#else
 
 .global	_spin_table_start_ofs
 _spin_table_start_ofs:
@@ -114,23 +124,23 @@ _spin_table_start_ofs:
 _spin_table_end_ofs:
 	.word __spin_table_end - _start
 
-.global	_parameters_start_ofs
-_parameters_start_ofs:
-	.word __parameter_start - _start
+.global	_parameters_start
+_parameters_start:
+	.word __parameter_start -_start
 
-.global	_parameters_end_ofs
-_parameters_end_ofs:
+.global	_parameters_end
+_parameters_end:
 	.word __parameter_end - _start
 
-#endif
-
-.global	_page_table_start_ofs
-_page_table_start_ofs:
+.global	_page_table_start
+_page_table_start:
 	.word __page_table_start - _start
 
-.global	_page_table_end_ofs
-_page_table_end_ofs:
+.global	_page_table_end
+_page_table_end:
 	.word __page_table_end - _start
+
+#endif /* CONFIG_SPL_BUILD */
 
 #endif /* CONFIG_AXXIA_ARM */
 
