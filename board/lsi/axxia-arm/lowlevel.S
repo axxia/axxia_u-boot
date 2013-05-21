@@ -154,10 +154,10 @@ jump_to_spin_table:
 clear_page_tables:
 
 	mov     r0, #0
-	ldr 	r3, =_page_table_start_ofs
+	ldr 	r3, =_page_table_start
 	ldr	r3, [r3]
 	mov     r1, r3
-	ldr	r2, =_page_table_end_ofs
+	ldr	r2, =_page_table_end
 	ldr	r2, [r2]
 1:	str     r0, [r1], #4
 	cmp     r1, r2
@@ -287,7 +287,9 @@ clear_page_tables:
 
 #endif
 
+	@@
 	@ Turn it all on...
+
 	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
 	tst     r11, #0xf               @ VMSA
 	mov     r0, #0
@@ -307,6 +309,17 @@ clear_page_tables:
 	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
 	mov     r0, #0
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+
+	@@
+	@ Clear BSS
+	mov	r0, #0
+	ldr	r1, = _bss_start_ofs
+	ldr	r1, [r1]
+	ldr	r2, = _bss_end_ofs
+	ldr	r2, [r2]
+1:	str	r0, [r1], #4
+	cmp	r1, r2
+	blt	1b
 
 	mov	pc, lr
 
