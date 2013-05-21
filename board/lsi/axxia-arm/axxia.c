@@ -39,7 +39,7 @@ const struct omap_sysinfo sysinfo = {
 int
 board_init(void)
 {
-	gd->bd->bi_boot_params = _parameters_start_ofs;
+	gd->bd->bi_boot_params = _parameters_start;
 
 	return 0;
 }
@@ -105,7 +105,6 @@ ft_board_setup(void *blob, bd_t *bd)
 	int rc;
 
 	release_addr = htonl(_spin_table_start_ofs + spin_loop_release_offset);
-	printf("%s:%d - release_addr=0x%08x\n", __FILE__, __LINE__, release_addr);
 
 	for (i = 1; i < 16; ++i) {
 		sprintf(cpu_string, "/cpus/cpu@%d", i);
@@ -113,8 +112,6 @@ ft_board_setup(void *blob, bd_t *bd)
 
 		if (0 > node)
 			continue;
-
-		printf("%s:%d - i=%d node=%d\n", __FILE__, __LINE__, i, node);
 
 		rc = fdt_setprop(blob, node, "cpu-release-addr",
 				 &release_addr, sizeof(unsigned long));
