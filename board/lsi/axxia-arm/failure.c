@@ -22,8 +22,6 @@
 
 #include <common.h>
 
-static int console_not_available = 1;
-
 /*
   -------------------------------------------------------------------------------
   acp_failure
@@ -35,8 +33,7 @@ static int console_not_available = 1;
 void
 acp_failure(const char *file, const char *function, const int line)
 {
-	if (1 != console_not_available)
-		printf("\n%s:%s:%d - System Failure\n", file, function, line);
+	printf("\n%s:%s:%d - System Failure\n", file, function, line);
 
 	while (1)
 		;
