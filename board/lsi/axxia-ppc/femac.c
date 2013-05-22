@@ -1965,11 +1965,11 @@ lsi_femac_eth_halt(struct eth_device *dev)
 
 /*
   ----------------------------------------------------------------------
-  lsi_femac_eth_recv
+  lsi_femac_eth_rx
 */
 
 int
-lsi_femac_eth_recv(struct eth_device *dev)
+lsi_femac_eth_rx(struct eth_device *dev)
 {
 	int bytes_received_ = 0;
 

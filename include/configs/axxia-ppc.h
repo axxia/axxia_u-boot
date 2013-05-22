@@ -40,6 +40,7 @@
 
 #define CONFIG_ACP3 1
 #define CONFIG_ACP   1		/* LSI ACP Board             */
+#define CONFIG_AXXIA_PPC
 #define CONFIG_476FP 1		/* Specific PPC476FP Support */
 #define CONFIG_470   1		/* ... PPC47x family         */
 #define CONFIG_4xx   1		/* ... PPC4xx family         */
@@ -730,39 +731,6 @@ unsigned long get_sysmem_size( void );
 /*
   ======================================================================
   ======================================================================
-  Nuevo Conf Ring Access, see board/lsi/axxia-ppc/ncr.c for the implementation
-  ======================================================================
-  ======================================================================
-*/
-
-#ifndef __ASSEMBLY__
-#define NCP_REGION_ID( node, target ) \
-( unsigned long ) ( ( ( ( node ) & 0xffff ) << 16 ) | ( ( target ) & 0xffff ) )
-#define NCP_NODE_ID( region ) ( ( ( region ) >> 16 ) & 0xffff )
-#define NCP_TARGET_ID( region ) ( ( region ) & 0xffff )
-int ncr_read(unsigned long, unsigned long, int, void *);
-int ncr_read8( unsigned long, unsigned long, unsigned char * );
-int ncr_read16( unsigned long, unsigned long, unsigned short * );
-int ncr_read32( unsigned long, unsigned long, unsigned long * );
-int ncr_write(unsigned long, unsigned long, int, void *);
-int ncr_write8( unsigned long, unsigned long, unsigned char );
-int ncr_write16( unsigned long, unsigned long, unsigned short );
-int ncr_write32( unsigned long, unsigned long, unsigned long );
-int ncr_modify32( unsigned long, unsigned long, unsigned long, unsigned long );
-int ncr_and( unsigned long, unsigned long, unsigned long );
-int ncr_or( unsigned long, unsigned long, unsigned long );
-int ncr_poll( unsigned long, unsigned long, unsigned long,
-	      unsigned long, unsigned long, unsigned long );
-void ncr_tracer_enable( void );
-void ncr_tracer_disable( void );
-int ncr_tracer_is_enabled( void );
-void ncr_enable( void );
-void ncr_disable( void );
-#endif
-
-/*
-  ======================================================================
-  ======================================================================
   DCR Access, see board/lsi/axxia-ppc/dcr.c for the implementation
   ======================================================================
   ======================================================================
@@ -1200,11 +1168,11 @@ void acp_eioa_eth_halt(struct eth_device *);
 int lsi_femac_eth_send(struct eth_device *, volatile void *, int);
 int acp_eioa_eth_send(struct eth_device *, volatile void *, int);
 
-int lsi_femac_eth_recv(struct eth_device *);
+int lsi_femac_eth_rx(struct eth_device *);
 int acp_eioa_eth_recv(struct eth_device *);
 
-void lsi_net_receive_test(void);
-void lsi_net_loopback_test(void);
+void lsi_net_receive_test(struct eth_device *);
+void lsi_net_loopback_test(struct eth_device *);
 
 void lsi_femac_receive_test(struct eth_device *);
 void acp_eioa_receive_test(struct eth_device *);

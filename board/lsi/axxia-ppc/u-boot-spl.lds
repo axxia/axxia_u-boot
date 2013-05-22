@@ -74,10 +74,11 @@ SECTIONS
 		*(.eh_frame)
 	} > .lsm
 
-	.u_boot_list :
-	{
-		#include "u-boot.lst"
-	} > .lsm
+ . = .;
+ . = ALIGN(4);
+ .u_boot_list : {
+ *(SORT(.u_boot_list*));
+ }
 
 	__end_of_spl = .;
 

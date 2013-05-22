@@ -95,6 +95,7 @@ int is_asic( void );
 #define CONFIG_ARMV7	/* This is an ARM V7 CPU core */
 #define CONFIG_OMAP	/* in a TI OMAP core */
 #define CONFIG_AXXIA_ARM	/* in a TI OMAP core */
+#define CONFIG_AXXIA
 #define CONFIG_ACP
 #define CONFIG_OMAP54XX	/* which is a 54XX */
 #define CONFIG_OMAP5430	/* which is in a 5430 */

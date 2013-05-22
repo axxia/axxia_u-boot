@@ -30,7 +30,7 @@ ifndef CONFIG_SPL_BUILD
 
 COBJS = splash.o dt.o spintable.o os_access.o ipi.o
 COBJS += ose.o nvram.o osg.o locks.o i2c.o pcie.o ncp_task_lite.o
-COBJS += ncp_task_lite_uboot.o
+COBJS += ncp_task_lite_uboot.o femac.o phy.o
 
 ifdef CONFIG_AXXIA_EIOA
 COBJS  += eioa.o
@@ -52,7 +52,7 @@ endif
 ################################################################################
 ## All Builds
 
-COBJS += dcr.o ncr.o ssp.o sbb.o reset.o clocks.o acp_failure.o mdio.o nand.o
+COBJS += dcr.o ssp.o sbb.o reset.o clocks.o acp_failure.o mdio.o nand.o
 COBJS += pciesrio.o version.o
 
 SOBJS += acp_start.o

@@ -200,74 +200,13 @@ boot_jump_linux(bootm_headers_t *images)
 	printf("CCR0=0x%08lx CCR1=0x%08lx CCR2=0x%08lx\n",
 	       ccr0_val, ccr1_val, ccr2_val );
 
-	if (0 != cores) {
-		for (core = 0; core < ACP_NR_CORES; ++core) {
-			if (0 == ((1 << core) & cores))
-				continue;
-			(acp_spintable[core])->ccr0_value = ccr0_val;
-			(acp_spintable[core])->ccr1_value = ccr1_val;
-			(acp_spintable[core])->ccr2_value = ccr2_val;
-		}
-	}
-
-	/* Remove unused cores from the device tree. */
-	for (core = 0; core < ACP_NR_CORES; ++core) {
-		int nodeoffset;
-		char buffer[20];
-
-		if ((0 != ((1 << core) & cores)) ||
-		    ((1 << core) ==
-		     acp_osg_group_get_res(group, ACP_OS_BOOT_CORE)))
-			continue;
-
-		sprintf(buffer, "/cpus/cpu@%d", core);
-		nodeoffset = fdt_path_offset(dt, buffer);
-
-		if (0 > nodeoffset) {
-			printf("Error Getting Offset of %s.\n", buffer);
-			goto error;
-		}
-
-		fdt_del_node(dt, nodeoffset);
-	}
-
-	/* Update the CCRn values for the boot core. */
-	mtspr( ccr0, ccr0_val );
-	mtspr( ccr1, ccr1_val );
-	mtspr( ccr2, ccr2_val );
-	isync( );
-
 	/* Boot Linux */
 	kernel = (void (*)(bd_t *, ulong, ulong, ulong, ulong))images->ep;
-#ifndef CONFIG_SPL_BUILD
-	/* If necessary, Copy the device tree. */
-	if (0 != os_base) {
-		rc = fdt_open_into(dt,
-				   os_base,
-				   fdt_totalsize(dt));
-
-		if (0 != rc) {
-			printf("Unable to copy device tree!\n");
-			goto error;
-		}
-
-		dt = (struct fdt_header *)os_base;
-	}
-
-	acp_osg_set_os(group, kernel, (unsigned long)dt,
-		       (unsigned long)kernel, 0, 0, 0);
-#else
-	/* Release the stage 3 lock. */
-	acp_unlock_stage3();
-
+	printf("Calling kernel=0x%p\n", kernel);
 	(*kernel)((bd_t *)dt, (ulong)kernel, 0, 0, 0);
-#endif
 
  error:
 
-#ifndef CONFIG_ACP
-	board_reset();
-#endif
 	return;
 }
 

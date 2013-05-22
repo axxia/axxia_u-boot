@@ -25,8 +25,7 @@ include $(TOPDIR)/config.mk
 
 LIB	:= $(obj)libserial.o
 
-#ifndef CONFIG_ACP
-ifndef CONFIG_AXXIA_ARM
+ifndef CONFIG_AXXIA
 COBJS-y += serial.o
 endif
 

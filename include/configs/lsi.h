@@ -251,7 +251,7 @@ typedef union {
   unsigned short raw;
 
   struct {
-#if 1
+#ifdef CONFIG_AXXIA_PPC
     unsigned short soft_reset      : 1;
     unsigned short loop_back       : 1;
     unsigned short force100        : 1; /* speedBit0 */
@@ -262,7 +262,7 @@ typedef union {
     unsigned short full_duplex     : 1; /* duplex */
     unsigned short collision_test  : 1;
     unsigned short unused          : 7;
-#else  /* __BIG_ENDIAN */
+#else
     unsigned short                 : 7;
     unsigned short collision_test  : 1;
     unsigned short full_duplex     : 1; /* duplex */
@@ -273,7 +273,7 @@ typedef union {
     unsigned short force100        : 1; /* speedBit0 */
     unsigned short loop_back       : 1;
     unsigned short soft_reset      : 1;
-#endif /* __BIG_ENDIAN */
+#endif
   } __attribute__ ( ( packed ) ) bits;
 } __attribute__ ( ( packed ) ) phy_control_t;
 
@@ -285,7 +285,7 @@ typedef union {
   unsigned short raw;
 
   struct {
-#if 1
+#ifdef CONFIG_AXXIA_PPC
     unsigned short t4_capable        : 1;
     unsigned short tx_fdx_capable    : 1;
     unsigned short tx_capable        : 1;
@@ -313,7 +313,7 @@ typedef union {
     unsigned short tx_capable        : 1;
     unsigned short tx_fdx_capable    : 1;
     unsigned short t4_capable        : 1;
-#endif /* __BIG_ENDIAN */
+#endif
   } __attribute__ ( ( packed ) ) bits;
 } __attribute__ ( ( packed ) ) phy_status_t;
 
@@ -337,15 +337,15 @@ typedef union {
   unsigned short raw;
 
   struct {
-#if 1
+#ifdef CONFIG_AXXIA_PPC
     unsigned short id       : 6;
     unsigned short model    : 6;
     unsigned short revision : 4;
-#else  /* __BIG_ENDIAN */
+#else
     unsigned short revision : 4;
     unsigned short model    : 6;
     unsigned short id       : 6;
-#endif /* __BIG_ENDIAN */
+#endif
   } __attribute__ ( ( packed ) ) bits;
 } __attribute__ ( ( packed ) ) phy_id_low_t;
 

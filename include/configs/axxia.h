@@ -23,6 +23,41 @@
 #ifndef __CONFIGS_AXXIA_H
 #define __CONFIGS_AXXIA_H
 
+#define CONFIG_AXXIA
+
+/*
+  ======================================================================
+  ======================================================================
+  Nuevo Conf Ring Access, see board/lsi/axxia-ppc/ncr.c for the implementation
+  ======================================================================
+  ======================================================================
+*/
+
+#ifndef __ASSEMBLY__
+#define NCP_REGION_ID( node, target ) \
+( unsigned long ) ( ( ( ( node ) & 0xffff ) << 16 ) | ( ( target ) & 0xffff ) )
+#define NCP_NODE_ID( region ) ( ( ( region ) >> 16 ) & 0xffff )
+#define NCP_TARGET_ID( region ) ( ( region ) & 0xffff )
+int ncr_read(unsigned long, unsigned long, int, void *);
+int ncr_read8( unsigned long, unsigned long, unsigned char * );
+int ncr_read16( unsigned long, unsigned long, unsigned short * );
+int ncr_read32( unsigned long, unsigned long, unsigned long * );
+int ncr_write(unsigned long, unsigned long, int, void *);
+int ncr_write8( unsigned long, unsigned long, unsigned char );
+int ncr_write16( unsigned long, unsigned long, unsigned short );
+int ncr_write32( unsigned long, unsigned long, unsigned long );
+int ncr_modify32( unsigned long, unsigned long, unsigned long, unsigned long );
+int ncr_and( unsigned long, unsigned long, unsigned long );
+int ncr_or( unsigned long, unsigned long, unsigned long );
+int ncr_poll( unsigned long, unsigned long, unsigned long,
+              unsigned long, unsigned long, unsigned long );
+void ncr_tracer_enable( void );
+void ncr_tracer_disable( void );
+int ncr_tracer_is_enabled( void );
+void ncr_enable( void );
+void ncr_disable( void );
+#endif
+
 /*
   Include the common LSI header.
 */

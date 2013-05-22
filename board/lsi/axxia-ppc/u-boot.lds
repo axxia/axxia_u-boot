@@ -142,9 +142,11 @@ SECTIONS
     CONSTRUCTORS
   }
 
-  .u_boot_list : {
-    #include "u-boot.lst"
-  }
+ . = .;
+ . = ALIGN(4);
+ .u_boot_list : {
+ *(SORT(.u_boot_list*));
+ }
 
   . = .;
   __start___ex_table = .;
