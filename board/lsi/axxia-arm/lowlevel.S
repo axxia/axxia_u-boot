@@ -310,6 +310,8 @@ clear_page_tables:
 	mov     r0, #0
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
 
+#ifndef CONFIG_SPL_BUILD
+
 	@@
 	@ Clear BSS
 	mov	r0, #0
@@ -320,6 +322,8 @@ clear_page_tables:
 1:	str	r0, [r1], #4
 	cmp	r1, r2
 	blt	1b
+
+#endif
 
 	mov	pc, lr
 
