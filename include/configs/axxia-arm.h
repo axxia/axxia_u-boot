@@ -260,14 +260,6 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
 #endif
 
 #define CONFIG_SYS_PROMPT       "ACP3=> "
-#if 0
-//#define CONFIG_SYS_CBSIZE       1024
-//#define CONFIG_SYS_PBSIZE       (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16)
-//#define CONFIG_SYS_MAXARGS      64
-//#define CONFIG_SYS_BARGSIZE     CONFIG_SYS_CBSIZE
-
-#endif
-
 #define CFG_PROMPT              "ACP3=> "
 #define CFG_CBSIZE              1024
 #define CFG_PBSIZE              (CFG_CBSIZE+sizeof(CFG_PROMPT)+16)
@@ -275,11 +267,10 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
 #define CFG_BARGSIZE            CFG_CBSIZE
 
 
-#define UART_CLOCK_SPEED	2*1024*1024	/* 2 Mb/s */
-/* #define CONFIG_BAUDRATE			115200 */
-#define CONFIG_BAUDRATE			9600
-/* #define CONFIG_SYS_BAUDRATE_TABLE	{4800, 9600, 19200, 38400, 57600,\
-					115200} */
+#define UART_CLOCK_SPEED	2000000
+#define CONFIG_BAUDRATE		115200
+#define CONFIG_SYS_BAUDRATE_TABLE {4800, 9600, 19200, 38400, 57600, 115200}
+
 #ifndef __ASSEMBLY__
 int serial_early_init(void);
 #endif
