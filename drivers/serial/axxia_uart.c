@@ -27,26 +27,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifdef ACP_ISS
-#define	_writel(v,a)	(*(volatile unsigned long*)(a)) = (v)
-#define	_readl(a)	(*(volatile unsigned long*)(a))
-#else
-#define _readl( address ) \
-readl( ( unsigned long * ) ( address ) )
-#define _writel( value, address ) \
-writel( ( value ), ( unsigned long * ) ( address ) )
-#endif
-
-#if 0
-#ifndef CONFIG_SPL_BUILD
-ACP_DEFINE_SPINLOCK(uart_lock);
-#define ACP_LOCK() acp_spin_lock(&uart_lock)
-#define ACP_UNLOCK() acp_spin_unlock(&uart_lock)
-#else
-#define ACP_LOCK()
-#define ACP_UNLOCK()
-#endif
-#endif
 void
 serial_exit(void);
 
@@ -124,7 +104,6 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 	unsigned long per_clock;
 
 #ifndef CONFIG_AXXIA_ARM
-
 	do {
 		for (;;) {
 			int rc;
@@ -174,15 +153,16 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 	*/
 
 #ifndef CONFIG_AXXIA_ARM
-	fbrd = (per_clock / divisor) % (16 * baud_rate);
+	fbrd = (per_clock / divisor);
+#else
+	fbrd = UART_CLOCK_SPEED;
+#endif
+	fbrd %= (16 * baud_rate);
 	fbrd *= 128;
 	fbrd += (16 * baud_rate);
 	fbrd /= (2 * (16 * baud_rate));
 
 	clock_stuff->divisor = (divisor - 1);
-#else
-	fbrd = (UART_CLOCK_SPEED % (16 * baud_rate)) / (16 * baud_rate);
-#endif
 	clock_stuff->ibrd = ibrd;
 	clock_stuff->fbrd = fbrd;
 
@@ -208,9 +188,9 @@ axxia_serial_initialize(unsigned long divisor, unsigned long ibrd, unsigned long
 
 #ifndef CONFIG_AXXIA_ARM
 	/* Set up the timer. */
-	_writel(0, (uart.timer + TIMER_CONTROL));
-	_writel(divisor, (uart.timer + TIMER_LOAD));
-	_writel((TIMER_CONTROL_ENABLE | TIMER_CONTROL_MODE),
+	writel(0, (uart.timer + TIMER_CONTROL));
+	writel(divisor, (uart.timer + TIMER_LOAD));
+	writel((TIMER_CONTROL_ENABLE | TIMER_CONTROL_MODE),
 	       (uart.timer + TIMER_CONTROL));
 #endif
 	/*
@@ -219,24 +199,24 @@ axxia_serial_initialize(unsigned long divisor, unsigned long ibrd, unsigned long
 
 	  How should this be done for reception?
 	*/
-	while (0 == (_readl(uart.uart + UART_FR) & FR_TXFE));
-	while (0 != (_readl(uart.uart + UART_FR) & FR_BUSY));
+	while (0 == (readl(uart.uart + UART_FR) & FR_TXFE));
+	while (0 != (readl(uart.uart + UART_FR) & FR_BUSY));
 
 	/* Disable the UART. */
-	_writel(0, uart.uart + UART_CR);
+	writel(0, uart.uart + UART_CR);
 
 	/* Flush the transmit fifo. */
-	lcr_h = _readl(uart.uart + UART_LCR_H);
+	lcr_h = readl(uart.uart + UART_LCR_H);
 	lcr_h &= ~0x10;
-	_writel(lcr_h, uart.uart + UART_LCR_H);
+	writel(lcr_h, uart.uart + UART_LCR_H);
 
 	/* Reprogram. */
-  	_writel(ibrd, uart.uart + UART_IBRD);
-	_writel(fbrd, uart.uart + UART_FBRD);
-	_writel(0x70, uart.uart + UART_LCR_H);
+  	writel(ibrd, uart.uart + UART_IBRD);
+	writel(fbrd, uart.uart + UART_FBRD);
+	writel(0x70, uart.uart + UART_LCR_H);
 
 	/* Enable */
-	_writel(0x301, uart.uart + UART_CR);
+	writel(0x301, uart.uart + UART_CR);
 #endif
 	return;
 }
@@ -292,25 +272,25 @@ serial_putc( const char c )
 	if (0 == uart.uart)
 		return;
 
-	while (0 != (_readl(uart.uart + UART_FR) & FR_TXFF))
+	while (0 != (readl(uart.uart + UART_FR) & FR_TXFF))
 		;
 
 	if ('\n' == c) {
-		_writel('\r', uart.uart + UART_DR);
-		while (0 != (_readl(uart.uart + UART_FR) & FR_TXFF))
+		writel('\r', uart.uart + UART_DR);
+		while (0 != (readl(uart.uart + UART_FR) & FR_TXFF))
 			;
 	}
 
-	_writel(c, uart.uart + UART_DR);
+	writel(c, uart.uart + UART_DR);
 
 	/*
 	  The following is useful for printf debugging; get all the
 	  characters out!
 	*/
-	while (0 == (_readl(uart.uart + UART_FR) & FR_TXFE))
+	while (0 == (readl(uart.uart + UART_FR) & FR_TXFE))
 		;
 
-	while (0 != (_readl(uart.uart + UART_FR) & FR_BUSY))
+	while (0 != (readl(uart.uart + UART_FR) & FR_BUSY))
 		;
 #endif
 
@@ -355,10 +335,10 @@ serial_getc(void)
 	if (0 == uart.uart)
 		for (;;)
 			;
-	while (0 != (_readl(uart.uart + UART_FR) & FR_RXFE))
+	while (0 != (readl(uart.uart + UART_FR) & FR_RXFE))
 		;
 
-	character = _readl(uart.uart + UART_DR);
+	character = readl(uart.uart + UART_DR);
 
 	return character;
 #endif
@@ -379,7 +359,7 @@ serial_tstc(void)
 #else
 	if (0 != uart.uart)
 		return_value =
-			(FR_RXFE != (_readl(uart.uart + UART_FR) & FR_RXFE));
+			(FR_RXFE != (readl(uart.uart + UART_FR) & FR_RXFE));
 #endif
 
 	return return_value;
@@ -404,25 +384,22 @@ char printbuffer [ CFG_PBSIZE ] = { 1, 8, 0, 8, 8 };
 void
 serial_exit(void)
 {
-#ifndef ACP_ISS
 	if (0 == uart.uart)
 		return;
 
 	/* Disable the UART. */
-	_writel(0, (uart.uart + UART_CR));
+	writel(0, (uart.uart + UART_CR));
 
 	/* Make sure all transmissions are finished. */
-	while (0 == (_readl(uart.uart + UART_FR) & FR_TXFE));
-	while (0 != (_readl(uart.uart + UART_FR) & FR_BUSY));
+	while (0 == (readl(uart.uart + UART_FR) & FR_TXFE));
+	while (0 != (readl(uart.uart + UART_FR) & FR_BUSY));
 
 #ifndef CONFIG_AXXIA_ARM
 	/* Turn off the timer. */
-	_writel(0, (uart.timer + TIMER_CONTROL));
+	writel(0, (uart.timer + TIMER_CONTROL));
 #endif
 
 	uart.uart = 0;
-#endif
-	//acp_failure_disable_console();
 	
 	return;
 }
@@ -435,7 +412,6 @@ serial_exit(void)
 int
 serial_early_init()
 {
-#ifndef ACP_ISS
 	clock_stuff_t clock_stuff;
 
 	memset((void *)printbuffer, 0, CFG_PBSIZE);
@@ -446,10 +422,8 @@ serial_early_init()
 #endif
 
 	get_clock_stuff(CONFIG_BAUDRATE, &clock_stuff);
-	//acp_serial_init(clock_stuff.divisor, clock_stuff.ibrd, clock_stuff.fbrd);
-	axxia_serial_initialize(clock_stuff.divisor, clock_stuff.ibrd, clock_stuff.fbrd);
-#endif
-	//acp_failure_enable_console();
+	axxia_serial_initialize(clock_stuff.divisor,
+				clock_stuff.ibrd, clock_stuff.fbrd);
 
 	return 0;
 }
@@ -462,46 +436,17 @@ serial_early_init()
 int
 serial_init()
 {
-#ifndef ACP_ISS
 	clock_stuff_t clock_stuff;
-#ifndef CONFIG_SPL_BUILD
-	unsigned long core;
-	int group;
-#endif
 
 	memset((void *)printbuffer, 0, CFG_PBSIZE);
-	uart.uart = 0;
-
-#ifndef CONFIG_SPL_BUILD
-#if 0
-	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
-
-	group = acp_osg_get_group(core);
-
-	if (-1 != group) {
-		if (0 != acp_osg_group_get_res(group, ACP_OS_UART0)) {
-			uart.uart = UART0_ADDRESS;
-			uart.timer = TIMER2;
-		} else if(0 != acp_osg_group_get_res(group, ACP_OS_UART1)) {
-			uart.uart = UART1_ADDRESS;
-			uart.timer = TIMER3;
-		}
-	}
-#endif
-	uart.uart = UART0_ADDRESS;
-#else
 	uart.uart = UART0_ADDRESS;
 #ifndef CONFIG_AXXIA_ARM
 	uart.timer = TIMER2;
 #endif
-#endif
-
 	/*get_clock_stuff(gd->baudrate, &clock_stuff);*/
-	get_clock_stuff(9600, &clock_stuff);
-	//acp_serial_init(clock_stuff.divisor, clock_stuff.ibrd, clock_stuff.fbrd);
-	axxia_serial_initialize(clock_stuff.divisor, clock_stuff.ibrd, clock_stuff.fbrd);
-#endif
-	//acp_failure_enable_console();
+	get_clock_stuff(CONFIG_BAUDRATE, &clock_stuff);
+	axxia_serial_initialize(clock_stuff.divisor,
+				clock_stuff.ibrd, clock_stuff.fbrd);
 
 	return 0;
 }
