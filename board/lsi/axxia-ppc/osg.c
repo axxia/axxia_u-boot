@@ -343,10 +343,10 @@ acp_osg_readenv(void)
   acp_osg_group_get_res
 */
 
-unsigned long
+unsigned long long
 acp_osg_group_get_res(int group, acp_osg_group_res_t res)
 {
-	unsigned long rv = 0;
+	unsigned long long rv = 0;
 	acp_osg_group_t *acp_osg_group = acp_osg_groups[group];
 
 	switch(res) {
@@ -360,7 +360,7 @@ acp_osg_group_get_res(int group, acp_osg_group_res_t res)
 		rv = acp_osg_groups[group]->base;
 		break;
 	case ACP_OS_SIZE:
-		rv = acp_osg_groups[group]->size;
+		rv = (unsigned long long)acp_osg_groups[group]->size;
 		break;
 	case ACP_OS_UART0:
 		rv = UART0(acp_osg_group->flags);
@@ -594,11 +594,6 @@ acp_osg_jump_to_os(int group)
 		   unsigned long, unsigned long);
 
 	os = acp_osg_groups[group]->os;
-
-	/*ZZZ*/
-	set_working_fdt_addr((void *)acp_osg_groups[group]->arguments[0]);
-	fdt_print("/", NULL, 32);
-	/*ZZZ*/
 
 	/* Release the stage 3 lock. */
 	acp_unlock_stage3();

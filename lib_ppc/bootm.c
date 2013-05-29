@@ -154,18 +154,32 @@ boot_jump_linux(bootm_headers_t *images)
 		printf("Updating /memory reg\n");
 		{
 			unsigned long value[3];
+			unsigned long long mem_value;
 
 			value[0] = 0x00000000;
 			value[1] = os_base;
-			value[2] =
-				(acp_osg_group_get_res(group, ACP_OS_SIZE) *
-				 1024 * 1024);
+			mem_value = (unsigned long long)
+			  (acp_osg_group_get_res(group, ACP_OS_SIZE)
+			   * 1024 * 1024);
+			value[2] = (unsigned long long)mem_value / 2; 
 
-			rc = fdt_find_and_setprop(dt, "/memory", "reg",
+			rc = fdt_find_and_setprop(dt, "/memory@0", "reg",
 						  (void *)value,
 						  sizeof(value), 1);
 
 			if(0 != rc) {
+				printf("Unable to set /memory@0 reg: %d.\n", rc);
+				goto error;
+			}
+
+			value[1] = (unsigned long long)mem_value / 2;
+			rc = fdt_find_and_setprop(dt, "/memory@80000000", "reg",
+						  (void *)value, sizeof(value),
+						  1);
+
+			if(0 != rc) {
+				printf("Unable to set /memory@80000000 reg: "
+				       "%d.\n", rc);
 				printf("Unable to set /memory reg: %d.\n", rc);
 				goto error;
 			}
@@ -250,11 +264,6 @@ boot_jump_linux(bootm_headers_t *images)
 	kernel = (void (*)(bd_t *, ulong, ulong, ulong, ulong))images->ep;
 
 	if (0 != dt_specified) {
-		/*ZZZ*/
-		set_working_fdt_addr((void *)dt);
-		fdt_print("/", NULL, 32);
-		/*ZZZ*/
-
 		/* Release the stage 3 lock. */
 		acp_unlock_stage3();
 

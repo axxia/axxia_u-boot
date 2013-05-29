@@ -320,7 +320,7 @@ typedef enum {
 	ACP_OS_USB, ACP_OS_PLX, ACP_OS_SBB, ACP_OS_FDT
 } acp_osg_group_res_t;
 
-unsigned long acp_osg_group_get_res(int, acp_osg_group_res_t);
+unsigned long long acp_osg_group_get_res(int, acp_osg_group_res_t);
 void acp_osg_group_set_res(int, acp_osg_group_res_t, unsigned long);
 int acp_osg_get_group(int);
 int acp_osg_is_group_boot_core(int);
