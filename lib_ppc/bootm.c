@@ -88,6 +88,38 @@ boot_jump_linux(bootm_headers_t *images)
 	int rc;
 	int dt_specified = 0;
 
+	/* Set up secondary cores. */
+	cores = acp_osg_group_get_res(group, ACP_OS_CORES);
+	cores &= ~acp_osg_group_get_res(group, ACP_OS_BOOT_CORE);
+
+	if (NULL != (ccr0_env = getenv("ccr0")))
+		ccr0_val = simple_strtoul(ccr0_env, NULL, 16);
+	else
+		ccr0_val = CCR0_DEFAULT;
+
+	if (NULL != (ccr1_env = getenv("ccr1")))
+		ccr1_val = simple_strtoul(ccr1_env, NULL, 16);
+	else
+		ccr1_val = CCR1_DEFAULT;
+
+	if (NULL != (ccr2_env = getenv("ccr2")))
+		ccr2_val = simple_strtoul(ccr2_env, NULL, 16);
+	else
+		ccr2_val = CCR2_DEFAULT;
+
+	printf("CCR0=0x%08lx CCR1=0x%08lx CCR2=0x%08lx\n",
+	       ccr0_val, ccr1_val, ccr2_val );
+
+	if (0 != cores) {
+		for (core = 0; core < ACP_NR_CORES; ++core) {
+			if (0 == ((1 << core) & cores))
+				continue;
+			(acp_spintable[core])->ccr0_value = ccr0_val;
+			(acp_spintable[core])->ccr1_value = ccr1_val;
+			(acp_spintable[core])->ccr2_value = ccr2_val;
+		}
+	}
+
 	if (NULL != dt) {
 		dt_specified = 1;	
 		bootargs = getenv("bootargs3");
@@ -154,38 +186,6 @@ boot_jump_linux(bootm_headers_t *images)
 				       "%d.\n", rc);
 				printf("Unable to set /memory reg: %d.\n", rc);
 				goto error;
-			}
-		}
-
-		/* Set up secondary cores. */
-		cores = acp_osg_group_get_res(group, ACP_OS_CORES);
-		cores &= ~acp_osg_group_get_res(group, ACP_OS_BOOT_CORE);
-
-		if (NULL != (ccr0_env = getenv("ccr0")))
-			ccr0_val = simple_strtoul(ccr0_env, NULL, 16);
-		else
-			ccr0_val = CCR0_DEFAULT;
-
-		if (NULL != (ccr1_env = getenv("ccr1")))
-			ccr1_val = simple_strtoul(ccr1_env, NULL, 16);
-		else
-			ccr1_val = CCR1_DEFAULT;
-
-		if (NULL != (ccr2_env = getenv("ccr2")))
-			ccr2_val = simple_strtoul(ccr2_env, NULL, 16);
-		else
-			ccr2_val = CCR2_DEFAULT;
-
-		printf("CCR0=0x%08lx CCR1=0x%08lx CCR2=0x%08lx\n",
-		       ccr0_val, ccr1_val, ccr2_val );
-
-		if (0 != cores) {
-			for (core = 0; core < ACP_NR_CORES; ++core) {
-				if (0 == ((1 << core) & cores))
-					continue;
-				(acp_spintable[core])->ccr0_value = ccr0_val;
-				(acp_spintable[core])->ccr1_value = ccr1_val;
-				(acp_spintable[core])->ccr2_value = ccr2_val;
 			}
 		}
 
