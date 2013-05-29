@@ -89,7 +89,8 @@ boot_jump_linux(bootm_headers_t *images)
 	int dt_specified = 0;
 
 	if (NULL != dt) {
-		dt_specified = 1;
+		dt_specified = 1;	
+		bootargs = getenv("bootargs3");
 	} else {
 		__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
 		group = acp_osg_get_current();
@@ -100,13 +101,6 @@ boot_jump_linux(bootm_headers_t *images)
 		       core, group, dt);
 
 		/* Update the command line */
-		new_commandline = calloc(512, 1);
-
-		if ((char *)0 == new_commandline) {
-			printf("Unable to update the command line.\n");
-			goto error;
-		}
-
 		switch (group) {
 		case 0:
 			bootargs = getenv("osgroup0_bootargs");
@@ -127,28 +121,6 @@ boot_jump_linux(bootm_headers_t *images)
 
 		if (NULL == bootargs)
 			bootargs = getenv("bootargs3");
-
-		if ((char *)0 != bootargs) {
-			strcat(new_commandline, bootargs);
-
-			if((char *)0 != mtdparts) {
-				strcat(new_commandline, " ");
-				strcat(new_commandline, mtdparts);
-			}
-		}
-
-		printf("Linux Command Line: %s\n", new_commandline);
-
-		rc = fdt_find_and_setprop(dt, "/chosen", "bootargs",
-					  new_commandline,
-					  strlen(new_commandline) + 1, 1);
-
-		if(0 != rc) {
-			printf("Unable to set bootargs: %d.\n", rc);
-			goto error;
-		}
-
-		free(new_commandline);
 
 		/* Set up the memory definition in the device tree. */
 		printf("Updating /memory reg\n");
@@ -245,6 +217,35 @@ boot_jump_linux(bootm_headers_t *images)
 		isync( );
 	}
 
+	new_commandline = calloc(512, 1);
+
+	if ((char *)0 == new_commandline) {
+		printf("Unable to update the command line.\n");
+		goto error;
+	}
+
+	if ((char *)0 != bootargs) {
+		strcat(new_commandline, bootargs);
+
+		if((char *)0 != mtdparts) {
+			strcat(new_commandline, " ");
+			strcat(new_commandline, mtdparts);
+		}
+	}
+
+	printf("Linux Command Line: %s\n", new_commandline);
+
+	rc = fdt_find_and_setprop(dt, "/chosen", "bootargs",
+				  new_commandline,
+				  strlen(new_commandline) + 1, 1);
+
+	if(0 != rc) {
+		printf("Unable to set bootargs: %d.\n", rc);
+		goto error;
+	}
+
+	free(new_commandline);
+
 	if (0 != images->initrd_start && 0 != images->initrd_end) {
 		rc = fdt_find_and_setprop(dt, "/chosen",
 					  "linux,initrd-start",
@@ -266,6 +267,8 @@ boot_jump_linux(bootm_headers_t *images)
 	if (0 != dt_specified) {
 		/* Release the stage 3 lock. */
 		acp_unlock_stage3();
+
+		fdt_fixup_ethernet((void *)dt);
 
 		(*kernel)((bd_t *)dt, (ulong)kernel, 0, 0, 0);
 	}

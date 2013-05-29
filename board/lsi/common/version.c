@@ -26,7 +26,7 @@
 
 #ifdef CONFIG_LSI
 
-#define LSI_VERSION "4.8.1.81.pre2"
+#define LSI_VERSION "4.8.1.81.pre3"
 
 const char * lsi_version = LSI_VERSION;
 
