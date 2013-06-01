@@ -105,6 +105,14 @@ typedef struct {
 #define SBB_SHIFT     18
 #define SBB(flags)    (((flags) & SBB_MASK) >> SBB_SHIFT)
 
+#define SSP_MASK      0x80000
+#define SSP_SHIFT     19
+#define SSP(flags)    (((flags) & SSP_MASK) >> SSP_SHIFT)
+
+#define I2C_MASK      0x100000
+#define I2C_SHIFT     20
+#define I2C(flags)    (((flags) & I2C_MASK) >> I2C_SHIFT)
+
 static acp_osg_core_t *acp_osg_cores[] = {
 	(void *)&__acp_osg_cores + (0 * sizeof(acp_osg_core_t)),
 	(void *)&__acp_osg_cores + (1 * sizeof(acp_osg_core_t)),
@@ -397,6 +405,12 @@ acp_osg_group_get_res(int group, acp_osg_group_res_t res)
 	case ACP_OS_SBB:
 		rv = SBB(acp_osg_group->flags);
 		break;
+	case ACP_OS_SSP:
+		rv = SSP(acp_osg_group->flags);
+		break;
+	case ACP_OS_I2C:
+		rv = I2C(acp_osg_group->flags);
+		break;
 	case ACP_OS_FDT:
 		rv = (unsigned long)get_acp_fdt(group);
 		break;
@@ -488,6 +502,16 @@ acp_osg_group_set_res(int group, acp_osg_group_res_t res, unsigned long value)
 		acp_osg_groups[group]->flags &= ~SBB_MASK;
 		acp_osg_groups[group]->flags |=
 			((value << SBB_SHIFT) & SBB_MASK);
+		break;
+	case ACP_OS_SSP:
+		acp_osg_groups[group]->flags &= ~SSP_MASK;
+		acp_osg_groups[group]->flags |=
+			((value << SSP_SHIFT) & SSP_MASK);
+		break;
+	case ACP_OS_I2C:
+		acp_osg_groups[group]->flags &= ~I2C_MASK;
+		acp_osg_groups[group]->flags |=
+			((value << I2C_SHIFT) & I2C_MASK);
 		break;
 	case ACP_OS_FDT:
 		printf("The address of the device tree cannot be changed.\n");
@@ -684,6 +708,15 @@ acp_osg_update_dt(void *input, int group)
 	int i;
 	unsigned long value;
 	unsigned long group_base_address;
+	char *status[] = {"disabled", "ok"};
+	int ethaddr_size;
+	char ethaddr_string[18];
+	unsigned char ethaddr[6];
+	char *string;
+	char *endp;
+	int nodeoffset;
+	const struct fdt_property *property;
+	unsigned long *dma_ranges;
 
 	/*
 	  ============================================================
@@ -721,6 +754,14 @@ acp_osg_update_dt(void *input, int group)
 
 	/*
 	  ============================================================
+	  Set "boot_cpuid_phys" to the physical id of the boot core
+	*/
+
+	value = __ilog2(value);
+	fdt_set_boot_cpuid_phys(dt, value);
+
+	/*
+	  ============================================================
 	  Update the clocks, PPC and peripheral.
 	*/
 	
@@ -749,76 +790,149 @@ acp_osg_update_dt(void *input, int group)
 		}
 	}
 
-	rc = fdt_find_and_setprop(dt, "/plb/opb/serial@00404000",
-				  "clock-frequency",
-				  (void *)&clk_per, sizeof(unsigned long), 1);
-	rc |= fdt_find_and_setprop(dt, "/plb/opb/serial@00405000",
-				   "clock-frequency",
-				   (void *)&clk_per, sizeof(unsigned long), 1);
-
-	if (0 != rc) {
-		printf("Error setting up the UARTs\n");
-		return -1;
-	}
-
 	/*
 	  ============================================================
 	  Update the peripherals.
 	*/
 
-	if (0 != acp_osg_group_get_res(group, ACP_OS_UART0)) {
+	/* UART 0 */
+
+	if (0 != acp_osg_group_get_res(group, ACP_OS_UART0))
 		value = 1;
-		rc = fdt_find_and_setprop(dt, "/plb/opb/serial@00404000",
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/plb/opb/serial@00404000",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+	rc |= fdt_find_and_setprop(dt, "/plb/opb/serial@00404000",
+				   "status", (void *)status[value],
+				   strlen(status[value]) + 1, 1);
+	rc |= fdt_find_and_setprop(dt, "/plb/opb/serial@00404000",
+				   "current-speed",
+				   (void *)&gd->baudrate,
+				   sizeof(unsigned long), 1);
+	rc != fdt_find_and_setprop(dt, "/plb/opb/serial@00404000",
+				   "clock-frequency",
+				   (void *)&clk_per,
+				   sizeof(unsigned long), 1);
+
+	if (0 != rc) {
+		rc = fdt_find_and_setprop(dt, "/plb/opb/serial0",
 					  "enabled", (void *)&value,
 					  sizeof(unsigned long), 1);
-		rc |= fdt_find_and_setprop(dt, "/plb/opb/serial@00404000",
+		rc |= fdt_find_and_setprop(dt, "/plb/opb/serial0",
+					   "enabled", (void *)&value,
+					   sizeof(unsigned long), 1);
+		rc |= fdt_find_and_setprop(dt, "/plb/opb/serial0",
+					   "status",
+					   (void *)status[value],
+					   strlen(status[value]) + 1, 1);
+		rc |= fdt_find_and_setprop(dt, "/plb/opb/serial0",
 					   "current-speed",
 					   (void *)&gd->baudrate,
 					   sizeof(unsigned long), 1);
-
-		if (0 != rc)
-			return -1;
+		rc != fdt_find_and_setprop(dt, "/plb/opb/serial0",
+					   "clock-frequency",
+					   (void *)&clk_per,
+					   sizeof(unsigned long), 1);
 	}
 
-	if (0 != acp_osg_group_get_res(group, ACP_OS_UART1)) {
+	if (0 != rc)
+		return -1;
+
+	/* UART 1 */
+
+	if (0 != acp_osg_group_get_res(group, ACP_OS_UART1))
 		value = 1;
-		rc = fdt_find_and_setprop(dt, "/plb/opb/serial@00405000",
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/plb/opb/serial@00405000",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+	rc |= fdt_find_and_setprop(dt, "/plb/opb/serial@00405000",
+				   "status", (void *)status[value],
+				   strlen(status[value]) + 1, 1);
+	rc |= fdt_find_and_setprop(dt, "/plb/opb/serial@00405000",
+				   "current-speed",
+				   (void *)&gd->baudrate,
+				   sizeof(unsigned long), 1);
+	rc |= fdt_find_and_setprop(dt, "/plb/opb/serial@00405000",
+				   "clock-frequency",
+				   (void *)&clk_per,
+				   sizeof(unsigned long), 1);
+
+	if (0 != rc) {
+		rc = fdt_find_and_setprop(dt, "/plb/opb/serial1",
 					  "enabled", (void *)&value,
 					  sizeof(unsigned long), 1);
-		rc |= fdt_find_and_setprop(dt, "/plb/opb/serial@00405000",
+		rc |= fdt_find_and_setprop(dt, "/plb/opb/serial1",
+					   "status",
+					   (void *)status[value],
+					   strlen(status[value]) + 1, 1);
+		rc |= fdt_find_and_setprop(dt, "/plb/opb/serial1",
 					   "current-speed",
 					   (void *)&gd->baudrate,
 					   sizeof(unsigned long), 1);
-
-		if (0 != rc)
-			return -1;
+		rc |= fdt_find_and_setprop(dt, "/plb/opb/serial1",
+					   "clock-frequency",
+					   (void *)&clk_per,
+					   sizeof(unsigned long), 1);
 	}
 
-	if (0 != acp_osg_group_get_res(group, ACP_OS_NAND)) {
+	if (0 != rc)
+		return -1;
+
+	/* NAND */
+
+	if (0 != acp_osg_group_get_res(group, ACP_OS_NAND))
 		value = 1;
-		rc = fdt_find_and_setprop(dt, "/plb/opb/nand@00440000",
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/plb/opb/nand@00440000",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+
+	if (0 != rc) {
+		rc = fdt_find_and_setprop(dt, "/plb/opb/nand0",
 					  "enabled", (void *)&value,
 					  sizeof(unsigned long), 1);
-
-		if (0 != rc)
-			return -1;
+		rc |= fdt_find_and_setprop(dt, "/plb/opb/nand0",
+					   "status", (void *)status[value],
+					   strlen(status[value]) + 1, 1);
 	}
 
-	if (0 != acp_osg_group_get_res(group, ACP_OS_FEMAC)) {
-		int ethaddr_size;
-		char ethaddr_string[18];
-		unsigned char ethaddr[6];
-		char *string;
-		char *endp;
+	if (0 != rc)
+		return -1;
 
+	/* FEMAC */
+
+	if (0 != acp_osg_group_get_res(group, ACP_OS_FEMAC))
 		value = 1;
-		rc = fdt_find_and_setprop(dt, "/plb/opb/femac@00480000",
-					  "enabled", (void *)&value,
-					  sizeof(unsigned long), 1);
+	else
+		value = 0;
 
-		if (0 != rc)
-			return -1;
+	rc = fdt_find_and_setprop(dt, "/plb/opb/femac@00480000",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
 
+	if (0 != rc) {
+		rc = fdt_find_and_setprop(dt, "/plb/opb/femac0",
+					  "status",
+					  (void *)status[value],
+					  strlen(status[value]) + 1, 1);
+		/* Add enabled for now to support older kernels. */
+		rc |= fdt_find_and_setprop(dt, "/plb/opb/femac0",
+					   "enabled", (void *)&value,
+					   sizeof(unsigned long), 1);
+	}
+
+	if (0 != rc)
+		return -1;
+
+	if (1 == value) {
 		ethaddr_size = getenv_r("ethaddr",
 					ethaddr_string, sizeof(ethaddr_string));
 
@@ -846,196 +960,314 @@ acp_osg_update_dt(void *input, int group)
 					  "mac-address", (void *)ethaddr,
 					  (sizeof(unsigned char) * 6), 1);
 
+		if (0 != rc)
+			rc = fdt_find_and_setprop(dt, "/plb/opb/femac0",
+						  "mac-address", (void *)ethaddr,
+						  (sizeof(unsigned char) * 6), 1);
+
 		if (0 != rc) {
 			printf("Error setting up the FEMAC.\n");
 			return -1;
 		}
 	}
 
-	if (0 != acp_osg_group_get_res(group, ACP_OS_PCIE0)) {
-		int nodeoffset;
-		const struct fdt_property *property;
-		unsigned long *dma_ranges;
+	/* PEI0 */
 
+	if (0 != acp_osg_group_get_res(group, ACP_OS_PCIE0))
 		value = 1;
-		rc = fdt_find_and_setprop(dt, "/pciex@f00c0000",
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/pciex@f00c0000",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+
+	if (0 != rc) {
+		rc = fdt_find_and_setprop(dt, "/pei0",
 					  "enabled", (void *)&value,
 					  sizeof(unsigned long), 1);
+		rc |= fdt_find_and_setprop(dt, "/pei0",
+					   "status", (void *)status[value],
+					   strlen(status[value]) + 1, 1);
+	}
 
-		if (0 != rc)
+	if (0 != rc)
+		return -1;
+
+	if (0 > (nodeoffset = fdt_path_offset(dt, "/pciex@f00c0000")))
+		if (0 > (nodeoffset = fdt_path_offset(dt, "/pei0")))
 			return -1;
 
-		if (0 > (nodeoffset = fdt_path_offset(dt, "/pciex@f00c0000")))
-			return -1;
+	if (NULL == (property = fdt_get_property(dt, nodeoffset,
+						 "dma-ranges", NULL)))
+		return -1;
 
-		if (NULL == (property = fdt_get_property(dt, nodeoffset,
-							 "dma-ranges", NULL)))
-			return -1;
+	dma_ranges = (unsigned long *)property->data;
+	dma_ranges[6] = (acp_osg_group_get_res(group, ACP_OS_SIZE) * 1024 * 1024);
 
-		dma_ranges = (unsigned long *)property->data;
-		dma_ranges[6] = (acp_osg_group_get_res(group, ACP_OS_SIZE) *
-				 1024 * 1024);
+	rc = fdt_find_and_setprop(dt, "/pciex@f00c0000",
+				  "dma-ranges", (void *)dma_ranges,
+				  (sizeof(unsigned long) * 7), 1);
 
-		rc = fdt_find_and_setprop(dt, "/pciex@f00c0000",
+	if (0 != rc)
+		rc = fdt_find_and_setprop(dt, "/pei0",
 					  "dma-ranges", (void *)dma_ranges,
 					  (sizeof(unsigned long) * 7), 1);
 
-		if (0 != rc)
-			return -1;
+	if (0 != rc)
+		return -1;
 
-		/*
-		  If plx is set to set, enable it in the device tree.
-		*/
+	/* If plx is set to set, enable it in the device tree. */
 
-		if (0 != acp_osg_group_get_res(group, ACP_OS_PLX)) {
-			value = 1;
-
-			rc = fdt_find_and_setprop(dt, "/pciex@f00c0000",
-						  "plx", (void *)&value,
-						  sizeof(unsigned long), 1);
-
-			if (0 != rc)
-				return -1;
-		}
-	}
-
-	if (0 != acp_osg_group_get_res(group, ACP_OS_PCIE1)) {
-		int nodeoffset;
-		const struct fdt_property *property;
-		unsigned long *dma_ranges;
-
+	if (0 != acp_osg_group_get_res(group, ACP_OS_PLX))
 		value = 1;
-		rc = fdt_find_and_setprop(dt, "/pciex@f00c8000",
-					  "enabled", (void *)&value,
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/pciex@f00c0000",
+				  "plx", (void *)&value,
+				  sizeof(unsigned long), 1);
+
+	if (0 != rc)
+		rc = fdt_find_and_setprop(dt, "/pei0",
+					  "plx", (void *)&value,
 					  sizeof(unsigned long), 1);
 
-		if (0 != rc)
+	if (0 != rc)
+		return -1;
+
+	/* PEI1 */
+
+	if (0 != acp_osg_group_get_res(group, ACP_OS_PCIE1))
+		value = 1;
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/pciex@f00c8000",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+
+	if (0 != rc) {
+		rc = fdt_find_and_setprop(dt, "/pei1",
+					  "enabled", (void *)&value,
+					  sizeof(unsigned long), 1);
+		rc |= fdt_find_and_setprop(dt, "/pei1",
+					   "status", (void *)status[value],
+					   strlen(status[value]) + 1, 1);
+	}
+
+	if (0 != rc)
+		return -1;
+
+	if (0 > (nodeoffset = fdt_path_offset(dt, "/pciex@f00c8000")))
+		if (0 > (nodeoffset = fdt_path_offset(dt, "/pei1")))
 			return -1;
 
-		if (0 > (nodeoffset = fdt_path_offset(dt, "/pciex@f00c8000")))
-			return -1;
+	if (NULL == (property = fdt_get_property(dt, nodeoffset,
+						 "dma-ranges", NULL)))
+		return -1;
 
-		if (NULL == (property = fdt_get_property(dt, nodeoffset,
-							 "dma-ranges", NULL)))
-			return -1;
+	dma_ranges = (unsigned long *)property->data;
+	dma_ranges[6] = (acp_osg_group_get_res(group, ACP_OS_SIZE) * 1024 * 1024);
 
-		dma_ranges = (unsigned long *)property->data;
-		dma_ranges[6] = (acp_osg_group_get_res(group, ACP_OS_SIZE) *
-				 1024 * 1024);
+	rc = fdt_find_and_setprop(dt, "/pciex@f00c8000",
+				  "dma-ranges", (void *)dma_ranges,
+				  (sizeof(unsigned long) * 7), 1);
 
-		rc = fdt_find_and_setprop(dt, "/pciex@f00c8000",
+	if (0 != rc)
+		rc = fdt_find_and_setprop(dt, "/pei1",
 					  "dma-ranges", (void *)dma_ranges,
 					  (sizeof(unsigned long) * 7), 1);
 
-		if (0 != rc)
-			return -1;
+	if (0 != rc)
+		return -1;
 
-		/*
-		  If plx is set to set, enable it in the device tree.
-		*/
+	/* If plx is set to set, enable it in the device tree. */
 
-		if (0 != acp_osg_group_get_res(group, ACP_OS_PLX)) {
-			value = 1;
+	if (0 != acp_osg_group_get_res(group, ACP_OS_PLX))
+		value = 1;
+	else
+		value = 0;
 
-			rc = fdt_find_and_setprop(dt, "/pciex@f00c8000",
-						  "plx", (void *)&value,
-						  sizeof(unsigned long), 1);
+	rc = fdt_find_and_setprop(dt, "/pciex@f00c8000",
+				  "plx", (void *)&value,
+				  sizeof(unsigned long), 1);
 
-			if (0 != rc)
-				return -1;
-		}
-	}
+	if (0 != rc)
+		rc = fdt_find_and_setprop(dt, "/pei1",
+					  "plx", (void *)&value,
+					  sizeof(unsigned long), 1);
+
+	if (0 != rc)
+		return -1;
 
 #ifndef ACP_25xx
 
-	if (0 != acp_osg_group_get_res(group, ACP_OS_PCIE2)) {
-		int nodeoffset;
-		const struct fdt_property *property;
-		unsigned long *dma_ranges;
+	/* PEI2 */
 
+	if (0 != acp_osg_group_get_res(group, ACP_OS_PCIE2))
 		value = 1;
-		rc = fdt_find_and_setprop(dt, "/pciex@f00d0000",
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/pciex@f00d0000",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+
+	if (0 != rc) {
+		rc = fdt_find_and_setprop(dt, "/pei2",
 					  "enabled", (void *)&value,
 					  sizeof(unsigned long), 1);
+		rc |= fdt_find_and_setprop(dt, "/pei2",
+					   "status", (void *)status[value],
+					   strlen(status[value]) + 1, 1);
+	}
 
-		if (0 != rc)
+	if (0 != rc)
+		return -1;
+
+	if (0 > (nodeoffset = fdt_path_offset(dt, "/pciex@f00d0000")))
+		if (0 > (nodeoffset = fdt_path_offset(dt, "/pei2")))
 			return -1;
 
-		if (0 > (nodeoffset = fdt_path_offset(dt, "/pciex@f00d0000")))
-			return -1;
+	if (NULL == (property = fdt_get_property(dt, nodeoffset,
+						 "dma-ranges", NULL)))
+		return -1;
 
-		if (NULL == (property = fdt_get_property(dt, nodeoffset,
-							 "dma-ranges", NULL)))
-			return -1;
+	dma_ranges = (unsigned long *)property->data;
+	dma_ranges[6] = (acp_osg_group_get_res(group, ACP_OS_SIZE) * 1024 * 1024);
 
-		dma_ranges = (unsigned long *)property->data;
-		dma_ranges[6] = (acp_osg_group_get_res(group, ACP_OS_SIZE) *
-				 1024 * 1024);
+	rc = fdt_find_and_setprop(dt, "/pciex@f00d0000",
+				  "dma-ranges", (void *)dma_ranges,
+				  (sizeof(unsigned long) * 7), 1);
 
-		rc = fdt_find_and_setprop(dt, "/pciex@f00d0000",
+	if (0 != rc)
+		rc = fdt_find_and_setprop(dt, "/pei2",
 					  "dma-ranges", (void *)dma_ranges,
 					  (sizeof(unsigned long) * 7), 1);
 
-		if (0 != rc)
-			return -1;
+	if (0 != rc)
+		return -1;
 
-		/*
-		  If plx is set to set, enable it in the device tree.
-		*/
+	/* If plx is set to set, enable it in the device tree. */
 
-		if (0 != acp_osg_group_get_res(group, ACP_OS_PLX)) {
-			value = 1;
+	if (0 != acp_osg_group_get_res(group, ACP_OS_PLX))
+		value = 1;
+	else
+		value = 0;
 
-			rc = fdt_find_and_setprop(dt, "/pciex@f00d0000",
-						  "plx", (void *)&value,
-						  sizeof(unsigned long), 1);
+	rc = fdt_find_and_setprop(dt, "/pciex@f00d0000",
+				  "plx", (void *)&value,
+				  sizeof(unsigned long), 1);
 
-			if (0 != rc)
-				return -1;
-		}
-	}
+	if (0 != rc)
+		rc = fdt_find_and_setprop(dt, "/pei2",
+					  "plx", (void *)&value,
+					  sizeof(unsigned long), 1);
+
+	if (0 != rc)
+		return -1;
 
 #endif
 
-	if (0 != acp_osg_group_get_res(group, ACP_OS_SRIO)) {
+	if (0 != acp_osg_group_get_res(group, ACP_OS_SRIO))
 		value = 1;
-		rc = fdt_find_and_setprop(dt, "/rapidio@f0020000",
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/rapidio@f0020000",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+
+	if (0 != rc) {
+		rc = fdt_find_and_setprop(dt, "/srio0",
 					  "enabled", (void *)&value,
 					  sizeof(unsigned long), 1);
-
-		if (0 != rc)
-			return -1;
+		rc |= fdt_find_and_setprop(dt, "/srio0",
+					   "status", (void *)status[value],
+					   strlen(status[value]) + 1, 1);
 	}
+
+	if (0 != rc)
+		return -1;
 
 	/* USB */
-	if (0 != acp_osg_group_get_res(group, ACP_OS_USB)) {
+
+	if (0 != acp_osg_group_get_res(group, ACP_OS_USB))
 		value = 1;
-	} else {
+	else
 		value = 0;
-	}
 
 	rc = fdt_find_and_setprop(dt, "/plb/opb/usb@004a4000",
 				  "enabled", (void *)&value,
 				  sizeof(unsigned long), 1);
 
+	if (0 != rc) {
+		rc = fdt_find_and_setprop(dt, "/plb/opb/usb0",
+					  "enabled", (void *)&value,
+					  sizeof(unsigned long), 1);
+		rc |= fdt_find_and_setprop(dt, "/plb/opb/usb0",
+					   "status", (void *)status[value],
+					   strlen(status[value]) + 1, 1);
+	}
+
 	if (0 != rc)
 		return -1;
 
 #ifdef ACP_25xx
-	/* SBB */
-	if (0 != acp_osg_group_get_res(group, ACP_OS_SBB)) {
-		value = 1;
-	} else {
-		value = 0;
-	}
 
-	rc = fdt_find_and_setprop(dt, "/plb/opb/sbb",
+	/* SBB */
+
+	if (0 != acp_osg_group_get_res(group, ACP_OS_SBB))
+		value = 1;
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/plb/opb/sbb0",
 				  "enabled", (void *)&value,
 				  sizeof(unsigned long), 1);
+	rc |= fdt_find_and_setprop(dt, "/plb/opb/sbb0",
+				   "status", (void *)status[value],
+				   strlen(status[value]) + 1, 1);
 
 	if (0 != rc)
 		return -1;
+
 #endif
+
+	/* SSP */
+
+	if (0 != acp_osg_group_get_res(group, ACP_OS_SSP))
+		value = 1;
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/plb/opb/ssp0",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+	rc |= fdt_find_and_setprop(dt, "/plb/opb/ssp0",
+				   "status", (void *)status[value],
+				   strlen(status[value]) + 1, 1);
+
+	if (0 != rc)
+		return -1;
+
+	/* I2C */
+
+	if (0 != acp_osg_group_get_res(group, ACP_OS_I2C))
+		value = 1;
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/plb/opb/i2c0",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+	rc |= fdt_find_and_setprop(dt, "/plb/opb/i2c0",
+				   "status", (void *)status[value],
+				   strlen(status[value]) + 1, 1);
+
+	if (0 != rc)
+		return -1;
 
 	return rc;
 }

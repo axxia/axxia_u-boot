@@ -27,30 +27,12 @@
 #include <config.h>
 #include <common.h>
 
-#if defined(ACP_ISS)
-#if defined(ACP_X1V1)
-#include "dtb/ACPISS344xV1.h"
-#elif defined(ACP_X1V2)
-#include "dtb/ACPISS344xV2.h"
-#elif defined(ACP_X2V1)
-#include "dtb/ACPISS342x.h"
-#elif defined(ACP_25xx)
-#include "dtb/ACPISS25xx.h"
-#elif defined(AXM_35xx)
-#include "dtb/AXMISS35xx.h"
-#else
-#error "Unknown Target!"
-#endif
-#elif defined(ACP_X1V1)
-#include "dtb/ACP344xV1.h"
-#elif defined(ACP_X1V2)
+#if defined(ACP_X1V2)
 #include "dtb/ACP344xV2.h"
 #elif defined(ACP_X2V1)
 #include "dtb/ACP342x.h"
 #elif defined(ACP_25xx)
 #include "dtb/ACP25xx.h"
-#elif defined(AXM_35xx)
-#include "dtb/AXM35xx.h"
 #endif
 
 unsigned long *
