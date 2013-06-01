@@ -267,6 +267,7 @@ sysmem_init(void)
 	unsigned char i2c_chip = 0x50;
 	unsigned char i2c_chip_limit = 0x57;
 	unsigned char spd_memType;
+	unsigned char rDimm;
 	unsigned char spd_num_ranks_per_interface;
 	unsigned char spd_topology;
 	unsigned char spd_device_density;
@@ -300,9 +301,19 @@ sysmem_init(void)
 			}
 		}
 	}
+	
 	if (count > i2c_chip_limit) {
 		printf("SPD not detected in i2c chip range 0x%x-0x%x\n", i2c_chip, i2c_chip_limit);
 	} else{
+		/* Check if RDIMM since we don't support it */
+		if (i2c_read(count, 0x3, 1, &buffer, 1) != -1) {
+			rDimm = buffer;
+			if ((rDimm & 0xf) == 0x1) {
+				printf("SPD detected RDIMM which we don't support\n");
+				return 1;
+			}
+		}
+
 		/* Read the number of Ranks per Interface and device width*/
 		if (i2c_read(count, 0x7, 1, &buffer, 1) != -1) {
 			/* byte 7 bits 5:3 and add 1 to it*/
