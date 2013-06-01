@@ -475,8 +475,7 @@ serial_init()
 	uart.timer = TIMER2;
 #endif
 
-	/*get_clock_stuff(gd->baudrate, &clock_stuff);*/
-	get_clock_stuff(9600, &clock_stuff);
+	get_clock_stuff(gd->baudrate, &clock_stuff);
 	acp_serial_init(clock_stuff.divisor, clock_stuff.ibrd, clock_stuff.fbrd);
 #endif
 	acp_failure_enable_console();
