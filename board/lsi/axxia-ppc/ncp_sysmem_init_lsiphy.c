@@ -2979,8 +2979,8 @@ ncp_sysmem_init_lsiphy(
 		    rcfg = dcr_read(0xd0f);
 
 		    if (0 != (rcfg & 0x1000)) {
-		        if (rank > 0 ) {
-			    NCP_CALL(ncp_sm_lsiphy_wrlvl_dup(dev, smId, 0, 1));
+		        if (rank > 0) {
+			        NCP_CALL(ncp_sm_lsiphy_wrlvl_dup(dev, smId, 0, 1));
 			} else {
 				NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId,
 				    rank, 0, NCP_SYSMEM_PHY_WRITE_LEVELING,
@@ -2991,6 +2991,7 @@ ncp_sysmem_init_lsiphy(
 			    rank, 0, NCP_SYSMEM_PHY_WRITE_LEVELING,
 			    parms));
 		    }
+                }
 #else
 #ifdef NCP_SM_WRLVL_DUP
                     if (rank > 0 ) 
