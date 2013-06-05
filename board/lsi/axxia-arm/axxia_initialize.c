@@ -279,8 +279,6 @@ axxia_initialize(void)
 #ifdef DISPLAY_PARAMETERS
 	printf("version=%lu flags=0x%lx\n",
 	       global->version, global->flags);
-#else
-	printf("Parameter Table Version %lu\n", global->version);
 #endif
 
 	/*
