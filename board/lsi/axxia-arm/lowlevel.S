@@ -188,7 +188,7 @@ clear_page_tables:
         cmp     r1, r2
         blt     1b
 
-	@ System Memory.  Cachable and bufferable.
+	@ System Memory.  Not cachable or bufferable.
 	@
 	@ Physical: 0x20_0000_0000
 	@  Virtual: 0x4000_0000
