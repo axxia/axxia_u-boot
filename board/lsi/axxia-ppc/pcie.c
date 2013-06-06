@@ -514,7 +514,7 @@ void pci_init_board(void)
 	 * and MPAGE7 1 MB config space
 	 * 0x0020_4000_0000 to 0x0020_7FFF_FFFF */
 
-	word0 = 0x20000000 | 0x9f0;
+	word0 = CONFIG_PCIE0_PHY_START | 0x9f0;
 	word1 = 0x40000020;
 	word2 = 0x00030507;
 
@@ -528,7 +528,7 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 
-	word0 = 0x30000000 | 0x8f0;
+	word0 = CONFIG_SYS_PCIE0_MEMBASE | 0x8f0;
 	word1 = 0x78000020;
 	word2 = 0x00030507;
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
@@ -542,12 +542,11 @@ void pci_init_board(void)
 			"memory" );
 	busno = pci_476_init (&ppc476_hose[0], 0);
 
-
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
 	 * and MPAGE7 1 MB config space
 	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
 
-	word0 = 0x40000000 | 0x9f0;
+	word0 = CONFIG_PCIE1_PHY_START | 0x9f0;
 	word1 = 0xc0000020;
 	word2 = 0x00030507;
 
@@ -561,7 +560,7 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 
-	word0 = 0x50000000 | 0x8f0;
+	word0 = CONFIG_SYS_PCIE1_MEMBASE | 0x8f0;
 	word1 = 0xf8000020;
 	word2 = 0x00030507;
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
@@ -579,7 +578,7 @@ void pci_init_board(void)
 	 * and MPAGE7 1 MB config space
 	 * 0x0021_0000_0000 to 0x0021_3FFF_FFFF */
 
-	word0 = 0x60000000 | 0x9f0;
+	word0 = CONFIG_PCIE2_PHY_START | 0x9f0;
 	word1 = 0x00000021;
 	word2 = 0x00030507;
 
@@ -593,7 +592,7 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 
-	word0 = 0x70000000 | 0x8f0;
+	word0 = CONFIG_SYS_PCIE2_MEMBASE | 0x8f0;
 	word1 = 0x38000021;
 	word2 = 0x00030507;
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
@@ -606,12 +605,14 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 	busno = pci_476_init (&ppc476_hose[2], 2);
+
 #elif defined(ACP_PEI0) && defined(ACP_PEI1)
+
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0
 	 * and MPAGE7 1 MB config space
 	 * 0x0020_4000_0000 to 0x0020_7FFF_FFFF */
 
-	word0 = 0x20000000 | 0x9f0;
+	word0 = CONFIG_PCIE0_PHY_START | 0x9f0;
 	word1 = 0x40000020;
 	word2 = 0x00030507;
 
@@ -625,7 +626,7 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 
-	word0 = 0x30000000 | 0x8f0;
+	word0 = CONFIG_SYS_PCIE0_MEMBASE | 0x8f0;
 	word1 = 0x78000020;
 	word2 = 0x00030507;
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
@@ -644,7 +645,7 @@ void pci_init_board(void)
 	 * and MPAGE7 1 MB config space
 	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
 
-	word0 = 0x40000000 | 0x9f0;
+	word0 = CONFIG_PCIE1_PHY_START | 0x9f0;
 #if defined (ACP_25xx)
 	word1 = 0x80000020;
 #else
@@ -662,7 +663,7 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 
-	word0 = 0x50000000 | 0x8f0;
+	word0 = CONFIG_SYS_PCIE1_MEMBASE | 0x8f0;
 #if defined (ACP_25xx)
 	word1 = 0xb8000020;
 #else
@@ -679,13 +680,14 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 	busno = pci_476_init (&ppc476_hose[1], 1);
+
 #elif defined(ACP_PEI0)
 
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0
 	 * and MPAGE7 1 MB config space
 	 * 0x0020_4000_0000 to 0x0020_7FFF_FFFF */
 
-	word0 = 0x40000000 | 0xbf0;
+	word0 = CONFIG_PCIE0_PHY_START | 0xbf0;
 	word1 = 0x40000020;
 	word2 = 0x00030507;
 
@@ -699,7 +701,7 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 
-	word0 = 0x78000000 | 0x8f0;
+	word0 = CONFIG_SYS_PCIE0_MEMBASE | 0x8f0;
 	word1 = 0x78000020;
 	word2 = 0x00030507;
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
@@ -712,6 +714,7 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 	busno = pci_476_init (&ppc476_hose[0], 0);
+
 #endif
 
 
