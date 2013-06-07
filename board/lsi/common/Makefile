@@ -23,6 +23,8 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(VENDOR).o
 
+.PHONY: version
+
 ifndef CONFIG_SPL_BUILD
 
 ################################################################################
@@ -53,6 +55,12 @@ clean:
 
 distclean:	clean
 	rm -f $(LIB) core *.bak $(obj).depend
+
+version.c: version
+
+version:
+	sed -e s/GIT_VERSION_STRING/`git describe --dirty`/ \
+		version.c.in >version.c
 
 # defines $(obj).depend target
 include $(SRCTREE)/rules.mk
