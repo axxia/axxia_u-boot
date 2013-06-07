@@ -56,11 +56,8 @@ clean:
 distclean:	clean
 	rm -f $(LIB) core *.bak $(obj).depend
 
-version.c: version
-
-version:
-	sed -e s/GIT_VERSION_STRING/`git describe --dirty`/ \
-		version.c.in >version.c
+version: 
+	sed -e s/GIT_VERSION_STRING/`git describe --dirty`/ version.c.in >version.c
 
 # defines $(obj).depend target
 include $(SRCTREE)/rules.mk
