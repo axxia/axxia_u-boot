@@ -56,6 +56,20 @@ misc_init_r(void)
 	int i;
 
 	/*
+	  Clear the resetFab bit.
+
+	  This is a work-around for a defect (BZ 44613).
+	*/
+
+	{
+		unsigned long value;
+
+		value = readl(SYSCON + 0x1008);
+		value &= ~0x4;
+		writel(value, (SYSCON + 0x1008));
+	}
+
+	/*
 	  Wake up core 1.
 	*/
 
