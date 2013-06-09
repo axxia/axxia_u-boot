@@ -247,6 +247,8 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 {
 	int srioHSSSpeed;
 	int i;
+	char * env_value;
+	unsigned short chResetVal;
 	rx_serdes_value_t rx_serdes_values[] = {
 		{0x0026, 0x00ff},
 		{0x0226, 0x00ff},
@@ -256,10 +258,6 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		{0x022a, 0x0b50},
 		{0x062a, 0x0b50},
 		{0x082a, 0x0b50},
-		{0x042e, 0x0042},
-		{0x0c2e, 0x0042},
-		{0x0402, 0x1a0c},
-		{0x0c02, 0x140c},
 		{0x005e, 0x7d98},
 		{0x025e, 0x7d98},
 		{0x065e, 0x7d98},
@@ -312,14 +310,6 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		{0x02a4, 0x3001},
 		{0x06a4, 0x3001},
 		{0x08a4, 0x3001},
-		{0x008e, 0x0487},
-		{0x028e, 0x0487},
-		{0x068e, 0x0487},
-		{0x088e, 0x0487},
-		{0x001e, 0xc000},
-		{0x021e, 0xc000},
-		{0x061e, 0xc000},
-		{0x081e, 0xc000},
 		{0x009a, 0x5320},
 		{0x029a, 0x5320},
 		{0x069a, 0x5320},
@@ -332,7 +322,89 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 	  RX Serdes Configuration for All Control Values
 	*/
 
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x00000080);
+	udelay(100000);
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
+
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0x26c, 0x000c0000);
+
+	/* Assert the channel resets during the optimum setting sequence
+	 * clear bits 15,14,1,0 
+	 */
+
+		switch (new_control) {
+		/* PCIe Only Modes */
+	case 0x00000001:
+	case 0x00400001:
+	case 0x00080003:
+	case 0x00480003:
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x0, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x0, (chResetVal & 0x3ffc));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x200, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x200, (chResetVal & 0x3ffc));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x600, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x600, (chResetVal & 0x3ffc));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x800, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x800, (chResetVal & 0x3ffc));
+		break;
+		/* sRIO Only Modes */
+	case 0x00040008:
+	case 0x00140008:
+	case 0x00240008:
+	case 0x00340008:
+		srioHSSSpeed = dcr_read(0xd0f);
+		srioHSSSpeed &= 0x3;
+		if (srioHSSSpeed == 0) {
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x0, 0x390c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x200, 0x390c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x600, 0x390c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x800, 0x390c);
+		} else if (srioHSSSpeed == 1) {
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x0, 0x3b0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x200, 0x3b0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x600, 0x3b0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x800, 0x3b0c);
+		} else {
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x0, 0x3a0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x200, 0x3a0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x600, 0x3a0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x800, 0x3a0c);
+		}
+		break;
+
+		/* Mixed Modes */
+	case 0x000c000b:
+	case 0x001c000b:
+	case 0x002c000b:
+	case 0x003c000b:
+	case 0x004c000b:
+	case 0x005c000b:
+	case 0x006c000b:
+	case 0x007c000b:
+		srioHSSSpeed = dcr_read(0xd0f);
+		srioHSSSpeed &= 0x3;
+		if (srioHSSSpeed == 0) {
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x0, 0x390c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x200, 0x3b0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x600, 0x3b0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x800, 0x3b0c);
+		} else if (srioHSSSpeed == 1) {
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x0, 0x3b0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x200, 0x3b0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x600, 0x3b0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x800, 0x3b0c);
+		} else {
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x0, 0x3a0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x200, 0x3b0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x600, 0x3b0c);
+			ncr_write16(NCP_REGION_ID(0x115,1), 0x800, 0x3b0c);
+		}
+		break;
+	default:
+		return -1;
+		break;
+	}
+
 
 	for (i = 0;
 	     i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
@@ -355,6 +427,32 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		/* PCIe Only Modes */
 	case 0x00000001:
 	case 0x00400001:
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x42e, 0x0042);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0xc2e, 0x0042);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x402, 0x1a0c);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0xc02, 0x1a0c);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x08e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x28e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x68e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x88e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x01e, 0xc000);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x21e, 0xc000);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x61e, 0xc000);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x81e, 0xc000);
+
+		/* De-Assert the channel resets during the optimum setting sequence
+		 * set bits 15,14,1,0
+		 */
+
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x0, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x0, (chResetVal | 0xc003));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x200, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x200, (chResetVal | 0xc003));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x600, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x600, (chResetVal | 0xc003));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x800, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x800, (chResetVal | 0xc003));
+
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x20);
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
@@ -366,6 +464,32 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 		break;
 	case 0x00080003:
 	case 0x00480003:
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x42e, 0x0042);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0xc2e, 0x0042);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x402, 0x1a0c);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0xc02, 0x1a0c);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x08e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x28e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x68e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x88e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x01e, 0xc000);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x21e, 0xc000);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x61e, 0xc000);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x81e, 0xc000);
+
+		/* De-Assert the channel resets during the optimum setting sequence
+	 	 * set bits 15,14,1,0 
+	 	 */
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x0, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x0, (chResetVal | 0xc003));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x200, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x200, (chResetVal | 0xc003));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x600, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x600, (chResetVal | 0xc003));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x800, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x800, (chResetVal | 0xc003));
+
+
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x20);
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0x77ff77ff);
@@ -381,23 +505,80 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 	case 0x00140008:
 	case 0x00240008:
 	case 0x00340008:
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x60);
-		udelay(100000);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0x77777777);
-		udelay(100000);
 		srioHSSSpeed = dcr_read(0xd0f);
 		srioHSSSpeed &= 0x3;
 
-		if (2 > srioHSSSpeed)
-			ncr_write32(NCP_REGION_ID(0x115, 0), 0x234, 0x06126527);
-		else
-			ncr_write32(NCP_REGION_ID(0x115, 0), 0x234, 0x08176527);
+		/* enable control override */
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x042e, 0x0052);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
 
+		if (srioHSSSpeed == 0) {
+			/* 1.25 Gbps rate */
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0408, 0x0612);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0404, 0x4028);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x040c, 0x3029);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0402, 0x070c);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0430, 0x9412);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0434, 0x0007);
+
+			/* enable PLL */
+			/* reorder PLL selection */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x244, 0x11111111);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0422, 0x0555);
+		} else if (srioHSSSpeed == 1) {
+			/* 2.5 Gbps rate */
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0408, 0x0612);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0404, 0x4028);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x040c, 0x3029);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0402, 0x070c);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0430, 0x9412);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0434, 0x0007);	
+
+			/* enable PLL */
+			/* reorder PLL selection */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x244, 0x33333333);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0422, 0x0555);
+		} else {
+			/* 3.125 Gbps rate */
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0408, 0x030a);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0404, 0x4038);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x040c, 0x3029);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0402, 0x070c);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0430, 0xd40a);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0434, 0x0007);	
+
+			/* enable PLL */
+			/* reorder PLL selection */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x244, 0x22222222);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0422, 0x0555);
+		}
+		/* De-Assert the channel resets during the optimum setting sequence
+		 * set bits 15,14,1,0 
+		 */
+
+		/*
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x0, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x0, (chResetVal | 0xc003));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x200, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x200, (chResetVal | 0xc003));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x600, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x600, (chResetVal | 0xc003));
+		ncr_read16(NCP_REGION_ID(0x115,1), 0x800, &chResetVal);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x800, (chResetVal | 0xc003));
+		*/
+
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x0, 0xf90f);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x200, 0xf90f);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x600, 0xf90f);
+		ncr_write16(NCP_REGION_ID(0x115,1), 0x800, 0xf90f);
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x60);
 		udelay(100000);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000000);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000100);
 		udelay(100000);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x40);
 		udelay(100000);
+
 		break;
 
 		/* Mixed Modes */
@@ -409,18 +590,78 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 	case 0x005c000b:
 	case 0x006c000b:
 	case 0x007c000b:
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x60);
-		udelay(100000);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xfff7fff7);
-		udelay(100000);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x42e, 0x0042);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x402, 0x1a0c);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x28e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x68e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x88e, 0x0487);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x21e, 0xc000);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x61e, 0xc000);
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x81e, 0xc000);
+
 		srioHSSSpeed = dcr_read(0xd0f);
 		srioHSSSpeed &= 0x3;
 
-		if (2 > srioHSSSpeed)
-			ncr_write32(NCP_REGION_ID(0x115, 0), 0x234, 0x06126527);
-		else
-			ncr_write32(NCP_REGION_ID(0x115, 0), 0x234, 0x08176527);
+		/* enable control override */
+		ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c2e, 0x0052);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xfff7fff7);
 
+		if (srioHSSSpeed == 0) {
+			/* 1.25 Gbps rate */
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c08, 0x0612);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c04, 0x4028);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c0c, 0x3029);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c02, 0x070c);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c30, 0x9412);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c34, 0x0007);
+
+			/* enable PLL */
+			/* reorder PLL selection */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x244, 0x11111111);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c22, 0x0555);
+		} else if (srioHSSSpeed == 1) {
+			/* 2.5 Gbps rate */
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c08, 0x0612);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c04, 0x4028);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c0c, 0x3029);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c02, 0x070c);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c30, 0x9412);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c34, 0x0007);
+
+			/* enable PLL */
+			/* reorder PLL selection */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x244, 0x11131113);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c22, 0x0555);
+		} else {
+			/* 3.125 Gbps rate */
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c08, 0x030a);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c04, 0x4038);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c0c, 0x3029);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c02, 0x070c);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c30, 0xd40a);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c34, 0x0007);
+
+			/* enable PLL */
+			/* reorder PLL selection */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x244, 0x11121112);
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x0c22, 0x0555);
+		}
+
+        /* De-Assert the channel resets during the optimum setting sequence
+         * set bits 15,14,1,0
+         */
+        ncr_read16(NCP_REGION_ID(0x115,1), 0x0, &chResetVal);
+        ncr_write16(NCP_REGION_ID(0x115,1), 0x0, (chResetVal | 0xc003));
+        ncr_read16(NCP_REGION_ID(0x115,1), 0x200, &chResetVal);
+        ncr_write16(NCP_REGION_ID(0x115,1), 0x200, (chResetVal | 0xc003));
+        ncr_read16(NCP_REGION_ID(0x115,1), 0x600, &chResetVal);
+        ncr_write16(NCP_REGION_ID(0x115,1), 0x600, (chResetVal | 0xc003));
+        ncr_read16(NCP_REGION_ID(0x115,1), 0x800, &chResetVal);
+        ncr_write16(NCP_REGION_ID(0x115,1), 0x800, (chResetVal | 0xc003));
+
+
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control | 0x60);
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000000);
 		udelay(100000);

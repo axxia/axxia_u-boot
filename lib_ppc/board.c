@@ -1921,6 +1921,43 @@ acp_init_r( void )
 		}
 #endif
 #endif
+#if defined(ACP_25xx) && defined(CONFIG_ACP2) 
+	{
+		char * env_value;
+		unsigned long srioControl, srioForce;
+
+		env_value = getenv("srioForce");
+		if ((char *)0 != env_value) {
+			srioForce = simple_strtoul(env_value, NULL, 0);
+		} 
+
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &srioControl);
+
+		switch (srioControl & 0x007c000b) {
+		case 0x00040008:
+        	case 0x00140008:
+        	case 0x00240008:
+        	case 0x00340008:
+        	case 0x000c000b:
+        	case 0x001c000b:
+        	case 0x002c000b:
+        	case 0x003c000b:
+        	case 0x004c000b:
+        	case 0x005c000b:
+        	case 0x006c000b:
+        	case 0x007c000b:
+			if (srioForce == 1) {
+				/* from u-boot [io w 0xf096095c 0x01006042; */
+				acpwriteio(0x01006042, (void *)0xf096095c);
+			} else if (srioForce == 2) {
+				/* from u-boot [io w 0xf096095c 0x01006043; */
+				acpwriteio(0x01006043, (void *)0xf096095c);
+			}
+			break;
+		}
+	}
+#endif
+
 
 		if (0 == boot_mode && 1 == pci_rc) {
 #if defined(ACP_25xx) && defined(CONFIG_ACP2)
