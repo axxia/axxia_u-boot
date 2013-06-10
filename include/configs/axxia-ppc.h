@@ -212,7 +212,7 @@ void mmtest( unsigned long, unsigned long, unsigned long );
 #define TIMER_MIS                      0x14
 #define TIMER_BGLOAD                   0x18
 
-#if defined(ACP_25xx)
+#if defined(ACP_25xx) || defined(AXM_35xx)
 #define TIMER0 (IO+0x29000)
 #define TIMER1 (IO+0x29020)
 #define TIMER2 (IO+0x29040)
@@ -245,7 +245,12 @@ void mmtest( unsigned long, unsigned long, unsigned long );
 #define CONFIG_SYS_BAUDRATE_TABLE   { 9600, 19200, 38400, 57600, 115200 }
 
 #ifdef ACP_EMU
+#if defined(AXM_35xx)
+#define UART_CLOCK_SPEED 6250000
+#else
 #define UART_CLOCK_SPEED  3250000
+#endif
+
 #else
 #define UART_CLOCK_SPEED 25000000
 #endif
@@ -297,7 +302,7 @@ void mmtest( unsigned long, unsigned long, unsigned long );
 #define MCRVAL (MCR_DTR | MCR_RTS) /* RTS/DTR */
 #define FCRVAL (FCR_FIFO_EN | FCR_RXSR | FCR_TXSR) /* Clear & enable FIFOs */
 
-#if defined(ACP_25xx)
+#if defined(ACP_25xx) || defined(AXM_35xx)
 #define UART0_ADDRESS (IO+0x24000)
 #define UART1_ADDRESS (IO+0x25000)
 #else
@@ -313,7 +318,7 @@ void mmtest( unsigned long, unsigned long, unsigned long );
   ======================================================================
 */
 
-#if defined(ACP_25xx)
+#if defined(ACP_25xx) || defined(AXM_35xx)
 #define SSP (IO+0x22000)
 #else
 #define SSP (IO+0x2000)
@@ -363,7 +368,7 @@ int ssp_init(int, int);
   ======================================================================
 */
 
-#if !defined(ACP_25xx)
+#if !defined(ACP_25xx) || defined(AXM_35xx)
 #define APB2RC (IO+0xa000)
 #endif
 
@@ -377,7 +382,7 @@ int ssp_init(int, int);
   ======================================================================
 */
 
-#if defined(ACP_25xx)
+#if defined(ACP_25xx) || defined(AXM_35xx)
 #define MDIO_CONTROL_RD_DATA (IO+0x2a000)
 #define MDIO_STATUS_RD_DATA  (IO+0x2a004)
 #define MDIO_CLK_OFFSET      (IO+0x2a008)

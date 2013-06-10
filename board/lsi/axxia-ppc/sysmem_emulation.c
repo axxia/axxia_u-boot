@@ -38,7 +38,7 @@
 #if defined(SYSCACHE_ACP3) || defined(SYSCACHE_ACP2)
 #warning "Overriding the default System Cache Version!"
 #else
-#if defined(ACP_25xx)
+#if defined(ACP_25xx) 
 #define SYSCACHE_ACP2
 #else
 #define SYSCACHE_ACP3
@@ -70,14 +70,19 @@ unsigned long sc_nodes[] = {0x20, 0x1e, 0x21, 0x1d, 0x11, 0x12, 0x10, 0x13};
 #define SYSMEM_V1   0x01000000
 #define SYSMEM_V2   0x02000000
 #define SYSMEM_V3   0x03000000
+#define SYSMEM_V4   0x12000000   /* x3 fpga */ 
+
 #else
 #if defined(SYSMEM_ACP2)
 #define SYSMEM_V0   0x10000000
 #define SYSMEM_V1   0x20000000
+#define SYSMEM_V3   0x12000000   /* x3 fpga */ 
 #endif
 #endif
 
 unsigned long sm_nodes[] = {0x22, 0x0f};
+
+static void ncp_sysmem_init_fpga_x3(int enableECC);
 
 /*
   ==============================================================================
@@ -159,7 +164,6 @@ initialize_syscache(int sm_version, int sc_version, int num_sc_nodes)
 #endif
 
 #endif
-
 	for (i = 0; i < num_sc_nodes; ++i) {
 		volatile unsigned long count = 0x10000000;
 		unsigned long value;
@@ -249,8 +253,13 @@ initialize_sysmem(int sm_version)
 #ifdef TEST_MODIFICATIONS
 	sysmem_size -= 1;
 #endif
+	if (SYSMEM_V4 == sm_version) {
+		printf("Initializing Denali x3 memory controller\n");
+		ncp_sysmem_init_fpga_x3(sysmem->enableECC);
+                return 0;
+	}
 
-	switch (sm_version) {
+        switch (sm_version) {
 	case SYSMEM_V0:
 	case SYSMEM_V1:
 	case SYSMEM_V2:
@@ -901,6 +910,13 @@ initialize_sysmem(int sm_version)
 static int
 initialize_sysmem(int sm_version)
 {
+
+
+	if (SYSMEM_V3 == sm_version) {
+		printf("Initializing Denali x3 memory controller\n");
+		ncp_sysmem_init_fpga_x3(1);
+                return 0;
+	}
 	/*
 	  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	  ncp_sysmem_init_fpga_2500()
@@ -1145,6 +1161,8 @@ initialize_sysmem(int sm_version)
   ==============================================================================
 */
 
+/* #define DISPLAY_PARAMETERS */
+
 int
 sysmem_init(void)
 {
@@ -1216,7 +1234,6 @@ sysmem_init(void)
 		*/
 		syscache_mode(num_sc_nodes, (0 == sysmem->enableECC) ? 0 : 8);
 #endif
-
 	/*
 	  Initialize the System Cache Nodes
 	*/
@@ -1322,8 +1339,163 @@ sysmem_init(void)
 	/* Clear System Memory. */
 	fill_sysmem(0ULL, (1ULL << sysmem_size), num_sc_nodes);
 
+#if  !defined(AXM_35xx)
 	/* Set NHA */
 	dcr_write(0x33774000, 0xf00);
+#endif
 
 	return 0;
 }
+
+
+static void
+ncp_sysmem_init_fpga_x3(int enableECC)
+{
+        (ncr_write32(NCP_REGION_ID(34, 255), 0x10, 0x00000003));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x000, 0x00000002));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x000, 0x00010100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x004, 0x01010101));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x008, 0x00000100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x00c, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x010, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x014, 0x01000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x018, 0x00010000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x01c, 0x00000001));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x020, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x024, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x028, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x02c, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x030, 0x01000001));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x034, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x038, 0x00000100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x03c, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x040, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x044, 0x00000100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x048, 0x00000200));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x04c, 0x00000300));
+        if (enableECC) {
+            (ncr_write32(NCP_REGION_ID(34, 0), 0x050, 0x00000300));
+        } else {
+            (ncr_write32(NCP_REGION_ID(34, 0), 0x050, 0x00000000));
+        }
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x054, 0x02000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x058, 0x03070000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x05c, 0x00070000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x060, 0x04070000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x064, 0x00020605));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x068, 0x01010a02));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x06c, 0x01010101));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x070, 0x01010101));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x074, 0x01010101));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x078, 0x0c000101));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x07c, 0x00060300));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x080, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x084, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x088, 0x04000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x08c, 0x00000002));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x090, 0x060b0303));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x094, 0x00000506));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x098, 0x0000000c));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x09c, 0x17070000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x0a0, 0x18000008));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x0a4, 0x00002704));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x0a8, 0x0000280d));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x0f0, 0x27000300));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x0f4, 0x04000300));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x0f8, 0x001c0c00));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x0fc, 0x00006400));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x100, 0x00640064));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x104, 0x00400064));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x118, 0x00ea0000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x124, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x148, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x150, 0x00050200));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x154, 0x00140000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x158, 0x02000060));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x174, 0x00000008));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x178, 0x00000190));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x17c, 0x00008000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x1f8, 0x000000a0));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x1fc, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x200, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x2d0, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x2d4, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x2d8, 0x02020001));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x2dc, 0x00000104));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x2e0, 0x00000b00));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x2e4, 0x007f007f));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x2e8, 0x02000100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x2ec, 0x02200220));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x2f4, 0x40024002));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x2fc, 0x80008000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x304, 0xc000c000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x38c, 0x10330504));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x390, 0x10331033));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x394, 0x0000036d));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x398, 0x00000002));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3b0, 0x00000003));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3bc, 0x0000000c));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3c8, 0x00000002));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x45c, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x520, 0x01000002));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x524, 0x01010100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x528, 0x00000003));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x52c, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x534, 0x01010200));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x538, 0x07010000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x53c, 0x0000000c));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x55c, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x560, 0x00000009));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x564, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x574, 0x00000606));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x578, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x57c, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x580, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x584, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x588, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x5cc, 0x00000000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x1fc, 0x80000000));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x000, 0x00000003));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x004, 0x00000066));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x00c, 0x00000507));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x10, 0x00000202));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x20, 0x00000202));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x30, 0x00000202));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x40, 0x00000202));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x50, 0x00000202));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x60, 0x00000202));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x70, 0x00000202));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x80, 0x00000202));
+        (ncr_write32(NCP_REGION_ID(34, 1), 0x90, 0x00000202));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x030, 0x01010001));
+        (ncr_poll(NCP_REGION_ID(34, 0), 0x568,  0x0100,  0x0100,  1000000,  10000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x56c, 0x00100000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3ec, 0x00000300));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3e8, 0x02800001));
+        (ncr_poll(NCP_REGION_ID(34, 0), 0x568,  0x00100000,  0x00100000,  100,  100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x56c, 0x00100000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3f0, 0x00000003));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3e8, 0x02800101));
+        (ncr_poll(NCP_REGION_ID(34, 0), 0x568,  0x00100000,  0x00100000,  100,  100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x56c, 0x00100000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3ec, 0x001a2000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3e8, 0x02800000));
+        (ncr_poll(NCP_REGION_ID(34, 0), 0x568,  0x00100000,  0x00100000,  100,  100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x56c, 0x00100000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3f0, 0x00001a20));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3e8, 0x02800100));
+        (ncr_poll(NCP_REGION_ID(34, 0), 0x568,  0x00100000,  0x00100000,  100,  100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x56c, 0x00100000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3ec, 0x00000800));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3e8, 0x02800002));
+        (ncr_poll(NCP_REGION_ID(34, 0), 0x568,  0x00100000,  0x00100000,  100,  100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x56c, 0x00100000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3f0, 0x00000008));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x3e8, 0x02800102));
+        (ncr_poll(NCP_REGION_ID(34, 0), 0x568,  0x00100000,  0x00100000,  100,  100));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x56c, 0x00100000));
+        (ncr_write32(NCP_REGION_ID(34, 0), 0x038, 0x00010100));
+	printf("X3 sysmem controller done\n");
+        return;
+}
+

@@ -536,7 +536,12 @@ ssp_init(int input_device, int input_read_only)
 	  Set up the SSP.
 	*/
 
+
+#if defined(AXM_35xx)
+	WRITEL(0x107, (unsigned long *)(SSP + SSP_CR0));
+#else
 	WRITEL(0x3107, (unsigned long *)(SSP + SSP_CR0));
+#endif
 	WRITEL(2, (unsigned long *)(SSP + SSP_CR1));
 	WRITEL(2, (unsigned long *)(SSP + SSP_CPSR));
 	WRITEL(0x1f, (unsigned long *)(SSP + SSP_CSR));

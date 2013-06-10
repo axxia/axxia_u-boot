@@ -753,7 +753,7 @@ acp_init_f( void )
 	  All versions of the L2 before 1.4 are affected.
 	*/
 
-#ifndef ACP_25xx
+#if (!defined(ACP_25xx)) && (!defined(AXM_35xx))
 	dcr_write(0xc, 0x300);	/* 0x300 is L2[0] on 34xx */
 	l2version = dcr_read(0x304);
 	l2revision = l2version & 0xff;
@@ -1789,7 +1789,7 @@ acp_init_r( void )
 	serial_init();
 	acp_splash();
 
-#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+#if (defined(ACP_25xx) || defined(AXM_35xx)) && defined(CONFIG_ACP2) 
 	{
 		int rc;
 		unsigned long ncp_denali_ctl_20;

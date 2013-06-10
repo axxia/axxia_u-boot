@@ -121,6 +121,8 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 	unsigned long fbrd;
 	unsigned long per_clock;
 
+#ifndef AXM_35xx
+
 	do {
 		for (;;) {
 			int rc;
@@ -141,6 +143,8 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 	*/
 
 	divisor = (per_clock / UART_CLOCK_SPEED);
+
+#endif
 	ibrd = UART_CLOCK_SPEED / (16 * baud_rate);
 
 	/*
@@ -168,12 +172,17 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 	  2 * ( 16 * baud_rate )
 	*/
 
+
+#ifndef AXM_35xx
+
 	fbrd = (per_clock / divisor) % (16 * baud_rate);
 	fbrd *= 128;
 	fbrd += (16 * baud_rate);
 	fbrd /= (2 * (16 * baud_rate));
-
 	clock_stuff->divisor = (divisor - 1);
+#else
+	fbrd = (UART_CLOCK_SPEED % (16 * baud_rate)) / (16 * baud_rate);
+#endif
 	clock_stuff->ibrd = ibrd;
 	clock_stuff->fbrd = fbrd;
 
@@ -196,11 +205,13 @@ acp_serial_init(unsigned long divisor, unsigned long ibrd, unsigned long fbrd)
 	if (0 == uart.uart)
 		return;
 
+#ifndef AXM_35xx
 	/* Set up the timer. */
 	_writel(0, (uart.timer + TIMER_CONTROL));
 	_writel(divisor, (uart.timer + TIMER_LOAD));
 	_writel((TIMER_CONTROL_ENABLE | TIMER_CONTROL_MODE),
 	       (uart.timer + TIMER_CONTROL));
+#endif
 
 	/*
 	  Wait for the end of transmission or reception of the
@@ -405,8 +416,10 @@ serial_exit(void)
 	while (0 == (_readl(uart.uart + UART_FR) & FR_TXFE));
 	while (0 != (_readl(uart.uart + UART_FR) & FR_BUSY));
 
+#ifndef AXM_35xx
 	/* Turn off the timer. */
 	_writel(0, (uart.timer + TIMER_CONTROL));
+#endif
 
 	uart.uart = 0;
 #endif
@@ -429,7 +442,9 @@ serial_early_init()
 	memset((void *)printbuffer, 0, CFG_PBSIZE);
 
 	uart.uart = UART0_ADDRESS;
+#ifndef AXM_35xx
 	uart.timer = TIMER2;
+#endif
 
 	get_clock_stuff(CONFIG_BAUDRATE, &clock_stuff);
 	acp_serial_init(clock_stuff.divisor, clock_stuff.ibrd, clock_stuff.fbrd);
@@ -472,10 +487,13 @@ serial_init()
 	}
 #else
 	uart.uart = UART0_ADDRESS;
+#ifndef AXM_35xx
 	uart.timer = TIMER2;
+#endif
 #endif
 
 	get_clock_stuff(gd->baudrate, &clock_stuff);
+	/* get_clock_stuff(9600, &clock_stuff); */
 	acp_serial_init(clock_stuff.divisor, clock_stuff.ibrd, clock_stuff.fbrd);
 #endif
 	acp_failure_enable_console();

@@ -111,7 +111,7 @@ printf( "# " format "\n", ##args ); \
 
 #define CFG_MALLOC_BASE     0x00300000
 #define CFG_MALLOC_LEN      (1024 * 1024)
-#ifdef ACP_25xx
+#if defined(ACP_25xx) 
 #define CFG_INIT_RAM_ADDR   0xf0a24000
 #else
 #define CFG_INIT_RAM_ADDR   0xf0a1fc00
@@ -224,11 +224,11 @@ int acp_init( void );
 /*
   The 2nd stage can only support either NAND or Serial FLASH.  The
   environment must be stored on the supported device.  By default, the
-  supported device is Serial FLASH in the AXM2500 and NAND in all
+  supported device is Serial FLASH in the AXM2500/AXM3500 and NAND in all
   other cases.
 */
 
-#if defined(ACP_25xx) || defined(CONFIG_SPD)
+#if defined(ACP_25xx) || defined(CONFIG_SPD) || defined(AXM_35xx)
 #define CONFIG_SYS_NO_FLASH
 #define CONFIG_LSI_SERIAL_FLASH
 #define CONFIG_LSI_SERIAL_FLASH_ENV
