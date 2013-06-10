@@ -47,7 +47,7 @@ COBJS += version.o lsi.o ncr.o
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
 
-$(LIB):	$(obj).depend $(OBJS)
+$(LIB):	version $(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS) $(SOBJS))
 
 clean:
@@ -56,8 +56,9 @@ clean:
 distclean:	clean
 	rm -f $(LIB) core *.bak $(obj).depend
 
-version: 
-	sed -e s/GIT_VERSION_STRING/`git describe --dirty`/ version.c.in >version.c
+version:
+	sed -e s/GIT_VERSION_STRING/`git describe --dirty`/ \
+		version.c.in >version.c
 
 # defines $(obj).depend target
 include $(SRCTREE)/rules.mk

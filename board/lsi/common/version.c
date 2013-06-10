@@ -24,7 +24,7 @@
 
 #include <config.h>
 
-const char *lsi_version = "lsi_25May2013_prerelease-6-g9c3f578-dirty";
+const char *lsi_version = "lsi_25May2013_prerelease-9-g9fdcb61-dirty";
 
 /*
   ----------------------------------------------------------------------
