@@ -52,44 +52,17 @@ board_init(void)
 int
 misc_init_r(void)
 {
-	unsigned long hold_cpu;
-	int i;
-
-	/*
-	  Clear the resetFab bit.
-
-	  This is a work-around for a defect (BZ 44613).
-	*/
-
-	{
-		unsigned long value;
-
-		value = readl(SYSCON + 0x1008);
-		value &= ~0x4;
-		writel(value, (SYSCON + 0x1008));
-	}
-
-	/*
-	  Wake up core 1.
-	*/
-
-#if 0
-	printf("%s:%d - Waking up core 1.\n", __FILE__, __LINE__);
-	writel(0xab, (SYSCON + 0x1000));
-	hold_cpu = readl(SYSCON + 0x1010);
-	hold_cpu &= ~(1 << 1);
-	writel(hold_cpu, (SYSCON + 0x1010));
-#endif
-
 	return 0;
 }
 
 void set_muxconf_regs_essential(void)
 {
+	return;
 }
 
 void set_muxconf_regs_non_essential(void)
 {
+	return;
 }
 
 /*
@@ -101,6 +74,8 @@ int
 board_early_init_f(void)
 {
 	gd->ram_size = 0x40000000;
+
+	return 0;
 }
 
 /*
