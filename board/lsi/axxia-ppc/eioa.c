@@ -705,8 +705,11 @@ tlb_entries(int add)
 				       "memory" );
 
 		offset += 0x10000000UL;
-		size += 0x10000000UL;
+		size -= 0x10000000UL;
 	}
+
+
+	
 
 	return;
 }
