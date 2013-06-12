@@ -100,7 +100,6 @@ int is_asic( void );
 #define CONFIG_OMAP54XX	/* which is a 54XX */
 #define CONFIG_OMAP5430	/* which is in a 5430 */
 #define CONFIG_5430EVM	/* working with EVM */
-#define CONFIG_OMAP_GPIO
 
 #define CONFIG_SYS_HZ           1000    /* decrementer freq: 1 ms ticks */
 #define SYSTIMER_RATE		4096000
@@ -137,6 +136,9 @@ int is_asic( void );
 #define ELM1 (IO + 0x70000)
 
 #define SYSCON  (IO + 0x30000)
+
+#define GPIO0_ADDRESS (IO + 0x92000)
+#define GPIO1_ADDRESS (IO + 0x93000)
 
 #ifdef CONFIG_SPL_BUILD
 #define DICKENS (0x00200210)
@@ -908,12 +910,10 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
 
 /*
   ----------------------------------------------------------------------
-  Include the LSI common header.
+  Include the Axxia common header.
 */
 
-#if 0
-#include <configs/lsi.h>
-#endif
+#include <configs/axxia.h>
 
 
 #endif /* __CONFIG_H */

@@ -180,6 +180,154 @@
 #endif
 
 /*
+  ======================================================================
+  ======================================================================
+  Networking
+  ======================================================================
+  ======================================================================
+*/
+
+#ifndef __ASSEMBLY__
+
+/*
+  Standard PHY Registers
+*/
+
+/* -- control -- */
+
+#define PHY_CONTROL 0x00
+
+typedef union {
+  unsigned short raw;
+
+  struct {
+#ifdef CONFIG_AXXIA_PPC
+    unsigned short soft_reset      : 1;
+    unsigned short loop_back       : 1;
+    unsigned short force100        : 1; /* speedBit0 */
+    unsigned short autoneg_enable  : 1;
+    unsigned short power_down      : 1;
+    unsigned short isolate         : 1;
+    unsigned short restart_autoneg : 1;
+    unsigned short full_duplex     : 1; /* duplex */
+    unsigned short collision_test  : 1;
+    unsigned short unused          : 7;
+#else
+    unsigned short                 : 7;
+    unsigned short collision_test  : 1;
+    unsigned short full_duplex     : 1; /* duplex */
+    unsigned short restart_autoneg : 1;
+    unsigned short isolate         : 1;
+    unsigned short power_down      : 1;
+    unsigned short autoneg_enable  : 1;
+    unsigned short force100        : 1; /* speedBit0 */
+    unsigned short loop_back       : 1;
+    unsigned short soft_reset      : 1;
+#endif
+  } __attribute__ ( ( packed ) ) bits;
+} __attribute__ ( ( packed ) ) phy_control_t;
+
+/* -- status -- */
+
+#define PHY_STATUS 0x01
+
+typedef union {
+  unsigned short raw;
+
+  struct {
+#ifdef CONFIG_AXXIA_PPC
+    unsigned short t4_capable        : 1;
+    unsigned short tx_fdx_capable    : 1;
+    unsigned short tx_capable        : 1;
+    unsigned short bt_fdx_capable    : 1;
+    unsigned short tenbt_capable     : 1;
+    unsigned short unused            : 4;
+    unsigned short mf_pream_suppress : 1;
+    unsigned short autoneg_comp      : 1; /* autoNegDone */
+    unsigned short remote_fault      : 1; /* remoutFault */
+    unsigned short autoneg_capable   : 1;
+    unsigned short link_status       : 1; /* linkStatus */
+    unsigned short jabber_detect     : 1;
+    unsigned short extd_reg_capable  : 1;
+#else
+    unsigned short extd_reg_capable  : 1;
+    unsigned short jabber_detect     : 1;
+    unsigned short link_status       : 1; /* linkStatus */
+    unsigned short autoneg_capable   : 1;
+    unsigned short remote_fault      : 1; /* remoutFault */
+    unsigned short autoneg_comp      : 1; /* autoNegDone */
+    unsigned short mf_pream_suppress : 1;
+    unsigned short                   : 4;
+    unsigned short tenbt_capable     : 1;
+    unsigned short bt_fdx_capable    : 1;
+    unsigned short tx_capable        : 1;
+    unsigned short tx_fdx_capable    : 1;
+    unsigned short t4_capable        : 1;
+#endif
+  } __attribute__ ( ( packed ) ) bits;
+} __attribute__ ( ( packed ) ) phy_status_t;
+
+/* -- id_high -- */
+
+#define PHY_ID_HIGH 0x02
+
+typedef union {
+  unsigned short raw;
+
+  struct {
+    unsigned short id : 16;
+  } __attribute__ ( ( packed ) ) bits;
+} __attribute__ ( ( packed ) ) phy_id_high_t;
+
+/* -- id_low -- */
+
+#define PHY_ID_LOW  0x03
+
+typedef union {
+  unsigned short raw;
+
+  struct {
+#ifdef CONFIG_AXXIA_PPC
+    unsigned short id       : 6;
+    unsigned short model    : 6;
+    unsigned short revision : 4;
+#else
+    unsigned short revision : 4;
+    unsigned short model    : 6;
+    unsigned short id       : 6;
+#endif
+  } __attribute__ ( ( packed ) ) bits;
+} __attribute__ ( ( packed ) ) phy_id_low_t;
+
+/* -- autoneg_advertise  -- */
+
+#define PHY_AUTONEG_ADVERTISE 0x04
+
+/* -- link_partner_ability -- */
+
+#define PHY_LINK_PARTNER_ABILITY 0x05
+
+/*
+  Auto-negotiation Advertisement Values.
+*/
+
+#define PHY_AUTONEG_ADVERTISE_100FULL 0x101
+#define PHY_AUTONEG_ADVERTISE_100     0x081
+#define PHY_AUTONEG_ADVERTISE_10FULL  0x041
+#define PHY_AUTONEG_ADVERTISE_10      0x021
+
+int phy_duplex( int );
+int phy_link( int );
+int phy_renegotiate( int, int );
+int phy_speed( int );
+void dump_packet(const char *, void *, int);
+
+#endif /* __ASSEMBLY__ */
+
+#define CONFIG_SYS_PKTALIGN 128
+#define ARCH_DMA_MINALIGN 128
+
+/*
   ----------------------------------------------------------------------
   Commands
 */
