@@ -56,6 +56,8 @@ clean:
 distclean:	clean
 	rm -f $(LIB) core *.bak $(obj).depend
 
+version.c: version
+
 $(obj)version.o: version.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 ifdef CONFIG_SPL_BUILD
