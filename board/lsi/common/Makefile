@@ -21,9 +21,9 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	= $(obj)lib$(VENDOR).o
-
 .PHONY: version
+
+LIB	= $(obj)lib$(VENDOR).o
 
 ifndef CONFIG_SPL_BUILD
 
@@ -47,7 +47,7 @@ COBJS += version.o lsi.o ncr.o
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))
 
-$(LIB):	version $(obj).depend $(OBJS)
+$(LIB):	$(obj).depend $(OBJS)
 	$(call cmd_link_o_target, $(OBJS) $(SOBJS))
 
 clean:
@@ -62,7 +62,7 @@ ifdef CONFIG_SPL_BUILD
 	rm -f $<
 endif
 
-version:
+version: version.c.in
 	sed -e s/GIT_VERSION_STRING/`git describe --dirty`/ \
 		version.c.in >version.c
 
