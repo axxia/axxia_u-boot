@@ -32,7 +32,7 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-COBJS	+= axxia.o mdio.o phy.o femac.o
+COBJS	+= axxia.o mdio.o phy.o femac.o pcie.o
 
 else
 
