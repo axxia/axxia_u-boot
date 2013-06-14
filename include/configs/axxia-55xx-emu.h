@@ -23,7 +23,7 @@
 #ifndef __CONFIGS_AXXIA_55XX_EMU_H
 #define __CONFIGS_AXXIA_55XX_EMU_H
 
-#define CONFIG_AXXIA_55XX_EMU 1
+#define CONFIG_AXXIA_55XX_EMU
 
 #include <configs/axxia-arm.h>
 

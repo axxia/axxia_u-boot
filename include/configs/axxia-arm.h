@@ -139,6 +139,10 @@ int is_asic( void );
 
 #define SYSCON  (IO + 0x30000)
 
+#define I2C0_ADDRESS (IO + 0x84000)
+#define I2C1_ADDRESS (IO + 0x85000)
+#define I2C2_ADDRESS (IO + 0x86000)
+
 #define GPIO0_ADDRESS (IO + 0x92000)
 #define GPIO1_ADDRESS (IO + 0x93000)
 
@@ -893,59 +897,12 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
 #endif
 
-#if 0
-#ifndef __ASSEMBLY__
-#include <common.h>
-#include <asm/io.h>
-
-extern int lsi_logio_enable;
-
-#ifdef LSI_LOGIO
-#define LSI_LOGIO_ENABLE() {lsi_logio_enable = 1;}
-#define LSI_LOGIO_DISABLE() {lsi_logio_enable = 0;}
-#define LSI_LOGIO_ENABLED() (1 == lsi_logio_enable)
-static inline unsigned long _READL(const char *, int, unsigned long);
-static inline unsigned long
-_READL(const char *file, int line, unsigned long address)
-{
-        unsigned long value;
-        value = readl(address);
-
-        if (0 != lsi_logio_enable)
-
-                printf("%s:%d - Read 0x%08lx from 0x%08lx\n",
-                       file, line, value, address);
-
-        return value;
-}
-#define READL(address) _READL(__FILE__, __LINE__, (address))
-static inline void _WRITEL(const char *, int, unsigned long, unsigned long);
-static inline void
-_WRITEL(const char *file, int line, unsigned long value, unsigned long address)
-{
-        writel(value, address);
-
-        if (0 != lsi_logio_enable)
-                printf( "%s:%d - Wrote 0x%08lx to 0x%08lx\n",
-                        file, line, value, address);
-
-        return;
-}
-#define WRITEL(value, address) _WRITEL(__FILE__, __LINE__, (value), (address))
-#else  /* LSI_LOGIO */
-#define LSI_LOGIO_ENABLE() {}
-#define LSI_LOGIO_DISABLE() {}
-#define LSI_LOGIO_ENABLED() 0
-#define READL(address) readl((address))
-#define WRITEL(value, address) writel((value), (address))
-#endif /* LSI_LOGIO */
-#endif
-
-#endif
-
 /*
-  ----------------------------------------------------------------------
-  Include the Axxia common header.
+  ==============================================================================
+  ==============================================================================
+  Include the common Axxia header.
+  ==============================================================================
+  ==============================================================================
 */
 
 #include <configs/axxia.h>
