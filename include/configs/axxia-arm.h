@@ -100,6 +100,8 @@ int is_asic( void );
 #define CONFIG_OMAP54XX	/* which is a 54XX */
 #define CONFIG_OMAP5430	/* which is in a 5430 */
 #define CONFIG_5430EVM	/* working with EVM */
+#define CONFIG_AXXIA_PCI
+
 
 #define CONFIG_SYS_HZ           1000    /* decrementer freq: 1 ms ticks */
 #define SYSTIMER_RATE		4096000
@@ -145,6 +147,39 @@ int is_asic( void );
 #else
 #define DICKENS (0x80000000)
 #endif
+
+/*
+  ==============================================================================
+  PCI
+  ==============================================================================
+*/
+#ifdef CONFIG_AXXIA_PCI
+#define CONFIG_PCI 1
+#define CONFIG_PCI_PNP 1                          /* do pci plug-and-play*/
+#define CONFIG_CMD_PCI 1
+#define CONFIG_PCI_SCAN_SHOW 1
+#endif
+
+#define ACP_PEI0 1
+#define ACP_PEI1 1
+
+#define CONFIG_SYS_PCIE_NR_PORTS 2
+
+#define PCIE0_CONFIG (IO+0x10000000+0x120000)
+#define PCIE1_CONFIG (IO+0x10000000+0x130000)
+
+#define CONFIG_SYS_PCIE0_MEMBASE 0xd0000000
+#define CONFIG_SYS_PCIE1_MEMBASE 0xf0000000
+#define CONFIG_PCIE0_PHY_START 0xc0000000
+#define CONFIG_PCIE1_PHY_START 0xe0000000
+
+#define CONFIG_SYS_PCIE_MEMSIZE 0x100000
+
+#define CONFIG_PCIE0_BUS_START 0xA0000000
+#define CONFIG_PCIE1_BUS_START 0xB0000000
+
+#define CONFIG_SYS_PCIE0_CFGADDR PCIE0_CONFIG
+#define CONFIG_SYS_PCIE1_CFGADDR PCIE1_CONFIG
 
 /*
   ==============================================================================

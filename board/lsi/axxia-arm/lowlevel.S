@@ -287,6 +287,43 @@ clear_page_tables:
         cmp     r1, r2
         blt     1b
 
+
+       @
+        @ Fourth 1G is used by PCIe, not cacheable or bufferable.
+        @
+        @ Uses supersections to access IO beyond 4G physical address.
+        @ PEI0 is currently using 256 MB for outbound mapping
+        @ and  16 MB for MPAGE7 for config access
+        @
+        ldr     r0,=0x00040cd2          @ Start at 0x30_0000_0000
+        add     r1, r3, #0x3000
+        mov     r9, #0
+1:      str     r0, [r1], #4            @ Each supersection is repeated
+        add     r9, r9, #1              @ 16 times.
+        cmp     r9, #16
+        blt     1b
+
+        ldr     r0,=0x38040cd2          @ Start at 0x30_3800_0000
+        add     r1, r3, #0x3040
+        str     r0, [r1], #4            @ Each supersection is repeated once
+
+        @
+        @ PEI1 is currently using 256 MB for outbound mapping
+        @ and  16 MB for MPAGE7 for config access
+        @
+        ldr     r0,=0x80040cd2          @ Start at 0x30_8000_0000
+        add     r1, r3, #0x3080
+        mov     r9, #0
+1:     str     r0, [r1], #4            @ Each supersection is repeated
+        add     r9, r9, #1              @ 16 times.
+        cmp     r9, #16
+        blt     1b
+
+        ldr     r0,=0xb8040cd2          @ Start at 0x30_B800_0000
+        add     r1, r3, #0x30c0
+        str     r0, [r1], #4            @ Each supersection is repeated once
+
+
 #endif
 
 	@@
