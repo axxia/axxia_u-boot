@@ -25,6 +25,36 @@
 
 #define CONFIG_AXXIA_55XX_EMU
 
+/*
+  ================================================================================
+  ================================================================================
+  Non-Volatile Storage
+  ================================================================================
+  ================================================================================
+*/
+
+#define CONFIG_AXXIA_SERIAL_FLASH /* Include support for SPI flash. */
+
+#define CONFIG_AXXIA_SERIAL_FLASH_ENV
+#define CONFIG_ENV_IS_IN_SERIAL_FLASH
+
+#define CONFIG_PARAMETER_OFFSET          (256 * 1024)
+#define CONFIG_PARAMETER_SIZE            (64 * 1024)
+#define CONFIG_PARAMETER_RANGE           (64 * 1024)
+#define CONFIG_PARAMETER_OFFSET_REDUND \
+	(CONFIG_PARAMETER_OFFSET + CONFIG_PARAMETER_RANGE)
+#define CONFIG_PARAMETER_SIZE_REDUND     CONFIG_PARAMETER_SIZE
+#define CONFIG_PARAMETER_RANGE_REDUND    CONFIG_PARAMETER_RANGE
+
+#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
+#define CONFIG_ENV_OFFSET \
+	(CONFIG_PARAMETER_OFFSET_REDUND + CONFIG_PARAMETER_RANGE_REDUND)
+#define CONFIG_ENV_SIZE                  (64 * 1024)
+#define CONFIG_ENV_RANGE                 (64 * 1024)
+#define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
+#define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
+#define CONFIG_ENV_RANGE_REDUND           CONFIG_ENV_RANGE
+
 #include <configs/axxia-arm.h>
 
 #endif	/* __CONFIGS_AXXIA_55XX_H */

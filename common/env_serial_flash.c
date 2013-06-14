@@ -174,10 +174,9 @@ int saveenv(void)
 	int ret = 0;
 	env_t   env_new;
         ssize_t len;
-        char    *res, *saved_data = NULL;
-	
+        char    *res;
 
-    res = (char *)&env_new.data;
+	res = (char *)&env_new.data;
         len = hexport_r(&env_htab, '\0', 0, &res, ENV_SIZE, 0, NULL);
         if (len < 0) {
                 printf("Cannot export environment\n");
@@ -218,7 +217,7 @@ int saveenv(void)
 	int ret = 0;
 	env_t   env_new;
         ssize_t len;
-        char    *res, *saved_data = NULL;
+        char    *res;
 
 
     res = (char *)&env_new.data;

@@ -27,8 +27,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-void
-serial_exit(void);
+void serial_exit(void);
 
 /*
   ======================================================================
@@ -98,12 +97,12 @@ static void axxia_serial_initialize(unsigned long, unsigned long, unsigned long)
 static int
 get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 {
-	unsigned long divisor;
+	unsigned long divisor = 0;
 	unsigned long ibrd;
 	unsigned long fbrd;
+#ifndef CONFIG_AXXIA_ARM
 	unsigned long per_clock;
 
-#ifndef CONFIG_AXXIA_ARM
 	do {
 		for (;;) {
 			int rc;
@@ -246,8 +245,6 @@ void
 serial_setbrg(void)
 {
 #ifndef ACP_ISS
-	clock_stuff_t cs;
-
 	if (0 == uart.uart)
 		return;
 

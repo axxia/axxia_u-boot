@@ -28,8 +28,6 @@
   ==============================================================================
 */
 
-static int test_value;
-
 /*
   ==============================================================================
   ==============================================================================
@@ -100,31 +98,24 @@ void
 board_init_f(ulong bootflag)
 {
 	int rc;
-	unsigned long value32;
 
 	serial_early_init();
-
 	puts("\n"
 	     "   ___             _        __  __    ___            __    _______  __ \n"
 	     "  / _ |__ ____ __ (_)__ _  / / / /___/ _ )___  ___  / /_  / __/ _ \\/ / \n"
 	     " / __ |\\ \\ /\\ \\ // / _ `/ / /_/ /___/ _  / _ \\/ _ \\/ __/ _\\ \\/ ___/ /__\n"
 	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ /___/_/  /____/\n");
 	printf("\nLSI Version: %s\n", get_lsi_version());
-
 	rc = axxia_initialize();
 
 	if (0 != rc)
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
 	printf("Memory initialized\n");
-
 	ssp_init(0, 1);
 	rc = ssp_read((void *)0x40000000, 0x100000, 0x200000);
-
 	printf("U-Boot Copied\n");
-
 	reset_cpu_fabric();
-
 	acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
 	return;

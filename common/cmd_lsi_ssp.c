@@ -24,9 +24,6 @@
  */
 
 #include <config.h>
-
-#ifdef CONFIG_ACP
-
 #include <common.h>
 #include <command.h>
 
@@ -44,11 +41,19 @@ static int
 read(unsigned long device,
      unsigned long address, unsigned long offset, unsigned long size)
 {
-	ssp_init(device, 1);
-	printf("SR -- address = 0x%x, offset = 0x%x, size = 0x%x\n", address, offset, size); 
-	ssp_read((void *)address, offset, size);
+	int rc;
 
-	return 0;
+	rc = ssp_init(device, 1);
+
+	if (0 != rc)
+		return CMD_RET_FAILURE;
+
+	rc = ssp_read((void *)address, offset, size);
+
+	if (0 != rc)
+		return CMD_RET_FAILURE;
+
+	return CMD_RET_SUCCESS;
 }
 
 /*
@@ -60,9 +65,19 @@ static int
 write( unsigned long device,
        unsigned long address, unsigned long offset, unsigned long size )
 {
-	ssp_init(device, 0);
-	printf("SR -- address = 0x%x, offset = 0x%x, size = 0x%x\n", address, offset, size); 
-	return ssp_write((void *)address, offset, size, 0);
+	int rc;
+
+	rc = ssp_init(device, 0);
+
+	if (0 != rc)
+		return CMD_RET_FAILURE;
+
+	rc = ssp_write((void *)address, offset, size, 0);
+
+	if (0 != rc)
+		return CMD_RET_FAILURE;
+
+	return CMD_RET_SUCCESS;
 }
 
 
@@ -78,30 +93,21 @@ write( unsigned long device,
 */
   
 int
-do_ssp( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
+do_ssp(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned long device;
 	unsigned long address;
 	unsigned long offset;
 	unsigned long size;
-	int return_code = 1;
+	int rc = CMD_RET_USAGE;
 
-	if( 0 == strncmp( argv[1], "h", strlen( "h" ) ) ) {
-#ifndef CFG_NOHELP
-#ifdef CFG_LONGHELP
-		printf( "%s", cmdtp->help );
-#else
-		printf( "%s", cmdtp->usage );
-#endif
-#endif
-		return_code = 0;
-	} else if( 0 == strncmp( argv[1], "r", strlen( "r" ) ) ) {
+	if( 0 == strncmp( argv[1], "r", strlen( "r" ) ) ) {
 		if( 6 == argc ) {
 			device = simple_strtoul( argv[2], NULL, 16 );
 			address = simple_strtoul( argv[3], NULL, 16 );
 			offset = simple_strtoul( argv[4], NULL, 16 );
 			size = simple_strtoul( argv[5], NULL, 16 );
-			return_code = read( device, address, offset, size );
+			return read( device, address, offset, size );
 		}
 	} else if( 0 == strncmp( argv[1], "w", strlen( "w" ) ) ) {
 		if( 6 == argc ) {
@@ -109,19 +115,11 @@ do_ssp( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 			address = simple_strtoul( argv[3], NULL, 16 );
 			offset = simple_strtoul( argv[4], NULL, 16 );
 			size = simple_strtoul( argv[5], NULL, 16 );
-			return_code = write( device, address, offset, size );
+			return write( device, address, offset, size );
 		}
-
-
 	}
 
-	if( 0 != return_code ) {
-#ifndef CFG_NOHELP
-		printf( "%s", cmdtp->usage );
-#endif
-	}
-
-	return return_code;
+	return rc;
 }
 
 /*
@@ -130,13 +128,9 @@ do_ssp( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
   ======================================================================
 */
 
-U_BOOT_CMD( ssp, 6, 0, do_ssp,
-	    "ssp help|read|write [arguments]\n",
-	    "h,elp\n" \
-	    "\tdisplay this help screen\n" \
-	    "r,ead device address offset size\n" \
-	    "\tread size bytes from offset to address\n" \
-	    "w,rite device address offset size\n" \
-	    "\twrite size bytes from address to offset\n");
-
-#endif /* CONFIG_ACP */
+U_BOOT_CMD(ssp, 6, 0, do_ssp,
+	   "ssp read|write [arguments]\n",
+	   "r,ead device address offset size\n"
+	   "\tread size bytes from offset to address\n"
+	   "w,rite device address offset size\n"
+	   "\twrite size bytes from address to offset\n");

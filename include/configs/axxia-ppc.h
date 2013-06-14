@@ -26,11 +26,6 @@
 #define CONFIG_SYS_LDSCRIPT "board/lsi/axxia-ppc/u-boot.lds"
 #define CONFIG_SYS_TEXT_BASE 0x00004000
 
-#ifdef CONFIG_SPL_BUILD
-/*#define NCR_TRACER*/
-#define CONFIG_LSI_NAND
-#endif
-
 /*
   ==============================================================================
   Even though the hardware type should be defined in acp.h, the U-Boot config.mk
@@ -830,15 +825,7 @@ int eioa_ethernet_configure(void);
   NAND flash support, comment out the following.
 */
 
-#define CONFIG_LSI_NAND
 #define ACP_NAND_4BIT_ECC
-
-/*
-  By default, the 3rd stage always supports serial flash.  To turn off
-  NAND flash support, comment out the following.
-*/
-
-#define CONFIG_LSI_SERIAL_FLASH
 
 /*
   By default, the U-Boot environment is stored in NAND for all targets
@@ -1401,8 +1388,8 @@ int sbb_desecure_range(int, void *, size_t);
   ======================================================================
 */
 
-#if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
-#undef CONFIG_LSI_NAND
+#if defined(NCR_TRACER)
+#undef CONFIG_AXXIA_NAND
 #undef CONFIG_LSI_NAND_ENV
 #undef CONFIG_LSI_SERIAL_FLASH
 #undef CONFIG_LSI_SERIAL_FLASH_ENV
@@ -1415,7 +1402,7 @@ int sbb_desecure_range(int, void *, size_t);
 #define CONFIG_SYS_MAX_FLASH_BANKS 4
 #endif
 
-#if defined(CONFIG_LSI_NAND)
+#if defined(CONFIG_AXXIA_NAND)
 #define CONFIG_FLASH_CFI_DRIVER      1
 #define CONFIG_SYS_FLASH_CFI         1
 #define CONFIG_CMD_NAND
@@ -1426,8 +1413,8 @@ int sbb_desecure_range(int, void *, size_t);
 #endif
 
 #if defined(CONFIG_LSI_NAND_ENV)
-#if !defined(CONFIG_LSI_NAND)
-#error "CONFIG_LSI_NAND must be defined for CONFIG_LSI_NAND_ENV"
+#if !defined(CONFIG_AXXIA_NAND)
+#error "CONFIG_AXXIA_NAND must be defined for CONFIG_LSI_NAND_ENV"
 #endif
 #define CONFIG_CMD_ENV
 #define CONFIG_ENV_IS_IN_NAND        1

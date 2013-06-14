@@ -23,64 +23,6 @@
 #include <malloc.h>
 #include <net.h>
 
-#ifdef CONFIG_AXXIA_ARM
-/* Error */
-#define ERROR_PRINT( format, args... ) do { \
-printf( "%s:%s:%d - ERROR - ", __FILE__, __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#define ERROR_CODE( code ) { code }
-
-/* Warning */
-#ifdef LSI_WARN
-#define WARN_PRINT( format, args... ) do { \
-printf( "%s:%s:%d - WARN - ", __FILE__, __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#define WARN_CODE( code ) { code }
-#else  /* LSI_WARN */
-#define WARN_PRINT( format, args... )
-#define WARN_CODE( code )
-#endif /* LSI_WARN */
-#endif
-
-/*
-  Debugging...
-*/
-
-#undef DEBUG
-/*#define DEBUG*/
-#ifdef DEBUG
-#define DEBUG_PRINT( format, args... ) do { \
-printf( "app3_nic:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#else  /* DEBUG */
-#define DEBUG_PRINT( format, args... )
-#endif /* DEBUG */
-
-#undef TX_DEBUG
-/*#define TX_DEBUG*/
-#ifdef TX_DEBUG
-#define TX_DEBUG_PRINT( format, args... ) do { \
-printf( "app3_nic:%s:%d - TX_DEBUG - ", __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#else  /* TX_DEBUG */
-#define TX_DEBUG_PRINT( format, args... )
-#endif /* TX_DEBUG */
-
-#undef RX_DEBUG
-/*#define RX_DEBUG*/
-#ifdef RX_DEBUG
-#define RX_DEBUG_PRINT( format, args... ) do { \
-printf( "app3_nic:%s:%d - RX_DEBUG - ", __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#else  /* RX_DEBUG */
-#define RX_DEBUG_PRINT( format, args... )
-#endif /* RX_DEBUG */
-
 /*
   ===============================================================================
   ===============================================================================
@@ -90,8 +32,10 @@ printf( format, ##args ); \
 */
 
 static int initialized = 0;
-static int femac;
 static struct eth_device *device;
+#if defined(CONFIG_AXXIA_EIOA)
+static int femac;
+#endif
 
 #if defined(CONFIG_AXXIA_EIOA)
 static void
@@ -141,14 +85,6 @@ static int
 _eth_init(struct eth_device *dev, bd_t *bd)
 {
 	return lsi_femac_eth_init(dev, bd);
-}
-
-static void
-_eth_halt(struct eth_device *dev)
-{
-	lsi_femac_eth_halt(dev);
-
-	return;
 }
 #endif
 
@@ -241,8 +177,6 @@ lsi_eth_init(struct eth_device *dev, bd_t *bd)
 {
 	int rc;
 
-	DEBUG_PRINT("\n");
-
 	/* If already initialized, halt an do it again.	*/
 	if (0 != initialized)
 		dev->halt(dev);
@@ -263,12 +197,10 @@ lsi_eth_init(struct eth_device *dev, bd_t *bd)
 */
 
 static int
-lsi_eth_send(struct eth_device *dev, volatile void *packet, int length)
+lsi_eth_send(struct eth_device *dev, void *packet, int length)
 {
-	DEBUG_PRINT("\n");
-
 	if (0 == initialized) {
-		ERROR_PRINT("Networking Isn't Initialized!\n");
+		printf("Networking Isn't Initialized!\n");
 		return 0;
 	}
 
@@ -290,10 +222,8 @@ lsi_eth_send(struct eth_device *dev, volatile void *packet, int length)
 static int
 lsi_eth_recv(struct eth_device *dev)
 {
-	/* DEBUG_PRINT("\n"); */
-
 	if (0 == initialized) {
-		ERROR_PRINT("Networking Isn't Initialized!\n");
+		printf("Networking Isn't Initialized!\n");
 		return 0;
 	}
 
@@ -315,8 +245,6 @@ lsi_eth_recv(struct eth_device *dev)
 static void
 lsi_eth_halt(struct eth_device *dev)
 {
-	DEBUG_PRINT("\n");
-
 #if defined(CONFIG_AXXIA_EIOA)
 	if (0 != initialized) {
 		if (0 != femac)
@@ -352,8 +280,6 @@ int
 board_eth_init(bd_t *bd)
 {
 	int rc;
-	char *ethaddr = NULL;
-	char *endp;
 
 	/*
 	  Allocate a device structure and clear it.

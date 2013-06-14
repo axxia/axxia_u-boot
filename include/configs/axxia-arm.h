@@ -39,43 +39,10 @@
 #warning "SETTING NCP_BIG_ENDIAN!!!"
 #endif
 
-#if 0
-#include <configs/axxia.h>
-#else
-/*
-  ======================================================================
-  ======================================================================
-  Nuevo Conf Ring Access, see board/lsi/axxia-ppc/ncr.c for the implementation
-  ======================================================================
-  ======================================================================
-*/
-
 #ifndef __ASSEMBLY__
-#define NCP_REGION_ID( node, target ) \
-( unsigned long ) ( ( ( ( node ) & 0xffff ) << 16 ) | ( ( target ) & 0xffff ) )
-#define NCP_NODE_ID( region ) ( ( ( region ) >> 16 ) & 0xffff )
-#define NCP_TARGET_ID( region ) ( ( region ) & 0xffff )
-int ncr_read(unsigned long, unsigned long, int, void *);
-int ncr_read8( unsigned long, unsigned long, unsigned char * );
-int ncr_read16( unsigned long, unsigned long, unsigned short * );
-int ncr_read32( unsigned long, unsigned long, unsigned long * );
-int ncr_write(unsigned long, unsigned long, int, void *);
-int ncr_write8( unsigned long, unsigned long, unsigned char );
-int ncr_write16( unsigned long, unsigned long, unsigned short );
-int ncr_write32( unsigned long, unsigned long, unsigned long );
-int ncr_modify32( unsigned long, unsigned long, unsigned long, unsigned long );
-int ncr_and( unsigned long, unsigned long, unsigned long );
-int ncr_or( unsigned long, unsigned long, unsigned long );
-int ncr_poll( unsigned long, unsigned long, unsigned long,
-              unsigned long, unsigned long, unsigned long );
-void ncr_tracer_enable( void );
-void ncr_tracer_disable( void );
-int ncr_tracer_is_enabled( void );
-void ncr_enable( void );
-void ncr_disable( void );
-#endif
-#endif
-
+void acp_failure(const char *, const char *, const int);
+int axxia_initialize(void);
+#endif	/* __ASSEMBLY__ */
 
 /*
   ======================================================================
@@ -294,7 +261,6 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
  * Total Size Environment - 128k
  * Malloc - add 256k
  */
-#define CONFIG_ENV_SIZE			(128 << 10)
 /* Vector Base */
 #define CONFIG_SYS_CA9_VECTOR_BASE	SRAM_ROM_VECT_BASE
 
@@ -381,20 +347,6 @@ int serial_early_init(void);
 
 #define CONFIG_LSI_SSP 1
 #define CONFIG_SYS_MAX_FLASH_SECT    1024
-#define CONFIG_LSI_SERIAL_FLASH 1
-/* #define CONFIG_LSI_SERIAL_FLASH_ENV */
- /* #define CONFIG_ENV_IS_NOWHERE */
-#if 0
-#define CONFIG_ENV_IS_IN_SERIAL_FLASH   1
-#define CONFIG_REDUNDAND_ENVIRONMENT     1
-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT 1
-#define CONFIG_ENV_OFFSET                (512*1024)
-/* #define CONFIG_ENV_SIZE                  (128*1024) */
-#define CONFIG_ENV_RANGE                 (512*1024)
-#define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
-#define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
-#endif
-
 
 #define TIMER0 (IO+0x91000)
 #define TIMER1 (IO+0x91020)
@@ -885,17 +837,9 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_ENV_IS_NOWHERE
 #endif
 
-#if 1
 #define CONFIG_LSI_SERIAL_FLASH_ENV
-#define CONFIG_ENV_IS_IN_SERIAL_FLASH   1
-#define CONFIG_REDUNDAND_ENVIRONMENT     1
-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT 1
-#define CONFIG_ENV_OFFSET                (512*1024)
-/* #define CONFIG_ENV_SIZE                  (128*1024) */
-#define CONFIG_ENV_RANGE                 (256*1024)
 #define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
 #define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
-#endif
 
 /*
   ==============================================================================

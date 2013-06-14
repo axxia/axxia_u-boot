@@ -232,7 +232,7 @@ axxia_initialize(void)
 
 	if (crc32(0, (void *)PARAMETERS_ADDRESS, (ntohl(header->size) - 12)) !=
 	    ntohl(header->checksum) ) {
-		printf( "Parameter table is corrupt. 0x%08lx!=0x%08x\n",
+		printf( "Parameter table is corrupt. 0x%08x!=0x%08x\n",
 			ntohl(header->checksum),
 			crc32(0, (void *)PARAMETERS_ADDRESS,
 			      (ntohl(header->size) - 12)));

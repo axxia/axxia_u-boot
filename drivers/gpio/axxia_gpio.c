@@ -257,12 +257,16 @@ gpio_direction_output(unsigned pin, int value)
 int
 gpio_get_value(unsigned pin)
 {
-	debug("%s:%d - GPIO pin %d is at %d.\n", __FILE__, __LINE__, pin);
+	int value;
 
 	if (8 > pin)
-		return axxia_gpio_get(AXXIA_GPIO_0, pin);
+		value = axxia_gpio_get(AXXIA_GPIO_0, pin);
 	else
-		return axxia_gpio_get(AXXIA_GPIO_1, (pin >> 8));
+		value = axxia_gpio_get(AXXIA_GPIO_1, (pin >> 8));
+
+	debug("%s:%d - GPIO pin %u is at %d.\n", __FILE__, __LINE__, pin, value);
+
+	return value;
 }
 
 /*

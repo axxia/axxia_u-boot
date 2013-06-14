@@ -27,10 +27,10 @@
 
 #define LOCK_DOMAIN 0
 
-static int ncr_tracer_disabled = 1;
 static int ncr_sysmem_mode_disabled = 1;
 
 #ifdef CONFIG_SPL_BUILD
+static int ncr_tracer_disabled = 1;
 void ncr_tracer_enable( void ) { ncr_tracer_disabled = 0; }
 void ncr_tracer_disable( void ) { ncr_tracer_disabled = 1; }
 int ncr_tracer_is_enabled( void ) { return 0 == ncr_tracer_disabled ? 1 : 0; }
@@ -47,7 +47,7 @@ ncr_fail(const char *file, const char *function, const int line)
 	if (1 == ncr_sysmem_mode_disabled)
 		return -1;
 	
-	printf("Config Ring Access Failed: 0x%08x 0x%08x\n",
+	printf("Config Ring Access Failed: 0x%08lx 0x%08lx\n",
 	       ncr_register_read((u32 *)(NCA + 0xe4)),
 	       ncr_register_read((u32 *)(NCA + 0xe8)));
 	acp_failure(file, function, line);

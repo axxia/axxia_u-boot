@@ -27,23 +27,13 @@
 
 #include <config.h>
 #include <common.h>
+#include <exports.h>
 #include <command.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
 extern int dumprx;
 extern int dumptx;
-
-#undef DEBUG
-/*#define DEBUG*/
-#ifdef DEBUG
-#define DEBUG_PRINT( format, args... ) do { \
-printf( "%s:%s:%d - ", __FILE__, __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#else
-#define DEBUG_PRINT( format, args... )
-#endif
 
 /*
   ======================================================================
@@ -56,10 +46,8 @@ printf( format, ##args ); \
 */
   
 int
-do_net( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
+do_net(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	DEBUG_PRINT( "flag=%d argc=%d\n", flag, argc );
-
 	if( 0 == strncmp( argv[1], "dr", strlen( "dr" ) ) ) {
 		dumprx ^= 1;
 
@@ -117,14 +105,12 @@ do_net( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
   ======================================================================
 */
 
-U_BOOT_CMD( net, 2, 0, do_net,
-	    "net loopback|receive|send|dr|dt\n",
-#ifdef CONFIG_ACP3
-	    "dr toggle the \"dumprx\" flag\n"
-	    "dt toggle the \"dumptx\" flag\n"
-#endif
-	    "l,oopback loop all received packets back\n"
-	    "r,ecevie packets, and dump them to the screen\n"
-	    "s,end send one packet\n" );
+U_BOOT_CMD(net, 2, 0, do_net,
+	   "net loopback|receive|send|dr|dt\n",
+	   "l,oopback loop all received packets back\n"
+	   "r,ecevie packets, and dump them to the screen\n"
+	   "s,end send one packet\n"
+	   "dr toggle the \"dumprx\" flag\n"
+	   "dt toggle the \"dumptx\" flag\n");
 
 #endif /* CONFIG_SPL_BUILD */

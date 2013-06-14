@@ -1583,89 +1583,6 @@ static unsigned long app3xxnic_tx_packets_( void ) {
 
 }
 
-/*
-  ----------------------------------------------------------------------
-  app3xxnic_tx_bytes_
-*/
-
-static unsigned long app3xxnic_tx_bytes_( void ) {
-
-	static unsigned long tx_bytes_ = 0;
-
-	int registers_ [ ] = {
-
-		( APP3XXNIC_TX_BASE + 0x0358 ),
-		( APP3XXNIC_TX_BASE + 0x0360 )
-
-	};
-
-	int index_;
-
-	for( index_ = 0; index_ < ( sizeof( registers_ ) / sizeof( int ) );
-	     ++ index_ ) {
-
-		tx_bytes_ += readl( registers_ [ index_ ] );
-
-	}
-
-	/* that's all */
-	return tx_bytes_;
-
-}
-
-/*
-  ----------------------------------------------------------------------
-  app3xxnic_display_
-*/
-
-static void app3xxnic_display_( void ) {
-
-	int registers_ [ ] = {
-
-		( APP3XXNIC_RX_BASE + 0x0010 ),
-		( APP3XXNIC_RX_BASE + 0x004c ),
-		( APP3XXNIC_TX_BASE + 0x0300 ),
-		( APP3XXNIC_TX_BASE + 0x0308 ),
-		( APP3XXNIC_TX_BASE + 0x0310 ),
-		( APP3XXNIC_TX_BASE + 0x0318 ),
-		( APP3XXNIC_TX_BASE + 0x0320 ),
-		( APP3XXNIC_TX_BASE + 0x0328 ),
-		( APP3XXNIC_TX_BASE + 0x0330 ),
-		( APP3XXNIC_TX_BASE + 0x0338 ),
-		( APP3XXNIC_TX_BASE + 0x0340 ),
-		( APP3XXNIC_TX_BASE + 0x0348 ),
-		( APP3XXNIC_TX_BASE + 0x0350 ),
-		( APP3XXNIC_TX_BASE + 0x0358 ),
-		( APP3XXNIC_TX_BASE + 0x0360 ),
-		( APP3XXNIC_TX_BASE + 0x0368 ),
-		( APP3XXNIC_TX_BASE + 0x0370 ),
-		( APP3XXNIC_TX_BASE + 0x0378 ),
-		( APP3XXNIC_TX_BASE + 0x0380 ),
-		APP3XXNIC_DMA_INTERRUPT_ENABLE,
-		APP3XXNIC_DMA_INTERRUPT_STATUS,
-		APP3XXNIC_TX_WATERMARK,
-	};
-
-	int index_;
-
-	printf( "NIC Registers:\n" );
-
-	for( index_ = 0; index_ < ( sizeof( registers_ ) / sizeof( int ) );
-	     ++ index_ ) {
-
-		unsigned long value_ = readl( registers_ [ index_ ] );
-
-		printf( " 0x%x:0x%lx\n", registers_ [ index_ ], value_ );
-
-	}
-
-	puts( "\n" );
-
-	/* that's all */
-	return;
-
-}
-
 #endif
 
 /*
@@ -1676,7 +1593,9 @@ static void app3xxnic_display_( void ) {
 int
 lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 {
+#if 0
 	size_t memory_needed;
+#endif
 	void * temp;
 
 	TRACE_BEGINNING( "\n" );
@@ -1723,6 +1642,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	}
 
 	/* Allocate Memory for Descriptors, Buffers, and Tail Pointers */
+#if 0
 	memory_needed =
 		( sizeof( app3xxnic_dma_descriptor_t ) * /* RX Descriptors */
 		  rx_number_of_descriptors +
@@ -1734,7 +1654,6 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		( TX_BUFFER_SIZE + BUFFER_GRANULARITY ) + /* TX Buffers */
 		( 2 * sizeof( app3xxnic_queue_pointer_t ) ); /* Tail Pointers */
 
-#if 0
 	if( ( void * ) 0 == ( memory = malloc( memory_needed ) ) ) {
 		ERROR_PRINT( "Unable to allocate space for descriptors and buffers\n" );
 		return 1;

@@ -89,7 +89,6 @@ ft_board_setup(void *blob, bd_t *bd)
 	int i;
 	char cpu_string[40];
 	int node;
-	const char *path;
 	unsigned long release_addr;
 	int rc;
 

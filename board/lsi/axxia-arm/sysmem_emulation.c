@@ -416,8 +416,6 @@ initialize_elm(void)
 		} while (0 != (value & 0x1fffffff));
 	}
 
-ncp_return:
-
 	return 0;
 }
 
