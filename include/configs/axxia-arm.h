@@ -76,6 +76,41 @@ int is_asic( void );
 /*
   ================================================================================
   ================================================================================
+  GPIO
+  ================================================================================
+  ================================================================================
+*/
+
+#ifndef __ASSEMBLY__
+#define CONFIG_CMD_GPIO
+#define CONFIG_AXXIA_GPIO
+
+typedef enum { AXXIA_GPIO_0, AXXIA_GPIO_1 } axxia_gpio_t;
+
+int axxia_gpio_get_direction(axxia_gpio_t gpio, int pin);
+int axxia_gpio_set_direction(axxia_gpio_t gpio, int pin, int direction);
+int axxia_gpio_get(axxia_gpio_t gpio, int pin);
+int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
+#endif	/* __ASSEMBLY__ */
+
+/*
+  ================================================================================
+  ================================================================================
+  I2C
+  ================================================================================
+  ================================================================================
+*/
+
+#ifndef __ASSEMBLY__
+#define CONFIG_CMD_I2C
+#define CONFIG_AXXIA_I2C
+#define CONFIG_I2C_MULTI_BUS
+#define CONFIG_SYS_I2C_SPEED 100000
+#endif	/* __ASSEMBLY__ */
+
+/*
+  ================================================================================
+  ================================================================================
   At present, the fuse register that defines the number of clusters has not been
   implemented in the emulation images.  So, use a define...
   ================================================================================
@@ -285,7 +320,7 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
 
 #define CONFIG_SYS_PROMPT       "ACP3=> "
 #define CFG_PROMPT              "ACP3=> "
-#define CFG_CBSIZE              1024
+#define CFG_CBSIZE              2048
 #define CFG_PBSIZE              (CFG_CBSIZE+sizeof(CFG_PROMPT)+16)
 #define CFG_MAXARGS             64
 #define CFG_BARGSIZE            CFG_CBSIZE
@@ -513,7 +548,7 @@ int ssp_init(int, int);
 
 #define CONFIG_SYS_LONGHELP	/* undef to save memory */
 /* #define CONFIG_SYS_HUSH_PARSER */	/* use "hush" command parser */ 
-#define CONFIG_SYS_CBSIZE		256
+#define CONFIG_SYS_CBSIZE		2048
 /* Print Buffer Size */
 #define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
 					sizeof(CONFIG_SYS_PROMPT) + 16)
