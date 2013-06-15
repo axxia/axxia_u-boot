@@ -21,8 +21,6 @@
  *
  */
 
-/*#define LSI_DEBUG*/
-#define LSI_WARN
 #include <config.h>
 #ifndef CONFIG_SPL_BUILD
 #include <common.h>
@@ -252,7 +250,7 @@ acp_osg_readenv(void)
 		env_value = getenv(env_name);
 
 		if ((char *)0 == env_value) {
-			WARN_PRINT("%s doesn't exist, creating it.\n", env_name);
+			printf("%s doesn't exist, creating it.\n", env_name);
 			if (0 == group) {
 				setenv(env_name, OS_GROUP0_DEFAULT);
 			} else {
@@ -262,7 +260,7 @@ acp_osg_readenv(void)
 			env_value = getenv(env_name);
 		}
 
-		DEBUG_PRINT("%s : %s\n", env_name, env_value);
+		debug("%s : %s\n", env_name, env_value);
 		string = malloc(strlen(env_value));
 		string_address = string;
 		strcpy(string, env_value);
@@ -279,7 +277,7 @@ acp_osg_readenv(void)
 			os_group->size = simple_strtoul(token, NULL, 0);
 
 			if ((os_group->base + os_group->size) > osmemory_value) {
-				WARN_PRINT("%s won't fit within osmemory.\n",
+				printf("%s won't fit within osmemory.\n",
 					   env_name);
 				if (0 == group) {
 					setenv(env_name, OS_GROUP0_DEFAULT);
@@ -293,7 +291,7 @@ acp_osg_readenv(void)
 
 		free(string_address);
 
-		DEBUG_PRINT("%s : 0x%08x boot=%d cores=0x%x "
+		debug("%s : 0x%08x boot=%d cores=0x%x "
 			    "base=0x%x size=0x%x\n",
 			    env_name, os_group->flags,
 			    BOOT(os_group->flags), CORES(os_group->flags),
@@ -313,7 +311,7 @@ acp_osg_readenv(void)
 		for (group = 0; group < ACP_MAX_OS_GROUPS; ++group) {
 			acp_osg_group_t *osg_group = acp_osg_groups[group];
 
-			DEBUG_PRINT("group=%d flags=0x%x CORES=0x%x core=%d\n",
+			debug("group=%d flags=0x%x CORES=0x%x core=%d\n",
 				    group, osg_group->flags,
 				    CORES(osg_group->flags), core);
 			
@@ -328,7 +326,7 @@ acp_osg_readenv(void)
 			}
 		}
 
-		DEBUG_PRINT("group %d : 0x%x 0x%x %d\n",
+		debug("group %d : 0x%x 0x%x %d\n",
 			    group, osg_core->spintable_state,
 			    osg_core->core_state, osg_core->os_group);
 	}

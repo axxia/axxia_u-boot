@@ -1477,7 +1477,7 @@ phy_enable_( int phy )
 
 		if( 31 < phy_address_ || 0 > phy_address_ ) {
 
-			ERROR_PRINT( "Unable to get valid PHY address!\n" );
+			printf( "Unable to get valid PHY address!\n" );
 			return -1;
 
 		}
@@ -1497,7 +1497,7 @@ phy_enable_( int phy )
 	*/
 
 	if (0 != phy_renegotiate(phy_address_, get_env_ad_value())) {
-		ERROR_PRINT( "PHY: Auto Negotiation Failed.\n" );
+		printf( "PHY: Auto Negotiation Failed.\n" );
 	}
 
 	printf("%s %s\n",
@@ -1679,7 +1679,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 
 	if( ( 0 != ( rx_number_of_descriptors % DESCRIPTOR_GRANULARITY ) ) ||
 	    ( 0 != ( TX_NUMBER_OF_DESCRIPTORS % DESCRIPTOR_GRANULARITY ) ) ) {
-		ERROR_PRINT( "Number of descriptors is not a multiple of 64! " \
+		printf( "Number of descriptors is not a multiple of 64! " \
 			     "rx=%d tx=%d\n",
 			     rx_number_of_descriptors, TX_NUMBER_OF_DESCRIPTORS );
 		TRACE_ENDING( "\n" );
@@ -1699,7 +1699,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		( 2 * sizeof( app3xxnic_queue_pointer_t ) ); /* Tail Pointers */
 
 	if( ( void * ) 0 == ( memory = malloc( memory_needed ) ) ) {
-		ERROR_PRINT( "Unable to allocate space for descriptors and buffers\n" );
+		printf( "Unable to allocate space for descriptors and buffers\n" );
 		return 1;
 	}
 
@@ -1882,7 +1882,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 
 		while( 0 != phy_enable_( phy_address_ ) ) {
 
-			WARN_PRINT( "Failed to initialize the PHY, retrying!\n" );
+			printf( "Failed to initialize the PHY, retrying!\n" );
 
 			if( 0 == -- retries_ ) { break; }
 
@@ -1890,13 +1890,13 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 
 		if( 0 != rx_enable_( ) ) {
 
-			WARN_PRINT( "Receiver not enabled, link down?\n" );
+			printf( "Receiver not enabled, link down?\n" );
 
 		}
 
 		if( 0 != tx_enable_( dev ) ) {
 
-			WARN_PRINT( "Transmitter not enabled, link down?\n" );
+			printf( "Transmitter not enabled, link down?\n" );
 
 		}
 
@@ -2108,7 +2108,7 @@ lsi_femac_eth_rx(struct eth_device *dev)
 				printf( "Bad Packet: "
 					"bytes=%d ovf=%ld ok=%ld crc=%ld align=%ld\n",
 					bytes_received_, overflow_, ok_, crc_, align_ );
-				WARN_PRINT( "Bad Packet: "
+				printf( "Bad Packet: "
 					    "bytes=%d ovf=%ld ok=%ld crc=%ld align=%ld\n",
 					    bytes_received_, overflow_, ok_, crc_, align_ );
 
@@ -2327,7 +2327,7 @@ lsi_femac_eth_send(struct eth_device *dev, volatile void * packet, int length)
 			}
 
 			if( 0 == tries_ ) {
-				ERROR_PRINT( "TX timeout: tx_head_.raw=0x%08lx "
+				printf( "TX timeout: tx_head_.raw=0x%08lx "
 					     "tx_tail_->raw=0x%08x/0x%08x\n",
 					     tx_head_.raw,
 					     swab32( tx_tail_->raw ),

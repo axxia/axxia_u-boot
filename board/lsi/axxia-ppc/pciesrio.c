@@ -21,6 +21,7 @@
  */
 
 #include <common.h>
+#include <asm/io.h>
 
 #ifndef ACP_25xx
 

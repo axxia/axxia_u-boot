@@ -33,6 +33,7 @@
 #include "ncp_task_lite_basetypes.h"
 #include "ncp_task_lite.h"
 #include "ncp_task_lite_pvt.h"
+#include <asm/io.h>
 #else /* defined(NCP_TASKIO_UBOOT_ENV) */
 #include "ncp_task_lite.h"
 #include "ncp_task_lite_pvt.h"

@@ -21,9 +21,6 @@
  * MA 02111-1307 USA
  */
 
-/*#define LSI_DEBUG*/
-#define LSI_WARN
-/*#define LSI_LOGIO*/
 #include <config.h>
 #include <common.h>
 
@@ -46,7 +43,7 @@ pic_enable(void)
 void
 pic_irq_enable(unsigned int interrupt)
 {
-	DEBUG_PRINT("\n");
+	debug("\n");
 }
 
 /*
@@ -57,7 +54,7 @@ pic_irq_enable(unsigned int interrupt)
 void
 pic_irq_disable(unsigned int interrupt)
 {
-	DEBUG_PRINT("\n");
+	debug("\n");
 }
   
 /*
@@ -68,7 +65,7 @@ pic_irq_disable(unsigned int interrupt)
 void
 pic_irq_ack(unsigned int interrupt)
 {
-	DEBUG_PRINT("\n");
+	debug("\n");
 }
 
 /*
@@ -79,5 +76,5 @@ pic_irq_ack(unsigned int interrupt)
 void
 external_interrupt(struct pt_regs *regs)
 {
-	DEBUG_PRINT("\n");
+	debug("\n");
 }

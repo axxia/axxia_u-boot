@@ -25,8 +25,6 @@
 
 #ifndef CONFIG_SPL_BUILD
 
-#define LSI_DEBUG
-#define LSI_LOGIO
 #include <config.h>
 #include <common.h>
 #include <command.h>
@@ -55,15 +53,7 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	int rc = -1;
 
-	if (0 == strncmp(argv[1], "d", strlen("d"))) {
-		if (LSI_DEBUG_ENABLED()) {
-			LSI_DEBUG_DISABLE();
-		} else {
-			LSI_DEBUG_ENABLE();
-		}
-
-		rc = 0;
-	} else if (0 == strncmp(argv[1], "e", strlen("e"))) {
+	if (0 == strncmp(argv[1], "e", strlen("e"))) {
 		rc = 0;
 
 		if (3 == argc) {
@@ -107,14 +97,6 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 #else
 		printf("Not Available in the 2nd Stage or Emulation.\n");
 #endif
-		rc = 0;
-	} else if (0 == strncmp(argv[1], "log", strlen("log"))) {
-		if (LSI_LOGIO_ENABLED()) {
-			LSI_LOGIO_DISABLE();
-		} else {
-			LSI_LOGIO_ENABLE();
-		}
-
 		rc = 0;
 	} else if ((0 == strncmp(argv[1], "n", strlen("n"))) &&
 		   (5 == argc)) {
@@ -465,9 +447,8 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 #endif
 	}
 
-	if (0 != rc) {
-		printf("%s", cmdtp->usage);
-	}
+	if (0 != rc)
+		return CMD_RET_USAGE;
 
  do_test_exit:
 	return rc;
@@ -480,17 +461,14 @@ do_test(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 */
 
 U_BOOT_CMD(test, 5, 0, do_test,
-	   "test debug|ecc|logio|locks|nand|ticks|memory|help\n",
-	   "d,ebug  -- Toggle DEBUG logging.\n" \
+	   "test ecc|logio|locks|nand|ticks|memory|help\n",
 	   "e,cc    -- Set the ECC mode to the given value.\n" \
-	   "log,io  -- Toggle IO logging.\n" \
 	   "loc,ks  -- Start the PLL Lock Test.\n" \
 	   "n,and   -- Insert error in NAND page (\"page offset\" byte " \
 	   "bit|value).\n" \
 	   "           bit means flip that bit, value means write that value\n" \
 	   "           to specify a value, start with 0x...\n" \
 	   "t,icks  -- Display the Return Value from get_ticks().\n" \
-	   "m,emory -- Verify the memory fault trigger.\n" \
-	   "h,elp   -- This Wonderful Help Screen\n");
+	   "m,emory -- Verify the memory fault trigger.\n");
 
 #endif /* CONFIG_SPL_BUILD */

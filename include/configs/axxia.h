@@ -34,6 +34,7 @@
 */
 
 #ifndef __ASSEMBLY__
+#if 0
 
 #define CONFIG_CMD_GPIO
 #define CONFIG_AXXIA_GPIO
@@ -44,7 +45,7 @@ int axxia_gpio_get_direction(axxia_gpio_t gpio, int pin);
 int axxia_gpio_set_direction(axxia_gpio_t gpio, int pin, int direction);
 int axxia_gpio_get(axxia_gpio_t gpio, int pin);
 int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
-
+#endif
 #endif	/* __ASSEMBLY__ */
 
 /*
@@ -56,12 +57,12 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 */
 
 #ifndef __ASSEMBLY__
-
+#if 0
 #define CONFIG_CMD_I2C
 #define CONFIG_AXXIA_I2C
 #define CONFIG_I2C_MULTI_BUS
 #define CONFIG_SYS_I2C_SPEED 100000
-
+#endif
 #endif	/* __ASSEMBLY__ */
 
 /*

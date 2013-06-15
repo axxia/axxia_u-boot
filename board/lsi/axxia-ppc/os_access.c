@@ -63,7 +63,7 @@ get_offset_by_partition( const char * partition,
 
 	if( ( 0 == mtdparts_init( ) ) &&
 	    ( 0 == find_dev_and_part( partition, & dev, & pnum, & part ) ) ) {
-		DEBUG_PRINT( "type=0x%x offset=0x%x size=0x%x num=%d\n",
+		debug( "type=0x%x offset=0x%x size=0x%x num=%d\n",
 			     dev->id->type, part->offset, part->size,
 			     dev->id->num );
 		* offset = part->offset;
@@ -88,7 +88,7 @@ os_access_nand_read( const char * partition, unsigned int offset,
 	unsigned int part_size;
 	int size_read = size;
 
-	DEBUG_PRINT( "partition=%s size=%d\n", partition, size );
+	debug( "partition=%s size=%d\n", partition, size );
 	SAVE_R2( os_r2 );
 	RESTORE_R2( gd_backup );
 
@@ -114,7 +114,7 @@ os_access_nand_read( const char * partition, unsigned int offset,
 		goto cleanup;
 	}
 
-	DEBUG_PRINT( "Read 0x%x bytes.\n", size_read );
+	debug( "Read 0x%x bytes.\n", size_read );
  cleanup:
 	RESTORE_R2( os_r2 );
 	return rc;
@@ -139,7 +139,7 @@ os_access_nand_write( const char * partition, unsigned int offset,
 	int status;
 	nand_erase_options_t erase;
 
-	DEBUG_PRINT( "partition=%s offset=%d size=%d\n",
+	debug( "partition=%s offset=%d size=%d\n",
 		     partition, offset, size );
 	SAVE_R2( os_r2 );
 	RESTORE_R2( gd_backup );
@@ -169,7 +169,7 @@ os_access_nand_write( const char * partition, unsigned int offset,
 		this_access = es;
 		status = nand_read( & nand_info [ 0 ], this_offset,
 				    & this_access, block_buffer );
-		DEBUG_PRINT( "this_access=0x%x status=0x%x\n",
+		debug( "this_access=0x%x status=0x%x\n",
 			     this_access, status );
 		memcpy( ( void * ) ( block_buffer + ( offset % es ) ),
 			buffer,
@@ -178,11 +178,11 @@ os_access_nand_write( const char * partition, unsigned int offset,
 		erase.length = es;
 		erase.offset = this_offset;
 		status = nand_erase_opts( & nand_info [ 0 ], & erase );
-		DEBUG_PRINT( "status=0x%x\n", status );
+		debug( "status=0x%x\n", status );
 		this_access = es;
 		status = nand_write( & nand_info [ 0 ], this_offset,
 				     & this_access, block_buffer );
-		DEBUG_PRINT( "this_access=0x%x status=0x%x\n",
+		debug( "this_access=0x%x status=0x%x\n",
 			     this_access, status );
 
 		if( size > ( es - ( offset % es ) ) ) {
@@ -193,46 +193,46 @@ os_access_nand_write( const char * partition, unsigned int offset,
 			size = 0;
 		}
 
-		DEBUG_PRINT( "offset=%d size=%d\n", offset, size );
+		debug( "offset=%d size=%d\n", offset, size );
 	}
 
 	while( es <= size ) {
 		erase.length = es;
 		erase.offset = part_offset + offset;
 		status = nand_erase_opts( & nand_info [ 0 ], & erase );
-		DEBUG_PRINT( "status=0x%x\n", status );
+		debug( "status=0x%x\n", status );
 		this_access = es;
 		status = nand_write( & nand_info [ 0 ],
 				     ( part_offset + offset ), & this_access,
 				     buffer );
-		DEBUG_PRINT( "this_access=0x%x status=0x%x\n",
+		debug( "this_access=0x%x status=0x%x\n",
 			     this_access, status );
 		offset += es;
 		size -= es;
 		buffer += es;
-		DEBUG_PRINT( "offset=%d size=%d\n", offset, size );
+		debug( "offset=%d size=%d\n", offset, size );
 	}
 
 	if( 0 != size ) {
 		this_offset = part_offset + offset;
 		this_access = es;
-		DEBUG_PRINT( "this_offset=0x%x this_access=0x%x\n",
+		debug( "this_offset=0x%x this_access=0x%x\n",
 			     this_offset, this_access );
 		status = nand_read( & nand_info [ 0 ], this_offset,
 				    & this_access, block_buffer );
-		DEBUG_PRINT( "this_access=0x%x status=0x%x\n",
+		debug( "this_access=0x%x status=0x%x\n",
 			     this_access, status );
 		memcpy( block_buffer, buffer, size );
 		erase.length = es;
 		erase.offset = this_offset;
 		status = nand_erase_opts( & nand_info [ 0 ], & erase );
-		DEBUG_PRINT( "status=0x%x\n", status );
+		debug( "status=0x%x\n", status );
 		this_access = es;
 		status = nand_write( & nand_info [ 0 ], this_offset,
 				     & this_access, block_buffer );
-		DEBUG_PRINT( "this_access=0x%x status=0x%x\n",
+		debug( "this_access=0x%x status=0x%x\n",
 			     this_access, status );
-		DEBUG_PRINT( "offset=%d size=%d\n", offset, size );
+		debug( "offset=%d size=%d\n", offset, size );
 	}
 
  cleanup:
@@ -253,7 +253,7 @@ os_access_nand_erase( const char * partition )
 	unsigned int part_size;
 	nand_erase_options_t nand_erase_options;
 
-	DEBUG_PRINT( "partition=%s\n", partition );
+	debug( "partition=%s\n", partition );
 	SAVE_R2( os_r2 );
 	RESTORE_R2( gd_backup );
 
@@ -291,10 +291,10 @@ os_access_get_env( const char * name, char * value, int size )
 
 	SAVE_R2( os_r2 );
 	RESTORE_R2( gd_backup );
-	DEBUG_PRINT( "name=%s size=%d\n", name, size );
+	debug( "name=%s size=%d\n", name, size );
 
 	if( ( char * ) 0 == ( variable = getenv( name ) ) ) {
-		DEBUG_PRINT( "getenv() failed\n" );
+		debug( "getenv() failed\n" );
 		RESTORE_R2( os_r2 );
 		return NCP_UBOOT_PARAM_NAME_NOT_FOUND;
 	}
@@ -302,7 +302,7 @@ os_access_get_env( const char * name, char * value, int size )
 	RESTORE_R2( os_r2 );
 
 	if( strlen( variable ) >= size ) {
-		DEBUG_PRINT( "Variable is too big for the buffer.\n" );
+		debug( "Variable is too big for the buffer.\n" );
 		return NCP_UBOOT_PARAM_VAL_SIZE_TOO_SMALL;
 	}
 
@@ -318,7 +318,7 @@ os_access_get_env( const char * name, char * value, int size )
 static ncp_status_t
 os_access_set_env( const char * name, const char * value )
 {
-	DEBUG_PRINT( "name=%s value=%s\n", name, value );
+	debug( "name=%s value=%s\n", name, value );
 	SAVE_R2( os_r2 );
 	RESTORE_R2( gd_backup );
 
@@ -339,7 +339,7 @@ os_access_set_env( const char * name, const char * value )
 static ncp_status_t
 os_access_save_env( void )
 {
-	DEBUG_PRINT( "\n" );
+	debug( "\n" );
 
 	SAVE_R2( os_r2 );
 	RESTORE_R2( gd_backup );
@@ -383,7 +383,7 @@ os_access_init( void )
 	if( 0 == ( block_buffer = malloc( ( nand_info [ 0 ] ).erasesize ) ) ) {
 		return -1;
 	}
-	DEBUG_PRINT( "Allocated 0x%x bytes for a block buffer.\n",
+	debug( "Allocated 0x%x bytes for a block buffer.\n",
 		     ( nand_info [ 0 ] ).erasesize );
 	nand_access.version = NCP_ACCESS_VERSION;
 	nand_access.readFn = os_access_nand_read;

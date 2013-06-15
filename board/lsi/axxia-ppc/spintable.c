@@ -24,7 +24,6 @@
  * MA 02111-1307 USA
  */
 
-/*#define LSI_DEBUG*/
 #include <config.h>
 #ifdef CONFIG_ACP3
 #include <common.h>
@@ -176,7 +175,7 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 	}
 
 	/* Get the core from the 1st stage by sending an IPI. */
-	DEBUG_PRINT("Changing core %d spintable state.\n", core);
+	debug("Changing core %d spintable state.\n", core);
 	acp_osg_set_spintable_state(core, ACP_OSG_SPINTABLE_AVAILABLE);
 
 #if defined(ACP_25xx) && defined(RESET_INSTEAD_OF_IPI)
@@ -200,7 +199,7 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 
 	/* Send an IPI */
 	if (0 != cold_start) {
-		DEBUG_PRINT("Sending an IPI to core %d.\n", core);
+		debug("Sending an IPI to core %d.\n", core);
 		dcr_write((1 << core), 0xffc00040);
 	}
 #endif
@@ -215,7 +214,7 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 	if( 0 == retries ) {
 		printf( "Core %d is hung!\n", core );
 	} else {
-		DEBUG_PRINT("Core %d woke up!\n", core);
+		debug("Core %d woke up!\n", core);
 	}
 
 	acp_osg_set_spintable_state(core, ACP_OSG_SPINTABLE_NOTAVAIL);
