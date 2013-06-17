@@ -849,23 +849,9 @@ int eioa_ethernet_configure(void);
   ======================================================================
 */
 
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_LSI_NET
-
-#if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
-#undef CONFIG_LSI_NET
-#endif
-
-#if defined(CONFIG_LSI_NET)
-#define CONFIG_CMD_NET
-#define CONFIG_CMD_DHCP
 #define APP3XXNIC_RX_BASE  (IO+0x80000)
 #define APP3XXNIC_TX_BASE  (IO+0x81000)
 #define APP3XXNIC_DMA_BASE (IO+0x82000)
-#endif
-
-/*#define CONFIG_LSI_EIOA*/
-#endif	/* CONFIG_SPL_BUILD */
 
 /*
   ======================================================================

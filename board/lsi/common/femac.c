@@ -1,7 +1,7 @@
 /*
- *  drivers/net/lsi_femac.c
+ *  board/lsi/common/femac.c
  *
- *  Copyright (C) 2011 LSI (john.jacques@lsi.com)
+ *  Copyright (C) 2013 LSI (john.jacques@lsi.com)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,27 +19,21 @@
  */
 
 /*
- * A Driver for the custom MAC included in LSI ASICs (APP3, APP3K, and ACP).
+ * A Driver for the custom MAC included in LSI Axxia ASICs
  *
  * -- Hardware Bugs -- With Software Fixes --
  *
- * -1- (APP ONLY)
- * The MAC (or any other device) can only DMA to the alias (0x6nnn nnnn).
- * For now, all addresses written to the parts will be modified.  The top
- * nibble will be overwritten by 0x6.
- * -2-
+ * -1-
  * When the generation bits are equal, as are the pointers, instead of
  * considering the fifo empty (which it is) hardware considers it FULL.
  * In concequence, one descriptor will always be wasted...
- * -3-
+ * -2-
  * When the MAC sends a packet, it zeros out the "data transfer length"
  * field...
  *
  */
 
 #include <config.h>
-#if defined(CONFIG_LSI_NET)
-#if !defined(CONFIG_TRACER)
 #include <common.h>
 #include <command.h>
 #include <net.h>
@@ -2139,5 +2133,11 @@ lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 	return bytes_sent_;
 }
 
-#endif /* NCR_TRACER */
-#endif /* CONFIG_LSI_NET */
+/*
+ */
+
+int
+lsi_femac_write_hwaddr(struct eth_device *device)
+{
+	return 0;
+}
