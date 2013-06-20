@@ -38,20 +38,22 @@ int ehci_hcd_init(int index, struct ehci_hccr **hccr, struct ehci_hcor **hcor)
 	/* Setup GPREG for USB to enable the 6-bit address line */
         writel(0x0, GPREG_USB);
 
-	*hccr = (struct ehci_hccr *)(CONFIG_SYS_PPC4XX_USB_ADDR+0x100);
+	*hccr = (struct ehci_hccr *)(CONFIG_USB_ADDR+0x100);
         *hcor = (struct ehci_hcor *)((uint32_t) *hccr +
 				     HC_LENGTH(ehci_readl(&(*hccr)->cr_capbase)));
 
-	hwtxbuf = ehci_readl(CONFIG_SYS_PPC4XX_USB_ADDR+0x10);
-	txfulltuning = ehci_readl(CONFIG_SYS_PPC4XX_USB_ADDR+0x164);
+#ifndef CONFIG_AXXIA_ARM
+	hwtxbuf = ehci_readl(CONFIG_USB_ADDR+0x10);
+	txfulltuning = ehci_readl(CONFIG_USB_ADDR+0x164);
 
 	/* fix Bugzilla #31874     */
 	/* fix Bugzilla #32212     */
-	VUSB_HS_TX_BURST =    ehci_readl(CONFIG_SYS_PPC4XX_USB_ADDR+0x10) & 0x0f;
+	VUSB_HS_TX_BURST =    ehci_readl(CONFIG_USB_ADDR+0x10) & 0x0f;
 	USB_TXFIFOTHRES = (32 << 16);
 	txfulltuning = (txfulltuning  & 0xffc0ffff) | USB_TXFIFOTHRES;
 
-	writel( CONFIG_SYS_PPC4XX_USB_ADDR+0x164, txfulltuning);	
+	writel( CONFIG_USB_ADDR+0x164, txfulltuning);
+#endif
 	return 0;
 }
 

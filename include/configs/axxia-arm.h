@@ -68,6 +68,7 @@ int is_asic( void );
 #define CONFIG_OMAP5430	/* which is in a 5430 */
 #define CONFIG_5430EVM	/* working with EVM */
 #define CONFIG_AXXIA_PCI
+#define CONFIG_AXXIA_USB
 
 
 #define CONFIG_SYS_HZ           1000    /* decrementer freq: 1 ms ticks */
@@ -154,6 +155,12 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define DICKENS (0x80000000)
 #endif
 
+#define GPREG                   (IO+0x94000)
+#define GPREG_GPDMA             (GPREG+0x00)
+#define GPREG_MAC               (GPREG+0x04)
+#define GPREG_USB               (GPREG+0x08)
+#define GPREG_STATUS            (GPREG+0x0c)
+
 /*
   ==============================================================================
   PCI
@@ -186,6 +193,29 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 #define CONFIG_SYS_PCIE0_CFGADDR PCIE0_CONFIG
 #define CONFIG_SYS_PCIE1_CFGADDR PCIE1_CONFIG
+
+/*
+  ==============================================================================
+  USB
+  ==============================================================================
+*/
+
+/* USB support */
+#ifdef CONFIG_AXXIA_USB
+#define CONFIG_CMD_USB 1
+#define CONFIG_USB_EHCI 1
+#define CONFIG_USB_STORAGE 1
+#define CONFIG_CMD_USB_STORAGE 1
+#define CONFIG_USB_ULPI 1
+#define CONFIG_USB_ULPI_VIEWPORT 1
+#define CONFIG_CMD_EXT2 1
+#define CONFIG_CMD_EXT4 1
+#define CONFIG_DOS_PARTITION 1
+#define CONFIG_USB_ADDR (IO+0x140000)
+#define CONFIG_EHCI_IS_TDI 1
+#define CONFIG_LSI_USB 1
+#endif
+
 
 /*
   ==============================================================================
