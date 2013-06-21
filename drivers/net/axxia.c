@@ -100,11 +100,10 @@ board_eth_init(bd_t *bd)
 	}
 
 #if defined(CONFIG_AXXIA_FEMAC)
-
 	/*
 	  Allocate a device structure and clear it.
 	*/
-
+ 
 	device = (struct eth_device *)malloc(sizeof(struct eth_device));
 
 	if (NULL == device) {
@@ -126,7 +125,6 @@ board_eth_init(bd_t *bd)
 	device->recv         = lsi_femac_eth_rx;
 	device->write_hwaddr = lsi_femac_write_hwaddr;
 	eth_register(device);
-
 #elif defined(CONFIG_AXXIA_EIOA)
 #warning "EIOA has not been implemented in the new U-Boot branch."
 #else

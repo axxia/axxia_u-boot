@@ -115,7 +115,6 @@
 #define CONFIG_SYS_PPC4XX_USB_ADDR (IO+0xA0000)
 #define CONFIG_USB_ADDR (IO+0xA0000)
 #define CONFIG_EHCI_IS_TDI 1
-#define CONFIG_LSI_USB 1
 #endif
 #endif
 
@@ -1495,6 +1494,9 @@ void lsi_femac_receive_test(struct eth_device *);
 void acp_eioa_receive_test(struct eth_device *);
 void lsi_femac_loopback_test(struct eth_device *);
 void acp_eioa_loopback_test(struct eth_device *);
+
+int lsi_femac_write_hwaddr(struct eth_device *);
+
 #endif /* __ASSEMBLY__ */
 
 /*

@@ -36,7 +36,7 @@
 #ifndef CONFIG_SPL_BUILD
 
 #define CONFIG_AXXIA_FEMAC
-#define CONFIG_AXXIA_EIOA
+/*#define CONFIG_AXXIA_EIOA*/
 
 #if defined(CONFIG_AXXIA_FEMAC) || defined(CONFIG_AXXIA_EIOA)
 #define CONFIG_AXXIA_NET
