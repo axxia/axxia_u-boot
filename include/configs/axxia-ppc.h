@@ -113,6 +113,7 @@
 #define CONFIG_CMD_EXT2 1
 #define CONFIG_DOS_PARTITION 1
 #define CONFIG_SYS_PPC4XX_USB_ADDR (IO+0xA0000)
+#define CONFIG_USB_ADDR (IO+0xA0000)
 #define CONFIG_EHCI_IS_TDI 1
 #define CONFIG_LSI_USB 1
 #endif
@@ -181,6 +182,8 @@
   ======================================================================
   ======================================================================
 */
+
+#define CONFIG_LSI_NAND
 
 #ifndef __ASSEMBLY__
 #include <linux/mtd/mtd.h>
