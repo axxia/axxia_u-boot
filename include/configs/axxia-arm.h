@@ -213,7 +213,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_DOS_PARTITION 1
 #define CONFIG_USB_ADDR (IO+0x140000)
 #define CONFIG_EHCI_IS_TDI 1
-#define CONFIG_LSI_USB 1
 #endif
 
 
@@ -517,8 +516,6 @@ int ssp_init(int, int);
 #include <config_cmd_default.h>
 
 /* Enabled commands */
-#define CONFIG_CMD_EXT2		/* EXT2 Support                 */
-#define CONFIG_CMD_FAT		/* FAT support                  */
 #if 0
 #define CONFIG_CMD_I2C		/* I2C serial bus support	*/
 #define CONFIG_CMD_MMC		/* MMC support                  */
@@ -651,24 +648,14 @@ void mdio_write( int phy, int reg, unsigned short value );
   ======================================================================
   ======================================================================
 */
-#define CONFIG_LSI_NET
 
 #ifndef __ASSEMBLY__
 extern unsigned char ethernet_address[6];
 #endif
 
-#if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
-#undef CONFIG_LSI_NET
-#endif
-
-#if defined(CONFIG_LSI_NET)
-#define CONFIG_CMD_NET
-#define CONFIG_CMD_DHCP
-#define CONFIG_CMD_PING
 #define APP3XXNIC_RX_BASE  (IO+0x120000)
 #define APP3XXNIC_TX_BASE  (IO+0x121000)
 #define APP3XXNIC_DMA_BASE (IO+0x122000)
-#endif
 
 /*
   ======================================================================
@@ -843,6 +830,8 @@ void lsi_femac_receive_test(struct eth_device *);
 void acp_eioa_receive_test(struct eth_device *);
 void lsi_femac_loopback_test(struct eth_device *);
 void acp_eioa_loopback_test(struct eth_device *);
+
+int lsi_femac_write_hwaddr(struct eth_device *);
 
 #if 0
 int axxia_eth_init(bd_t *);

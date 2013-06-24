@@ -112,9 +112,12 @@
 #define CONFIG_CMD_FAT 1
 #define CONFIG_CMD_EXT2 1
 #define CONFIG_DOS_PARTITION 1
+<<<<<<< HEAD
+=======
+#define CONFIG_SYS_PPC4XX_USB_ADDR (IO+0xA0000)
+>>>>>>> 0505f0dc5e5fd80bbb11e8c9c85a5fd13a935ddd
 #define CONFIG_USB_ADDR (IO+0xA0000)
 #define CONFIG_EHCI_IS_TDI 1
-#define CONFIG_LSI_USB 1
 #endif
 #endif
 
@@ -181,6 +184,8 @@
   ======================================================================
   ======================================================================
 */
+
+#define CONFIG_LSI_NAND
 
 #ifndef __ASSEMBLY__
 #include <linux/mtd/mtd.h>
@@ -849,23 +854,9 @@ int eioa_ethernet_configure(void);
   ======================================================================
 */
 
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_LSI_NET
-
-#if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
-#undef CONFIG_LSI_NET
-#endif
-
-#if defined(CONFIG_LSI_NET)
-#define CONFIG_CMD_NET
-#define CONFIG_CMD_DHCP
 #define APP3XXNIC_RX_BASE  (IO+0x80000)
 #define APP3XXNIC_TX_BASE  (IO+0x81000)
 #define APP3XXNIC_DMA_BASE (IO+0x82000)
-#endif
-
-/*#define CONFIG_LSI_EIOA*/
-#endif	/* CONFIG_SPL_BUILD */
 
 /*
   ======================================================================
@@ -1506,6 +1497,9 @@ void lsi_femac_receive_test(struct eth_device *);
 void acp_eioa_receive_test(struct eth_device *);
 void lsi_femac_loopback_test(struct eth_device *);
 void acp_eioa_loopback_test(struct eth_device *);
+
+int lsi_femac_write_hwaddr(struct eth_device *);
+
 #endif /* __ASSEMBLY__ */
 
 /*
