@@ -38,15 +38,11 @@
   ===============================================================================
 */
 
-#ifndef CONFIG_AXXIA_342X
-#error "GOT HERE!"
-#endif
-
 #if defined(ACP_X1V1)
 #define EP501
-#elif defined(ACP_X1V2)
+#elif defined(CONFIG_AXXIA_344X)
 #define EP501G1
-#elif defined(CONFIG_AXXIA_342X) || defined(ACP_25xx)
+#elif defined(CONFIG_AXXIA_342X) || defined(CONFIG_AXXIA_25xx)
 #define EP501G3
 #else
 #error "Unsupported ACP System Type!"
@@ -246,9 +242,9 @@ set_ecc_mode(lsi_ecc_mode_t new_ecc_mode)
 
 #if defined(ACP_X1V1)
 #define LSI_NAND_PECC_BUSY_MASK	    (1<<25)
-#elif defined(ACP_X1V2) || defined(CONFIG_AXXIA_342X)
+#elif defined(CONFIG_AXXIA_344X) || defined(CONFIG_AXXIA_342X)
 #define LSI_NAND_PECC_BUSY_MASK	    (1<<28)
-#elif defined(ACP_25xx)
+#elif defined(CONFIG_AXXIA_25xx)
 #define LSI_NAND_PECC_BUSY_MASK	    (1<<23)
 #endif
 

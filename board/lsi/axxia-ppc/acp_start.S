@@ -77,7 +77,7 @@ utlb_table:
 #endif
 
 	#; -- -- Local CPU memory -- --
-#if ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	#; Physical Address - 0x0010_0002_0000
 	#; Virtual Address - 0xf0a0_0000
 	#; Size - 64K
@@ -98,7 +98,7 @@ utlb_table:
 #endif
 	
 	#; -- -- ROM -- -- (Note that ROM is writable on ISS)
-#if ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	#; Physical Address - 0x002f_ffff_8000
 	#; Virtual Address - 0xf0b0_0000
 	#; Size - 32K (2 16K chunks)
@@ -130,7 +130,7 @@ utlb_table_end:
 
 _start_acp:
 
-#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+#if defined(CONFIG_AXXIA_25xx) && defined(CONFIG_ACP2)
 	#; ------------------------------------------------------------
 	#; In some cases, the core attempts to prefetch from system
 	#; memory before it has been initialized.  To avoid this,
@@ -426,7 +426,7 @@ acp_relocate:
 
 	#; Determine whether this is a cold or warm reset.
 
-#if defined(ACP_25xx) && !defined(ACP_EMU)
+#if defined(CONFIG_AXXIA_25xx) && !defined(ACP_EMU)
 	#; 2500 Case
 	lis		r23,(DCR_RESET_BASE + 0xe)@h
 	ori		r23,r23,(DCR_RESET_BASE + 0xe)@l
@@ -741,7 +741,7 @@ acp_icache_init:
 
 #ifdef CONFIG_SPL_BUILD
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 
 	lis		r4,CFG_INIT_RAM_ADDR@h
 	ori		r4,r4,CFG_INIT_RAM_ADDR@l
@@ -829,7 +829,7 @@ stackstuff:
 	#; ------------------------------------------------------------
 
 #ifdef CONFIG_ACP2
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	#; Physical Address - 0x0010_0002_0000
 	#; Virtual Address - 0xf0a0_0000
 	#; Size - 64K

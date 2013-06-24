@@ -31,7 +31,7 @@
   ===============================================================================
 */
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 
 static unsigned long
 get_pll(unsigned long prms, unsigned long seldiv)
@@ -176,7 +176,7 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 int
 acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 {
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 	unsigned long mcgc;
 	unsigned long mcgc1;
 	unsigned long prms;
@@ -286,7 +286,7 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 #endif
 }
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 void
 axm2500_pll_check_lock(void)
 {

@@ -23,7 +23,7 @@
 #include <common.h>
 #include <asm/io.h>
 
-#ifndef ACP_25xx
+#ifndef CONFIG_AXXIA_25xx
 
 /*
   ==============================================================================
@@ -441,7 +441,7 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 int
 pciesrio_setcontrol(unsigned long control)
 {
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 	return pciesrio_setcontrol_axm25xx(control);
 #else
 	return pciesrio_setcontrol_acp34xx(control);
@@ -464,7 +464,7 @@ pciesrio_init(unsigned long parameter)
 	int pci_srio_mode;
 	unsigned long control;
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 	control = dcr_read(0xd0f);
 	boot_mode = (control & 0x100) >> 8;
 	pci_srio_select = (control & 0x10) >> 4;
@@ -490,7 +490,7 @@ pciesrio_init(unsigned long parameter)
 		return 0;
 	}
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 
 	/*
 	  For the AXM2500, the three bits (pci_srio_select and

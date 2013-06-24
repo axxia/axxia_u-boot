@@ -51,7 +51,7 @@
 #define ACP_PEI0 1
 #define ACP_PEI1 1
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 #define CONFIG_SYS_PCIE_NR_PORTS 2
 #else
 #define ACP_PEI2 1
@@ -94,7 +94,7 @@
 #define CONFIG_SYS_PCIE1_CFGADDR PCIE1_CONFIG
 #define CONFIG_SYS_PCIE2_CFGADDR PCIE2_CONFIG
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 #define CONFIG_SYS_PCIE_NR_PORTS 2
 #else
 #define CONFIG_SYS_PCIE_NR_PORTS 3
@@ -161,7 +161,7 @@
 #define CONFIG_SYS_MALLOC_LEN (CONFIG_SYS_MALLOC_SIZE)
 
 #ifdef CONFIG_SPL_BUILD
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 #define CFG_INIT_RAM_ADDR   0xf0a24000
 #else
 #define CFG_INIT_RAM_ADDR   0xf0a1fc00
@@ -557,12 +557,12 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_SYS_I2C_MULTI_EEPROMS
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN 1
 #define CONFIG_CMD_EEPROM
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 #define CONFIG_I2C_MULTI_BUS
 #define CONFIG_SYS_MAX_I2C_BUS 2
 #endif
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 #define I2C0 (IO + 0x27000)
 #define I2C1 (IO + 0x28000)
 #else
@@ -622,7 +622,7 @@ unsigned long *get_acp_fdt(int);
 */
 
 #define ACP_MAX_CORES 4
-#if defined(CONFIG_AXXIA_342X) || defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_342X) || defined(CONFIG_AXXIA_25xx)
 #define ACP_NR_CORES 2
 #define OS_GROUP0_DEFAULT "0xd31:0:0x100"
 #else
@@ -835,11 +835,11 @@ int eioa_ethernet_configure(void);
   CONFIG_LIS_SERIAL_FLASH_ENV.
 */
 
-#ifdef ACP_25xx
-#define CONFIG_LSI_SERIAL_FLASH_ENV
+#ifdef CONFIG_AXXIA_25xx
+#define CONFIG_AXXIA_SERIAL_FLASH_ENV
 #endif
 
-#ifndef CONFIG_LSI_SERIAL_FLASH_ENV
+#ifndef CONFIG_AXXIA_SERIAL_FLASH_ENV
 #define CONFIG_LSI_NAND_ENV
 #endif
 
@@ -1006,7 +1006,7 @@ void acp_splash( void );
 
 #define CONFIG_BOARD_RESET 1
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 #define DCR_RESET_BASE 0x1700
 #else
 #define DCR_RESET_BASE 0xe00
@@ -1032,6 +1032,12 @@ void acp_splash( void );
 #ifndef __ASSEMBLY__
 unsigned long get_sysmem_size( void );
 #endif /* __ASSEMBLY__ */
+
+#define CANNED_PHY_REGS_OFFSET  (PARAMETERS_OFFSET + 512)
+#define CANNED_PHY_REGS_ADDRESS (LCM + CANNED_PHY_REGS_OFFSET)
+
+#define CANNED_PHY_REGS_TAG_SAVE 0x53415645
+#define CANNED_PHY_REGS_TAG_PROM 0x50524f4d
 
 /*
   ======================================================================
@@ -1113,7 +1119,7 @@ void mmtest( unsigned long, unsigned long, unsigned long );
 #define TIMER_MIS                      0x14
 #define TIMER_BGLOAD                   0x18
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 #define TIMER0 (IO+0x29000)
 #define TIMER1 (IO+0x29020)
 #define TIMER2 (IO+0x29040)
@@ -1198,7 +1204,7 @@ void mmtest( unsigned long, unsigned long, unsigned long );
 #define MCRVAL (MCR_DTR | MCR_RTS) /* RTS/DTR */
 #define FCRVAL (FCR_FIFO_EN | FCR_RXSR | FCR_TXSR) /* Clear & enable FIFOs */
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 #define UART0_ADDRESS (IO+0x24000)
 #define UART1_ADDRESS (IO+0x25000)
 #else
@@ -1214,7 +1220,7 @@ void mmtest( unsigned long, unsigned long, unsigned long );
   ======================================================================
 */
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 #define SSP (IO+0x22000)
 #else
 #define SSP (IO+0x2000)
@@ -1264,7 +1270,7 @@ int ssp_init(int, int);
   ======================================================================
 */
 
-#if !defined(ACP_25xx)
+#if !defined(CONFIG_AXXIA_25xx)
 #define APB2RC (IO+0xa000)
 #endif
 
@@ -1278,7 +1284,7 @@ int ssp_init(int, int);
   ======================================================================
 */
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 #define MDIO_CONTROL_RD_DATA (IO+0x2a000)
 #define MDIO_STATUS_RD_DATA  (IO+0x2a004)
 #define MDIO_CLK_OFFSET      (IO+0x2a008)
@@ -1304,7 +1310,7 @@ void mdio_write( int phy, int reg, unsigned short value );
   ======================================================================
 */
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 #define GPREG_GPDMA             (IO+0x00)
 #define GPREG_MAC               (IO+0x04)
 #define GPREG_USB               (IO+0x08)
@@ -1338,7 +1344,7 @@ void mdio_write( int phy, int reg, unsigned short value );
   ======================================================================
 */
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 #define CONFIG_LSI_SBB 1
 #ifndef __ASSEMBLY__
 int sbb_verify_image(void *, void *, int);
@@ -1357,7 +1363,7 @@ int sbb_desecure_range(int, void *, size_t);
   ======================================================================
 */
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 #define PCIE0_CONFIG (IO+0x180000)
 #define PCIE1_CONFIG (IO+0x188000)
 #else
@@ -1379,8 +1385,8 @@ int sbb_desecure_range(int, void *, size_t);
 #if defined(NCR_TRACER)
 #undef CONFIG_AXXIA_NAND
 #undef CONFIG_LSI_NAND_ENV
-#undef CONFIG_LSI_SERIAL_FLASH
-#undef CONFIG_LSI_SERIAL_FLASH_ENV
+#undef CONFIG_AXXIA_SERIAL_FLASH
+#undef CONFIG_AXXIA_SERIAL_FLASH_ENV
 #define CONFIG_SYS_NO_FLASH
 #define CONFIG_CMD_ENV
 #define CONFIG_ENV_IS_IN_NVRAM
@@ -1412,9 +1418,9 @@ int sbb_desecure_range(int, void *, size_t);
 #define CONFIG_ENV_RANGE             (512*1024)
 #define CONFIG_ENV_OFFSET_REDUND     (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
 #define CONFIG_ENV_SIZE_REDUND       CONFIG_ENV_SIZE
-#elif defined(CONFIG_LSI_SERIAL_FLASH_ENV)
-#if !defined(CONFIG_LSI_SERIAL_FLASH)
-#error "CONFIG_LSI_SERIAL_FLASH must be defined for CONFIG_LSI_SERIAL_FLASH_ENV"
+#elif defined(CONFIG_AXXIA_SERIAL_FLASH_ENV)
+#if !defined(CONFIG_AXXIA_SERIAL_FLASH)
+#error "CONFIG_AXXIA_SERIAL_FLASH must be defined for CONFIG_AXXIA_SERIAL_FLASH_ENV"
 #endif
 #define CONFIG_ENV_IS_IN_SERIAL_FLASH
 #define CONFIG_REDUNDAND_ENVIRONMENT     1
@@ -1452,7 +1458,7 @@ typedef enum {
 	clock_sys, clock_ppc, clock_ddr, clock_peripheral
 } acp_clock_t;
 int acp_clock_get(acp_clock_t, unsigned long *);
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 void axm2500_pll_check_lock(void);
 #endif
 #endif /* __ASSEMBLY__ */
@@ -1507,7 +1513,7 @@ int lsi_femac_write_hwaddr(struct eth_device *);
   ======================================================================
 */
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 
 /*#define SM_PLL_533_MHZ*/
 
@@ -1517,7 +1523,7 @@ int lsi_femac_write_hwaddr(struct eth_device *);
 
 /*#define PPCPLL_STEP_TEST*/
 
-#endif	/* ACP_25xx */
+#endif	/* CONFIG_AXXIA_25xx */
 
 /*
   ======================================================================
@@ -1569,7 +1575,7 @@ int acp_clock_lock_verify(int, int);
 #define CCR0_DEFAULT 0x01604040
 #define CCR1_DEFAULT 0x00000400
 #define CCR2_DEFAULT 0x04000000
-#elif defined(ACP_25xx)
+#elif defined(CONFIG_AXXIA_25xx)
 #define CCR0_DEFAULT 0x00200000
 #define CCR1_DEFAULT 0x00000000
 #define CCR2_DEFAULT 0x00000000

@@ -68,7 +68,7 @@ extern int dumprx;
 extern int dumptx;
 
 static int port_by_index[] = {1, 2, 3, 4, 9, 10, 11, 12};
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 static int phy_by_index[] = {0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10};
 #else
 static int phy_by_index[] = {0x10, 0x11, 0x12, 0x13, 0x18, 0x19, 0x1a, 0x1b};
@@ -117,7 +117,7 @@ typedef struct {
 	unsigned long mask;
 } ncr_command_t;
 
-#if defined(ACP_X1V2)
+#if defined(CONFIG_AXXIA_344X)
 #include "EIOA344x/mmb.c"
 #include "EIOA344x/vp.c"
 #include "EIOA344x/nca.c"
@@ -127,7 +127,7 @@ typedef struct {
 #include "EIOA342x/vp.c"
 #include "EIOA342x/nca.c"
 #include "EIOA342x/eioa.c"
-#elif defined(ACP_25xx)
+#elif defined(CONFIG_AXXIA_25xx)
 #include "EIOA25xx/mmb.c"
 #include "EIOA25xx/vp.c"
 #include "EIOA25xx/nca.c"
@@ -138,7 +138,7 @@ typedef struct {
 #error "EIOA is not defined for this architecture!"
 #endif
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 /*
   ------------------------------------------------------------------------------
   ncp_1d1_read
@@ -251,7 +251,7 @@ ncp_dev_reset(void)
 	  Reset Modules
 	*/
 
-#if defined(ACP_X1V2)
+#if defined(CONFIG_AXXIA_344X)
 	dcr_write(0xcc700000, (DCR_RESET_BASE + 2));
 	udelay(10000);
 	dcr_write(0, (DCR_RESET_BASE + 2));
@@ -261,7 +261,7 @@ ncp_dev_reset(void)
 	udelay(10000);
 	dcr_write(0, (DCR_RESET_BASE + 2));
 	udelay(10000);
-#elif defined(ACP_25xx)
+#elif defined(CONFIG_AXXIA_25xx)
 	/*
 	  Enable protected writes.
 	*/
@@ -305,7 +305,7 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 		*value = readl(command->offset);
 
 		return 0;
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	} else if(0x1d1 == NCP_NODE_ID(command->region)) {
 		return ncp_1d1_read(command, value);
 #endif
@@ -396,7 +396,7 @@ ncp_dev_do_write(ncr_command_t *command)
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
 		out_be32((volatile unsigned *)command->offset, command->value);
 		flush_cache(command->offset, 4);
-#ifndef ACP_25xx
+#ifndef CONFIG_AXXIA_25xx
 	} else if (NCP_REGION_ID(0x148, 0) == command->region) {
 		out_le32((volatile unsigned *)(APB2RC + command->offset),
 			 command->value);
@@ -978,7 +978,7 @@ line_setup(int index)
 		NCR_CALL(ncr_modify32(gmacRegion, 0x330 + gmacPortOffset,
 				      0x3f, 0x09));
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	mdio_write(phy_by_index[index], 0x17, 0x2000);
 	mdio_write(phy_by_index[index], 0x1b, 0x7000);
 	mdio_write(phy_by_index[index], 0x00, 0x8000);
@@ -1086,7 +1086,7 @@ initialize_task_lite(void)
 						     rx_buffers[i], 3);
 	}
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	if (0 != ncp_dev_configure(timer)) {
 		WARN_PRINT("TIMER Configuration Failed\n");
 		return -1;

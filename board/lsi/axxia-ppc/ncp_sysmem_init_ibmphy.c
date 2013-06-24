@@ -925,7 +925,7 @@ delay_table_t delay_table_sm0[] = {
 	{0x72, 0x1}, {0xc3, 0x1}, {0x114, 0x1},	{0x165, 0x1}
 };
 
-#if defined(ACP_X1V1) || defined(ACP_X1V2)
+#if defined(ACP_X1V1) || defined(CONFIG_AXXIA_344X)
 
 delay_table_t delay_table_sm1[] = {
 	{0xf, 0x6}, {0x1a, 0x3}, {0x18, 0x4}, {0x5, 0x6}, {0x16, 0x4},
@@ -1002,7 +1002,7 @@ delay_table_t delay_table_sm1[] = {
 	{0x72, 0x2}, {0xc3, 0x2}, {0x114, 0x2}, {0x165, 0x2}
 };
 
-#endif /* ACP_X1V1 || ACP_X1V2 */
+#endif /* ACP_X1V1 || CONFIG_AXXIA_344X */
 
 #endif
 
@@ -2301,7 +2301,7 @@ ncp_sysmem_init_ibmphy(
 		delay_table_size = sizeof(delay_table_v1_533) /
 			sizeof(delay_table_t);
 #else
-#if defined(ACP_X1V1) || defined(ACP_X1V2)
+#if defined(ACP_X1V1) || defined(CONFIG_AXXIA_344X)
 		if (0 == smId) {
 			delay_table = delay_table_sm0;
 			delay_table_size = sizeof(delay_table_sm0) /

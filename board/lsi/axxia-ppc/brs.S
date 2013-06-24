@@ -63,7 +63,7 @@ utlb_table:
 	.long		0x80000000,0xf0900870,0x00500020,0x00030507
 #endif
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	#; Physical Address - 0x0010_0002_0000
 	#; Virtual Address - 0xf0a0_0000
 	#; Size - 64K

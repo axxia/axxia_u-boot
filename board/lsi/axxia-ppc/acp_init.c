@@ -23,14 +23,14 @@
 #include <common.h>
 #include <asm/io.h>
 
-#if defined (ACP_X1V2) | defined (CONFIG_AXXIA_342X)
+#if defined (CONFIG_AXXIA_344X) | defined (CONFIG_AXXIA_342X)
 #include "regs/ncp_denali_regs.h"
 #include "regs/ncp_denali_reg_defines.h"
 #include "regs/ncp_phy_regs.h"
 #include "regs/ncp_phy_reg_defines.h"
 #endif
 
-#if defined (ACP_25xx) 
+#if defined (CONFIG_AXXIA_25xx) 
 #include "regs/ncp_denali_regs_acp2500.h"
 #include "regs/ncp_denali_reg_defines_acp2500.h"
 #include "regs/ncp_phy_regs_acp2500.h"
@@ -80,7 +80,7 @@ typedef struct {
 } __attribute__((packed)) parameters_voltage_t;
 
 typedef struct {
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	unsigned long syspll_prms;
 	unsigned long syspll_ctrl;
 	unsigned long syspll_mcgc;
@@ -289,7 +289,7 @@ fill_sysmem(unsigned long long address, unsigned long long size,
 	return;
 }
 
-#ifndef ACP_25xx
+#ifndef CONFIG_AXXIA_25xx
 
 /*
   ----------------------------------------------------------------------
@@ -512,7 +512,7 @@ voltage_init(void)
 
 #endif
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 
 /*
   ------------------------------------------------------------------------------
@@ -1076,10 +1076,10 @@ clocks_init( void )
 #include "sysmem_emulation.c"
 #else
 #include "sysmem_asic_common.c"
-#if defined (ACP_X1V2) || defined (CONFIG_AXXIA_342X)
+#if defined (CONFIG_AXXIA_344X) || defined (CONFIG_AXXIA_342X)
 #include "ncp_sysmem_init_ibmphy.c"
 #endif
-#if defined (ACP_25xx) 
+#if defined (CONFIG_AXXIA_25xx) 
 #include "ncp_sysmem_init_lsiphy.c"
 #endif
 #endif
@@ -1090,11 +1090,11 @@ clocks_init( void )
 #define INT_STATUS_OFFSET 0x16c
 #define BIST_COMPLETION 0x200
 #define ECC_ERROR_MASK 0x3c
-#elif defined(ACP_X1V2) || defined(CONFIG_AXXIA_342X)
+#elif defined(CONFIG_AXXIA_344X) || defined(CONFIG_AXXIA_342X)
 #define INT_STATUS_OFFSET 0x16c
 #define BIST_COMPLETION 0x400
 #define ECC_ERROR_MASK 0x78
-#elif defined(ACP_25xx)
+#elif defined(CONFIG_AXXIA_25xx)
 #define INT_STATUS_OFFSET 0x410
 #define BIST_COMPLETION 0x800
 #define ECC_ERROR_MASK 0x78
@@ -1112,7 +1112,7 @@ acp_sysmem_bist_failure(unsigned long region)
 	unsigned long value;
 	unsigned long offsets [] =
 	  { 0x248, 0x24c,
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	    0x418, 0x41c, 0x420, 0x424, 0x428, 0x42c, 0x430, 0x434,
 	    0x438, 0x43c, 0x440, 0x444, 0x448, 0x44c, 0x450, 0x454
 #else
@@ -1198,7 +1198,7 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 	ncr_write32( region, 0x254, 0 );
 
 	/* Program the data mask. */
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 	ncr_write32( region, 0x3f8, 0 );
 	ncr_write32( region, 0x3fc, 0 );
 	ncr_write32( region, 0x400, 0 );
@@ -1230,7 +1230,7 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 	}
 
 	/* Erase the interrupt status from the previous run. */
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 	ncr_or( region, 0x164, 0x200 );
 #else
 	ncr_or( region, 0x164, 0x600 );
@@ -1537,7 +1537,7 @@ acp_init( void )
 	  =======
 	*/
 
-#ifndef ACP_25xx
+#ifndef CONFIG_AXXIA_25xx
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE ) ) {
 		if( 0 != ( returnCode = voltage_init( ) ) ) {
@@ -1582,7 +1582,7 @@ acp_init( void )
 		serial_early_init( );
 	}
 
-#if defined(ACP_25xx) && !defined(ACP_EMU)
+#if defined(CONFIG_AXXIA_25xx) && !defined(ACP_EMU)
 	axm2500_pll_check_lock();
 #endif
 
@@ -1684,7 +1684,7 @@ acp_init( void )
 	/*
 	  Force all speculative collisions to be true collisions (L2)
 	*/
-#if !defined(ACP_ISS) && defined(ACP_X1V2)
+#if !defined(ACP_ISS) && defined(CONFIG_AXXIA_344X)
 	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_L2_FTC)) ||
 	    (0 != (global->flags & PARAMETERS_GLOBAL_SET_L2_DISABLE_SL))) {
 		unsigned long mask = 0;

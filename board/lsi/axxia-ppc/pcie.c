@@ -12,7 +12,7 @@
 #include <asm/4xx_pcie.h>
 #endif
 
-#if defined (ACP_25xx)
+#if defined (CONFIG_AXXIA_25xx)
 #include "regs/ncp_denali_regs_acp2500.h"
 #include "regs/ncp_denali_reg_defines_acp2500.h"
 #include "regs/ncp_phy_regs_acp2500.h"
@@ -69,7 +69,7 @@ static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
 		/* v1 only supports fn=0 */
 		if (fn)
 			return NULL;
-#elif defined(ACP_X1V2) || defined(CONFIG_AXXIA_342X)
+#elif defined(CONFIG_AXXIA_344X) || defined(CONFIG_AXXIA_342X)
 		/* v2 only supports fn0-3 and bus0-63 */
 		if ((fn > 3) || (PCI_BUS(devfn) > 63)) 
 			return NULL;
@@ -91,7 +91,7 @@ static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
 		(cfg_type << 5);
 
 		/* the function number moved for X2 */
-#if defined(ACP_X1V1) || defined(ACP_X1V2)
+#if defined(ACP_X1V1) || defined(CONFIG_AXXIA_344X)
 		mpage |= 0x11;	/* enable MPAGE for configuration access */
 		mpage |= (fn << 17);
 #else
@@ -363,7 +363,7 @@ int pci_476_init (struct pci_controller *hose, int port)
 
 	switch (port) {
 		case 0:
-#if defined (ACP_25xx)
+#if defined (CONFIG_AXXIA_25xx)
 			ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &registers);
 			if (registers & 0x400001) {
 				/* PEI0 RC mode */
@@ -383,7 +383,7 @@ int pci_476_init (struct pci_controller *hose, int port)
 			phys_start = CONFIG_PCIE0_PHY_START;
 			break;
         case 1:
-#if defined (ACP_25xx)
+#if defined (CONFIG_AXXIA_25xx)
 			ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &registers);
 			if (registers & 0x2) {
 				/* PEI1 enabled */
@@ -457,7 +457,7 @@ int pci_476_init (struct pci_controller *hose, int port)
 	 * this bit didn't exist in X1V1, and means something
 	 * else for X2...
 	 */
-#if defined (ACP_X1V2)
+#if defined (CONFIG_AXXIA_344X)
 	/* set up AXI_INTERFACE_RDY */
 	pci_config = in_le32(mbase + 0x1000);
 	out_le32(mbase + 0x1000, pci_config|0x40000);
@@ -483,7 +483,7 @@ int pci_476_init (struct pci_controller *hose, int port)
 	num_pages = ( (size - 1) >> 27) + 1;
 	for (i = 0; i < num_pages; i++) {
 		mpage_lower = (pcial & 0xf8000000); 
-#if defined(ACP_X1V1) || defined(ACP_X1V2)
+#if defined(ACP_X1V1) || defined(CONFIG_AXXIA_344X)
 		mpage_lower |= 1;
 #endif
 		out_le32( mbase + ACPX1_PCIE_MPAGE_UPPER(i), pciah);
@@ -661,7 +661,7 @@ void pci_init_board(void)
 	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
 
 	word0 = 0x40000000 | 0x9f0;
-#if defined (ACP_25xx)
+#if defined (CONFIG_AXXIA_25xx)
 	word1 = 0x80000020;
 #else
 	word1 = 0xc0000020;
@@ -679,7 +679,7 @@ void pci_init_board(void)
 			"memory" );
 
 	word0 = 0x50000000 | 0x8f0;
-#if defined (ACP_25xx)
+#if defined (CONFIG_AXXIA_25xx)
 	word1 = 0xb8000020;
 #else
 	word1 = 0xf8000020;

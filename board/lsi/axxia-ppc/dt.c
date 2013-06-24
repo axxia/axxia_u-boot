@@ -30,7 +30,7 @@
 #if defined(ACP_ISS)
 #if defined(ACP_X1V1)
 #include "dtb/ACPISS344xV1.h"
-#elif defined(ACP_X1V2)
+#elif defined(CONFIG_AXXIA_344X)
 #include "dtb/ACPISS344xV2.h"
 #elif defined(CONFIG_AXXIA_342X)
 #include "dtb/ACPISS342x.h"
@@ -39,11 +39,11 @@
 #endif
 #elif defined(ACP_X1V1)
 #include "dtb/ACP344xV1.h"
-#elif defined(ACP_X1V2)
+#elif defined(CONFIG_AXXIA_344X)
 #include "dtb/ACP344xV2.h"
 #elif defined(CONFIG_AXXIA_342X)
 #include "dtb/ACP342x.h"
-#elif defined(ACP_25xx)
+#elif defined(CONFIG_AXXIA_25xx)
 #include "dtb/ACP25xx.h"
 #endif
 
