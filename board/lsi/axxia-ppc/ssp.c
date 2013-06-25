@@ -181,7 +181,7 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 		ssp_select_device();
 		rc |= ssp_write_device(2, NULL);
 
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 		if (0 != is_flash) {
 			rc |= ssp_write_device((offset & 0x00ff0000) >> 16,
 					       NULL);
@@ -193,7 +193,7 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 			rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
 			rc |= ssp_write_device(offset & 0xff, NULL);
 #endif
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 		}
 #endif
 
@@ -237,7 +237,7 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 	return 0;
 }
 
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 
 /*
   ------------------------------------------------------------------------------
@@ -353,7 +353,7 @@ serial_flash_erase(unsigned long offset, unsigned long length)
 	return 0;
 }
 
-#endif /* defined(CONFIG_LSI_SERIAL_FLASH) */
+#endif /* defined(CONFIG_AXXIA_SERIAL_FLASH) */
 
 /*
   ======================================================================
@@ -377,7 +377,7 @@ ssp_read(void *buffer, unsigned long offset, unsigned long length)
 	ssp_select_device();
 	rc = ssp_write_device(3, NULL);
 
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	if (0 != is_flash) {
 		rc |= ssp_write_device((offset & 0x00ff0000) >> 16, NULL);
 		rc |= ssp_write_device((offset & 0x0000ff00) >> 8, NULL);
@@ -388,7 +388,7 @@ ssp_read(void *buffer, unsigned long offset, unsigned long length)
 		rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
 		rc |= ssp_write_device(offset & 0xff, NULL);
 #endif
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	}
 #endif
 
@@ -445,7 +445,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 		ssp_select_device();
 		rc = ssp_write_device(3, NULL);
 
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 		if (0 != is_flash) {
 			rc |= ssp_write_device((voffset & 0x00ff0000) >> 16,
 					       NULL);
@@ -459,7 +459,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 			rc |= ssp_write_device((voffset & 0xff00 ) >> 8, NULL);
 			rc |= ssp_write_device(voffset & 0xff, NULL);
 #endif
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 		}
 #endif
 
@@ -488,7 +488,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 int
 ssp_init(int input_device, int input_read_only)
 {
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	int rc;
 	int i;
 	unsigned char value[3];
@@ -508,7 +508,7 @@ ssp_init(int input_device, int input_read_only)
 
 	read_only = 0;
 
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	/*
 	  In order to write, decide if this is EEPROM or serial flash.
 	*/

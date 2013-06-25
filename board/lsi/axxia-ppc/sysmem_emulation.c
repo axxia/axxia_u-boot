@@ -38,7 +38,7 @@
 #if defined(SYSCACHE_ACP3) || defined(SYSCACHE_ACP2)
 #warning "Overriding the default System Cache Version!"
 #else
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 #define SYSCACHE_ACP2
 #else
 #define SYSCACHE_ACP3
@@ -53,7 +53,7 @@ unsigned long sc_nodes[] = {0x20, 0x1e, 0x21, 0x1d, 0x11, 0x12, 0x10, 0x13};
 #if defined(SYSMEM_ACP3) || defined(SYSMEM_ACP2)
 #warning "Overriding the default System Memory Version!"
 #else
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 #define SYSMEM_ACP2
 #else
 #define SYSMEM_ACP3
@@ -145,7 +145,7 @@ initialize_syscache(int sm_version, int sc_version, int num_sc_nodes)
 
 #else
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	/*
 	  Per BZ38847, the munge value for 2500 is 0x106, if there are
 	  4 syscache nodes.

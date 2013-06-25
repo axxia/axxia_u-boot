@@ -24,14 +24,12 @@
  * MA 02111-1307 USA
  */
 
-/*#define LSI_DEBUG*/
-#define LSI_WARN
-/*#define LSI_LOGIO*/
 #include <config.h>
 
-#if defined(CONFIG_ACP) && defined(ACP_25xx)
+#if defined(CONFIG_ACP) && defined(CONFIG_AXXIA_25xx)
 
 #include <common.h>
+#include <asm/io.h>
 
 /*
   ===============================================================================
@@ -184,10 +182,6 @@ verify_sbb_enabled(void)
 		return -1;
 	}
 
-	if (LSI_LOGIO_ENABLED()) {
-		printf("Export Security Disable is not set.\n");
-	}
-
 	/* Secure Boot Enable Bit. */
 	memset((void *)fuses, 0, sizeof(unsigned long) * 8);
 
@@ -199,10 +193,6 @@ verify_sbb_enabled(void)
 	if (0 == (fuses[0] & 0x8)) {
 		printf("Secure Boot Enable is NOT SET!\n");
 		return -1;
-	}
-
-	if (LSI_LOGIO_ENABLED()) {
-		printf("Secure Boot Enable is set.\n");
 	}
 
 #if 0
@@ -280,7 +270,7 @@ lock_sbb(void)
 {
 	unsigned long value;
 
-	value = READL(SBB_BASE + 0x800);
+	value = readl(SBB_BASE + 0x800);
 
 	if (0 == value)
 		return -1;
@@ -296,7 +286,7 @@ lock_sbb(void)
 static void
 unlock_sbb(void)
 {
-	WRITEL(0xffffffff, (SBB_BASE + 0x800));
+	writel(0xffffffff, (SBB_BASE + 0x800));
 }
 
 static int
@@ -422,23 +412,20 @@ run_sbb_function(int function,
 
 	/* Write the input parameters. */
 	for (i = 0; i < number_of_parameters; ++i) {
-		WRITEL(parameters[i], (SBB_BASE + 0x838 + (i * 4)));
+		writel(parameters[i], (SBB_BASE + 0x838 + (i * 4)));
 	}
 
 	/* Clear the interrupt status registers. */
-	WRITEL(0xffffffff, (SBB_BASE + 0xa04));
+	writel(0xffffffff, (SBB_BASE + 0xa04));
 
 	/* Write the function. */
-	WRITEL(function, (SBB_BASE + 0x804));
+	writel(function, (SBB_BASE + 0x804));
 
-	if (function != READL(SBB_BASE + 0x804))
+	if (function != readl(SBB_BASE + 0x804))
 		return -1;
 
 	/* Wait for the "done" bit. */
-	value = READL(SBB_BASE + 0xa04);
-
-	if (LSI_LOGIO_ENABLED())
-		printf("Skipping read logging while waiting for done...\n");
+	value = readl(SBB_BASE + 0xa04);
 
 	while (0 == (value & 1)) {
 		udelay(1000);
@@ -450,9 +437,6 @@ run_sbb_function(int function,
 
 		value = readl(SBB_BASE + 0xa04);
 	}
-
-	if (LSI_LOGIO_ENABLED())
-		printf("DONE: 0ax04 contained 0x%08lx\n", value);
 
 	/* Release the semaphore. */
 	unlock_sbb();
@@ -584,14 +568,14 @@ sbb_desecure_range(int region, void *address, size_t size)
 		++tzc_size_field;
 	}
 
-	WRITEL(tzc_address,
+	writel(tzc_address,
 	       (TZC_BASE + 0x100 + (0x10 * region)));
-	WRITEL(0,
+	writel(0,
 	       (TZC_BASE + 0x104 + (0x10 * region)));
-	WRITEL(0xf0000001 | (tzc_size_field << 1),
+	writel(0xf0000001 | (tzc_size_field << 1),
 	       (TZC_BASE + 0x108 + (0x10 * region)));
 
 	return 0;
 }
 
-#endif /* CONFIG_ACP && ACP_25xx */
+#endif /* CONFIG_ACP && CONFIG_AXXIA_25xx */

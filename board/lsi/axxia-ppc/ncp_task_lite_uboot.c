@@ -1185,7 +1185,7 @@ NCP_RETURN_LABEL
 /* 
  * Use for ACP2500 and later
  */
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 ncp_st_t
 ncp_dev_nca_program_rxPoolFifoRange(ncp_dev_hdl_t dev, 
                             ncp_uint8_t poolId,
@@ -1278,7 +1278,7 @@ ncp_task_lite_uboot_config(ncp_dev_t   *dev)
      * <<<=== Start NCA Hardware Initialization ===>>> 
      */ 
     
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
     {  
         int poolId;
         for (poolId=0; poolId<6; poolId++)
@@ -1307,7 +1307,7 @@ ncp_task_lite_uboot_config(ncp_dev_t   *dev)
                                             1024,
                                             2048));    
     
-#ifdef ACP_25xx  
+#ifdef CONFIG_AXXIA_25xx  
     {    
         NCP_CALL_LITE(ncp_dev_nca_program_rxPoolFifoRange(dev, 
                 (ncp_uint8_t)0, /* Pool Id */

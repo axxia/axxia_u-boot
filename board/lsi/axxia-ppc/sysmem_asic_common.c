@@ -21,7 +21,7 @@
  */
 
 #include <common.h>
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 #include "ncp_sysmem_lsiphy.h"
 extern ncp_st_t ncp_sysmem_init_lsiphy(ncp_dev_hdl_t, ncp_uint32_t, ncp_sm_parms_t *);
 #else
@@ -44,10 +44,10 @@ typedef parameters_sysmem_t     ncp_sm_parms_t;
 #if defined(ACP_X1V1)
 #define INT_STATUS_OFFSET 0x16c
 #define ECC_ERROR_MASK 0x3c
-#elif defined(ACP_X1V2) || defined(CONFIG_AXXIA_342X)
+#elif defined(CONFIG_AXXIA_344X) || defined(CONFIG_AXXIA_342X)
 #define INT_STATUS_OFFSET 0x16c
 #define ECC_ERROR_MASK 0x78
-#elif defined(ACP_25xx)
+#elif defined(CONFIG_AXXIA_25xx)
 #define INT_STATUS_OFFSET 0x410
 #define ECC_ERROR_MASK 0x78
 #endif
@@ -310,7 +310,7 @@ sysmem_init(void)
 	 */
 	num_sc_nodes = sysmem->num_interfaces * 4;
 
-#if defined (ACP_X1V1) || defined (ACP_X1V2)
+#if defined (ACP_X1V1) || defined (CONFIG_AXXIA_344X)
 	if (sysmem->num_interfaces == 1) {
 		sysmem->half_mem = 1;
 	}
@@ -341,7 +341,7 @@ sysmem_init(void)
 	 * sysmem init goes here!! 
 	 */
 	for (i = 0; i < sysmem->num_interfaces; i++) {
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 		ncr_sysmem_init_mode_enable();
 		rc = ncp_sysmem_init_lsiphy(NULL, i, sysmem);
 		ncr_sysmem_init_mode_disable();
@@ -356,7 +356,7 @@ sysmem_init(void)
 		  acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		}
 #else
-#if defined (ACP_X1V2) || defined (CONFIG_AXXIA_342X)
+#if defined (CONFIG_AXXIA_344X) || defined (CONFIG_AXXIA_342X)
 		ncp_sysmem_init_ibmphy(NULL, i, sysmem);
 #endif
 #endif
@@ -465,7 +465,7 @@ sysmem_init(void)
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		break;
 	}
-#elif defined(ACP_X1V2) || defined(CONFIG_AXXIA_342X) || defined(ACP_25xx)
+#elif defined(CONFIG_AXXIA_344X) || defined(CONFIG_AXXIA_342X) || defined(CONFIG_AXXIA_25xx)
 	value = ( 1 << ( sysmem_size - 20 ) ) / num_sc_nodes;
 
 	switch( value ) {
@@ -565,7 +565,7 @@ sysmem_init(void)
 	}
 
 	/* Disable some speculative reads. */
-#if defined(ACP_X1V1) || defined(ACP_X1V2) || defined(CONFIG_AXXIA_342X)
+#if defined(ACP_X1V1) || defined(CONFIG_AXXIA_344X) || defined(CONFIG_AXXIA_342X)
 	if (sysmem->half_mem)
 		dcr_write( 0x3377c800, 0xf00 );
 	else
@@ -594,7 +594,7 @@ sysmem_init(void)
 	}
 
 	/* WA for 34575 (applies to X1V2 and X2). */
-#if defined(ACP_X1V2) || defined(CONFIG_AXXIA_342X)
+#if defined(CONFIG_AXXIA_344X) || defined(CONFIG_AXXIA_342X)
 	dcr_write(0, 0xf1f);
 #endif
 

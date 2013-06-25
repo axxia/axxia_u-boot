@@ -655,12 +655,12 @@ axxia_init_f( void )
 #if defined(CONFIG_ACP3)
 	unsigned long cold_start;
 #endif
-#if !defined(ACP_25xx)
+#if !defined(CONFIG_AXXIA_25xx)
 	unsigned long l2version;
 	unsigned long l2revision;
 #endif
 
-#if defined(ACP_25xx) && defined(CONFIG_ACP2) && defined(RESET_INSTEAD_OF_IPI)
+#if defined(CONFIG_AXXIA_25xx) && defined(CONFIG_ACP2) && defined(RESET_INSTEAD_OF_IPI)
 	/*
 	  Disable core 1.
 
@@ -699,7 +699,7 @@ axxia_init_f( void )
 	*/
 
 	/* Is this a cold reset? */
-#if defined(ACP_25xx) && !defined(ACP_EMU)
+#if defined(CONFIG_AXXIA_25xx) && !defined(ACP_EMU)
 	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
@@ -733,7 +733,7 @@ axxia_init_f( void )
 		void *source[] = {
 			(void *)&_core_copy_core0,
 			(void *)&_core_copy_core1,
-#if !defined(CONFIG_AXXIA_342X) || !defined(ACP_25xx)
+#if !defined(CONFIG_AXXIA_342X) || !defined(CONFIG_AXXIA_25xx)
 			(void *)&_core_copy_core2,
 			(void *)&_core_copy_core3
 #endif
@@ -760,7 +760,7 @@ axxia_init_f( void )
 	  All versions of the L2 before 1.4 are affected.
 	*/
 
-#ifndef ACP_25xx
+#ifndef CONFIG_AXXIA_25xx
 	dcr_write(0xc, 0x300);	/* 0x300 is L2[0] on 34xx */
 	l2version = dcr_read(0x304);
 	l2revision = l2version & 0xff;
@@ -1308,7 +1308,7 @@ axxia_init_r( void )
 	int group;
 	unsigned long cold_start;
 	unsigned char *buf;
-#if defined(ACP_25xx) && !defined(ACP_ISS) && defined(CONFIG_ACP2)
+#if defined(CONFIG_AXXIA_25xx) && !defined(ACP_ISS) && defined(CONFIG_ACP2)
 	unsigned long *phyRegs = (unsigned long *)CANNED_PHY_REGS_ADDRESS;
 #endif
 
@@ -1316,7 +1316,7 @@ axxia_init_r( void )
 
 	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
 
-#if defined(ACP_25xx) && !defined(ACP_EMU)
+#if defined(CONFIG_AXXIA_25xx) && !defined(ACP_EMU)
 	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
@@ -1371,7 +1371,7 @@ axxia_init_r( void )
 #endif
 #endif
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	/*
 	  On the 2500, IO pins get shared.  To use the FEMAC, the pins
 	  must be connected.  So, connect the pins.
@@ -1434,7 +1434,7 @@ axxia_init_r( void )
 			env_save = 1;
 		}
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 
 		/*
 		 * check if LCM has an updated set of sysmem PHY registers
@@ -1541,7 +1541,7 @@ axxia_init_r( void )
 
 #ifdef CONFIG_ACP3
 	/* Clear the Reset Status Register. */
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	dcr_write(0xf, (DCR_RESET_BASE + 0xe));
 	dcr_write(0x3, (DCR_RESET_BASE + 0x8));
 	dcr_write(0x3, (DCR_RESET_BASE + 0x6));
@@ -1616,7 +1616,7 @@ axxia_init_r( void )
 	serial_init();
 	acp_splash();
 
-#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+#if defined(CONFIG_AXXIA_25xx) && defined(CONFIG_ACP2)
 	{
 		int rc;
 		unsigned long ncp_denali_ctl_20;
@@ -1708,7 +1708,7 @@ axxia_init_r( void )
 		group = acp_osg_get_group(core);
 #endif
 
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 		control = dcr_read(0xd0f);
 		boot_mode = (control & 0x100) >> 8;
 		if (0 != ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &control)) {
@@ -1750,7 +1750,7 @@ axxia_init_r( void )
 #endif
 
 		if (0 == boot_mode && 1 == pci_rc) {
-#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+#if defined(CONFIG_AXXIA_25xx) && defined(CONFIG_ACP2)
 			{
 				char * env_value;
 				unsigned long pciStatus, linkState;

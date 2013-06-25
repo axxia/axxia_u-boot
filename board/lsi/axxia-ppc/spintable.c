@@ -178,7 +178,7 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 	debug("Changing core %d spintable state.\n", core);
 	acp_osg_set_spintable_state(core, ACP_OSG_SPINTABLE_AVAILABLE);
 
-#if defined(ACP_25xx) && defined(RESET_INSTEAD_OF_IPI)
+#if defined(CONFIG_AXXIA_25xx) && defined(RESET_INSTEAD_OF_IPI)
 	/* Enable L2 1 and Core 1 */
 	{
 		unsigned temp;
@@ -191,7 +191,7 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 		dcr_write(0x0, (DCR_RESET_BASE + 1));
 	}
 #else
-#if defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_25xx)
 	/* Wake up the L2 */
 	dcr_write(0x84, 0x300 + (0x100 * core));
 	dcr_write(0, 0x304 + (0x100 * core));

@@ -38,7 +38,7 @@ acp_reset(int argc, char *argv[])
 	unsigned long value;
 #endif
 
-#if !defined(CONFIG_SPL_BUILD) && defined(ACP_25xx) && defined(WA_BZ42743)
+#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_AXXIA_25xx) && defined(WA_BZ42743)
 	value = dcr_read(0xd00);
 	value |= 0xab;
 	dcr_write(value, 0xd00);
@@ -85,7 +85,7 @@ acp_reset(int argc, char *argv[])
 			  Chip Reset -- ?
 			*/
 			printf("Chip Reset\n");
-#if defined(ACP_25xx) && defined(WA_BZ42743)
+#if defined(CONFIG_AXXIA_25xx) && defined(WA_BZ42743)
 			dcr_write(2, DCR_RESET_BASE);
 #else
 			mtspr(dbcr0, 0x20000000);
@@ -95,7 +95,7 @@ acp_reset(int argc, char *argv[])
 
 	/* Default is a System Reset. */
 	printf("System Reset\n");
-#if defined(ACP_25xx) && defined(WA_BZ42743)
+#if defined(CONFIG_AXXIA_25xx) && defined(WA_BZ42743)
 	dcr_write(1, DCR_RESET_BASE);
 #else
 	mtspr(dbcr0, 0x30000000);

@@ -1702,7 +1702,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	/*
 	  Set the zone to allow access by non-secure masters (the FEMAC).
 	*/
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	if (0 != sbb_desecure_range(1, memory, memory_needed)) {
 	  printf("sbb_desecure_range() failed!\n");
 	}
@@ -3974,7 +3974,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	/*
 	  Set the zone to allow access by non-secure masters (the FEMAC).
 	*/
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	if (0 != sbb_desecure_range(1, memory, memory_needed)) {
 	  printf("sbb_desecure_range() failed!\n");
 	}

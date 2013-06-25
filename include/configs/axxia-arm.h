@@ -891,7 +891,7 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_ENV_IS_NOWHERE
 #endif
 
-#define CONFIG_LSI_SERIAL_FLASH_ENV
+#define CONFIG_AXXIA_SERIAL_FLASH_ENV
 #define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
 #define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
 

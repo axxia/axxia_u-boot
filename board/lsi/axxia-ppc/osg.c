@@ -378,7 +378,7 @@ acp_osg_group_get_res(int group, acp_osg_group_res_t res)
 	case ACP_OS_PCIE1:
 		rv = PCIE1(acp_osg_group->flags);
 		break;
-#ifndef ACP_25xx
+#ifndef CONFIG_AXXIA_25xx
 	case ACP_OS_PCIE2:
 		rv = PCIE2(acp_osg_group->flags);
 		break;
@@ -460,7 +460,7 @@ acp_osg_group_set_res(int group, acp_osg_group_res_t res, unsigned long value)
 		acp_osg_groups[group]->flags |=
 			((value << PCIE1_SHIFT) & PCIE1_MASK);
 		break;
-#ifndef ACP_25xx
+#ifndef CONFIG_AXXIA_25xx
 	case ACP_OS_PCIE2:
 		acp_osg_groups[group]->flags &= ~PCIE2_MASK;
 		acp_osg_groups[group]->flags |=
@@ -541,7 +541,7 @@ acp_osg_is_boot_core(int core)
 	if (SYSTEM_BOOTCORE == core)
 		return 1;
 
-#if defined(CONFIG_AXXIA_342X) || defined(ACP_25xx)
+#if defined(CONFIG_AXXIA_342X) || defined(CONFIG_AXXIA_25xx)
 	if ((0 != ((1 << core) & BOOT(acp_osg_groups[0]->flags))) ||
 	    (0 != ((1 << core) & BOOT(acp_osg_groups[1]->flags)))) {
 		return 1;
@@ -943,7 +943,7 @@ acp_osg_update_dt(void *input, int group)
 		}
 	}
 
-#ifndef ACP_25xx
+#ifndef CONFIG_AXXIA_25xx
 
 	if (0 != acp_osg_group_get_res(group, ACP_OS_PCIE2)) {
 		int nodeoffset;
@@ -1018,7 +1018,7 @@ acp_osg_update_dt(void *input, int group)
 	if (0 != rc)
 		return -1;
 
-#ifdef ACP_25xx
+#ifdef CONFIG_AXXIA_25xx
 	/* SBB */
 	if (0 != acp_osg_group_get_res(group, ACP_OS_SBB)) {
 		value = 1;
