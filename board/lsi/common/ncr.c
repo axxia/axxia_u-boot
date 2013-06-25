@@ -215,7 +215,7 @@ ncr_trace_poll(region, loops, delay, offset, mask, value); } \
 typedef union {
 	unsigned long raw;
 	struct {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#ifndef NCP_BIG_ENDIAN
 		unsigned long dbs                 : 16;
 		unsigned long cmd_type            : 4;
 		unsigned long cfg_cmpl_int_enable : 1;
@@ -249,7 +249,7 @@ typedef union {
 typedef union {
 	unsigned long raw;
 	struct {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#ifndef NCP_BIG_ENDIAN
 		unsigned long target_id_address_upper : 8;
 		unsigned long target_node_id          : 8;
 		unsigned long                         : 16;
@@ -260,6 +260,7 @@ typedef union {
 #endif
 	} __attribute__ ( ( packed ) ) bits;
 } __attribute__ ( ( packed ) ) command_data_register_2_t;
+
 
 /*
   ------------------------------------------------------------------------------
@@ -483,7 +484,7 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 {
 	int rc = 0;
 
-#ifdef CONFIG_AXXIA_25xx
+#ifdef ACP_25xx
 	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
@@ -500,11 +501,11 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 			return -1;
 		}
 
-		writel((0x84c00000 + offset), (base + 4));
+		WRITEL((0x84c00000 + offset), (base + 4));
 
 		do {
 			--wfc_timeout;
-			*value = readl(base + 4);
+			*value = READL(base + 4);
 		} while (0 != (*value & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -513,7 +514,7 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 			return -1;
 		}
 
-		*value = readl(base + 8);
+		*value = READL(base + 8);
 
 		return 0;
 	}
@@ -538,7 +539,7 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 {
 	int rc = 0;
 
-#ifdef CONFIG_AXXIA_25xx
+#ifdef ACP_25xx
 	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
@@ -568,11 +569,11 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 		if (0xffff < offset)
 			return -1;
 
-		writel((0x85400000 + offset), (base + 4));
+		WRITEL((0x85400000 + offset), (base + 4));
 
 		do {
 			--wfc_timeout;
-			*value = readl(base + 4);
+			*value = READL(base + 4);
 		} while (0 != (*value & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -581,11 +582,11 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 			return -1;
 		}
 
-		*value = readl(base + 8);
+		*value = READL(base + 8);
 
 		return 0;
 	}
-#endif	/* CONFIG_AXXIA_25xx */
+#endif	/* ACP_25xx */
 
 	NCR_TRACE_READ32(region, offset);
 	rc = ncr_read(region, offset, 4, value);
@@ -788,7 +789,7 @@ int
 ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 {
 	int rc;
-#ifdef CONFIG_AXXIA_25xx
+#ifdef ACP_25xx
 	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
@@ -803,12 +804,12 @@ ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 		if (0xffff < offset)
 			return -1;
 
-		writel(value, base);
-		writel((0xc4c00000 + offset), (base + 4));
+		WRITEL(value, base);
+		WRITEL((0xc4c00000 + offset), (base + 4));
 
 		do {
 			--wfc_timeout;
-			value = readl(base + 4);
+			value = READL(base + 4);
 		} while (0 != (value & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -839,7 +840,7 @@ int
 ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 {
 	int rc;
-#ifdef CONFIG_AXXIA_25xx
+#ifdef ACP_25xx
 	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
@@ -869,12 +870,12 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 		if (0xffff < offset)
 			return -1;
 
-		writel(value, base);
-		writel((0xc5400000 + offset), (base + 4));
+		WRITEL(value, base);
+		WRITEL((0xc5400000 + offset), (base + 4));
 
 		do {
 			--wfc_timeout;
-			value = readl(base + 4);
+			value = READL(base + 4);
 		} while (0 != (value & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -885,7 +886,7 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 
 		return 0;
 	}
-#endif	/* CONFIG_AXXIA_25xx */
+#endif	/* ACP_25xx */
 
 	NCR_TRACE_WRITE32(region, offset, value);
 	rc = ncr_write(region, offset, 4, &value);
