@@ -112,10 +112,6 @@
 #define CONFIG_CMD_FAT 1
 #define CONFIG_CMD_EXT2 1
 #define CONFIG_DOS_PARTITION 1
-<<<<<<< HEAD
-=======
-#define CONFIG_SYS_PPC4XX_USB_ADDR (IO+0xA0000)
->>>>>>> 0505f0dc5e5fd80bbb11e8c9c85a5fd13a935ddd
 #define CONFIG_USB_ADDR (IO+0xA0000)
 #define CONFIG_EHCI_IS_TDI 1
 #endif
