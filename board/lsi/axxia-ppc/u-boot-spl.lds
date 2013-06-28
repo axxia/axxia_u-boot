@@ -92,9 +92,9 @@ SECTIONS
 		KEEP(*(.brs_vector))
 	}
 
-	. = 0x300000;
+	. = 0x180000;
 	PROVIDE(_bss_start = .);
-	.bss 0x300000:
+	.bss 0x180000:
 	{
 		*(.bss*)
 		*(.sbss*)

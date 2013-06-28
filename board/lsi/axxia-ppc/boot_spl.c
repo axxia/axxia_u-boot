@@ -304,12 +304,6 @@ axxia_init_r(void)
 	writel(0x00180070, 0xf0801060);
 #endif
 
-	/* NAND */
-#if defined(CONFIG_LSI_NAND)
-	nand_init( );
-#endif
-	/*env_relocate( );*/
-
 #if defined(CONFIG_AXXIA_25xx)
 
 		/*
@@ -428,6 +422,11 @@ axxia_init_r(void)
 	}
 #endif
 
+	puts("\n"
+	     "   ___             _        __  __    ___            __    _______  __ \n"
+	     "  / _ |__ ____ __ (_)__ _  / / / /___/ _ )___  ___  / /_  / __/ _ \\/ / \n"
+	     " / __ |\\ \\ /\\ \\ // / _ `/ / /_/ /___/ _  / _ \\/ _ \\/ __/ _\\ \\/ ___/ /__\n"
+	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ /___/_/  /____/\n\n\n");
 	printf( "System Memory Size: %lu M\n", get_sysmem_size( ) );
 	printf( "LSI Version: %s\n", get_lsi_version( ) );
 
@@ -435,12 +434,32 @@ axxia_init_r(void)
 	  Load the 3rd stage from NAND.
 	*/
 
-	nand_boot();
+	{
+		size_t size;
 
-	printf("Loaded the 3rd stage...\n");
+		nand_init();
 
-	for (;;)
-		;
+		size = 0x180000;
+
+		if (0 !=
+		    nand_read_skip_bad(&nand_info[0],
+				       0x180000, &size, 0)) {
+			printf("Error loading 3rd stage from NAND to "
+			       "System Memory!\n");
+			asm volatile ("1: b 1b");
+		}
+	}
+
+	printf("Starting U-Boot...\n");
+
+	{
+		void (*stage3)(void);
+
+		stage3 = (void (*)(void))0;
+		(*stage3)();
+	}
+
+	asm volatile ("1: b 1b");
 
 	return;
 }

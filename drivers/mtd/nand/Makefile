@@ -39,6 +39,10 @@ COBJS-$(CONFIG_SPL_NAND_LOAD) += nand_spl_load.o
 COBJS-$(CONFIG_SPL_NAND_ECC) += nand_ecc.o
 COBJS-$(CONFIG_SPL_NAND_BASE) += nand_base.o
 
+ifdef CONFIG_AXXIA
+COBJS-y += nand.o nand_ids.o nand_bbt.o nand_util.o
+endif
+
 else # not spl
 
 NORMAL_DRIVERS=y

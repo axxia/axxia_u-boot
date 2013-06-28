@@ -150,14 +150,9 @@
   stack will grow downward from there.
 */
 
-#define CONFIG_SYS_MALLOC_BASE (0x200000)
-#ifdef ACP_ISS
-#define CONFIG_SYS_MALLOC_SIZE (0x400000 - CONFIG_SYS_MALLOC_BASE - (64 * 1024)))
-#else
+#define CONFIG_SYS_MALLOC_BASE (0x280000)
 #define CONFIG_SYS_MALLOC_SIZE (0x400000 - CONFIG_SYS_MALLOC_BASE)
-#endif
 #define CONFIG_SYS_STACK_BASE  (CONFIG_SYS_MALLOC_BASE)
-
 #define CONFIG_SYS_MALLOC_LEN (CONFIG_SYS_MALLOC_SIZE)
 
 #ifdef CONFIG_SPL_BUILD
@@ -531,11 +526,13 @@ void dump_packet(const char *, void *, int);
 */
 
 #define ACP_NAND_4BIT_ECC
+#ifndef CONFIG_SPL_BUILD
 #define CONFIG_JFFS2_NAND
 #define CONFIG_JFFS2_CMDLINE
 #define CONFIG_CMD_SETGETDCR
 #define CONFIG_CMD_JFFS2
 #define CONFIG_CMD_ELF
+#endif
 
 /*
   ======================================================================
@@ -1698,10 +1695,11 @@ extern unsigned long _bss_end;
 */
 
 #define CONFIG_SPL_NAND_SUPPORT
-#define CONFIG_SPL_NAND_SIMPLE
-#define CONFIG_SPL_NAND_LOAD
-/*#define CONFIG_SPL_NAND_ECC*/
-/*#define CONFIG_SPL_NAND_BASE*/
+/*#define CONFIG_SPL_NAND_SIMPLE*/
+/*#define CONFIG_SPL_NAND_DRIVERS*/
+/*#define CONFIG_SPL_NAND_LOAD*/
+#define CONFIG_SPL_NAND_ECC
+#define CONFIG_SPL_NAND_BASE
 
 #define CONFIG_SYS_NAND_U_BOOT_OFFS 0x180000
 #define CONFIG_SYS_NAND_U_BOOT_START 0
@@ -1718,6 +1716,7 @@ extern unsigned long _bss_end;
 #define CONFIG_SYS_NAND_OOBSIZE 16
 #define CFG_NAND_BASE              (IO+0x40000)
 #define CONFIG_SYS_NAND_BASE       (IO+0x40000)
+#define CONFIG_SYS_NAND_HW_ECC_OOBFIRST
 
 /*
   ----------------------------------------------------------------------

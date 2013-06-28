@@ -21,6 +21,7 @@
  *
  */
 
+/*#define DEBUG*/
 #include <config.h>
 #ifndef NCR_TRACER
 #include <common.h>
@@ -29,6 +30,8 @@
 #include <linux/mtd/nand.h>
 #include <asm/errno.h>
 #include <asm/io.h>
+
+static struct nand_chip *current_chip;
 
 /*
   ===============================================================================
@@ -496,7 +499,11 @@ static struct nand_ecclayout lsi_8k_4bit_ecclayout = {
 static void
 lsi_nand_select_chip(struct mtd_info *mtd, int chip)
 {
-	debug( "chip=%d\n", chip );
+	debug("%s:%s:%d - mtd=0x%p chip=%d\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip);
+	mtd->priv = current_chip;
+
+	return;
 }
 
 /*
@@ -509,7 +516,8 @@ lsi_nand_cmd_ctrl(struct mtd_info *mtd, int cmd, unsigned int ctrl)
 {
 	struct nand_chip *chip = mtd->priv;
 
-	debug("cmd=0x%x\n", cmd);
+	debug("%s:%s:%d - mtd=0x%p cmd=0x%x ctrl=0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, cmd, ctrl);
 	writel(cmd, (chip->IO_ADDR_W + EP501_NAND_CMD_REG));
 
 	return;
@@ -526,10 +534,9 @@ lsi_nand_dev_ready(struct mtd_info *mtd)
 	struct nand_chip *chip = mtd->priv;    
 	int ready = 0;
 
-	debug("\n");
 	ready =	readl(chip->IO_ADDR_R + EP501_NAND_INTR_STATUS_REG) &
 		NAND_STATUS_TRUE_READY;
-	debug("ready=%d\n", ready);
+	debug("%s:%s:%d - ready=%d\n", __FILE__, __FUNCTION__, __LINE__, ready);
 
 	return ready;
 }
@@ -546,8 +553,8 @@ lsi_nand_cmdfunc(struct mtd_info *mtd,
 	register struct nand_chip *chip = mtd->priv;
 	unsigned int status = 0;
 
-	debug("command=0x%x, column = 0x%x, page = %d\n",
-		    command, column, page);
+	debug("%s:%s:%d - mtd=0x%p command=0x%x column=0x%x page=0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, command, column, page);
 	command &= 0xff;
 
 	/* Emulate NAND_CMD_READOOB */
@@ -702,15 +709,16 @@ lsi_nand_cmdfunc(struct mtd_info *mtd,
 */
 
 static void
-lsi_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
+lsi_nand_read_buf(struct mtd_info *mtd, uint8_t *buffer, int length)
 {
 	int i = 0;
 	struct nand_chip *chip = mtd->priv;
-	uint32_t *p = (uint32_t *)buf;
+	uint32_t *p = (uint32_t *)buffer;
 
-	debug( "\n" );
+	debug("%s:%s:%d - mtd=0x%p buffer=0x%p length=0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, buffer, length);
 
-	for (i = 0; i < (len >> 2); i++) {
+	for (i = 0; i < (length >> 2); i++) {
             p[i] = readl(chip->IO_ADDR_R);
 	}
 
@@ -723,15 +731,16 @@ lsi_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 */
 
 static void
-lsi_nand_write_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
+lsi_nand_write_buf(struct mtd_info *mtd, const uint8_t *buffer, int length)
 {
 	int i = 0;
 	struct nand_chip *chip = mtd->priv;
-	uint32_t *p = (uint32_t *)buf;
+	uint32_t *p = (uint32_t *)buffer;
 
-	debug( "\n" );
+	debug("%s:%s:%d - mtd=0x%p buffer=0x%p length=0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, buffer, length);
 
-	for (i = 0; i < (len >> 2); i++){
+	for (i = 0; i < (length >> 2); i++){
 		writel(p[i], chip->IO_ADDR_W);
 	}
 
@@ -744,16 +753,18 @@ lsi_nand_write_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
 */
 
 static int
-lsi_nand_verify_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
+lsi_nand_verify_buf(struct mtd_info *mtd, const uint8_t *buffer, int length)
 {
 	int i;
 	struct nand_chip *chip = mtd->priv;
-	uint32_t *p = (uint32_t *)buf;
+	uint32_t *p = (uint32_t *)buffer;
 
-	debug( "\n" );
+	debug("%s:%s:%d - mtd=0x%p buffer=0x%p length=0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, buffer, length);
 
-	for (i = 0; i < (len >> 2); i++) {
+	for (i = 0; i < (length >> 2); i++) {
 		udelay(chip->chip_delay);
+
 		if (p[i] != readl(chip->IO_ADDR_R))
 			return -EFAULT;
 	}
@@ -771,7 +782,7 @@ lsi_nand_read_status(struct mtd_info *mtd)
 {    
 	struct nand_chip *chip = mtd->priv;
 
-	debug( "\n" );
+	debug("%s:%s:%d - mtd=0x%p\n", __FILE__, __FUNCTION__, __LINE__, mtd);
 	lsi_nand_cmd_ctrl(mtd, NAND_CMD_STATUS, 0);
 
 	return (readl(chip->IO_ADDR_R + EP501_NAND_STATUS0_REG) & 0xff);
@@ -787,7 +798,8 @@ lsi_nand_waitfunc(struct mtd_info *mtd, struct nand_chip *chip)
 {
 	int status;
 
-	debug( "\n" );
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip);
 
 	do {
 		status = readl(LSI_NAND_PECC_BUSY_REGISTER);
@@ -807,7 +819,7 @@ lsi_nand_waitfunc(struct mtd_info *mtd, struct nand_chip *chip)
 		       status);
 	}
 
-	debug("status=%d\n", status);
+	debug("%s:%s:%d - status=%d\n", __FILE__, __FUNCTION__, __LINE__, status);
 
 	return status;
 }
@@ -822,7 +834,8 @@ lsi_nand_waitfunc(struct mtd_info *mtd, struct nand_chip *chip)
 static void
 lsi_nand_ecc_hwctl(struct mtd_info *mtd, int mode)
 {
-	debug( "\n" );
+	debug("%s:%s:%d - \n", __FILE__, __FUNCTION__, __LINE__);
+
 	return;
 }
 
@@ -839,7 +852,7 @@ lsi_nand_ecc_calculate(struct mtd_info *mtd,
 	int cmd;
 	int state = 0;
 
-	debug( "\n" );
+	debug("%s:%s:%d - \n", __FILE__, __FUNCTION__, __LINE__);
 
 	/* get the current operation by reading the cmd register */
 	cmd = readl(chip->IO_ADDR_R + EP501_NAND_CMD_REG);
@@ -866,7 +879,8 @@ static int
 lsi_nand_ecc_correct(struct mtd_info *mtd,
 		     uint8_t *dat, uint8_t *read_ecc, uint8_t *calc_ecc)
 {
-	debug( "\n" );
+	debug("%s:%s:%d - \n", __FILE__, __FUNCTION__, __LINE__);
+
 	return 0;
 }
 
@@ -1229,7 +1243,8 @@ report_ecc_errors(struct mtd_info *mtd, struct nand_chip *chip,
 	unsigned long offset;
 	int i;
 
-	debug("page=0x%x\n", page);
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p buffer=0x%p page=0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip, buffer, page);
 
 	/* Make sure ECC is enabled. */
 	if (LSI_NAND_ECC_MODE_NONE == ecc_mode)
@@ -1282,7 +1297,8 @@ report_ecc_errors(struct mtd_info *mtd, struct nand_chip *chip,
 	int is_blank = 1;
 	int i;
 
-	debug("page=0x%x\n", page);
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p buffer=0x%p page=0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip, buffer, page);
 
 	/* Make sure ECC is enabled. */
 	if (LSI_NAND_ECC_MODE_OFF == ecc_mode) {
@@ -1364,8 +1380,8 @@ report_ecc_errors(struct mtd_info *mtd, struct nand_chip *chip,
 	}
 #endif
 
-	debug("num_sections=%d bch_status=0x%x\n",
-		    num_sections, bch_status);
+	debug("%s:%s:%d - num_sections=%d bch_status=0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, num_sections, bch_status);
 
 	for (i = 0; i < num_sections; ++i) {
 		if ((1 << i) == (bch_status & (1 << i))) {
@@ -1402,7 +1418,8 @@ report_ecc_errors(struct mtd_info *mtd, struct nand_chip *chip,
 	int i;
 #endif
 
-	debug("page=0x%x\n", page);
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p buffer=0x%p page=0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip, buffer, page);
 
 	/* Make sure ECC is enabled. */
 	if (LSI_NAND_ECC_MODE_OFF == ecc_mode) {
@@ -1530,12 +1547,13 @@ report_ecc_errors(struct mtd_info *mtd, struct nand_chip *chip,
 
 static int
 lsi_nand_ecc_read_page(struct mtd_info *mtd,
-		       struct nand_chip *chip, uint8_t *buf, int page)
+		       struct nand_chip *chip, uint8_t *buffer, int page)
 {
-	debug("ecc_read_page: page = %d\n", page);
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p buffer=0x%p page = 0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip, buffer, page);
 
 	/* read the page */
-	chip->read_buf(mtd, buf, mtd->writesize);		
+	chip->read_buf(mtd, buffer, mtd->writesize);		
 
 	/* read oob data */
 	chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
@@ -1544,7 +1562,7 @@ lsi_nand_ecc_read_page(struct mtd_info *mtd,
 	chip->ecc.calculate(mtd, NULL, NULL);
 
 	/* Read the ECC Status and see if there were any errors */
-	report_ecc_errors(mtd, chip, buf, page);
+	report_ecc_errors(mtd, chip, buffer, page);
 
 	/* cmd to controller to turn off CE */
 	chip->cmd_ctrl(mtd, nand_cmd_ce_off, 0);
@@ -1563,7 +1581,8 @@ int
 lsi_nand_ecc_read_oob(struct mtd_info *mtd, struct nand_chip *chip,
 		      int page, int sndcmd)
 {
-	debug( "\n" );
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p page=0x%x sndcmd=%d\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip, page, sndcmd);
 
 	if (sndcmd) {
 		chip->cmdfunc(mtd, NAND_CMD_READOOB, 0, page);
@@ -1597,14 +1616,17 @@ lsi_nand_ecc_read_oob(struct mtd_info *mtd, struct nand_chip *chip,
 
 static void
 lsi_nand_ecc_write_page(struct mtd_info *mtd, struct nand_chip *chip,
-			const uint8_t *buf)
+			const uint8_t *buffer)
 {
 	int i, eccsize = chip->ecc.size;
 	int eccbytes = chip->ecc.bytes;
 	int eccsteps = chip->ecc.steps;
 	uint8_t *ecc_calc = chip->buffers->ecccalc;
 	int ecctotal = chip->ecc.total;
-	const uint8_t *p = buf;
+	const uint8_t *p = buffer;
+
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p buffer=0x%p\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip, buffer);
 
 	for (i = 0; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
 		chip->ecc.hwctl(mtd, NAND_ECC_WRITE);
@@ -1633,7 +1655,8 @@ lsi_nand_ecc_write_oob(struct mtd_info *mtd, struct nand_chip *chip, int page)
 	int rc;
 	int ecctotal = chip->ecc.total;	
 
-	debug("page=0x%x\n", page);
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p page=0x%x\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip, page);
 
 	/* start OOB write */
 	chip->cmdfunc(mtd, NAND_CMD_SEQIN, mtd->writesize, page);
@@ -1651,7 +1674,8 @@ lsi_nand_ecc_write_oob(struct mtd_info *mtd, struct nand_chip *chip, int page)
 	chip->cmd_ctrl(mtd, nand_cmd_ce_off, 0);
 
 	rc = (chip->dev_ready(mtd) & NAND_STATUS_FAIL) ? -EIO : 0;
-	debug("ready & NAND_STATUS_FAIL = %d\n", rc);
+	debug("%s:%s:%d - ready & NAND_STATUS_FAIL = %d\n",
+	      __FILE__, __FUNCTION__, __LINE__, rc);
 
 	return rc;
 }
@@ -1668,6 +1692,8 @@ lsi_nand_set_config_501(struct mtd_info *mtd, struct nand_chip *chip)
 	unsigned long config = 0;
 	unsigned long mbits;
 
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip);
 	mbits = ((chip->chipsize >> 20) * 8);
 
 	/* The EP501 only supports 512 and 2k page sizes. */
@@ -1686,7 +1712,8 @@ lsi_nand_set_config_501(struct mtd_info *mtd, struct nand_chip *chip)
 	chip->ecc.layout = &lsi_2k_1bit_ecclayout;
 	chip->ecc.size = mtd->writesize;
 	chip->ecc.bytes = chip->ecc.layout->eccbytes;
-	debug("config=0x%lx\n", config);
+	debug("%s:%s:%d - config=0x%lx\n",
+	      __FILE__, __FUNCTION__, __LINE__, config);
 	writel(config, chip->IO_ADDR_W + EP501_NAND_CONFIG_REG);
 
 	return 0;
@@ -1704,6 +1731,8 @@ lsi_nand_set_config_501g1(struct mtd_info *mtd, struct nand_chip *chip)
 	unsigned long config = 0;
 	unsigned long mbits;
 
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip);
 	mbits = ((chip->chipsize >> 20) * 8);
 
 	/* The EP501G1 only supports 512, 2k, and 4k page sizes, */
@@ -1770,7 +1799,8 @@ lsi_nand_set_config_501g1(struct mtd_info *mtd, struct nand_chip *chip)
 	chip->ecc.size = mtd->writesize;
 	chip->ecc.bytes = chip->ecc.layout->eccbytes;
 	chip->ecc.total = chip->ecc.layout->eccbytes;
-	debug("config=0x%lx\n", config);
+	debug("%s:%s:%d - config=0x%lx\n",
+	      __FILE__, __FUNCTION__, __LINE__, config);
 	writel(config, chip->IO_ADDR_W + EP501_NAND_CONFIG_REG);
 
 	return 0;
@@ -1788,6 +1818,8 @@ lsi_nand_set_config_501g3(struct mtd_info *mtd, struct nand_chip *chip)
 	unsigned long config;
 	unsigned long mbits;
 
+	debug("%s:%s:%d - mtd=0x%p chip=0x%p\n",
+	      __FILE__, __FUNCTION__, __LINE__, mtd, chip);
 	mbits = ((chip->chipsize >> 20) * 8);
 
 	/* The EP501G3 only supports 2k, 4k, and 8k page sizes, */
@@ -1863,13 +1895,14 @@ lsi_nand_set_config_501g3(struct mtd_info *mtd, struct nand_chip *chip)
 	chip->ecc.size = mtd->writesize;
 	chip->ecc.bytes = chip->ecc.layout->eccbytes;
 	chip->ecc.total = chip->ecc.layout->eccbytes;
-	debug("config=0x%lx\n", config);
+	debug("%s:%s:%d - config=0x%lx\n",
+	      __FILE__, __FUNCTION__, __LINE__, config);
 	writel(config, chip->IO_ADDR_W + EP501_NAND_CONFIG_REG);
 
 	return 0;
 }
 #else
-#error "Unsupported ACP System Type!"
+#error "Unsupported System Type!"
 #endif
 
 /*
@@ -1916,9 +1949,11 @@ board_nand_init(struct nand_chip *chip)
 	int i;
 #endif
 
-	debug( "\n" );
+	current_chip = NULL;
+	debug("%s:%s:%d - chip=0x%p\n", __FILE__, __FUNCTION__, __LINE__, chip);
 
 #if defined(ACP_NAND_4BIT_ECC)
+
 	/*
 	  Generate the "alpha of" and "index of" tables for 4 bit ECC.
 	*/
@@ -2070,6 +2105,10 @@ board_nand_init(struct nand_chip *chip)
 		writel(tcr2.raw, (chip->IO_ADDR_W + EP501G3_NAND_TIMING2_REG));
 	}
 #endif
+
+	current_chip = chip;
+	debug("%s:%s:%d - current_chip=0x%p\n",
+	      __FILE__, __FUNCTION__, __LINE__, current_chip);
 
 	return 0;
 }
