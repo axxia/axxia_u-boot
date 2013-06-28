@@ -242,6 +242,10 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 	int timeout;
 	int ret = 0;
 	struct ehci_ctrl *ctrl = dev->controller;
+#ifdef CONFIG_ACP3
+        int result = USB_EFAIL;
+#endif
+
 
 	debug("dev=%p, pipe=%lx, buffer=%p, length=%d, req=%p\n", dev, pipe,
 	      buffer, length, req);
@@ -531,9 +535,12 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 	invalidate_dcache_range((uint32_t)buffer,
 		ALIGN((uint32_t)buffer + length, ARCH_DMA_MINALIGN));
 
+
+#ifndef CONFIG_ACP3
 	/* Check that the TD processing happened */
 	if (QT_TOKEN_GET_STATUS(token) & QT_TOKEN_STATUS_ACTIVE)
 		printf("EHCI timed out on TD - token=%#x\n", token);
+#endif
 
 	/* Disable async schedule. */
 	cmd = ehci_readl(&ctrl->hcor->or_usbcmd);
@@ -546,6 +553,17 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		printf("EHCI fail timeout STS_ASS reset\n");
 		goto fail;
 	}
+
+#ifdef CONFIG_ACP3
+        token = hc32_to_cpu(vtd->qt_token);
+        /* check that the TD processing happened */
+        if (token & 0x80) {
+                printf("EHCI timed out on TD - token=%#x\n", token);
+                result = USB_EDEVCRITICAL;
+                goto fail;
+        }
+#endif
+
 
 	token = hc32_to_cpu(qh->qh_overlay.qt_token);
 	if (!(QT_TOKEN_GET_STATUS(token) & QT_TOKEN_STATUS_ACTIVE)) {
@@ -589,7 +607,11 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 fail:
 	free(qtd);
+#ifdef CONFIG_ACP3
+        return result;
+#else
 	return -1;
+#endif
 }
 
 static inline int min3(int a, int b, int c)

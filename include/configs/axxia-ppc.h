@@ -111,8 +111,8 @@
 #define CONFIG_USB_ULPI_VIEWPORT 1
 #define CONFIG_CMD_FAT 1
 #define CONFIG_CMD_EXT2 1
+#define CONFIG_CMD_EXT4 1	
 #define CONFIG_DOS_PARTITION 1
-#define CONFIG_SYS_PPC4XX_USB_ADDR (IO+0xA0000)
 #define CONFIG_USB_ADDR (IO+0xA0000)
 #define CONFIG_EHCI_IS_TDI 1
 #endif
@@ -623,7 +623,7 @@ unsigned long *get_acp_fdt(int);
 #define ACP_NR_CORES 2
 #define OS_GROUP0_DEFAULT "0xd31:0:0x100"
 #else
-#define ACP_NR_CORES 4
+#define ACP_NR_CORES 1
 #define OS_GROUP0_DEFAULT "0xdf1:0:0x100"
 #endif
 #define OS_MEMORY_DEFAULT 0x100
@@ -721,10 +721,11 @@ typedef enum {
 	ACP_OS_BOOT_CORE, ACP_OS_CORES, ACP_OS_BASE, ACP_OS_SIZE,
 	ACP_OS_UART0, ACP_OS_UART1, ACP_OS_NAND, ACP_OS_FEMAC,
 	ACP_OS_PCIE0, ACP_OS_PCIE1, ACP_OS_PCIE2, ACP_OS_SRIO,
-	ACP_OS_USB, ACP_OS_PLX, ACP_OS_SBB, ACP_OS_FDT
+	ACP_OS_USB, ACP_OS_PLX, ACP_OS_SBB, ACP_OS_SSP, ACP_OS_I2C,
+	ACP_OS_FDT
 } acp_osg_group_res_t;
 
-unsigned long acp_osg_group_get_res(int, acp_osg_group_res_t);
+unsigned long long acp_osg_group_get_res(int, acp_osg_group_res_t);
 void acp_osg_group_set_res(int, acp_osg_group_res_t, unsigned long);
 int acp_osg_get_group(int);
 int acp_osg_is_group_boot_core(int);
