@@ -181,21 +181,16 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 		ssp_select_device();
 		rc |= ssp_write_device(2, NULL);
 
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
-		if (0 != is_flash) {
+		if (1 == is_flash) {
 			rc |= ssp_write_device((offset & 0x00ff0000) >> 16,
 					       NULL);
 			rc |= ssp_write_device((offset & 0x0000ff00) >> 8, NULL);
 			rc |= ssp_write_device(offset & 0x000000ff, NULL);
 		} else {
-#else
 			rc |= ssp_write_device((offset & 0x10000) >> 16, NULL);
 			rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
 			rc |= ssp_write_device(offset & 0xff, NULL);
-#endif
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 		}
-#endif
 
 		this_write = 256 - ( offset % 256 );
 
@@ -230,7 +225,7 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 			if (0 == retries)
 				return SSP_FAILURE();
 		} else {
-			udelay( 5000 );	/* TODO: Why the delay? */
+			udelay(5000);	/* TODO: Why the delay? */
 		}
 	}
 
@@ -377,20 +372,15 @@ ssp_read(void *buffer, unsigned long offset, unsigned long length)
 	ssp_select_device();
 	rc = ssp_write_device(3, NULL);
 
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
-	if (0 != is_flash) {
+	if (1 == is_flash) {
 		rc |= ssp_write_device((offset & 0x00ff0000) >> 16, NULL);
 		rc |= ssp_write_device((offset & 0x0000ff00) >> 8, NULL);
 		rc |= ssp_write_device(offset & 0x000000ff, NULL);
 	} else {
-#else
 		rc |= ssp_write_device((offset & 0x10000) >> 16, NULL);
 		rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
 		rc |= ssp_write_device(offset & 0xff, NULL);
-#endif
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	}
-#endif
 
 	while (0 == rc &&
 	       0 < length--) {
@@ -425,12 +415,14 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 	  If this is serial flash, erase first.
 	*/
 
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	if (1 == is_flash) {
 		rc = serial_flash_erase(offset, length);
 
 		if (0 != rc)
 			return SSP_FAILURE();
 	}
+#endif
 	
 	rc = ssp_internal_write(buffer, offset, length);
 
@@ -445,8 +437,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 		ssp_select_device();
 		rc = ssp_write_device(3, NULL);
 
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
-		if (0 != is_flash) {
+		if (1 == is_flash) {
 			rc |= ssp_write_device((voffset & 0x00ff0000) >> 16,
 					       NULL);
 			rc |= ssp_write_device((voffset & 0x0000ff00) >> 8,
@@ -454,14 +445,10 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 			rc |= ssp_write_device(voffset & 0x000000ff,
 					       NULL);
 		} else {
-#else
 			rc |= ssp_write_device((voffset & 0x10000) >> 16, NULL);
 			rc |= ssp_write_device((voffset & 0xff00 ) >> 8, NULL);
 			rc |= ssp_write_device(voffset & 0xff, NULL);
-#endif
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 		}
-#endif
 
 		while (0 == rc &&
 		       0 < vlength--) {
@@ -496,13 +483,49 @@ ssp_init(int input_device, int input_read_only)
 
 	device = input_device;
 
+#ifndef CONFIG_AXXIA_25xx
+	/*
+	  Set up timer 0.
+	*/
+
+	writel(0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
+	writel(1, (unsigned long *)(TIMER0 + TIMER_LOAD));
+	writel(0xc0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
+#endif
+
+	/*
+	  Set up the SSP.
+	*/
+
 	writel(0x3107, (unsigned long *)(SSP + SSP_CR0));
 	writel(2, (unsigned long *)(SSP + SSP_CR1));
 	writel(2, (unsigned long *)(SSP + SSP_CPSR));
 	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
 
+	/*
+	  Clear out the SSP fifo.
+	*/
+
+	for (;;) {
+		unsigned long status;
+
+		status = readl(SSP + SSP_SR);
+
+		if (3 == status)
+			break;
+
+		(void)readl(SSP + SSP_DR);
+	}
+
+	/*
+	  Set is_flash and read_only.
+	*/
+
+	is_flash = 0;
+
 	if (0 != input_read_only) {
 		read_only = 1;
+
 		return 0;
 	}
 
@@ -532,13 +555,25 @@ ssp_init(int input_device, int input_read_only)
 
 	if ('Q' == value[0] && 'R' == value[1] && 'Y' == value[2])
 		is_flash = 1;
-	else
-		is_flash = 0;
 
-	if (0 != is_flash)
+	if (1 == is_flash)
 		writel(0x907, (unsigned long *)(SSP + SSP_CR0));
 #endif
 
+	/*
+	  Clear out the SSP fifo.
+	*/
+
+	for (;;) {
+		unsigned long status;
+
+		status = readl(SSP + SSP_SR);
+
+		if (3 == status)
+			break;
+
+		(void)readl(SSP + SSP_DR);
+	}
 
 	return 0;
 }
