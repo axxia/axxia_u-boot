@@ -32,10 +32,10 @@
   ==============================================================================
 */
 
-/*#define LSI_LOGIO*/
 #include <config.h>
 #include <common.h>
 #include <exports.h>
+#include <asm/io.h>
 
 #define SECTOR_SIZE 0x10000 
 
@@ -66,7 +66,7 @@ ssp_failure(const char *file, const char *function, const int line)
 static void
 ssp_select_device(void)
 {
-	WRITEL((0x1f &~ (1 << device)), (unsigned long *)(SSP + SSP_CSR));
+	writel((0x1f &~ (1 << device)), (unsigned long *)(SSP + SSP_CSR));
 }
 
 /*
@@ -77,7 +77,7 @@ ssp_select_device(void)
 static void
 ssp_deselect_all(void)
 {
-	WRITEL(0x1f, (unsigned long *)(SSP + SSP_CSR));
+	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
 }
 
 /*
@@ -92,17 +92,17 @@ ssp_write_device(unsigned short input, unsigned char *output)
 	unsigned long value;
 
 	/* Send the command to the device. */
-	WRITEL(input, (unsigned long *)(SSP + SSP_DR));
+	writel(input, (unsigned long *)(SSP + SSP_DR));
 
 	/* Get the response from the receive buffer. */
-	while (0 == (READL((unsigned long *)(SSP + SSP_SR)) & 4) &&
+	while (0 == (readl((unsigned long *)(SSP + SSP_SR)) & 4) &&
 	       0 < --retries)
 		;
 
 	if (0 == retries)
 		return SSP_FAILURE();
 
-	value = READL((unsigned long *)(SSP + SSP_DR));
+	value = readl((unsigned long *)(SSP + SSP_DR));
 
 	if (NULL != output)
 		*output = (unsigned char)(value & 0xff);
@@ -172,13 +172,6 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 {
 	int rc;
 	unsigned char *input = (unsigned char *)buffer;
-	int reenable_logio = 0;
-
-	if (LSI_LOGIO_ENABLED()) {
-		printf("Writing 0x%lx bytes to offset 0x%lx\n", length, offset);
-		reenable_logio = 1;
-		LSI_LOGIO_DISABLE();
-	}
 
 	while (0 < length) {
 		int this_write;
@@ -188,21 +181,16 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 		ssp_select_device();
 		rc |= ssp_write_device(2, NULL);
 
-#if defined(CONFIG_LSI_SERIAL_FLASH)
-		if (0 != is_flash) {
+		if (1 == is_flash) {
 			rc |= ssp_write_device((offset & 0x00ff0000) >> 16,
 					       NULL);
 			rc |= ssp_write_device((offset & 0x0000ff00) >> 8, NULL);
 			rc |= ssp_write_device(offset & 0x000000ff, NULL);
 		} else {
-#else
 			rc |= ssp_write_device((offset & 0x10000) >> 16, NULL);
 			rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
 			rc |= ssp_write_device(offset & 0xff, NULL);
-#endif
-#if defined(CONFIG_LSI_SERIAL_FLASH)
 		}
-#endif
 
 		this_write = 256 - ( offset % 256 );
 
@@ -237,13 +225,8 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 			if (0 == retries)
 				return SSP_FAILURE();
 		} else {
-			udelay( 5000 );	/* TODO: Why the delay? */
+			udelay(5000);	/* TODO: Why the delay? */
 		}
-	}
-
-	if (0 != reenable_logio) {
-		printf("Write completed.\n");
-		LSI_LOGIO_ENABLE();
 	}
 
 	return 0;
@@ -385,32 +368,19 @@ ssp_read(void *buffer, unsigned long offset, unsigned long length)
 {
 	int rc;
 	unsigned char *output = (unsigned char *)buffer;
-	int reenable_logio = 0;
-
-	if (LSI_LOGIO_ENABLED()) {
-		printf("Reading 0x%lx bytes from offset 0x%lx\n",
-		       length, offset);
-		reenable_logio = 1;
-		LSI_LOGIO_DISABLE();
-	}
 
 	ssp_select_device();
 	rc = ssp_write_device(3, NULL);
 
-#if defined(CONFIG_LSI_SERIAL_FLASH)
-	if (0 != is_flash) {
+	if (1 == is_flash) {
 		rc |= ssp_write_device((offset & 0x00ff0000) >> 16, NULL);
 		rc |= ssp_write_device((offset & 0x0000ff00) >> 8, NULL);
 		rc |= ssp_write_device(offset & 0x000000ff, NULL);
 	} else {
-#else
 		rc |= ssp_write_device((offset & 0x10000) >> 16, NULL);
 		rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
 		rc |= ssp_write_device(offset & 0xff, NULL);
-#endif
-#if defined(CONFIG_LSI_SERIAL_FLASH)
 	}
-#endif
 
 	while (0 == rc &&
 	       0 < length--) {
@@ -424,11 +394,6 @@ ssp_read(void *buffer, unsigned long offset, unsigned long length)
 
 	if (0 != rc)
 		return SSP_FAILURE();
-
-	if (0 != reenable_logio) {
-		printf("Read completed.\n");
-		LSI_LOGIO_ENABLE();
-	}
 
 	return 0;
 }
@@ -450,12 +415,14 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 	  If this is serial flash, erase first.
 	*/
 
+#if defined(CONFIG_LSI_SERIAL_FLASH)
 	if (1 == is_flash) {
 		rc = serial_flash_erase(offset, length);
 
 		if (0 != rc)
 			return SSP_FAILURE();
 	}
+#endif
 	
 	rc = ssp_internal_write(buffer, offset, length);
 
@@ -470,8 +437,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 		ssp_select_device();
 		rc = ssp_write_device(3, NULL);
 
-#if defined(CONFIG_LSI_SERIAL_FLASH)
-		if (0 != is_flash) {
+		if (1 == is_flash) {
 			rc |= ssp_write_device((voffset & 0x00ff0000) >> 16,
 					       NULL);
 			rc |= ssp_write_device((voffset & 0x0000ff00) >> 8,
@@ -479,14 +445,10 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 			rc |= ssp_write_device(voffset & 0x000000ff,
 					       NULL);
 		} else {
-#else
 			rc |= ssp_write_device((voffset & 0x10000) >> 16, NULL);
 			rc |= ssp_write_device((voffset & 0xff00 ) >> 8, NULL);
 			rc |= ssp_write_device(voffset & 0xff, NULL);
-#endif
-#if defined(CONFIG_LSI_SERIAL_FLASH)
 		}
-#endif
 
 		while (0 == rc &&
 		       0 < vlength--) {
@@ -518,52 +480,65 @@ ssp_init(int input_device, int input_read_only)
 	int i;
 	unsigned char value[3];
 #endif
-	int reenable_logio = 0;
 
 	device = input_device;
 
-#ifndef ACP_25xx
+#if !defined(ACP_25xx) && !defined(AXM_35xx)
 	/*
 	  Set up timer 0.
 	*/
 
-	WRITEL(0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
-	WRITEL(1, (unsigned long *)(TIMER0 + TIMER_LOAD));
-	WRITEL(0xc0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
+	writel(0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
+	writel(1, (unsigned long *)(TIMER0 + TIMER_LOAD));
+	writel(0xc0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
 #endif
 
 	/*
 	  Set up the SSP.
 	*/
 
-
 #if defined(AXM_35xx)
-	WRITEL(0x107, (unsigned long *)(SSP + SSP_CR0));
+        WRITEL(0x107, (unsigned long *)(SSP + SSP_CR0));
 #else
-	WRITEL(0x3107, (unsigned long *)(SSP + SSP_CR0));
+        WRITEL(0x3107, (unsigned long *)(SSP + SSP_CR0));
 #endif
-	WRITEL(2, (unsigned long *)(SSP + SSP_CR1));
-	WRITEL(2, (unsigned long *)(SSP + SSP_CPSR));
-	WRITEL(0x1f, (unsigned long *)(SSP + SSP_CSR));
+	writel(2, (unsigned long *)(SSP + SSP_CR1));
+	writel(2, (unsigned long *)(SSP + SSP_CPSR));
+	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
+
+	/*
+	  Clear out the SSP fifo.
+	*/
+
+	for (;;) {
+		unsigned long status;
+
+		status = readl(SSP + SSP_SR);
+
+		if (3 == status)
+			break;
+
+		(void)readl(SSP + SSP_DR);
+	}
+
+	/*
+	  Set is_flash and read_only.
+	*/
+
+	is_flash = 0;
 
 	if (0 != input_read_only) {
 		read_only = 1;
+
 		return 0;
 	}
 
 	read_only = 0;
 
-	LSI_LOGIO_DISABLE();
-
 #if defined(CONFIG_LSI_SERIAL_FLASH)
 	/*
 	  In order to write, decide if this is EEPROM or serial flash.
 	*/
-
-	if (LSI_LOGIO_ENABLED()) {
-		reenable_logio = 1;
-		LSI_LOGIO_DISABLE();
-	}
 
 	ssp_select_device();
 	rc = ssp_write_device(0x9f, NULL);
@@ -579,22 +554,30 @@ ssp_init(int input_device, int input_read_only)
 
 	ssp_deselect_all();
 
-	if (0 != reenable_logio) {
-		LSI_LOGIO_ENABLE();
-	}
-
 	if (0 != rc)
 		return SSP_FAILURE();
 
 	if ('Q' == value[0] && 'R' == value[1] && 'Y' == value[2])
 		is_flash = 1;
-	else
-		is_flash = 0;
 
-	if (0 != is_flash)
-		WRITEL(0x907, (unsigned long *)(SSP + SSP_CR0));
+	if (1 == is_flash)
+		writel(0x907, (unsigned long *)(SSP + SSP_CR0));
 #endif
 
+	/*
+	  Clear out the SSP fifo.
+	*/
+
+	for (;;) {
+		unsigned long status;
+
+		status = readl(SSP + SSP_SR);
+
+		if (3 == status)
+			break;
+
+		(void)readl(SSP + SSP_DR);
+	}
 
 	return 0;
 }
