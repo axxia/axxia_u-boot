@@ -1389,8 +1389,6 @@ axxia_init_r( void )
 #endif
 	env_relocate( );
 
-	printf("Updating the Environment...\n");	/* ZZZ */
-
 	/* Update "baudrate" now that the environment is available. */
 	{
 		char *env_baudrate;
