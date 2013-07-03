@@ -292,7 +292,7 @@ ncr_register_write(const unsigned value, unsigned *address)
 static int
 ncr_lock(int domain)
 {
-#ifdef ACP3
+#ifndef CONFIG_SPL_BUILD
 	unsigned long offset;
 	unsigned long value;
 	int loops = 400000;
@@ -321,7 +321,7 @@ ncr_lock(int domain)
 static void
 ncr_unlock(int domain)
 {
-#ifdef ACP3
+#ifndef CONFIG_SPL_BUILD
 	unsigned long offset;
 
 	offset=(0xff80 + (domain * 4));
