@@ -1554,8 +1554,9 @@ axxia_init_r( void )
 	  this OS group.
 	*/
 
+#if 0
 	printf("Bringing Up Other Cores...\n");	/* ZZZ */
-
+	
 	{
 		int i;
 		char *testmode;
@@ -1604,6 +1605,7 @@ axxia_init_r( void )
 			       (unsigned int)acp_spintable[3]);
 		}
 	}
+#endif
 
 	/* Update the device trees for all groups. */
 	if (0 != acp_osg_initialize())
@@ -1612,7 +1614,11 @@ axxia_init_r( void )
 
 	eth_initialize(bd);
 	serial_init();
-	acp_splash();
+	puts("\n"
+	     "   ___             _        __  __    ___            __ \n"
+	     "  / _ |__ ____ __ (_)__ _  / / / /___/ _ )___  ___  / /_\n"
+	     " / __ |\\ \\ /\\ \\ // / _ `/ / /_/ /___/ _  / _ \\/ _ \\/ __/\n"
+	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ \n\n\n");
 
 #if defined(CONFIG_AXXIA_25xx) && defined(CONFIG_ACP2)
 	{
