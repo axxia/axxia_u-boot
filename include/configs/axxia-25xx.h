@@ -36,7 +36,7 @@
 
 #define CONFIG_AXXIA_NAND
 #define CONFIG_AXXIA_SERIAL_FLASH
-#define CONFIG_AXXIA_NAND_ENV
+#define CONFIG_AXXIA_SERIAL_FLASH_ENV
 
 #include <configs/axxia-ppc.h>
 
