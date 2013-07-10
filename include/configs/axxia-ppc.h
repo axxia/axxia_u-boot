@@ -41,6 +41,93 @@
 #define CONFIG_4xx   1		/* ... PPC4xx family         */
 #define CONFIG_BOOKE 1
 
+#ifndef __ASSEMBLY__
+
+#include <asm/io.h>
+
+/* Debug */
+extern int lsi_debug_enable;
+
+#ifdef LSI_DEBUG
+#define LSI_DEBUG_ENABLE() {lsi_debug_enable = 1;}
+#define LSI_DEBUG_DISABLE() {lsi_debug_enable = 0;}
+#define LSI_DEBUG_ENABLED() (1 == lsi_debug_enable)
+#define DEBUG_PRINT( format, args... ) do { \
+if (0 != lsi_debug_enable) { ;\
+printf( "%s:%s:%d - DEBUG - ", __FILE__, __FUNCTION__, __LINE__ ); \
+printf( format, ##args ); \
+} ; \
+} while( 0 );
+#define DEBUG_CODE( code ) { code }
+#else  /* LSI_DEBUG */
+#define LSI_DEBUG_ENABLE() {}
+#define LSI_DEBUG_DISABLE() {}
+#define LSI_DEBUG_ENABLED() 0
+#define DEBUG_PRINT( format, args... )
+#define DEBUG_CODE( code )
+#endif /* LSI_DEBUG */
+
+/* Warning */
+#ifdef LSI_WARN
+#define WARN_PRINT( format, args... ) do { \
+printf( "%s:%s:%d - WARN - ", __FILE__, __FUNCTION__, __LINE__ ); \
+printf( format, ##args ); \
+
+} while( 0 );
+#define WARN_CODE( code ) { code }
+#else  /* LSI_WARN */
+#define WARN_PRINT( format, args... )
+#define WARN_CODE( code )
+#endif /* LSI_WARN */
+
+/* Error */
+#define ERROR_PRINT( format, args... ) do { \
+printf( "%s:%s:%d - ERROR - ", __FILE__, __FUNCTION__, __LINE__ ); \
+printf( format, ##args ); \
+} while( 0 );
+#define ERROR_CODE( code ) { code }
+
+#ifdef LSI_LOGIO
+#define LSI_LOGIO_ENABLE() {lsi_logio_enable = 1;}
+#define LSI_LOGIO_DISABLE() {lsi_logio_enable = 0;}
+#define LSI_LOGIO_ENABLED() (1 == lsi_logio_enable)
+static inline unsigned long _READL(const char *, int, unsigned long);
+static inline unsigned long
+_READL(const char *file, int line, unsigned long address)
+{
+        unsigned long value;
+        value = readl(address);
+
+        if (0 != lsi_logio_enable)
+                printf("%s:%d - Read 0x%08lx from 0x%08lx\n",
+                       file, line, value, address);
+
+        return value;
+}
+#define READL(address) _READL(__FILE__, __LINE__, (address))
+static inline void _WRITEL(const char *, int, unsigned long, unsigned long);
+static inline void
+_WRITEL(const char *file, int line, unsigned long value, unsigned long address)
+{
+        writel(value, address);
+
+        if (0 != lsi_logio_enable)
+                printf( "%s:%d - Wrote 0x%08lx to 0x%08lx\n",
+                        file, line, value, address);
+
+        return;
+}
+#define WRITEL(value, address) _WRITEL(__FILE__, __LINE__, (value), (address))
+#else  /* LSI_LOGIO */
+#define LSI_LOGIO_ENABLE() {}
+#define LSI_LOGIO_DISABLE() {}
+#define LSI_LOGIO_ENABLED() 0
+#define READL(address) readl((address))
+#define WRITEL(value, address) writel((value), (address))
+#endif /* LSI_LOGIO */
+#endif
+
+
 #ifdef CONFIG_AXXIA_PCI
 #define CONFIG_PCI 1
 #define CONFIG_PCI_PNP 1                          /* do pci plug-and-play*/
@@ -549,6 +636,7 @@ void dump_packet(const char *, void *, int);
   ======================================================================
   ======================================================================
 */
+#define CONFIG_AXXIA_I2C
 #define CONFIG_HARD_I2C         /* Hardware I2C */
 #define CONFIG_CMD_I2C
 #define CONFIG_SYS_I2C_MULTI_EEPROMS
