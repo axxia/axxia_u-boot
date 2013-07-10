@@ -195,10 +195,11 @@ int saveenv(void)
 	if (CONFIG_ENV_RANGE < CONFIG_ENV_SIZE)
 		return 1;
 	if(gd->env_valid == 1) {
-		puts ("Writing to redundant seeprom... ");
+		printf("Writing to redundant seeprom (0x%x)... ",
+		       CONFIG_ENV_OFFSET_REDUND);
 		ret = writeenv(CONFIG_ENV_OFFSET_REDUND, (u_char *) &env_new);
 	} else {
-		puts ("Writing to seeprom... ");
+		printf("Writing to seeprom (0x%x)... ", CONFIG_ENV_OFFSET);
 		ret = writeenv(CONFIG_ENV_OFFSET, (u_char *) &env_new);
 	}
 	if (ret) {
