@@ -72,7 +72,6 @@ printf( format, ##args ); \
 #define WARN_PRINT( format, args... ) do { \
 printf( "%s:%s:%d - WARN - ", __FILE__, __FUNCTION__, __LINE__ ); \
 printf( format, ##args ); \
-
 } while( 0 );
 #define WARN_CODE( code ) { code }
 #else  /* LSI_WARN */

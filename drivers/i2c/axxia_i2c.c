@@ -104,9 +104,11 @@ i2c_read(uchar chip, uint address, int alen, uchar *buffer, int len)
 		case 1:
 			i2c_addr = I2C1;
 			break;
+#ifndef CONFIG_AXXIA_25xx
 		case 2:
 			i2c_addr = I2C2;
 			break;
+#endif
 		default:
                 printf("Unsupported bus num = %d, only 0, 1 and 2 are supported\n", bus_num);
                 return -1;
@@ -334,9 +336,11 @@ _i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 		case 1:
 			i2c_addr = I2C1;
 			break;
+#ifndef CONFIG_AXXIA_25xx
 		case 2:
 			i2c_addr = I2C2;
 			break;
+#endif
 		default:
                 printf("Unsupported bus num = %d, only 0, 1 and 2 are supported\n", bus_num);
                 return -1;
