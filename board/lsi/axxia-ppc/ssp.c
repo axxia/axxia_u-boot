@@ -415,14 +415,12 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 	  If this is serial flash, erase first.
 	*/
 
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	if (1 == is_flash) {
 		rc = serial_flash_erase(offset, length);
 
 		if (0 != rc)
 			return SSP_FAILURE();
 	}
-#endif
 	
 	rc = ssp_internal_write(buffer, offset, length);
 
@@ -518,18 +516,15 @@ ssp_init(int input_device, int input_read_only)
 	}
 
 	/*
-	  Set is_flash and read_only.
+	  Set read_only and is_flash.
 	*/
 
-	is_flash = 0;
-
-	if (0 != input_read_only) {
+	if (0 != input_read_only)
 		read_only = 1;
+	else
+		read_only = 0;
 
-		return 0;
-	}
-
-	read_only = 0;
+	is_flash = 0;
 
 #if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	/*
