@@ -232,7 +232,7 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 	return 0;
 }
 
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 
 /*
   ------------------------------------------------------------------------------
@@ -348,7 +348,7 @@ serial_flash_erase(unsigned long offset, unsigned long length)
 	return 0;
 }
 
-#endif /* defined(CONFIG_LSI_SERIAL_FLASH) */
+#endif /* defined(CONFIG_AXXIA_SERIAL_FLASH) */
 
 /*
   ======================================================================
@@ -415,7 +415,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 	  If this is serial flash, erase first.
 	*/
 
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	if (1 == is_flash) {
 		rc = serial_flash_erase(offset, length);
 
@@ -475,7 +475,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 int
 ssp_init(int input_device, int input_read_only)
 {
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	int rc;
 	int i;
 	unsigned char value[3];
@@ -483,7 +483,7 @@ ssp_init(int input_device, int input_read_only)
 
 	device = input_device;
 
-#if !defined(ACP_25xx) && !defined(AXM_35xx)
+#ifndef CONFIG_AXXIA_25xx
 	/*
 	  Set up timer 0.
 	*/
@@ -497,11 +497,7 @@ ssp_init(int input_device, int input_read_only)
 	  Set up the SSP.
 	*/
 
-#if defined(AXM_35xx)
-        WRITEL(0x107, (unsigned long *)(SSP + SSP_CR0));
-#else
-        WRITEL(0x3107, (unsigned long *)(SSP + SSP_CR0));
-#endif
+	writel(0x3107, (unsigned long *)(SSP + SSP_CR0));
 	writel(2, (unsigned long *)(SSP + SSP_CR1));
 	writel(2, (unsigned long *)(SSP + SSP_CPSR));
 	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
@@ -522,20 +518,17 @@ ssp_init(int input_device, int input_read_only)
 	}
 
 	/*
-	  Set is_flash and read_only.
+	  Set read_only and is_flash.
 	*/
+
+	if (0 != input_read_only)
+		read_only = 1;
+	else
+		read_only = 0;
 
 	is_flash = 0;
 
-	if (0 != input_read_only) {
-		read_only = 1;
-
-		return 0;
-	}
-
-	read_only = 0;
-
-#if defined(CONFIG_LSI_SERIAL_FLASH)
+#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	/*
 	  In order to write, decide if this is EEPROM or serial flash.
 	*/
