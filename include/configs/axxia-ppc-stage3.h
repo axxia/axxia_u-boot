@@ -216,14 +216,22 @@ unsigned long *get_acp_fdt(int);
 */
 
 #define ACP_MAX_CORES 4
+
 #if defined(ACP_X2V1) || defined(ACP_25xx)
 #define ACP_NR_CORES 2
 #define OS_GROUP0_DEFAULT "0xd31:0:0x100"
 #else
+#if defined (AXM_35xx) && defined (ACP_EMU)
+#define ACP_NR_CORES 1
+#define OS_GROUP0_DEFAULT "0x911:0:0x100"
+#else
 #define ACP_NR_CORES 4
 #define OS_GROUP0_DEFAULT "0xdf1:0:0x100"
 #endif
+#endif
+
 #define OS_MEMORY_DEFAULT 0x100
+
 
 #ifndef __ASSEMBLY__
 
@@ -309,7 +317,13 @@ void acp_osg_set_spintable_state(int, acp_osg_spintable_state_t);
 acp_osg_core_state_t acp_osg_get_core_state(int);
 void acp_osg_set_core_state(int, acp_osg_core_state_t);
 
+/* single core axm_35xx support */
+#if defined (AXM_35xx) && defined (ACP_EMU)
+#define ACP_MAX_OS_GROUPS 1
+#else
 #define ACP_MAX_OS_GROUPS ACP_MAX_CORES
+#endif
+
 
 int acp_osg_readenv(void);
 
@@ -420,23 +434,25 @@ int eioa_ethernet_configure(void);
   NAND flash support, comment out the following.
 */
 
-#define CONFIG_LSI_NAND
+#if !(defined(AXM_35xx) && defined(ACP_EMU))
+#define CONFIG_LSI_NAND  
 #define ACP_NAND_4BIT_ECC
+#endif
 
 /*
   By default, the 3rd stage always supports serial flash.  To turn off
   NAND flash support, comment out the following.
 */
 
-#define CONFIG_LSI_SERIAL_FLASH
+#define CONFIG_LSI_SERIAL_FLASH 
 
 /*
   By default, the U-Boot environment is stored in NAND for all targets
-  except AXM2500.  To switch to serial flash, defined
+  except AXM2500 and AXM35xx.  To switch to serial flash, defined
   CONFIG_LIS_SERIAL_FLASH_ENV.
 */
 
-#ifdef ACP_25xx
+#if defined(ACP_25xx) || defined(AXM_35xx) 
 #define CONFIG_LSI_SERIAL_FLASH_ENV
 #endif
 

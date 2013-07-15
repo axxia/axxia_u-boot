@@ -692,7 +692,7 @@ acp_init_f( void )
 	*/
 
 	/* Is this a cold reset? */
-#if defined(ACP_25xx) && !defined(ACP_EMU)
+#if (defined(ACP_25xx) || defined(AXM_35xx)) && !defined(ACP_EMU)
 	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
@@ -1709,20 +1709,24 @@ acp_init_r( void )
 #ifdef CONFIG_ACP3
 	/* Set the FDT address to the builtin flattened device tree. */
 	working_fdt = (struct fdt_header *)get_acp_fdt(acp_osg_get_group(core));
+
 #endif /* CONFIG_ACP3 */
 
 	interrupt_init();
 
 #ifdef CONFIG_ACP3
 	/* Clear the Reset Status Register. */
-#ifdef ACP_25xx
+#if defined(ACP_25xx) || defined(AXM_35xx) 
 	dcr_write(0xf, (DCR_RESET_BASE + 0xe));
 	dcr_write(0x3, (DCR_RESET_BASE + 0x8));
 	dcr_write(0x3, (DCR_RESET_BASE + 0x6));
+
 #else
 	dcr_write(0xffffe000, (DCR_RESET_BASE + 1));
 #endif
 
+
+#if 0
 	/*
 	  If this is the initial boot, bring up the other OS boot cores.
 
@@ -1781,6 +1785,8 @@ acp_init_r( void )
 		}
 	}
 
+#endif
+
 	/* Update the device trees for all groups. */
 	if (0 != acp_osg_initialize())
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
@@ -1811,7 +1817,7 @@ acp_init_r( void )
 		dcr_write(0x80, 0x400);
 		l2_1_sleep_state = dcr_read(0x404);
 
-		printf("--------------- AXM2500 Settings ---------------\n"
+		printf("--------------- AXM2500/AXM35xx Settings ---------------\n"
 		       "               L2 State: %d %d\n"
 		       "   Reset instead of IPI: %s\n"
 		       "                    ECC: %s\n"
@@ -1864,6 +1870,7 @@ acp_init_r( void )
 	}
 #endif
 
+#if 0
 #if defined(CONFIG_ACP2) || defined(CONFIG_ACP3)
 	/*
 	  Only set up PCI when in internal boot mode, in control of
@@ -2003,6 +2010,7 @@ acp_init_r( void )
 #endif
 		}
 	}
+#endif
 #endif
 
 #if 0

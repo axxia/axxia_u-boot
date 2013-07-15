@@ -33,6 +33,8 @@
 #include "dtb/ACP342x.h"
 #elif defined(ACP_25xx)
 #include "dtb/ACP25xx.h"
+#elif defined(AXM_35xx)
+#include "dtb/AXM35xx.h"
 #endif
 
 unsigned long *

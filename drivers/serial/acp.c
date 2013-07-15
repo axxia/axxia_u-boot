@@ -469,8 +469,8 @@ serial_init()
 	int group;
 #endif
 
+
 	memset((void *)printbuffer, 0, CFG_PBSIZE);
-	uart.uart = 0;
 
 #ifdef CONFIG_ACP3
 	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
@@ -479,10 +479,15 @@ serial_init()
 	if (-1 != group) {
 		if (0 != acp_osg_group_get_res(group, ACP_OS_UART0)) {
 			uart.uart = UART0_ADDRESS;
+			#ifndef AXM_35xx
 			uart.timer = TIMER2;
+			#endif
+
 		} else if(0 != acp_osg_group_get_res(group, ACP_OS_UART1)) {
 			uart.uart = UART1_ADDRESS;
+			#ifndef AXM_35xx
 			uart.timer = TIMER3;
+			#endif
 		}
 	}
 #else

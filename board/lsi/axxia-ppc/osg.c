@@ -242,6 +242,7 @@ acp_osg_readenv(void)
 		save_env = 1;
 	}
 
+	/* printf("%s() osememory=0x%x\n", __func__, osmemory_value);*/
 	/* Update the scratch register for the RTE. */
 #ifndef ACP_ISS
 	ncr_write32(NCP_REGION_ID(0x22, 0xff), 0x20, osmemory_value);
@@ -271,6 +272,7 @@ acp_osg_readenv(void)
 		}
 
 		DEBUG_PRINT("%s : %s\n", env_name, env_value);
+
 		string = malloc(strlen(env_value));
 		string_address = string;
 		strcpy(string, env_value);
@@ -283,14 +285,16 @@ acp_osg_readenv(void)
 			token = strsep(&string, ":");
 			os_group->base =
 				simple_strtoul(token, NULL, 0);
+
 			token = strsep(&string, ":");
 			os_group->size = simple_strtoul(token, NULL, 0);
 
 			if ((os_group->base + os_group->size) > osmemory_value) {
 				WARN_PRINT("%s won't fit within osmemory.\n",
 					   env_name);
+				printf("setting group0 to default %s\n",OS_GROUP0_DEFAULT );
 				if (0 == group) {
-					setenv(env_name, OS_GROUP0_DEFAULT);
+				setenv(env_name, OS_GROUP0_DEFAULT);
 				} else {
 					setenv(env_name, "0:0:0");
 				}
@@ -300,9 +304,14 @@ acp_osg_readenv(void)
 		}
 
 		free(string_address);
-
+	
 		DEBUG_PRINT("%s : 0x%08x boot=%d cores=0x%x "
 			    "base=0x%x size=0x%x\n",
+			    env_name, os_group->flags,
+			    BOOT(os_group->flags), CORES(os_group->flags),
+			    os_group->base, os_group->size);
+		printf("%s() %s : 0x%08x boot=%d cores=0x%x "
+			    "base=0x%x size=0x%x\n",__func__,
 			    env_name, os_group->flags,
 			    BOOT(os_group->flags), CORES(os_group->flags),
 			    os_group->base, os_group->size);
@@ -388,7 +397,7 @@ acp_osg_group_get_res(int group, acp_osg_group_res_t res)
 	case ACP_OS_PCIE1:
 		rv = PCIE1(acp_osg_group->flags);
 		break;
-#ifndef ACP_25xx
+#if !defined(ACP_25xx) && !defined(AXM_35xx)
 	case ACP_OS_PCIE2:
 		rv = PCIE2(acp_osg_group->flags);
 		break;
@@ -476,7 +485,7 @@ acp_osg_group_set_res(int group, acp_osg_group_res_t res, unsigned long value)
 		acp_osg_groups[group]->flags |=
 			((value << PCIE1_SHIFT) & PCIE1_MASK);
 		break;
-#ifndef ACP_25xx
+#if !defined(ACP_25xx) && !defined(AXM_35xx)
 	case ACP_OS_PCIE2:
 		acp_osg_groups[group]->flags &= ~PCIE2_MASK;
 		acp_osg_groups[group]->flags |=
@@ -617,8 +626,11 @@ acp_osg_jump_to_os(int group)
 	void (*os)(unsigned long, unsigned long, unsigned long,
 		   unsigned long, unsigned long);
 
-	os = acp_osg_groups[group]->os;
 
+	printf("%s() group=%d\n",__func__,group);
+	acp_osg_dump(group);
+	os = acp_osg_groups[group]->os;
+      
 	/* Release the stage 3 lock. */
 	acp_unlock_stage3();
 
@@ -789,7 +801,7 @@ acp_osg_update_dt(void *input, int group)
 			return -1;
 		}
 	}
-
+	
 	/*
 	  ============================================================
 	  Update the peripherals.
@@ -801,7 +813,7 @@ acp_osg_update_dt(void *input, int group)
 		value = 1;
 	else
 		value = 0;
-
+	
 	rc = fdt_find_and_setprop(dt, "/plb/opb/serial@00404000",
 				  "enabled", (void *)&value,
 				  sizeof(unsigned long), 1);
@@ -838,8 +850,10 @@ acp_osg_update_dt(void *input, int group)
 					   sizeof(unsigned long), 1);
 	}
 
+	
 	if (0 != rc)
 		return -1;
+
 
 	/* UART 1 */
 
@@ -883,6 +897,7 @@ acp_osg_update_dt(void *input, int group)
 
 	if (0 != rc)
 		return -1;
+	
 
 	/* NAND */
 
@@ -914,6 +929,7 @@ acp_osg_update_dt(void *input, int group)
 	else
 		value = 0;
 
+
 	rc = fdt_find_and_setprop(dt, "/plb/opb/femac@00480000",
 				  "enabled", (void *)&value,
 				  sizeof(unsigned long), 1);
@@ -927,20 +943,23 @@ acp_osg_update_dt(void *input, int group)
 		rc |= fdt_find_and_setprop(dt, "/plb/opb/femac0",
 					   "enabled", (void *)&value,
 					   sizeof(unsigned long), 1);
+		printf("femac enabled set\n");
 	}
 
 	if (0 != rc)
 		return -1;
+	
+	/* value = 1; */
 
 	if (1 == value) {
 		ethaddr_size = getenv_r("ethaddr",
 					ethaddr_string, sizeof(ethaddr_string));
-
+	
 		if (18 > ethaddr_size) {
 			printf("Error Getting ethaddr.\n");
 			return -1;
 		}
-
+	
 		string = ethaddr_string;
 
 		for (i = 0; i < 6; ++i) {
@@ -970,7 +989,7 @@ acp_osg_update_dt(void *input, int group)
 			return -1;
 		}
 	}
-
+	
 	/* PEI0 */
 
 	if (0 != acp_osg_group_get_res(group, ACP_OS_PCIE0))
@@ -1016,6 +1035,7 @@ acp_osg_update_dt(void *input, int group)
 
 	if (0 != rc)
 		return -1;
+
 
 	/* If plx is set to set, enable it in the device tree. */
 
@@ -1100,8 +1120,8 @@ acp_osg_update_dt(void *input, int group)
 
 	if (0 != rc)
 		return -1;
-
-#ifndef ACP_25xx
+	
+#if !defined(ACP_25xx) && !defined(AXM_35xx)
 
 	/* PEI2 */
 
