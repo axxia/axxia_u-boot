@@ -1,78 +1,80 @@
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(_start)
+
 SECTIONS
 {
 	. = 0x00000000;
-	. = ALIGN(4);
 
-	.text :	{
+	.text :
+	{
 		__image_copy_start = .;
 		arch/arm/cpu/armv7/start.o (.text*)
 		*(.text*)
 	}
 
+	. = ALIGN(0x20000);
+	__page_table_start = .;
+	. += 0x8000;
+	__page_table_end = .;
+
 	/*
 	 * Space for spin tables (0x20 bytes per core, 16 * 0x20 = 0x200).
 	 */
-	
-	 . = ALIGN(0x4);
 
-	 __spin_table_start = .;
-	 . += 0x200;
-	 __spin_table_end = .;  
-	
-	 . = ALIGN(0x10);
+	. = ALIGN(0x4);
+	__spin_table_start = .;
+	. += 0x200;
+	__spin_table_end = .;  
 
-	 __parameter_start = .;
-	 . += 0x1000;
-	 __parameter_end = .;  
-	
-	. = ALIGN(0x1000);
-	__page_table_start = .;
-	. += 0x5000;
-	__page_table_end = .;
+	. = ALIGN(0x10);
+	__parameter_start = .;
+	. += 0x1000;
+	__parameter_end = .;  
 
 	. = ALIGN(4);
-
-	.rodata : {
+	.rodata :
+	{
 		*(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*)))
 	}
 
 	. = ALIGN(4);
-
-	.data : {
-	      *(.data*)
+	.data :
+	{
+		*(.data*)
 	}
-	
-	. = ALIGN(4);
 
-	.u_boot_list : {
+
+	. = ALIGN(4);
+	.u_boot_list :
+	{
 		*(SORT(.u_boot_list*));
 	}
 
 	. = ALIGN(4);
-
 	__image_copy_end = .;
 
-	.rel.dyn : {
-		 __rel_dyn_start = .;
-		 *(.rel*)
-		 __rel_dyn_end = .;
+	.rel.dyn :
+	{
+		__rel_dyn_start = .;
+		*(.rel*)
+		__rel_dyn_end = .;
 	}
 
-	.dynsym : {
+	.dynsym :
+	{
 		__dynsym_start = .;
 		*(.dynsym)
 	}
 
 	_end = .;
 
-	.bss __rel_dyn_start (OVERLAY) : {
-	     __bss_start = .;
-	     *(.bss*)
-	     . = ALIGN(4);
-	     __bss_end__ = .;
+	.bss __rel_dyn_start (OVERLAY) :
+	{
+		__bss_start = .;
+		*(.bss*)
+		. = ALIGN(4);
+		__bss_end__ = .;
 	}
 
 	/DISCARD/ : { *(.dynstr*) }

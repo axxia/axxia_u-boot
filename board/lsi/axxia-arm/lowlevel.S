@@ -165,8 +165,6 @@ clear_page_tables:
 	cmp     r1, r2
 	blt     1b
 
-1:	b	1b
-
 #ifdef CONFIG_SPL_BUILD
 
 	@@@@@@
@@ -285,11 +283,12 @@ clear_page_tables:
         add     r9, r9, #1              @ 16 times.
         cmp     r9, #16
         blt     2b
-        add     r0, r0, #0x100000       @ 16M
+        add     r0, r0, #0x1000000      @ 16M
         cmp     r1, r2
         blt     1b
 
-        @
+
+       @
         @ Fourth 1G is used by PCIe, not cacheable or bufferable.
         @
         @ Uses supersections to access IO beyond 4G physical address.
@@ -315,7 +314,7 @@ clear_page_tables:
         ldr     r0,=0x80040cd2          @ Start at 0x30_8000_0000
         add     r1, r3, #0x3080
         mov     r9, #0
-1:      str     r0, [r1], #4            @ Each supersection is repeated
+1:     str     r0, [r1], #4            @ Each supersection is repeated
         add     r9, r9, #1              @ 16 times.
         cmp     r9, #16
         blt     1b
