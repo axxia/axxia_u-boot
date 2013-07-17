@@ -310,11 +310,6 @@ acp_osg_readenv(void)
 			    env_name, os_group->flags,
 			    BOOT(os_group->flags), CORES(os_group->flags),
 			    os_group->base, os_group->size);
-		printf("%s() %s : 0x%08x boot=%d cores=0x%x "
-			    "base=0x%x size=0x%x\n",__func__,
-			    env_name, os_group->flags,
-			    BOOT(os_group->flags), CORES(os_group->flags),
-			    os_group->base, os_group->size);
 	}
 
 	for (core = 0; core < ACP_MAX_CORES; ++core) {
@@ -943,7 +938,6 @@ acp_osg_update_dt(void *input, int group)
 		rc |= fdt_find_and_setprop(dt, "/plb/opb/femac0",
 					   "enabled", (void *)&value,
 					   sizeof(unsigned long), 1);
-		printf("femac enabled set\n");
 	}
 
 	if (0 != rc)

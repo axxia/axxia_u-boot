@@ -652,7 +652,7 @@ sysmem_init(void)
 	}
 
 	/* Disable some speculative reads. */
-#if defined(ACP_X1V1) || defined(ACP_X1V2) || defined(ACP_X2V1) || defined(AXM_35xx)
+#if defined(ACP_X1V1) || defined(ACP_X1V2) || defined(ACP_X2V1)
 	if (sysmem->half_mem)
 		dcr_write( 0x3377c800, 0xf00 );
 	else
@@ -681,7 +681,7 @@ sysmem_init(void)
 	}
 
 	/* WA for 34575 (applies to X1V2 and X2). */
-#if defined(ACP_X1V2) || defined(ACP_X2V1) || defined(AXM_35xx)
+#if defined(ACP_X1V2) || defined(ACP_X2V1)
 	dcr_write(0, 0xf1f);
 #endif
 

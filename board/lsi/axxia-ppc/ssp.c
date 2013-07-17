@@ -232,7 +232,7 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 	return 0;
 }
 
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
+#if defined(CONFIG_LSI_SERIAL_FLASH)
 
 /*
   ------------------------------------------------------------------------------
@@ -348,7 +348,7 @@ serial_flash_erase(unsigned long offset, unsigned long length)
 	return 0;
 }
 
-#endif /* defined(CONFIG_AXXIA_SERIAL_FLASH) */
+#endif /* defined(CONFIG_LSI_SERIAL_FLASH) */
 
 /*
   ======================================================================
@@ -415,7 +415,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 	  If this is serial flash, erase first.
 	*/
 
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
+#if defined(CONFIG_LSI_SERIAL_FLASH)
 	if (1 == is_flash) {
 		rc = serial_flash_erase(offset, length);
 
@@ -475,7 +475,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 int
 ssp_init(int input_device, int input_read_only)
 {
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
+#if defined(CONFIG_LSI_SERIAL_FLASH)
 	int rc;
 	int i;
 	unsigned char value[3];
@@ -483,7 +483,7 @@ ssp_init(int input_device, int input_read_only)
 
 	device = input_device;
 
-#ifndef CONFIG_AXXIA_25xx
+#if !defined(ACP_25xx) && !defined(AXM_35xx)
 	/*
 	  Set up timer 0.
 	*/
@@ -497,7 +497,11 @@ ssp_init(int input_device, int input_read_only)
 	  Set up the SSP.
 	*/
 
-	writel(0x3107, (unsigned long *)(SSP + SSP_CR0));
+#if defined(AXM_35xx)
+        writel(0x107, (unsigned long *)(SSP + SSP_CR0));
+#else
+        writel(0x3107, (unsigned long *)(SSP + SSP_CR0));
+#endif
 	writel(2, (unsigned long *)(SSP + SSP_CR1));
 	writel(2, (unsigned long *)(SSP + SSP_CPSR));
 	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
@@ -518,8 +522,10 @@ ssp_init(int input_device, int input_read_only)
 	}
 
 	/*
-	  Set read_only and is_flash.
+	  Set is_flash and read_only.
 	*/
+
+	is_flash = 0;
 
 	if (0 != input_read_only)
 		read_only = 1;
@@ -528,7 +534,7 @@ ssp_init(int input_device, int input_read_only)
 
 	is_flash = 0;
 
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
+#if defined(CONFIG_LSI_SERIAL_FLASH)
 	/*
 	  In order to write, decide if this is EEPROM or serial flash.
 	*/
@@ -547,14 +553,22 @@ ssp_init(int input_device, int input_read_only)
 
 	ssp_deselect_all();
 
-	if (0 != rc)
+	if (0 != rc) {
+		printf("SR -- not SERIAL FLASH\n");
 		return SSP_FAILURE();
+	}
 
 	if ('Q' == value[0] && 'R' == value[1] && 'Y' == value[2])
 		is_flash = 1;
 
-	if (1 == is_flash)
-		writel(0x907, (unsigned long *)(SSP + SSP_CR0));
+	if (1 == is_flash) {
+#if defined(AXM_35xx)
+        writel(0x107, (unsigned long *)(SSP + SSP_CR0));
+#else
+	writel(0x907, (unsigned long *)(SSP + SSP_CR0));
+#endif
+	}
+
 #endif
 
 	/*

@@ -1870,8 +1870,7 @@ acp_init_r( void )
 	}
 #endif
 
-#if 0
-#if defined(CONFIG_ACP2) || defined(CONFIG_ACP3)
+#if (defined(CONFIG_ACP2) || defined(CONFIG_ACP3) && !defined(AXM_35xx))
 	/*
 	  Only set up PCI when in internal boot mode, in control of
 	  one of the PEIs, and the root complex.
@@ -2010,7 +2009,6 @@ acp_init_r( void )
 #endif
 		}
 	}
-#endif
 #endif
 
 #if 0

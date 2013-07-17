@@ -70,13 +70,12 @@ unsigned long sc_nodes[] = {0x20, 0x1e, 0x21, 0x1d, 0x11, 0x12, 0x10, 0x13};
 #define SYSMEM_V1   0x01000000
 #define SYSMEM_V2   0x02000000
 #define SYSMEM_V3   0x03000000
-#define SYSMEM_V4   0x12000000   /* x3 fpga */ 
-
+#define SYSMEM_V4   0x35000000   /* x3 fpga */
 #else
 #if defined(SYSMEM_ACP2)
 #define SYSMEM_V0   0x10000000
 #define SYSMEM_V1   0x20000000
-#define SYSMEM_V3   0x12000000   /* x3 fpga */ 
+#define SYSMEM_V3   0x35000000   /* x3 fpga */
 #endif
 #endif
 
@@ -142,6 +141,14 @@ initialize_syscache(int sm_version, int sc_version, int num_sc_nodes)
 			break;
 		}
 	}
+
+#ifdef AXM_35xx
+        if (2 == num_sc_nodes)
+                munge = 0x115;
+        else
+                munge = 0x106;
+#endif
+
 
 	ncr_read32(NCP_REGION_ID(0x20, 0), 0x4, &update_sc_control);
 
@@ -1197,9 +1204,13 @@ sysmem_init(void)
 	       sysmem->syscacheDisable, sysmem->half_mem);
 #endif
 
-	/* Get the version of the System Memory controller. */
-	ncr_read32(NCP_REGION_ID(0x22, 0), 0x214, &sm_version);
-	sm_version &= 0xff000000;
+#if  !defined(AXM_35xx)
+        /* Get the version of the System Memory controller. */
+        ncr_read32(NCP_REGION_ID(0x22, 0), 0x214, &sm_version);
+#else
+        ncr_read32(NCP_REGION_ID(0x22, 0), 0x220, &sm_version);
+#endif
+        sm_version &= 0xff000000;
 
 	/* Get the version of the System Cache controller. */
 	ncr_read32(NCP_REGION_ID(0x20, 0xff), 0, &sc_version);

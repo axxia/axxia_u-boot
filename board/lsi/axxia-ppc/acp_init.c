@@ -1720,10 +1720,6 @@ acp_init( void )
 	}
 #endif
 
-#ifdef CONFIG_ACP3
-	pci_init_board();
-#endif
-
 #ifdef SM_REG_DUMP
 	/*check_for_failure(0, __FILE__, __LINE__);*/
 #endif /* SM_REG_DUMP */
