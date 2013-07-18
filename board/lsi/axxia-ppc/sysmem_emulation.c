@@ -144,9 +144,11 @@ initialize_syscache(int sm_version, int sc_version, int num_sc_nodes)
 
 #ifdef AXM_35xx
         if (2 == num_sc_nodes)
-                munge = 0x115;
+                munge = 0x104;
+        else if (4 == num_sc_nodes)
+                munge = 0x105;
         else
-                munge = 0x106;
+                munge = 0x103;
 #endif
 
 
