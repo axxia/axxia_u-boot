@@ -13,9 +13,13 @@ SECTIONS
 		*(.text*)
 	}
 
-	. = ALIGN(0x20000);
+	/*
+	 * Space for page tables.
+	 */
+
+	. = ALIGN(0x1000);
 	__page_table_start = .;
-	. += 0x8000;
+	. += 0x5000;
 	__page_table_end = .;
 
 	/*
@@ -26,6 +30,10 @@ SECTIONS
 	__spin_table_start = .;
 	. += 0x200;
 	__spin_table_end = .;  
+
+	/*
+	 * Space for page tables.
+	 */
 
 	. = ALIGN(0x10);
 	__parameter_start = .;
