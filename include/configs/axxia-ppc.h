@@ -181,9 +181,16 @@ void mmtest( unsigned long, unsigned long, unsigned long );
 #define CFG_MAX_NAND_DEVICE        1
 #define CONFIG_SYS_MAX_NAND_DEVICE 1
 #define MAX_NAND_CHIPS             CFG_MAX_NAND_DEVICE
+#if defined(AXM_35xx)
+#define CONFIG_SYS_FLASH_BASE      (IO+0xE0000)
+#define CFG_NAND_BASE              (IO+0xE0000)
+#define CONFIG_SYS_NAND_BASE       (IO+0xE0000)
+#else
+#define CONFIG_SYS_FLASH_BASE      (IO+0x40000)
 #define CFG_NAND_BASE              (IO+0x40000)
 #define CONFIG_SYS_NAND_BASE       (IO+0x40000)
-#define CONFIG_SYS_FLASH_BASE      (IO+0x40000)
+#endif
+
 #define MTDIDS_DEFAULT		"nand0=acp-nand"
 #define MTDPARTS_DEFAULT	"mtdparts=acp-nand:512K(2ndStage),512K(env-0),512K(env-1),512K(3rdStage),4M(linux),200M(linux_fs),32M(ose),16M(ose_backup),-(ose_storage)"
 #define MTDPARTS_REQUIRED       "mtdparts=acp-nand:512K(2ndStage),512K(env-0),512K(env-1),512K(3rdStage)"
