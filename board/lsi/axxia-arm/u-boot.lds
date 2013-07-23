@@ -14,15 +14,6 @@ SECTIONS
 	}
 
 	/*
-	 * Space for page tables.
-	 */
-
-	. = ALIGN(0x1000);
-	__page_table_start = .;
-	. += 0x5000;
-	__page_table_end = .;
-
-	/*
 	 * Space for spin tables (0x20 bytes per core, 16 * 0x20 = 0x200).
 	 */
 
@@ -32,13 +23,22 @@ SECTIONS
 	__spin_table_end = .;  
 
 	/*
-	 * Space for page tables.
+	 * Space for parameters.
 	 */
 
 	. = ALIGN(0x10);
 	__parameter_start = .;
 	. += 0x1000;
 	__parameter_end = .;  
+
+	/*
+	 * Space for page tables.
+	 */
+
+	. = ALIGN(0x4000);
+	__page_table_start = .;
+	. += 0x5000;
+	__page_table_end = .;
 
 	. = ALIGN(4);
 	.rodata :
