@@ -729,7 +729,7 @@ unsigned long get_tbclk (void)
 #else
 	unsigned long frequency;
 
-	acp_clock_get(clock_ppc, &frequency);
+	acp_clock_get(clock_core, &frequency);
 
 	return (frequency * 1000);
 #endif

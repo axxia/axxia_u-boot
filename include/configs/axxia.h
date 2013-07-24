@@ -50,6 +50,64 @@
 /*
   ================================================================================
   ================================================================================
+  SSP Access
+  ================================================================================
+  ================================================================================
+*/
+
+#define SSP_CR0       0x000
+#define SSP_CR1       0x004
+#define SSP_DR        0x008
+#define SSP_SR        0x00c
+#define SSP_CPSR      0x010
+#define SSP_IMSC      0x014
+#define SSP_RIS       0x018
+#define SSP_MIS       0x01c
+#define SSP_ICR       0x020
+#define SSP_DMACR     0x024
+#define SSP_CSR       0x030
+#define SSP_PERIPHID0 0xfe0
+#define SSP_PERIPHID1 0xfe4
+#define SSP_PERIPHID2 0xfe8
+#define SSP_PERIPHID3 0xfec
+#define SSP_PCELLID0  0xff0
+#define SSP_PCELLID1  0xff4
+#define SSP_PCELLID2  0xff8
+#define SSP_PCELLID3  0xffc
+
+#define SSP_DEFAULT_CLOCK  1250000
+#define SSP_MAXIMUM_CLOCK 25000000
+
+#ifndef __ASSEMBLY__
+int ssp_read(void *, unsigned long, unsigned long);
+int ssp_write(void *, unsigned long, unsigned long, int);
+int ssp_set_speed(unsigned long *);
+int ssp_init(int, int);
+#endif
+
+/*
+  ======================================================================
+  ======================================================================
+  Clocks
+  ======================================================================
+  ======================================================================
+*/
+
+#ifndef __ASSEMBLY__
+
+#define CLK_REF0 125000000
+
+typedef enum {
+        clock_system, clock_core, clock_memory, clock_peripheral
+} acp_clock_t;
+
+int acp_clock_get(acp_clock_t, unsigned long *);
+
+#endif /* __ASSEMBLY__ */
+
+/*
+  ================================================================================
+  ================================================================================
   Include the Common LSI Header
   ================================================================================
   ================================================================================

@@ -52,7 +52,7 @@ endif
 ################################################################################
 ## All Builds
 
-COBJS += dcr.o ssp.o sbb.o reset.o clocks.o acp_failure.o mdio.o nand.o
+COBJS += dcr.o sbb.o reset.o clocks.o acp_failure.o mdio.o nand.o
 COBJS += pciesrio.o version.o
 
 SOBJS += acp_start.o

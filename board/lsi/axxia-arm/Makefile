@@ -32,7 +32,7 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-COBJS	+= axxia.o mdio.o phy.o pcie.o axxia_clocks.o
+COBJS	+= axxia.o mdio.o phy.o pcie.o
 
 else
 
@@ -46,7 +46,7 @@ endif
 ################################################################################
 ## All Builds
 
-COBJS   += failure.o version.o ssp.o
+COBJS   += failure.o version.o axxia_clocks.o
 SOBJS   += lowlevel.o
 
 ################################################################################

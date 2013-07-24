@@ -50,7 +50,7 @@ unsigned long do_go_exec(ulong (*entry)(int, char * const []), int argc,
 		unsigned long ccr1_val;
 		unsigned long ccr2_val;
 		char buffer [ 80 ];
-		unsigned long ppc_clock;
+		unsigned long core_clock;
 
 		envstring = getenv("os_access");
 
@@ -97,8 +97,8 @@ unsigned long do_go_exec(ulong (*entry)(int, char * const []), int argc,
 		ose_add_string( 0, buffer );
 		sprintf( buffer, "serclk1=%u", UART_CLOCK_SPEED);
 		ose_add_string( 0, buffer );
-		if( 0 == acp_clock_get( clock_ppc, & ppc_clock ) ) {
-			sprintf( buffer, "coreclk=%lu", ( ppc_clock * 1000 ) );
+		if( 0 == acp_clock_get( clock_core, &core_clock ) ) {
+			sprintf( buffer, "coreclk=%lu", ( core_clock * 1000 ) );
 			ose_add_string( 0, buffer );
 		} else {
 			printf( "Error Getting PPC Clock!\n" );

@@ -1311,32 +1311,6 @@ void mmtest( unsigned long, unsigned long, unsigned long );
 #define SSP (IO+0x2000)
 #endif
 
-#define SSP_CR0       0x000
-#define SSP_CR1       0x004
-#define SSP_DR        0x008
-#define SSP_SR        0x00c
-#define SSP_CPSR      0x010
-#define SSP_IMSC      0x014
-#define SSP_RIS       0x018
-#define SSP_MIS       0x01c
-#define SSP_ICR       0x020
-#define SSP_DMACR     0x024
-#define SSP_CSR       0x030
-#define SSP_PERIPHID0 0xfe0
-#define SSP_PERIPHID1 0xfe4
-#define SSP_PERIPHID2 0xfe8
-#define SSP_PERIPHID3 0xfec
-#define SSP_PCELLID0  0xff0
-#define SSP_PCELLID1  0xff4
-#define SSP_PCELLID2  0xff8
-#define SSP_PCELLID3  0xffc
-
-#ifndef __ASSEMBLY__
-int ssp_read(void *, unsigned long, unsigned long);
-int ssp_write(void *, unsigned long, unsigned long, int);
-int ssp_init(int, int);
-#endif
-
 /*
   ======================================================================
   ======================================================================
@@ -1538,11 +1512,6 @@ int is_asic( void );
 */
 
 #ifndef __ASSEMBLY__
-#define CLK_REF0 125000000
-typedef enum {
-	clock_sys, clock_ppc, clock_ddr, clock_peripheral
-} acp_clock_t;
-int acp_clock_get(acp_clock_t, unsigned long *);
 #ifdef CONFIG_AXXIA_25xx
 void axm2500_pll_check_lock(void);
 #endif

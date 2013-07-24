@@ -1,9 +1,9 @@
 /*
- * ssp.c
+ * board/lsi/common/ssp.c
  *
- * Simple driver for the SSP controller in LSI's ACP.
+ * Simple driver for the SSP controller in LSI's Axxia (ARM PL022).
  *
- * Copyright (C) 2009 LSI Corporation
+ * Copyright (C) 2009-2013 LSI Corporation
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -146,6 +146,23 @@ write_enable(void)
 }
 
 /*
+  ----------------------------------------------------------------------
+  write_disable
+*/
+
+static int
+write_disable(void)
+{
+	int rc;
+
+	ssp_select_device();
+	rc = ssp_write_device(4, NULL);
+	ssp_deselect_all();
+
+	return rc;
+}
+
+/*
   ------------------------------------------------------------------------------
   ssp_internal_write
 */
@@ -156,8 +173,6 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 	int rc;
 	unsigned char *input = (unsigned char *)buffer;
 
-	printf("Writing 0x%lx bytes to offset 0x%lx\n", length, offset);
-
 	while (0 < length) {
 		int this_write;
 		int this_written = 0;
@@ -166,21 +181,16 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 		ssp_select_device();
 		rc |= ssp_write_device(2, NULL);
 
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
-		if (0 != is_flash) {
+		if (1 == is_flash) {
 			rc |= ssp_write_device((offset & 0x00ff0000) >> 16,
 					       NULL);
 			rc |= ssp_write_device((offset & 0x0000ff00) >> 8, NULL);
 			rc |= ssp_write_device(offset & 0x000000ff, NULL);
 		} else {
-#else
 			rc |= ssp_write_device((offset & 0x10000) >> 16, NULL);
 			rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
 			rc |= ssp_write_device(offset & 0xff, NULL);
-#endif
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 		}
-#endif
 
 		this_write = 256 - ( offset % 256 );
 
@@ -192,7 +202,6 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 			--length;
 			++offset;
 		}
-
 
 		if (0 != rc)
 			return SSP_FAILURE();
@@ -216,7 +225,7 @@ ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
 			if (0 == retries)
 				return SSP_FAILURE();
 		} else {
-			udelay( 5000 );	/* TODO: Why the delay? */
+			udelay(5000);	/* TODO: Why the delay? */
 		}
 	}
 
@@ -254,9 +263,8 @@ serial_flash_sector_erase(unsigned long offset)
 		 0 != (status & 1) &&
 		 0 < --retries);
 
-	if (0 != rc || 0 == retries) {
+	if (0 != rc || 0 == retries)
 		return SSP_FAILURE();
-	}
 
 	return 0;
 }
@@ -287,8 +295,6 @@ serial_flash_erase(unsigned long offset, unsigned long length)
 
 		rc = ssp_read(buffer, sector_offset, SECTOR_SIZE);
 		rc |= serial_flash_sector_erase(sector_offset);
-		if (0 != rc) 
-			return SSP_FAILURE();
 		rc |= ssp_internal_write(buffer, sector_offset,
 					 offset % SECTOR_SIZE);
 		free(buffer);
@@ -330,8 +336,6 @@ serial_flash_erase(unsigned long offset, unsigned long length)
 
 		rc = ssp_read(buffer, sector_offset, SECTOR_SIZE);
 		rc |= serial_flash_sector_erase(sector_offset);
-		if (0 != rc) 
-			return SSP_FAILURE();
 		rc |= ssp_internal_write((buffer + length),
 					 (sector_offset + length),
 					 SECTOR_SIZE - length);
@@ -368,20 +372,15 @@ ssp_read(void *buffer, unsigned long offset, unsigned long length)
 	ssp_select_device();
 	rc = ssp_write_device(3, NULL);
 
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
-	if (0 != is_flash) {
+	if (1 == is_flash) {
 		rc |= ssp_write_device((offset & 0x00ff0000) >> 16, NULL);
 		rc |= ssp_write_device((offset & 0x0000ff00) >> 8, NULL);
 		rc |= ssp_write_device(offset & 0x000000ff, NULL);
 	} else {
-#else
 		rc |= ssp_write_device((offset & 0x10000) >> 16, NULL);
 		rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
 		rc |= ssp_write_device(offset & 0xff, NULL);
-#endif
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	}
-#endif
 
 	while (0 == rc &&
 	       0 < length--) {
@@ -422,7 +421,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 		if (0 != rc)
 			return SSP_FAILURE();
 	}
-
+	
 	rc = ssp_internal_write(buffer, offset, length);
 
 	if (0 != rc)
@@ -436,8 +435,7 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 		ssp_select_device();
 		rc = ssp_write_device(3, NULL);
 
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
-		if (0 != is_flash) {
+		if (1 == is_flash) {
 			rc |= ssp_write_device((voffset & 0x00ff0000) >> 16,
 					       NULL);
 			rc |= ssp_write_device((voffset & 0x0000ff00) >> 8,
@@ -445,14 +443,10 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 			rc |= ssp_write_device(voffset & 0x000000ff,
 					       NULL);
 		} else {
-#else
 			rc |= ssp_write_device((voffset & 0x10000) >> 16, NULL);
 			rc |= ssp_write_device((voffset & 0xff00 ) >> 8, NULL);
 			rc |= ssp_write_device(voffset & 0xff, NULL);
-#endif
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
 		}
-#endif
 
 		while (0 == rc &&
 		       0 < vlength--) {
@@ -472,7 +466,91 @@ ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
 }
 
 /*
-  ----------------------------------------------------------------------
+  ------------------------------------------------------------------------------
+  ssp_set_speed
+*/
+
+int
+ssp_set_speed(unsigned long *new_speed)
+{
+	unsigned long input_clock;
+	unsigned long output_clock;
+	unsigned long scr;
+	unsigned long cpsdvsr;
+
+	if (SSP_MAXIMUM_CLOCK < *new_speed) {
+		printf("ssp: Requested speed (%lu) is greater than the maximum "
+		       "speed (%lu).\n"
+		       "     Setting speed to maximum.\n",
+		       *new_speed, SSP_MAXIMUM_CLOCK);
+		*new_speed = SSP_MAXIMUM_CLOCK;
+	}
+
+	if (0 != acp_clock_get(clock_peripheral, &input_clock))
+		return -1;	/* Input clock not available. */
+
+	input_clock *= 1000;
+
+#if !defined(CONFIG_AXXIA_25xx) && \
+  !defined(CONFIG_AXXIA_55xx_EMU) && \
+  !defined(CONFIG_AXXIA_55xx)
+	/*
+	  Set up timer 0.
+	*/
+
+	writel(0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
+	writel(1, (unsigned long *)(TIMER0 + TIMER_LOAD));
+	writel(0xc0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
+#endif
+
+	/*
+	  Output Clock is Input Clock divided by CPSDVSR (in the
+	  SSPCPSR register, incorrectly called CPSDVR in the
+	  description of SSPCR0) multiplied by the SCR plus 1.
+
+	  Output Clock = Input Clock / (CPSDVSR * (1 + SCR))
+
+	  Calculate the closest output clock available.
+	*/
+
+	output_clock = input_clock / *new_speed;
+
+	/*
+	  cpsdvsr must be even, and between 2 and 254.
+	  scr must be between 0 and 255.
+	*/
+
+	cpsdvsr = output_clock / 1;
+	cpsdvsr &= ~1;
+
+	if (2 > cpsdvsr)
+		cpsdvsr = 2;
+
+	scr = output_clock / cpsdvsr;
+
+	if (0 < scr)
+		--scr;
+
+	if (255 < scr)
+		scr = 255;
+
+	output_clock = input_clock / (cpsdvsr * (1 + scr));
+	*new_speed = output_clock;
+
+	/*
+	  Set up the SSP.
+	*/
+
+	writel(((scr << 16) | 0x07), (unsigned long *)(SSP + SSP_CR0));
+	writel(cpsdvsr, (unsigned long *)(SSP + SSP_CPSR));
+	writel(2, (unsigned long *)(SSP + SSP_CR1));
+	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
   ssp_init
 */
 
@@ -484,39 +562,38 @@ ssp_init(int input_device, int input_read_only)
 	int i;
 	unsigned char value[3];
 #endif
+	unsigned long ssp_speed = SSP_DEFAULT_CLOCK;
 
 	device = input_device;
 
-	/*
-	  Set up timer 0.
-	*/
-
-#if (!defined(ACP_25xx) && !defined(CONFIG_AXXIA_ARM))
-	writel(0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
-	writel(1, (unsigned long *)(TIMER0 + TIMER_LOAD));
-	writel(0xc0, (unsigned long *)(TIMER0 + TIMER_CONTROL));
-#endif
+	if (0 != ssp_set_speed(&ssp_speed))
+		return -1;
 
 	/*
-	  Set up the SSP.
+	  Clear out the SSP fifo.
 	*/
 
-#if defined(CONFIG_AXXIA_ARM) 
-	writel(0x7, (unsigned long *)(SSP + SSP_CR0));
-	writel(2, (unsigned long *)(SSP + SSP_CPSR));
-#else
-	writel(0x3107, (unsigned long *)(SSP + SSP_CR0));
-	writel(2, (unsigned long *)(SSP + SSP_CPSR));
-#endif
-	writel(2, (unsigned long *)(SSP + SSP_CR1));
-	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
+	for (;;) {
+		unsigned long status;
 
-	if (0 != input_read_only) {
-		read_only = 1;
-		return 0;
+		status = readl(SSP + SSP_SR);
+
+		if (3 == status)
+			break;
+
+		(void)readl(SSP + SSP_DR);
 	}
 
-	read_only = 0;
+	/*
+	  Set read_only and is_flash.
+	*/
+
+	if (0 != input_read_only)
+		read_only = 1;
+	else
+		read_only = 0;
+
+	is_flash = 0;
 
 #if defined(CONFIG_AXXIA_SERIAL_FLASH)
 	/*
@@ -542,13 +619,22 @@ ssp_init(int input_device, int input_read_only)
 
 	if ('Q' == value[0] && 'R' == value[1] && 'Y' == value[2])
 		is_flash = 1;
-	else
-		is_flash = 0;
-
-	if (0 != is_flash)
-		writel(0x907, (unsigned long *)(SSP + SSP_CR0));
 #endif
 
+	/*
+	  Clear out the SSP fifo.
+	*/
+
+	for (;;) {
+		unsigned long status;
+
+		status = readl(SSP + SSP_SR);
+
+		if (3 == status)
+			break;
+
+		(void)readl(SSP + SSP_DR);
+	}
 
 	return 0;
 }

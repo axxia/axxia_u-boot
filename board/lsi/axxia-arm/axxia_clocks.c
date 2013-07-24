@@ -37,7 +37,7 @@
 */
 
 int
-acp_clock_get(axxia_clock_t clock, unsigned long *frequency)
+acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 {
 	*frequency = 0ULL;
 
@@ -46,13 +46,19 @@ acp_clock_get(axxia_clock_t clock, unsigned long *frequency)
 	*/
 
 	switch (clock) {
-	case clock_sys:
+	case clock_system:
 		*frequency = 4096;
+		break;
+	case clock_peripheral:
+		*frequency = 2000;
+		break;
+	case clock_core:
+		*frequency = 2000;
 		break;
 	default:
 		return -1;
 		break;
 	}
-
+	
 	return 0;
 }

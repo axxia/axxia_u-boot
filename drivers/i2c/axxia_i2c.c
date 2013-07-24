@@ -664,12 +664,12 @@ i2c_init(int speed, int slave)
 	writel(0x1, i2c_addr + AI2C_REG_I2C_X7_GLOBAL_CONTROL);
 
 	/* Configure Clock setup registers */
-     /*   Assume PCLK=50MHZ, I2C=Fast mode (400KHz) */
+	/*   Assume PCLK=50MHZ, I2C=Fast mode (400KHz) */
 
 	do {
 		for (;;) {
 			int rc;
-			rc = acp_clock_get(clock_sys, &per_clock);
+			rc = acp_clock_get(clock_system, &per_clock);
 
 			if (0 == rc) {
 				clockMhz = per_clock/(1024*1024);

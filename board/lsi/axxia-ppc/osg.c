@@ -763,7 +763,7 @@ acp_osg_update_dt(void *input, int group)
 	  Update the clocks, PPC and peripheral.
 	*/
 	
-	if ((0 != acp_clock_get(clock_ppc, &ppc_clk)) ||
+	if ((0 != acp_clock_get(clock_core, &ppc_clk)) ||
 	    (0 != acp_clock_get(clock_peripheral, &clk_per))) {
 		return -1;
 	}

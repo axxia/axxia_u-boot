@@ -403,9 +403,9 @@ axxia_init_r(void)
 #endif
 			);
 
-		rc = acp_clock_get(clock_sys, &system_pll);
-		rc |= acp_clock_get(clock_ppc, &ppc_pll);
-		rc |= acp_clock_get(clock_ddr, &ddr_pll);
+		rc = acp_clock_get(clock_system, &system_pll);
+		rc |= acp_clock_get(clock_core, &ppc_pll);
+		rc |= acp_clock_get(clock_memory, &ddr_pll);
 		rc |= acp_clock_get(clock_peripheral, &peripheral_clock);
 
 		if (0 != rc)

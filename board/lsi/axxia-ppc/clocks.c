@@ -155,7 +155,7 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 	case clock_peripheral:
 		*frequency = 6500;
 		break;
-	case clock_ppc:
+	case clock_core:
 		*frequency = 12500;
 		break;
 	default:
@@ -182,7 +182,7 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 	unsigned long prms;
 
 	switch (clock) {
-	case clock_sys:
+	case clock_system:
 		mcgc = dcr_read(0xd00);
 
 		if (0 == (mcgc & 0x30000000)) {
@@ -192,7 +192,7 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 			*frequency = get_pll(prms, ((mcgc & 0xf0000) >> 16) + 1);
 		}
 		break;
-	case clock_ppc:
+	case clock_core:
 		mcgc = dcr_read(0xd00);
 
 		if (0 == (mcgc & 0xc0000000)) {
@@ -203,7 +203,7 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 					     ((mcgc & 0xf00000) >> 20) + 1);
 		}
 		break;
-	case clock_ddr:
+	case clock_memory:
 		prms = dcr_read(0xd70);
 		*frequency = get_pll(prms, 1);
 		break;
@@ -248,7 +248,7 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 	mcgs = dcr_read(0xd01);
 
 	switch (clock) {
-	case clock_ppc:
+	case clock_core:
 		if (0 == (mcgc & 0xc0000000)) {
 			/* ppc_clk is clk_ref0 */
 			*frequency = CLK_REF0 / 1000;
