@@ -352,34 +352,34 @@ clear_page_tables:
 
 #ifndef CONFIG_SPL_BUILD
 
-setup_dickens:
-
-#ifdef DUAL_CLUSTER
-	ldr	r0, =0x00080200
-#else
-	ldr	r0, =0x00080000
-#endif
-	ldr	r1, =(DICKENS + 0x00200210)
-	ldr	r2, =(DICKENS + 0x280210)
-1:	str	r0, [r1]
-	add	r1, r1, #0x10000
-	cmp	r1, r2
-	blt	1b
-	ldr	r1, =(DICKENS + 0x210)
-	str	r0, [r1]
-
-	ldr	r1, =(DICKENS + 0x200200)
-	ldr	r2, =(DICKENS + 0x280200)
-2:	ldr	r3, [r1]
-	cmp	r0, r3
-	bne	2b
-	add	r1, r1, #0x10000
-	cmp	r1, r2
-	blt	2b
-	ldr	r1, =(DICKENS + 0x200)
-3:	ldr	r3, [r1]
-	cmp	r0, r3
-	bne	3b
+#setup_dickens:
+#
+##ifdef DUAL_CLUSTER
+#	ldr	r0, =0x00080200
+##else
+#	ldr	r0, =0x00080000
+##endif
+#	ldr	r1, =(DICKENS + 0x00200210)
+#	ldr	r2, =(DICKENS + 0x280210)
+#1:	str	r0, [r1]
+#	add	r1, r1, #0x10000
+#	cmp	r1, r2
+#	blt	1b
+#	ldr	r1, =(DICKENS + 0x210)
+#	str	r0, [r1]
+#
+#	ldr	r1, =(DICKENS + 0x200200)
+#	ldr	r2, =(DICKENS + 0x280200)
+#2:	ldr	r3, [r1]
+#	cmp	r0, r3
+#	bne	2b
+#	add	r1, r1, #0x10000
+#	cmp	r1, r2
+#	blt	2b
+#	ldr	r1, =(DICKENS + 0x200)
+#3:	ldr	r3, [r1]
+#	cmp	r0, r3
+#	bne	3b
 
 	@@
 	@ Clear BSS
