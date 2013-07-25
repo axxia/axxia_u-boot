@@ -282,6 +282,18 @@ axxia_initialize(void)
 #endif
 
 	/*
+	  =======
+	  Voltage
+	  =======
+	*/
+
+#ifdef CONFIG_AXXIA_55XX
+	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE))
+		if (0 != (returnCode = voltage_init()))
+			goto acp_init_return;
+#endif
+
+	/*
 	  =============
 	  System Memory
 	  =============

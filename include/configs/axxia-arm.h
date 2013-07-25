@@ -578,29 +578,6 @@ int serial_early_init(void);
 
 #define SSP (IO+0x88000)
 
-/* TWL6035 */
-#ifndef CONFIG_SPL_BUILD
-#if 0
-#define CONFIG_TWL6035_POWER
-#endif
-#endif
-
-#if 0
-/* MMC */
-#define CONFIG_GENERIC_MMC
-#define CONFIG_MMC
-#define CONFIG_OMAP_HSMMC
-/* #define CONFIG_DOS_PARTITION */
-
-/* MMC ENV related defines */
-#define CONFIG_ENV_IS_IN_MMC
-#define CONFIG_SYS_MMC_ENV_DEV		1	/* SLOT2: eMMC(1) */
-#define CONFIG_ENV_OFFSET		0xE0000
-#define CONFIG_CMD_SAVEENV
-
-#define CONFIG_SYS_CONSOLE_IS_IN_ENV
-#endif
-
 /* Flash */
 #define CONFIG_SYS_NO_FLASH
 
@@ -982,10 +959,6 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_SPL_BSS_MAX_SIZE		0x100000	/* 1 MB */
 #define CONFIG_SYS_SPL_MALLOC_START	0x84100000
 #define CONFIG_SYS_SPL_MALLOC_SIZE	0x100000	/* 1 MB */
-
-#if 0
-#define CONFIG_ENV_IS_NOWHERE
-#endif
 
 #define CONFIG_AXXIA_SERIAL_FLASH_ENV
 #define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
