@@ -106,7 +106,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_CMD_I2C
 #define CONFIG_AXXIA_I2C
 #define CONFIG_I2C_MULTI_BUS
-#define CONFIG_SYS_MAX_I2C_BUS 3
+#define CONFIG_SYS_MAX_I2C_BUS 4
 #define CONFIG_SYS_I2C_SPEED 100000
 
 
@@ -273,10 +273,12 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define I2C0_ADDRESS (IO + 0x84000)
 #define I2C1_ADDRESS (IO + 0x85000)
 #define I2C2_ADDRESS (IO + 0x86000)
+#define I2C3_ADDRESS (IO + 0x87000)
 
 #define I2C0	I2C0_ADDRESS
 #define I2C1	I2C1_ADDRESS
 #define I2C2	I2C2_ADDRESS
+#define I2C3	I2C3_ADDRESS
 
 #define GPIO0_ADDRESS (IO + 0x92000)
 #define GPIO1_ADDRESS (IO + 0x93000)

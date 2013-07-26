@@ -108,9 +108,17 @@ i2c_read(uchar chip, uint address, int alen, uchar *buffer, int len)
 		case 2:
 			i2c_addr = I2C2;
 			break;
+		case 3:
+			i2c_addr = I2C3;
+			break;
 #endif
 		default:
-                printf("Unsupported bus num = %d, only 0, 1 and 2 are supported\n", bus_num);
+#ifndef CONFIG_AXXIA_25xx
+                printf("Unsupported bus num = %d, only 0, 1, 2 and 3 are supported\n", bus_num);
+#else
+                printf("Unsupported bus num = %d, only 0 and 1 are supported\n", bus_num);
+
+#endif
                 return -1;
 	}
 #endif
@@ -340,9 +348,16 @@ _i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 		case 2:
 			i2c_addr = I2C2;
 			break;
+		case 3:
+			i2c_addr = I2C3;
+			break;
 #endif
 		default:
-                printf("Unsupported bus num = %d, only 0, 1 and 2 are supported\n", bus_num);
+#ifndef CONFIG_AXXIA_25xx
+                printf("Unsupported bus num = %d, only 0, 1, 2 and 3 are supported\n", bus_num);
+#else
+                printf("Unsupported bus num = %d, only 0 and 1 are supported\n", bus_num);
+#endif
                 return -1;
 	}
 #endif
@@ -654,8 +669,11 @@ i2c_init(int speed, int slave)
 		case 2:
 			i2c_addr = I2C2;
 			break;
+		case 3:
+			i2c_addr = I2C3;
+			break;
 		default:
-                printf("Unsupport bus num = %d, only 0, 1 and 2 are supported\n", bus_num);
+                printf("Unsupport bus num = %d, only 0, 1, 2 and 3 are supported\n", bus_num);
                 return;
 	}
 #endif
