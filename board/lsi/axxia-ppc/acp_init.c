@@ -994,7 +994,8 @@ clocks_init( void )
 		tune3 = ((clocks->sys_locktune & 0xffff) << 16) |
 			(clocks->sys_fftune & 0xffff);
 #ifdef DISPLAY_PARAMETERS
-		serial_early_init();
+		serial_initialize();
+		serial_init();
 		printf("%s Tune Values: 0x%08lx 0x%08lx 0x%08lx\n",
 		       (0 == type) ? "SYS" : "PPC", tune1, tune2, tune3);
 #endif
@@ -1058,7 +1059,8 @@ clocks_init( void )
 	tune3 = clocks->ddr_lftune_lower;
 
 #ifdef DISPLAY_PARAMETERS
-	serial_early_init();
+	serial_initialize()
+	serial_init();
 	printf("DDR Tune Values: 0x%08lx 0x%08lx 0x%08lx\n",
 	       tune1, tune2, tune3);
 #endif
@@ -1561,10 +1563,6 @@ acp_init( void )
 
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS ) ) {
-#ifndef DISPLAY_PARAMETERS
-	  serial_exit(); /* Turn off the UART while updating the PLLs. */
-#endif
-
 		if( 0 != ( returnCode = clocks_init( ) ) ) {
 			/*
 			  Set the PCIe/SRIO mode based on the
@@ -1579,7 +1577,8 @@ acp_init( void )
 #ifdef CLOCK_LOCK_VERIFY_EARLY
 		mdelay( 500 );
 #endif
-		serial_early_init( );
+		serial_initialize();
+		serial_init();
 	}
 
 #if defined(CONFIG_AXXIA_25xx) && !defined(ACP_EMU)

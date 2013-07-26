@@ -225,7 +225,7 @@ void serial_register(struct serial_device *dev)
  */
 void serial_initialize(void)
 {
-	axxia_serial_init();
+	axxia_serial_initialize();
 	mpc8xx_serial_initialize();
 	ns16550_serial_initialize();
 	pxa_serial_initialize();

@@ -19,6 +19,7 @@
  */
 
 #include <common.h>
+#include <asm/spl.h>
 
 /*
   ==============================================================================
@@ -94,12 +95,23 @@ reset_cpu_fabric(void)
   overridden here to handle the SPL boot on Axxia ARM systems.
 */
 
+DECLARE_GLOBAL_DATA_PTR;
+extern gd_t gdata;
+
 void
 board_init_f(ulong bootflag)
 {
 	int rc;
 
-	serial_early_init();
+	/* Clear BSS */
+	memset(__bss_start, 0, __bss_end__ - __bss_start);
+
+	/* Set the global data pointer. */
+	gd = &gdata;
+
+	gd->baudrate = CONFIG_BAUDRATE;
+	serial_initialize();
+	serial_init();
 	puts("\n"
 	     "   ___             _        __  __    ___            __    _______  __ \n"
 	     "  / _ |__ ____ __ (_)__ _  / / / /___/ _ )___  ___  / /_  / __/ _ \\/ / \n"

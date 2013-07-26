@@ -565,11 +565,7 @@ extern unsigned long _u_boot_list__start; /* SR */
 	set_cpu_clk_info(); /* Setup clock information */
 #endif
 
-#ifndef CONFIG_AXXIA_ARM
 	serial_initialize();
-#else
-	serial_init();
-#endif
 
 	debug("Now running in RAM - U-Boot at: %08lx\n", dest_addr);
 

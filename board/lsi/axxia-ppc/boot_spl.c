@@ -125,7 +125,8 @@ axxia_init_f(void)
 #endif
 
 	/* Initialize the serial port. */
-	serial_early_init();
+	serial_initialize();
+	serial_init();
 
 	/*
 	  Work around for the problem described in the L2 errata document.
@@ -195,7 +196,8 @@ axxia_init_f(void)
 	memset((void *)&_bss_start, 0, (&_bss_end - &_bss_start));
 
 	/* Re-Initialize the serial port (since BSS just got cleared). */
-	serial_early_init();
+	serial_initialize();
+	serial_init();
 
 	/*
 	  Set up the board info, global data, and stack

@@ -644,6 +644,7 @@ void board_init_f(ulong bootflag)
 
 void acp_mem_init( unsigned long, unsigned long, unsigned long );
 void axxia_init_r( void );
+gd_t gdata __attribute__ ((section(".data")));
 
 void
 axxia_init_f( void )
@@ -749,8 +750,13 @@ axxia_init_f( void )
 	}
 #endif /* CONFIG_ACP3 */
 
+	/* Clear BSS */
+	memset((void *)&_bss_start, 0, (&_bss_end - &_bss_start));
+
 	/* Initialize the serial port. */
-	serial_early_init();
+	serial_initialize();
+	serial_init();
+	printf("\ngd->baudrate is %d\n", gd->baudrate);
 
 	/*
 	  Work around for the problem described in the L2 errata document.
@@ -818,12 +824,6 @@ axxia_init_f( void )
 #endif /* ACP_ISS */
 #endif /* CONFIG_ACP2 */
 
-	/* Clear BSS */
-	memset((void *)&_bss_start, 0, (&_bss_end - &_bss_start));
-
-	/* Re-Initialize the serial port (since BSS just got cleared). */
-	serial_early_init();
-
 	/*
 	  Set up the board info, global data, and stack
 	*/
@@ -842,6 +842,10 @@ axxia_init_f( void )
 	__asm__ __volatile__( "" : : : "memory" );
 	memset( ( void * ) gd, 0, sizeof( gd_t ) );
 	gd->bd = bd;
+
+	/* Re-Initialize the serial port (since BSS just got cleared). */
+	serial_initialize();
+	serial_init();
 
 	/*
 	  Get the size of memory...

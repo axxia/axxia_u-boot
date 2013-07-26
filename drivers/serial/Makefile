@@ -25,7 +25,7 @@ include $(TOPDIR)/config.mk
 
 LIB	:= $(obj)libserial.o
 
-ifndef CONFIG_AXXIA
+ifndef CONFIG_SPL_BUILD
 COBJS-y += serial.o
 endif
 
@@ -56,19 +56,10 @@ COBJS-$(CONFIG_XILINX_UARTLITE) += serial_xuartlite.o
 COBJS-$(CONFIG_SANDBOX_SERIAL) += sandbox.o
 COBJS-$(CONFIG_SCIF_CONSOLE) += serial_sh.o
 COBJS-$(CONFIG_ZYNQ_SERIAL) += serial_zynq.o
+COBJS-$(CONFIG_AXXIA_SERIAL) += axxia.o
 
 ifndef CONFIG_SPL_BUILD
 COBJS-$(CONFIG_USB_TTY) += usbtty.o
-endif
-
-ifdef CONFIG_ACP
-COBJS-y += axxia_uart.o
-endif
-
-ifdef CONFIG_SPL_BUILD 
-ifdef CONFIG_ACP
-COBJS-y += axxia_uart.o
-endif
 endif
 
 COBJS	:= $(sort $(COBJS-y))
