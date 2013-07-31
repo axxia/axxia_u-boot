@@ -1726,7 +1726,6 @@ acp_init_r( void )
 #endif
 
 
-#if 0
 	/*
 	  If this is the initial boot, bring up the other OS boot cores.
 
@@ -1784,8 +1783,6 @@ acp_init_r( void )
 			       (unsigned int)acp_spintable[3]);
 		}
 	}
-
-#endif
 
 	/* Update the device trees for all groups. */
 	if (0 != acp_osg_initialize())
