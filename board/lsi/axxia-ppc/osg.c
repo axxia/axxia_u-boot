@@ -392,7 +392,7 @@ acp_osg_group_get_res(int group, acp_osg_group_res_t res)
 	case ACP_OS_PCIE1:
 		rv = PCIE1(acp_osg_group->flags);
 		break;
-#if !defined(ACP_25xx) && !defined(AXM_35xx)
+#if !defined(ACP_25xx)
 	case ACP_OS_PCIE2:
 		rv = PCIE2(acp_osg_group->flags);
 		break;
@@ -480,7 +480,7 @@ acp_osg_group_set_res(int group, acp_osg_group_res_t res, unsigned long value)
 		acp_osg_groups[group]->flags |=
 			((value << PCIE1_SHIFT) & PCIE1_MASK);
 		break;
-#if !defined(ACP_25xx) && !defined(AXM_35xx)
+#if !defined(ACP_25xx)
 	case ACP_OS_PCIE2:
 		acp_osg_groups[group]->flags &= ~PCIE2_MASK;
 		acp_osg_groups[group]->flags |=
@@ -1115,7 +1115,7 @@ acp_osg_update_dt(void *input, int group)
 	if (0 != rc)
 		return -1;
 	
-#if !defined(ACP_25xx) && !defined(AXM_35xx)
+#if !defined(ACP_25xx)
 
 	/* PEI2 */
 
