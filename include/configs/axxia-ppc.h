@@ -238,7 +238,7 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
 
 #define CONFIG_SYS_MALLOC_BASE (0x280000)
 #define CONFIG_SYS_MALLOC_SIZE (0x400000 - CONFIG_SYS_MALLOC_BASE)
-#define CONFIG_SYS_STACK_BASE  (CONFIG_SYS_MALLOC_BASE)
+#define CONFIG_SYS_STACK_BASE  (CONFIG_SYS_MALLOC_BASE - (ACP_MAX_CORES * 0x400))
 #define CONFIG_SYS_MALLOC_LEN (CONFIG_SYS_MALLOC_SIZE)
 
 #ifdef CONFIG_SPL_BUILD
@@ -249,10 +249,10 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
 #endif
 #else
 /* Early stack for each core. */
-#define CFG_INIT_RAM_ADDR0  (CONFIG_SYS_STACK_BASE - 0x0000)
-#define CFG_INIT_RAM_ADDR1  (CONFIG_SYS_STACK_BASE - 0x4000)
-#define CFG_INIT_RAM_ADDR2  (CONFIG_SYS_STACK_BASE - 0x8000)
-#define CFG_INIT_RAM_ADDR3  (CONFIG_SYS_STACK_BASE - 0xc000)
+#define CFG_INIT_RAM_ADDR0  (CONFIG_SYS_STACK_BASE)
+#define CFG_INIT_RAM_ADDR1  (CONFIG_SYS_STACK_BASE + 0x400)
+#define CFG_INIT_RAM_ADDR2  (CONFIG_SYS_STACK_BASE + 0x800)
+#define CFG_INIT_RAM_ADDR3  (CONFIG_SYS_STACK_BASE + 0xc00)
 #endif
 
 /*
@@ -691,6 +691,7 @@ int i2c_write(unsigned char, unsigned int, int, unsigned char *, int);
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_OF_LIBFDT
+#define CONFIG_OF_BOARD_SETUP
 #define CONFIG_FIT
 #ifndef __ASSEMBLY__
 unsigned long *get_acp_fdt(int);
@@ -706,13 +707,14 @@ unsigned long *get_acp_fdt(int);
 */
 
 #define ACP_MAX_CORES 4
-#if defined(CONFIG_AXXIA_342X) || defined(CONFIG_AXXIA_25xx)
+#if defined(CONFIG_AXXIA_344X)
+#define ACP_NR_CORES 4
+#elif defined(CONFIG_AXXIA_342X) || defined(CONFIG_AXXIA_25xx)
 #define ACP_NR_CORES 2
-#define OS_GROUP0_DEFAULT "0xd31:0:0x100"
 #else
 #define ACP_NR_CORES 1
-#define OS_GROUP0_DEFAULT "0xdf1:0:0x100"
 #endif
+
 #define OS_MEMORY_DEFAULT 0x100
 
 #ifndef __ASSEMBLY__
@@ -777,7 +779,7 @@ typedef struct {
 
 extern acp_spintable_t * acp_spintable [ ACP_NR_CORES ];
 
-int acp_spintable_init(int, int, unsigned long);
+int acp_spintable_init(int, int);
 void acp_spintable_spin( void );
 void acp_spintable_jump( unsigned long, unsigned long );
 

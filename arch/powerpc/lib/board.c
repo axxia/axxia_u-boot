@@ -644,7 +644,6 @@ void board_init_f(ulong bootflag)
 
 void acp_mem_init( unsigned long, unsigned long, unsigned long );
 void axxia_init_r( void );
-gd_t gdata __attribute__ ((section(".data")));
 
 void
 axxia_init_f( void )
@@ -661,7 +660,9 @@ axxia_init_f( void )
 	unsigned long l2revision;
 #endif
 
-#if defined(CONFIG_AXXIA_25xx) && defined(CONFIG_ACP2) && defined(RESET_INSTEAD_OF_IPI)
+#if defined(CONFIG_AXXIA_25xx) && \
+	defined(CONFIG_SPL_BUILD) && \
+	defined(RESET_INSTEAD_OF_IPI)
 	/*
 	  Disable core 1.
 
@@ -690,7 +691,7 @@ axxia_init_f( void )
 	dcr_write(1, (0x304 + (0x100 * core)));
 #endif
 
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 	/*
 	  Handle SMP/AMP.
 
@@ -708,55 +709,15 @@ axxia_init_f( void )
 	cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
 #endif
 
-	/* Fail if this is a cold start, and not core 0. */
-	if (cold_start && (SYSTEM_BOOTCORE != core))
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	/*
+	  All non-zero cores should spin.
+	*/
 
-	/* Initialize the Stage 3 Lock. */
-	if (cold_start && (SYSTEM_BOOTCORE == core)) {
-		acp_initialize_stage3_lock();
-		acp_osg_group_set_res(0, ACP_OS_BOOT_CORE, 0);
-	}
-
-	/* All secondary cores should spin. */
-	if (!acp_osg_is_boot_core(core)) {
-		if (-1 == acp_osg_map(acp_osg_get_group(core)))
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
+	if (0 != core) {
 		acp_spintable_spin();
 	}
 
-	/* Only one boot core at a time... */
-	acp_lock_stage3();
-
-	/* Restore this core's copy of the "data" section. */
-	if (SYSTEM_BOOTCORE == core) {
-		void *source[] = {
-			(void *)&_core_copy_core0,
-			(void *)&_core_copy_core1,
-#if !defined(CONFIG_AXXIA_342X) || !defined(CONFIG_AXXIA_25xx)
-			(void *)&_core_copy_core2,
-			(void *)&_core_copy_core3
-#endif
-		};
-
-		memcpy((void *)&_core_copy_beginning, source[0],
-		       (&_core_copy_end - &_core_copy_beginning) * 4);
-	} else {
-		if (-1 == acp_osg_map(acp_osg_get_group(core)))
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
-		acp_osg_jump_to_os(acp_osg_get_group(core));
-	}
-#endif /* CONFIG_ACP3 */
-
-	/* Clear BSS */
-	memset((void *)&_bss_start, 0, (&_bss_end - &_bss_start));
-
-	/* Initialize the serial port. */
-	serial_initialize();
-	serial_init();
-	printf("\ngd->baudrate is %d\n", gd->baudrate);
+#endif /* CONFIG_SPL_BUILD */
 
 	/*
 	  Work around for the problem described in the L2 errata document.
@@ -785,45 +746,6 @@ axxia_init_f( void )
 	}
 #endif
 
-#ifdef CONFIG_ACP2
-#ifndef ACP_ISS
-	/* Make all P2A access up to the ROM alias be 32b.  See BZ 32127. */
-	/*dcr_write(0x00300000, 0x1000);*/
-#ifdef ACP_X1V1
-	dcr_write(0x00210000, 0x1000);
-#else
-	dcr_write(0x00214000, 0x1000);
-#endif
-
-	/* Initialize voltage, clocks, and system memory */
-	if( 0 != acp_init( ) ) {
-		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
-	}
-
-	/* Work around for syscache defect 30980 (only for X1). */
-#ifdef ACP_X1V1
-	dcr_write( 0x7f082600, 0xf03 );
-#endif
-
-	/*
-	  Update the TLB entry for system memory (change WIMG to 0010).
-
-	  Note that this should be 1G to allow the VxWorks 3rd stage
-	  to boot.
-	*/
-
-	__asm__ __volatile__ ("tlbwe		%1,%0,0\n" \
-			      "tlbwe		%2,%0,1\n" \
-			      "tlbwe		%3,%0,2\n" \
-			      "isync\n" : :
-			      "r" (0x80000000),
-			      "r" (0x00000bf0),
-			      "r" (0x00000000),
-			      "r" (ACP_CACHE_TLB));
-
-#endif /* ACP_ISS */
-#endif /* CONFIG_ACP2 */
-
 	/*
 	  Set up the board info, global data, and stack
 	*/
@@ -843,9 +765,13 @@ axxia_init_f( void )
 	memset( ( void * ) gd, 0, sizeof( gd_t ) );
 	gd->bd = bd;
 
-	/* Re-Initialize the serial port (since BSS just got cleared). */
+	/* Clear BSS */
+	memset((void *)&_bss_start, 0, (&_bss_end - &_bss_start));
+
+	/* Initialize the serial port. */
 	serial_initialize();
 	serial_init();
+	acp_failure_enable_console();
 
 	/*
 	  Get the size of memory...
@@ -1356,15 +1282,6 @@ axxia_init_r( void )
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 	}
 
-#ifdef CONFIG_ACP2
-	if( ( volatile uchar * ) 0 == 
-	    ( PktBuf = ( volatile uchar * )
-	      malloc( (PKTBUFSRX+1) * PKTSIZE_ALIGN + PKTALIGN ) ) ) {
-	  printf( "%s:%s:%d - malloc() failed!\n",
-		  __FILE__, __FUNCTION__, __LINE__ );
-	}
-#endif
-
 	/*
 	  Initialize MDIO
 	*/
@@ -1476,27 +1393,6 @@ axxia_init_r( void )
 		}
 #endif
 #else
-		env_value = getenv( "version3" );
-		strcpy( buffer, get_lsi_version( ) );
-
-		if( ( char * ) 0 == env_value ||
-		    0 != strcmp( env_value, buffer ) ) {
-			setenv( "version3", buffer );
-			env_save = 1;
-		}
-
-		if (cold_start) {
-			int rc;
-
-			rc = acp_osg_readenv();
-
-			if (-1 == rc)
-				acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
-			if (1 == rc)
-				env_save = 1;
-		}
-
 		/* Set the PLB6 hang pulse count. */
 		env_value = getenv("plb6_hpc");
 
@@ -1534,14 +1430,9 @@ axxia_init_r( void )
 	}
 #endif
 
-#ifdef CONFIG_ACP3
-	/* Set the FDT address to the builtin flattened device tree. */
-	working_fdt = (struct fdt_header *)get_acp_fdt(acp_osg_get_group(core));
-#endif /* CONFIG_ACP3 */
-
 	interrupt_init();
 
-#ifdef CONFIG_ACP3
+#ifndef CONFIG_SPL_BUILD
 	/* Clear the Reset Status Register. */
 #ifdef CONFIG_AXXIA_25xx
 	dcr_write(0xf, (DCR_RESET_BASE + 0xe));
@@ -1552,68 +1443,24 @@ axxia_init_r( void )
 #endif
 
 	/*
-	  If this is the initial boot, bring up the other OS boot cores.
-
-	  In all cases, bring up the secondary cores associated with
-	  this OS group.
+	  Wake up the other cores.
 	*/
 
-#if 0
-	printf("Bringing Up Other Cores...\n");	/* ZZZ */
+	printf("Bringing Up Other Cores (%d)...\n", ACP_NR_CORES); /* ZZZ */
 	
 	{
 		int i;
 		char *testmode;
 
-		/*
-		  Core 0 has to have access to the memory of every group...
-		*/
-		for (i = 0; i < ACP_MAX_OS_GROUPS; ++i) {
-			if (-1 == acp_osg_map(i))
-				acp_failure(__FILE__, __FUNCTION__, __LINE__);
-		}
-
-		for (i = 0; i < ACP_NR_CORES; ++i) {
+		for (i = 1; i < ACP_NR_CORES; ++i) {
 			int group;
 			unsigned long os_base;
 			unsigned long cores;
 
-			if (i == core)
-				continue;
-
-			if (-1 == (group = acp_osg_get_group(i)))
-				continue;
-
-			cores = acp_osg_group_get_res(group, ACP_OS_CORES);
-
-			if (0 == (cores & (1 << i)))
-				continue;
-
-			if (acp_osg_is_boot_core(i) && cold_start) {
-				dcr_write((1 << i), 0xffc00040);
-			} else {
-				os_base =
-					(acp_osg_group_get_res(group,
-							       ACP_OS_BASE) *
-					 1024 * 1024);
-				acp_spintable_init(i, cold_start, os_base);
-			}
-		}
-
-		testmode = getenv("testmode");
-
-		if (((char *)0 != testmode) && (0 == strcmp("on", testmode))) {
-			printf("Test Mode: Spintables at 0x%x 0x%x 0x%x\n",
-			       (unsigned int)acp_spintable[1],
-			       (unsigned int)acp_spintable[2],
-			       (unsigned int)acp_spintable[3]);
+			acp_spintable_init(i, cold_start);
 		}
 	}
-#endif
 
-	/* Update the device trees for all groups. */
-	if (0 != acp_osg_initialize())
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 
 	eth_initialize(bd);
@@ -1709,12 +1556,7 @@ axxia_init_r( void )
 		int boot_mode;
 		unsigned long control;
 		int pci_rc = 0;
-		int group;
 		int pei_mask = 0;
-
-#if defined(CONFIG_ACP3)	
-		group = acp_osg_get_group(core);
-#endif
 
 #if defined(CONFIG_AXXIA_25xx)
 		control = dcr_read(0xd0f);
@@ -1731,14 +1573,12 @@ axxia_init_r( void )
 		if (0 != (control & 0x00080000))
 			pci_rc = 1;
 #elif defined (CONFIG_ACP3)
-		if (0 != (control & 0x00400000) 
-			&& 0 != acp_osg_group_get_res(group, ACP_OS_PCIE0)) {
+		if (0 != (control & 0x00400000)) {
 			pci_rc = 1;
 			pei_mask |= 1;
 		}
 
-		if (0 != (control & 0x00080000) &&
-		    0 != acp_osg_group_get_res(group, ACP_OS_PCIE1)) {
+		if (0 != (control & 0x00080000)) {
 			pci_rc = 1;
 			pei_mask |= 2;
 		}
@@ -1749,8 +1589,7 @@ axxia_init_r( void )
 		boot_mode = (control & 0x80000000) >> 31;
 		control = readl((void *)GPREG_PHY_CTRL0);
 
-		if (0 != (control & 0x1000) &&
-		    0 != acp_osg_group_get_res(group, ACP_OS_PCIE0)) {
+		if (0 != (control & 0x1000)) {
 			pci_rc = 1;
 			pei_mask |= 1;
 		}

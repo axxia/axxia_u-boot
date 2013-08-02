@@ -130,7 +130,7 @@ utlb_table_end:
 
 _start_acp:
 
-#if defined(CONFIG_AXXIA_25xx) && defined(CONFIG_ACP2)
+#if defined(CONFIG_AXXIA_25xx) && defined(CONFIG_SPL_BUILD)
 	#; ------------------------------------------------------------
 	#; In some cases, the core attempts to prefetch from system
 	#; memory before it has been initialized.  To avoid this,
@@ -678,13 +678,13 @@ clear_all_fp_done:
 #ifndef CONFIG_SPL_BUILD
 acp_icache_init:
 
-	#; Create a 64K page at virtual=0x40000000/physical=0x003f0000
+	#; Create a 64K page at virtual=0x40000000/physical=0x00400000
 	lis		r14,(0x80000000)@h
 	ori		r14,r14,(0x80000000)@l
 	lis		r15,(0x40000830)@h
 	ori		r15,r15,(0x40000830)@l
-	lis		r16,(0x003f0000)@h
-	ori		r16,r16,(0x003f0000)@l
+	lis		r16,(0x00400000)@h
+	ori		r16,r16,(0x00400000)@l
 	lis		r17,(0x0000003f)@h
 	ori		r17,r17,(0x0000003f)@l
 	tlbwe		r15,r14,0
@@ -738,8 +738,12 @@ acp_icache_init:
 #ifndef CONFIG_SPL_BUILD
 	
 	#; ------------------------------------------------------------
-	#; Clear everything from _end to 4M
+	#; Clear everything from _end to 4M (core 0 only).
 	#; ------------------------------------------------------------
+
+	mfspr		r22,0x11e
+	cmpwi		r22,SYSTEM_BOOTCORE
+	bne		setup_stack
 
 	lis		r3,(_end)@h
 	ori		r3,r3,(_end)@l
@@ -754,6 +758,8 @@ acp_icache_init:
 	#; ------------------------------------------------------------
 	#; Set up the inital stack.
 	#; ------------------------------------------------------------
+
+setup_stack:
 
 #ifdef CONFIG_SPL_BUILD
 

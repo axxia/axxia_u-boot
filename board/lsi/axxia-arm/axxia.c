@@ -1,5 +1,5 @@
 /*
- *  board/lsi/axxia-arm/spl.c
+ *  board/lsi/axxia-arm/axxia.c
  *
  *  Copyright (C) 2013 LSI (john.jacques@lsi.com)
  *

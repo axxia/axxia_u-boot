@@ -1,9 +1,9 @@
 /*
  * spintable.c
  *
- * Handles all non-zero cores on LSI's ACP.
+ * Handles all non-zero cores on LSI's Axxia.
  *
- * Copyright (C) 2009 LSI Corporation
+ * Copyright (C) 2009...2013 LSI Corporation
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -25,7 +25,6 @@
  */
 
 #include <config.h>
-#ifdef CONFIG_ACP3
 #include <common.h>
 #include <malloc.h>
 #include <libfdt.h>
@@ -35,193 +34,208 @@
 
 #define ALIGNMENT 32UL
 
-acp_spintable_t *acp_spintable[ACP_NR_CORES];
-static int core_up[] = {0, 0, 0, 0};
+static int core_hold[ACP_NR_CORES] = {1};
+static int core_up[ACP_NR_CORES] = {0};
 
 /*
-  ----------------------------------------------------------------------
+  -------------------------------------------------------------------------------
   acp_spintable_spin
+
+  Executed by all non-zero cores...
 */
 
 void
-acp_spintable_spin( void )
+acp_spintable_spin(void)
 {
 	unsigned long core;
-	unsigned long os_base;
-	volatile acp_spintable_t * spintable;
+	acp_spintable_t *spintable;
 
-	__asm__ __volatile__ ( "mfspr %0,0x11e" : "=r" ( core ) );
-	acp_osg_set_core_state(core, ACP_OSG_CORE_STATE_WAITING_FOR_SPINTABLE);
+	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r"(core));
+	spintable = (acp_spintable_t *)(0x2000 + (0x40 * core));
 
-	while (ACP_OSG_SPINTABLE_NOTAVAIL == acp_osg_get_spintable_state(core)) {
+
+	while (1 == core_hold[core])
+		;
+
+	core_hold[core] = 1;
+	core_up[core] = 1;
+
+	/* Clear all pending interrupts. */
+	while (0xff != dcr_read(0xffc000a0)) {
+		dcr_write(0, 0xffc000b0);
+	}
+
+	/* Wait for the OS... */
+	while ((unsigned long long)1 == spintable->entry_address)
 		isync();
-	}
 
-	spintable = acp_spintable [ core ];
-	core_up [ core ] = 1;
+	/* Fix up CCRn. */
+	mtspr(ccr0, spintable->ccr0_value);
+	mtspr(ccr1, spintable->ccr1_value);
+	mtspr(ccr2, spintable->ccr2_value);
+	isync();
 
-	while( 0xff != dcr_read( 0xffc000a0 ) ) {
-		dcr_write( 0, 0xffc000b0 );
-	}
+	/* Make the jump. */
+#if 0
+	asm volatile ("mtspr     0x1a,%0\n"
+		      "mtspr     0x1b,%1\n"
+		      "ori       3,%2,0\n"
+		      "rfi" : : 
+		      "r"((unsigned long)spintable->entry_address),
+		      "r"(0),
+		      "r"((unsigned long)spintable->r3_value));
+#else
+	acp_spintable_jump((unsigned long)spintable->r3_value,
+			   (unsigned long)spintable->entry_address);
+#endif
 
-	acp_osg_set_core_state(core, ACP_OSG_CORE_STATE_SPINNING);
-
-	while( ( unsigned long long ) 1 == spintable->entry_address ) {
-		isync( );
-	}
-
-	acp_osg_set_core_state(core, ACP_OSG_CORE_STATE_RUNNING);
-	mtspr( ccr0, spintable->ccr0_value );
-	mtspr( ccr1, spintable->ccr1_value );
-	mtspr( ccr2, spintable->ccr2_value );
-	isync( );
-
-	acp_spintable_jump( ( unsigned long ) spintable->r3_value,
-			    ( unsigned long ) spintable->entry_address );
+	/* Should never get here! */
+	acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
 	return;
 }
 
 /*
-  ----------------------------------------------------------------------
+  -------------------------------------------------------------------------------
   acp_spintable_init
+
+  Set up the spin tables.
 */
 
 int
-acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
+acp_spintable_init(int core, int cold_start)
 {
-#if !defined(ACP_CORE1ONLY)
-	int group;
-	char *nodes[] = {
-		"/cpus/cpu@0",
-		"/cpus/cpu@1",
-		"/cpus/cpu@2",
-		"/cpus/cpu@3"
-	};
 	acp_spintable_t *spintable;
-	unsigned long long release_address;
-	struct fdt_header *dt;
-	const struct fdt_property *property;
-	int nodeoffset;
 	int retries = 1000;
+#if defined(CONFIG_AXXIA_25xx) && defined(RESET_INSTEAD_OF_IPI)
+	unsigned long temp;
+#endif
 
-	/* Get the group this core belongs to. */
-	if (-1 == (group = acp_osg_get_group(core)))
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	core_up[core] = 0;
+	flush_dcache_range(&(core_up[core]),
+			   (unsigned long)(&(core_up[core])) + sizeof(int));
 
-	/* Get a pointer to the device tree. */
-	if (NULL == (dt = (struct fdt_header *)get_acp_fdt(group)))
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
-	/* Map memory if necessary */
-	if (-1 == acp_osg_map(group))
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
-	if (0 == os_base_address) {
-		/* Allocate a spin table */
-		if ((acp_spintable_t *) 0 ==
-		    (spintable = malloc(sizeof(acp_spintable_t) + ALIGNMENT))) {
-			printf("Error allocating memory for %s.\n", nodes[core]);
-			return -1;
-		}
-
-		spintable = (acp_spintable_t *)
-			((((unsigned long) (spintable) +
-			   (ALIGNMENT - 1UL)) & ~(ALIGNMENT - 1UL)));
-	} else {
-		/*
-		  Otherwise, put at 1K above os_base_address.
-		*/
-		spintable = (acp_spintable_t *)
-			((unsigned long)os_base_address + 0x2000 +
-			 (core * ALIGNMENT));
-	}
-
-	/* Get the "reg" property */
-	if (0 > (nodeoffset = fdt_path_offset(dt, nodes[core]))) {
-		printf("Error Getting Node (%s) Offset.\n", nodes[core]);
+	/* Allocate a spin table */
+#if 0
+	if ((acp_spintable_t *) 0 ==
+	    (spintable = malloc(sizeof(acp_spintable_t) + ALIGNMENT))) {
+		printf("Error allocating memory for core %d.\n", core);
 		return -1;
 	}
 
-	if( ( struct fdt_property * ) 0 ==
-	    ( property =
-	      fdt_get_property( dt, nodeoffset,
-				"reg", NULL ) ) ) {
-		printf( "Error Getting Node (%s) Property \"reg\".\n",
-			nodes [ core ] );
-		return -1;
-	}
+	spintable = (acp_spintable_t *)
+		((((unsigned long) (spintable) +
+		   (ALIGNMENT - 1UL)) & ~(ALIGNMENT - 1UL)));
+#else
+	spintable = (acp_spintable_t *)(0x2000 + (0x40 * core));
+#endif
+	printf("%s:%d - cold_start=%d spintable=0x%p\n",
+	       __FILE__, __LINE__, cold_start, spintable); /* ZZZ */
 
 	/* Initialize the spin table */
 	spintable->entry_address = 1;
-	spintable->r3_value = *((unsigned long *) property->data);
+	spintable->r3_value = core;
 	spintable->rsvd1_value = 0;
 	spintable->pir_value = core;
-
-	/* Set the pointer array entry */
-	acp_spintable[core] = spintable;
-
-	/* Set the "cpu-release-addr" property */
-	release_address = (unsigned long long)spintable;
-
-	if( 0 != fdt_find_and_setprop( dt,
-				       nodes [ core ],
-				       "cpu-release-addr",
-				       & release_address,
-				       sizeof( unsigned long long ),
-				       1 ) ) {
-		printf( "Error Setting \"cpu-release-addr\".\n" );
-		return -1;
-	}
+	flush_dcache_range(spintable,
+			   (unsigned long)spintable + sizeof(acp_spintable_t));
+	isync();
 
 	/* Get the core from the 1st stage by sending an IPI. */
 	debug("Changing core %d spintable state.\n", core);
-	acp_osg_set_spintable_state(core, ACP_OSG_SPINTABLE_AVAILABLE);
 
+	if (0 != cold_start) {
 #if defined(CONFIG_AXXIA_25xx) && defined(RESET_INSTEAD_OF_IPI)
-	/* Enable L2 1 and Core 1 */
-	{
-		unsigned temp;
-
+		/* Enable L2 1 and Core 1 */
 		temp = dcr_read(0xd00);
 		temp |= 0xab;
 		dcr_write(temp, 0xd00);
-
 		dcr_write(0x0, (DCR_RESET_BASE + 2));
 		dcr_write(0x0, (DCR_RESET_BASE + 1));
-	}
+		temp = dcr_read(0xd00);
+		temp &= ~0xab;
+		dcr_write(temp, 0xd00);
 #else
 #if defined(CONFIG_AXXIA_25xx)
-	/* Wake up the L2 */
-	dcr_write(0x84, 0x300 + (0x100 * core));
-	dcr_write(0, 0x304 + (0x100 * core));
+		/* Wake up the L2 */
+		dcr_write(0x84, 0x300 + (0x100 * core));
+		dcr_write(0, 0x304 + (0x100 * core));
 #endif
-
-	/* Send an IPI */
-	if (0 != cold_start) {
+		/* Send an IPI */
 		debug("Sending an IPI to core %d.\n", core);
 		dcr_write((1 << core), 0xffc00040);
-	}
 #endif
+	} else {
+		core_hold[core] = 0;
+	}
+
+	isync();
 
 	/* Wait for a response */
-	while( 0 < retries ) {
-		-- retries;
-		if( 0 != core_up [ core ] ) break;
-		udelay( 100 );
+	while (0 < retries) {
+		--retries;
+
+		if(0 != core_up[core])
+			break;
+
+		udelay(100);
 	}
 
-	if( 0 == retries ) {
+	if (0 == retries)
 		printf( "Core %d is hung!\n", core );
-	} else {
+	else
 		debug("Core %d woke up!\n", core);
-	}
-
-	acp_osg_set_spintable_state(core, ACP_OSG_SPINTABLE_NOTAVAIL);
-
-#endif /* !defined(ACP_CORE1ONLY) */
 
 	return 0;
 }
 
-#endif /* CONFIG_ACP3 */
+/*
+  ------------------------------------------------------------------------------
+  ft_board_setup
+*/
+
+void
+ft_board_setup(void *blob, bd_t *bd)
+{
+	int i;
+
+	printf("%s:%d - \n", __FILE__, __LINE__); /* ZZZ */
+
+#if 0
+	for (i = 1; i < ACP_NR_CORES; ++i) {
+		char cpu_string[40];
+		int node;
+		int rc;
+		acp_spintable_t *spintable;
+		unsigned long release_address;
+
+		sprintf(cpu_string, "/cpus/cpu@%d", i);
+		printf("%s:%d - cpu_string=%s\n",
+		       __FILE__, __LINE__, cpu_string); /* ZZZ */
+		node = fdt_path_offset(blob, cpu_string);
+		printf("%s:%d - i=%d node=%d blob=0x%p\n",
+		       __FILE__, __LINE__, i, node, blob); /* ZZZ */
+
+		if (0 > node)
+			continue;
+
+		spintable = (acp_spintable_t *)(0x2000 + (0x40 * i));
+		release_address = (unsigned long)
+			((unsigned long *)&spintable->entry_address);
+		printf("%s:%d - spintable=0x%p release_address=0x%p\n",
+		       __FILE__, __LINE__, spintable, release_address); /* ZZZ */
+		rc = fdt_setprop(blob, node, "cpu-release-addr",
+				 &release_address, sizeof(unsigned long));
+
+		if (0 != rc) {
+			printf("%s:%d - Error setting property, %d!\n",
+			       __FILE__, __LINE__, rc);
+			continue;
+		}
+	}
+#endif
+
+	fdt_fixup_ethernet(blob);
+
+	return;
+}

@@ -35,6 +35,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifndef CONFIG_AXXIA
 void __ft_board_setup(void *blob, bd_t *bd)
 {
 	int rc;
@@ -79,6 +80,7 @@ void __ft_board_setup(void *blob, bd_t *bd)
 	}
 }
 void ft_board_setup(void *blob, bd_t *bd) __attribute__((weak, alias("__ft_board_setup")));
+#endif	/* CONFIG_AXXIA */
 
 /*
  * Fixup all PCIe nodes by setting the device_type property
@@ -120,7 +122,8 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 {
 	sys_info_t sys_info;
 	int off, ndepth = 0;
-
+	
+	printf("%s:%d - \n", __FILE__, __LINE__); /* ZZZ */
 	get_sys_info(&sys_info);
 
 	do_fixup_by_prop_u32(blob, "device_type", "cpu", 4, "timebase-frequency",
@@ -167,6 +170,7 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 	 * Fixup all ethernet nodes
 	 * Note: aliases in the dts are required for this
 	 */
+	printf("%s:%d - \n", __FILE__, __LINE__); /* ZZZ */
 	fdt_fixup_ethernet(blob);
 
 	/*

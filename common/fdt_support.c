@@ -471,6 +471,11 @@ void fdt_fixup_ethernet(void *fdt)
 				tmp = (*end) ? end+1 : end;
 		}
 
+		printf("Fixing up mac-address and local-mac-address "
+		       "(%02x:%02x:%02x:%02x:%02x:%02x) for %s\n",
+		       mac_addr[0], mac_addr[1], mac_addr[2],
+		       mac_addr[3], mac_addr[4], mac_addr[5],
+		       enet);
 		do_fixup_by_path(fdt, path, "mac-address", &mac_addr, 6, 0);
 		do_fixup_by_path(fdt, path, "local-mac-address",
 				&mac_addr, 6, 1);
