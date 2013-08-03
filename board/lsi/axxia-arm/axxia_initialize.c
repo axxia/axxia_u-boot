@@ -291,6 +291,10 @@ axxia_initialize(void)
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE))
 		if (0 != (returnCode = voltage_init()))
 			goto acp_init_return;
+
+	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
+		if (0 != (returnCode = pciesrio_init()))
+			goto acp_init_return;
 #endif
 
 	/*

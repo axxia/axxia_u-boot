@@ -42,7 +42,7 @@ else
 COBJS   += spl.o axxia_initialize.o
 
 ifdef CONFIG_AXXIA_55XX
-COBJS += voltage.o
+COBJS += voltage.o pciesrio.c
 endif
 
 endif
