@@ -238,17 +238,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #endif	/* __ASSEMBLY__ */
 
 /*
-  ================================================================================
-  ================================================================================
-  At present, the fuse register that defines the number of clusters has not been
-  implemented in the emulation images.  So, use a define...
-  ================================================================================
-  ================================================================================
-*/
-
-/*#define DUAL_CLUSTER*/
-
-/*
   ======================================================================
   ======================================================================
   IO (Peripheral Mapping)
@@ -256,7 +245,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
   ======================================================================
 */
 
-#define IO 0x90000000
+#define DICKENS (0x80000000)
+#define IO      (0x90000000)
 
 #define UART0_ADDRESS (IO + 0x80000)
 #define UART1_ADDRESS (IO + 0x81000)
@@ -282,12 +272,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 #define GPIO0_ADDRESS (IO + 0x92000)
 #define GPIO1_ADDRESS (IO + 0x93000)
-
-#ifdef CONFIG_SPL_BUILD
-#define DICKENS (0x00200210)
-#else
-#define DICKENS (0x80000000)
-#endif
 
 #define GPREG                   (IO+0x94000)
 #define GPREG_GPDMA             (GPREG+0x00)
@@ -372,6 +356,7 @@ int sysmem_init(void);
 #define CONFIG_FIT
 
 #define CONFIG_BOARD_EARLY_INIT_F
+#define CONFIG_ARCH_EARLY_INIT_R
 #define CONFIG_OF_BOARD_SETUP
 
 #define LDSSCRIPT "board/lsi/axxia-arm/u-boot.lds"
@@ -481,10 +466,8 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
 
 #endif
 
-#define CONFIG_SYS_PROMPT       "ACP3=> "
-#define CFG_PROMPT              "ACP3=> "
-#define CFG_CBSIZE              2048
-#define CFG_PBSIZE              (CFG_CBSIZE+sizeof(CFG_PROMPT)+16)
+#define CONFIG_SYS_PROMPT       "=> "
+#define CFG_CBSIZE              4096
 #define CFG_MAXARGS             64
 #define CFG_BARGSIZE            CFG_CBSIZE
 

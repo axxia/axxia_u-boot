@@ -1646,7 +1646,6 @@ int acp_clock_lock_verify(int, int);
 #define CONFIG_LSI_MDIO 1
 #define CONFIG_LSI_IO 1
 #endif
-#define CONFIG_LSI_NCR 1
 
 #define NCP_BIG_ENDIAN 1
 

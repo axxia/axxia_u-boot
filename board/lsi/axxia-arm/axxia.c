@@ -18,6 +18,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <config.h>
 #include <common.h>
 #include <twl6035.h>
 #include <asm/arch/sys_proto.h>
@@ -30,6 +31,62 @@ DECLARE_GLOBAL_DATA_PTR;
 const struct omap_sysinfo sysinfo = {
 	"Board: OMAP5430 EVM\n"
 };
+
+/*
+  ==============================================================================
+  ==============================================================================
+  Private
+  ==============================================================================
+  ==============================================================================
+*/
+
+/*
+  ------------------------------------------------------------------------------
+  set_sdcr
+*/
+
+int
+set_sdcr(void)
+{
+	char *env_sdcr;
+	unsigned long sdcr_value;
+	unsigned long sdcr_offsets[] = {
+		0x00, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
+	};
+	int i;
+
+	if (NULL == (env_sdcr = getenv("sdcr")))
+		sdcr_value = DEFAULT_SDCR_VALUE;
+	else
+		sdcr_value = simple_strtoul(env_sdcr, NULL, 16);
+
+	printf("SDCR: 0x%lx\n", sdcr_value);
+
+	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(unsigned long)); ++i) {
+		int retries = 1000;
+		int offset;
+
+		offset = DICKENS | (sdcr_offsets[i] << 16);
+		writel(sdcr_value, (offset + 0x210));
+
+		do {
+			--retries;
+		} while (0 < retries && sdcr_value != readl(offset + 0x200));
+
+		if (0 == retries)
+			return -1;
+	}
+
+	return 0;
+}
+
+/*
+  ==============================================================================
+  ==============================================================================
+  Public
+  ==============================================================================
+  ==============================================================================
+*/
 
 /**
  * @brief board_init
@@ -52,6 +109,9 @@ board_init(void)
 int
 misc_init_r(void)
 {
+	if (0 != set_sdcr())
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
 	return 0;
 }
 
@@ -75,6 +135,17 @@ board_early_init_f(void)
 {
 	gd->ram_size = 0x40000000;
 
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  arch_early_init_r
+*/
+
+int
+arch_early_init_r(void)
+{
 	return 0;
 }
 

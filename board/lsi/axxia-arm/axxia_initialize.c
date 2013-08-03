@@ -288,13 +288,25 @@ axxia_initialize(void)
 	*/
 
 #ifdef CONFIG_AXXIA_55XX
+#ifndef CONFIG_AXXIA_EMU
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE))
 		if (0 != (returnCode = voltage_init()))
 			goto acp_init_return;
+#endif
+#endif
 
+	/*
+	  =========
+	  PCIe/SRIO
+	  =========
+	*/
+
+#ifdef CONFIG_AXXIA_55XX
+#ifndef CONFIG_AXXIA_EMU
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
 		if (0 != (returnCode = pciesrio_init()))
 			goto acp_init_return;
+#endif
 #endif
 
 	/*

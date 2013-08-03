@@ -747,11 +747,6 @@ extern unsigned long _u_boot_list__start; /* SR */
 	}
 #endif
 
-#if 0
-printf("SR -- _u_boot_list_cmd__start %08lx  %08lx\n", (unsigned long)_u_boot_list_cmd__start, (unsigned long)&_u_boot_list_cmd__start);
-printf("SR -- _u_boot_list__start %08lx  %08lx\n", (unsigned long)_u_boot_list__start, (unsigned long)&_u_boot_list__start);
-#endif
-
 	/* main_loop() can return to retry autoboot, if so just run it again. */
 	for (;;) {
 		main_loop();
