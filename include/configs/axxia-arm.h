@@ -1,15 +1,8 @@
 /*
- * (C) Copyright 2010
- * Texas Instruments Incorporated.
- * Sricharan R	  <r.sricharan@ti.com>
- *
- * Derived from OMAP4 done by:
- *	Aneesh V <aneesh@ti.com>
- *
- * Configuration settings for the TI EVM5430 board.
- *
- * See file CREDITS for list of people who contributed to this
- * project.
+ * (C) Copyright 2009-2013
+ * LSI <www.lsi.com>
+ * John Jacques <john.jacques@lsi.com>
+ * Configuration settings for the LSI ACP development boards.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,7 +11,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -27,8 +20,8 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#ifndef __CONFIGS_AXXIA_ARM_H
+#define __CONFIGS_AXXIA_ARM_H
 
 #ifndef __ASSEMBLY__
 #include <linux/types.h>
@@ -473,7 +466,6 @@ _WRITEL(const char *file, int line, unsigned long value, unsigned long address)
 
 
 #define UART_CLOCK_SPEED	2000000
-#define CONFIG_BAUDRATE		115200
 #define CONFIG_SYS_BAUDRATE_TABLE {4800, 9600, 19200, 38400, 57600, 115200}
 
 #ifndef __ASSEMBLY__
@@ -960,4 +952,4 @@ void dump_packet(const char *, void *, int);
 #include <configs/axxia.h>
 
 
-#endif /* __CONFIG_H */
+#endif /* __CONFIGS_AXXIA_ARM_H */
