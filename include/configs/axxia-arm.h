@@ -23,6 +23,8 @@
 #ifndef __CONFIGS_AXXIA_ARM_H
 #define __CONFIGS_AXXIA_ARM_H
 
+#define CONFIG_AXXIA_ARM
+
 #ifndef __ASSEMBLY__
 #include <linux/types.h>
 #endif
@@ -904,7 +906,7 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_SPL_FRAMEWORK
 #define CONFIG_SPL_TEXT_BASE		0x20000000
 #define CONFIG_SPL_MAX_SIZE		0x19000	/* 100K */
-#define CONFIG_SPL_STACK		(LSM + (256 * 1024))
+#define CONFIG_SPL_STACK		(LSM + (256 * 1024) - (8 * 1024))
 #define CONFIG_SPL_DISPLAY_PRINT
 
 #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	0x300 /* address 0x60000 */

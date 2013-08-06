@@ -35,6 +35,263 @@
 /*
   ================================================================================
   ================================================================================
+  Parameters
+  ================================================================================
+  ================================================================================
+*/
+
+#ifndef __ASSEMBLY__
+
+#define PARAMETERS_MAGIC 0x12af34ec
+
+#define PARAMETERS_GLOBAL_IGNORE_VOLTAGE     0x00000001
+#define PARAMETERS_GLOBAL_IGNORE_CLOCKS      0x00000010
+#define PARAMETERS_GLOBAL_IGNORE_SYSMEM      0x00000100
+#define PARAMETERS_GLOBAL_IGNORE_PCIESRIO    0x00001000
+
+#define PARAMETERS_GLOBAL_RUN_SYSMEM_BIST    0x80000000
+#define PARAMETERS_GLOBAL_SET_L2_FTC         0x40000000
+#define PARAMETERS_GLOBAL_SET_L2_DISABLE_SL  0x20000000
+#define PARAMETERS_GLOBAL_DISABLE_RESET      0x10000000
+#define PARAMETERS_GLOBAL_SM_PHY_REG_RESTORE 0x08000000
+#define PARAMETERS_GLOBAL_SM_PHY_REG_DUMP    0x04000000
+
+#ifdef CONFIG_AXXIA_ARM
+
+typedef struct {
+	unsigned long version;
+	unsigned long flags;
+	unsigned long baud_rate;
+	unsigned long memory_check_ranges;
+} __attribute__((packed)) parameters_global_t;
+
+#else  /* CONFIG_AXXIA_ARM */
+
+typedef struct {
+	unsigned long version;
+	unsigned long flags;
+} __attribute__((packed)) parameters_global_t;
+
+#endif	/* CONFIG_AXXIA_ARM */
+
+typedef struct {
+	unsigned long control;
+} __attribute__((packed)) parameters_pciesrio_t;
+
+typedef struct {
+	unsigned long checksum;
+	unsigned long version;
+	unsigned long vofs;
+	unsigned long tvid;
+	unsigned long long twait;
+	unsigned long VIDChecks;
+	unsigned char vidLT[64];
+} __attribute__((packed)) parameters_voltage_t;
+
+#ifdef CONFIG_AXXIA_ARM
+
+typedef struct {
+	unsigned long flags;
+	unsigned long syspll0_prms;
+	unsigned long syspll0_ctrl;
+	unsigned long syspll0_csw;
+	unsigned long syspll0_div;
+	unsigned long syspll0_psd;
+	unsigned long cpupll0_prms;
+	unsigned long cpupll0_ctrl;
+	unsigned long cpupll0_csw;
+	unsigned long cpupll0_div;
+	unsigned long cpupll0_psd;
+	unsigned long smpll0_prms;
+	unsigned long smpll0_ctrl;
+	unsigned long smpll0_csw;
+	unsigned long smpll0_div;
+	unsigned long smpll0_psd;
+	unsigned long smpll1_prms;
+	unsigned long smpll1_ctrl;
+	unsigned long smpll1_csw;
+	unsigned long smpll1_div;
+	unsigned long smpll1_psd;
+	unsigned long tmpll0_prms;
+	unsigned long tmpll0_ctrl;
+	unsigned long tmpll0_csw;
+	unsigned long tmpll0_div;
+	unsigned long tmpll0_psd;
+	unsigned long fabpll0_prms;
+	unsigned long fabpll0_ctrl;
+	unsigned long fabpll0_csw;
+	unsigned long fabpll0_div;
+	unsigned long fabpll0_psd;
+	unsigned long nrcp_csw;
+	unsigned long nrcp_div;
+	unsigned long per_csw;
+	unsigned long per_div;
+	unsigned long emmc_csw;
+	unsigned long emmc_div;
+	unsigned long debug_csw;
+	unsigned long stop_csw;
+} __attribute__ ((packed)) parameters_clocks_t;
+
+#else  /* CONFIG_AXXIA_ARM */
+
+typedef struct {
+#ifdef CONFIG_AXXIA_25xx
+	unsigned long syspll_prms;
+	unsigned long syspll_ctrl;
+	unsigned long syspll_mcgc;
+	unsigned long syspll_mcgc1;
+	unsigned long syspll_psd;
+	unsigned long ppcpll_prms;
+	unsigned long ppcpll_ctrl;
+	unsigned long ppcpll_mcgc;
+	unsigned long ppcpll_mcgc1;
+	unsigned long ppcpll_psd;
+	unsigned long smpll_prms;
+	unsigned long smpll_ctrl;
+	unsigned long smpll_mcgc;
+	unsigned long smpll_mcgc1;
+	unsigned long smpll_psd;
+	unsigned long tmpll_prms;
+	unsigned long tmpll_ctrl;
+	unsigned long tmpll_mcgc;
+	unsigned long tmpll_mcgc1;
+	unsigned long tmpll_psd;
+	unsigned long per_mcgc;
+	unsigned long per_mcgc1;
+#else
+	unsigned long sys_control;
+	unsigned long sys_lftune_upper;
+	unsigned long sys_lftune_lower;
+	unsigned long sys_fftune;
+	unsigned long sys_locktune;
+	unsigned long ppc_control;
+	unsigned long ppc_lftune_upper;
+	unsigned long ppc_lftune_lower;
+	unsigned long ppc_fftune;
+	unsigned long ppc_locktune;
+	unsigned long ddr0_control;
+	unsigned long ddr1_control;
+	unsigned long ddr_lftune_upper;
+	unsigned long ddr_lftune_lower;
+	unsigned long ddr_fftune;
+	unsigned long ddr_locktune;
+#endif
+} __attribute__ ((packed)) parameters_clocks_t;
+
+#endif	/* CONFIG_AXXIA_ARM */
+
+typedef struct {
+	unsigned long version;
+	unsigned long auto_detect;
+	unsigned long num_interfaces;
+	unsigned long num_ranks_per_interface;
+	unsigned long topology;
+	unsigned long sdram_device_density;
+	unsigned long sdram_device_width;
+	unsigned long primary_bus_width;
+	unsigned long CAS_latency;
+	unsigned long CAS_write_latency;
+	unsigned long enableECC;
+	unsigned long enable_deskew;
+	unsigned long enable_rdlvl;
+	unsigned long enable_auto_cpc;
+	unsigned long min_phy_cal_delay;
+	unsigned long min_ctrl_roundtrip_delay;
+	unsigned long single_bit_mpr;
+	unsigned long rdcal_cmp_even;
+	unsigned long rdcal_cmp_odd;
+	unsigned long phy_rdlat;
+	unsigned long added_rank_switch_delay;
+	unsigned long high_temp_dram;
+	unsigned long sdram_rtt_nom;
+	unsigned long sdram_rtt_wr;
+	unsigned long sdram_data_drv_imp;
+	unsigned long phy_adr_imp;
+	unsigned long phy_dat_imp;
+	unsigned long phy_rcv_imp;
+	unsigned long sysCacheMode;
+	unsigned long syscacheDisable;
+	unsigned long half_mem;
+	unsigned long address_mirroring;
+} __attribute__((packed)) parameters_sysmem_t;
+
+#ifdef CONFIG_AXXIA_ARM
+
+typedef struct {
+	unsigned long retentionSize;
+	unsigned long retentionOffset;
+	unsigned long sysmemSize;
+	unsigned long sysmemOffset;
+	unsigned long clocksSize;
+	unsigned long clocksOffset;
+	unsigned long voltageSize;
+	unsigned long voltageOffset;
+	unsigned long pciesrioSize;
+	unsigned long pciesrioOffset;
+	unsigned long globalSize;
+	unsigned long globalOffset;
+	unsigned long version;
+	unsigned long flags;
+	unsigned long checksum;
+	unsigned long size;
+	unsigned long magic;
+} __attribute__((packed)) parameters_header_t;
+
+#else  /* CONFIG_AXXIA_ARM */
+
+typedef struct {
+	unsigned long sysmemSize;
+	unsigned long sysmemOffset;
+	unsigned long clocksSize;
+	unsigned long clocksOffset;
+	unsigned long voltageSize;
+	unsigned long voltageOffset;
+	unsigned long pciesrioSize;
+	unsigned long pciesrioOffset;
+	unsigned long globalSize;
+	unsigned long globalOffset;
+	unsigned long version;
+	unsigned long checksum;
+	unsigned long size;
+	unsigned long magic;
+} __attribute__((packed)) parameters_header_t;
+
+#endif	/* CONFIG_AXXIA_ARM */
+
+typedef struct {
+	parameters_header_t *header;
+	parameters_global_t *global;
+	parameters_voltage_t *voltage;
+	parameters_pciesrio_t *pciesrio;
+	parameters_clocks_t *clocks;
+	parameters_sysmem_t *sysmem;
+} parameters_t;
+
+extern parameters_header_t *header;
+extern parameters_global_t *global;
+extern parameters_pciesrio_t *pciesrio;
+extern parameters_voltage_t *voltage;
+extern parameters_clocks_t *clocks;
+extern parameters_sysmem_t *sysmem;
+#ifdef CONFIG_AXXIA_ARM
+extern void *retention;
+#endif
+
+int read_parameters(void);
+
+#ifdef CONFIG_MEMORY_RETENTION
+int write_parameters(parameters_t *);
+#endif
+
+#ifndef CONFIG_SPL_BUILD
+#define CONFIG_CMD_LSI_PARAMETERS
+#endif
+
+#endif	/* __ASSEMBLY__ */
+
+/*
+  ================================================================================
+  ================================================================================
   Networking
   ================================================================================
   ================================================================================

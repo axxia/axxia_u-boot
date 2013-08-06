@@ -96,8 +96,6 @@ set_sdcr(void)
 int
 board_init(void)
 {
-	gd->bd->bi_boot_params = _parameters_start;
-
 	return 0;
 }
 

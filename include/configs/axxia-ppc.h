@@ -23,6 +23,8 @@
 #ifndef __CONFIGS_AXXIA_PPC_H
 #define __CONFIGS_AXXIA_PPC_H
 
+#define CONFIG_AXXIA_PPC
+
 #define CONFIG_SYS_LDSCRIPT "board/lsi/axxia-ppc/u-boot.lds"
 #define CONFIG_SYS_TEXT_BASE 0x00004000
 

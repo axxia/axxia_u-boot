@@ -51,6 +51,7 @@ SECTIONS
 	__image_copy_end = .;
 	_end = .;
 
+
 	/*
 	 * Provide space for a page table (0x4000 bytes).
  	 */

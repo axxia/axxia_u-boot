@@ -67,10 +67,20 @@
 #define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
 #define CONFIG_ENV_RANGE_REDUND           CONFIG_ENV_RANGE
 
+/*
+  ===============================================================================
+  ===============================================================================
+  Features.
+  ===============================================================================
+  ===============================================================================
+*/
+
 #define V_MIN   795
 #define V_SAFE  940
 #define V_MAX  1050
 
+#define CONFIG_MEMORY_RETENTION
+
 #include <configs/axxia-arm.h>
 
-#endif	/* __CONFIGS_AXXIA_55XX_H */
+#endif	/* __CONFIGS_AXXIA_55XX_EMU_H */

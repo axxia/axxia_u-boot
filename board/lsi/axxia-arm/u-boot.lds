@@ -22,14 +22,6 @@ SECTIONS
 	. += 0x200;
 	__spin_table_end = .;  
 
-	/*
-	 * Space for parameters.
-	 */
-
-	. = ALIGN(0x10);
-	__parameter_start = .;
-	. += 0x1000;
-	__parameter_end = .;  
 
 	/*
 	 * Space for page tables.
