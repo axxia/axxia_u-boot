@@ -39,13 +39,13 @@ else
 ################################################################################
 ## SPL Build
 
-COBJS   += spl.o axxia_initialize.o
-
 ifdef CONFIG_AXXIA_55XX
 ifndef CONFIG_AXXIA_EMU
-COBJS += voltage.o pciesrio.c
+COBJS += voltage.o pciesrio.o
 endif
 endif
+
+COBJS   += spl.o axxia_initialize.o
 
 endif
 

@@ -26,6 +26,12 @@
 
 int pciesrio_setcontrol(unsigned long new_control);
 
+typedef struct {
+        unsigned short offset;
+        unsigned short value;
+} rx_serdes_value_t;
+
+
 /*
   ===============================================================================
   ===============================================================================
@@ -434,13 +440,53 @@ pciesrio_init(unsigned long parameter)
 
 int pciesrio_setcontrol(unsigned long new_control)
 {
-	int pci_srio_select;
+	int pci_srio_select, i;
 	int pci_srio_mode;
 	unsigned long phy0_ctrl, phy1_ctrl;
-	
+	rx_serdes_value_t rx_serdes_values[] = {
+                {0x008e, 0x0487},
+                {0x028e, 0x0487},
+                {0x068e, 0x0487},
+                {0x088e, 0x0487},
+                {0x001e, 0xc000},
+                {0x021e, 0xc000},
+                {0x061e, 0xc000},
+                {0x081e, 0xc000}
+	};
+
 	phy0_ctrl = new_control & 0x1f700409;
 	phy1_ctrl = new_control & 0x60800004;
 
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x0, phy0_ctrl);
-	ncr_write32(NCP_REGION_ID(0x115, 3), 0x0, phy1_ctrl);
+	for (i = 0;
+		i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
+		++i) {
+		ncr_write16(NCP_REGION_ID(0x115, 1),
+                            rx_serdes_values[i].offset,
+                            rx_serdes_values[i].value);
+	}
+	/*
+	 * set 26 R/W dsbl_g12_rx_p1_pd Disable the Gen1/Gen2 configuration
+	 * RX_P1_PD signal. 0x0 for pipe0 and pipe 1
+	 */
+	ncr_write32(NCP_REGION_ID(0x115, 2), 0x02c, 0x05008249);
+	ncr_write32(NCP_REGION_ID(0x115, 3), 0x02c, 0x05008249);
+	udelay(100000);
+
+	switch (new_control) {
+
+	case 0x00400001:
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl | 0x20);
+		udelay(100000);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000000);
+		udelay(100000);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl);
+		udelay(100000);
+		break;
+	default:
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl);
+		ncr_write32(NCP_REGION_ID(0x115, 3), 0x200, phy1_ctrl);
+		break;
+	}
+	return 0;
 }
