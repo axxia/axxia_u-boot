@@ -484,28 +484,40 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 {
 	int rc = 0;
 
-#ifdef ACP_25xx
+#if defined(ACP_25xx) || defined(CONFIG_AXXIA_55XX)
 	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
-	  Handle the 0x115.1 node on the AXM25xx.
+	  Handle the 0x115.1 node on the AXM25xx and AXM55xx
 	*/
 
+#if defined(ACP_25xx)
 	if (NCP_REGION_ID(0x115, 1) == region) {
+#elif defined (CONFIG_AXXIA_55XX)
+	if ((NCP_REGION_ID(0x115, 1) == region) ||
+		(NCP_REGION_ID(0x115, 4) == region)) {
+#endif
 		unsigned long base;
 
+#ifdef ACP_25xx
 		base = (IO + 0x3000);
+#elif defined(CONFIG_AXXIA_55XX)
+		if (NCP_REGION_ID(0x115, 1) == region)
+			base = (IO + 0x1f0);
+		else 
+			base = (IO + 0x220);
+#endif
 
 		if (0xffff < offset) {
 			printf("Bad Offset!\n");
 			return -1;
 		}
 
-		WRITEL((0x84c00000 + offset), (base + 4));
+		writel((0x84c00000 + offset), (base + 4));
 
 		do {
 			--wfc_timeout;
-			*value = READL(base + 4);
+			*value = readl(base + 4);
 		} while (0 != (*value & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -514,7 +526,7 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 			return -1;
 		}
 
-		*value = READL(base + 8);
+		*value = readl(base + 8);
 
 		return 0;
 	}
@@ -539,18 +551,32 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 {
 	int rc = 0;
 
-#ifdef ACP_25xx
+#if defined(ACP_25xx) || defined(CONFIG_AXXIA_55XX)
 	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
 	  Handle the 0x115.0, 0x115.2, and 0x115.3 nodes on the AXM25xx.
 	*/
 
+#if defined(ACP_25xx)
 	if ((NCP_REGION_ID(0x115, 0) == region) ||
 	    (NCP_REGION_ID(0x115, 2) == region) ||
 	    (NCP_REGION_ID(0x115, 3) == region)) {
+#else
+	/*
+	  Handle the 0x115.0, 0x115.1, 0x115.2, 0x115.3, 0x115.4 and 0x115.5
+	  nodes on the AXM55xx.
+	*/
+	if ((NCP_REGION_ID(0x115, 0) == region) ||
+	    (NCP_REGION_ID(0x115, 1) == region) ||
+	    (NCP_REGION_ID(0x115, 2) == region) ||
+	    (NCP_REGION_ID(0x115, 3) == region) ||
+	    (NCP_REGION_ID(0x115, 4) == region) ||
+	    (NCP_REGION_ID(0x115, 5) == region)) {
+#endif
 		unsigned long base = 0;
 
+#if defined(ACP_25xx)
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
 			base = (IO + 0x3030);
@@ -565,15 +591,40 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 			/* Unreachable, due to the if() above. */
 			break;
 		}
+#else
+		switch (NCP_TARGET_ID(region)) {
+		case 0:
+			base = (IO + 0x1e0);
+			break;
+		case 1:
+			base = (IO + 0x1f0);
+			break;
+		case 2:
+			base = (IO + 0x200);
+			break;
+		case 3:
+			base = (IO + 0x210);
+			break;
+		case 4:
+			base = (IO + 0x220);
+			break;
+		case 5:
+			base = (IO + 0x230);
+			break;
+		default:
+			/* Unreachable, due to the if() above. */
+			break;
+		}
+#endif
 
 		if (0xffff < offset)
 			return -1;
 
-		WRITEL((0x85400000 + offset), (base + 4));
+		writel((0x85400000 + offset), (base + 4));
 
 		do {
 			--wfc_timeout;
-			*value = READL(base + 4);
+			*value = readl(base + 4);
 		} while (0 != (*value & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -582,7 +633,7 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 			return -1;
 		}
 
-		*value = READL(base + 8);
+		*value = readl(base + 8);
 
 		return 0;
 	}
@@ -789,27 +840,39 @@ int
 ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 {
 	int rc;
-#ifdef ACP_25xx
+#if defined(ACP_25xx) || defined(CONFIG_AXXIA_55XX)
 	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
 	  Handle the 0x115 nodes on AXM25xx
 	*/
 
+#if defined(ACP_25xx)
 	if (NCP_REGION_ID(0x115, 1) == region) {
+#else
+	if ((NCP_REGION_ID(0x115, 1) == region) ||
+		(NCP_REGION_ID(0x115, 4) == region)) {
+#endif
 		unsigned long base;
 
+#if defined(ACP_25xx)
 		base = (IO + 0x3000);
+#elif defined(CONFIG_AXXIA_55XX)
+		if (NCP_REGION_ID(0x115, 1) == region)
+			base = (IO + 0x1f0);
+		else
+			base = (IO + 0x220);
+#endif
 
 		if (0xffff < offset)
 			return -1;
 
-		WRITEL(value, base);
-		WRITEL((0xc4c00000 + offset), (base + 4));
+		writel(value, base);
+		writel((0xc4c00000 + offset), (base + 4));
 
 		do {
 			--wfc_timeout;
-			value = READL(base + 4);
+			value = readl(base + 4);
 		} while (0 != (value & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -840,12 +903,14 @@ int
 ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 {
 	int rc;
-#ifdef ACP_25xx
+#if defined(ACP_25xx) || defined(CONFIG_AXXIA_55XX)
 	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
 	  Handle the 0x115 nodes on AXM25xx
 	*/
+
+#if defined (ACP_25xx)
 
 	if ((NCP_REGION_ID(0x115, 0) == region) ||
 	    (NCP_REGION_ID(0x115, 2) == region) ||
@@ -866,16 +931,48 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 			/* Unreachable, due to the if() above. */
 			break;
 		}
+#elif defined(CONFIG_AXXIA_55XX)
+	if ((NCP_REGION_ID(0x115, 0) == region) ||
+	    (NCP_REGION_ID(0x115, 1) == region) ||
+	    (NCP_REGION_ID(0x115, 2) == region) ||
+	    (NCP_REGION_ID(0x115, 3) == region) ||
+	    (NCP_REGION_ID(0x115, 4) == region) ||
+	    (NCP_REGION_ID(0x115, 5) == region)) {
+		unsigned long base = 0;
+		switch (NCP_TARGET_ID(region)) {
+		case 0:
+			base = (IO + 0x1e0);
+			break;
+		case 1:
+			base = (IO + 0x1f0);
+			break;
+		case 2:
+			base = (IO + 0x200);
+			break;
+		case 3:
+			base = (IO + 0x210);
+			break;
+		case 4:
+			base = (IO + 0x220);
+			break;
+		case 5:
+			base = (IO + 0x230);
+			break;
+		default:
+			/* Unreachable, due to the if() above. */
+			break;
+		}
+#endif
 
 		if (0xffff < offset)
 			return -1;
 
-		WRITEL(value, base);
-		WRITEL((0xc5400000 + offset), (base + 4));
+		writel(value, base);
+		writel((0xc5400000 + offset), (base + 4));
 
 		do {
 			--wfc_timeout;
-			value = READL(base + 4);
+			value = readl(base + 4);
 		} while (0 != (value & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -972,7 +1069,7 @@ ncr_modify(unsigned long region, unsigned long address, int count,
 
 	cdr1.raw = 0;
 
-	if( NCP_REGION_ID( 512, 1 ) == region ) {
+	if(NCP_REGION_ID( 512, 1 ) == region ) {
 		cdr1.bits.target_address = address;
 	} else {
 		cdr1.bits.target_address = ( address >> 2 );
