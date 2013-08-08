@@ -343,6 +343,26 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 int sysmem_init(void);
 #endif
 
+
+#ifdef CONFIG_SPL_BUILD
+#ifdef NCR_TRACER
+#define NCR_TRACE( format, args... ) do { \
+if( 0 != ncr_tracer_is_enabled( ) ) { \
+printf( format, ##args ); \
+} \
+} while( 0 );
+#define NCP_COMMENT( format, args... ) do { \
+if( 0 != ncr_tracer_is_enabled( ) ) { \
+printf( "# " format "\n", ##args ); \
+} \
+} while( 0 );
+#else
+#define NCR_TRACE( format, args... )
+#define NCP_COMMENT( format, args... )
+#endif
+#endif
+
+
 #ifdef CONFIG_SPL_BUILD
 #define LSM     0x20000000
 #endif

@@ -21,20 +21,22 @@
  */
 
 #include <common.h>
+
+
 #include <asm/io.h>
 
 #if defined (CONFIG_AXXIA_344X) | defined (CONFIG_AXXIA_342X)
-#include "regs/ncp_denali_regs.h"
-#include "regs/ncp_denali_reg_defines.h"
-#include "regs/ncp_phy_regs.h"
-#include "regs/ncp_phy_reg_defines.h"
+#include "../common/regs/ncp_denali_regs.h"
+#include "../common/regs/ncp_denali_reg_defines.h"
+#include "../common/regs/ncp_phy_regs.h"
+#include "../common/regs/ncp_phy_reg_defines.h"
 #endif
 
 #if defined (CONFIG_AXXIA_25xx) 
-#include "regs/ncp_denali_regs_acp2500.h"
-#include "regs/ncp_denali_reg_defines_acp2500.h"
-#include "regs/ncp_phy_regs_acp2500.h"
-#include "regs/ncp_phy_reg_defines_acp2500.h"
+#include "../common/regs/ncp_denali_regs_acp2500.h"
+#include "../common/regs/ncp_denali_reg_defines_acp2500.h"
+#include "../common/regs/ncp_phy_regs_acp2500.h"
+#include "../common/regs/ncp_phy_reg_defines_acp2500.h"
 #endif
 
 /*
@@ -180,6 +182,7 @@ write_vc(unsigned long vc)
 
 	return 0;
 }
+
 
 /*
   ----------------------------------------------------------------------
@@ -922,14 +925,14 @@ clocks_init( void )
 #endif
 
 #if defined(ACP_EMU)
-#include "sysmem_emulation.c"
+#include "../common/sysmem_emulation.c"
 #else
-#include "sysmem_asic_common.c"
+#include "../common/sysmem_asic_common.c"
 #if defined (CONFIG_AXXIA_344X) || defined (CONFIG_AXXIA_342X)
-#include "ncp_sysmem_init_ibmphy.c"
+#include "../common/ncp_sysmem_init_ibmphy.c"
 #endif
 #if defined (CONFIG_AXXIA_25xx) 
-#include "ncp_sysmem_init_lsiphy.c"
+#include "../common/ncp_sysmem_init_lsiphy.c"
 #endif
 #endif
 
@@ -1503,3 +1506,4 @@ acp_init( void )
 
 	return returnCode;
 }
+

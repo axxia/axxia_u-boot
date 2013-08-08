@@ -180,6 +180,40 @@ typedef struct {
 
 #endif	/* CONFIG_AXXIA_ARM */
 
+
+typedef unsigned long           ncp_uint32_t;
+typedef void *                  ncp_dev_hdl_t;
+typedef unsigned long           ncp_region_id_t;
+typedef unsigned long           ncp_st_t;
+
+typedef enum {
+    NCP_SM_MC_INIT_DONE = 1,
+    NCP_SM_LP_OP_DONE,
+    NCP_SM_BIST_DONE,
+    NCP_SM_LVL_OP_DONE,
+    NCP_SM_MR_OP_DONE
+} ncp_sm_poll_event_t;
+
+typedef ncp_uint32_t
+(*ncp_sm_intr_status_fn_t) (
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_uint32_t    mask);
+
+typedef ncp_st_t
+(*ncp_sm_poll_controller_fn_t) (
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_sm_poll_event_t event);
+
+
+typedef ncp_uint32_t
+(*ncp_sm_ecc_enb_fn_t) (
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_uint32_t    value);
+
+
 typedef struct {
 	unsigned long version;
 	unsigned long auto_detect;
@@ -209,10 +243,17 @@ typedef struct {
 	unsigned long phy_adr_imp;
 	unsigned long phy_dat_imp;
 	unsigned long phy_rcv_imp;
-	unsigned long sysCacheMode;
+	unsigned long syscacheMode;
 	unsigned long syscacheDisable;
 	unsigned long half_mem;
 	unsigned long address_mirroring;
+
+	unsigned long                  num_bytelanes;
+    	unsigned long long           totalSize;
+    	ncp_sm_intr_status_fn_t      intrStatFn;
+    	ncp_sm_ecc_enb_fn_t          eccEnbFn;
+    	ncp_sm_poll_controller_fn_t  pollControllerFn;
+
 } __attribute__((packed)) parameters_sysmem_t;
 
 #ifdef CONFIG_AXXIA_ARM

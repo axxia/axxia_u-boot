@@ -22,6 +22,9 @@
 
 #include <common.h>
 
+#include "../common/ncp_sysmem_ext.h"
+#include "../common/ncp_sysmem_lsiphy.h"
+
 /*
   ===============================================================================
   ===============================================================================
@@ -30,7 +33,18 @@
   ===============================================================================
 */
 
+unsigned long sysmem_size = 1;
+unsigned long reset_enabled = 1;
+unsigned long ncp_sm_phy_reg_restore = 1;
+unsigned long ncp_sm_phy_reg_dump = 1;
+                                                                                
+#if defined (CONFIG_AXXIA_55XX_EMU)
 #include "sysmem_emulation.c"
+#else                                                                           
+#include "../common/sysmem_asic_common.c"
+#include "../common/ncp_sysmem_init_lsiphy.c"
+#include "../common/ncp_elm.c"
+#endif
 
 /*
   ==============================================================================

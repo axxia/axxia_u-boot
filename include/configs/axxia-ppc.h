@@ -980,7 +980,8 @@ printf( "# " format "\n", ##args ); \
 } while( 0 );
 #else
 #define NCR_TRACE( format, args... )
-#define NCP_COMMENT( format, args... )
+/* #define NCP_COMMENT( format, args... ) */
+#define NCP_COMMENT( format, args... ) printf( "# " format "\n", ##args ); /* TEMP DEBUG */
 #endif
 #endif
 
@@ -1127,6 +1128,68 @@ unsigned long get_sysmem_size( void );
 
 #define CANNED_PHY_REGS_TAG_SAVE 0x53415645
 #define CANNED_PHY_REGS_TAG_PROM 0x50524f4d
+
+
+
+
+
+/*
+  ----------------------------------------------------------------------
+  ACP2500 sysmem init compile time options 
+ */
+
+/*
+ * NCP_SM_PHY_REG_RESTORE: 
+ *   if defined, enable sysmem PHY register save/restore capability
+ */
+/* #define NCP_SM_PHY_REG_RESTORE  */
+
+/* 
+ * NCP_SM_PHY_REG_DUMP: 
+ *   if defined, enable dumping of sysmem PHY registers 
+ *   upon completion of the sysmem init sequence
+ */
+#define NCP_SM_PHY_REG_DUMP
+
+/* 
+ * NCP_SM_WRLVL_DUP
+ *   if defined, will only run the write leveling training
+ *   on rank0, and will duplicate the write delays for rank1.
+ *   This is a workaround for a problem with the original 
+ *   Odessa board design. 
+ */
+#define NCP_SM_WRLVL_DUP
+
+
+
+/*
+  ----------------------------------------------------------------------
+  ACP2500 sysmem init compile time options 
+ */
+
+/*
+ * NCP_SM_PHY_REG_RESTORE: 
+ *   if defined, enable sysmem PHY register save/restore capability
+ */
+/* #define NCP_SM_PHY_REG_RESTORE  */
+
+/* 
+ * NCP_SM_PHY_REG_DUMP: 
+ *   if defined, enable dumping of sysmem PHY registers 
+ *   upon completion of the sysmem init sequence
+ */
+#define NCP_SM_PHY_REG_DUMP
+
+/* 
+ * NCP_SM_WRLVL_DUP
+ *   if defined, will only run the write leveling training
+ *   on rank0, and will duplicate the write delays for rank1.
+ *   This is a workaround for a problem with the original 
+ *   Odessa board design. 
+ */
+#define NCP_SM_WRLVL_DUP
+
+
 
 /*
   ======================================================================

@@ -12,13 +12,6 @@
 #include <asm/4xx_pcie.h>
 #endif
 
-#if defined (CONFIG_AXXIA_25xx)
-#include "regs/ncp_denali_regs_acp2500.h"
-#include "regs/ncp_denali_reg_defines_acp2500.h"
-#include "regs/ncp_phy_regs_acp2500.h"
-#include "regs/ncp_phy_reg_defines_acp2500.h"
-#endif
-
 
 #ifdef CONFIG_PCI
 
