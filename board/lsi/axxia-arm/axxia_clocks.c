@@ -59,6 +59,7 @@ pll_init_5500(unsigned long region, unsigned long *parameters)
 	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0xc02);
 	prms |= 0x10000000;
 	ncr_write32(region, 0x0, prms);
+
 	/*
 	  Enable the PLL.  Enable clock_sync for DDR PLLs
 	*/
@@ -93,7 +94,6 @@ pll_init_5500(unsigned long region, unsigned long *parameters)
 	ncr_write32(region, 0x10, 1);
 	prms |= 0x20000000;
 	ncr_write32(region, 0x0, prms);
-
 
 	/*
 	  Set the divider and switch the clocks
@@ -133,6 +133,7 @@ pll_init_5500(unsigned long region, unsigned long *parameters)
 			udelay(parameters[4]);
 		}
 	}
+
 	return 0;
 }
 
@@ -179,7 +180,6 @@ clocks_init( void )
 	  PLL Setup
 	  -----------------------------------------------------------------------
 	*/
-
 
 	/* fabpll */
 	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 3), &clocks->fabpll_prms))
@@ -233,11 +233,11 @@ clocks_init( void )
 	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 6), &clocks->sm0pll_prms))
 		return -1;
 
-
 	/* sm1pll */
 	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 7), &clocks->sm0pll_prms))
 		return -1;
 
+#if 0
 	/* Set the peripheral clock */
 	if (0 != clocks->per_div) {
 		ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &value);
@@ -252,6 +252,7 @@ clocks_init( void )
 		ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
 		udelay(clocks->sm1pll_psd);
 	}
+#endif
 
 	/* Set the emmc clock */
 	if (0 != clocks->emmc_div) {
