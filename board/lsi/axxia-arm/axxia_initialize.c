@@ -75,19 +75,46 @@ axxia_initialize(void)
 	*/
 
 #ifdef CONFIG_AXXIA_55XX
-#ifndef CONFIG_AXXIA_EMU
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
 		if (0 != (returnCode = pciesrio_init()))
 			goto acp_init_return;
 #endif
-#endif
+
+	/*
+	  ======
+	  Clocks
+	  ======
+	*/
+	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS)) {
+		if (0 != (returnCode = clocks_init()))
+			goto acp_init_return;
+	}
+		
+	serial_initialize();
+	serial_init();
+
+	{
+		unsigned long freq;
+		int rc;
+
+		rc = acp_clock_get(clock_memory, &freq);
+		printf("rc=%d clock_memory=%lu\n", rc, freq);
+
+		rc = acp_clock_get(clock_core, &freq);
+		printf("rc=%d clock_core=%lu\n", rc, freq);
+
+		rc = acp_clock_get(clock_peripheral, &freq);
+		printf("rc=%d clock_peripheral=%lu\n", rc, freq);
+	}
+
+	/*ZZZ*/
+	asm volatile ("1: b 1b");
 
 	/*
 	  =============
 	  System Memory
 	  =============
 	*/
-
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM))
 		if (0 != (returnCode = sysmem_init()))
 			goto acp_init_return;

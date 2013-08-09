@@ -22,6 +22,7 @@
 
 #include <config.h>
 #include <common.h>
+#include <asm/io.h>
 #include <asm/byteorder.h>
 #include <serial.h>
 
@@ -85,7 +86,7 @@ __serial_start(void)
 	 the input to timer1 can be either 125 MHz or 200 MHz.
 	*/
 
-	ibrd = UART_CLOCK_SPEED / (16 * baudrate);
+	ibrd = per_clock / (16 * baudrate);
 
 	/*
 	  The following forumla is from the ARM document (ARM DDI 0183E).
@@ -112,8 +113,7 @@ __serial_start(void)
 	  2 * ( 16 * baud_rate )
 	*/
 
-	fbrd = (per_clock / (per_clock / UART_CLOCK_SPEED));
-	fbrd %= (16 * baudrate);
+	fbrd = per_clock % (16 * baudrate);
 	fbrd *= 128;
 	fbrd += (16 * baudrate);
 	fbrd /= (2 * (16 * baudrate));
@@ -151,7 +151,7 @@ __serial_start(void)
 
 	/* Reprogram. */
   	writel(ibrd, UART0_ADDRESS + UART_IBRD);
-	writel(fbrd, UART0_ADDRESS + UART_FBRD);
+	writel(fbrd + 1, UART0_ADDRESS + UART_FBRD);
 	writel(0x70, UART0_ADDRESS + UART_LCR_H);
 
 	/* Enable */
