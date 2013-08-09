@@ -97,6 +97,9 @@ axxia_initialize(void)
 		unsigned long freq;
 		int rc;
 
+		rc = acp_clock_get(clock_system, &freq);
+		printf("rc=%d clock_system=%lu\n", rc, freq);
+
 		rc = acp_clock_get(clock_memory, &freq);
 		printf("rc=%d clock_memory=%lu\n", rc, freq);
 
