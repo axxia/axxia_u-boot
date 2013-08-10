@@ -59,6 +59,7 @@ ncp_sm_denali_2041_init(
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_uint32_t value;
+    ncp_uint32_t col_diff;
     ncp_uint32_t ctl_32 = 0, ctl_33 = 0, ctl_34 = 0;
     ncp_region_id_t ctlReg = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
 
@@ -558,7 +559,7 @@ ncp_sm_denali_2041_init(
      * version of the denali controller.
      *
      *     
-     *   Density         Width         row_diff       col_diff
+     *   Density         Width         row_diff      col_diff (axm2500)
      *   512Mb           x8              3               1
      *   512Mb           x16             4               1
      *   1Gb             x8              2               1
@@ -570,6 +571,10 @@ ncp_sm_denali_2041_init(
      *   8Gb             x8              0               1
      *   8Gb             x16             0               0
      *
+     *
+     *  The above values are for axm2500. For axm5500 we need
+     *  to add one to the col_diff value.
+     *
      *  sdram_device_density is defined as follows:
      *   0=256M, 1=512Mb, 2=1Gb, 3=2Gb, 4=4Gb, 5=8Gb, and 6=16Gb
      *
@@ -580,13 +585,23 @@ ncp_sm_denali_2041_init(
      *
      */
     value = 0;
+    col_diff = 0;
     if ((parms->sdram_device_density != NCP_SM_SDRAM_DENSITY_8GBIT) && 
         (parms->sdram_device_width   != NCP_SM_SDRAM_WIDTH_16BITS) )
     {
-        SV(ncp_denali_DENALI_CTL_333_t, col_diff,  1);
+        col_diff = 1;
+        
         SV(ncp_denali_DENALI_CTL_333_t, row_diff,  
                 (3 + parms->sdram_device_width - parms->sdram_device_density));
     }
+
+    if (parms->version == NCP_CHIP_ACP55xx)
+    {
+        /* for 5500 we need to add one to col_dif */
+        col_diff++;
+    } 
+
+    SV(ncp_denali_DENALI_CTL_333_t, col_diff,  col_diff);
     ncr_write32(ctlReg,  0x0534, value);
 
     /* DENALI_CTL_334 */
