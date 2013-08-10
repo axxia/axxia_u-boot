@@ -347,14 +347,13 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 
 		if (0 == (csw & 0x00000003)) {
 			*frequency = CLK_REF0 / 1000;
-		} else if (0 == (csw & 0x00000003)) {
-			ncr_read32(NCP_REGION_ID(0x155,4), 0x4, &prms);
+		} else if (1 == (csw & 0x00000003)) {
+			ncr_read32(NCP_REGION_ID(0x155,4), 0x0, &prms);
 			*frequency = get_pll(prms, 1);
 		} else {
-			ncr_read32(NCP_REGION_ID(0x155,4), 0x4, &prms);
+			ncr_read32(NCP_REGION_ID(0x155,4), 0x0, &prms);
 			ncr_read32(NCP_REGION_ID(0x156,0), 0x8, &div);
-			*frequency = get_pll(prms,
-					     ((div & 0xf0) >> 4) + 1);
+			*frequency = get_pll(prms, (div & 0xf) + 1);
 		}
 		break;
 

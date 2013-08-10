@@ -151,7 +151,7 @@ __serial_start(void)
 
 	/* Reprogram. */
   	writel(ibrd, UART0_ADDRESS + UART_IBRD);
-	writel(fbrd + 1, UART0_ADDRESS + UART_FBRD);
+	writel(fbrd, UART0_ADDRESS + UART_FBRD);
 	writel(0x70, UART0_ADDRESS + UART_LCR_H);
 
 	/* Enable */
