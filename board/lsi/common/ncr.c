@@ -828,6 +828,69 @@ ncr_write32_0x156(unsigned long region, unsigned long offset, unsigned long valu
 
 	return 0;
 }
+/*
+  -------------------------------------------------------------------------------
+  ncr_read32_0x158
+*/
+
+static int
+ncr_read32_0x158(unsigned long region, unsigned long offset, unsigned long *value)
+{
+	unsigned long address;
+
+	address = IO + 0x60000 + offset;
+	*value = readl(address);
+
+	return 0;
+}
+
+/*
+  -------------------------------------------------------------------------------
+  ncr_write32_0x158
+*/
+
+static int
+ncr_write32_0x158(unsigned long region, unsigned long offset, unsigned long value)
+{
+	unsigned long address;
+
+	address = IO + 0x60000 + offset;
+	writel(value, address);
+
+	return 0;
+}
+
+/*
+  -------------------------------------------------------------------------------
+  ncr_read32_0x159
+*/
+
+static int
+ncr_read32_0x159(unsigned long region, unsigned long offset, unsigned long *value)
+{
+	unsigned long address;
+
+	address = IO + 0x70000 + offset;
+	*value = readl(address);
+
+	return 0;
+}
+
+/*
+  -------------------------------------------------------------------------------
+  ncr_write32_0x159
+*/
+
+static int
+ncr_write32_0x159(unsigned long region, unsigned long offset, unsigned long value)
+{
+	unsigned long address;
+
+	address = IO + 0x70000 + offset;
+	writel(value, address);
+
+	return 0;
+}
 
 #endif	/* CONFIG_AXXXIA_55XX */
 
@@ -1012,6 +1075,10 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 		rc = ncr_read32_0x155(region, offset, value);
 	else if(0x156 == NCP_NODE_ID(region))
 		rc = ncr_read32_0x156(region, offset, value);
+	else if(0x158 == NCP_NODE_ID(region))
+		rc = ncr_read32_0x158(region, offset, value);
+	else if(0x159 == NCP_NODE_ID(region))
+		rc = ncr_read32_0x159(region, offset, value);
 	else
 		rc = ncr_read(region, offset, 4, value);
 
@@ -1245,6 +1312,10 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 		rc = ncr_write32_0x155(region, offset, value);
 	else if(0x156 == NCP_NODE_ID(region))
 		rc = ncr_write32_0x156(region, offset, value);
+	else if(0x158 == NCP_NODE_ID(region))
+		rc = ncr_write32_0x158(region, offset, value);
+	else if(0x159 == NCP_NODE_ID(region))
+		rc = ncr_write32_0x159(region, offset, value);
 	else
 		rc = ncr_write(region, offset, 4, &value);
 
