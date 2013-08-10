@@ -448,10 +448,14 @@ int pciesrio_setcontrol(unsigned long new_control)
                 {0x028e, 0x0487},
                 {0x068e, 0x0487},
                 {0x088e, 0x0487},
-                {0x001e, 0xc000},
-                {0x021e, 0xc000},
-                {0x061e, 0xc000},
-                {0x081e, 0xc000}
+                {0x001e, 0xc001},
+                {0x021e, 0xc001},
+                {0x061e, 0xc001},
+                {0x081e, 0xc001},
+                {0x00ba, 0x0070},
+                {0x02ba, 0x0070},
+                {0x06ba, 0x0070},
+                {0x08ba, 0x0070}
 	};
 
 	phy0_ctrl = new_control & 0x1f700409;
@@ -463,14 +467,10 @@ int pciesrio_setcontrol(unsigned long new_control)
 		ncr_write16(NCP_REGION_ID(0x115, 1),
                             rx_serdes_values[i].offset,
                             rx_serdes_values[i].value);
+		ncr_write16(NCP_REGION_ID(0x115, 4),
+                            rx_serdes_values[i].offset,
+                            rx_serdes_values[i].value);
 	}
-	/*
-	 * set 26 R/W dsbl_g12_rx_p1_pd Disable the Gen1/Gen2 configuration
-	 * RX_P1_PD signal. 0x0 for pipe0 and pipe 1
-	 */
-	ncr_write32(NCP_REGION_ID(0x115, 2), 0x02c, 0x05008249);
-	ncr_write32(NCP_REGION_ID(0x115, 3), 0x02c, 0x05008249);
-	udelay(100000);
 
 	switch (new_control) {
 
