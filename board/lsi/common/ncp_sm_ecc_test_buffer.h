@@ -1,3 +1,23 @@
+/**************************************************************************
+ **                                                                       *
+ **   LSI Corporation, Inc.     CONFIDENTIAL                              *
+ **                           PROPRIETARY NOTE                            *
+ **                                                                       *
+ **    This software contains information confidential and proprietary    *
+ **    to LSI Corporation Inc.  It shall not be reproduced in whole or in *
+ **    part, or transferred to other documents, or disclosed to third     *
+ **    parties, or used for any purpose other than that for which it was  *
+ **    obtained, without the prior written consent of LSI Corporation Inc.*
+ **    (c) 2008-2013, LSI Corporation Inc.  All rights reserved.          *
+ **                                                                       *
+ **  **********************************************************************
+ **
+ **  **********************************************************************
+ **   File:       $HeadURL: $
+ **   Version:    $Revision: 55878 $
+ **   Date:       $Date: 2011-08-22 11:42:11 -0500 (Mon, 22 Aug 2011) $
+ **
+ **************************************************************************/
 
 
 

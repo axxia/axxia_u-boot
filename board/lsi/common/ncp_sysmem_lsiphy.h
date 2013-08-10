@@ -47,15 +47,7 @@
 #define NCP_API
 #endif
 
-#if 0
-typedef enum {
-    NCP_SM_MC_INIT_DONE = 1,
-    NCP_SM_LP_OP_DONE,
-    NCP_SM_BIST_DONE,
-    NCP_SM_LVL_OP_DONE,
-    NCP_SM_MR_OP_DONE
-} ncp_sm_poll_event_t;
-#endif
+
 
 #ifndef UBOOT
 /* bindings for RTE build */
@@ -171,6 +163,50 @@ typedef ncp_uint32_t
     ncp_region_id_t regionId,
     ncp_uint32_t    value);
 
+
+#ifndef UBOOT
+typedef struct {
+    unsigned long version;
+    unsigned long auto_detect;
+    unsigned long num_interfaces;
+    unsigned long num_ranks_per_interface;
+    unsigned long topology;
+    unsigned long sdram_device_density;
+    unsigned long sdram_device_width;
+    unsigned long primary_bus_width;
+    unsigned long CAS_latency;
+    unsigned long CAS_write_latency;
+    unsigned long enableECC;
+    unsigned long enable_deskew;
+    unsigned long enable_rdlvl;
+    unsigned long enable_auto_cpc;
+    unsigned long min_phy_cal_delay;
+    unsigned long min_ctrl_roundtrip_delay;
+    unsigned long single_bit_mpr;
+    unsigned long rdcal_cmp_even;
+    unsigned long rdcal_cmp_odd;
+    unsigned long phy_rdlat;
+    unsigned long added_rank_switch_delay;
+    unsigned long high_temp_dram;
+    unsigned long sdram_rtt_nom;
+    unsigned long sdram_rtt_wr;
+    unsigned long sdram_data_drv_imp;
+    unsigned long phy_adr_imp;
+    unsigned long phy_dat_imp;
+    unsigned long phy_rcv_imp;
+    unsigned long syscacheMode;
+    unsigned long syscacheDisable;
+    unsigned long half_mem;
+    unsigned long address_mirroring;
+
+    unsigned long                  num_bytelanes;
+    unsigned long long           totalSize;
+} __attribute__((packed)) parameters_sysmem_t;
+
+#endif
+
+
+
 typedef parameters_sysmem_t     ncp_sm_parms_t;
 
 #define TRUE   (1)
@@ -214,7 +250,6 @@ enum {
               __FILE__, __FUNCTION__, __LINE__); \
         goto ncp_return; \
     }
-
 
 #define NCP_SM_POLL_FOR_OP_DONE(_region) \
     do { \

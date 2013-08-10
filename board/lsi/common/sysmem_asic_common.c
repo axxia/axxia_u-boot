@@ -363,7 +363,7 @@ sysmem_init(void)
 	}
 #endif
 
-/* #define DISPLAY_PARAMETERS */
+#define DISPLAY_PARAMETERS
 #ifdef DISPLAY_PARAMETERS
 	printf("-- -- Sysmem\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
@@ -384,7 +384,7 @@ sysmem_init(void)
 	       sysmem->high_temp_dram, sysmem->sdram_rtt_nom,
 	       sysmem->sdram_rtt_wr, sysmem->sdram_data_drv_imp,
 	       sysmem->phy_adr_imp, sysmem->phy_dat_imp,
-	       sysmem->phy_rcv_imp, sysmem->sysCacheMode,
+	       sysmem->phy_rcv_imp, sysmem->syscacheMode,
 	       sysmem->syscacheDisable, sysmem->half_mem, sysmem->address_mirroring);
 #endif
 
@@ -402,6 +402,7 @@ sysmem_init(void)
 #else
 
     ncr_read32(NCP_REGION_ID(34,0xff), 0, &sysmem->version);
+    printf("sysmem->version read from reg = 0x%x\n", sysmem->version);
     sysmem->version &= 0xff;
 #endif
 #endif

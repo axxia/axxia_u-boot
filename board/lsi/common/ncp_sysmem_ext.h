@@ -159,6 +159,16 @@ typedef enum {
     NCP_SYSMEM_PHY_GATE_TRAINING 
 } ncp_sm_phy_training_mode_t;
 
+typedef enum {
+    NCP_SM_MC_INIT_DONE = 1,
+    NCP_SM_LP_OP_DONE,
+    NCP_SM_BIST_DONE,
+    NCP_SM_LVL_OP_DONE,
+    NCP_SM_MR_OP_DONE
+} ncp_sm_poll_event_t;
+
+
+
 #ifdef UBOOT
 #define NCP_CHIP_ACP25xx             6
 #define NCP_CHIP_ACP25xx_V2          7
@@ -231,9 +241,6 @@ typedef struct {
 
     ncp_uint8_t                 num_bytelanes;
     ncp_int64_t                 totalSize;
-    ncp_sm_intr_status_fn_t     intrStatFn;
-    ncp_sm_ecc_enb_fn_t         eccEnbFn;
-    ncp_sm_poll_controller_fn_t pollControllerFn;
 
 } ncp_sm_parms_t;
 

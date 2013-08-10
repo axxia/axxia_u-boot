@@ -186,6 +186,7 @@ typedef void *                  ncp_dev_hdl_t;
 typedef unsigned long           ncp_region_id_t;
 typedef unsigned long           ncp_st_t;
 
+#if 0
 typedef enum {
     NCP_SM_MC_INIT_DONE = 1,
     NCP_SM_LP_OP_DONE,
@@ -212,6 +213,8 @@ typedef ncp_uint32_t
     ncp_dev_hdl_t   dev,
     ncp_region_id_t regionId,
     ncp_uint32_t    value);
+
+#endif
 
 
 typedef struct {
@@ -247,12 +250,13 @@ typedef struct {
 	unsigned long syscacheDisable;
 	unsigned long half_mem;
 	unsigned long address_mirroring;
-
 	unsigned long                  num_bytelanes;
     	unsigned long long           totalSize;
+#if 0
     	ncp_sm_intr_status_fn_t      intrStatFn;
     	ncp_sm_ecc_enb_fn_t          eccEnbFn;
     	ncp_sm_poll_controller_fn_t  pollControllerFn;
+#endif
 
 } __attribute__((packed)) parameters_sysmem_t;
 

@@ -35,7 +35,6 @@
 
 unsigned long sysmem_size = 1;
 unsigned long reset_enabled = 1;
-unsigned long ncp_sm_phy_reg_restore = 1;
 unsigned long ncp_sm_phy_reg_dump = 1;
                                                                                 
 #if defined (CONFIG_AXXIA_55XX_EMU)
@@ -121,8 +120,10 @@ axxia_initialize(void)
 		printf("rc=%d clock_peripheral=%lu\n", rc, freq);
 	}
 
+#if 0
 	/*ZZZ*/
 	asm volatile ("1: b 1b");
+#endif
 
 	/*
 	  =============

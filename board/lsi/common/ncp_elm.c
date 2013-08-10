@@ -17,7 +17,6 @@
  **  ***********************************************************************
  **  
  **************************************************************************/
-
 #ifndef UBOOT
 #include <stdio.h>
 #include "ncp.h"
@@ -93,6 +92,8 @@ ncp_return:
     return ncpStatus;
 }
 
+extern ncp_sm_intr_status_fn_t      intrStatFn ;
+
 
 ncp_st_t
 ncp_elm_sysmem_fill(
@@ -135,7 +136,7 @@ ncp_elm_sysmem_fill(
 	if (0 != parms->enableECC) {
 		/* clear ECC interrupt status bits */
 		for( i = 0; i < parms->num_interfaces; ++ i ) {
-            parms->intrStatFn(NULL, 
+            intrStatFn(NULL, 
                     NCP_REGION_ID (sm_nodes[i], 0), 
                     NCP_SM_DENALI_V2_ECC_INTR_BITS);
 
