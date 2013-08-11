@@ -512,9 +512,8 @@ ncp_st_t ncp_elm_init( ncp_dev_hdl_t dev, ncp_sm_parms_t *parms);
 ncp_st_t ncp_elm_sysmem_fill( ncp_dev_hdl_t dev, ncp_sm_parms_t *parms);
 
     ncp_elm_init(NULL, sysmem);
-#if 0
+if (sysmem->enableECC)
     ncp_elm_sysmem_fill(NULL, sysmem);
-#endif
 #endif
 
 

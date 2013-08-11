@@ -17,6 +17,7 @@
  **  ***********************************************************************
  **  
  **************************************************************************/
+
 #ifndef UBOOT
 #include <stdio.h>
 #include "ncp.h"
@@ -136,7 +137,7 @@ ncp_elm_sysmem_fill(
 	if (0 != parms->enableECC) {
 		/* clear ECC interrupt status bits */
 		for( i = 0; i < parms->num_interfaces; ++ i ) {
-            intrStatFn(NULL, 
+            intrStatFn(dev, 
                     NCP_REGION_ID (sm_nodes[i], 0), 
                     NCP_SM_DENALI_V2_ECC_INTR_BITS);
 

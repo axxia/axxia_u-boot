@@ -1202,8 +1202,6 @@ ncp_sm_lsiphy_static_init(
      * make it 3.
      */
 
-    printf("min_phy_cal_delay = %d\n", parms->min_phy_cal_delay);
-
     if (parms->min_phy_cal_delay < 3) {
         parms->min_phy_cal_delay = 3;
     }
@@ -1872,7 +1870,6 @@ ncp_sm_lsiphy_gate_training(
 
     while (dp_en) 
     {
-        printf("running gate training dp_en = %x\n", dp_en);
         /* run the training */
         NCP_CALL(trnFn(dev, smId, ctlRegion, phyRegion, 
                     rank, 0, NCP_SYSMEM_PHY_GATE_TRAINING, parms));
@@ -1885,8 +1882,6 @@ ncp_sm_lsiphy_gate_training(
 
         ncr_read32(phyRegion, NCP_PHY_CFG_SYSMEM_PHY_GTTRAINSTAT0, &value);
         gt_stat |= value;
-
-        printf("gt_stat = 0x%016llx\n", gt_stat);
 
         for (i = 0; i < parms->num_bytelanes; i++)
         {
@@ -2050,7 +2045,7 @@ NCP_RETURN_LABEL
 
 
 
-#define SM_BYTELANE_TEST_DEBUG 
+/* #define SM_BYTELANE_TEST_DEBUG  */
 
 /*
  *------------------------------------------------------------------------------
@@ -2312,6 +2307,7 @@ NCP_RETURN_LABEL
   ------------------------------------------------------------------------------
   sm_ecc_bytelane_test
 */
+
 /* #define SM_ECC_BYTELANE_TEST_DEBUG */
 
 #include "ncp_sm_ecc_test_buffer.h"
@@ -2611,8 +2607,6 @@ sm_bytelane_test_elm(
      * the 64-byte cacheline, so we write the address shifted
      * by 6 bits.
      */
-
-    printf("blTestElm addr = 0x%012llx\n", address);
 
     ncr_write32( elmRegion, NCP_ELM_SYSMEM_INIT_CACHE_ADDR, (address >> 6));
 
@@ -3019,6 +3013,7 @@ ncp_sm_sm_coarse_write_leveling(
     if (parms->enableECC) {
         NCP_COMMENT("sysmem phy coarse write leveling - ECC bytelane rank %d", rank);
 
+#if 0
         ecc_mask = NCP_SM_DENALI_V2_ECC_INTR_BITS;
 
         /* enable ECC reporting with no correction */
@@ -3121,6 +3116,32 @@ ncp_sm_sm_coarse_write_leveling(
 
         /* disable ECC until all ranks are level */
         eccEnbFn(dev, ctlRegion, 0);
+#else 
+            
+            /* 
+             *  ECC bytelane needs leveling. 
+             * 
+             * first get the current write-leveling delay values 
+             */
+            ncr_read32(region, 
+                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLUPP_BL_CS(bl, rank),
+                       &udly);
+
+            ncr_read32(region, 
+                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLLOW_BL_CS(bl, rank),
+                       &ldly);
+
+            /* always add one clock */
+            ncr_write32(region, 
+                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLUPP_BL_CS(bl, rank),
+                       udly + 4);
+
+            ncr_write32(region, 
+                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLLOW_BL_CS(bl, rank),
+                       ldly + 4);
+
+
+#endif
     }
 
     /* check the PHY status */
@@ -3531,6 +3552,7 @@ ncp_sysmem_init_lsiphy(
     ncp_bool_t did_training = FALSE;
     ncp_region_id_t ctlRegion;
     ncp_bool_t ncp_sm_phy_reg_restore = FALSE;
+
 #ifndef UBOOT 
     ncp_bool_t ncp_sm_phy_reg_dump    = FALSE;
 #endif
@@ -3597,13 +3619,13 @@ ncp_sysmem_init_lsiphy(
 #ifdef NCP_SM_WRLVL_DUP
                     if ( (parms->version == NCP_CHIP_ACP25xx) && ( rank > 0 ) )
                     {
-                        printf("wrlvl dup smId %d rank %d\n", smId, rank);
+                        /* printf("wrlvl dup smId %d rank %d\n", smId, rank); */
                         NCP_CALL(ncp_sm_lsiphy_wrlvl_dup(dev, smId, 0, 1));
                     } 
                     else 
 #endif
                     {
-                        printf("wrlvl smId %d rank %d\n", smId, rank);
+                        /* printf("wrlvl smId %d rank %d\n", smId, rank); */
                         NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 0,
                              NCP_SYSMEM_PHY_WRITE_LEVELING,
                              parms));
@@ -3612,13 +3634,13 @@ ncp_sysmem_init_lsiphy(
 
                 if (do_gt_trn) {
                     /* gate training */
-                    printf("gttrn smId %d rank %d\n", smId, rank);
+                    /* printf("gttrn smId %d rank %d\n", smId, rank); */
                     NCP_CALL(ncp_sm_lsiphy_gate_training(dev, smId, rank, parms));
                 }
 
                 if (do_rd_lvl) {
                     /* read leveling */
-                    printf("rdlvl smId %d rank %d\n", smId, rank);
+                    /* printf("rdlvl smId %d rank %d\n", smId, rank); */
                     NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 0,
                              NCP_SYSMEM_PHY_READ_LEVELING,
                              parms));
@@ -3683,7 +3705,7 @@ ncp_sysmem_init_lsiphy(
             }
 
 #if 0
-            printf("coarse wrlvl smId %d rank %d addr 0x%08llx\n", 
+            printf("coarse wrlvl smId %d rank %d addr 0x%012llx\n", 
                                 smId, rank, addr);
 #endif
             NCP_CALL(ncp_sm_lsiphy_coarse_write_leveling(dev, smId, rank, addr,
@@ -3704,7 +3726,7 @@ ncp_sysmem_init_lsiphy(
         ncpStatus = ncp_sm_lsiphy_reg_save(dev, NCP_REGION_ID(34,1));
     }
 
-#if 0
+#if 1
     NCP_CALL(ncp_sm_lsiphy_runtime_adj(dev, smId, parms));
 #endif
 
