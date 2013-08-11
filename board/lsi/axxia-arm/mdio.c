@@ -55,8 +55,15 @@
 int
 mdio_initialize(void)
 {
+
+#ifdef CONFIG_AXXIA_EMU
 	writel(0x10, MDIO_CLK_OFFSET);
 	writel(0x2c, MDIO_CLK_PERIOD);
+#else
+	writel(0x1c, MDIO_CLK_OFFSET);
+	writel(0xf0, MDIO_CLK_PERIOD);
+#endif
+
 
 	return 0;
 }
