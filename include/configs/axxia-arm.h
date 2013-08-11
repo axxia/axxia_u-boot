@@ -67,8 +67,12 @@ int is_asic( void );
 
 
 #define CONFIG_SYS_HZ           1000    /* decrementer freq: 1 ms ticks */
-#define SYSTIMER_RATE		4096000
 
+#ifdef CONFIG_AXXIA_EMU
+#define SYSTIMER_RATE		4096000
+#else  /* CONFIG_AXXIA_EMU */
+#define SYSTIMER_RATE		256000000
+#endif	/* CONFIG_AXXIA_EMU */
 /*
   ================================================================================
   ================================================================================
