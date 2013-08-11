@@ -197,6 +197,7 @@ writel( ( value ), ( unsigned long * ) ( address ) )
 
 /* Set to -1 to auto-detect. */
 static int phy_address_ = PHY_ADDRESS_;
+
 /*static int phy_address_ = -1;*/
 
 static int phy_enable_( int );
@@ -2490,8 +2491,11 @@ int test( void );
 
 /* -- -- */
 
-/*#define PHY_ADDRESS_ 0x1e*/
+#ifndef CONFIG_AXXIA_EMU
+#define PHY_ADDRESS_ 0x1e
+#else
 #define PHY_ADDRESS_ 0x3
+#endif
 
 /* Set to -1 to auto-detect. */
 static int phy_address_ = PHY_ADDRESS_;
