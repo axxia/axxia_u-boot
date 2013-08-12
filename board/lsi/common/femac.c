@@ -3858,8 +3858,6 @@ phy_enable_( int phy )
 		printf( "PHY: Auto Negotiation Failed.\n" );
 	}
 
-	phy_debug();
-
 	DEBUG_PRINT( "\n");
 	printf("%s %s\n",
 	       0 == phy_speed(phy_address_) ? "10M" : "100M",
