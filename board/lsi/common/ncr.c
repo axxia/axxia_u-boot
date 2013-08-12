@@ -915,6 +915,41 @@ ncr_read(unsigned long region, unsigned long address, int number, void *buffer)
 	command_data_register_2_t cdr2;	/* 0x101.0.0xf8 */
 	int wfc_timeout = WFC_TIMEOUT;
 
+	switch (NCP_NODE_ID(region)) {
+	case 0x115:
+		/* Can be 16 bit (targets 1 & 4) or 32 bit. */
+		switch (NCP_TARGET_ID(region)) {
+		case 0:
+		case 2:
+		case 3:
+		case 5:
+			return ncr_read32_0x115(region, address,
+						(unsigned long *)buffer);
+			break;
+		case 1:
+		case 4:
+			break;
+		default:
+			return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+		}
+		break;
+	case 0x155:
+		return ncr_read32_0x155(region, address, (unsigned long *)buffer);
+		break;
+	case 0x156:
+		return ncr_read32_0x156(region, address, (unsigned long *)buffer);
+		break;
+	case 0x158:
+		return ncr_read32_0x158(region, address, (unsigned long *)buffer);
+		break;
+	case 0x159:
+		return ncr_read32_0x159(region, address, (unsigned long *)buffer);
+		break;
+	default:
+		/* Actual config ring acces, continue. */
+		break;
+	}
+
 	if (0 != ncr_lock(LOCK_DOMAIN))
 		return -1;
 
@@ -1068,19 +1103,7 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 	int rc = 0;
 
 	NCR_TRACE_READ32(region, offset);
-
-	if (0x115 == NCP_NODE_ID(region))
-		rc = ncr_read32_0x115(region, offset, value);
-	else if(0x155 == NCP_NODE_ID(region))
-		rc = ncr_read32_0x155(region, offset, value);
-	else if(0x156 == NCP_NODE_ID(region))
-		rc = ncr_read32_0x156(region, offset, value);
-	else if(0x158 == NCP_NODE_ID(region))
-		rc = ncr_read32_0x158(region, offset, value);
-	else if(0x159 == NCP_NODE_ID(region))
-		rc = ncr_read32_0x159(region, offset, value);
-	else
-		rc = ncr_read(region, offset, 4, value);
+	rc = ncr_read(region, offset, 4, value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1140,6 +1163,45 @@ ncr_write(unsigned long region, unsigned long address, int number, void *buffer)
 	command_data_register_2_t cdr2;
 	int dbs = (number - 1);
 	int wfc_timeout = WFC_TIMEOUT;
+
+	switch (NCP_NODE_ID(region)) {
+	case 0x115:
+		/* Can be 16 bit (targets 1 & 4) or 32 bit. */
+		switch (NCP_TARGET_ID(region)) {
+		case 0:
+		case 2:
+		case 3:
+		case 5:
+			return ncr_write32_0x115(region, address,
+						 *((unsigned long *)buffer));
+			break;
+		case 1:
+		case 4:
+			break;
+		default:
+			return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+		}
+		break;
+	case 0x155:
+		return ncr_write32_0x155(region, address,
+				       *((unsigned long *)buffer));
+		break;
+	case 0x156:
+		return ncr_write32_0x156(region, address,
+				       *((unsigned long *)buffer));
+		break;
+	case 0x158:
+		return ncr_write32_0x158(region, address,
+				       *((unsigned long *)buffer));
+		break;
+	case 0x159:
+		return ncr_write32_0x159(region, address,
+				       *((unsigned long *)buffer));
+		break;
+	default:
+		/* Actual config ring acces, continue. */
+		break;
+	}
 
 	if (0 != ncr_lock(LOCK_DOMAIN))
 		return -1;
@@ -1305,19 +1367,7 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 	int rc;
 
 	NCR_TRACE_WRITE32(region, offset, value);
-
-	if (0x115 == NCP_NODE_ID(region))
-		rc = ncr_write32_0x115(region, offset, value);
-	else if(0x155 == NCP_NODE_ID(region))
-		rc = ncr_write32_0x155(region, offset, value);
-	else if(0x156 == NCP_NODE_ID(region))
-		rc = ncr_write32_0x156(region, offset, value);
-	else if(0x158 == NCP_NODE_ID(region))
-		rc = ncr_write32_0x158(region, offset, value);
-	else if(0x159 == NCP_NODE_ID(region))
-		rc = ncr_write32_0x159(region, offset, value);
-	else
-		rc = ncr_write(region, offset, 4, &value);
+	rc = ncr_write(region, offset, 4, &value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
