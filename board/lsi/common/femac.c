@@ -97,7 +97,7 @@ dump_packet_( direction, data, length );
 */
 
 #undef DEBUG
-/*#define DEBUG*/
+#define DEBUG
 #ifdef DEBUG
 #define DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -1489,6 +1489,8 @@ phy_enable_( int phy )
 
 #endif /* CONFIG_ACP */
 
+	phy_address_ = 0x1e;
+
 	/*
 	  Set up the link.
 	*/
@@ -2491,11 +2493,15 @@ int test( void );
 
 /* -- -- */
 
+#if 0
 #ifndef CONFIG_AXXIA_EMU
 #define PHY_ADDRESS_ 0x1e
 #else
 #define PHY_ADDRESS_ 0x3
 #endif
+#endif
+
+#define PHY_ADDRESS_ 0x1e
 
 /* Set to -1 to auto-detect. */
 static int phy_address_ = PHY_ADDRESS_;
@@ -3835,7 +3841,7 @@ phy_enable_( int phy )
 
 #else  /* CONFIG_ACP */
 
-#ifndef CONFIG_AXXIA_ARM
+#ifndef CONFIG_AXXIA_EMU
         phy_address_ = 0x1e;
 #else
         phy_address_ = 0x3;
@@ -3851,6 +3857,8 @@ phy_enable_( int phy )
 	if (0 != phy_renegotiate(phy_address_, get_env_ad_value())) {
 		printf( "PHY: Auto Negotiation Failed.\n" );
 	}
+
+	phy_debug();
 
 	DEBUG_PRINT( "\n");
 	printf("%s %s\n",

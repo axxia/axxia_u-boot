@@ -37,8 +37,8 @@
 
 /* Debugging */
 #undef DEBUG
-/*#define DEBUG*/
-#if defined( DEBUG )
+#define DEBUG 1
+#ifdef DEBUG
 #define DEBUG_PRINT( format, args... ) do { \
 printf( "phy:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
 printf( format, ##args ); \
@@ -204,9 +204,86 @@ phy_ops_t micrel_phy_ops = {
   ======================================================================
 */
 
-#define BC_PHY_ID_HIGH_ID   0x40
-#define BC_PHY_ID_LOW_ID    0x18
-#define BC_PHY_ID_LOW_MODEL 0x1e
+#define BCM5222_PHY_ID_HIGH_ID   0x40
+#define BCM5222_PHY_ID_LOW_ID    0x18
+#define BCM5222_PHY_ID_LOW_MODEL 0x1e
+
+#define BCM5222_PHY_AUXILIARY_CONTROL_STATUS 0x18
+
+typedef union {
+	unsigned short raw;
+
+	struct {
+#ifdef __BIG_ENDIAN
+		unsigned short jabber_disable   : 1;
+		unsigned short force_link       : 1;
+		unsigned short rsvd             : 6;
+		unsigned short hsq_lsq          : 2;
+		unsigned short edge_rate        : 2;
+		unsigned short auto_neg         : 1;
+		unsigned short force_ind        : 1;
+		unsigned short speed            : 1;
+		unsigned short full_duplex_ind  : 1;
+#else  /* __BIG_ENDIAN */
+		unsigned short full_duplex_ind  : 1;
+		unsigned short speed            : 1;
+		unsigned short force_ind        : 1;
+		unsigned short auto_neg         : 1;
+		unsigned short edge_rate        : 2;
+		unsigned short hsq_lsq          : 2;
+		unsigned short rsvd             : 6;
+		unsigned short force_link       : 1;
+		unsigned short jabber_disable   : 1;
+#endif /* __BIG_ENDIAN */
+  } bits;
+} bcm5222_phy_auxiliary_control_status_t;
+
+static int
+bcm5222_phy_duplex( int phy )
+{
+	bcm5222_phy_auxiliary_control_status_t aux;
+	unsigned short duplex;
+	
+	aux.raw = mdio_read( phy, BCM5222_PHY_AUXILIARY_CONTROL_STATUS );
+
+	DEBUG_PRINT( "aux.raw=0x%x aux.bits.full_duplex_ind=%d " \
+		     "aux.bits.speed=%d aux.bits.force_ind=%d " \
+		     "aux.bits.auto_neg=%d aux.bits.edge_rate=%d\n ",
+		     aux.raw, aux.bits.full_duplex_ind, aux.bits.speed,
+		     aux.bits.force_ind, aux.bits.auto_neg,
+		     aux.bits.edge_rate);
+
+	mdio_write( phy, BCM5222_PHY_AUXILIARY_CONTROL_STATUS, 0x4001 );
+
+	aux.raw = mdio_read( phy, BCM5222_PHY_AUXILIARY_CONTROL_STATUS );
+
+	DEBUG_PRINT( "aux.raw=0x%x aux.bits.full_duplex_ind=%d " \
+		     "aux.bits.speed=%d aux.bits.force_ind=%d " \
+		     "aux.bits.auto_neg=%d aux.bits.edge_rate=%d\n ",
+		     aux.raw, aux.bits.full_duplex_ind, aux.bits.speed,
+		     aux.bits.force_ind, aux.bits.auto_neg,
+		     aux.bits.edge_rate);
+
+	return aux.bits.full_duplex_ind;
+
+}
+
+
+static int
+bcm5222_phy_speed( int phy )
+{
+	bcm5222_phy_auxiliary_control_status_t aux;
+
+	aux.raw = mdio_read( phy, BCM5222_PHY_AUXILIARY_CONTROL_STATUS );
+
+	return aux.bits.speed;
+}
+
+phy_ops_t bcm5222_phy_ops = {
+	.duplex = bcm5222_phy_duplex,
+	.speed = bcm5222_phy_speed
+};
+
 
 /*
   ======================================================================
@@ -340,6 +417,14 @@ phy_identify( int phy )
 		    (VSC8634_PHY_ID_LOW_MODEL == phy_id_low.bits.model)) {
 			phy_ops[phy] = &vsc8634_phy_ops;
 
+			return 0;
+		}
+		break;
+	case BCM5222_PHY_ID_HIGH_ID:
+		if ((BCM5222_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
+		    (BCM5222_PHY_ID_LOW_MODEL == phy_id_low.bits.model)) {
+			phy_ops[phy] = &bcm5222_phy_ops;
+			DEBUG_PRINT( "Setting up BCM5222 Operations.\n" );
 			return 0;
 		}
 		break;
@@ -506,6 +591,7 @@ phy_speed( int phy )
 	}
 
 	DEBUG_PRINT( "ops=0x%x ops->speed=0x%x\n", ops, ops->speed );
+	printf( "ops=0x%x ops->speed=0x%x\n", ops, ops->speed );
 
 	return ops->speed( phy );
 }
@@ -518,7 +604,8 @@ phy_speed( int phy )
 void
 phy_debug( void )
 {
-#ifndef CONFIG_AXXIA_ARM
+
+#ifndef CONFIG_AXXIA_EMU
 	DEBUG_PRINT( "\n" );
 	/* PHY Access Test */
 	phy_renegotiate( 0x1e, PHY_AUTONEG_ADVERTISE_100FULL );
