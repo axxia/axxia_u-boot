@@ -37,7 +37,7 @@
 
 /* Debugging */
 #undef DEBUG
-#define DEBUG 1
+//#define DEBUG 1
 #ifdef DEBUG
 #define DEBUG_PRINT( format, args... ) do { \
 printf( "phy:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -253,6 +253,7 @@ bcm5222_phy_duplex( int phy )
 		     aux.bits.force_ind, aux.bits.auto_neg,
 		     aux.bits.edge_rate);
 
+#if 0
 	mdio_write( phy, BCM5222_PHY_AUXILIARY_CONTROL_STATUS, 0x4001 );
 
 	aux.raw = mdio_read( phy, BCM5222_PHY_AUXILIARY_CONTROL_STATUS );
@@ -263,6 +264,7 @@ bcm5222_phy_duplex( int phy )
 		     aux.raw, aux.bits.full_duplex_ind, aux.bits.speed,
 		     aux.bits.force_ind, aux.bits.auto_neg,
 		     aux.bits.edge_rate);
+#endif
 
 	return aux.bits.full_duplex_ind;
 
@@ -501,16 +503,12 @@ phy_renegotiate( int phy, int ad_value )
 	int autoneg_retries = PHY_RETRIES;
 	int autoneg_complete_retries = PHY_RETRIES;
 
-	DEBUG_PRINT( "\n" );
 	mdio_write( phy, PHY_AUTONEG_ADVERTISE, ad_value );
-	DEBUG_PRINT( "\n" );
 
 	do {
 		control.raw = mdio_read( phy, PHY_CONTROL );
 		control.bits.restart_autoneg = 1;
-	DEBUG_PRINT( "\n" );
 		mdio_write( phy, PHY_CONTROL, control.raw );
-	DEBUG_PRINT( "\n" );
 
 		do {
 			udelay( 500000 );
@@ -518,7 +516,6 @@ phy_renegotiate( int phy, int ad_value )
 		} while( ( 0 < -- autoneg_complete_retries ) &&
 			 ( 0 == status.bits.autoneg_comp ) );
 
-	DEBUG_PRINT( "\n" );
 		if( 0 == status.bits.autoneg_comp ) {
 			puts( "." );
 		} else {
@@ -526,7 +523,6 @@ phy_renegotiate( int phy, int ad_value )
 		}
 	} while( 0 < -- autoneg_retries );
 
-	DEBUG_PRINT( "\n" );
 	if( 0 == status.bits.autoneg_comp ) {
 		printf( "Auto Negotiation Failed\n" );
 		return -1;
