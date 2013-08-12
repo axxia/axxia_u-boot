@@ -123,12 +123,42 @@ board_init_f(ulong bootflag)
 	if (0 != rc)
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
-	printf("Memory initialized\n");
+#ifdef SYSCACHE_ONLY_MODE
+
+	printf("Syscache Only Mode!\n");
+	asm volatile ("1: b 1b");
+
+	{
+		unsigned long value;
+		unsigned long *address;
+
+		address = (unsigned long *)0x40000000;
+
+		for (;;) {
+			value = *address;
+			printf("Read 0x%x from 0x%p\n", value, address);
+			value = ~value;
+			*address = value;
+			value = *address;
+			printf("Read 0x%x from 0x%p\n", value, address);
+
+			if ((unsigned long)address < 0x40800000)
+				++address;
+			else
+				address = (unsigned long *)0x40000000;
+		}
+	}
+
+#else
+
+	printf("System initialized\n");
 	ssp_init(0, 1);
 	rc = ssp_read((void *)0x40000000, 0x100000, 0x200000);
 	printf("U-Boot Copied\n");
 	reset_cpu_fabric();
 	acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+#endif
 
 	return;
 }

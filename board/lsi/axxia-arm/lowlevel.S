@@ -196,7 +196,11 @@ clear_page_tables:
 	@  Virtual: 0x4000_0000
 	@     Size: 1G
 
+#ifndef SYSCACHE_ONLY_MODE
         ldr     r0, =0x40c52		@ Start at 0x20_0000_0000
+#else
+        ldr     r0, =0x50c5e		@ Start at 0x20_0000_0000
+#endif
         add     r1, r3, #0x1000
         add     r2, r3, #0x2000
 1:    	mov     r9, #0
@@ -226,7 +230,31 @@ clear_page_tables:
         cmp     r1, r2
         blt     1b
 
+	@@
+	@ Turn it all on...
+
+	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
+	tst     r11, #0xf               @ VMSA
+	mov     r0, #0
+	mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
+	tst     r11, #0xf               @ VMSA
+	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
+	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
+	bic     r0, r0, #1 << 28        @ clear SCTLR.TRE
+	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
+	orr     r0, r0, #0x003c         @ write buffer
+	orrne   r0, r0, #1              @ MMU enabled
+	movne   r1, #-1
+	mcrne   p15, 0, r3, c2, c0, 0   @ load page table pointer
+	mcrne   p15, 0, r1, c3, c0, 0   @ load domain access control
+	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+	mcr     p15, 0, r0, c1, c0, 0   @ load control register
+	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
+	mov     r0, #0
+	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+
 #else
+#ifndef SYSCACHE_ONLY_MODE
 
 	@@@@@@@@@@@@
 	@@ 3rd Stage
@@ -234,9 +262,9 @@ clear_page_tables:
 	@@
 	@ Set up the page tables.
 
-	@ First 1G of RAM, cacheable and bufferable.
+	@ First 1G of RAM, sharable, cacheable and bufferable.
 
-        ldr     r0, =0xc1e
+        ldr     r0, =0x1c1e
         mov     r1, r3
         add     r2, r1, #0x1000
 	str	r0, [r1], #4
@@ -324,9 +352,6 @@ clear_page_tables:
         add     r1, r3, #0x30c0
         str     r0, [r1], #4            @ Each supersection is repeated once
 
-
-#endif
-
 	@@
 	@ Turn it all on...
 
@@ -349,6 +374,9 @@ clear_page_tables:
 	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
 	mov     r0, #0
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+
+#endif
+#endif
 
 #ifndef CONFIG_SPL_BUILD
 

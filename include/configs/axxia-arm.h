@@ -40,7 +40,19 @@ int axxia_initialize(void);
 #endif	/* __ASSEMBLY__ */
 
 /*
-  ======================================================================
+  ===============================================================================
+  ===============================================================================
+*/
+
+/*#define SYSCACHE_ONLY_MODE*/
+
+#ifdef SYSCACHE_ONLY_MODE
+#ifndef __ASSEMBLY__
+void ncr_l3tags(void);
+#endif
+#endif
+
+/*
   ======================================================================
   Version
   ======================================================================
@@ -952,7 +964,13 @@ void dump_packet(const char *, void *, int);
  * header. That is 80E7FFC0--0x80E80000 should not be used for any
  * other needs.
  */
+
+#ifdef CONFIG_SYSCACHE_ONLY
+#define CONFIG_SYS_TEXT_BASE		0x40000000
+#else
 #define CONFIG_SYS_TEXT_BASE		0x00000000
+#endif
+
 
 /*
  * BSS and malloc area 64MB into memory to allow enough

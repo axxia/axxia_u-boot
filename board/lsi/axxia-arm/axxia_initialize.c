@@ -73,12 +73,10 @@ axxia_initialize(void)
 	  =======
 	*/
 
-#ifdef CONFIG_AXXIA_55XX
 #ifndef CONFIG_AXXIA_EMU
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE))
 		if (0 != (returnCode = voltage_init()))
 			goto acp_init_return;
-#endif
 #endif
 
 	/*
@@ -87,7 +85,7 @@ axxia_initialize(void)
 	  =========
 	*/
 
-#ifdef CONFIG_AXXIA_55XX
+#ifndef CONFIG_AXXIA_EMU
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
 		if (0 != (returnCode = pciesrio_init()))
 			goto acp_init_return;
@@ -123,19 +121,19 @@ axxia_initialize(void)
 		printf("rc=%d clock_peripheral=%lu\n", rc, freq);
 	}
 
-#if 0
-	/*ZZZ*/
-	asm volatile ("1: b 1b");
-#endif
-
 	/*
 	  =============
 	  System Memory
 	  =============
 	*/
+
+#ifdef SYSCACHE_ONLY_MODE
+	ncr_l3tags();
+#else
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM))
 		if (0 != (returnCode = sysmem_init()))
 			goto acp_init_return;
+#endif
 
  acp_init_return:
 

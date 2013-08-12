@@ -206,14 +206,13 @@ COBJS-$(CONFIG_UPDATE_TFTP) += update.o
 COBJS-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
 COBJS-$(CONFIG_CMD_DFU) += cmd_dfu.o
 COBJS-$(CONFIG_CMD_GPT) += cmd_gpt.o
-endif
-
 COBJS-$(CONFIG_LSI_NET) += cmd_lsi_net.o
 COBJS-$(CONFIG_LSI_SSP) += cmd_lsi_ssp.o
 COBJS-$(CONFIG_LSI_NCR) += cmd_lsi_ncr.o
-#COBJS-$(CONFIG_LSI_MDIO) += cmd_lsi_mdio.o
+COBJS-$(CONFIG_LSI_MDIO) += cmd_lsi_mdio.o
 COBJS-$(CONFIG_LSI_TEST) += cmd_lsi_test.o
 COBJS-$(CONFIG_LSI_SBB) += cmd_lsi_sbb.o
+endif
 
 ifdef CONFIG_SPL_BUILD
 COBJS-$(CONFIG_ENV_IS_IN_FLASH) += env_flash.o

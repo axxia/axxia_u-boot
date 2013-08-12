@@ -18,19 +18,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#undef LSI_DEBUG
-#undef LSI_WARN
-#undef LSI_LOGIO
 #include <config.h>
-#if defined(CONFIG_ACP)
 #include <common.h>
 #include <command.h>
 #include <net.h>
 #include <linux/string.h>
 #include <asm/io.h>
-#if defined(CONFIG_ACP3)
 #include <malloc.h>
-#endif
 
 /*
   ======================================================================
@@ -52,7 +46,6 @@
   ======================================================================
 */
 
-#if defined(CONFIG_ACP3)
 static int
 decode_range(const char *input, int minimum, int maximum, int range[2])
 {
@@ -97,7 +90,6 @@ decode_range(const char *input, int minimum, int maximum, int range[2])
 
 	return 0;
 }
-#endif
 
 /*
   ======================================================================
@@ -117,8 +109,6 @@ decode_range(const char *input, int minimum, int maximum, int range[2])
 int
 do_mdio(cmd_tbl_t *command_table, int flag, int argc, char *argv[])
 {
-	DEBUG_PRINT( "flag=0x%x argc=%d\n", flag, argc );
-
 	if ((0 == strncmp(argv[1], "r", strlen("r"))) && (4 == argc)) {
 		/*
 		  mdio read
@@ -126,7 +116,6 @@ do_mdio(cmd_tbl_t *command_table, int flag, int argc, char *argv[])
 
 		int device_range[2];
 		int register_range[2];
-#if defined(CONFIG_ACP3)
 		int i;
 		int j;
 
@@ -147,19 +136,6 @@ do_mdio(cmd_tbl_t *command_table, int flag, int argc, char *argv[])
 				printf("0x%02x[0x%02x]:0x%x\n", i, j, mdio_read(i, j));
 			}
 		}
-#else
-		int phy;
-		int reg;
-		
-		phy = simple_strtol((argv[2]), NULL, 0);
-		reg = simple_strtol((argv[3]), NULL, 0);
-			
-		if (0 > phy || 31 < phy || 0 > reg || 31 < reg)
-			return -1;
-
-		printf("Read 0x%x from Address 0x%x, Offset 0x%x\n",
-		       mdio_read(phy, reg), phy, reg);
-#endif
 	} else if ((0 == strncmp(argv[1], "w", strlen("w")))) {
 		/* write */
 
@@ -192,5 +168,3 @@ U_BOOT_CMD(mdio, 5, 0, do_mdio,
 	   "mdio	- mdio access\n",
 	   "read  device|device-range register|register-range\n"
 	   "write device|device-range register value\n");
-
-#endif /* CONFIG_ACP */

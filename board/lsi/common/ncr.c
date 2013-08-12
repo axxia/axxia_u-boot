@@ -908,7 +908,9 @@ ncr_write32_0x159(unsigned long region, unsigned long offset, unsigned long valu
 */
 
 int
-ncr_read(unsigned long region, unsigned long address, int number, void *buffer)
+ncr_read(unsigned long region,
+	 unsigned long address_upper, unsigned long address,
+	 int number, void *buffer)
 {
 	command_data_register_0_t cdr0;	/* 0x101.0.0xf0 */
 	command_data_register_1_t cdr1;	/* 0x101.0.0xf4 */
@@ -962,6 +964,8 @@ ncr_read(unsigned long region, unsigned long address, int number, void *buffer)
 	if( NCP_REGION_ID( 512, 1 ) != region ) {
 		cdr2.bits.target_node_id = NCP_NODE_ID( region );
 		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
+	} else {
+		cdr2.bits.target_id_address_upper = address_upper;
 	}
 
 	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
@@ -1061,7 +1065,7 @@ ncr_read8(unsigned long region, unsigned long offset, unsigned char *value)
 	int rc;
 
 	NCR_TRACE_READ8(region, offset);
-	rc = ncr_read(region, offset, 1, value);
+	rc = ncr_read(region, 0, offset, 1, value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1084,7 +1088,7 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 	if (0x115 == NCP_NODE_ID(region))
 		rc = ncr_read16_0x115(region, offset, value);
 	else
-		rc = ncr_read(region, offset, 2, value);
+		rc = ncr_read(region, 0, offset, 2, value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1103,7 +1107,7 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 	int rc = 0;
 
 	NCR_TRACE_READ32(region, offset);
-	rc = ncr_read(region, offset, 4, value);
+	rc = ncr_read(region, 0, offset, 4, value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1131,7 +1135,7 @@ ncr_poll( unsigned long region, unsigned long offset,
 	for( i = 0; i < delay_loops; ++ i ) {
 		unsigned long value;
 
-		rc |= ncr_read(region, offset, 4, &value);
+		rc |= ncr_read(region, 0, offset, 4, &value);
 
 		if( ( value & mask ) == desired_value ) {
 			break;
@@ -1156,7 +1160,9 @@ ncr_poll( unsigned long region, unsigned long offset,
 */
 
 int
-ncr_write(unsigned long region, unsigned long address, int number, void *buffer)
+ncr_write(unsigned long region,
+	  unsigned long address_upper, unsigned long address,
+	  int number, void *buffer)
 {
 	command_data_register_0_t cdr0;
 	command_data_register_1_t cdr1;
@@ -1215,6 +1221,8 @@ ncr_write(unsigned long region, unsigned long address, int number, void *buffer)
 	if( NCP_REGION_ID( 512, 1 ) != region ) {
 		cdr2.bits.target_node_id = NCP_NODE_ID( region );
 		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
+	} else {
+		cdr2.bits.target_id_address_upper = address_upper;
 	}
 
 	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
@@ -1325,7 +1333,7 @@ ncr_write8( unsigned long region, unsigned long offset, unsigned char value )
 	int rc;
 
 	NCR_TRACE_WRITE8(region, offset, value);
-	rc = ncr_write(region, offset, 1, &value);
+	rc = ncr_write(region, 0, offset, 1, &value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1348,7 +1356,7 @@ ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 	if (0x115 == NCP_NODE_ID(region))
 		rc = ncr_write16_0x115(region, offset, value);
 	else
-		rc = ncr_write(region, offset, 2, &value);
+		rc = ncr_write(region, 0, offset, 2, &value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1367,7 +1375,7 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 	int rc;
 
 	NCR_TRACE_WRITE32(region, offset, value);
-	rc = ncr_write(region, offset, 4, &value);
+	rc = ncr_write(region, 0, offset, 4, &value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1386,9 +1394,9 @@ ncr_and( unsigned long region, unsigned long offset, unsigned long value )
 	unsigned long temp;
 	int rc = 0;
 
-	rc |= ncr_read(region, offset, 4, &temp);
+	rc |= ncr_read(region, 0, offset, 4, &temp);
 	temp &= value;
-	rc |= ncr_write(region, offset, 4, &temp);
+	rc |= ncr_write(region, 0, offset, 4, &temp);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1407,9 +1415,9 @@ ncr_or( unsigned long region, unsigned long offset, unsigned long value )
 	unsigned long temp;
 	int rc = 0;
 
-	rc |= ncr_read(region, offset, 4, &temp);
+	rc |= ncr_read(region, 0, offset, 4, &temp);
 	temp |= value;
-	rc |= ncr_write(region, offset, 4, &temp);
+	rc |= ncr_write(region, 0, offset, 4, &temp);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1545,3 +1553,48 @@ ncr_modify32( unsigned long region, unsigned long offset,
 
 	return 0;
 }
+
+#ifdef SYSCACHE_ONLY_MODE
+
+/*
+  -------------------------------------------------------------------------------
+  ncr_l3tags
+*/
+
+void
+ncr_l3tags(void)
+{
+	int i;
+	unsigned long address;
+
+	/*donotwrite = 0;*/
+
+	/*
+	  ?
+	*/
+
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1000, 0x80000000);
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1004, 0x0fffff00);
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1008, 0x00000020);
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x100c, 0x00000000);
+
+	/*
+	  Set up cdar_memory
+	*/
+
+	for (i = 0; i < 64; ++i)
+		writel(0, (NCA + 0x1000 + (i * 4)));
+
+	/*
+	  Write it
+	*/
+
+	address = 0;
+
+	for (i = 0; i < (8 * 1024 * 1024) / 256; ++i, address += 256)
+		ncr_write(NCP_REGION_ID(512, 1), 0x20, address, 256, NULL);
+
+	return;
+}
+
+#endif
