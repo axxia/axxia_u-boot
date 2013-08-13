@@ -52,24 +52,25 @@ pll_init_5500(unsigned long region, unsigned long *parameters)
 	/*
 	  Set the parameter value and reset the PLL, with
 	  bypass and bypass_select (in the control register), set.
+
+	  Enable the PLL.
 	*/
-	prms = parameters[0] & PARAMETER_MASK;
-	ncr_write32(region, 0x0, prms);
 	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0xc00);
-	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0xc02);
-	prms |= 0x10000000;
+	prms = parameters[0] & PARAMETER_MASK | 0x80000000;
 	ncr_write32(region, 0x0, prms);
+	udelay(100);
+	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0xc02);
 
 	/*
-	  Enable the PLL.  Enable clock_sync for DDR PLLs
+	  Enable clock_sync for DDR PLLs
 	*/
-	prms |= 0x80000000;
+
 	if ((region == NCP_REGION_ID(0x155, 6)) ||
 	    (region == NCP_REGION_ID(0x155, 7)) ||
 	    (region == NCP_REGION_ID(0x155, 8))) {
 		prms |= 0x40000000;
+		ncr_write32(region, 0x0, prms);
 	}
-	ncr_write32(region, 0x0, prms);
 
 	/*
 	  Wait for pll_locked.
@@ -234,7 +235,7 @@ clocks_init( void )
 		return -1;
 
 	/* sm1pll */
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 7), &clocks->sm0pll_prms))
+	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 7), &clocks->sm1pll_prms))
 		return -1;
 
 #if 0
