@@ -291,6 +291,22 @@ __serial_puts(const char *s)
 
 #ifdef CONFIG_SPL_BUILD
 
+int
+serial_tstc(void) {
+	return __serial_tstc();
+}
+
+int
+serial_getc(void) {
+	return __serial_getc();
+}
+
+void
+serial_putc(const char c)
+{
+	__serial_putc(c);
+}
+
 void
 serial_puts(const char *s)
 {
