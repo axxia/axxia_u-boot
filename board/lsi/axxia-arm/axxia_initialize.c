@@ -131,11 +131,12 @@ axxia_initialize(void)
 #ifdef SYSCACHE_ONLY_MODE
 	ncr_l3tags();
 #else
-	sysmem_reset();
+	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM)) {
+	  	sysmem_reset();
 
-	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM))
 		if (0 != (returnCode = sysmem_init()))
 			goto acp_init_return;
+	}
 #endif
 
  acp_init_return:

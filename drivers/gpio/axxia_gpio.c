@@ -174,7 +174,10 @@ axxia_gpio_set(axxia_gpio_t gpio, int pin, int value)
 	if (7 < pin)
 		return -1;
 
-	write_reg(gpio, (1 << pin), (GPIODATA + ((1 << pin) * 4)));
+	if (0 == value)
+		write_reg(gpio, 0, (GPIODATA + ((1 << pin) * 4)));
+	else
+		write_reg(gpio, (1 << pin), (GPIODATA + ((1 << pin) * 4)));
 
 	return 0;
 }
@@ -207,7 +210,7 @@ gpio_direction_input(unsigned pin)
 	if (8 > pin)
 		rc = axxia_gpio_set_direction(AXXIA_GPIO_0, pin, 0);
 	else
-		rc = axxia_gpio_set_direction(AXXIA_GPIO_1, (pin >> 8), 0);
+		rc = axxia_gpio_set_direction(AXXIA_GPIO_1, (pin - 8), 0);
 
 	if (-1 == rc)
 		return -1;
@@ -237,8 +240,8 @@ gpio_direction_output(unsigned pin, int value)
 		rc = axxia_gpio_set_direction(AXXIA_GPIO_0, pin, 1);
 		rc |= axxia_gpio_set(AXXIA_GPIO_0, pin, value);
 	} else {
-		rc = axxia_gpio_set_direction(AXXIA_GPIO_1, (pin >> 8), 1);
-		rc |= axxia_gpio_set(AXXIA_GPIO_1, (pin >> 8), value);
+		rc = axxia_gpio_set_direction(AXXIA_GPIO_1, (pin - 8), 1);
+		rc |= axxia_gpio_set(AXXIA_GPIO_1, (pin - 8), value);
 	}
 
 	if (-1 == rc)
@@ -262,7 +265,7 @@ gpio_get_value(unsigned pin)
 	if (8 > pin)
 		value = axxia_gpio_get(AXXIA_GPIO_0, pin);
 	else
-		value = axxia_gpio_get(AXXIA_GPIO_1, (pin >> 8));
+		value = axxia_gpio_get(AXXIA_GPIO_1, (pin - 8));
 
 	debug("%s:%d - GPIO pin %u is at %d.\n", __FILE__, __LINE__, pin, value);
 
@@ -284,7 +287,7 @@ gpio_set_value(unsigned pin, int value)
 	if (8 > pin)
 		axxia_gpio_set(AXXIA_GPIO_0, pin, value);
 	else
-		axxia_gpio_set(AXXIA_GPIO_1, (pin >> 8), value);
+		axxia_gpio_set(AXXIA_GPIO_1, (pin - 8), value);
 
 	return 0;
 }
