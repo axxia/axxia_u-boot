@@ -192,11 +192,8 @@ writel( ( value ), ( unsigned long * ) ( address ) )
 
 /* -- -- */
 
-/*#define PHY_ADDRESS_ 0x1e*/
-#define PHY_ADDRESS_ 0
-
 /* Set to -1 to auto-detect. */
-static int phy_address_ = PHY_ADDRESS_;
+static int phy_address_ = 0;
 
 /*static int phy_address_ = -1;*/
 
@@ -1439,6 +1436,9 @@ get_env_ad_value( void )
 static int
 phy_enable_( int phy )
 {
+	char * macspeed = ( char * ) 0;
+	phy_control_t control;
+
 	TRACE_BEGINNING( "\n" );
 
 	/*
@@ -1484,21 +1484,84 @@ phy_enable_( int phy )
 	}
 
 #else  /* CONFIG_ACP */
-
-	phy_address_ = 0x1e;
-
+	phy_address_ = CONFIG_AXXIA_PHY_ADDRESS;
 #endif /* CONFIG_ACP */
 
-	phy_address_ = 0x1e;
+	macspeed = getenv( "macspeed" );
 
 	/*
 	  Set up the link.
 	*/
-
-	if (0 != phy_renegotiate(phy_address_, get_env_ad_value())) {
-		printf( "PHY: Auto Negotiation Failed.\n" );
+	if( 0 == strncmp(macspeed, "auto", strlen("auto") ) ) {
+		if (0 != phy_renegotiate(phy_address_, get_env_ad_value())) {
+			printf( "PHY: Auto Negotiation Failed.\n" );
+			return -1;
+		}
+		printf("%s %s\n",
+	       0 == phy_speed(phy_address_) ? "10M" : "100M",
+	       0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+		return 0;
+	} else {
+		control.raw = mdio_read( phy_address_, PHY_CONTROL );
+		control.bits.autoneg_enable = 0x0;
+		if( 0 == strncmp(macspeed, "10MF", strlen("10MF") ) ) {
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			/* Full Duplex Mode */
+			control.bits.full_duplex = 0x1;
+			/* 10 Mbps  Mode */
+			control.bits.force100 = 0x0;
+			mdio_write( phy_address_, PHY_CONTROL, control.raw );
+			if ((phy_speed(phy_address_) != 0) && 
+				(phy_duplex(phy_address_) != 0x1)) {
+				printf("USER wanted 10Mb/s Full Duplex but link is at\n");
+				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
+					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+				return -1;
+			}
+		} else if( 0 == strncmp(macspeed, "10MH", strlen("10MH") ) ) {
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			/* Half Duplex Mode */
+			control.bits.full_duplex = 0x0;
+			/* 10 Mbps  Mode */
+			control.bits.force100 = 0x0;
+			mdio_write( phy_address_, PHY_CONTROL, control.raw );
+			if ((phy_speed(phy_address_) != 0) && 
+				(phy_duplex(phy_address_) != 0x0)) {
+				printf("USER wanted 10Mb/s Half Duplex but link is at\n");
+				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
+					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+				return -1;
+			}
+		} else if( 0 == strncmp(macspeed, "100MF", strlen("100MF") ) ) {
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			/* Full Duplex Mode */
+			control.bits.full_duplex = 0x1;
+			/* 100 Mbps  Mode */
+			control.bits.force100 = 0x1;
+			mdio_write( phy_address_, PHY_CONTROL, control.raw );
+			if ((phy_speed(phy_address_) != 0x1) && 
+				(phy_duplex(phy_address_) != 0x1)) {
+				printf("USER wanted 100Mb/s Full Duplex but link is at\n");
+				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
+					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+				return -1;
+			}
+		} else if( 0 == strncmp(macspeed, "100MH", strlen("100MH") ) ) {
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			/* Half Duplex Mode */
+			control.bits.full_duplex = 0x0;
+			/* 100 Mbps  Mode */
+			control.bits.force100 = 0x1;
+			mdio_write( phy_address_, PHY_CONTROL, control.raw );
+			if ((phy_speed(phy_address_) != 0x1) && 
+				(phy_duplex(phy_address_) != 0x0)) {
+				printf("USER wanted 100Mb/s Half Duplex but link is at\n");
+				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
+					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+				return -1;
+			}
+		}
 	}
-
 	printf("%s %s\n",
 	       0 == phy_speed(phy_address_) ? "10M" : "100M",
 	       0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
@@ -2373,7 +2436,7 @@ lsi_femac_write_hwaddr(struct eth_device *device)
 
 #else  /* CONFIG_AXXIA_PPC */
 
-#define ALLOW_DEBUGGING
+/*#define ALLOW_DEBUGGING */
 
 #define DUMP_STATS
 /*#define EH_STATS*/
@@ -2400,7 +2463,7 @@ static int eh_stats_initialized = 0;
 */
 
 #undef DUMP_DESCRIPTOR
-/*#define DUMP_DESCRIPTOR*/
+/* #define DUMP_DESCRIPTOR */
 /*#define DUMP_DESCRIPTOR_COMPACT*/
 #ifdef DUMP_DESCRIPTOR
 #define DUMP_DESCRIPTOR_( address ) dump_descriptor_( __LINE__, ( address ) )
@@ -2409,7 +2472,7 @@ static int eh_stats_initialized = 0;
 #endif /* DUMP_DESCRIPTOR */
 
 #undef DUMP_PACKETS
-/*#define DUMP_PACKETS*/
+/* #define DUMP_PACKETS */
 #ifdef DUMP_PACKETS
 #define DUMP_PACKET(header, data, length) \
 dump_packet_(header, data, length);
@@ -2422,7 +2485,7 @@ dump_packet_(header, data, length);
 */
 
 #undef DEBUG
-/*#define DEBUG*/
+/* #define DEBUG */
 #ifdef DEBUG
 #define DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -2433,7 +2496,7 @@ printf( format, ##args ); \
 #endif /* DEBUG */
 
 #undef TX_DEBUG
-/*#define TX_DEBUG*/
+/* #define TX_DEBUG */
 #ifdef TX_DEBUG
 #define TX_DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - TX_DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -2444,7 +2507,7 @@ printf( format, ##args ); \
 #endif /* TX_DEBUG */
 
 #undef RX_DEBUG
-/*#define RX_DEBUG*/
+/* #define RX_DEBUG */
 #ifdef RX_DEBUG
 #define RX_DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - RX_DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -2477,8 +2540,8 @@ printf( format, ##args ); \
 static int initialized_ = 0;
 static int rx_debug = 0;
 static int rx_allow_all = 0;
-static int dump_packets = 1;
-static int dump_descriptors = 1;
+static int dump_packets = 0;
+static int dump_descriptors = 0;
 static int loopback = 0;
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -2493,18 +2556,8 @@ int test( void );
 
 /* -- -- */
 
-#if 0
-#ifndef CONFIG_AXXIA_EMU
-#define PHY_ADDRESS_ 0x1e
-#else
-#define PHY_ADDRESS_ 0x3
-#endif
-#endif
-
-#define PHY_ADDRESS_ 0x1e
-
 /* Set to -1 to auto-detect. */
-static int phy_address_ = PHY_ADDRESS_;
+static int phy_address_ = 0;
 /*static int phy_address_ = -1;*/
 
 static int phy_enable_( int );
@@ -3794,6 +3847,9 @@ get_env_ad_value( void )
 static int
 phy_enable_( int phy )
 {
+	char * macspeed = ( char * ) 0;
+	phy_control_t control;
+
 	TRACE_BEGINNING( "\n" );
 
 	/*
@@ -3840,28 +3896,101 @@ phy_enable_( int phy )
 	}
 
 #else  /* CONFIG_ACP */
-
-#ifndef CONFIG_AXXIA_EMU
-        phy_address_ = 0x1e;
-#else
-        phy_address_ = 0x3;
-#endif
-
+	phy_address_ = CONFIG_AXXIA_PHY_ADDRESS;
 #endif /* CONFIG_ACP */
+
+	macspeed = getenv( "macspeed" );
 
 	/*
 	  Set up the link.
 	*/
-	
-	DEBUG_PRINT( "\n");
-	if (0 != phy_renegotiate(phy_address_, get_env_ad_value())) {
-		printf( "PHY: Auto Negotiation Failed.\n" );
-	}
-
-	DEBUG_PRINT( "\n");
-	printf("%s %s\n",
+	if( 0 == strncmp(macspeed, "auto", strlen("auto") ) ) {
+		if (0 != phy_renegotiate(phy_address_, get_env_ad_value())) {
+			printf( "PHY: Auto Negotiation Failed.\n" );
+			return -1;
+		}
+		printf("Auto negotiation returned %s %s\n",
 	       0 == phy_speed(phy_address_) ? "10M" : "100M",
 	       0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+		return 0;
+	} else {
+		control.raw = mdio_read( phy_address_, PHY_CONTROL );
+		control.bits.autoneg_enable = 0x0;
+		if( 0 == strncmp(macspeed, "10MF", strlen("10MF") ) ) {
+			DEBUG_PRINT("User wants 10MF\n\n");
+			/* Full Duplex Mode */
+			control.bits.full_duplex = 0x1;
+			/* 10 Mbps  Mode */
+			control.bits.force100 = 0x0;
+			mdio_write( phy_address_, PHY_CONTROL, control.raw );
+			DEBUG_PRINT("PHY_CONTROL  written raw value =  0x%x\n", control.raw);
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			DEBUG_PRINT("PHY_CONTROL  read raw value =  0x%x\n", control.raw);
+			if ((phy_speed(phy_address_) != 0) || 
+				(phy_duplex(phy_address_) != 0x1)) {
+				printf("USER wanted 10Mb/s Full Duplex but link is at\n");
+				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
+					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+				return -1;
+			}
+		} else if( 0 == strncmp(macspeed, "10MH", strlen("10MH") ) ) {
+			DEBUG_PRINT("User wants 10MH\n\n");
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			/* Half Duplex Mode */
+			control.bits.full_duplex = 0x0;
+			/* 10 Mbps  Mode */
+			control.bits.force100 = 0x0;
+			mdio_write( phy_address_, PHY_CONTROL, control.raw );
+			DEBUG_PRINT("PHY_CONTROL  written raw value =  0x%x\n", control.raw);
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			DEBUG_PRINT("PHY_CONTROL  read raw value =  0x%x\n", control.raw);
+			if ((phy_speed(phy_address_) != 0) || 
+				(phy_duplex(phy_address_) != 0x0)) {
+				printf("USER wanted 10Mb/s Half Duplex but link is at\n");
+				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
+					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+				return -1;
+			}
+		} else if( 0 == strncmp(macspeed, "100MF", strlen("100MF") ) ) {
+			DEBUG_PRINT("User wants 100MF\n\n");
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			/* Full Duplex Mode */
+			control.bits.full_duplex = 0x1;
+			/* 100 Mbps  Mode */
+			control.bits.force100 = 0x1;
+			mdio_write( phy_address_, PHY_CONTROL, control.raw );
+			DEBUG_PRINT("PHY_CONTROL  written raw value =  0x%x\n", control.raw);
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			DEBUG_PRINT("PHY_CONTROL  read raw value =  0x%x\n", control.raw);
+			if ((phy_speed(phy_address_) != 0x1) || 
+				(phy_duplex(phy_address_) != 0x1)) {
+				printf("USER wanted 100Mb/s Full Duplex but link is at\n");
+				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
+					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+				return -1;
+			}
+		} else if( 0 == strncmp(macspeed, "100MH", strlen("100MH") ) ) {
+			DEBUG_PRINT("User wants 100MH\n\n");
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			/* Half Duplex Mode */
+			control.bits.full_duplex = 0x0;
+			/* 100 Mbps  Mode */
+			control.bits.force100 = 0x1;
+			mdio_write( phy_address_, PHY_CONTROL, control.raw );
+			DEBUG_PRINT("PHY_CONTROL  written raw value =  0x%x\n", control.raw);
+			control.raw = mdio_read( phy_address_, PHY_CONTROL );
+			DEBUG_PRINT("PHY_CONTROL  read raw value =  0x%x\n", control.raw);
+			if ((phy_speed(phy_address_) != 0x1) || 
+				(phy_duplex(phy_address_) != 0x0)) {
+				printf("USER wanted 100Mb/s Half Duplex but link is at\n");
+				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
+					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+				return -1;
+			}
+		}
+	}
+	printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
+			0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
 
 	return 0;
 }
@@ -3964,6 +4093,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		return 1;
 	}
 
+#if 0
 	/* Allocate Memory for Descriptors, Buffers, and Tail Pointers */
 	memory_needed =
 		( sizeof( app3xxnic_dma_descriptor_t ) * /* RX Descriptors */
@@ -3980,6 +4110,10 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		printf("Unable to allocate space for descriptors and buffers\n");
 		return 1;
 	}
+
+#endif
+
+	memory = (void *)((4 * 1024 * 1024) - (128 * 1024));
 
 	/*
 	  Set the zone to allow access by non-secure masters (the FEMAC).
@@ -4091,6 +4225,9 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		/* writel( 0xc00096, APP3XXNIC_TX_WATERMARK ); */
 		writel( 0x7f007f, APP3XXNIC_TX_WATERMARK );
 	}
+
+	writel( 0x300a, APP3XXNIC_TX_WATERMARK );
+
 	writel( 0x1, APP3XXNIC_TX_HALF_DUPLEX_CONF );
 	writel( 0xffff, APP3XXNIC_TX_TIME_VALUE_CONF );
 	writel( 0x1, APP3XXNIC_TX_INTERRUPT_CONTROL );

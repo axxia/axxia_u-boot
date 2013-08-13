@@ -43,6 +43,7 @@
 #define CONFIG_AXXIA_NET
 /*#define CONFIG_AXXIA_EIOA*/
 #define CONFIG_AXXIA_FEMAC
+#define CONFIG_AXXIA_PHY_ADDRESS 0x1e
 #endif
 
 #define CONFIG_AXXIA_NAND
