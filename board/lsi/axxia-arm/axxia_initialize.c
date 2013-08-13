@@ -37,7 +37,7 @@ unsigned long sysmem_size = 1;
 unsigned long reset_enabled = 1;
 unsigned long ncp_sm_phy_reg_dump = 1;
                                                                                 
-#if defined (CONFIG_AXXIA_55XX_EMU)
+#if defined (CONFIG_AXXIA_EMU)
 #include "sysmem_emulation.c"
 #else                                                                           
 #include "../common/sysmem_asic_common.c"
@@ -96,10 +96,11 @@ axxia_initialize(void)
 	  Clocks
 	  ======
 	*/
-	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS)) {
+#ifndef CONFIG_AXXIA_EMU
+	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS))
 		if (0 != (returnCode = clocks_init()))
 			goto acp_init_return;
-	}
+#endif
 		
 	serial_initialize();
 	serial_init();
@@ -130,6 +131,8 @@ axxia_initialize(void)
 #ifdef SYSCACHE_ONLY_MODE
 	ncr_l3tags();
 #else
+	sysmem_reset();
+
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM))
 		if (0 != (returnCode = sysmem_init()))
 			goto acp_init_return;

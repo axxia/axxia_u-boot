@@ -38,7 +38,7 @@ else
 ################################################################################
 ## SPL Build
 
-COBJS += parameters.o
+COBJS += parameters.o sysmem_reset.o
 
 endif
 
