@@ -4100,7 +4100,6 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		return 1;
 	}
 
-#if 0
 	/* Allocate Memory for Descriptors, Buffers, and Tail Pointers */
 	memory_needed =
 		( sizeof( app3xxnic_dma_descriptor_t ) * /* RX Descriptors */
@@ -4124,10 +4123,6 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 #else
 	memory = (void *)((4 * 1024 * 1024) - (256 * 1024));
 #endif
-
-#endif
-
-	memory = (void *)((4 * 1024 * 1024) - (128 * 1024));
 
 	/*
 	  Set the zone to allow access by non-secure masters (the FEMAC).
