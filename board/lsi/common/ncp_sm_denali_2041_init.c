@@ -40,6 +40,7 @@
 #endif
 
 
+
 #define NCP_SM_ENCODE_RTT_NOM(val)  \
     ( ( (val & 0x1) << 2 ) |  /* a2 */ \
       ( (val & 0x2) << 5 ) |  /* a6 */ \
@@ -59,17 +60,35 @@ ncp_sm_denali_2041_init(
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_uint32_t value;
+    ncp_uint32_t value2;
     ncp_uint32_t col_diff;
     ncp_uint32_t ctl_32 = 0, ctl_33 = 0, ctl_34 = 0;
     ncp_region_id_t ctlReg = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
+    ncp_uint32_t rttNom;
+    ncp_uint32_t drvImp;
+    ncp_uint32_t rttWr;
+    ncp_uint32_t shift;
+    ncp_uint32_t tshift;
 
 #ifdef SM_PLL_533_MHZ
+    extern ncp_uint8_t tRFC_vals_533[5] ;
     ncp_uint8_t *tRFC_vals = tRFC_vals_533;
 #else
     ncp_uint8_t *tRFC_vals = tRFC_vals_800;
 #endif
+#ifdef SM_PLL_533_MHZ
+    printf("Setting up controller for 533MHz!!! \n");
+#endif
 
     NCP_COMMENT("Sysmem %d Denali Controller init", smId);
+
+    if (( smId & 1) == 0 ) {
+        shift = 0;
+    } else {
+        shift = 16;
+    }
+
+
     /* node_cfg */
     ncr_write32(ctlReg,  0x0010, 0x00000003);
 
@@ -437,22 +456,75 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x02ec, value);
     ncr_write32(ctlReg,  0x02f0, value);
 
+    tshift = shift;
     /* DENALI_CTL_189 */
     /* DENALI_CTL_190 */
-    /* MR1 */
-    value  = NCP_SM_ENCODE_RTT_NOM(parms->sdram_rtt_nom);
-    value |= NCP_SM_ENCODE_DRV_IMP(parms->sdram_data_drv_imp);
-    value |= value << 16; 
+    /* MR1 rank 0 - 1 */
+    rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
+    drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
+
+    printf("rttNom=%d, drvImp=%d\n", rttNom, drvImp);
+
+    value  = NCP_SM_ENCODE_RTT_NOM(rttNom);
+    value |= NCP_SM_ENCODE_DRV_IMP(drvImp);
+
+    shift += 4;
+    rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
+    drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
+    printf("rttNom=%d, drvImp=%d\n", rttNom, drvImp);
+    value2  = NCP_SM_ENCODE_RTT_NOM(rttNom);
+    value2 |= NCP_SM_ENCODE_DRV_IMP(drvImp);
+
+    value |= value2 << 16; 
     ncr_write32(ctlReg,  0x02f4, value);
+
+    /* MR1 rank 2 - 3  */
+    shift += 4;
+    rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
+    drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
+
+    printf("rttNom=%d, drvImp=%d\n", rttNom, drvImp);
+    value  = NCP_SM_ENCODE_RTT_NOM(rttNom);
+    value |= NCP_SM_ENCODE_DRV_IMP(drvImp);
+
+    shift += 4;
+    rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
+    drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
+    printf("rttNom=%d, drvImp=%d\n", rttNom, drvImp);
+    value2  = NCP_SM_ENCODE_RTT_NOM(rttNom);
+    value2 |= NCP_SM_ENCODE_DRV_IMP(drvImp);
+
+
     ncr_write32(ctlReg,  0x02f8, value);
 
     /* DENALI_CTL_191 */
     /* DENALI_CTL_192 */
     /* MR2 : FREQDEP */
-    value  = ( parms->sdram_rtt_wr << 9) ; 
+    /* rank 0 - 1 */
+    shift = tshift;
+    rttWr  = (parms->sdram_rtt_wr >> shift) & 0xf;
+    value  = ( rttWr << 9) ; 
     value |= ( parms->CAS_write_latency - 5 ) << 3;
-    value |= ( value << 16 );
+
+    shift += 4;
+    rttWr  = (parms->sdram_rtt_wr >> shift) & 0xf;
+    value2  = ( rttWr << 9) ; 
+    value2 |= ( parms->CAS_write_latency - 5 ) << 3;
+
+    value |= ( value2 << 16 );
     ncr_write32(ctlReg,  0x02fc, value);
+
+    /* rank 2 - 3 */
+    shift += 4;
+    rttWr  = (parms->sdram_rtt_wr >> shift) & 0xf;
+    value  = ( rttWr << 9) ; 
+    value |= ( parms->CAS_write_latency - 5 ) << 3;
+
+    shift += 4;
+    rttWr  = (parms->sdram_rtt_wr >> shift) & 0xf;
+    value2  = ( rttWr << 9) ; 
+    value2 |= ( parms->CAS_write_latency - 5 ) << 3;
+
     ncr_write32(ctlReg,  0x0300, value);
        
     /* DENALI_CTL_223 */

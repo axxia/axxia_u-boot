@@ -33,6 +33,8 @@
 
 #ifndef UBOOT
 #include "ncp_pvt.h"
+/* #define SM_PLL_533_MHZ */
+
 
 /*
  * the number syscache clients on the ASIC.
@@ -222,13 +224,14 @@ typedef struct {
     ncp_uint8_t                 added_rank_switch_delay;
     ncp_bool_t                  high_temp_dram;
 
-    ncp_sm_sdram_rtt_imp_t      sdram_rtt_nom;
-    ncp_sm_sdram_rtt_imp_t      sdram_rtt_wr;
-    ncp_sm_sdram_drv_imp_t      sdram_data_drv_imp;
+    ncp_uint32_t                sdram_rtt_nom;
+    ncp_uint32_t                sdram_rtt_wr;
+    ncp_uint32_t                sdram_data_drv_imp;
 
-    ncp_uint8_t                 phy_adr_imp;
-    ncp_uint8_t                 phy_dat_imp;
-    ncp_uint8_t                 phy_rcv_imp;
+    ncp_uint32_t                phy_adr_imp;
+    ncp_uint32_t                phy_dat_imp;
+    ncp_uint32_t                phy_rcv_imp;
+
     ncp_uint8_t                 phy_rdlat;
     ncp_uint8_t                 address_mirroring;
     ncp_uint8_t                 fixed_read_lat;

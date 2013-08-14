@@ -1080,6 +1080,9 @@ ncp_sm_lsiphy_static_init(
     int             i;
     ncp_uint32_t    vtc_cnt;
     ncp_uint32_t    eccBlMask;
+    ncp_uint32_t    phy_adr_imp;
+    ncp_uint32_t    phy_dat_imp;
+    ncp_uint32_t    phy_rcv_imp;
 
     ncp_phy_CFG_SYSMEM_PHY_DPCONFIG2_BLx_r_t   dpconfig2  = {0};
     ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG1_r_t      phyconfig1 = {0};
@@ -1347,12 +1350,32 @@ ncp_sm_lsiphy_static_init(
 
     }
 
-    adrioset.adrdrvac  = parms->phy_adr_imp;
-    adrioset.adrdrvck0 = parms->phy_adr_imp;
-    adrioset.adrdrvck1 = parms->phy_adr_imp;
-    adrioset.adrslac   = parms->phy_adr_imp;
-    adrioset.adrslck0  = parms->phy_adr_imp;
-    adrioset.adrslck1  = parms->phy_adr_imp;
+    /* 
+     * PHY impedance settings are (may be?) specified on a 
+     * per-sysmem basis. The setting for SMEM 0 is specified
+     * in the lower half word and SMEM 1 is in the upper half 
+     * word. Currently only supported by u-boot parameter file
+     * (if at all).
+     */
+
+    if ( ( smId & 0x1 ) == 0 ) {
+        phy_adr_imp = parms->phy_adr_imp & 0x3;
+        phy_dat_imp = parms->phy_dat_imp & 0x3;
+        phy_rcv_imp = parms->phy_rcv_imp & 0x3;
+    } else {
+        phy_adr_imp = (parms->phy_adr_imp >> 16) & 0x3;
+        phy_dat_imp = (parms->phy_dat_imp >> 16) & 0x3;
+        phy_rcv_imp = (parms->phy_rcv_imp >> 16) & 0x3;
+    }
+
+    printf("setting SMID%d  phy_dat=%d rcv_imp=%d phy_adr=%d\n", smId, phy_dat_imp, phy_rcv_imp, phy_adr_imp);
+
+    adrioset.adrdrvac  = phy_adr_imp;
+    adrioset.adrdrvck0 = phy_adr_imp;
+    adrioset.adrdrvck1 = phy_adr_imp;
+    adrioset.adrslac   = phy_adr_imp;
+    adrioset.adrslck0  = phy_adr_imp;
+    adrioset.adrslck1  = phy_adr_imp;
 
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR0_ADRIOSET_1ST, *(ncp_uint32_t *) &adrioset);
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR1_ADRIOSET, *(ncp_uint32_t *) &adrioset);
@@ -1367,12 +1390,15 @@ ncp_sm_lsiphy_static_init(
     dpiovrefset.sldqs  = 3;
     dpiovrefset.sldq   = 3;
 #endif
-    dpiovrefset.drvdq  = parms->phy_dat_imp;
-    dpiovrefset.drvdqs = parms->phy_dat_imp;
-    dpiovrefset.drvdm  = parms->phy_dat_imp;
-    dpiovrefset.odtimpdq  = parms->phy_rcv_imp;
-    dpiovrefset.odtimpdqs = parms->phy_rcv_imp;
-    dpiovrefset.odtimpdm  = parms->phy_rcv_imp;
+    
+
+    dpiovrefset.drvdq  = phy_dat_imp;
+    dpiovrefset.drvdqs = phy_dat_imp;
+    dpiovrefset.drvdm  = phy_dat_imp;
+
+    dpiovrefset.odtimpdq  = phy_rcv_imp;
+    dpiovrefset.odtimpdqs = phy_rcv_imp;
+    dpiovrefset.odtimpdm  = phy_rcv_imp;
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_DPIOVREFSET, *(ncp_uint32_t *) &dpiovrefset);
 
     /* check the PHY status */
@@ -2181,7 +2207,7 @@ sm_bytelane_test(
 
     /* write it out and save the comparison value from the write buffer*/
 #ifdef UBOOT
-    if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), 0, address, blockSize, NULL )) {
+    if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), 0x0, address, blockSize, NULL )) {
       printf("%d : ncr_write() failed: 0x%08lx 0x%08lx\n",
          __LINE__, in_be32(NCA + 0xe4), in_be32(NCA + 0xe8));
       return -1;
@@ -2200,7 +2226,7 @@ sm_bytelane_test(
 
     /* Read back and compare. */
 #ifdef UBOOT
-    if (0 != ncr_read( NCP_REGION_ID( 512, 1 ), 0, address, blockSize, NULL )) {
+    if (0 != ncr_read( NCP_REGION_ID( 512, 1 ), 0x0, address, blockSize, NULL )) {
       printf("%d : ncr_read() failed: 0x%08lx 0x%08lx\n",
          __LINE__, in_be32(NCA + 0xe4), in_be32(NCA + 0xe8));
     }
@@ -2368,7 +2394,7 @@ sm_ecc_bytelane_test(
 
     /* write it out */
 #ifdef UBOOT 
-    if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), 0, address, blockSize, NULL )) {
+    if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), 0x0,address, blockSize, NULL )) {
       printf("%d : ncr_write() failed!\n", __LINE__);
       return -1;
     }
@@ -2423,7 +2449,7 @@ sm_ecc_bytelane_test(
      * This may fail if the ECC bytelane is out of level
      */
 #ifdef UBOOT
-    rc = ncr_read( NCP_REGION_ID( node, 5 ), 0, (address >> 2), blockSizeWords, NULL );
+        rc = ncr_read( NCP_REGION_ID( node, 5 ), 0x0, (address >> 2), blockSizeWords, NULL );
 
     if (-1 == rc)
         rc = in_be32(NCA + 0xe4);
@@ -3552,7 +3578,6 @@ ncp_sysmem_init_lsiphy(
     ncp_bool_t did_training = FALSE;
     ncp_region_id_t ctlRegion;
     ncp_bool_t ncp_sm_phy_reg_restore = FALSE;
-
 #ifndef UBOOT 
     ncp_bool_t ncp_sm_phy_reg_dump    = FALSE;
 #endif
