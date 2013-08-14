@@ -79,7 +79,7 @@ spl_mtest(unsigned long *start, unsigned long *end)
 
 		if (iteration_limit && iterations > iteration_limit) {
 			printf("Tested %d iteration(s) with %lu errors.\n",
-				iterations-1, errs);
+			       iterations-1, errs);
 			return errs != 0;
 		}
 
@@ -106,35 +106,36 @@ spl_mtest(unsigned long *start, unsigned long *end)
 		 */
 		addr = start;
 		for (j = 0; j < sizeof(bitpattern)/sizeof(bitpattern[0]); j++) {
-		    val = bitpattern[j];
-		    for(; val != 0; val <<= 1) {
-			*addr  = val;
-			*dummy  = ~val; /* clear the test data off of the bus */
-			readback = *addr;
-			if(readback != val) {
-			    printf ("FAILURE (data line): "
-				"expected %08lx, actual %08lx\n",
-					  val, readback);
-			    errs++;
-			    if (ctrlc()) {
-				putc ('\n');
-				return 1;
-			    }
+			val = bitpattern[j];
+			for(; val != 0; val <<= 1) {
+				*addr  = val;
+				/* clear the test data off of the bus */
+				*dummy  = ~val;
+				readback = *addr;
+				if(readback != val) {
+					printf ("FAILURE (data line): "
+						"expected %08lx, actual %08lx\n",
+						val, readback);
+					errs++;
+					if (ctrlc()) {
+						putc ('\n');
+						return 1;
+					}
+				}
+				*addr  = ~val;
+				*dummy  = val;
+				readback = *addr;
+				if(readback != ~val) {
+					printf ("FAILURE (data line): "
+						"Is %08lx, should be %08lx\n",
+						readback, ~val);
+					errs++;
+					if (ctrlc()) {
+						putc ('\n');
+						return 1;
+					}
+				}
 			}
-			*addr  = ~val;
-			*dummy  = val;
-			readback = *addr;
-			if(readback != ~val) {
-			    printf ("FAILURE (data line): "
-				"Is %08lx, should be %08lx\n",
-					readback, ~val);
-			    errs++;
-			    if (ctrlc()) {
-				putc ('\n');
-				return 1;
-			    }
-			}
-		    }
 		}
 
 		/*
@@ -176,8 +177,8 @@ spl_mtest(unsigned long *start, unsigned long *end)
 		anti_pattern = (vu_long) 0x55555555;
 
 		debug("%s:%d: length = 0x%.8lx\n",
-			__FUNCTION__, __LINE__,
-			len);
+		      __FUNCTION__, __LINE__,
+		      len);
 		/*
 		 * Write the default pattern at each of the
 		 * power-of-two offsets.
@@ -193,17 +194,18 @@ spl_mtest(unsigned long *start, unsigned long *end)
 		start[test_offset] = anti_pattern;
 
 		for (offset = 1; offset < len; offset <<= 1) {
-		    temp = start[offset];
-		    if (temp != pattern) {
-			printf ("\nFAILURE: Address bit stuck high @ 0x%.8lx:"
-				" expected 0x%.8lx, actual 0x%.8lx\n",
-				(ulong)&start[offset], pattern, temp);
-			errs++;
-			if (ctrlc()) {
-			    putc ('\n');
-			    return 1;
+			temp = start[offset];
+			if (temp != pattern) {
+				printf ("\nFAILURE: Address bit stuck high "
+					"@ 0x%.8lx:"
+					" expected 0x%.8lx, actual 0x%.8lx\n",
+					(ulong)&start[offset], pattern, temp);
+				errs++;
+				if (ctrlc()) {
+					putc ('\n');
+					return 1;
+				}
 			}
-		    }
 		}
 		start[test_offset] = pattern;
 
@@ -211,22 +213,26 @@ spl_mtest(unsigned long *start, unsigned long *end)
 		 * Check for addr bits stuck low or shorted.
 		 */
 		for (test_offset = 1; test_offset < len; test_offset <<= 1) {
-		    start[test_offset] = anti_pattern;
+			start[test_offset] = anti_pattern;
 
-		    for (offset = 1; offset < len; offset <<= 1) {
-			temp = start[offset];
-			if ((temp != pattern) && (offset != test_offset)) {
-			    printf ("\nFAILURE: Address bit stuck low or shorted @"
-				" 0x%.8lx: expected 0x%.8lx, actual 0x%.8lx\n",
-				(ulong)&start[offset], pattern, temp);
-			    errs++;
-			    if (ctrlc()) {
-				putc ('\n');
-				return 1;
-			    }
+			for (offset = 1; offset < len; offset <<= 1) {
+				temp = start[offset];
+				if ((temp != pattern) &&
+				    (offset != test_offset)) {
+					printf ("\nFAILURE: Address bit stuck "
+						"low or shorted @"
+						" 0x%.8lx: expected 0x%.8lx, "
+						"actual 0x%.8lx\n",
+						(ulong)&start[offset], pattern,
+						temp);
+					errs++;
+					if (ctrlc()) {
+						putc ('\n');
+						return 1;
+					}
+				}
 			}
-		    }
-		    start[test_offset] = pattern;
+			start[test_offset] = pattern;
 		}
 
 		/*
@@ -246,47 +252,51 @@ spl_mtest(unsigned long *start, unsigned long *end)
 		/*
 		 * Fill memory with a known pattern.
 		 */
-		for (pattern = 1, offset = 0; offset < num_words; pattern++, offset++) {
+		for (pattern = 1, offset = 0; offset < num_words; pattern++,
+			     offset++) {
 			start[offset] = pattern;
 		}
 
 		/*
 		 * Check each location and invert it for the second pass.
 		 */
-		for (pattern = 1, offset = 0; offset < num_words; pattern++, offset++) {
-		    temp = start[offset];
-		    if (temp != pattern) {
-			printf ("\nFAILURE (read/write) @ 0x%.8lx:"
-				" expected 0x%.8lx, actual 0x%.8lx)\n",
-				(ulong)&start[offset], pattern, temp);
-			errs++;
-			if (ctrlc()) {
-			    putc ('\n');
-			    return 1;
+		for (pattern = 1, offset = 0; offset < num_words; pattern++,
+			     offset++) {
+			temp = start[offset];
+			if (temp != pattern) {
+				printf ("\nFAILURE (read/write) @ 0x%.8lx:"
+					" expected 0x%.8lx, actual 0x%.8lx)\n",
+					(ulong)&start[offset], pattern, temp);
+				errs++;
+				if (ctrlc()) {
+					putc ('\n');
+					return 1;
+				}
 			}
-		    }
 
-		    anti_pattern = ~pattern;
-		    start[offset] = anti_pattern;
+			anti_pattern = ~pattern;
+			start[offset] = anti_pattern;
 		}
 
 		/*
 		 * Check each location for the inverted pattern and zero it.
 		 */
-		for (pattern = 1, offset = 0; offset < num_words; pattern++, offset++) {
-		    anti_pattern = ~pattern;
-		    temp = start[offset];
-		    if (temp != anti_pattern) {
-			printf ("\nFAILURE (read/write): @ 0x%.8lx:"
-				" expected 0x%.8lx, actual 0x%.8lx)\n",
-				(ulong)&start[offset], anti_pattern, temp);
-			errs++;
-			if (ctrlc()) {
-			    putc ('\n');
-			    return 1;
+		for (pattern = 1, offset = 0; offset < num_words; pattern++,
+			     offset++) {
+			anti_pattern = ~pattern;
+			temp = start[offset];
+			if (temp != anti_pattern) {
+				printf ("\nFAILURE (read/write): @ 0x%.8lx:"
+					" expected 0x%.8lx, actual 0x%.8lx)\n",
+					(ulong)&start[offset], anti_pattern,
+					temp);
+				errs++;
+				if (ctrlc()) {
+					putc ('\n');
+					return 1;
+				}
 			}
-		    }
-		    start[offset] = 0;
+			start[offset] = 0;
 		}
 	}
 }
