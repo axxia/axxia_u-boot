@@ -119,8 +119,21 @@ axxia_initialize(void)
 
 		if (0 != (returnCode = sysmem_init()))
 			goto acp_init_return;
+		sysmem_size = 0x20;
+                axxia_sysmem_bist(0x310000, sysmem_size );
 	}
 #endif
+
+#if 0
+#if !defined(CONFIG_AXXIA_EMU)
+                if( 0 != ( global->flags &
+                           PARAMETERS_GLOBAL_RUN_SYSMEM_BIST ) ) {
+			sysmem_size = 0x20;
+			axxia_sysmem_bist(0x310000, sysmem_size );
+                }
+#endif
+#endif
+
 
  acp_init_return:
 
