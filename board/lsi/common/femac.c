@@ -2436,6 +2436,10 @@ lsi_femac_write_hwaddr(struct eth_device *device)
 
 #else  /* CONFIG_AXXIA_PPC */
 
+/*
+  THE ARM STARTS HERE
+*/
+
 /*#define ALLOW_DEBUGGING */
 
 #define DUMP_STATS
@@ -2463,7 +2467,7 @@ static int eh_stats_initialized = 0;
 */
 
 #undef DUMP_DESCRIPTOR
-/* #define DUMP_DESCRIPTOR */
+/*#define DUMP_DESCRIPTOR*/
 /*#define DUMP_DESCRIPTOR_COMPACT*/
 #ifdef DUMP_DESCRIPTOR
 #define DUMP_DESCRIPTOR_( address ) dump_descriptor_( __LINE__, ( address ) )
@@ -2986,7 +2990,7 @@ static app3xxnic_queue_pointer_t rx_tail_copy_;
 static volatile app3xxnic_queue_pointer_t * rx_tail_;
 static app3xxnic_queue_pointer_t rx_head_;
 
-#define TX_NUMBER_OF_DESCRIPTORS 512
+#define TX_NUMBER_OF_DESCRIPTORS 128
 #define TX_BUFFER_SIZE ( 64 * 1024 )
 
 static app3xxnic_dma_descriptor_t * tx_descriptors_;
@@ -4057,6 +4061,9 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		eth_halt( );
 	}
 
+	/* Set the FEMAC to uncached. */
+	writel( 0, (GPREG + 0x78));
+
 	/* Reset the MAC */
 	writel( 0x80000000, APP3XXNIC_DMA_PCI_CONTROL );
 
@@ -4106,10 +4113,17 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		( TX_BUFFER_SIZE + BUFFER_GRANULARITY ) + /* TX Buffers */
 		( 2 * sizeof( app3xxnic_queue_pointer_t ) ); /* Tail Pointers */
 
+	printf("%s:%d - memory_needed=0x%x/%lu\n",
+	       __FILE__, __LINE__, memory_needed, memory_needed);
+
+#if 0
 	if (NULL == (memory = allocate_dma_memory(memory_needed))) {
 		printf("Unable to allocate space for descriptors and buffers\n");
 		return 1;
 	}
+#else
+	memory = (void *)((4 * 1024 * 1024) - (256 * 1024));
+#endif
 
 #endif
 
@@ -4219,14 +4233,12 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	writel( 0x1, APP3XXNIC_RX_MODE );
 	writel( 0x0, APP3XXNIC_TX_SOFT_RESET );
 	writel( 0x1, APP3XXNIC_TX_MODE );
-	if( is_asic( ) ) {
-		writel( 0x300a, APP3XXNIC_TX_WATERMARK );
-	} else {
-		/* writel( 0xc00096, APP3XXNIC_TX_WATERMARK ); */
-		writel( 0x7f007f, APP3XXNIC_TX_WATERMARK );
-	}
 
+#ifdef CONFIG_AXXIA_EMU
+	writel( 0x7f007f, APP3XXNIC_TX_WATERMARK );
+#else
 	writel( 0x300a, APP3XXNIC_TX_WATERMARK );
+#endif
 
 	writel( 0x1, APP3XXNIC_TX_HALF_DUPLEX_CONF );
 	writel( 0xffff, APP3XXNIC_TX_TIME_VALUE_CONF );

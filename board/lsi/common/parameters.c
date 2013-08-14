@@ -46,9 +46,10 @@
 #define PARAMETERS_OFFSET ((128 * 1024) - PARAMETERS_SIZE)
 #define PARAMETERS_ADDRESS (LCM + PARAMETERS_OFFSET)
 #define PARAMETERS_OFFSET_IN_FLASH PARAMETERS_OFFSET
+#define PARAMETERS_VERSION 4
 #elif defined(CONFIG_AXXIA_ARM)
 /*
-  For ARM (55xx), use version 5 of the parameters.
+  For ARM (55xx), use version 6 of the parameters.
 */
 #define PSWAB(value) ntohl(value)
 #define PARAMETERS_HEADER_ADDRESS \
@@ -57,6 +58,7 @@
 #define PARAMETERS_OFFSET ((256 * 1024) - PARAMETERS_SIZE)
 #define PARAMETERS_ADDRESS (LSM + PARAMETERS_OFFSET)
 #define PARAMETERS_OFFSET_IN_FLASH 0x40000
+#define PARAMETERS_VERSION 6
 #else
 #error "Unknown Architecture!"
 #endif
@@ -172,9 +174,15 @@ read_parameters(void)
 
 #ifdef DISPLAY_PARAMETERS
 	printf("version=%lu flags=0x%lx\n", global->version, global->flags);
-#else
-	/*printf("Parameter Table Version %lu\n", global->version);*/
 #endif
+
+	if (PARAMETERS_VERSION != header->version) {
+		printf("Parameter Table Must Be Version %d!\n",
+		       PARAMETERS_VERSION);
+		return -1;
+	}
+
+	printf("Parameter Table Version %lu\n", global->version);
 
 	return 0;
 }

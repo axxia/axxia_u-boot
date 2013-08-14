@@ -81,6 +81,29 @@ set_sdcr(void)
 }
 
 /*
+  -------------------------------------------------------------------------------
+  cluster_power
+*/
+#if 0
+static int
+cluster_power(void)
+{
+	char *cluster_enable_env;
+	unsigned long cluster_enable;
+
+	if (NULL == (cluster_enable_env = getenv("cluster_enable")))
+		cluster_enable = 0xf;
+	else
+		cluster_enable = simple_strtoul(cluster_enable_env);
+
+	/*
+	  How many clusters should be up?
+	*/
+	return;
+}
+#endif
+
+/*
   ==============================================================================
   ==============================================================================
   Public
