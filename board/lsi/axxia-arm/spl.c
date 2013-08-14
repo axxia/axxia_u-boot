@@ -374,12 +374,24 @@ check_memory_ranges(void)
 
 	for (i = 0; i < 8; ++i) {
 		unsigned long long offset = (unsigned long long)*ranges++;
-		unsigned long length = *ranges++;
+		unsigned long long length = (unsigned long long)*ranges++;
+
+		offset <<= 8;
+		length <<= 8;
 
 		if (0ULL != length) {
-			printf("Testing Memory From 0x%llx, 0x%x bytes\n",
-			       offset << 8, length << 8);
-			axxia_sysmem_bist(offset << 8, length << 8);
+			unsigned long bits = 0;
+
+			while (0 < length) {
+				++bits;
+				length /= 2;
+			}
+
+			--bits;
+
+			printf("Testing Memory From 0x%llx, 0x%llx bytes\n",
+			       offset, length);
+			axxia_sysmem_bist(offset, bits);
 		}
 	}
 }
@@ -422,7 +434,8 @@ board_init_f(ulong bootflag)
 
 	axxia_display_clocks();
 
-	check_memory_ranges();
+	if (0 != (global->flags & PARAMETERS_GLOBAL_DDR_RANGE_TEST))
+		check_memory_ranges();
 
 #ifdef CONFIG_SPL_MTEST
 	printf("Running the SPL Memory Test, Ctrl-C to Continue\n");

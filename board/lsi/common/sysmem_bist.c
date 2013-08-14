@@ -225,14 +225,14 @@ axxia_sysmem_bist_start( unsigned long region, int bits, int test, unsigned long
 void
 axxia_sysmem_bist(unsigned long long address, unsigned long sysmem_size)
 {
-	unsigned long size;
+	unsigned long size =
+		( 1 << ( sysmem_size - 20 ) ) / sysmem->num_interfaces;
 	unsigned long bits = 20;
 	int test;
 	unsigned long result;
 	int smid;
 	unsigned long interrupt_status;
 
-	size = (sysmem_size / 1000) / sysmem->num_interfaces;
 	printf("Running the Built In Self Test.\n");
 	axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
 
@@ -243,8 +243,6 @@ axxia_sysmem_bist(unsigned long long address, unsigned long sysmem_size)
 		++ bits;
 		size = size >> 1;
 	}
-
-	printf("bits=0x%x\n", bits);
 
 #ifdef PARALLEL_BIST
 	for( test = 1; test >= 0; -- test ) {
