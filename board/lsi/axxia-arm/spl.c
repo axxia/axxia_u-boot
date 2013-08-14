@@ -382,6 +382,9 @@ check_memory_ranges(void)
 		if (0ULL != length) {
 			unsigned long bits = 0;
 
+			printf("Testing Memory From 0x%llx, 0x%llx bytes\n",
+			       offset, length);
+
 			while (0 < length) {
 				++bits;
 				length /= 2;
@@ -389,8 +392,6 @@ check_memory_ranges(void)
 
 			--bits;
 
-			printf("Testing Memory From 0x%llx, 0x%llx bytes\n",
-			       offset, length);
 			axxia_sysmem_bist(offset, bits);
 		}
 	}
