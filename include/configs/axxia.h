@@ -407,7 +407,8 @@ int ssp_init(int, int);
 #define CLK_REF0 125000000
 
 typedef enum {
-        clock_system, clock_core, clock_memory, clock_peripheral
+	clock_system, clock_core, clock_memory, clock_peripheral,
+	clock_fab, clock_treemem, clock_emmc
 } acp_clock_t;
 
 int acp_clock_get(acp_clock_t, unsigned long *);

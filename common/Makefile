@@ -212,6 +212,7 @@ COBJS-$(CONFIG_LSI_NCR) += cmd_lsi_ncr.o
 COBJS-$(CONFIG_LSI_MDIO) += cmd_lsi_mdio.o
 COBJS-$(CONFIG_LSI_TEST) += cmd_lsi_test.o
 COBJS-$(CONFIG_LSI_SBB) += cmd_lsi_sbb.o
+COBJS-$(CONFIG_LSI_CLOCKS) += cmd_lsi_clocks.o
 endif
 
 ifdef CONFIG_SPL_BUILD

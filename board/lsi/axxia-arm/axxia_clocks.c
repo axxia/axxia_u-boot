@@ -238,7 +238,6 @@ clocks_init( void )
 	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 7), &clocks->sm1pll_prms))
 		return -1;
 
-#if 0
 	/* Set the peripheral clock */
 	if (0 != clocks->per_div) {
 		ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &value);
@@ -253,7 +252,6 @@ clocks_init( void )
 		ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
 		udelay(clocks->sm1pll_psd);
 	}
-#endif
 
 	/* Set the emmc clock */
 	if (0 != clocks->emmc_div) {
@@ -327,6 +325,21 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 #ifndef CONFIG_AXXIA_EMU
 
 	switch (clock) {
+	case clock_fab:
+		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &csw);
+
+		if (0 == (csw & 0x00000030)) {
+			*frequency = CLK_REF0 / 1000;
+		} else if (1 == (csw & 0x00000030)) {
+			ncr_read32(NCP_REGION_ID(0x155,3), 0x0, &prms);
+			*frequency = get_pll(prms, 1);
+		} else {
+			ncr_read32(NCP_REGION_ID(0x155,3), 0x0, &prms);
+			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &div);
+			*frequency = get_pll(prms,
+					     ((div & 0xf00) >> 8) + 1);
+		}
+		break;
 	case clock_system:
 		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &csw);
 
@@ -363,6 +376,11 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 		*frequency = get_pll(prms, 1);
 		break;
 
+	case clock_treemem:
+		ncr_read32(NCP_REGION_ID(0x155,8), 0x0, &prms);
+		*frequency = get_pll(prms, 1);
+		break;
+
 	case clock_peripheral:
 		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &csw);
 
@@ -373,6 +391,19 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &div);
 			*frequency = get_pll(prms,
 					     ((div & 0xf000) >> 12) + 1);
+		}
+		break;
+
+	case clock_emmc:
+		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &csw);
+
+		if (0 == (csw & 0x00000100)) {
+			*frequency = CLK_REF0 / 1000;
+		} else {
+			ncr_read32(NCP_REGION_ID(0x155,7), 0x0, &prms);
+			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &div);
+			*frequency = get_pll(prms,
+					     ((div & 0xf0000) >> 16) + 1);
 		}
 		break;
 
@@ -405,4 +436,57 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 #endif
 	
 	return 0;
+}
+
+/*
+  -------------------------------------------------------------------------------
+*/
+
+void
+axxia_display_clocks(void)
+{
+	unsigned long speed;
+	unsigned long loss_count0;
+	unsigned long loss_count1;
+
+	acp_clock_get(clock_system, &speed);
+	speed /= 1000;
+	ncr_read32(NCP_REGION_ID(0x155, 5), 0xc, &loss_count0);
+	printf("    System: %04lu MHz Loss of Lock Count %lu\n",
+	       speed, loss_count0);
+
+	acp_clock_get(clock_core, &speed);
+	speed /= 1000;
+	ncr_read32(NCP_REGION_ID(0x155, 4), 0xc, &loss_count0);
+	printf("      Core: %04lu MHz Loss of Lock Count %lu\n",
+	       speed, loss_count0);
+
+	acp_clock_get(clock_memory, &speed);
+	speed /= 1000;
+	ncr_read32(NCP_REGION_ID(0x155, 6), 0xc, &loss_count0);
+	ncr_read32(NCP_REGION_ID(0x155, 7), 0xc, &loss_count1);
+	printf("    Memory: %04lu MHz Loss of Lock Count %lu/%lu\n",
+	       speed, loss_count0, loss_count1);
+
+	acp_clock_get(clock_fab, &speed);
+	speed /= 1000;
+	ncr_read32(NCP_REGION_ID(0x155, 3), 0xc, &loss_count0);
+	printf("    Fabric: %04lu MHz Loss of Lock Count %lu\n",
+	       speed, loss_count0);
+
+	acp_clock_get(clock_treemem, &speed);
+	speed /= 1000;
+	ncr_read32(NCP_REGION_ID(0x155, 8), 0xc, &loss_count0);
+	printf("      Tree: %04lu MHz Loss of Lock Count %lu\n",
+	       speed, loss_count0);
+
+	acp_clock_get(clock_peripheral, &speed);
+	speed /= 1000;
+	printf("Peripheral: %04lu MHz\n", speed);
+
+	acp_clock_get(clock_emmc, &speed);
+	speed /= 1000;
+	printf("   SD/eMMC: %04lu MHz\n", speed);
+
+	return;
 }
