@@ -362,6 +362,29 @@ reset_cpu_fabric(void)
 }
 
 /*
+  -------------------------------------------------------------------------------
+  check_memory_ranges
+*/
+
+static void
+check_memory_ranges(void)
+{
+	unsigned long *ranges = &global->memory_check_ranges;
+	int i;
+
+	for (i = 0; i < 8; ++i) {
+		unsigned long long offset = (unsigned long long)*ranges++;
+		unsigned long length = *ranges++;
+
+		if (0ULL != length) {
+			printf("Testing Memory From 0x%llx, 0x%x bytes\n",
+			       offset << 8, length << 8);
+			axxia_sysmem_bist(offset << 8, length << 8);
+		}
+	}
+}
+
+/*
   ------------------------------------------------------------------------------
   board_init_f
 
@@ -396,6 +419,10 @@ board_init_f(ulong bootflag)
 
 	if (0 != rc)
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+	axxia_display_clocks();
+
+	check_memory_ranges();
 
 #ifdef CONFIG_SPL_MTEST
 	printf("Running the SPL Memory Test, Ctrl-C to Continue\n");
