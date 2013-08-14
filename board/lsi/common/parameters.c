@@ -48,7 +48,7 @@
 #define PARAMETERS_OFFSET_IN_FLASH PARAMETERS_OFFSET
 #elif defined(CONFIG_AXXIA_ARM)
 /*
-  For ARM (55xx), use version 5 of the parameters.
+  For ARM (55xx), use version 6 of the parameters.
 */
 #define PSWAB(value) ntohl(value)
 #define PARAMETERS_HEADER_ADDRESS \
@@ -173,7 +173,14 @@ read_parameters(void)
 #ifdef DISPLAY_PARAMETERS
 	printf("version=%lu flags=0x%lx\n", global->version, global->flags);
 #else
-	/*printf("Parameter Table Version %lu\n", global->version);*/
+	printf("Parameter Table Version %lu\n", global->version);
+#endif
+
+#ifdef CONFIG_AXXIA_ARM
+	if (6 != header->version) {
+		printf("Parameter Table Must Be Version 6!\n");
+		return -1;
+	}
 #endif
 
 	return 0;
