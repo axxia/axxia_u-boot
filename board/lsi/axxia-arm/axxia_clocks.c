@@ -452,41 +452,41 @@ axxia_display_clocks(void)
 	acp_clock_get(clock_system, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 5), 0xc, &loss_count0);
-	printf("    System: %04lu MHz Loss of Lock Count %lu\n",
+	printf("    System: %4lu MHz Loss of Lock Count %lu\n",
 	       speed, loss_count0);
 
 	acp_clock_get(clock_core, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 4), 0xc, &loss_count0);
-	printf("      Core: %04lu MHz Loss of Lock Count %lu\n",
+	printf("      Core: %4lu MHz Loss of Lock Count %lu\n",
 	       speed, loss_count0);
 
 	acp_clock_get(clock_memory, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 6), 0xc, &loss_count0);
 	ncr_read32(NCP_REGION_ID(0x155, 7), 0xc, &loss_count1);
-	printf("    Memory: %04lu MHz Loss of Lock Count %lu/%lu\n",
+	printf("    Memory: %4lu MHz Loss of Lock Count %lu/%lu\n",
 	       speed, loss_count0, loss_count1);
 
 	acp_clock_get(clock_fab, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 3), 0xc, &loss_count0);
-	printf("    Fabric: %04lu MHz Loss of Lock Count %lu\n",
+	printf("    Fabric: %4lu MHz Loss of Lock Count %lu\n",
 	       speed, loss_count0);
 
 	acp_clock_get(clock_treemem, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 8), 0xc, &loss_count0);
-	printf("      Tree: %04lu MHz Loss of Lock Count %lu\n",
+	printf("      Tree: %4lu MHz Loss of Lock Count %lu\n",
 	       speed, loss_count0);
 
 	acp_clock_get(clock_peripheral, &speed);
 	speed /= 1000;
-	printf("Peripheral: %04lu MHz\n", speed);
+	printf("Peripheral: %4lu MHz\n", speed);
 
 	acp_clock_get(clock_emmc, &speed);
 	speed /= 1000;
-	printf("   SD/eMMC: %04lu MHz\n", speed);
+	printf("   SD/eMMC: %4lu MHz\n", speed);
 
 	return;
 }
