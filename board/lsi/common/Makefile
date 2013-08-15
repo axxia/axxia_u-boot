@@ -38,14 +38,14 @@ else
 ################################################################################
 ## SPL Build
 
-COBJS += parameters.o sysmem_reset.o sysmem_bist.o
+COBJS += sysmem_reset.o sysmem_bist.o
 
 endif
 
 ################################################################################
 ## All Builds
 
-COBJS += version.o lsi.o ncr.o ssp.o
+COBJS += version.o lsi.o ncr.o ssp.o parameters.o
 
 ################################################################################
 

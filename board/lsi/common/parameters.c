@@ -26,6 +26,9 @@
 
 #include <config.h>
 #include <common.h>
+#ifndef CONFIG_SPL_BUILD
+#include <malloc.h>
+#endif
 
 /*
   ==============================================================================
@@ -35,16 +38,20 @@
   ==============================================================================
 */
 
+static void *parameters = (void *)1; /* Stay in the .data section, not .bss! */
+
 #if defined(CONFIG_AXXIA_PPC)
 /*
   For PPC (34xx, 25xx, 35xx), use version 4 of the parameters.
 */
 #define PSWAB(value) (value)
+#ifdef CONFIG_SPL_BUILD
 #define PARAMETERS_HEADER_ADDRESS \
 	(LCM + (128 * 1024) - sizeof(parameters_header_t))
-#define PARAMETERS_SIZE (1024)
 #define PARAMETERS_OFFSET ((128 * 1024) - PARAMETERS_SIZE)
 #define PARAMETERS_ADDRESS (LCM + PARAMETERS_OFFSET)
+#endif
+#define PARAMETERS_SIZE (1024)
 #define PARAMETERS_OFFSET_IN_FLASH PARAMETERS_OFFSET
 #define PARAMETERS_VERSION 4
 #elif defined(CONFIG_AXXIA_ARM)
@@ -52,18 +59,24 @@
   For ARM (55xx), use version 6 of the parameters.
 */
 #define PSWAB(value) ntohl(value)
+#ifdef CONFIG_SPL_BUILD
 #define PARAMETERS_HEADER_ADDRESS \
 	(LSM + (256 * 1024) - sizeof(parameters_header_t))
-#define PARAMETERS_SIZE (4096)
 #define PARAMETERS_OFFSET ((256 * 1024) - PARAMETERS_SIZE)
 #define PARAMETERS_ADDRESS (LSM + PARAMETERS_OFFSET)
+#endif
+#define PARAMETERS_SIZE (4096)
 #define PARAMETERS_OFFSET_IN_FLASH 0x40000
 #define PARAMETERS_VERSION 6
 #else
 #error "Unknown Architecture!"
 #endif
 
+#ifdef CONFIG_SPL_BUILD
 parameters_header_t *header = (parameters_header_t *)PARAMETERS_HEADER_ADDRESS;
+#else
+parameters_header_t *header = (parameters_header_t *)1;
+#endif
 parameters_global_t *global = (parameters_global_t *)1;
 parameters_pciesrio_t *pciesrio = (parameters_pciesrio_t *)1;
 parameters_voltage_t *voltage = (parameters_voltage_t *)1;
@@ -95,6 +108,15 @@ read_parameters(void)
 	unsigned long *buffer;
 #endif
 
+#ifdef CONFIG_SPL_BUILD
+	parameters = (void *)PARAMETERS_ADDRESS;
+#else
+	parameters = malloc(PARAMETERS_SIZE);
+	memset(parameters, 0, PARAMETERS_SIZE);
+#endif
+
+	header = parameters + PARAMETERS_SIZE - sizeof(parameters_header_t);
+
 	/*
 	  Try LSM first, to allow for board repair when the serial
 	  EEPROM contains a valid but incorrect (unusable) parameter
@@ -107,26 +129,24 @@ read_parameters(void)
 		ssp_init(0, 1);
 
 		/* Copy the parameters from SPI device 0. */
-		rc = ssp_read((void *)PARAMETERS_ADDRESS,
-				      PARAMETERS_OFFSET_IN_FLASH,
-				      PARAMETERS_SIZE);
+		rc = ssp_read(parameters,
+			      PARAMETERS_OFFSET_IN_FLASH, PARAMETERS_SIZE);
 
 		if (0 != rc || PARAMETERS_MAGIC != PSWAB(header->magic))
 			/* No parameters available, fail. */
 			return -1;
 	}
 
-	if (crc32(0, (void *)PARAMETERS_ADDRESS, (PSWAB(header->size) - 12)) !=
+	if (crc32(0, parameters, (PSWAB(header->size) - 12)) !=
 	    PSWAB(header->checksum) ) {
 		printf("Parameter table is corrupt. 0x%08x!=0x%08x\n",
 		       PSWAB(header->checksum),
-		       crc32(0, (void *)PARAMETERS_ADDRESS,
-			     (PSWAB(header->size) - 12)));
+		       crc32(0, parameters, (PSWAB(header->size) - 12)));
 		return -1;
 	}
 
 #ifdef CONFIG_AXXIA_ARM
-	buffer = (unsigned long *)PARAMETERS_ADDRESS;
+	buffer = parameters;
 
 	for (i = 0; i < (PARAMETERS_SIZE / 4); ++i) {
 		*buffer = ntohl(*buffer);
@@ -158,18 +178,13 @@ read_parameters(void)
 	       header->sysmemSize);
 #endif
 
-	global = (parameters_global_t *)
-		(PARAMETERS_ADDRESS + header->globalOffset);
-	pciesrio = (parameters_pciesrio_t *)
-		(PARAMETERS_ADDRESS + header->pciesrioOffset);
-	voltage = (parameters_voltage_t *)
-		(PARAMETERS_ADDRESS + header->voltageOffset);
-	clocks = (parameters_clocks_t *)
-		(PARAMETERS_ADDRESS + header->clocksOffset);
-	sysmem = (parameters_sysmem_t *)
-		(PARAMETERS_ADDRESS + header->sysmemOffset);
+	global = (parameters_global_t *)(parameters + header->globalOffset);
+	pciesrio = (parameters_pciesrio_t *)(parameters + header->pciesrioOffset);
+	voltage = (parameters_voltage_t *)(parameters + header->voltageOffset);
+	clocks = (parameters_clocks_t *)(parameters + header->clocksOffset);
+	sysmem = (parameters_sysmem_t *)(parameters + header->sysmemOffset);
 #ifdef CONFIG_AXXIA_ARM
-	retention = (void *)(PARAMETERS_ADDRESS + header->retentionOffset);
+	retention = (void *)(parameters + header->retentionOffset);
 #endif
 
 #ifdef DISPLAY_PARAMETERS
