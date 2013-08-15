@@ -45,8 +45,6 @@
   ===============================================================================
 */
 
-#if !defined(ACP_EMU)
-
 #if defined(ACP_X1V1)
 #define INT_STATUS_OFFSET 0x16c
 #define BIST_COMPLETION 0x200
@@ -78,20 +76,20 @@
   axxia_sysmem_bist_failure
 */
 
-void
+static void
 axxia_sysmem_bist_failure(unsigned long region)
 {
 	int i;
 	unsigned long value;
-	unsigned long offsets [] =
-	  { 0x248, 0x24c,
+	unsigned long offsets[] = {
+		0x248, 0x24c,
 #if defined(CONFIG_AXXIA_25xx) || defined(CONFIG_AXXIA_55XX)
-	    0x418, 0x41c, 0x420, 0x424, 0x428, 0x42c, 0x430, 0x434,
-	    0x438, 0x43c, 0x440, 0x444, 0x448, 0x44c, 0x450, 0x454
+		0x418, 0x41c, 0x420, 0x424, 0x428, 0x42c, 0x430, 0x434,
+		0x438, 0x43c, 0x440, 0x444, 0x448, 0x44c, 0x450, 0x454
 #else
-	    0x2b0, 0x2b4, 0x2b8, 0x2bc, 0x2c0, 0x2c4, 0x2c8, 0x2cc
+		0x2b0, 0x2b4, 0x2b8, 0x2bc, 0x2c0, 0x2c4, 0x2c8, 0x2cc
 #endif
-	  };
+	};
 
 	for (i = 0; i < (sizeof(offsets) / sizeof(unsigned long)); ++i) {
 		ncr_read32(region, offsets[i], &value);
@@ -112,6 +110,15 @@ axxia_sysmem_asic_check_ecc(unsigned long region)
 {
 	unsigned long value;
 
+#ifdef CONFIG_AXXIA_55XX
+	ncr_read32(region, NCP_DENALI_CTL_421, &value);
+
+	if (1 != ((ncp_denali_DENALI_CTL_421_t *)&value)->ecc_en) {
+		printf("ECC is not enabled for node 0x%03lx\n",
+		       NCP_NODE_ID(region));
+		return;
+	}
+#else
 	ncr_read32(region, NCP_DENALI_CTL_20, &value);
 
 	if (3 != ((ncp_denali_DENALI_CTL_20_t *)&value)->ctrl_raw) {
@@ -119,6 +126,7 @@ axxia_sysmem_asic_check_ecc(unsigned long region)
 		       NCP_NODE_ID(region));
 		return;
 	}
+#endif
 
 	ncr_read32(region, INT_STATUS_OFFSET, &value);
 
@@ -127,7 +135,7 @@ axxia_sysmem_asic_check_ecc(unsigned long region)
 		       NCP_NODE_ID(region));
 	} else {
 		int i;
-		unsigned long offsets [] = {
+		unsigned long offsets[] = {
 			0x0ac, 0x258, 0x260, 0x264, 0x288, 0x28c, 0x290, 0x294
 		};
 
@@ -151,47 +159,50 @@ axxia_sysmem_asic_check_ecc(unsigned long region)
 */
 
 static void
-axxia_sysmem_bist_start( unsigned long region, int bits, int test, unsigned long long address )
+axxia_sysmem_bist_start(unsigned long region, int bits, int test,
+			unsigned long long address)
 {
 	/* Disable BIST_GO parameter */
-	ncr_and( region, 0x8, 0xfffffffe );
+	ncr_and(region, 0x8, 0xfffffffe);
 
 	/* Unset the previous data and address test modes. */
-	ncr_and( region, 0x4, 0xfefeffff );
+	ncr_and(region, 0x4, 0xfefeffff);
 
 	/* Program to test either address or data. */
-	if( 1 == test ) {
-		ncr_or( region, 0x4, 0x00010000 );
+	if (1 == test) {
+		ncr_or(region, 0x4, 0x00010000);
 	} else {
-		ncr_or( region, 0x4, 0x01000000 );
+		ncr_or(region, 0x4, 0x01000000);
 	}
 
 	/* Program the start address. */
-	ncr_write32( region, 0x250, address );
-	ncr_write32( region, 0x254, address );
+	ncr_write32(region, 0x250, /* bottom 32 bits */
+		    (unsigned long)(address & 0xffffffff));
+	ncr_write32(region, 0x254, /* top 4 bits */
+		    ((unsigned long)(address & 0xffffffff00000000) >> 32) & 0xf);
 
 	/* Program the data mask. */
 #if defined(CONFIG_AXXIA_25xx) || defined(CONFIG_AXXIA_55XX)
-	ncr_write32( region, 0x3f8, 0 );
-	ncr_write32( region, 0x3fc, 0 );
-	ncr_write32( region, 0x400, 0 );
-	ncr_write32( region, 0x404, 0 );
+	ncr_write32(region, 0x3f8, 0);
+	ncr_write32(region, 0x3fc, 0);
+	ncr_write32(region, 0x400, 0);
+	ncr_write32(region, 0x404, 0);
 #else
-	ncr_write32( region, 0x280, 0 );
-	ncr_write32( region, 0x284, 0 );
+	ncr_write32(region, 0x280, 0);
+	ncr_write32(region, 0x284, 0);
 #endif
 
 	/*
 	  The end address is specified by the number
 	  of address bits.
 	*/
-	if( 1 == test ) {
+	if (1 == test) {
 		/*
 		  For address checking, the spec says
 		  the register value should be one
 		  less than the calculated value.
 		*/
-		ncr_or( region, 0xa4,	( ( bits - 1 ) << 24 ) );
+		ncr_or(region, 0xa4, ((bits - 1) << 24));
 	} else {
 		/*
 		  For data checking we just use the
@@ -220,90 +231,98 @@ axxia_sysmem_bist_start( unsigned long region, int bits, int test, unsigned long
   axxia_sysmem_bist
 */
 
-#define PARALLEL_BIST
-
-void
-axxia_sysmem_bist(unsigned long long address, unsigned long sysmem_size)
+int
+axxia_sysmem_bist(unsigned long long address, unsigned long long length)
 {
-	unsigned long size =
-		( 1 << ( sysmem_size - 20 ) ) / sysmem->num_interfaces;
-	unsigned long bits = 20;
+	unsigned long bits;
 	int test;
 	unsigned long result;
 	int smid;
 	unsigned long interrupt_status;
+	unsigned long long temp;
 
-	printf("Running the Built In Self Test.\n");
-	axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
-
-	if( 1 < sysmem->num_interfaces )
-		axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x00f, 0));
-
-	while( 0 == ( size & 1 ) ) {
-		++ bits;
-		size = size >> 1;
+	/* Make sure the size is a power of 2. */
+	if (0 == ((length != 0) && ((length & (~length + 1)) == length))) {
+		printf("length, 0x%llx, is NOT a power of 2.\n", length);
+		return -1;
 	}
 
-#ifdef PARALLEL_BIST
-	for( test = 1; test >= 0; -- test ) {
+	/* What power of 2 is it? */
+	bits = 0;
+	temp = 1;
+
+	while (temp < length) {
+		++bits;
+		temp <<= 1;
+	}
+
+	printf("Running the Built In Self Test on 2^%d bytes at 0x%llx.\n",
+	       bits, address);
+
+	/* Check for ECC errors. */
+	axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
+
+	if (1 < sysmem->num_interfaces)
+		axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x00f, 0));
+
+	for (test = 1; test >= 0; -- test) {
 		unsigned long smregion0 = NCP_REGION_ID(0x22, 0);
 		unsigned long smregion1 = NCP_REGION_ID(0xf, 0);
 		unsigned long delay_loops;
 
-		if( 1 == test ) {
-			printf( "ADDRESS Check MBIST on all nodes...\n" );
+		if (1 == test) {
+			printf("ADDRESS Check MBIST on all nodes...\n");
 			delay_loops = 20000;
 		} else {
-			printf( "DATA Check MBIST on all nodes...\n" );
+			printf("DATA Check MBIST on all nodes...\n");
 			delay_loops = 100000;
 		}
 
-#if defined(ACP_EMU)
-		delay_loops *= 100;
-#endif
-		
-		axxia_sysmem_bist_start( smregion0, bits, test, address );
+		axxia_sysmem_bist_start(smregion0, bits, test, address);
 
-		if( 1 < sysmem->num_interfaces )
-			axxia_sysmem_bist_start( smregion1, bits, test, address );
+		if (1 < sysmem->num_interfaces)
+			axxia_sysmem_bist_start(smregion1, bits, test, address);
 
 		/* Poll for completion and get the results. */
-		if( 0 != ncr_poll( smregion0, INT_STATUS_OFFSET,
-				   BIST_COMPLETION, BIST_COMPLETION,
-				   10000, delay_loops ) ) {
-			printf( "SM Node 0x%lx Didn't Complete.\n",
-				NCP_NODE_ID( smregion0 ) );
+		if (0 != ncr_poll(smregion0, INT_STATUS_OFFSET,
+				  BIST_COMPLETION, BIST_COMPLETION,
+				  10000, delay_loops)) {
+			printf("SM Node 0x%lx Didn't Complete.\n",
+			       NCP_NODE_ID(smregion0));
 		} else {
 			ncr_read32(smregion0, INT_STATUS_OFFSET,
 				   &interrupt_status);
-			ncr_write32(smregion0, INT_STATUS_CLEAR_OFFSET, interrupt_status);
-			ncr_read32( smregion0, BIST_STATUS_OFFSET, & result );
+			ncr_write32(smregion0,
+				    INT_STATUS_CLEAR_OFFSET, interrupt_status);
+			ncr_read32(smregion0, BIST_STATUS_OFFSET, &result);
 
-			if( result & ( 1 << test ) ) {
-				printf( "\tSM Node 0 PASSED\n" );
+			if (result & (1 << test)) {
+				printf("\tSM Node 0 PASSED\n");
 			} else {
-				printf( "\tSM Node 0 FAILED\n" );
-				axxia_sysmem_bist_failure( smregion0 );
+				printf("\tSM Node 0 FAILED\n");
+				axxia_sysmem_bist_failure(smregion0);
 			}
 		}
 
-		if( 1 < sysmem->num_interfaces ) {
-			if( 0 != ncr_poll( smregion1, INT_STATUS_OFFSET,
-					   BIST_COMPLETION, BIST_COMPLETION,
-					   10000, delay_loops ) ) {
-				printf( "SM Node 0x%lx Didn't Complete.\n",
-					NCP_NODE_ID( smregion1 ) );
+		if (1 < sysmem->num_interfaces) {
+			if (0 != ncr_poll(smregion1, INT_STATUS_OFFSET,
+					  BIST_COMPLETION, BIST_COMPLETION,
+					  10000, delay_loops)) {
+				printf("SM Node 0x%lx Didn't Complete.\n",
+				       NCP_NODE_ID(smregion1));
 			} else {
 				ncr_read32(smregion1, INT_STATUS_OFFSET,
 					   &interrupt_status);
-				ncr_write32(smregion1, INT_STATUS_CLEAR_OFFSET, interrupt_status);
-				ncr_read32( smregion1, BIST_STATUS_OFFSET, & result );
-				
-				if( result & ( 1 << test ) ) {
-					printf( "\tSM Node 1 PASSED\n" );
+				ncr_write32(smregion1, INT_STATUS_CLEAR_OFFSET,
+					    interrupt_status);
+				ncr_read32(smregion1, BIST_STATUS_OFFSET,
+					   &result);
+
+				if(result & (1 << test)) {
+					printf("\tSM Node 1 PASSED\n");
 				} else {
-					printf( "\tSM Node 1 FAILED\n" );
-					axxia_sysmem_bist_failure( smregion1 );
+					printf("\tSM Node 1 FAILED\n");
+					axxia_sysmem_bist_failure(smregion1);
 				}
 			}
 		}
@@ -313,75 +332,25 @@ axxia_sysmem_bist(unsigned long long address, unsigned long sysmem_size)
 		  system access system memory.  Disabling
 		  BIST_GO param.
 		*/
-		ncr_and( smregion0, 0x8, 0xfffffffe );
+		ncr_and(smregion0, 0x8, 0xfffffffe);
 
 		do {
 			ncr_read32(smregion0, 0x8, &result);
 		} while (0 != (result & 1));
 
-		if( 1 < sysmem->num_interfaces ) {
-			ncr_and( smregion1, 0x8, 0xfffffffe );
+		if (1 < sysmem->num_interfaces) {
+			ncr_and(smregion1, 0x8, 0xfffffffe);
 
 			do {
 				ncr_read32(smregion1, 0x8, &result);
 			} while (0 != (result & 1));
 		}
 	}
-#else
-	for( smid = 0 ; smid < sysmem->num_interfaces ; ++ smid ) {
-		unsigned long smregion;
-
-		if( 0 == smid )
-			smregion = NCP_REGION_ID( 34, 0);
-		else
-			smregion = NCP_REGION_ID( 15, 0);
-
-		for( test = 1; test >= 0; -- test ) {
-			if( 1 == test ) {
-				printf( "SM Node %d ADDRESS Check... ",
-					NCP_NODE_ID( smregion ) );
-			} else {
-				printf( "SM Node %d DATA Check... ",
-					NCP_NODE_ID( smregion ) );
-			}
-
-			axxia_sysmem_bist_start( smregion, bits, test, address );
-
-			/* Poll for completion. */
-			ncr_poll( smregion, INT_STATUS_OFFSET,
-				  BIST_COMPLETION, BIST_COMPLETION,
-				  1000000, 10000 );
-
-			ncr_read32(smregion, INT_STATUS_OFFSET,
-				   &interrupt_status);
-			ncr_write32(smregion, INT_STATUS_CLEAR_OFFSET, interrupt_status);
-
-			/* Get the results. */
-			ncr_read32(smregion, BIST_STATUS_OFFSET, & result);
-
-			if( result & ( 1 << test ) ) {
-				printf( "PASSED.\n" );
-			} else {
-				printf( "FAILED.\n" );
-				axxia_sysmem_bist_failure( smregion );
-			}
-
-			/*
-			  Make sure to disable before letting the
-			  system access system memory.  Disabling
-			  BIST_GO param.
-			 */
-			ncr_and( smregion, 0x8, 0xfffffffe );
-		}
-	}
-#endif
 
 	axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
 
-	if( 1 < sysmem->num_interfaces )
+	if (1 < sysmem->num_interfaces)
 		axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x00f, 0));
 
-	return;
+	return 0;
 }
-
-#endif

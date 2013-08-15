@@ -55,8 +55,7 @@ void ncr_l3tags(void);
 /****** BIST *************/
 #ifndef __ASSEMBLY__
 #ifndef CONFIG_AXXIA_EMU
-void
-axxia_sysmem_bist(unsigned long long address, unsigned long sysmem_size);
+int axxia_sysmem_bist(unsigned long long address, unsigned long long sysmem_size);
 #endif  /* CONFIG_AXXIA_EMU */
 #endif
 
