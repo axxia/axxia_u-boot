@@ -458,7 +458,7 @@ axxia_display_clocks(void)
 	acp_clock_get(clock_core, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 4), 0xc, &loss_count0);
-	printf("      Core: %4lu MHz Loss of Lock Count %lu\n",
+	printf("       Cpu: %4lu MHz Loss of Lock Count %lu\n",
 	       speed, loss_count0);
 
 	acp_clock_get(clock_memory, &speed);
