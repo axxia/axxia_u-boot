@@ -33,7 +33,7 @@
   ===============================================================================
 */
 
-#define DEFAULT_SDCR_VALUE 0x00080000
+#define DEFAULT_SDCR_VALUE 0x00080a02
 #define CONFIG_BAUDRATE    9600
 
 /********** FEMAC PHY ADDRESS *************/
