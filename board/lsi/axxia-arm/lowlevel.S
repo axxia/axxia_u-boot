@@ -126,7 +126,11 @@ set_actlr2:
 	@@
 	@ Set the CNTFRQ
 
+#ifdef CONFIG_AXXIA_EMU
 	ldr	r0, =4096000
+#else
+	ldr	r0, =256000000
+#endif
 	mcr	p15, 0, r0, c14, c0, 0
 
 #ifndef CONFIG_SPL_BUILD
@@ -264,7 +268,8 @@ clear_page_tables:
 
 	@ First 1G of RAM, sharable, cacheable and bufferable.
 
-	ldr     r0, =0x11c1e
+	@ldr     r0, =0x11c1e
+	ldr     r0, =0x1c12
         mov     r1, r3
         add     r2, r1, #0x1000
 	str	r0, [r1], #4
@@ -286,7 +291,8 @@ clear_page_tables:
 
 	@ Second Level Table
 
-	ldr	r0, =0x30043f
+	@ldr	r0, =0x30043f
+	ldr	r0, =0x300033
 	add	r1, r3, #0x4000
 	add	r2, r1, #0x300
 1:	str	r0, [r1], #4
@@ -294,7 +300,8 @@ clear_page_tables:
 	cmp	r1, r2
 	blt	1b
 
-	ldr	r0, =0x3c0433
+	@ldr	r0, =0x3c0433
+	ldr	r0, =0x3c0033
 	add	r1, r3, #0x4300
 	add	r2, r1, #0x100
 1:	str	r0, [r1], #4
