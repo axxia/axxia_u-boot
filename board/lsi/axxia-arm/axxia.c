@@ -54,6 +54,7 @@ set_sdcr(void)
 		0x00, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
 	};
 	int i;
+	int retries;
 
 	if (NULL == (env_sdcr = getenv("sdcr")))
 		sdcr_value = DEFAULT_SDCR_VALUE;
@@ -61,13 +62,14 @@ set_sdcr(void)
 		sdcr_value = simple_strtoul(env_sdcr, NULL, 16);
 
 	printf("SDCR: 0x%lx\n", sdcr_value);
+	printf("DDCR: 0x%lx\n", sdcr_value);
 
 	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(unsigned long)); ++i) {
-		int retries = 1000;
 		int offset;
 
 		offset = DICKENS | (sdcr_offsets[i] << 16);
 		writel(sdcr_value, (offset + 0x210));
+		retries = 1000;
 
 		do {
 			--retries;
@@ -76,6 +78,17 @@ set_sdcr(void)
 		if (0 == retries)
 			return -1;
 	}
+
+	/* Update DVM */
+	writel(sdcr_value, (DICKENS + 0x210));
+	retries = 1000;
+
+	do {
+		--retries;
+	} while (0 < retries && sdcr_value != readl(DICKENS + 0x200));
+
+	if (0 == retries)
+		return -1;
 
 	return 0;
 }
