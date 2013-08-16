@@ -61,7 +61,6 @@ unsigned long ncp_sm_phy_reg_dump = 1;
 int
 axxia_initialize(void)
 {
-	int returnCode = 0;
 	int i;
 
 	if (0 != read_parameters())
@@ -75,8 +74,8 @@ axxia_initialize(void)
 
 #ifndef CONFIG_AXXIA_EMU
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE))
-		if (0 != (returnCode = voltage_init()))
-			goto acp_init_return;
+		if (0 != voltage_init())
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 
 	/*
@@ -87,8 +86,8 @@ axxia_initialize(void)
 
 #ifndef CONFIG_AXXIA_EMU
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
-		if (0 != (returnCode = pciesrio_init()))
-			goto acp_init_return;
+		if (0 != pciesrio_init())
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 
 	/*
@@ -98,8 +97,8 @@ axxia_initialize(void)
 	*/
 #ifndef CONFIG_AXXIA_EMU
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS))
-		if (0 != (returnCode = clocks_init()))
-			goto acp_init_return;
+		if (0 != clocks_init())
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 		
 	serial_initialize();
@@ -117,12 +116,10 @@ axxia_initialize(void)
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM)) {
 	  	sysmem_reset();
 
-		if (0 != (returnCode = sysmem_init()))
-			goto acp_init_return;
+		if (0 != sysmem_init())
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 	}
 #endif
 
- acp_init_return:
-
-	return returnCode;
+	return 0;
 }
