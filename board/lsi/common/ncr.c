@@ -947,6 +947,35 @@ ncr_read(unsigned long region,
 	case 0x159:
 		return ncr_read32_0x159(region, address, (unsigned long *)buffer);
 		break;
+    case 0x101:
+    case 0x109:
+        /* if reading from within NCA/MME_POKE, just do the plain and simple read */
+        if (NULL != buffer) {
+    		unsigned long offset = 0;
+
+            if(NCP_NODE_ID(region) == 0x101) {
+                offset = (NCA + address);
+            } else if(NCP_NODE_ID(region) == 0x109) {
+                offset = (MME_POKE + address);
+            }
+
+    		while (4 <= number) {
+                *((unsigned long *)buffer) =
+    				ncr_register_read((unsigned *)offset);
+    			offset += 4;
+    			buffer += 4;
+    			number -= 4;
+    		}
+
+    		if (0 < number) {
+    			unsigned long temp;
+
+    			temp = ncr_register_read((unsigned *)offset);
+    			memcpy(buffer, (void *)&temp, number);
+    		}
+    	}
+        return 0;
+        break;
 	default:
 		/* Actual config ring acces, continue. */
 		break;
@@ -964,8 +993,6 @@ ncr_read(unsigned long region,
 	if( NCP_REGION_ID( 512, 1 ) != region ) {
 		cdr2.bits.target_node_id = NCP_NODE_ID( region );
 		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
-	} else {
-		cdr2.bits.target_id_address_upper = address_upper;
 	}
 
 	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
@@ -1204,6 +1231,34 @@ ncr_write(unsigned long region,
 		return ncr_write32_0x159(region, address,
 				       *((unsigned long *)buffer));
 		break;
+    case 0x101:
+    case 0x109:
+        if (NULL != buffer) {
+    		unsigned long offset = 0;
+
+            if(NCP_NODE_ID(region) == 0x101) {
+                offset = (NCA + address);
+            } else if(NCP_NODE_ID(region) == 0x109) {
+                offset = (MME_POKE + address);
+            }
+
+    		while (4 <= number) {
+    			ncr_register_write(*((unsigned long *)buffer),
+    					   (unsigned *)offset);
+    			offset += 4;
+    			buffer += 4;
+    			number -= 4;
+    		}
+
+    		if (0 < number) {
+    			unsigned long temp;
+
+    			memcpy((void *)&temp, buffer, number);
+    			ncr_register_write(temp, (unsigned *)offset);
+    		}
+    	}
+        return 0;
+        break;
 	default:
 		/* Actual config ring acces, continue. */
 		break;
@@ -1221,8 +1276,6 @@ ncr_write(unsigned long region,
 	if( NCP_REGION_ID( 512, 1 ) != region ) {
 		cdr2.bits.target_node_id = NCP_NODE_ID( region );
 		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
-	} else {
-		cdr2.bits.target_id_address_upper = address_upper;
 	}
 
 	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
@@ -1242,14 +1295,12 @@ ncr_write(unsigned long region,
 	*/
 
 	if (NULL != buffer) {
-		unsigned long address;
-
-		address = (NCA + 0x1000);
+		unsigned long offset = (NCA + 0x1000);
 
 		while (4 <= number) {
 			ncr_register_write(*((unsigned long *)buffer),
-					   (unsigned *)address);
-			address += 4;
+					   (unsigned *)offset);
+			offset += 4;
 			buffer += 4;
 			number -= 4;
 		}
@@ -1258,7 +1309,7 @@ ncr_write(unsigned long region,
 			unsigned long temp;
 
 			memcpy((void *)&temp, buffer, number);
-			ncr_register_write(temp, (unsigned *)address);
+			ncr_register_write(temp, (unsigned *)offset);
 		}
 	}
 
@@ -1305,14 +1356,11 @@ ncr_write(unsigned long region,
 	  Check status.
 	*/
 
-	if( 0x3 !=
-	    ( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-		0x00c00000 ) >> 22 ) ) {
-#ifdef NCR_TRACER
-		printf( "ncr_write( ) failed: 0x%lx\n",
-			( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
-			    0x00c00000 ) >> 22 ) );
-#endif
+	if(0x3 != ((ncr_register_read((unsigned *)(NCA + 0xf0)) & 0x00c00000) >> 22)) {
+		printf("ncr_write( ) failed: 0x%lx, status1=0x%x, status2=0x%x\n",
+			((ncr_register_read((unsigned *)(NCA + 0xf0)) & 0x00c00000) >> 22),
+			ncr_register_read((unsigned *)(NCA + 0xe4)),
+			ncr_register_read((unsigned *)(NCA + 0xe8)));
 		ncr_unlock(LOCK_DOMAIN);
 
 		return -1;

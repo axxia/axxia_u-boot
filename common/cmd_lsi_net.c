@@ -49,13 +49,15 @@ int
 do_net(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	if( 0 == strncmp( argv[1], "dr", strlen( "dr" ) ) ) {
-		dumprx ^= 1;
+		dumprx = dumprx ? 0 : 1;
+        printf("Dump receive packets %s\n", dumprx ? "On" : "Off");
 
 		return 0;
 	}
 
 	if( 0 == strncmp( argv[1], "dt", strlen( "dt" ) ) ) {
-		dumptx ^= 1;
+		dumptx = dumptx ? 0 : 1;
+        printf("Dump transmit packets %s\n", dumptx ? "On" : "Off");
 
 		return 0;
 	}

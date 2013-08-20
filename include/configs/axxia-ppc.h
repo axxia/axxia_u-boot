@@ -1602,24 +1602,24 @@ extern unsigned char ethernet_address[6];
 void eth_getenv_enetaddrg(const char *, unsigned char [6]);
 
 int lsi_femac_eth_init(struct eth_device *, bd_t *);
-int acp_eioa_eth_init(struct eth_device *, bd_t *);
+int lsi_eioa_eth_init(struct eth_device *, bd_t *);
 
 void lsi_femac_eth_halt(struct eth_device *);
-void acp_eioa_eth_halt(struct eth_device *);
+void lsi_eioa_eth_halt(struct eth_device *);
 
 int lsi_femac_eth_send(struct eth_device *, volatile void *, int);
-int acp_eioa_eth_send(struct eth_device *, volatile void *, int);
+int lsi_eioa_eth_send(struct eth_device *, volatile void *, int);
 
 int lsi_femac_eth_rx(struct eth_device *);
-int acp_eioa_eth_recv(struct eth_device *);
+int lsi_eioa_eth_rx(struct eth_device *);
 
 void lsi_net_receive_test(struct eth_device *);
 void lsi_net_loopback_test(struct eth_device *);
 
 void lsi_femac_receive_test(struct eth_device *);
-void acp_eioa_receive_test(struct eth_device *);
+void lsi_eioa_receive_test(struct eth_device *);
 void lsi_femac_loopback_test(struct eth_device *);
-void acp_eioa_loopback_test(struct eth_device *);
+void lsi_eioa_loopback_test(struct eth_device *);
 
 int lsi_femac_write_hwaddr(struct eth_device *);
 

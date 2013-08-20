@@ -37,16 +37,24 @@ SECTIONS
 	}
 
 	. = ALIGN(4);
-	.data :
-	{
-		*(.data*)
-	}
-
-
-	. = ALIGN(4);
 	.u_boot_list :
 	{
 		*(SORT(.u_boot_list*));
+	}
+
+	/*
+	 * Space for page tables.
+	 */
+
+	. = ALIGN(0x4000);
+	__page_table_start = .;
+	. += 0x5000;
+	__page_table_end = .;
+
+	. = ALIGN(4);
+	.data :
+	{
+		*(.data*)
 	}
 
 	. = ALIGN(4);
