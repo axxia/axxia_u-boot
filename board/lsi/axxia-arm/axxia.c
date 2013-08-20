@@ -166,7 +166,7 @@ void flush_l3(void)
 		do {
 			status = readl(DICKENS +
 				       (0x10000 * hnf_offsets[i]) + 0x18);
-			udelay(10);
+			udelay(1);
 		} while ((0 < --retries) && (0x0 != (status & 0xf)));
 
 		if (0 == retries)
@@ -186,7 +186,7 @@ void flush_l3(void)
 		do {
 			status = readl(DICKENS +
 				       (0x10000 * hnf_offsets[i]) + 0x18);
-			udelay(10);
+			udelay(1);
 		} while ((0 < --retries) && (0xc != (status & 0xf)));
 
 		if (0 == retries)
