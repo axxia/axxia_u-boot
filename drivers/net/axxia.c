@@ -23,6 +23,14 @@
 #include <malloc.h>
 #include <net.h>
 
+#if 0
+#define DEBUG
+#endif
+
+unsigned char ethernet_address[6];
+int dumprx = 0;
+int dumptx = 0;
+
 /*
   ===============================================================================
   ===============================================================================
@@ -55,7 +63,7 @@ axxia_dump_packet(const char *header, void *packet, int length)
 	int i;
 	unsigned char *data = packet;
 
-	printf("---- %s\n", header);
+	printf("---- %s ----\n", header);
 
 	while (0 < length) {
 		int this_line;
@@ -85,51 +93,130 @@ int
 board_eth_init(bd_t *bd)
 {
 	int rc;
-	unsigned char enetaddr[6];
 	struct eth_device *device;
 
-	/*
+#if defined(CONFIG_AXXIA_FEMAC)
+
+    debug("Adding LSI_FEMAC device\n");
+
+    /*
 	  Get the Ethernet address from the environment.
 	*/
 
-	rc = eth_getenv_enetaddr("ethaddr", enetaddr);
+	rc = eth_getenv_enetaddr("ethaddr", ethernet_address);
 
-	if (0 == rc) {		/* returns is_valid... 1=true, 0=false */
-		printf("Error getting Ethernet address.\n");
-		return -1;
-	}
+	if (rc) {		/* returns is_valid... 1=true, 0=false */
+        /*
+    	  Allocate a device structure and clear it.
+    	*/
+     
+    	device = (struct eth_device *)malloc(sizeof(struct eth_device));
 
-#if defined(CONFIG_AXXIA_FEMAC)
-	/*
-	  Allocate a device structure and clear it.
+    	if (NULL == device) {
+    		printf("Unable to allocate memory for LSI_FEMAC eth_device.\n");
+    		return -1;
+    	}
+
+    	memset((void *)device, 0, sizeof(struct eth_device *));
+        memcpy(device->enetaddr, ethernet_address, (sizeof(unsigned char) * 6));
+        
+    	/*
+    	  Set up the rest of the eth_device structure and register it.
+    	*/
+
+    	sprintf(device->name, "LSI_FEMAC");
+    	device->init         = lsi_femac_eth_init;
+    	device->halt         = lsi_femac_eth_halt;
+    	device->send         = lsi_femac_eth_send;
+    	device->recv         = lsi_femac_eth_rx;
+    	device->write_hwaddr = lsi_femac_write_hwaddr;
+
+        eth_register(device);
+   } else {
+        /* returns is_valid... 1=true, 0=false */
+        printf("Failed to add LSI_FEMAC device. Error getting ethaddr.\n");
+   }
+#endif
+
+#if defined(CONFIG_AXXIA_EIOA)
+
+    debug("Adding LSI_EIOA device\n");
+
+    /*
+	  Get the Ethernet address from the environment.
 	*/
- 
-	device = (struct eth_device *)malloc(sizeof(struct eth_device));
+	rc = eth_getenv_enetaddr("ethaddr", ethernet_address);
 
-	if (NULL == device) {
-		printf("Unable to allocate memory for eth_device.\n");
-		return -1;
-	}
+    if (rc) {		/* returns is_valid... 1=true, 0=false */
+        /*
+    	  Allocate a device structure and clear it.
+    	*/
+     
+    	device = (struct eth_device *)malloc(sizeof(struct eth_device));
 
-	memset((void *)device, 0, sizeof(struct eth_device *));
+    	if (NULL == device) {
+    		printf("Unable to allocate memory for LSI_EIOA eth_device.\n");
+    		return -1;
+    	}
 
-	/*
-	  Set up the reset of the eth_device structure and register it.
-	*/
+    	memset((void *)device, 0, sizeof(struct eth_device *));
+        memcpy(device->enetaddr, ethernet_address, (sizeof(unsigned char) * 6));
+        
+    	/*
+    	  Set up the rest of the eth_device structure and register it.
+    	*/
 
-	sprintf(device->name, "LSI_FEMAC");
-	memcpy(device->enetaddr, enetaddr, (sizeof(unsigned char) * 6));
-	device->init         = lsi_femac_eth_init;
-	device->halt         = lsi_femac_eth_halt;
-	device->send         = lsi_femac_eth_send;
-	device->recv         = lsi_femac_eth_rx;
-	device->write_hwaddr = lsi_femac_write_hwaddr;
-	eth_register(device);
-#elif defined(CONFIG_AXXIA_EIOA)
-#warning "EIOA has not been implemented in the new U-Boot branch."
-#else
+    	sprintf(device->name, "LSI_EIOA");
+    	device->init         = lsi_eioa_eth_init;
+    	device->halt         = lsi_eioa_eth_halt;
+    	device->send         = lsi_eioa_eth_send;
+    	device->recv         = lsi_eioa_eth_rx;
+    	device->write_hwaddr = NULL;
+
+        eth_register(device);
+    } else {
+        /* returns is_valid... 1=true, 0=false */
+        printf("Failed to add LSI_EIOA device. Error getting ethaddr.\n");
+   }
+
+#endif
+
+#if !defined(CONFIG_AXXIA_EIOA) || !defined(CONFIG_AXXIA_FEMAC)
 #error "Axxia networking is defined, but no interface has been!"
 #endif
 
 	return 0;
 }
+
+void lsi_net_receive_test(struct eth_device *dev)
+{
+    char *act = getenv("ethact");
+
+    /* set current device to whats in ethact */
+    eth_set_current();
+
+    if(act) {
+        if(strcmp(act, "LSI_FEMAC") == 0) {
+            lsi_femac_receive_test(dev);
+        } else if(strcmp(act, "LSI_EIOA") == 0) {
+            lsi_eioa_receive_test(dev);
+        }
+    }
+}
+
+void lsi_net_loopback_test(struct eth_device *dev)
+{
+    char *act = getenv("ethact");
+
+    /* set current device to whats in ethact */
+    eth_set_current();
+
+    if(act) {
+        if(strcmp(act, "LSI_FEMAC") == 0) {
+            lsi_femac_loopback_test(dev);
+        } else if(strcmp(act, "LSI_EIOA") == 0) {
+            lsi_eioa_loopback_test(dev);
+        }
+    }
+}
+
