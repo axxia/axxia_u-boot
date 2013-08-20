@@ -62,6 +62,7 @@ ncp_sm_denali_2041_init(
     ncp_uint32_t value;
     ncp_uint32_t value2;
     ncp_uint32_t col_diff;
+    ncp_uint32_t row_diff;
     ncp_uint32_t ctl_32 = 0, ctl_33 = 0, ctl_34 = 0;
     ncp_region_id_t ctlReg = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
     ncp_uint32_t rttNom;
@@ -657,15 +658,20 @@ ncp_sm_denali_2041_init(
      *
      */
     value = 0;
-    col_diff = 0;
-    if ((parms->sdram_device_density != NCP_SM_SDRAM_DENSITY_8GBIT) && 
-        (parms->sdram_device_width   != NCP_SM_SDRAM_WIDTH_16BITS) )
-    {
-        col_diff = 1;
-        
-        SV(ncp_denali_DENALI_CTL_333_t, row_diff,  
-                (3 + parms->sdram_device_width - parms->sdram_device_density));
+    col_diff = 1;
+    if (parms->sdram_device_density == NCP_SM_SDRAM_DENSITY_8GBIT) {
+        row_diff = 0;
+        if (parms->sdram_device_width   == NCP_SM_SDRAM_WIDTH_16BITS)
+        {
+            col_diff = 0;
+        } 
     }
+    else 
+    {
+        row_diff = 3 + parms->sdram_device_width - parms->sdram_device_density;
+    }
+
+    SV(ncp_denali_DENALI_CTL_333_t, row_diff, row_diff);
 
     if (parms->version == NCP_CHIP_ACP55xx)
     {
