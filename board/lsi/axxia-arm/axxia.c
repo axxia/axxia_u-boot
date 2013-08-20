@@ -152,6 +152,8 @@ void flush_l3(void)
 	int i;
         unsigned long status, id;
 	int retries;
+
+	puts("Flushing L3 Cache\n");
 	
 	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
 		/* set state NOL3 */
@@ -159,12 +161,12 @@ void flush_l3(void)
 	}
 
 	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		retries = 1000;
+		retries = 10000;
 
 		do {
 			status = readl(DICKENS +
 				       (0x10000 * hnf_offsets[i]) + 0x18);
-			mdelay(1);
+			udelay(10);
 		} while ((0 < --retries) && (0x0 != (status & 0xf)));
 
 		if (0 == retries)
@@ -184,7 +186,7 @@ void flush_l3(void)
 		do {
 			status = readl(DICKENS +
 				       (0x10000 * hnf_offsets[i]) + 0x18);
-			mdelay(1);
+			udelay(10);
 		} while ((0 < --retries) && (0xc != (status & 0xf)));
 
 		if (0 == retries)
@@ -263,6 +265,12 @@ ft_board_setup(void *blob, bd_t *bd)
 	int node;
 	unsigned long release_addr;
 	int rc;
+	acp_clock_t clocks[] = {
+		clock_core, clock_peripheral, clock_emmc
+	};
+	const char *clock_names[] = {
+		"/clocks/cpu", "/clocks/peripheral", "/clocks/emmc"
+	};
 
 	/*
   	  Set up the coherency domains and clusters.  This is handled
@@ -271,6 +279,28 @@ ft_board_setup(void *blob, bd_t *bd)
 
 	if (0 != set_clusters())
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+	/*
+	  Set the PLL/Clock frequencies.
+	*/
+
+	for (i = 0; i < (sizeof(clocks) / sizeof(acp_clock_t)); ++i) {
+		unsigned long clock_frequency;
+
+		node = fdt_path_offset(blob, clock_names[i]);
+
+		if (0 > node)
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		acp_clock_get(clocks[i], &clock_frequency);
+		clock_frequency *= 1000;
+		clock_frequency = htonl(clock_frequency);
+		rc = fdt_setprop(blob, node, "frequency",
+				 &clock_frequency, sizeof(unsigned long));
+
+		if (0 != rc)
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	}				 
 
 	/*
 	  Fix up the spin table addresses.
