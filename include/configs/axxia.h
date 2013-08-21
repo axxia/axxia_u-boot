@@ -388,7 +388,6 @@ int write_parameters(parameters_t *);
 #define SSP_PCELLID2  0xff8
 #define SSP_PCELLID3  0xffc
 
-#define SSP_DEFAULT_CLOCK  1250000
 #define SSP_MAXIMUM_CLOCK 25000000
 
 #ifndef __ASSEMBLY__

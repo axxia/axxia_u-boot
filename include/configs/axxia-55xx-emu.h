@@ -89,6 +89,8 @@
 
 #define CONFIG_MEMORY_RETENTION
 
+#define SSP_DEFAULT_CLOCK  1000000
+
 #include <configs/axxia-arm.h>
 
 #endif	/* __CONFIGS_AXXIA_55XX_EMU_H */
