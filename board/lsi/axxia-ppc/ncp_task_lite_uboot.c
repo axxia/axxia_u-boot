@@ -1505,7 +1505,7 @@ NCP_RETURN_LABEL
 }
 
 ncp_st_t
-ncp_task_lite_uboot_unconfig(ncp_dev_t *dev)
+ncp_task_lite_uboot_unconfig()
 {
 	ncp_st_t ncpStatus = NCP_ST_SUCCESS;
 

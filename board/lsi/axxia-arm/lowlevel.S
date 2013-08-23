@@ -26,6 +26,11 @@
 
 #include <config.h>
 
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@ In some cases (memory tests) it makes sense to run uncached.
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 #ifndef CONFIG_SPL_BUILD
 
 	@@
@@ -268,8 +273,11 @@ clear_page_tables:
 
 	@ First 1G of RAM, sharable, cacheable and bufferable.
 
-	@ldr     r0, =0x11c1e
+#ifdef CONFIG_SPL_MTEST
 	ldr     r0, =0x1c12
+#else
+	ldr     r0, =0x11c1e
+#endif
         mov     r1, r3
         add     r2, r1, #0x1000
 	str	r0, [r1], #4
@@ -291,8 +299,11 @@ clear_page_tables:
 
 	@ Second Level Table
 
-	@ldr	r0, =0x30043f
+#ifdef CONFIG_SPL_MTEST
 	ldr	r0, =0x300033
+#else
+	ldr	r0, =0x30043f
+#endif
 	add	r1, r3, #0x4000
 	add	r2, r1, #0x300
 1:	str	r0, [r1], #4
@@ -300,8 +311,11 @@ clear_page_tables:
 	cmp	r1, r2
 	blt	1b
 
-	@ldr	r0, =0x3c0433
+#ifdef CONFIG_SPL_MTEST
 	ldr	r0, =0x3c0033
+#else
+	ldr	r0, =0x3c0433
+#endif
 	add	r1, r3, #0x4300
 	add	r2, r1, #0x100
 1:	str	r0, [r1], #4

@@ -85,6 +85,8 @@
 
 #define CONFIG_MEMORY_RETENTION
 
+#define SSP_DEFAULT_CLOCK  4000000
+
 #include <configs/axxia-arm.h>
 
 #endif	/* __CONFIGS_AXXIA_55XX_H */

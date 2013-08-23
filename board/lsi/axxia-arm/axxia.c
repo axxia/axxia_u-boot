@@ -42,50 +42,43 @@ const struct omap_sysinfo sysinfo = {
 
 /*
   ------------------------------------------------------------------------------
-  set_sdcr
+  set_coherency
 */
 
-int
-set_sdcr(void)
+static int
+set_coherency(unsigned long sdcr_ddcr_value)
 {
-	char *env_sdcr;
-	unsigned long sdcr_value;
 	unsigned long sdcr_offsets[] = {
-		0x00, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
+		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
 	};
 	int i;
 	int retries;
 
-	if (NULL == (env_sdcr = getenv("sdcr")))
-		sdcr_value = DEFAULT_SDCR_VALUE;
-	else
-		sdcr_value = simple_strtoul(env_sdcr, NULL, 16);
-
-	printf("SDCR: 0x%lx\n", sdcr_value);
-	printf("DDCR: 0x%lx\n", sdcr_value);
+	printf("SDCR/DDCR: 0x%lx\n", sdcr_ddcr_value);
 
 	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(unsigned long)); ++i) {
 		int offset;
 
 		offset = DICKENS | (sdcr_offsets[i] << 16);
-		writel(sdcr_value, (offset + 0x210));
+		writel(sdcr_ddcr_value, (offset + 0x210));
 		retries = 1000;
 
 		do {
 			--retries;
-		} while (0 < retries && sdcr_value != readl(offset + 0x200));
+		} while (0 < retries &&
+			 sdcr_ddcr_value != readl(offset + 0x200));
 
 		if (0 == retries)
 			return -1;
 	}
 
 	/* Update DVM */
-	writel(sdcr_value, (DICKENS + 0x210));
+	writel(sdcr_ddcr_value, (DICKENS + 0x210));
 	retries = 1000;
 
 	do {
 		--retries;
-	} while (0 < retries && sdcr_value != readl(DICKENS + 0x200));
+	} while (0 < retries && sdcr_ddcr_value != readl(DICKENS + 0x200));
 
 	if (0 == retries)
 		return -1;
@@ -95,26 +88,48 @@ set_sdcr(void)
 
 /*
   -------------------------------------------------------------------------------
-  cluster_power
+  set_clusters
 */
-#if 0
-static int
-cluster_power(void)
-{
-	char *cluster_enable_env;
-	unsigned long cluster_enable;
 
-	if (NULL == (cluster_enable_env = getenv("cluster_enable")))
-		cluster_enable = 0xf;
+static int
+set_clusters(void)
+{
+	char *clusters_env;
+	unsigned long clusters;
+	unsigned long sdcr_ddcr = DEFAULT_SDCR_VALUE;
+
+	if (NULL == (clusters_env = getenv("clusters")))
+		clusters = 0xf;
 	else
-		cluster_enable = simple_strtoul(cluster_enable_env);
+		clusters = simple_strtoul(clusters_env, NULL, 0);
+
+	if (0 == (clusters & 1)) {
+		printf("Cluster 0 MUST be enabled, enabling.\n");
+		clusters |= 1;
+	}
+
+	puts("Setting up Coherencly for Clusters: 0");
+
+	if (0 != (clusters & 0x2))
+		puts(",1");
+
+	if (0 != (clusters & 0x4))
+		puts(",2");
+
+	if (0 != (clusters & 0x8))
+		puts(",3");
+
+	puts("\n");
 
 	/*
 	  How many clusters should be up?
 	*/
-	return;
+
+	if (0 != set_coherency(sdcr_ddcr))
+		return -1;
+
+	return 0;
 }
-#endif
 
 /*
   ==============================================================================
@@ -123,6 +138,63 @@ cluster_power(void)
   ==============================================================================
   ==============================================================================
 */
+
+/*
+  -------------------------------------------------------------------------------
+  flush_l3
+*/
+
+void flush_l3(void)
+{
+	unsigned long hnf_offsets[] = {
+		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
+	};
+	int i;
+        unsigned long status, id;
+	int retries;
+
+	puts("Flushing L3 Cache\n");
+	
+	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
+		/* set state NOL3 */
+		writel(0x0, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
+	}
+
+	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
+		retries = 10000;
+
+		do {
+			status = readl(DICKENS +
+				       (0x10000 * hnf_offsets[i]) + 0x18);
+			udelay(1);
+		} while ((0 < --retries) && (0x0 != (status & 0xf)));
+
+		if (0 == retries)
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	}
+
+	/* */
+
+	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
+		/* set state NOL3 */
+		writel(0x3, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
+	}
+
+	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
+		retries = 10000;
+
+		do {
+			status = readl(DICKENS +
+				       (0x10000 * hnf_offsets[i]) + 0x18);
+			udelay(1);
+		} while ((0 < --retries) && (0xc != (status & 0xf)));
+
+		if (0 == retries)
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	}
+
+	return;
+}
 
 /**
  * @brief board_init
@@ -143,9 +215,6 @@ board_init(void)
 int
 misc_init_r(void)
 {
-	if (0 != set_sdcr())
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
 	return 0;
 }
 
@@ -196,6 +265,46 @@ ft_board_setup(void *blob, bd_t *bd)
 	int node;
 	unsigned long release_addr;
 	int rc;
+	acp_clock_t clocks[] = {
+		clock_core, clock_peripheral, clock_emmc
+	};
+	const char *clock_names[] = {
+		"/clocks/cpu", "/clocks/peripheral", "/clocks/emmc"
+	};
+
+	/*
+  	  Set up the coherency domains and clusters.  This is handled
+	  late in order to use the latest environment.
+	*/
+
+	if (0 != set_clusters())
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+	/*
+	  Set the PLL/Clock frequencies.
+	*/
+
+	for (i = 0; i < (sizeof(clocks) / sizeof(acp_clock_t)); ++i) {
+		unsigned long clock_frequency;
+
+		node = fdt_path_offset(blob, clock_names[i]);
+
+		if (0 > node)
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		acp_clock_get(clocks[i], &clock_frequency);
+		clock_frequency *= 1000;
+		clock_frequency = htonl(clock_frequency);
+		rc = fdt_setprop(blob, node, "frequency",
+				 &clock_frequency, sizeof(unsigned long));
+
+		if (0 != rc)
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	}				 
+
+	/*
+	  Fix up the spin table addresses.
+	*/
 
 	release_addr = htonl(_spin_table_start_ofs + spin_loop_release_offset);
 

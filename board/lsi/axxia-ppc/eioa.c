@@ -34,6 +34,9 @@
 #include <common.h>
 #include <malloc.h>
 
+#include <asm/io.h>
+#include <config.h>
+
 /*#define TRACE_ALLOCATION*/
 
 #define NCP_TASKIO_LITE
@@ -138,6 +141,12 @@ typedef struct {
 #error "EIOA is not defined for this architecture!"
 #endif
 
+ncp_st_t
+ncp_task_lite_uboot_unconfig();
+
+void
+axxia_dump_packet(const char *header, void *packet, int length);
+
 #ifdef CONFIG_AXXIA_25xx
 /*
   ------------------------------------------------------------------------------
@@ -155,19 +164,19 @@ ncp_1d1_read(ncr_command_t *command, unsigned long *data)
 	target = NCP_TARGET_ID(command->region);
 	base = IO + 0x3000 + (target * 0x10);
 
-	WRITEL(value, base);
+	writel(value, base);
 
 	if (5 == target || 7 == target || 9 == target) {
 		/* 32 bit */
-		WRITEL((0x81400000 + command->offset), (base + 4));
+		writel((0x81400000 + command->offset), (base + 4));
 	} else if (4 == target || 6 == target || 8 == target) {
 		/* 16 bit */
-		WRITEL((0x80c00000 + command->offset), (base + 4));
+		writel((0x80c00000 + command->offset), (base + 4));
 	}
 
 	do {
 		--timeout;
-		value = READL(base + 4);
+		value = readl(base + 4);
 	} while (0 != (value & 0x80000000) && 0 < timeout);
 
 	if (0 == timeout) {
@@ -175,14 +184,14 @@ ncp_1d1_read(ncr_command_t *command, unsigned long *data)
 		return -1;
 	}
 
-	value = READL(base + 0xc);
+	value = readl(base + 0xc);
 
 	if (0 != value) {
 		printf("ncp_1d1_read() error!\n");
 		return -1;
 	}
 
-	*data = READL(base + 0x8);
+	*data = readl(base + 0x8);
 
 	return 0;
 }
@@ -203,19 +212,19 @@ ncp_1d1_write(ncr_command_t *command)
 	target = NCP_TARGET_ID(command->region);
 	base = IO + 0x3000 + (target * 0x10);
 
-	WRITEL(command->value, base);
+	writel(command->value, base);
 
 	if (5 == target || 7 == target || 9 == target) {
 		/* 32 bit */
-		WRITEL((0xc1400000 + command->offset), (base + 4));
+		writel((0xc1400000 + command->offset), (base + 4));
 	} else if (4 == target || 6 == target || 8 == target) {
 		/* 16 bit */
-		WRITEL((0xc0c00000 + command->offset), (base + 4));
+		writel((0xc0c00000 + command->offset), (base + 4));
 	}
 
 	do {
 		--timeout;
-		value = READL(base + 4);
+		value = readl(base + 4);
 	} while (0 != (value & 0x80000000) && 0 < timeout);
 
 	if (0 == timeout) {
@@ -223,7 +232,7 @@ ncp_1d1_write(ncr_command_t *command)
 		return -1;
 	}
 
-	value = READL(base + 0xc);
+	value = readl(base + 0xc);
 
 	if (0 != value) {
 		printf("ncp_1d1_write() error!\n");
@@ -245,7 +254,7 @@ ncp_dev_reset(void)
 {
 	unsigned long value;
 
-	DEBUG_PRINT("\n");
+	debug("\n");
 
 	/*
 	  Reset Modules
@@ -317,7 +326,7 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 		if (-1 == last_node ||
 		    NCP_NODE_ID(command->region) != last_node) {
 			last_node = NCP_NODE_ID(command->region);
-			DEBUG_PRINT("READ IGNORED: n=0x%lx t=0x%lx o=0x%lx\n",
+			debug("READ IGNORED: n=0x%lx t=0x%lx o=0x%lx\n",
 				    NCP_NODE_ID(command->region),
 				    NCP_TARGET_ID(command->region),
 				    command->offset);
@@ -327,13 +336,13 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 	}
 
 	if (0 != ncr_read32(command->region, command->offset, value)) {
-		ERROR_PRINT("READ ERROR: n=0x%lx t=0x%lx o=0x%lx\n",
+		printf("READ ERROR: n=0x%lx t=0x%lx o=0x%lx\n",
 			    NCP_NODE_ID(command->region),
 			    NCP_TARGET_ID(command->region), command->offset);
 		return -1;
 	}
 
-	DEBUG_PRINT("Read 0x%08lx from n=0x%lx t=0x%lx o=0x%lx\n",
+	debug("Read 0x%08lx from n=0x%lx t=0x%lx o=0x%lx\n",
 		    *value, NCP_NODE_ID(command->region),
 		    NCP_TARGET_ID(command->region),
 		    command->offset);
@@ -355,7 +364,7 @@ ncp_dev_do_modify(ncr_command_t *command)
 		if (-1 == last_node ||
 		    NCP_NODE_ID(command->region) != last_node) {
 			last_node = NCP_NODE_ID(command->region);
-			DEBUG_PRINT("MODIFY IGNORED: n=0x%lx t=0x%lx o=0x%lx\n",
+			debug("MODIFY IGNORED: n=0x%lx t=0x%lx o=0x%lx\n",
 				    NCP_NODE_ID(command->region),
 				    NCP_TARGET_ID(command->region),
 				    command->offset);
@@ -366,7 +375,7 @@ ncp_dev_do_modify(ncr_command_t *command)
 
 	if (0 != ncr_modify32(command->region, command->offset,
 			      command->mask, command->value)) {
-		ERROR_PRINT("MODIFY ERROR: n=0x%lx t=0x%lx o=0x%lx m=0x%lx "
+		printf("MODIFY ERROR: n=0x%lx t=0x%lx o=0x%lx m=0x%lx "
 			    "v=0x%lx\n",
 			    NCP_NODE_ID(command->region),
 			    NCP_TARGET_ID(command->region), command->offset,
@@ -374,7 +383,7 @@ ncp_dev_do_modify(ncr_command_t *command)
 
 		return -1;
 	} else {
-		DEBUG_PRINT("MODIFY: r=0x%lx o=0x%lx m=0x%lx v=0x%lx\n",
+		debug("MODIFY: r=0x%lx o=0x%lx m=0x%lx v=0x%lx\n",
 			    command->region, command->offset,
 			    command->mask, command->value);
 	}
@@ -390,7 +399,7 @@ ncp_dev_do_modify(ncr_command_t *command)
 static int
 ncp_dev_do_write(ncr_command_t *command)
 {
-	DEBUG_PRINT(" WRITE: r=0x%lx o=0x%lx v=0x%lx\n",
+	debug(" WRITE: r=0x%lx o=0x%lx v=0x%lx\n",
 		    command->region, command->offset, command->value);
 
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
@@ -413,7 +422,7 @@ ncp_dev_do_write(ncr_command_t *command)
 
 		if (0 != ncr_write32(command->region, command->offset,
 				     command->value)) {
-			ERROR_PRINT("WRITE ERROR: n=0x%lx t=0x%lx o=0x%lx "
+			printf("WRITE ERROR: n=0x%lx t=0x%lx o=0x%lx "
 				    "v=0x%lx\n",
 				    NCP_NODE_ID(command->region),
 				    NCP_TARGET_ID(command->region),
@@ -427,7 +436,7 @@ ncp_dev_do_write(ncr_command_t *command)
 		if (-1 == last_node ||
 		    NCP_NODE_ID(command->region) != last_node) {
 			last_node = NCP_NODE_ID(command->region);
-			DEBUG_PRINT("WRITE IGNORED: n=0x%lx t=0x%lx o=0x%lx "
+			debug("WRITE IGNORED: n=0x%lx t=0x%lx o=0x%lx "
 				    "v=0x%lx\n",
 				    NCP_NODE_ID(command->region),
 				    NCP_TARGET_ID(command->region),
@@ -493,14 +502,14 @@ ncp_dev_configure(ncr_command_t *commands) {
 			rc = ncp_dev_do_modify(commands);
 			break;
 		case NCR_COMMAND_USLEEP:
-			DEBUG_PRINT("USLEEP: v=0x%lx\n", commands->value);
+			debug("USLEEP: v=0x%lx\n", commands->value);
 			udelay(commands->value);
 			break;
 		case NCR_COMMAND_POLL:
 			rc = ncp_dev_do_poll(commands);
 			break;
 		default:
-			ERROR_PRINT("Unknown Command: 0x%x\n",
+			printf("Unknown Command: 0x%x\n",
 				    commands->command);
 			rc = -1;
 			break;
@@ -529,7 +538,7 @@ alloc_128B_aligned(int size)
 	void *aligned_address;
 
 	if (NULL == (free_address = malloc(size + 128 + sizeof(void *)))) {
-		ERROR_PRINT("Failed to allocate %d bytes!\n", size);
+		printf("Failed to allocate %d bytes!\n", size);
 		return NULL;
 	}
 
@@ -888,7 +897,7 @@ line_setup(int index)
 				break;
 
 			if (0 == retries--) {
-				ERROR_PRINT("GMAC%d: AN Timed Out.\n",
+				printf("GMAC%d: AN Timed Out.\n",
 					    port_by_index[index]);
 				return -1;
 			}
@@ -897,7 +906,7 @@ line_setup(int index)
 		}
 
 		if (0 == (status & 0x4)) {
-			ERROR_PRINT("GMAC%d: LINK is Down.\n",
+			printf("GMAC%d: LINK is Down.\n",
 				    port_by_index[index]);
 
 			if (0 != eioaPort)
@@ -999,7 +1008,7 @@ line_setup(int index)
 */
 
 static int
-initialize_task_lite(void)
+initialize_task_lite(struct eth_device *dev)
 {
 	ncp_st_t ncpStatus = NCP_ST_SUCCESS;
 	char *eioaport;
@@ -1028,7 +1037,7 @@ initialize_task_lite(void)
 		} else if (0 == strcmp(eioaport, "GMAC12")) {
 			eioaPort = 12;
 		} else {
-			WARN_PRINT("If set, eioaport must be AUTO, "
+			printf("If set, eioaport must be AUTO, "
 				   "GMAC1...GMAC4, or GMAC9...GMAC12\n");
 			return -1;
 		}
@@ -1037,24 +1046,24 @@ initialize_task_lite(void)
 	}
 
 	if (0 != ncp_dev_reset()) {
-		WARN_PRINT("Reset Failed\n");
+		printf("Reset Failed\n");
 		return -1;
 	}
 
 	tlb_entries(1);
 
 	if (0 != ncp_dev_configure(mmb)) {
-		WARN_PRINT("MMB Configuration Failed\n");
+		printf("MMB Configuration Failed\n");
 		return -1;
 	}
 
 	if (0 != ncp_dev_configure(vp)) {
-		WARN_PRINT("Virtual Pipeline Configuration Failed\n");
+		printf("Virtual Pipeline Configuration Failed\n");
 		return -1;
 	}
 
 	if (0 != ncp_dev_configure(nca)) {
-		WARN_PRINT("NCA Configuration Failed\n");
+		printf("NCA Configuration Failed\n");
 		return -1;
 	}
 
@@ -1078,7 +1087,7 @@ initialize_task_lite(void)
 
 	for (i = 0; i < NUMBER_OF_RX_BUFFERS; ++i) {
 		if (NULL == (rx_buffers[i] = alloc_128B_aligned(2048))) {
-			ERROR_PRINT("RX Buffer Allocation Failed.\n");
+			printf("RX Buffer Allocation Failed.\n");
 			return -1;
 		}
 
@@ -1088,25 +1097,25 @@ initialize_task_lite(void)
 
 #ifdef CONFIG_AXXIA_25xx
 	if (0 != ncp_dev_configure(timer)) {
-		WARN_PRINT("TIMER Configuration Failed\n");
+		printf("TIMER Configuration Failed\n");
 		return -1;
 	}
 
 	if (0 != ncp_dev_configure(tdmioa)) {
-		WARN_PRINT("TDMIOA Configuration Failed\n");
+		printf("TDMIOA Configuration Failed\n");
 		return -1;
 	}
 #endif
 
 	if (0 != ncp_dev_configure(eioa)) {
-		WARN_PRINT("EIOA Configuration Failed\n");
+		printf("EIOA Configuration Failed\n");
 		return -1;
 	}
 
  ncp_return:
 
 	if (NCP_ST_SUCCESS != ncpStatus) {
-		acp_eioa_eth_halt();
+		lsi_eioa_eth_halt(dev);
 
 		return -1;
 	}
@@ -1145,7 +1154,7 @@ finalize_task_lite(void)
 	int i;
 	unsigned long value;
 
-	DEBUG_PRINT("\n");
+	debug("\n");
 
 	/*
 	  Stop the queue.
@@ -1213,11 +1222,11 @@ finalize_task_lite(void)
 
 /*
   -------------------------------------------------------------------------------
-  acp_eioae_eth_halt
+  lsi_eioae_eth_halt
 */
 
 void
-acp_eioa_eth_halt(void)
+lsi_eioa_eth_halt(struct eth_device *dev)
 {
 	if (0 != initialized)
 		finalize_task_lite();
@@ -1227,14 +1236,14 @@ acp_eioa_eth_halt(void)
 
 /*
   ----------------------------------------------------------------------
-  acp_eioa_eth_init
+  lsi_eioa_eth_init
 */
 
 int
-acp_eioa_eth_init(bd_t *bd)
+lsi_eioa_eth_init(struct eth_device *dev, bd_t *bd)
 {
 	if (0 == initialized)
-		if (0 != initialize_task_lite()) {
+		if (0 != initialize_task_lite(dev)) {
 			printf("Failed to Initialize TaskIO Lite!\n");
 			return -1;
 		}
@@ -1244,17 +1253,17 @@ acp_eioa_eth_init(bd_t *bd)
 
 /*
   -------------------------------------------------------------------------------
-  acp_eioa_eth_send
+  lsi_eioa_eth_send
 */
 
 int
-acp_eioa_eth_send(volatile void *packet, int length)
+lsi_eioa_eth_send(struct eth_device *dev, volatile void *packet, int length)
 {
 	int bytes_sent;
 	void *buffer;
 	int i;
 
-	DEBUG_PRINT("\n");
+	debug("\n");
 
 	if (0 == eioaPort) {
 		ncp_task_lite_send_meta_t *taskLiteMetaData;
@@ -1269,7 +1278,7 @@ acp_eioa_eth_send(volatile void *packet, int length)
 				alloc_128B_aligned(sizeof(ncp_task_lite_send_meta_t));
 
 			if (NULL == taskLiteMetaData) {
-				ERROR_PRINT("Couldn't allocate send buffer "
+				printf("Couldn't allocate send buffer "
 					    "meta data.\n");
 				return 0;
 			}
@@ -1278,7 +1287,7 @@ acp_eioa_eth_send(volatile void *packet, int length)
 
 			if (NULL == buffer) {
 				free_128B_aligned(taskLiteMetaData);
-				ERROR_PRINT("Couldn't allocate send buffer.\n");
+				printf("Couldn't allocate send buffer.\n");
 				return 0;
 			}
 
@@ -1306,7 +1315,7 @@ acp_eioa_eth_send(volatile void *packet, int length)
 		ncp_task_lite_send_meta_t taskLiteMetaData;
 
 		if (NULL == (buffer = alloc_128B_aligned(length))) {
-			ERROR_PRINT("Couldn't allocate send buffer.\n");
+			printf("Couldn't allocate send buffer.\n");
 			return 0;
 		}
 
@@ -1322,7 +1331,7 @@ acp_eioa_eth_send(volatile void *packet, int length)
 			    sizeof(ncp_task_lite_send_meta_t));
 
 		if (0 != dumptx)
-			dump_packet("TX", buffer, length);
+			axxia_dump_packet("LSI_EIOA TX", buffer, length);
 
 		taskLiteMetaData.taskParms[0] = eioaPort;
 		if (length != (bytes_sent = task_lite_send(&taskLiteMetaData))) {
@@ -1335,18 +1344,18 @@ acp_eioa_eth_send(volatile void *packet, int length)
 
 /*
   -------------------------------------------------------------------------------
-  acp_eioa_eth_rx
+  lsi_eioa_eth_rx
 */
 
 int
-acp_eioa_eth_rx(void)
+lsi_eioa_eth_rx(struct eth_device *dev)
 {
 	ncp_st_t ncpStatus;
 	ncp_task_lite_recv_buf_t *task;
 	void *taskData;
 	int bytes_received = 0;
 
-	DEBUG_PRINT("\n");
+	debug("\n");
 	ncpStatus = ncp_task_lite_recv(taskLiteHdl, taskLiteRxHdl,
 				       &task, &taskData, FALSE);
 
@@ -1377,7 +1386,7 @@ acp_eioa_eth_rx(void)
 	memcpy((void *)NetRxPackets[0], (void *)taskData, bytes_received);
 
 	if (0 != dumprx)
-		dump_packet("RX", (void *)NetRxPackets[0], bytes_received);
+		axxia_dump_packet("LSI_EIOA RX", (void *)NetRxPackets[0], bytes_received);
 
 	if (0 == loopback && 0 == rxtest)
 		NetReceive(NetRxPackets[0], bytes_received);
@@ -1400,40 +1409,41 @@ acp_eioa_eth_rx(void)
 
 /*
   -------------------------------------------------------------------------------
-  acp_eioa_receive_test
+  lsi_eioa_receive_test
 */
 
 void
-acp_eioa_receive_test(void)
+lsi_eioa_receive_test(struct eth_device *dev)
 {
-	int save_dumprx;
 	int packets_received = 0;
 	bd_t *bd = gd->bd;
 
-	DEBUG_PRINT("\n");
-	save_dumprx = dumprx;
-	dumprx = 1;
-	rxtest = 1;
+	debug("\n");
+    rxtest = 1;
 	eth_halt();
 
 	if (0 != eth_init(bd)) {
+        rxtest = 0;
 		eth_halt();
-		dumprx = save_dumprx;
-		rxtest = 0;
 		return;
 	}
 
 	for (;;) {
-		if (0 != eth_rx())
+		int packet_len = eth_rx();
+		if (0 != packet_len) {
+            if(dumprx) {
+                axxia_dump_packet("LSI_FEMAC RX", &NetRxPackets[0], packet_len);
+            }
+            
 			++packets_received;
+        }
 
 		if (ctrlc())
 			break;
 	}
 
+    rxtest = 0;
 	eth_halt();
-	dumprx = save_dumprx;
-	rxtest = 0;
 	printf("EIOA Receive Test Interrupted.  Received %d packets.\n",
 	       packets_received);
 
@@ -1442,31 +1452,38 @@ acp_eioa_receive_test(void)
 
 /*
   -------------------------------------------------------------------------------
-  acp_eioa_loopback_test
+  lsi_eioa_loopback_test
 */
 
 void
-acp_eioa_loopback_test(void)
+lsi_eioa_loopback_test(struct eth_device *dev)
 {
 	bd_t *bd = gd->bd;
 	int bytes_received;
 	int packets_looped = 0;
 
-	DEBUG_PRINT("\n");
+	debug("\n");
 	loopback = 1;
 	eth_halt();
 
 	if (0 != eth_init(bd)) {
 		eth_halt();
+        loopback = 0;
 		return;
 	}
 
 	for (;;) {
 		if (0 != (bytes_received = eth_rx())) {
+            if(dumprx) {
+                axxia_dump_packet("LSI_FEMAC RX", (void *)NetRxPackets[0], bytes_received);
+            }
 			if (bytes_received !=
 			    eth_send((void *)NetRxPackets[0], bytes_received)) {
-				ERROR_PRINT("acp_eioa_eth_send() failed.\n");
+				printf("lsi_eioa_eth_send() failed.\n");
 			} else {
+			    if(dumptx) {
+                    axxia_dump_packet("LSI_FEMAC TX", (void *)NetRxPackets[0], bytes_received);
+                }
 				++packets_looped;
 			}
 		}

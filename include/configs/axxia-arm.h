@@ -84,6 +84,7 @@ int is_asic( void );
 #define CONFIG_AXXIA_PCI
 #define CONFIG_AXXIA_USB
 
+#define CONFIG_LSI_NET 1
 
 #define CONFIG_SYS_HZ           1000    /* decrementer freq: 1 ms ticks */
 
@@ -271,6 +272,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define UART2_ADDRESS (IO + 0x82000)
 #define UART3_ADDRESS (IO + 0x83000)
 
+#define MME_POKE (IO + 0x10040000)
 #define NCA (IO + 0x10100000)
 
 #define ELM0 (IO + 0x60000)
@@ -701,6 +703,7 @@ int serial_early_init(void);
 
 #define CONFIG_SYS_SDRAM_BASE		0x00000000
 
+/*#define CONFIG_SYS_INIT_SP_ADDR         (NON_SECURE_SRAM_END - GENERATED_GBL_DATA_SIZE) */
 #define CONFIG_SYS_INIT_SP_ADDR         0x280000
 #define CONFIG_SYS_MALLOC_BASE		CONFIG_SYS_INIT_SP_ADDR
 #define CONFIG_SYS_MALLOC_SIZE \
@@ -899,7 +902,10 @@ void dump_packet(const char *, void *, int);
 
 #endif /* __ASSEMBLY__ */
 
-
+#if 0
+#define FALSE 0
+#define TRUE (!FALSE)
+#endif
 
 #ifndef __ASSEMBLY__
 #include <asm/types.h>
@@ -908,23 +914,25 @@ void dump_packet(const char *, void *, int);
 struct eth_device;
 
 int lsi_femac_eth_init(struct eth_device *, bd_t *);
-int acp_eioa_eth_init(struct eth_device *, bd_t *);
+int lsi_eioa_eth_init(struct eth_device *, bd_t *);
 
 void lsi_femac_eth_halt(struct eth_device *);
-void acp_eioa_eth_halt(struct eth_device *);
+void lsi_eioa_eth_halt(struct eth_device *);
+
 int lsi_femac_eth_send(struct eth_device *, volatile void *, int);
-int acp_eioa_eth_send(struct eth_device *, volatile void *, int);
+int lsi_eioa_eth_send(struct eth_device *, volatile void *, int);
 
 int lsi_femac_eth_rx(struct eth_device *);
-int acp_eioa_eth_rx(struct eth_device *);
+int lsi_eioa_eth_rx(struct eth_device *);
 
 void lsi_net_receive_test(struct eth_device *);
 void lsi_net_loopback_test(struct eth_device *);
 
 void lsi_femac_receive_test(struct eth_device *);
-void acp_eioa_receive_test(struct eth_device *);
+void lsi_eioa_receive_test(struct eth_device *);
+
 void lsi_femac_loopback_test(struct eth_device *);
-void acp_eioa_loopback_test(struct eth_device *);
+void lsi_eioa_loopback_test(struct eth_device *);
 
 int lsi_femac_write_hwaddr(struct eth_device *);
 

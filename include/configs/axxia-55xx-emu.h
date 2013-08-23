@@ -42,6 +42,9 @@
 #define CONFIG_AXXIA_PHY_ADDRESS 0x3
 
 
+/* HACK: Define it until cache coherency is figured out */
+/* #define USE_CACHE_SYNC */
+
 /*
   ================================================================================
   ================================================================================
@@ -85,6 +88,8 @@
 #define V_MAX  1050
 
 #define CONFIG_MEMORY_RETENTION
+
+#define SSP_DEFAULT_CLOCK  1000000
 
 #include <configs/axxia-arm.h>
 

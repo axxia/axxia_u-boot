@@ -32,6 +32,10 @@
 
 #define CONFIG_LSI_NCR
 
+#ifndef __ASSEMBLY__
+void flush_l3(void);
+#endif
+
 /*
   ================================================================================
   ================================================================================
@@ -185,7 +189,6 @@ typedef struct {
 typedef unsigned long           ncp_uint32_t;
 typedef void *                  ncp_dev_hdl_t;
 typedef unsigned long           ncp_region_id_t;
-typedef unsigned long           ncp_st_t;
 
 #if 0
 typedef enum {
@@ -346,7 +349,7 @@ int write_parameters(parameters_t *);
 #ifndef CONFIG_SPL_BUILD
 
 #define CONFIG_AXXIA_FEMAC
-/*#define CONFIG_AXXIA_EIOA*/
+#define CONFIG_AXXIA_EIOA
 
 #if defined(CONFIG_AXXIA_FEMAC) || defined(CONFIG_AXXIA_EIOA)
 #define CONFIG_AXXIA_NET
@@ -385,7 +388,6 @@ int write_parameters(parameters_t *);
 #define SSP_PCELLID2  0xff8
 #define SSP_PCELLID3  0xffc
 
-#define SSP_DEFAULT_CLOCK  1250000
 #define SSP_MAXIMUM_CLOCK 25000000
 
 #ifndef __ASSEMBLY__
