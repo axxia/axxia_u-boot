@@ -518,7 +518,7 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 			break;
 		WATCHDOG_RESET();
 #if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
-	} while (get_timer(ts) < CONFIG_SYS_HZ*4);
+	} while (get_timer(ts) < CONFIG_SYS_HZ*5);
 #else
 	} while (get_timer(ts) < CONFIG_SYS_HZ);
 #endif
@@ -793,7 +793,9 @@ ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *buffer,
 				int ret;
 
 				reg |= EHCI_PS_PR;
+#if 0
 				reg &= ~EHCI_PS_PE;
+#endif
 				ehci_writel(status_reg, reg);
 
 #ifndef CONFIG_AXXIA_ARM
