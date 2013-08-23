@@ -52,7 +52,7 @@
 
 #define USB_CNTL_TIMEOUT 100 /* 100ms timeout */
 
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
 /*
  * Errors we can report, e.g. return USB_EDEVCRITICAL
  * Use -ve numbers to fit in with usb_storage
@@ -68,7 +68,10 @@
  * This is the timeout to allow for submitting an urb in ms. We allow more
  * time for a BULK device to react - some are slow.
  */
+#if 0
 #define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 5000 : 1000)
+#endif
+#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 10000 : 5000)
 
 /* device request (setup) */
 struct devrequest {

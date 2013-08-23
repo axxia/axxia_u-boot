@@ -242,7 +242,7 @@ int usb_stor_scan(int mode)
 {
 	unsigned char i;
 	struct usb_device *dev;
-#ifdef CONFIG_ACP3
+#if defined (CONFIG_ACP3) || defined (CONFIG_AXXIA_ARM)
 	int result;
 #endif
 
@@ -280,7 +280,7 @@ int usb_stor_scan(int mode)
 			     lun <= max_lun && usb_max_devs < USB_MAX_STOR_DEV;
 			     lun++) {
 				usb_dev_desc[usb_max_devs].lun = lun;
-#ifdef CONFIG_ACP3
+#if defined (CONFIG_ACP3) || defined (CONFIG_AXXIA_ARM)
 			result = usb_stor_get_info(dev, &usb_stor[usb_max_devs],
 						&usb_dev_desc[usb_max_devs]);
 			if (result == USB_EDEVCRITICAL) {
@@ -691,7 +691,7 @@ static int usb_stor_BBB_clear_endpt_stall(struct us_data *us, __u8 endpt)
 	int result;
 
 	/* ENDPOINT_HALT = 0, so set value to 0 */
-#ifdef CONFIG_ACP
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
 	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0),
 				USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT,
 				0, endpt, NULL, 0, USB_CNTL_TIMEOUT);
@@ -965,7 +965,7 @@ static int usb_inquiry(ccb *srb, struct us_data *ss)
 static int usb_request_sense(ccb *srb, struct us_data *ss)
 {
 	char *ptr;
-#ifdef CONFIG_ACP3
+#if defined (CONFIG_ACP3) || defined (CONFIG_AXXIA_ARM)
 	int result;
 #endif
 
@@ -977,7 +977,7 @@ static int usb_request_sense(ccb *srb, struct us_data *ss)
 	srb->datalen = 18;
 	srb->pdata = &srb->sense_buf[0];
 	srb->cmdlen = 12;
-#ifdef CONFIG_ACP3
+#if defined (CONFIG_ACP3) || defined (CONFIG_AXXIA_ARM)
 	result = ss->transport(srb, ss);
 	if (result < 0) {
 		if (result != USB_EDEVCRITICAL)
@@ -997,7 +997,7 @@ static int usb_request_sense(ccb *srb, struct us_data *ss)
 static int usb_test_unit_ready(ccb *srb, struct us_data *ss)
 {
 	int retries = 10;
-#ifdef CONFIG_ACP3
+#if defined (CONFIG_ACP3) || defined (CONFIG_AXXIA_ARM)
 	int result;
 #endif
 
@@ -1011,7 +1011,7 @@ static int usb_test_unit_ready(ccb *srb, struct us_data *ss)
 			ss->flags |= USB_READY;
 			return 0;
 		}
-#ifdef CONFIG_ACP3
+#if defined (CONFIG_ACP3) || defined (CONFIG_AXXIA_ARM)
                 result = usb_request_sense(srb, ss);
                 if (result == USB_EDEVCRITICAL)
                         return result;
@@ -1409,7 +1409,7 @@ int usb_stor_get_info(struct usb_device *dev, struct us_data *ss,
 	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, usb_stor_buf, 36);
 	unsigned long *capacity, *blksz;
 	ccb *pccb = &usb_ccb;
-#ifdef CONFIG_ACP3
+#if defined (CONFIG_ACP3) || defined (CONFIG_AXXIA_ARM)
 	int result;
 #endif
 
@@ -1445,7 +1445,7 @@ int usb_stor_get_info(struct usb_device *dev, struct us_data *ss,
 #endif /* CONFIG_USB_BIN_FIXUP */
 	USB_STOR_PRINTF("ISO Vers %X, Response Data %X\n", usb_stor_buf[2],
 			usb_stor_buf[3]);
-#ifdef CONFIG_ACP3
+#if defined (CONFIG_ACP3) || defined (CONFIG_AXXIA_ARM)
 	result = usb_test_unit_ready(pccb, ss);
 	if (result) {
 		if (result == USB_EDEVCRITICAL)

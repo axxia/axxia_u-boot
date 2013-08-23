@@ -69,7 +69,7 @@
 static struct usb_hub_device hub_dev[USB_MAX_HUB];
 static int usb_hub_index;
 
-#ifdef CONFIG_ACP3 
+#if defined(CONFIG_ACP3 ) || defined(CONFIG_AXXIA_ARM)
 int usb_reset_device_on_hub(struct usb_device *dev);
 int usb_restart_device(struct usb_device *dev);
 static int hub_port_wait_reset(struct usb_device *dev, int port,
@@ -156,7 +156,7 @@ static inline char *portspeed(int portstatus)
 		return "12 Mb/s";
 }
 
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3 ) || defined(CONFIG_AXXIA_ARM)
 /* brought this in from kernel 2.6.36 as it is a problem area. Some USB
 sticks do not operate properly with the previous reset code */
 #define PORT_RESET_TRIES	5
@@ -173,7 +173,7 @@ sticks do not operate properly with the previous reset code */
 #define ENOTCONN 107
 #endif
 
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3 ) || defined(CONFIG_AXXIA_ARM)
 int hub_port_reset(struct usb_device *dev, int port, unsigned short *portstat)
 {
 	int tries, status;
@@ -594,7 +594,7 @@ int usb_hub_probe(struct usb_device *dev, int ifnum)
 	return ret;
 }
 
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3 ) || defined(CONFIG_AXXIA_ARM)
 /* find a device's parent hub, and reset this device's port on that hub */
 int usb_reset_device_on_hub(struct usb_device *dev)
 {

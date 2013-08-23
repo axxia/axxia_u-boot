@@ -51,6 +51,7 @@
 #include <linux/ctype.h>
 #include <asm/byteorder.h>
 #include <asm/unaligned.h>
+#include <asm/io.h>
 
 #include <usb.h>
 #ifdef CONFIG_4xx
@@ -88,6 +89,7 @@ int usb_init(void)
 	void *ctrl;
 	struct usb_device *dev;
 	int i, start_index = 0;
+	unsigned long value;
 
 	dev_index = 0;
 	asynch_allowed = 1;
@@ -97,7 +99,24 @@ int usb_init(void)
 	for (i = 0; i < USB_MAX_DEVICE; i++) {
 		memset(&usb_dev[i], 0, sizeof(struct usb_device));
 		usb_dev[i].devnum = -1;
-	}
+	} 
+
+#ifdef CONFIG_AXXI_ARM
+	/* setup ULPI viewport register to access FUSB2805 PHY reg 0x7 to complement VBUS signal for FAULT */
+	writel(0x40070000, CONFIG_USB_ADDR+0x170));
+	do {
+		value = readl(CONFIG_USB_ADDR+0x170));
+	} while ((value&0x40000000)); 
+
+	value = (value >> 8) & 0xff;
+	writel((0x60070000 | (value | 1 << 5)), (CONFIG_USB_ADDR+0x170));
+
+	writel(0x40070000, CONFIG_USB_ADDR+0x170));
+	do {
+		value = readl(CONFIG_USB_ADDR+0x170));
+	} while ((value&0x40000000)); 
+#endif
+
 
 	/* init low_level USB */
 	for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
@@ -251,7 +270,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe,
 int usb_bulk_msg(struct usb_device *dev, unsigned int pipe,
 			void *data, int len, int *actual_length, int timeout)
 {
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
 	int err;
 #endif
 
@@ -259,7 +278,7 @@ int usb_bulk_msg(struct usb_device *dev, unsigned int pipe,
 		return -1;
 	dev->status = USB_ST_NOT_PROC; /*not yet processed */
 
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
 	err = submit_bulk_msg(dev, pipe, data, len);
 	if (err < 0) {
 		return err;

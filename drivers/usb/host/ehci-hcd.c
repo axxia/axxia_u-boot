@@ -147,7 +147,7 @@ static int ehci_reset(int index)
 	uint32_t tmp;
 	uint32_t *reg_ptr;
 	int ret = 0;
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
 	int result = USB_EFAIL;
 #endif
 
@@ -242,7 +242,7 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 	int timeout;
 	int ret = 0;
 	struct ehci_ctrl *ctrl = dev->controller;
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
         int result = USB_EFAIL;
 #endif
 
@@ -517,8 +517,8 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		if (!(QT_TOKEN_GET_STATUS(token) & QT_TOKEN_STATUS_ACTIVE))
 			break;
 		WATCHDOG_RESET();
-#ifdef CONFIG_ACP3
-	} while (get_timer(ts) < CONFIG_SYS_HZ*3);
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
+	} while (get_timer(ts) < CONFIG_SYS_HZ*4);
 #else
 	} while (get_timer(ts) < CONFIG_SYS_HZ);
 #endif
@@ -536,7 +536,7 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		ALIGN((uint32_t)buffer + length, ARCH_DMA_MINALIGN));
 
 
-#ifndef CONFIG_ACP3
+#if !defined(CONFIG_ACP3) && !defined(CONFIG_AXXIA_ARM)
 	/* Check that the TD processing happened */
 	if (QT_TOKEN_GET_STATUS(token) & QT_TOKEN_STATUS_ACTIVE)
 		printf("EHCI timed out on TD - token=%#x\n", token);
@@ -554,7 +554,7 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 		goto fail;
 	}
 
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
         token = hc32_to_cpu(vtd->qt_token);
         /* check that the TD processing happened */
         if (token & 0x80) {
@@ -607,7 +607,7 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 fail:
 	free(qtd);
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
         return result;
 #else
 	return -1;
@@ -795,6 +795,8 @@ ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *buffer,
 				reg |= EHCI_PS_PR;
 				reg &= ~EHCI_PS_PE;
 				ehci_writel(status_reg, reg);
+
+#ifndef CONFIG_AXXIA_ARM
 				/*
 				 * caller must wait, then call GetPortStatus
 				 * usb 2.0 specification say 50 ms resets on
@@ -816,6 +818,7 @@ ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *buffer,
 				else
 					printf("port(%d) reset error\n",
 					le16_to_cpu(req->index) - 1);
+#endif
 			}
 			break;
 		default:
@@ -890,7 +893,7 @@ int usb_lowlevel_init(int index, void **controller)
 	uint32_t reg;
 	uint32_t cmd;
 	struct QH *qh_list;
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
 	u32 port_status;
 	unsigned burst_size;
 #endif
@@ -909,10 +912,10 @@ int usb_lowlevel_init(int index, void **controller)
 
 	qh_list = &ehcic[index].qh_list;
 
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
 	port_status = ehci_readl(&ehcic[index].hcor->or_portsc[0]);
 	if (port_status & 0x100) {
-		printf(KERN_ERR "USB port is in reset status, not able to "
+		printf("USB port is in reset status, not able to "
 			 "change host controller status to run\n");
 		return -1;
 	}
@@ -961,7 +964,7 @@ int usb_lowlevel_init(int index, void **controller)
 	reg = HC_VERSION(ehci_readl(&ehcic[index].hccr->cr_capbase));
 	printf("USB EHCI %x.%02x\n", reg >> 8, reg & 0xff);
 
-#ifdef CONFIG_ACP3
+#if defined(CONFIG_ACP3)
 	burst_size = ehci_readl(&ehcic[index].hcor->or_burstsize);
 	burst_size = (burst_size & 0xffff00ff) | 0x4000;        /* TXPBURST */
 	ehci_writel(&ehcic[index].hcor->or_burstsize, burst_size);

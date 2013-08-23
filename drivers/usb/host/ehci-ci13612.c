@@ -33,7 +33,7 @@ int ehci_hcd_init(int index, struct ehci_hccr **hccr, struct ehci_hcor **hcor)
 {
 	int ret;
 	int USB_TXFIFOTHRES, VUSB_HS_TX_BURST;
-	int hwtxbuf, txfulltuning;
+	int hwtxbuf, txfulltuning, deviceMode;
 
 	/* Setup GPREG for USB to enable the 6-bit address line */
         writel(0x0, GPREG_USB);
@@ -41,8 +41,10 @@ int ehci_hcd_init(int index, struct ehci_hccr **hccr, struct ehci_hcor **hcor)
 	*hccr = (struct ehci_hccr *)(CONFIG_USB_ADDR+0x100);
         *hcor = (struct ehci_hcor *)((uint32_t) *hccr +
 				     HC_LENGTH(ehci_readl(&(*hccr)->cr_capbase)));
-
-#ifndef CONFIG_AXXIA_ARM
+#ifdef CONFIG_AXXIA_ARM
+	/* Setup hprot for non-cacheable/non-bufferable for USB DMA */
+	writel(0x0, GPREG+0x74);
+#else
 	hwtxbuf = ehci_readl(CONFIG_USB_ADDR+0x10);
 	txfulltuning = ehci_readl(CONFIG_USB_ADDR+0x164);
 
@@ -52,8 +54,19 @@ int ehci_hcd_init(int index, struct ehci_hccr **hccr, struct ehci_hcor **hcor)
 	USB_TXFIFOTHRES = (32 << 16);
 	txfulltuning = (txfulltuning  & 0xffc0ffff) | USB_TXFIFOTHRES;
 
-	writel( CONFIG_USB_ADDR+0x164, txfulltuning);
+	writel( txfulltuning, CONFIG_USB_ADDR+0x164);
+
+      	deviceMode = ehci_readl(CONFIG_USB_ADDR+0x1A8);
+
+        if ((deviceMode & 0x3) == 0x2) {
+                /* device mode */
+                writel(0x0, CONFIG_USB_ADDR + 0x90);
+        } else if ((deviceMode & 0x3) == 0x3) {
+                /* host mode */
+                writel(0x6, CONFIG_USB_ADDR + 0x90);
+        }
 #endif
+
 	return 0;
 }
 
