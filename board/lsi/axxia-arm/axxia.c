@@ -88,6 +88,138 @@ set_coherency(unsigned long sdcr_ddcr_value)
 
 /*
   -------------------------------------------------------------------------------
+  power_down_cluster
+*/
+
+static int
+power_down_cluster(int cluster)
+{
+	unsigned long value;
+	unsigned long mask;
+	int i;
+
+	printf("Powering down cluster %d.\n", cluster);
+
+	/*
+	  Power down the cpus.
+	*/
+
+	for (i = 0; i < 4; ++i) {
+		mask = (((cluster & 0x3) << 8) | i);
+
+		/* clear nPWRUPCPURAM */
+		ncr_and(NCP_REGION_ID(0x156, 0), 0x1488, ~mask);
+		ncr_read32(NCP_REGION_ID(0x156, 0), 0x1488, &value);
+
+		/* set nISOLATECPU */
+		ncr_or(NCP_REGION_ID(0x156, 0), 0x148c, mask);
+		ncr_read32(NCP_REGION_ID(0x156, 0), 0x148c, &value);
+
+		/* clear nPWRUPCPUSTG2 */
+		ncr_and(NCP_REGION_ID(0x156, 0), 0x1484, ~mask);
+		ncr_read32(NCP_REGION_ID(0x156, 0), 0x1484, &value);
+
+		/* clear nPWRUPCPUSTG1 */
+		ncr_and(NCP_REGION_ID(0x156, 0), 0x1480, ~mask);
+		ncr_read32(NCP_REGION_ID(0x156, 0), 0x1480, &value);
+	}
+
+	/*
+	 */
+
+	mask = (1 << cluster);
+
+	/* set pwr_ACEPWRDNRQ bit for cluster */
+	ncr_or(NCP_REGION_ID(0x156, 0), 0x142c, mask);
+
+	/* set pwr_ACINACTM bit for cluster */
+	ncr_or(NCP_REGION_ID(0x156, 0), 0x1408, mask);
+
+	/*
+	  Power down the L2.
+	*/
+
+	/* clear CSYSREQ_TS */
+	ncr_and(NCP_REGION_ID(0x156, 0), 0x1410, ~mask);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1410, &value);
+
+	/* clear CSYSREQ_CNT */
+	ncr_and(NCP_REGION_ID(0x156, 0), 0x1414, ~mask);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1414, &value);
+
+	/* set CHIPSELECTEN */
+	ncr_or(NCP_REGION_ID(0x156, 0), 0x140c, mask);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x140c, &value);
+
+	/* clear nPWRUPL2HSRAM */
+	ncr_and(NCP_REGION_ID(0x156, 0), 0x1428, ~mask);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1428, &value);
+
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)), ~0xff);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)), ~0xf00);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)), ~(0xff000));
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)), ~0xf00000);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)), ~0xff000000);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xf);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1584 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xff0);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1584 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xf000);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xff0000);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xf000000);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xf0000000);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xf);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xf0);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xff00);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xf0000);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xff00000);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+	
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xf0000000);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
+
+	/* Clear the hold bit for the cpus in this cluster. */
+	mask = (0xf << (cluster * 4));
+	ncr_or(NCP_REGION_ID(0x156, 0), 0x1010, mask);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1010, &value);
+
+	/* Clear the clusterN_clken bit. */
+	ncr_and(NCP_REGION_ID(0x156, 0), 0x1400, (1 << cluster));
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1400, &value);
+
+	return 0;
+}
+
+/*
+  -------------------------------------------------------------------------------
   set_clusters
 */
 
@@ -96,29 +228,65 @@ set_clusters(void)
 {
 	char *clusters_env;
 	unsigned long clusters;
-	unsigned long sdcr_ddcr = DEFAULT_SDCR_VALUE;
+	unsigned long sdcr_ddcr;
 
-	if (NULL == (clusters_env = getenv("clusters")))
-		clusters = 0xf;
-	else
+	if (NULL != (clusters_env = getenv("clusters"))) {
 		clusters = simple_strtoul(clusters_env, NULL, 0);
+	} else {
+#ifdef CONFIG_AXXIA_EMU
+		clusters = 0x1;
+#else
+		clusters = 0xf;
+#endif
+	}
 
 	if (0 == (clusters & 1)) {
 		printf("Cluster 0 MUST be enabled, enabling.\n");
 		clusters |= 1;
 	}
 
+#ifdef CONFIG_AXXIA_EMU
+	if (0 != (clusters & 0x3)) {
+		printf("Emulation only supports clusters 0 and 1!\n"
+		       "Change the \"clusters\" variable to 1 or 3.\n");
+		return -1;
+	}
+
+	sdcr_ddcr = 0x80200;
+
 	puts("Setting up Coherencly for Clusters: 0");
 
-	if (0 != (clusters & 0x2))
+	if (0 != (clusters & 0x2)) {
 		puts(",1");
+	} else {
+		sdcr_ddcr &= ~0x200;
+	}
+#else
+	sdcr_ddcr = 0x80a02;
 
-	if (0 != (clusters & 0x4))
+	puts("Setting up Coherencly for Clusters: 0");
+
+	if (0 != (clusters & 0x2)) {
+		puts(",1");
+	} else {
+		power_down_cluster(1);
+		sdcr_ddcr &= ~0x200;
+	}
+
+	if (0 != (clusters & 0x4)) {
 		puts(",2");
+	} else {
+		power_down_cluster(2);
+		sdcr_ddcr &= ~0x800;
+	}
 
-	if (0 != (clusters & 0x8))
+	if (0 != (clusters & 0x8)) {
 		puts(",3");
-
+	} else {
+		power_down_cluster(3);
+		sdcr_ddcr &= ~0x80000;
+	}
+#endif
 	puts("\n");
 
 	/*
