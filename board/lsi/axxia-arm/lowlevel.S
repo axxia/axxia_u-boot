@@ -311,11 +311,7 @@ clear_page_tables:
 	cmp	r1, r2
 	blt	1b
 
-#ifdef CONFIG_SPL_MTEST
 	ldr	r0, =0x3c0033
-#else
-	ldr	r0, =0x3c0433
-#endif
 	add	r1, r3, #0x4300
 	add	r2, r1, #0x100
 1:	str	r0, [r1], #4
