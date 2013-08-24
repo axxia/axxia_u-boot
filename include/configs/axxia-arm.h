@@ -926,12 +926,12 @@ int lsi_femac_eth_rx(struct eth_device *);
 int lsi_eioa_eth_rx(struct eth_device *);
 
 void lsi_net_receive_test(struct eth_device *);
-void lsi_net_loopback_test(struct eth_device *);
+void lsi_net_loopback_test(struct eth_device *, int);
 
 void lsi_femac_receive_test(struct eth_device *);
 void lsi_eioa_receive_test(struct eth_device *);
 
-void lsi_femac_loopback_test(struct eth_device *);
+void lsi_femac_loopback_test(struct eth_device *, int);
 void lsi_eioa_loopback_test(struct eth_device *);
 
 int lsi_femac_write_hwaddr(struct eth_device *);
@@ -943,9 +943,15 @@ int axxia_eth_send(volatile void *, int);
 int axxia_eth_rx(void);
 #endif
 
+void axxia_dump_packet(const char *header, void *packet, int length);
+void axxia_dump_packet_rx(const char *header, void *packet, int length);
+void axxia_dump_packet_tx(const char *header, void *packet, int length);
+
 int phy_duplex( int );
 int phy_link( int );
+int phy_set( int, int, int );
 int phy_renegotiate( int, int );
+int phy_loopback( int, int );
 int axxia_phy_reset( int );
 int phy_speed( int );
 void dump_packet(const char *, void *, int);
