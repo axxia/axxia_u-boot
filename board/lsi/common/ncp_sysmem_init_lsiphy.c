@@ -28,6 +28,8 @@
 #include "ncp_sysmem_lsiphy.h"
 #endif
 
+#define AMARILLO_WORKAROUND
+
 /* register definitions for ACP25xx */
 #define NCP_SYSMEM_LSIPHY
 #include "regs/ncp_phy_regs_acp2500.h"
@@ -1173,7 +1175,7 @@ ncp_sm_lsiphy_static_init(
 
     phyconfig1.rdranksw  = 0; /* TODO: Do these need to be set later on?? */
     phyconfig1.wrranksw  = 0;
-    phyconfig1.wrlatrank = 5;
+    phyconfig1.wrlatrank = 2;
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG1, 
                         *(ncp_uint32_t *) &phyconfig1);
 
@@ -1405,14 +1407,6 @@ ncp_sm_lsiphy_static_init(
     ncpStatus = ncp_sm_lsiphy_status_check(dev, smId, parms);
 
 
-    /* 
-     * ECC may have been enabled above for dfi_init_start 
-     * We disable it now, it will be re-enabled later if necessary
-     */
-    if (eccEnbFn) 
-    {
-        eccEnbFn(dev, ctlRegion, 0);
-    }
 
 NCP_RETURN_LABEL
     return ncpStatus;
@@ -2884,6 +2878,9 @@ ncp_sm_sm_coarse_write_leveling(
     /* number of data bytelanes (sans ECC) */
     num_bls = parms->num_bytelanes - 1;
 
+    /* disable ECC */
+    eccEnbFn(dev, ctlRegion, 0);
+
     /* enable runtime */
     mask = value = 0;
     SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG1_r_t, bblclobber, 1); 
@@ -3144,6 +3141,7 @@ ncp_sm_sm_coarse_write_leveling(
         eccEnbFn(dev, ctlRegion, 0);
 #else 
             
+#ifdef AMARILLO_WORKAROUND
             /* 
              *  ECC bytelane needs leveling. 
              * 
@@ -3166,6 +3164,7 @@ ncp_sm_sm_coarse_write_leveling(
                        NCP_PHY_CFG_SYSMEM_PHY_WRTLVLLOW_BL_CS(bl, rank),
                        ldly + 4);
 
+#endif
 
 #endif
     }
