@@ -50,21 +50,27 @@ do_net(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	if( 0 == strncmp( argv[1], "dr", strlen( "dr" ) ) ) {
 		dumprx = dumprx ? 0 : 1;
-        printf("Dump receive packets %s\n", dumprx ? "On" : "Off");
+		printf("Dump receive packets %s\n", dumprx ? "On" : "Off");
 
 		return 0;
 	}
 
 	if( 0 == strncmp( argv[1], "dt", strlen( "dt" ) ) ) {
 		dumptx = dumptx ? 0 : 1;
-        printf("Dump transmit packets %s\n", dumptx ? "On" : "Off");
+		printf("Dump transmit packets %s\n", dumptx ? "On" : "Off");
 
 		return 0;
 	}
 
 	if( 0 == strncmp( argv[1], "l", strlen( "l" ) ) ) {
-		printf( "Starting Loopback Test -- Ctrl-C to Exit.\n" );
-		lsi_net_loopback_test(eth_get_dev());
+		int test = 1;
+
+		if (3 == argc)
+			test = simple_strtol(argv[2], NULL, 0);
+
+		printf( "Starting Loopback Test(%d) -- Ctrl-C to Exit.\n",
+			test );
+		lsi_net_loopback_test(eth_get_dev(), test);
 
 		return 0;
 	}
@@ -107,9 +113,11 @@ do_net(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
   ======================================================================
 */
 
-U_BOOT_CMD(net, 2, 0, do_net,
-	   "net loopback|receive|send|dr|dt\n",
-	   "l,oopback loop all received packets back\n"
+U_BOOT_CMD(net, 3, 0, do_net,
+	   "net loopback|receive|send|dr|dt [type]\n",
+	   "l,oopback loop all received packets back, specify the type\n"
+	   "     1=loop received packets back out\n"
+	   "     2=put the PHY in loopback mode and write/read/compare\n"
 	   "r,ecevie packets, and dump them to the screen\n"
 	   "s,end send one packet\n"
 	   "dr toggle the \"dumprx\" flag\n"

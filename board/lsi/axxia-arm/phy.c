@@ -491,6 +491,33 @@ phy_link( int phy )
 }
 
 /*
+  -------------------------------------------------------------------------------
+  phy_set
+*/
+
+int phy_set(int phy, int speed, int duplex)
+{
+	phy_control_t control;
+
+	control.raw = mdio_read(phy, PHY_CONTROL);
+	control.bits.autoneg_enable = 0;
+
+	if (0 != speed)
+		control.bits.force100 = 1;
+	else
+		control.bits.force100 = 0;
+
+	if (0 != duplex)
+		control.bits.full_duplex = 1;
+	else
+		control.bits.full_duplex = 0;
+
+	mdio_write(phy, PHY_CONTROL, control.raw);
+
+	return 0;
+}
+
+/*
   ----------------------------------------------------------------------
   phy_renegotiate
 */
@@ -527,6 +554,23 @@ phy_renegotiate( int phy, int ad_value )
 		printf( "Auto Negotiation Failed\n" );
 		return -1;
 	}
+
+	return 0;
+}
+
+/*
+  -------------------------------------------------------------------------------
+  phy_loopback
+*/
+
+int
+phy_loopback(int phy, int state)
+{
+	phy_control_t control;
+
+	control.raw = mdio_read(phy, PHY_CONTROL);
+	control.bits.loop_back = state;
+	mdio_write(phy, PHY_CONTROL, control.raw);
 
 	return 0;
 }
@@ -587,7 +631,6 @@ phy_speed( int phy )
 	}
 
 	DEBUG_PRINT( "ops=0x%x ops->speed=0x%x\n", ops, ops->speed );
-	printf( "ops=0x%x ops->speed=0x%x\n", ops, ops->speed );
 
 	return ops->speed( phy );
 }

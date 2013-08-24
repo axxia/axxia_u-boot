@@ -2441,6 +2441,7 @@ lsi_femac_write_hwaddr(struct eth_device *device)
 */
 
 /*#define ALLOW_DEBUGGING */
+/*#define USE_LSM*/
 
 #define DUMP_STATS
 /*#define EH_STATS*/
@@ -2467,13 +2468,15 @@ static int eh_stats_initialized = 0;
 */
 
 #undef DUMP_DESCRIPTOR
-/*#define DUMP_DESCRIPTOR*/
-/*#define DUMP_DESCRIPTOR_COMPACT*/
+#define DUMP_DESCRIPTOR
+#define DUMP_DESCRIPTOR_COMPACT
 #ifdef DUMP_DESCRIPTOR
 #define DUMP_DESCRIPTOR_( address ) dump_descriptor_( __LINE__, ( address ) )
 #else  /* DUMP_DESCRIPTOR */
 #define DUMP_DESCRIPTOR_( address )
 #endif /* DUMP_DESCRIPTOR */
+
+static void dump_descriptor_( unsigned long, void *);
 
 #undef DUMP_PACKETS
 /* #define DUMP_PACKETS */
@@ -2560,10 +2563,7 @@ int test( void );
 
 /* -- -- */
 
-/* Set to -1 to auto-detect. */
-static int phy_address_ = 0;
-/*static int phy_address_ = -1;*/
-
+static int phy_address_ = CONFIG_AXXIA_PHY_ADDRESS;
 static int phy_enable_( int );
 
 /*
@@ -2975,7 +2975,7 @@ swab_queue_pointer(const app3xxnic_queue_pointer_t *old_queue)
 #define RX_NUMBER_OF_DESCRIPTORS 128
 #define RX_BUFFER_SIZE ( 128 * 1024 )
 #define RX_BUFFER_PER_DESCRIPTOR \
-( RX_BUFFER_SIZE / RX_NUMBER_OF_DESCRIPTORS )
+	(RX_BUFFER_SIZE / RX_NUMBER_OF_DESCRIPTORS)
 
 static void * memory;
 
@@ -2990,8 +2990,8 @@ static app3xxnic_queue_pointer_t rx_tail_copy_;
 static volatile app3xxnic_queue_pointer_t * rx_tail_;
 static app3xxnic_queue_pointer_t rx_head_;
 
-#define TX_NUMBER_OF_DESCRIPTORS 128
-#define TX_BUFFER_SIZE ( 64 * 1024 )
+#define TX_NUMBER_OF_DESCRIPTORS 64 /* We only use one, but 64 is the minimum. */
+#define TX_BUFFER_SIZE 1518	    /* Maximum packet size. */
 
 static app3xxnic_dma_descriptor_t * tx_descriptors_;
 static void * tx_buffer_;
@@ -3089,102 +3089,364 @@ lsi_femac_receive_test(struct eth_device *dev)
 }
 
 /*
+  ===============================================================================
+  ===============================================================================
+  Loopback Tests
+  ===============================================================================
+  ===============================================================================
+*/
+
+typedef struct {
+	void *address;
+	int size;
+	app3xxnic_queue_pointer_t queue_pointer;
+} packet_header_t;
+
+#define MAX_PACKET_SIZE 1536
+#define PACKET_LOG_NUMBER 100
+
+/*
+  -------------------------------------------------------------------------------
+  dump_everything
+*/
+
+static void
+dump_everything(void)
+{
+	app3xxnic_dma_descriptor_t *descriptor;
+	void *packet;
+	char buffer[80];
+	int i;
+
+	/* heads, tails, sizes, ... */
+	printf("<rx tc=0x%p:0x%lx t=0x%p:0x%lx h=0x%p:0x%lx>\n",
+	       &rx_tail_copy_, rx_tail_copy_.raw,
+	       rx_tail_, rx_tail_->raw,
+	       &rx_head_, rx_head_.raw);
+
+	printf("<rx descriptors adr=0x%p num=0x%x>\n",
+	       rx_descriptors_, rx_number_of_descriptors);
+
+	printf("<rx buffers adr=0x%p sz=0x%x szpd=0x%x nmd=0x%x>\n",
+	       rx_buffer_, rx_buffer_size, rx_buffer_per_descriptor,
+	       rx_number_of_descriptors);
+	
+	printf("<tx tc=0x%p:0x%lx t=0x%p:0x%lx h=0x%p:0x%lx>\n",
+	       &tx_tail_copy_, tx_tail_copy_.raw,
+	       tx_tail_, tx_tail_->raw,
+	       &tx_head_, tx_head_.raw);
+
+	printf("<tx descriptors adr=0x%p num=0x%x>\n",
+	       tx_descriptors_, TX_NUMBER_OF_DESCRIPTORS);
+
+	printf("<tx buffer adr=0x%p sz=0x%x>\n",
+	       tx_buffer_, TX_BUFFER_SIZE);
+
+	/* femac registers */
+	dump_configuration();
+	dump_rx_stats();
+
+	/* phy registers */
+	for (i = 0; i < 0x20; ++i) {
+		if (i >= 0xa && i < 0x10)
+			continue;
+		printf("mdio register 0x%02x = 0x%04x\n",
+		       i, mdio_read(phy_address_, i));
+	}
+
+	mdio_write(phy_address_, 0x1f, 0x8b); /* Enable Shadow Registers */
+
+	for (i = 0x1a; i < 0x1f; ++i) {
+		printf("mdio shadow register 0x%02x = 0x%04x\n",
+		       i, mdio_read(phy_address_, i));
+	}
+
+	mdio_write(phy_address_, 0x1f, 0x0b); /* Disable Shadow Registers */
+
+	dump_descriptors = 1;
+
+	/* descriptors (rx) */
+	descriptor = rx_descriptors_;
+
+	while ((unsigned long)descriptor <
+	       ((unsigned long)rx_descriptors_ +
+		(rx_number_of_descriptors *
+		 sizeof(app3xxnic_dma_descriptor_t)))) {
+		DUMP_DESCRIPTOR_(descriptor);
+		++descriptor;
+	}
+
+	/* descriptors (tx) */
+	descriptor = tx_descriptors_;
+
+	while ((unsigned long)descriptor <
+	       ((unsigned long)tx_descriptors_ +
+		(TX_NUMBER_OF_DESCRIPTORS *
+		 sizeof(app3xxnic_dma_descriptor_t)))) {
+		DUMP_DESCRIPTOR_(descriptor);
+		++descriptor;
+	}
+
+	dump_descriptors = 0;
+
+	/* buffers (rx) */
+
+	packet = rx_buffer_;
+
+	for (i = 0; i < rx_number_of_descriptors; ++i) {
+		sprintf(buffer, "rx buffer %d", i);
+		axxia_dump_packet(buffer, packet, rx_buffer_per_descriptor);
+		packet += rx_buffer_per_descriptor;
+	}
+
+	/* buffers (tx) */
+
+	axxia_dump_packet("tx buffer 1", tx_buffer_, TX_BUFFER_SIZE);
+
+	return;
+}
+
+/*
+  -------------------------------------------------------------------------------
+  mac_loopback_test
+
+  Have the MAC loop packets back to the PNY.
+*/
+
+static void
+mac_loopback_test(void)
+{
+	packet_header_t *packet_headers;
+	void *packets;
+	void *input = (void *)(NetRxPackets[0]);
+	int i;
+	int size;
+	int logged = 0;
+	int total = 0;
+
+	packet_headers = malloc(sizeof(packet_header_t) * PACKET_LOG_NUMBER);
+
+	if (NULL == packet_headers) {
+		printf("Couldn't allocate packet header log.\n");
+		return;
+	}
+
+	packets = malloc(MAX_PACKET_SIZE * PACKET_LOG_NUMBER);
+
+	if (NULL == packets) {
+		printf("Couldn't allocate packet log.\n");
+		return;
+	}
+
+	for (;;) {
+		if (0 == (size = eth_rx()))
+			continue;
+
+		++total;
+
+		if (i < PACKET_LOG_NUMBER) {
+			packet_header_t *ph;
+
+			ph = &(packet_headers[logged++]);
+			ph->address = packets;
+			ph->size = size;
+			ph->queue_pointer.raw = rx_tail_copy_.raw;
+
+			if (size <= MAX_PACKET_SIZE) {
+				memcpy(packets, input, size);
+			} else {
+				printf("Packet larger than %d bytes!\n",
+				       MAX_PACKET_SIZE);
+			}
+
+			packets += MAX_PACKET_SIZE;
+
+			if (size != eth_send(input, size))
+				printf("eth_send() failed: index %d\n",
+				       logged - 1);
+		}
+
+		if (ctrlc())
+			break;
+	}
+
+	printf("Logged %d of %d packets received\n", logged, total);
+
+	for (i = 0; i < logged; ++i) {
+		packet_header_t *ph;
+
+		ph = &(packet_headers[i]);
+		printf("<%2d> address 0x%p generation %d offset 0x%x\n",
+		       i, ph->address, ph->queue_pointer.bits.generation_bit,
+		       ph->queue_pointer.bits.offset);
+		axxia_dump_packet_rx("loopback test", ph->address, ph->size);
+
+		if (ctrlc())
+			break;
+	}
+
+	free(packet_headers);
+	free(packets);
+
+	return;
+}
+
+/*
+  -------------------------------------------------------------------------------
+  phy_loopback_test
+
+  Have the PHY loop packets back to the mac.
+*/
+
+#define PHY_LOOPBACK_PACKET_SIZE 1200
+
+static void
+phy_loopback_test(void)
+{
+	void *out = NULL;
+	void *in = (void *)(NetRxPackets[0]);
+	int iteration = 0;
+	int size;
+	int i;
+
+	/* Turn on PHY loopback. */
+	phy_loopback(phy_address_, 1);
+
+	/* Drop any existing packets. */
+	while (0 != eth_rx())
+		printf("Dropping pre-existing packet.\n");
+
+	/* Writing pattern to buffers. */
+	memset(rx_buffer_, 0x5a,
+	       (rx_number_of_descriptors * rx_buffer_per_descriptor));
+	memset(tx_buffer_, 0x7f, TX_BUFFER_SIZE);
+
+	/*dump_everything();*/
+	out = malloc(PHY_LOOPBACK_PACKET_SIZE);
+
+	if (NULL == out) {
+		printf("Couldn't allocate output packet.\n");
+		goto phy_loopback_test_over;
+	}
+
+	/* As a sort of "random" data, use part of the U-Boot text. */
+	/*memcpy(out, (void *)0x1000, PHY_LOOPBACK_PACKET_SIZE);*/
+
+	/* Fix up the header. */
+	((char *)out)[12] = 0x00;
+	((char *)out)[13] = 0x40;
+
+	axxia_dump_packet_tx("PHY Loopback TX", out, PHY_LOOPBACK_PACKET_SIZE);
+
+	for (;;) {
+		int retries = 100;
+		unsigned char *packet;
+		int count;
+
+		/* Put a pattern in "out". */
+		packet = out;
+		count = iteration;
+		puts(".");
+
+		for (i = 0; i < PHY_LOOPBACK_PACKET_SIZE; ++i) {
+			*packet++ = (unsigned char)count++;
+
+			if (0xff < count)
+				count = 0;
+		}
+
+		if (PHY_LOOPBACK_PACKET_SIZE !=
+		    eth_send(out, PHY_LOOPBACK_PACKET_SIZE)) {
+			printf("Error sending packet.\n");
+			goto phy_loopback_test_over;
+		}
+
+		do {
+			size = eth_rx();
+
+			if (0 == size)
+				udelay(1);
+		} while (0 == size && 0 < --retries);
+
+		if (0 == retries) {
+			printf("Timed out waiting for packet!\n");
+			goto phy_loopback_test_over;
+		}
+
+		axxia_dump_packet_rx("PHY Loopback RX", out, size);
+
+		if (PHY_LOOPBACK_PACKET_SIZE != size) {
+			printf("Error receiving packet (size=%d).\n", size);
+			goto phy_loopback_test_over;
+		}
+
+		if (0 != memcmp(out, in, PHY_LOOPBACK_PACKET_SIZE)) {
+			printf("ERROR: Bad Packet Received (iteration %d).\n\n",
+				iteration);
+			dump_everything();
+			axxia_dump_packet("out", out, size);
+			axxia_dump_packet("in", in, size);
+		}
+
+		while (0 != (size = eth_rx())) {
+			printf("ERROR: Extra Packet Received (iteration %d).\n\n",
+			       iteration);
+			dump_everything();
+		}
+
+		++iteration;
+
+		if (ctrlc())
+			break;
+
+		if ((RX_NUMBER_OF_DESCRIPTORS * 10) < iteration)
+			break;
+	}
+
+	printf("Ran test %d times.\n", iteration - 1);
+
+phy_loopback_test_over:
+
+	/* Turn off PHY loopback. */
+	phy_loopback(phy_address_, 0);
+
+	if (NULL != out)
+		free(out);
+
+	return;
+}
+
+/*
   ----------------------------------------------------------------------
   lsi_femac_loopback_test
 */
 
-typedef struct {
-
-	void * address;
-	app3xxnic_queue_pointer_t queue_pointer;
-
-} packet_log_header_t;
-
-#define MAX_PACKET_SIZE (1536 + sizeof(packet_log_header_t))
-#define PACKET_LOG_NUMBER 100
-
 void
-lsi_femac_loopback_test(struct eth_device *dev)
+lsi_femac_loopback_test(struct eth_device *dev, int type)
 {
-
-	bd_t * bd = gd->bd;
-	int packet_size;
-	void * packet = ( void * ) ( NetRxPackets [ 0 ] );
-	packet_log_header_t * packet_log_headers;
-	unsigned long packet_log_header_index = 0;
-	void * packet_log;
+	bd_t *bd = gd->bd;
 
 	rx_allow_all = 1;
 	rx_debug = 1;
 	loopback = 1;
 
-	packet_log_headers = malloc(PACKET_LOG_NUMBER * MAX_PACKET_SIZE);
+	eth_halt();
 
-	if (NULL == packet_log_headers) {
-		printf("Couldn't allocate a packet log!\n");
+	if (0 > eth_init(bd)) {
+		eth_halt( );
 		return;
 	}
 
-	packet_log = ( void * )
-		( packet_log_headers +
-		  ( PACKET_LOG_NUMBER * sizeof( packet_log_header_t ) ) );
-
-	eth_halt( );
-	if( 0 > eth_init( bd ) ) { eth_halt( ); return; }
-	/*dump_configuration( );*/
-
-	for( ; ; ) {
-
-		if( 0 != ( packet_size = eth_rx( ) ) ) {
-
-			if( packet_log_header_index < PACKET_LOG_NUMBER ) {
-
-				packet_log_header_t * plh;
-
-				plh = & ( packet_log_headers [ packet_log_header_index ++ ] );
-				plh->address = packet_log;
-				plh->queue_pointer.raw = rx_tail_copy_.raw ;
-				memcpy( packet_log, packet, packet_size );
-				packet_log += packet_size;
-				packet_log += sizeof( unsigned long ) -
-					( ( unsigned long ) packet_log % sizeof( unsigned long ) );
-
-			}
-
-			if( packet_size != eth_send( packet, packet_size ) ) {
-
-				printf( "eth_send( ) failed: index %ld\n",
-					packet_log_header_index - 1 );
-
-			}
-
-		}
-
-		if( ctrlc( ) ) { break; }
-
-	}
-
-	{
-
-		int index = 0;
-
-		printf( "Logged %ld packets\n", packet_log_header_index );
-
-		while( index < packet_log_header_index ) {
-
-			packet_log_header_t * plh;
-
-			plh = & ( packet_log_headers [ index ] );
-			printf( "<%2d> address 0x%lx generation %d offset 0x%lx\n",
-				index, ( unsigned long ) plh->address,
-				plh->queue_pointer.bits.generation_bit,
-				( unsigned long ) plh->queue_pointer.bits.offset );
-			++ index;
-
-			if( ctrlc( ) ) { break; }
-
-		}
-
+	switch (type) {
+	case 1:
+		mac_loopback_test();
+		break;
+	case 2:
+		phy_loopback_test();
+		break;
+	default:
+		printf("Unknown test type.\n");
+		break;
 	}
 
 	loopback = 0;
@@ -3449,8 +3711,10 @@ static int rx_enable_( void ) {
 
 		rx_configuration_ |= APP3XXNIC_RX_CONF_ENABLE;
 		rx_configuration_ |= APP3XXNIC_RX_CONF_LINK;
+#if 0
 		rx_configuration_ |= APP3XXNIC_RX_CONF_RXFCE;
 		rx_configuration_ |= APP3XXNIC_RX_CONF_TXFCE;
+#endif
 		rx_enabled_ = 1;
 
 	} else {
@@ -3849,152 +4113,67 @@ get_env_ad_value( void )
 */
 
 static int
-phy_enable_( int phy )
+phy_enable_(int phy)
 {
-	char * macspeed = ( char * ) 0;
-	phy_control_t control;
+	char *macspeed = (char *)0;
+	int link_retries;
 
-	TRACE_BEGINNING( "\n" );
-
-	/*
-	  Get the PHY address.
-	*/
-
-/* #ifndef CONFIG_ACP */
-#if 0
-
-	{
-
-		char * phy_address_string_ = ( char * ) 0;
-
-		if( ( char * ) 0 ==
-		    ( phy_address_string_ = getenv( "phy_address" ) ) ) {
-
-#if defined( LSI_ARCH_APP3K ) && defined( APP3K_NONOR )
-			phy_address_ = * ( ( unsigned long * ) ( CONFIG_NORMAL_SHMEM_BASE ) );
-			printf( "Using SHMEM for phy_address: 0x%x\n", phy_address_ );
-#else  /*defined( LSI_ARCH_APP3K ) && defined( APP3K_NONOR ) */
-			phy_address_ = 0x1f;
-#endif /* defined( LSI_ARCH_APP3K ) && defined( APP3K_NONOR ) */
-
-		} else if( 0 ==
-			   strncmp( phy_address_string_, "scan", strlen( "scan" ) ) ) {
-
-			phy_address_ = phy_scan_( );
-
-		} else {
-
-			phy_address_ = simple_strtoul( phy_address_string_, NULL, 0 );
-
-		}
-
-		if( 31 < phy_address_ || 0 > phy_address_ ) {
-
-			printf( "Unable to get valid PHY address!\n" );
-			return -1;
-
-		}
-
-		printf( "PHY Address: 0x%x\n", phy_address_ );
-
-	}
-
-#else  /* CONFIG_ACP */
-	phy_address_ = CONFIG_AXXIA_PHY_ADDRESS;
-#endif /* CONFIG_ACP */
-
+	phy_address_ = phy;
 	macspeed = getenv( "macspeed" );
 
 	/*
-	  Set up the link.
+	  Set up the phy.
 	*/
+
 	if( 0 == strncmp(macspeed, "auto", strlen("auto") ) ) {
-		if (0 != phy_renegotiate(phy_address_, get_env_ad_value())) {
+		if (0 != phy_renegotiate(phy, get_env_ad_value())) {
 			printf( "PHY: Auto Negotiation Failed.\n" );
 			return -1;
 		}
-		printf("Auto negotiation returned %s %s\n",
-	       0 == phy_speed(phy_address_) ? "10M" : "100M",
-	       0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
-		return 0;
 	} else {
-		control.raw = mdio_read( phy_address_, PHY_CONTROL );
-		control.bits.autoneg_enable = 0x0;
-		if( 0 == strncmp(macspeed, "10MF", strlen("10MF") ) ) {
-			DEBUG_PRINT("User wants 10MF\n\n");
-			/* Full Duplex Mode */
-			control.bits.full_duplex = 0x1;
-			/* 10 Mbps  Mode */
-			control.bits.force100 = 0x0;
-			mdio_write( phy_address_, PHY_CONTROL, control.raw );
-			DEBUG_PRINT("PHY_CONTROL  written raw value =  0x%x\n", control.raw);
-			control.raw = mdio_read( phy_address_, PHY_CONTROL );
-			DEBUG_PRINT("PHY_CONTROL  read raw value =  0x%x\n", control.raw);
-			if ((phy_speed(phy_address_) != 0) || 
-				(phy_duplex(phy_address_) != 0x1)) {
-				printf("USER wanted 10Mb/s Full Duplex but link is at\n");
-				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
-					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
-				return -1;
-			}
-		} else if( 0 == strncmp(macspeed, "10MH", strlen("10MH") ) ) {
-			DEBUG_PRINT("User wants 10MH\n\n");
-			control.raw = mdio_read( phy_address_, PHY_CONTROL );
-			/* Half Duplex Mode */
-			control.bits.full_duplex = 0x0;
-			/* 10 Mbps  Mode */
-			control.bits.force100 = 0x0;
-			mdio_write( phy_address_, PHY_CONTROL, control.raw );
-			DEBUG_PRINT("PHY_CONTROL  written raw value =  0x%x\n", control.raw);
-			control.raw = mdio_read( phy_address_, PHY_CONTROL );
-			DEBUG_PRINT("PHY_CONTROL  read raw value =  0x%x\n", control.raw);
-			if ((phy_speed(phy_address_) != 0) || 
-				(phy_duplex(phy_address_) != 0x0)) {
-				printf("USER wanted 10Mb/s Half Duplex but link is at\n");
-				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
-					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
-				return -1;
-			}
-		} else if( 0 == strncmp(macspeed, "100MF", strlen("100MF") ) ) {
-			DEBUG_PRINT("User wants 100MF\n\n");
-			control.raw = mdio_read( phy_address_, PHY_CONTROL );
-			/* Full Duplex Mode */
-			control.bits.full_duplex = 0x1;
-			/* 100 Mbps  Mode */
-			control.bits.force100 = 0x1;
-			mdio_write( phy_address_, PHY_CONTROL, control.raw );
-			DEBUG_PRINT("PHY_CONTROL  written raw value =  0x%x\n", control.raw);
-			control.raw = mdio_read( phy_address_, PHY_CONTROL );
-			DEBUG_PRINT("PHY_CONTROL  read raw value =  0x%x\n", control.raw);
-			if ((phy_speed(phy_address_) != 0x1) || 
-				(phy_duplex(phy_address_) != 0x1)) {
-				printf("USER wanted 100Mb/s Full Duplex but link is at\n");
-				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
-					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
-				return -1;
-			}
+		int speed;
+		int duplex;
+
+		if( 0 == strncmp(macspeed, "100MF", strlen("100MF") ) ) {
+			speed = 1;
+			duplex = 1;
 		} else if( 0 == strncmp(macspeed, "100MH", strlen("100MH") ) ) {
-			DEBUG_PRINT("User wants 100MH\n\n");
-			control.raw = mdio_read( phy_address_, PHY_CONTROL );
-			/* Half Duplex Mode */
-			control.bits.full_duplex = 0x0;
-			/* 100 Mbps  Mode */
-			control.bits.force100 = 0x1;
-			mdio_write( phy_address_, PHY_CONTROL, control.raw );
-			DEBUG_PRINT("PHY_CONTROL  written raw value =  0x%x\n", control.raw);
-			control.raw = mdio_read( phy_address_, PHY_CONTROL );
-			DEBUG_PRINT("PHY_CONTROL  read raw value =  0x%x\n", control.raw);
-			if ((phy_speed(phy_address_) != 0x1) || 
-				(phy_duplex(phy_address_) != 0x0)) {
-				printf("USER wanted 100Mb/s Half Duplex but link is at\n");
-				printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
-					0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
-				return -1;
-			}
+			speed = 1;
+			duplex = 0;
+		} else if( 0 == strncmp(macspeed, "10MF", strlen("10MF") ) ) {
+			speed = 0;
+			duplex = 1;
+		} else if( 0 == strncmp(macspeed, "10MH", strlen("10MH") ) ) {
+			speed = 0;
+			duplex = 0;
+		}
+
+		if (0 != phy_set(phy, speed, duplex)) {
+			printf("PHY: Setup Failed.\n");
+			return -1;
 		}
 	}
-	printf("%s %s\n", 0 == phy_speed(phy_address_) ? "10M" : "100M",
-			0 == phy_duplex(phy_address_) ? "Half Duplex" : "Full Duplex");
+
+	/*
+	  Verify that there is a link.
+	*/
+
+	link_retries = 100;
+
+	while ((0 == phy_link(phy)) &&
+	       (0 < --link_retries)) {
+		mdelay(1);
+		--link_retries;
+	}
+
+	if (0 == link_retries) {
+		printf("PHY: no link\n");
+		return -1;
+	}
+
+	printf("PHY: %s %s\n",
+	       0 == phy_speed(phy) ? "10M" : "100M",
+	       0 == phy_duplex(phy) ? "Half Duplex" : "Full Duplex");
 
 	return 0;
 }
@@ -4063,6 +4242,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 
 	/* Set the FEMAC to uncached. */
 	writel( 0, (GPREG + 0x78));
+	printf("HPROT: 0x%x\n", readl(GPREG + 0x78));
 
 	/* Reset the MAC */
 	writel( 0x80000000, APP3XXNIC_DMA_PCI_CONTROL );
@@ -4112,16 +4292,20 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		( TX_BUFFER_SIZE + BUFFER_GRANULARITY ) + /* TX Buffers */
 		( 2 * sizeof( app3xxnic_queue_pointer_t ) ); /* Tail Pointers */
 
-	printf("%s:%d - memory_needed=0x%x/%lu\n",
-	       __FILE__, __LINE__, memory_needed, memory_needed);
-
 #if 0
 	if (NULL == (memory = allocate_dma_memory(memory_needed))) {
 		printf("Unable to allocate space for descriptors and buffers\n");
 		return 1;
 	}
 #else
+#ifdef USE_LSM
+	writel(0x2020, (GPREG + 0x4));
+	memory = (void *)(0xa0000000);
+#else
 	memory = (void *)((4 * 1024 * 1024) - (256 * 1024));
+#endif
+	printf("FEMAC: Used 0x%x of 0x%x at 0x%p\n",
+	       memory_needed, (256 * 1024), memory);
 #endif
 
 	/*
@@ -4251,8 +4435,13 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	  head pointer will be updated when there is something to transmit.
 	*/
 
+#ifdef USE_LSM
+	writel(((unsigned int )rx_descriptors_ - 0x80000000),
+	       APP3XXNIC_DMA_RX_QUEUE_BASE_ADDRESS );
+#else
 	writel( ( unsigned int ) rx_descriptors_,
 		 APP3XXNIC_DMA_RX_QUEUE_BASE_ADDRESS );
+#endif
 	writel( ( unsigned int )
 		 ( ( rx_number_of_descriptors *
 		     sizeof( app3xxnic_dma_descriptor_t ) ) / 1024 ),
@@ -4262,12 +4451,22 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		sizeof( app3xxnic_queue_pointer_t ) );
 
 	memset( ( void * ) rx_tail_, 0, sizeof( app3xxnic_queue_pointer_t ) );
-	writel( ( unsigned long ) rx_tail_, APP3XXNIC_DMA_RX_TAIL_POINTER_ADDRESS );
+#ifdef USE_LSM
+	writel(((unsigned long)rx_tail_ - 0x80000000),
+	       APP3XXNIC_DMA_RX_TAIL_POINTER_ADDRESS);
+#else
+	writel((unsigned long)rx_tail_, APP3XXNIC_DMA_RX_TAIL_POINTER_ADDRESS);
+#endif
 
 	writel( 3, APP3XXNIC_DMA_BASE + 0x1c );
 
-	writel( ( unsigned int ) tx_descriptors_,
-		 APP3XXNIC_DMA_TX_QUEUE_BASE_ADDRESS );
+#ifdef USE_LSM
+	writel(((unsigned int)tx_descriptors_ - 0x80000000),
+	       APP3XXNIC_DMA_TX_QUEUE_BASE_ADDRESS);
+#else
+	writel((unsigned int)tx_descriptors_,
+	       APP3XXNIC_DMA_TX_QUEUE_BASE_ADDRESS);
+#endif
 	writel( ( unsigned int )
 		 ( TX_NUMBER_OF_DESCRIPTORS *
 		   sizeof( app3xxnic_dma_descriptor_t ) / 1024 ),
@@ -4277,7 +4476,12 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		sizeof( app3xxnic_queue_pointer_t ) );
 
 	memset( ( void * ) tx_tail_, 0, sizeof( app3xxnic_queue_pointer_t ) );
-	writel( ( unsigned long ) tx_tail_, APP3XXNIC_DMA_TX_TAIL_POINTER_ADDRESS );
+#ifdef CONFIG_LSM
+	writel(((unsigned long)tx_tail_ - 0x80000000),
+	       APP3XXNIC_DMA_TX_TAIL_POINTER_ADDRESS);
+#else
+	writel((unsigned long)tx_tail_, APP3XXNIC_DMA_TX_TAIL_POINTER_ADDRESS);
+#endif
 
 	rx_tail_->raw = readl( APP3XXNIC_DMA_RX_TAIL_POINTER_LOCAL_COPY );
 	rx_tail_copy_.raw = rx_tail_->raw;
@@ -4478,19 +4682,8 @@ lsi_femac_eth_rx(struct eth_device *dev)
 				(const void *)&(dev->enetaddr[0]), 6) ||
 		    0 == memcmp((const void *)&(destination_[0]),
 				(const void *)&(broadcast_[0]), 6)) {
-			if (0 == rx_debug) {
-#if 0
-				unsigned short *ps;
-				unsigned char *pc;
-
-				ps = (unsigned short *)&NetRxPackets[0];
-				pc = (unsigned char *)&NetRxPackets[0];
-				dump_packet_("RX", NetRxPackets[0],
-					     bytes_received_);
-#endif
-
+			if (0 == rx_debug)
 				NetReceive(NetRxPackets[0], bytes_received_);
-			}
 		}
 	}
 
@@ -4571,6 +4764,7 @@ lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 		descriptor_.byte_swapping_on = 0;
 		writedescriptor( ( ( unsigned long ) tx_descriptors_ +
 				   tx_head_.bits.offset ), & descriptor_ );
+		asm volatile ("mcr p15,0,%0,c7,c10,4" : : "r" (0));
 		queue_increment_( & tx_head_, TX_NUMBER_OF_DESCRIPTORS );
 		writel( tx_head_.raw, APP3XXNIC_DMA_TX_HEAD_POINTER );
 
