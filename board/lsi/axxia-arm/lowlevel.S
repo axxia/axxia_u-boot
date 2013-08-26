@@ -281,7 +281,7 @@ clear_page_tables:
 #ifdef RUN_UNCACHED
 	ldr     r0, =0x1c12
 #else
-	ldr     r0, =0x11c1e
+	ldr     r0, =0x10c1e
 #endif
         mov     r1, r3
         add     r2, r1, #0x1000
