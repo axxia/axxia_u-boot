@@ -19,7 +19,6 @@
  **************************************************************************/
 
 #ifndef UBOOT
-#include <stdio.h>
 #include "ncp.h"
 #include "ncp_pvt.h"
 #endif

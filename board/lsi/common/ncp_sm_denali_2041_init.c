@@ -90,9 +90,6 @@ ncp_sm_denali_2041_init(
     }
 
 
-    /* node_cfg */
-    ncr_write32(ctlReg,  0x0010, 0x00000003);
-
     /* DENALI_CTL_00 */
     /* TODO: at some point the AP field may be st */
     ncr_write32(ctlReg,  0x0000, 0x01010100);
@@ -156,8 +153,10 @@ ncp_sm_denali_2041_init(
      */
     ncr_write32(ctlReg,  0x0060, 0x06000000);
 
-    /* DENALI_CTL_25 */
-    ncr_write32(ctlReg,  0x0064, 0x00000605);
+    /* DENALI_CTL_25 
+     *   set w2r_diffcs_dly = 1 
+     */
+    ncr_write32(ctlReg,  0x0064, 0x00010605);
 
     /* DENALI_CTL_26 */
 #if 0   /* TEMP until we have ASE config support */
@@ -464,15 +463,12 @@ ncp_sm_denali_2041_init(
     rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
     drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
 
-    printf("rttNom=%d, drvImp=%d\n", rttNom, drvImp);
-
     value  = NCP_SM_ENCODE_RTT_NOM(rttNom);
     value |= NCP_SM_ENCODE_DRV_IMP(drvImp);
 
     shift += 4;
     rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
     drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
-    printf("rttNom=%d, drvImp=%d\n", rttNom, drvImp);
     value2  = NCP_SM_ENCODE_RTT_NOM(rttNom);
     value2 |= NCP_SM_ENCODE_DRV_IMP(drvImp);
 
@@ -484,14 +480,12 @@ ncp_sm_denali_2041_init(
     rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
     drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
 
-    printf("rttNom=%d, drvImp=%d\n", rttNom, drvImp);
     value  = NCP_SM_ENCODE_RTT_NOM(rttNom);
     value |= NCP_SM_ENCODE_DRV_IMP(drvImp);
 
     shift += 4;
     rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
     drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
-    printf("rttNom=%d, drvImp=%d\n", rttNom, drvImp);
     value2  = NCP_SM_ENCODE_RTT_NOM(rttNom);
     value2 |= NCP_SM_ENCODE_DRV_IMP(drvImp);
 
