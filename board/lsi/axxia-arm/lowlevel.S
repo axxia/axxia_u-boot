@@ -279,7 +279,7 @@ clear_page_tables:
 	@ First 1G of RAM, sharable, cacheable and bufferable.
 
 #ifdef RUN_UNCACHED
-	ldr     r0, =0x1c12
+	ldr     r0, =0xc12
 #else
 	ldr     r0, =0x10c1e
 #endif
