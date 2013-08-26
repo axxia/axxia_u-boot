@@ -3310,7 +3310,7 @@ phy_loopback_test(void)
 	int i;
 
 	/* Turn on PHY loopback. */
-	phy_loopback(phy_address_, 1);
+	/*phy_loopback(phy_address_, 1);*/
 
 	/* Drop any existing packets. */
 	while (0 != eth_rx())
@@ -3346,7 +3346,6 @@ phy_loopback_test(void)
 		/* Put a pattern in "out". */
 		packet = out;
 		count = iteration;
-		puts(".");
 
 		for (i = 0; i < PHY_LOOPBACK_PACKET_SIZE; ++i) {
 			*packet++ = (unsigned char)count++;
@@ -3398,9 +3397,6 @@ phy_loopback_test(void)
 
 		if (ctrlc())
 			break;
-
-		if ((RX_NUMBER_OF_DESCRIPTORS * 10) < iteration)
-			break;
 	}
 
 	printf("Ran test %d times.\n", iteration - 1);
@@ -3408,7 +3404,7 @@ phy_loopback_test(void)
 phy_loopback_test_over:
 
 	/* Turn off PHY loopback. */
-	phy_loopback(phy_address_, 0);
+	/*phy_loopback(phy_address_, 0);*/
 
 	if (NULL != out)
 		free(out);

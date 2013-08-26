@@ -66,13 +66,13 @@ decode_range(const char *input, int minimum, int maximum, int range[2])
 		if (NULL == token)
 			return -2;
 
-		range[0] = simple_strtol(token, NULL, 0);
+		range[0] = simple_strtol(token, NULL, 16);
 		token = strsep(&string, "-");
 
 		if (NULL == token)
 			range[1] = range[0];
 		else
-			range[1] = simple_strtol(token, NULL, 0);
+			range[1] = simple_strtol(token, NULL, 16);
 
 		if (range[0] > range[1]) {
 			int temp;
@@ -109,6 +109,8 @@ decode_range(const char *input, int minimum, int maximum, int range[2])
 int
 do_mdio(cmd_tbl_t *command_table, int flag, int argc, char *argv[])
 {
+	mdio_initialize();
+
 	if ((0 == strncmp(argv[1], "r", strlen("r"))) && (4 == argc)) {
 		/*
 		  mdio read
@@ -133,7 +135,8 @@ do_mdio(cmd_tbl_t *command_table, int flag, int argc, char *argv[])
 
 		for (i = device_range[0]; i <= device_range[1]; ++i) {
 			for (j = register_range[0]; j <= register_range[1]; ++j) {
-				printf("0x%02x[0x%02x]:0x%x\n", i, j, mdio_read(i, j));
+				printf("0x%02x[0x%02x]:0x%x\n",
+				       i, j, mdio_read(i, j));
 			}
 		}
 	} else if ((0 == strncmp(argv[1], "w", strlen("w")))) {
@@ -144,9 +147,9 @@ do_mdio(cmd_tbl_t *command_table, int flag, int argc, char *argv[])
 			int reg;
 			int value;
 
-			phy = simple_strtol((argv[2]), NULL, 0);
-			reg = simple_strtol((argv[3]), NULL, 0);
-			value = simple_strtol((argv[4]), NULL, 0);
+			phy = simple_strtol((argv[2]), NULL, 16);
+			reg = simple_strtol((argv[3]), NULL, 16);
+			value = simple_strtol((argv[4]), NULL, 16);
 			mdio_write(phy, reg, value);
 		} else {
 			printf("Usage: mdio write phy reg value\n");

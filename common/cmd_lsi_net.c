@@ -63,13 +63,19 @@ do_net(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 
 	if( 0 == strncmp( argv[1], "l", strlen( "l" ) ) ) {
-		int test = 1;
+		int test;
 
 		if (3 == argc)
-			test = simple_strtol(argv[2], NULL, 0);
+			if (0 == strncmp(argv[2], "n", strlen("n")))
+				test = 1;
+			else if (0 == strncmp(argv[2], "p", strlen("p")))
+				test = 2;
+			else {
+				printf("Unknow Loopback Type!\n");
+				return -1;
+			}
 
-		printf( "Starting Loopback Test(%d) -- Ctrl-C to Exit.\n",
-			test );
+		printf("Starting Loopback Test -- Ctrl-C to Exit.\n", test);
 		lsi_net_loopback_test(eth_get_dev(), test);
 
 		return 0;
@@ -116,8 +122,9 @@ do_net(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 U_BOOT_CMD(net, 3, 0, do_net,
 	   "net loopback|receive|send|dr|dt [type]\n",
 	   "l,oopback loop all received packets back, specify the type\n"
-	   "     1=loop received packets back out\n"
-	   "     2=put the PHY in loopback mode and write/read/compare\n"
+	   "     net -- loop packets from the network back out\n"
+	   "     phy -- expect the phy to loop packets back\n"
+	   "            Remeber to put the PHY in loopback mode!\n"
 	   "r,ecevie packets, and dump them to the screen\n"
 	   "s,end send one packet\n"
 	   "dr toggle the \"dumprx\" flag\n"

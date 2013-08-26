@@ -356,6 +356,7 @@ int write_parameters(parameters_t *);
 #define CONFIG_CMD_NET
 #define CONFIG_CMD_DHCP
 #define CONFIG_CMD_PING
+#define CONFIG_LSI_MDIO
 #endif
 
 #endif	/* CONFIG_SPL_BUILD */
