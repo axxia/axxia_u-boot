@@ -2778,10 +2778,10 @@ static ncp_st_t use_elm(ncp_dev_hdl_t dev, int elm)
     writel(elm0_bits, (DICKENS + 0x210008));
     writel(elm0_bits, (DICKENS + 0x220008));
     writel(elm0_bits, (DICKENS + 0x230008));
-    writel(elm0_bits, (DICKENS + 0x240008));
-    writel(elm0_bits, (DICKENS + 0x250008));
-    writel(elm0_bits, (DICKENS + 0x260008));
-    writel(elm0_bits, (DICKENS + 0x270008));
+    writel(elm1_bits, (DICKENS + 0x240008));
+    writel(elm1_bits, (DICKENS + 0x250008));
+    writel(elm1_bits, (DICKENS + 0x260008));
+    writel(elm1_bits, (DICKENS + 0x270008));
 #endif
 
 
