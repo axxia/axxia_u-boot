@@ -207,7 +207,7 @@ board_eth_init(bd_t *bd)
 
 #endif
 
-#if !defined(CONFIG_AXXIA_EIOA) || !defined(CONFIG_AXXIA_FEMAC)
+#if !defined(CONFIG_AXXIA_EIOA) && !defined(CONFIG_AXXIA_FEMAC)
 #error "Axxia networking is defined, but no interface has been!"
 #endif
 
@@ -223,9 +223,13 @@ void lsi_net_receive_test(struct eth_device *dev)
 
 	if(act) {
 		if(strcmp(act, "LSI_FEMAC") == 0) {
+#ifdef CONFIG_AXXIA_FEMAC
 			lsi_femac_receive_test(dev);
+#endif
 		} else if(strcmp(act, "LSI_EIOA") == 0) {
+#ifdef CONFIG_AXXIA_EIOA
 			lsi_eioa_receive_test(dev);
+#endif
 		}
 	}
 }
@@ -239,9 +243,13 @@ void lsi_net_loopback_test(struct eth_device *dev, int type)
 
 	if(act) {
 		if(strcmp(act, "LSI_FEMAC") == 0) {
+#ifdef CONFIG_AXXIA_FEMAC
 			lsi_femac_loopback_test(dev, type);
+#endif
 		} else if(strcmp(act, "LSI_EIOA") == 0) {
+#ifdef CONFIG_AXXIA_EIOA
 			lsi_eioa_loopback_test(dev);
+#endif
 		}
 	}
 }
