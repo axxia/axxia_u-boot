@@ -901,7 +901,7 @@ acp_osg_update_dt(void *input, int group)
 	else
 		value = 0;
 
-	rc = fdt_find_and_setprop(dt, "/plb/opb/nand@00440000",
+	rc = fdt_find_and_setprop(dt, "/plb/opb/nand@004e0000",
 				  "enabled", (void *)&value,
 				  sizeof(unsigned long), 1);
 

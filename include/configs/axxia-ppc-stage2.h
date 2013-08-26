@@ -228,7 +228,7 @@ int acp_init( void );
   other cases.
 */
 
-#if defined(ACP_25xx) || defined(CONFIG_SPD) || defined(AXM_35xx)
+#if defined(ACP_25xx) || defined(CONFIG_SPD) || (defined(AXM_35xx) && (!(defined(ACP_EMU))))
 #define CONFIG_SYS_NO_FLASH
 #define CONFIG_LSI_SERIAL_FLASH
 #define CONFIG_LSI_SERIAL_FLASH_ENV

@@ -429,22 +429,20 @@ int eioa_ethernet_configure(void);
   ======================================================================
 */
 
-/*
-  By default, the 3rd stage always supports NAND flash.  To turn off
-  NAND flash support, comment out the following.
-*/
-
-#if !(defined(AXM_35xx) && defined(ACP_EMU))
-#define CONFIG_LSI_NAND  
-#define ACP_NAND_4BIT_ECC
-#endif
 
 /*
   By default, the 3rd stage always supports serial flash.  To turn off
   NAND flash support, comment out the following.
 */
-
+#if defined(ACP_25xx)
 #define CONFIG_LSI_SERIAL_FLASH 
+#elif (defined(AXM_35xx) && !defined(ACP_EMU))
+#define CONFIG_LSI_SERIAL_FLASH 
+#else
+#define CONFIG_LSI_NAND  
+#define ACP_NAND_4BIT_ECC
+#endif
+
 
 /*
   By default, the U-Boot environment is stored in NAND for all targets
@@ -452,9 +450,16 @@ int eioa_ethernet_configure(void);
   CONFIG_LIS_SERIAL_FLASH_ENV.
 */
 
-#if defined(ACP_25xx) || defined(AXM_35xx) 
+#if defined(ACP_25xx)
 #define CONFIG_LSI_SERIAL_FLASH_ENV
 #endif
+
+#if defined(AXM_35xx)
+#if !defined(ACP_EMU)
+#define CONFIG_LSI_SERIAL_FLASH_ENV
+#endif
+#endif
+
 
 #ifndef CONFIG_LSI_SERIAL_FLASH_ENV
 #define CONFIG_LSI_NAND_ENV
