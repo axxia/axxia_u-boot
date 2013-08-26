@@ -269,7 +269,7 @@ clocks_init( void )
 	}
 
 	/* tm0pll */
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 8), &clocks->sm0pll_prms))
+	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 8), &clocks->tmpll_prms))
 		return -1;
 
 	/*
