@@ -43,9 +43,9 @@
 
 #if defined(ACP_X1V1)
 #define EP501
-#elif defined(ACP_X1V2) || defined(AXM_35xx)
+#elif defined(ACP_X1V2) 
 #define EP501G1
-#elif defined(ACP_X2V1) || defined(ACP_25xx)
+#elif defined(ACP_X2V1) || defined(ACP_25xx) || defined(AXM_35xx)
 #define EP501G3
 #else
 #error "Unsupported ACP System Type!"
@@ -241,14 +241,20 @@ set_ecc_mode(lsi_ecc_mode_t new_ecc_mode)
 #endif
 }
 
+#if defined(AXM_35xx)
+#define LSI_NAND_PECC_BUSY_REGISTER GPREG_LVL_IRQ_STATS
+#else
 #define LSI_NAND_PECC_BUSY_REGISTER GPREG_STATUS
+#endif
 
 #if defined(ACP_X1V1)
 #define LSI_NAND_PECC_BUSY_MASK	    (1<<25)
-#elif defined(ACP_X1V2) || defined(ACP_X2V1) || defined(AXM_35xx)
+#elif defined(ACP_X1V2) || defined(ACP_X2V1) 
 #define LSI_NAND_PECC_BUSY_MASK	    (1<<28)
-#elif defined(ACP_25xx)
+#elif defined(ACP_25xx) 
 #define LSI_NAND_PECC_BUSY_MASK	    (1<<23)
+#elif defined(AXM_35xx)
+#define LSI_NAND_PECC_BUSY_MASK	    (1<<20)
 #endif
 
 #define NAND_CMD_START_ECC_READ	    0x23
