@@ -1277,6 +1277,9 @@ ncr_write(unsigned long region,
 		cdr2.bits.target_node_id = NCP_NODE_ID( region );
 		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
 	}
+    else {
+		cdr2.bits.target_id_address_upper = address_upper;
+    }
 
 	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
 
