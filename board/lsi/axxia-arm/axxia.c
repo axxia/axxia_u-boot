@@ -314,6 +314,7 @@ set_clusters(void)
 
 void flush_l3(void)
 {
+#ifndef RUN_UNCACHED
 	unsigned long hnf_offsets[] = {
 		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
 	};
@@ -360,6 +361,7 @@ void flush_l3(void)
 		if (0 == retries)
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 	}
+#endif
 
 	return;
 }
