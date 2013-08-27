@@ -351,6 +351,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_DOS_PARTITION 1
 #define CONFIG_USB_ADDR (IO+0x140000)
 #define CONFIG_EHCI_IS_TDI 1
+#define CONFIG_CMD_LSI_ULPI 1
 #endif
 
 
