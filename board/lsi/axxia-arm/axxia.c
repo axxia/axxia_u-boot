@@ -42,46 +42,69 @@ const struct omap_sysinfo sysinfo = {
 
 /*
   ------------------------------------------------------------------------------
-  set_coherency
+  set_cluster_coherency
 */
 
 static int
-set_coherency(unsigned long sdcr_ddcr_value)
+set_cluster_coherency(unsigned cluster, unsigned state)
 {
 	unsigned long sdcr_offsets[] = {
+		0x00,		/* This is the DVM */
 		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
 	};
 	int i;
 	int retries;
+	unsigned long mask;
+	unsigned long value;
+#ifdef CONFIG_AXXIA_EMU
+	int bit_by_cluster[] = {19, 9};
+#else
+	int bit_by_cluster[] = {1, 9, 11, 19};
+#endif
 
-	printf("SDCR/DDCR: 0x%lx\n", sdcr_ddcr_value);
+#ifdef CONFIG_AXXIA_EMU
+	if (1 < cluster)
+		return -1;
+#else
+	if (3 < cluster)
+		return -1;
+#endif
+
+	printf("%s cluster %d %s the coherency domain.\n",
+	       state ? "Adding" : "Removing",
+	       cluster,
+	       state ? "to" : "from");
+	mask = (1 << bit_by_cluster[cluster]);
 
 	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(unsigned long)); ++i) {
 		int offset;
 
 		offset = DICKENS | (sdcr_offsets[i] << 16);
-		writel(sdcr_ddcr_value, (offset + 0x210));
+
+		if (0 == state)
+			writel(mask, (offset + 0x220));
+		else
+			writel(mask, (offset + 0x210));
+
 		retries = 1000;
 
 		do {
 			--retries;
-		} while (0 < retries &&
-			 sdcr_ddcr_value != readl(offset + 0x200));
+			value = readl(offset + 0x200);
+
+			if (0 == state) {
+				if (0 == (mask & value))
+					break;
+			} else {
+				if (mask == (mask & value))
+					break;
+			}
+					
+		} while (0 < retries);
 
 		if (0 == retries)
 			return -1;
 	}
-
-	/* Update DVM */
-	writel(sdcr_ddcr_value, (DICKENS + 0x210));
-	retries = 1000;
-
-	do {
-		--retries;
-	} while (0 < retries && sdcr_ddcr_value != readl(DICKENS + 0x200));
-
-	if (0 == retries)
-		return -1;
 
 	return 0;
 }
@@ -105,7 +128,7 @@ power_down_cluster(int cluster)
 	*/
 
 	for (i = 0; i < 4; ++i) {
-		mask = (((cluster & 0x3) << 8) | i);
+		mask = (1 << (i + (cluster * 4)));
 
 		/* clear nPWRUPCPURAM */
 		ncr_and(NCP_REGION_ID(0x156, 0), 0x1488, ~mask);
@@ -228,7 +251,6 @@ set_clusters(void)
 {
 	char *clusters_env;
 	unsigned long clusters;
-	unsigned long sdcr_ddcr;
 
 	if (NULL != (clusters_env = getenv("clusters"))) {
 		clusters = simple_strtoul(clusters_env, NULL, 0);
@@ -246,55 +268,66 @@ set_clusters(void)
 	}
 
 #ifdef CONFIG_AXXIA_EMU
-	if (0 != (clusters & 0x3)) {
+	if (0 != (clusters & 0xc)) {
 		printf("Emulation only supports clusters 0 and 1!\n"
 		       "Change the \"clusters\" variable to 1 or 3.\n");
 		return -1;
 	}
 
-	sdcr_ddcr = 0x80200;
-
 	puts("Setting up Coherencly for Clusters: 0");
 
 	if (0 != (clusters & 0x2)) {
 		puts(",1");
+
+		if (0 != set_cluster_coherency(1, 1))
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 	} else {
-		sdcr_ddcr &= ~0x200;
+		if (0 != set_cluster_coherency(1, 0))
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 	}
+
+	puts("\n");
 #else
-	sdcr_ddcr = 0x80a02;
-
 	puts("Setting up Coherencly for Clusters: 0");
 
-	if (0 != (clusters & 0x2)) {
+	if (0 != (clusters & 0x2))
 		puts(",1");
-	} else {
-		power_down_cluster(1);
-		sdcr_ddcr &= ~0x200;
-	}
 
-	if (0 != (clusters & 0x4)) {
+	if (0 != (clusters & 0x4))
 		puts(",2");
-	} else {
-		power_down_cluster(2);
-		sdcr_ddcr &= ~0x800;
-	}
 
-	if (0 != (clusters & 0x8)) {
+	if (0 != (clusters & 0x8))
 		puts(",3");
-	} else {
-		power_down_cluster(3);
-		sdcr_ddcr &= ~0x80000;
-	}
-#endif
+
 	puts("\n");
 
-	/*
-	  How many clusters should be up?
-	*/
+	if (0 == (clusters & 0x2)) {
+		power_down_cluster(1);
 
-	if (0 != set_coherency(sdcr_ddcr))
-		return -1;
+		if (0 != set_cluster_coherency(1, 0))
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	} else if (0 != set_cluster_coherency(1, 1)) {
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	}
+
+	if (0 == (clusters & 0x4)) {
+		power_down_cluster(2);
+
+		if (0 != set_cluster_coherency(2, 0))
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	} else if (0 != set_cluster_coherency(2, 1)) {
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	}
+
+	if (0 == (clusters & 0x8)) {
+		power_down_cluster(3);
+
+		if (0 != set_cluster_coherency(3, 0))
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	} else if (0 != set_cluster_coherency(3, 1)) {
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	}
+#endif
 
 	return 0;
 }
@@ -385,6 +418,11 @@ board_init(void)
 int
 misc_init_r(void)
 {
+	unsigned long sdcr_ddcr;
+
+	if (0 != set_cluster_coherency(0, 1))
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
 	return 0;
 }
 
