@@ -267,28 +267,11 @@ ncp_dev_reset(void)
 static int
 ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 {
-	if (NCP_REGION_ID(512, 1) == command->region) {
+	if (NCP_REGION_ID(0x200, 1) == command->region) {
 		*value = *((volatile unsigned *)command->offset);
 
 		return 0;
-	}
-
-	if (0x100 <= NCP_NODE_ID(command->region)) {
-		static int last_node = -1;
-
-		if (-1 == last_node ||
-		    NCP_NODE_ID(command->region) != last_node) {
-			last_node = NCP_NODE_ID(command->region);
-			debug("READ IGNORED: n=0x%lx t=0x%lx o=0x%lx\n",
-				    NCP_NODE_ID(command->region),
-				    NCP_TARGET_ID(command->region),
-				    command->offset);
-		}
-
-		return 0;
-	}
-
-	if (0 != ncr_read32(command->region, command->offset, value)) {
+	} else if (0 != ncr_read32(command->region, command->offset, value)) {
 		printf("READ ERROR: n=0x%lx t=0x%lx o=0x%lx\n",
 			    NCP_NODE_ID(command->region),
 			    NCP_TARGET_ID(command->region), command->offset);
@@ -299,49 +282,6 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 		    *value, NCP_NODE_ID(command->region),
 		    NCP_TARGET_ID(command->region),
 		    command->offset);
-
-	return 0;
-}
-
-/*
-  ------------------------------------------------------------------------------
-  ncp_dev_do_modify
-*/
-
-static int
-ncp_dev_do_modify(ncr_command_t *command)
-{
-	if (0x100 <= NCP_NODE_ID(command->region)) {
-		static int last_node = -1;
-
-		if (-1 == last_node ||
-		    NCP_NODE_ID(command->region) != last_node) {
-			last_node = NCP_NODE_ID(command->region);
-			debug("MODIFY IGNORED: n=0x%lx t=0x%lx o=0x%lx\n",
-				    NCP_NODE_ID(command->region),
-				    NCP_TARGET_ID(command->region),
-				    command->offset);
-		}
-
-		return 0;
-	}
-
-	if (0 != ncr_modify32(command->region, command->offset,
-			      command->mask, command->value)) {
-		printf("MODIFY ERROR: n=0x%lx t=0x%lx o=0x%lx m=0x%lx "
-			    "v=0x%lx\n",
-			    NCP_NODE_ID(command->region),
-			    NCP_TARGET_ID(command->region), command->offset,
-			    command->mask, command->value);
-
-		return -1;
-	} else {
-
-		debug("MODIFY: r=0x%lx o=0x%lx m=0x%lx v=0x%lx\n",
-			    command->region, command->offset,
-			    command->mask, command->value);
-
-	}
 
 	return 0;
 }
@@ -368,11 +308,7 @@ ncp_dev_do_write(ncr_command_t *command)
 			 command->value);
 		flush_cache((APB2RC + command->offset), 4);
 #endif
-	} else if (NCP_NODE_ID(command->region) <= 0x101) {
-		if (NCP_REGION_ID(0x17, 0x11) == command->region &&
-		    0x11c == command->offset) {
-			return 0;
-		}
+	} else {
 #if 0
         /* HACK: to avoid errors in half switch systems, skip eioa2 and eioa3 */
         else if(NCP_NODE_ID(command->region) == 0x29 ||
@@ -390,21 +326,43 @@ ncp_dev_do_write(ncr_command_t *command)
 
 			return -1;
 		}
-	} else {
-		static int last_node = -1;
+	}
 
-		if (-1 == last_node ||
-		    NCP_NODE_ID(command->region) != last_node) {
-			last_node = NCP_NODE_ID(command->region);
-			debug("WRITE IGNORED: n=0x%lx t=0x%lx o=0x%lx "
-				    "v=0x%lx\n",
-				    NCP_NODE_ID(command->region),
-				    NCP_TARGET_ID(command->region),
-				    command->offset,
-				    command->value);
-		}
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  ncp_dev_do_modify
+*/
+
+static int
+ncp_dev_do_modify(ncr_command_t *command)
+{
+    if (NCP_REGION_ID(0x200, 1) == command->region) {
+        ncp_dev_do_read(command, &command->value);
+
+        command->value &= ~command->mask;
+        command->value |= command->value;
+
+        ncp_dev_do_write(command);
 
 		return 0;
+	} else if (0 != ncr_modify32(command->region, command->offset,
+			      command->mask, command->value)) {
+		printf("MODIFY ERROR: n=0x%lx t=0x%lx o=0x%lx m=0x%lx "
+			    "v=0x%lx\n",
+			    NCP_NODE_ID(command->region),
+			    NCP_TARGET_ID(command->region), command->offset,
+			    command->mask, command->value);
+
+		return -1;
+	} else {
+
+		debug("MODIFY: r=0x%lx o=0x%lx m=0x%lx v=0x%lx\n",
+			    command->region, command->offset,
+			    command->mask, command->value);
+
 	}
 
 	return 0;
@@ -565,49 +523,49 @@ line_setup(int index)
 
 	/* Set the region and offset. */
     if (5 > index) {
-        hwPortIndex = index;
+        hwPortIndex = ((index == 0) ? 0 : (index - 1));
 		eioaRegion = NCP_REGION_ID(31, 16); /* 0x1f.0x10 */
 		gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(31, 17) : /* 0x1f.0x11 */ 
                                            NCP_REGION_ID(31, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (10 > index) {
-	    hwPortIndex = index - 5;
+	    hwPortIndex = ((index == 5) ? 0 : (index - 6));
 		eioaRegion = NCP_REGION_ID(23, 16); /* 0x17.0x10 */
         gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(23, 17) : /* 0x1f.0x11 */ 
                                            NCP_REGION_ID(23, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (12 > index) {
-	    hwPortIndex = index - 10;
+	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(40, 16); /* 0x28.0x10 */
         gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(40, 17) : /* 0x1f.0x11 */ 
                                            NCP_REGION_ID(40, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (14 > index) {
-	    hwPortIndex = index - 12;
+	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(41, 16); /* 0x29.0x10 */
         gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(41, 17) : /* 0x1f.0x11 */ 
                                            NCP_REGION_ID(41, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (16 > index) {
-	    hwPortIndex = index - 14;
+	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(42, 16); /* 0x2a.0x10 */
         gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(42, 17) : /* 0x1f.0x11 */ 
                                            NCP_REGION_ID(42, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (18 > index) {
-	    hwPortIndex = index - 16;
+	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(43, 16); /* 0x2b.0x10 */
         gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(43, 17) : /* 0x1f.0x11 */ 
                                            NCP_REGION_ID(43, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (20 > index) {
-	    hwPortIndex = index - 18;
+	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(44, 16); /* 0x2c.0x10 */
         gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(44, 17) : /* 0x1f.0x11 */ 
                                            NCP_REGION_ID(44, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (22 > index) {
-	    hwPortIndex = index - 20;
+	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(45, 16); /* 0x2d.0x10 */
         gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(45, 17) : /* 0x1f.0x11 */ 
                                            NCP_REGION_ID(45, 18)); /* 0x1f.0x12 */
@@ -633,6 +591,7 @@ line_setup(int index)
 
 		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
 				    &ncr_status));
+
 		ncr_status &= ~0x3c;
 		ncr_status |= 0x08; /* Force Link Up */
 
@@ -651,103 +610,171 @@ line_setup(int index)
 			return -1;
 		}
 
-		NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
-				     ncr_status));
-	} else {
-#if defined(CONFIG_AXXIA_55XX)
-		/* Get ad_value and ge_ad_value from the environment. */
-		envstring = getenv("ad_value");
-
-		if (NULL == envstring) {
-			ad_value = 0x1e1;
-		} else {
-			ad_value = simple_strtoul(envstring, NULL, 0);
-		}
-
-		envstring = getenv("ge_ad_value");
-
-		if (NULL == envstring) {
-			ge_ad_value = 0x300;
-		} else {
-			ge_ad_value = simple_strtoul(envstring, NULL, 0);
-		}
-
-		/* Set the AN advertise values. */
-		mdio_write(phy_by_index[index], 4, ad_value);
-		mdio_write(phy_by_index[index], 9, ge_ad_value);
-
-		/* Force re-negotiation. */
-		control = mdio_read(phy_by_index[index], 0);
-		control |= 0x200;
-		mdio_write(phy_by_index[index], 0, control);
-
-		DELAY();
-
-		/* Wait for AN complete. */
-		for (;;) {
-			status = mdio_read(phy_by_index[index], 1);
-
-			if (0 != (status & 0x20))
-				break;
-
-			if (0 == retries--) {
-				printf("GMAC%d: AN Timed Out.\n",
-					    port_by_index[index]);
-				return -1;
-			}
-
-			DELAY();
-		}
-
-		if (0 == (status & 0x4)) {
-			printf("GMAC%d: LINK is Down.\n",
-				    port_by_index[index]);
-
-			if (NCP_USE_ALL_PORTS != eioaPort)
-				return -1; /* Don't Error Out in AUTO Mode. */
-		} else {
-			status = mdio_read(phy_by_index[index], 0x1c);
+        /* fiber vs copper */
+        if(phy_media_by_index[index] == EIOA_PHY_MEDIA_FIBER) {
+            ncr_status |= 0x200;
+        } else {
+            ncr_status &= 0xfffffdff;
         }
-#else
-		status = 0x28; /* For FPGA, its 100MF */
-#endif
-		printf("GMAC%02d: ", port_by_index[index]);
-
-		switch ((status & 0x18) >> 3) {
-		case 0:
-			puts("10M");
-			break;
-		case 1:
-			puts("100M");
-			break;
-		case 2:
-			puts("1G");
-			break;
-		default:
-			puts("UNKNOWN");
-			break;
-		}
-
-		printf(" %s\n",
-		       (0 == (status & 0x20)) ?
-		       "Half Duplex" : "Full Duplex");
-		DELAY();
-
-		/* Make the MAC match. */
-
-		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
-				    &ncr_status));
-		ncr_status &= ~0x3c;
-		ncr_status |= 0x08;	/* Force Link Up */
-
-		if (0 != (status & 0x20))
-			ncr_status |= 0x04; /* Force Full Duplex */
-
-		/* Set the Speed */
-		ncr_status |= (((status & 0x18) >> 3) << 4);
 
 		NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
 				     ncr_status));
+
+        /* do phy configuration for copper PHY */
+        if(phy_media_by_index[index] == EIOA_PHY_MEDIA_COPPER) {
+            control = mdio_read(phy_by_index[index], 0);
+            control &= 0xdebf; /* clear bit 6, 8 and 13 */
+            
+            if (0 == strcmp("10MH", envstring)) {
+    		} else if (0 == strcmp("10MF", envstring)) {
+                control |= 0x100; /* set bit 8 */
+    		} else if (0 == strcmp("100MH", envstring)) {
+    			control |= 0x2000; /* set bit 13 */
+    		} else if (0 == strcmp("100MF", envstring)) {
+    		    control |= 0x2100; /* set bit 8, 13 */
+    		} else if (0 == strcmp("1G", envstring)) {
+    		    /* enable only gb in advt and restart AN. */
+    		    unsigned short ad_value = mdio_read(phy_by_index[index], 4);
+    		    unsigned short ge_ad_value = mdio_read(phy_by_index[index], 9);
+
+                ad_value &= 0xfc1f;
+                mdio_write(phy_by_index[index], 4, ad_value);
+                
+                ge_ad_value |= 0x300;
+    		    mdio_write(phy_by_index[index], 9, ge_ad_value);
+
+                control |= 0x200;
+    		} else {
+    			printf("macspeed must be set to 10MH, 10MF, 100MH, "
+    			       "100MF, or 1G\n");
+    			return -1;
+    		}
+            
+            mdio_write(phy_by_index[index], 0, control);
+        }
+	} else {
+	    /* do phy configuration for copper PHY */
+        if(phy_media_by_index[index] == EIOA_PHY_MEDIA_COPPER) {
+#if defined(CONFIG_AXXIA_55XX)
+    		/* Get ad_value and ge_ad_value from the environment. */
+    		envstring = getenv("ad_value");
+
+    		if (NULL == envstring) {
+    			ad_value = 0x1e1;
+    		} else {
+    			ad_value = simple_strtoul(envstring, NULL, 0);
+    		}
+
+    		envstring = getenv("ge_ad_value");
+
+    		if (NULL == envstring) {
+    			ge_ad_value = 0x300;
+    		} else {
+    			ge_ad_value = simple_strtoul(envstring, NULL, 0);
+    		}
+
+    		/* Set the AN advertise values. */
+    		mdio_write(phy_by_index[index], 4, ad_value);
+    		mdio_write(phy_by_index[index], 9, ge_ad_value);
+
+    		/* Force re-negotiation. */
+    		control = mdio_read(phy_by_index[index], 0);
+    		control |= 0x200;
+    		mdio_write(phy_by_index[index], 0, control);
+
+    		DELAY();
+
+    		/* Wait for AN complete. */
+    		for (;;) {
+    			status = mdio_read(phy_by_index[index], 1);
+
+    			if (0 != (status & 0x20))
+    				break;
+
+    			if (0 == retries--) {
+    				printf("GMAC%d: AN Timed Out.\n",
+    					    port_by_index[index]);
+    				return -1;
+    			}
+
+    			DELAY();
+    		}
+
+    		if (0 == (status & 0x4)) {
+    			printf("GMAC%d: LINK is Down.\n",
+    				    port_by_index[index]);
+
+    			if (NCP_USE_ALL_PORTS != eioaPort)
+    				return -1; /* Don't Error Out in AUTO Mode. */
+    		} else {
+    			status = mdio_read(phy_by_index[index], 0x1c);
+            }
+#else
+    		status = 0x28; /* For FPGA, its 100MF */
+#endif
+    		printf("GMAC%02d: ", port_by_index[index]);
+
+    		switch ((status & 0x18) >> 3) {
+    		case 0:
+    			puts("10M");
+    			break;
+    		case 1:
+    			puts("100M");
+    			break;
+    		case 2:
+    			puts("1G");
+    			break;
+    		default:
+    			puts("UNKNOWN");
+    			break;
+    		}
+
+    		printf(" %s\n",
+    		       (0 == (status & 0x20)) ?
+    		       "Half Duplex" : "Full Duplex");
+    		DELAY();
+            
+
+    		/* Make the MAC match. */
+
+    		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
+    				    &ncr_status));
+    		ncr_status &= ~0x3c;
+    		ncr_status |= 0x08;	/* Force Link Up */
+
+            /* fiber vs copper */
+            if(phy_media_by_index[index] == EIOA_PHY_MEDIA_FIBER) {
+                ncr_status |= 0x200;
+            } else {
+                ncr_status &= 0xfffffdff;
+            }
+
+    		if (0 != (status & 0x20))
+    			ncr_status |= 0x04; /* Force Full Duplex */
+
+    		/* Set the Speed */
+    		ncr_status |= (((status & 0x18) >> 3) << 4);
+
+    		NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
+    				     ncr_status));
+        } else {
+            /* enable AN in mac */
+    		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
+    				    &ncr_status));
+    		ncr_status &= ~0x3c;
+
+            /* fiber vs copper */
+            if(phy_media_by_index[index] == EIOA_PHY_MEDIA_FIBER) {
+                ncr_status |= 0x200;
+            } else {
+                ncr_status &= (~0x200);
+            }
+
+            ncr_status |= 0x3;
+
+    		NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
+    				     ncr_status));
+        }
 	}
 
 	/*
@@ -923,6 +950,22 @@ initialize_task_io(struct eth_device *dev)
 		printf("EIOA Configuration Failed\n");
 		return -1;
 	}
+    debug("done\n");
+
+    debug("Configuring HSS...");
+    if((NCP_USE_ALL_PORTS == eioaPort && port_type_by_index[0] == EIOA_PORT_TYPE_GMAC) ||
+       (NCP_USE_ALL_PORTS != eioaPort && port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_GMAC)) {
+    	if (0 != ncp_dev_configure(hss_gmac)) {
+    		printf("HSS Configuration Failed for GMACs.\n");
+    		return -1;
+    	}
+    } else if((NCP_USE_ALL_PORTS == eioaPort && port_type_by_index[0] == EIOA_PORT_TYPE_XGMAC) ||
+       (NCP_USE_ALL_PORTS != eioaPort && port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_XGMAC)) {
+    	if (0 != ncp_dev_configure(hss_xgmac)) {
+    		printf("HSS Configuration Failed for XGMACs.\n");
+    		return -1;
+    	}
+    }
     debug("done\n");
 
     debug("Creating task hdl.\n");

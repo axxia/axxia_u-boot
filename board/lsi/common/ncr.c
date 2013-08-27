@@ -767,6 +767,38 @@ ncr_write32_0x115(unsigned long region, unsigned long offset,
 
 /*
   -------------------------------------------------------------------------------
+  ncr_read32_0x153
+*/
+
+static int
+ncr_read32_0x153(unsigned long region, unsigned long offset, unsigned long *value)
+{
+	unsigned long address;
+
+	address = IO + 0x0 + (NCP_TARGET_ID(region) * 0x800) + offset;
+	*value = readl(address);
+
+	return 0;
+}
+
+/*
+  -------------------------------------------------------------------------------
+  ncr_write32_0x153
+*/
+
+static int
+ncr_write32_0x153(unsigned long region, unsigned long offset, unsigned long value)
+{
+	unsigned long address;
+
+	address = IO + 0x0 + (NCP_TARGET_ID(region) * 0x800) + offset;
+	writel(value, address);
+
+	return 0;
+}
+
+/*
+  -------------------------------------------------------------------------------
   ncr_read32_0x155
 */
 
@@ -935,6 +967,9 @@ ncr_read(unsigned long region,
 			return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
 		}
 		break;
+    case 0x153:
+        return ncr_read32_0x153(region, address, (unsigned long *)buffer);
+		break;
 	case 0x155:
 		return ncr_read32_0x155(region, address, (unsigned long *)buffer);
 		break;
@@ -977,6 +1012,11 @@ ncr_read(unsigned long region,
         return 0;
         break;
 	default:
+        if(NCP_NODE_ID(region) >= 0x100) {
+            printf("Unhandled read to 0x%x.0x%x.0x%llx\n", NCP_NODE_ID(region),
+                    NCP_TARGET_ID(region), address);
+            return -1;
+        }
 		/* Actual config ring acces, continue. */
 		break;
 	}
@@ -1215,6 +1255,10 @@ ncr_write(unsigned long region,
 			return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
 		}
 		break;
+    case 0x153:
+		return ncr_write32_0x153(region, address,
+				       *((unsigned long *)buffer));
+		break;
 	case 0x155:
 		return ncr_write32_0x155(region, address,
 				       *((unsigned long *)buffer));
@@ -1260,6 +1304,11 @@ ncr_write(unsigned long region,
         return 0;
         break;
 	default:
+        if(NCP_NODE_ID(region) >= 0x100) {
+            printf("Unhandled write to 0x%x.0x%x.0x%llx\n", NCP_NODE_ID(region),
+                    NCP_TARGET_ID(region), address);
+            return -1;
+        }
 		/* Actual config ring acces, continue. */
 		break;
 	}

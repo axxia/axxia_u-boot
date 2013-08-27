@@ -3662,58 +3662,13 @@ static int config_port(int index)
     return rc;
 }
 
-#include "gmac_copper_hss.c"
-#include "gmac_fiber_hss.c"
-#include "xgmac_fiber_hss.c"
-
-static ncr_command_t *gmac_copper_hss[] = {
-    gmac_copper_hss0,
-    gmac_copper_hss1,
-    gmac_copper_hss2,
-    gmac_copper_hss3,
-    gmac_copper_hss4,
-};
-
-static ncr_command_t *gmac_fiber_hss[] = {
-    gmac_fiber_hss0,
-    gmac_fiber_hss1,
-    gmac_fiber_hss2,
-    gmac_fiber_hss3,
-    gmac_fiber_hss4,
-};
-
-static ncr_command_t *xgmac_fiber_hss[] = {
-    xgmac_fiber_hss0,
-    xgmac_fiber_hss1,
-    xgmac_fiber_hss2,
-    xgmac_fiber_hss3,
-    xgmac_fiber_hss4,
-};
+#include "hss_hw_script/hss_gmac.c"
+#include "hss_hw_script/hss_xgmac.c"
 
 static int config_hss(int index)
 {
-    int rc = -1;
-
-    /* configure the port only for the selected port or all ports. */
-    if(index < 5) {
-        eioa_port_type port_type = port_type_by_index[index_by_port[eioaPort]];
-        eioa_phy_media phy_media = phy_media_by_index[index_by_port[eioaPort]];
-
-        if(port_type == EIOA_PORT_TYPE_GMAC && phy_media == EIOA_PHY_MEDIA_COPPER) {
-            rc = ncp_dev_configure(gmac_copper_hss[index]);
-        } else if(port_type == EIOA_PORT_TYPE_GMAC && phy_media == EIOA_PHY_MEDIA_FIBER) {
-            rc = ncp_dev_configure(gmac_fiber_hss[index]);
-        } else if(port_type == EIOA_PORT_TYPE_XGMAC && phy_media == EIOA_PHY_MEDIA_FIBER) {
-            rc = ncp_dev_configure(xgmac_fiber_hss[index]);
-        } else {
-            printf("Invalid port type %d and phy media %d combination.\n",
-                    port_type, phy_media);
-        }
-    }
-
-    return rc;
+    return 0;
 }
-
 
 static ncr_command_t eioa[] = {
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(23, 0), 0x00000090, 0x00000000, 0},
