@@ -1011,6 +1011,8 @@ ncr_read(unsigned long region,
     	}
         return 0;
         break;
+	case 0x200:
+	  break;
 	default:
         if(NCP_NODE_ID(region) >= 0x100) {
             printf("Unhandled read to 0x%x.0x%x.0x%llx\n", NCP_NODE_ID(region),
@@ -1303,6 +1305,8 @@ ncr_write(unsigned long region,
     	}
         return 0;
         break;
+	case 0x200:
+	  break;
 	default:
         if(NCP_NODE_ID(region) >= 0x100) {
             printf("Unhandled write to 0x%x.0x%x.0x%llx\n", NCP_NODE_ID(region),
