@@ -3218,6 +3218,7 @@ mac_loopback_test(void)
 {
 	packet_header_t *packet_headers;
 	void *packets;
+	void *pp;
 	void *input = (void *)(NetRxPackets[0]);
 	int i;
 	int size;
@@ -3238,6 +3239,8 @@ mac_loopback_test(void)
 		return;
 	}
 
+	pp = packets;
+
 	for (;;) {
 		if (0 == (size = eth_rx()))
 			continue;
@@ -3246,20 +3249,21 @@ mac_loopback_test(void)
 
 		if (i < PACKET_LOG_NUMBER) {
 			packet_header_t *ph;
+			void *pp;
 
 			ph = &(packet_headers[logged++]);
-			ph->address = packets;
+			ph->address = pp;
 			ph->size = size;
 			ph->queue_pointer.raw = rx_tail_copy_.raw;
 
 			if (size <= MAX_PACKET_SIZE) {
-				memcpy(packets, input, size);
+				memcpy(pp, input, size);
 			} else {
 				printf("Packet larger than %d bytes!\n",
 				       MAX_PACKET_SIZE);
 			}
 
-			packets += MAX_PACKET_SIZE;
+			pp += MAX_PACKET_SIZE;
 
 			if (size != eth_send(input, size))
 				printf("eth_send() failed: index %d\n",
