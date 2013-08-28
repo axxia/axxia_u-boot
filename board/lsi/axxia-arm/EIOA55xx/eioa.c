@@ -3662,8 +3662,8 @@ static int config_port(int index)
     return rc;
 }
 
-#include "hss_hw_script/hss_gmac.c"
-#include "hss_hw_script/hss_xgmac.c"
+#include "hss_gmac.c"
+#include "hss_xgmac.c"
 
 static int config_hss(int index)
 {
