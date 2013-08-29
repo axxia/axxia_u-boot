@@ -883,6 +883,8 @@ typedef union {
 /* -- link_partner_ability -- */
 
 #define PHY_LINK_PARTNER_ABILITY 0x05
+#define PHY_AUXILIARY_MODE3 0x1d
+#define PHY_BCM_TEST_REG 0x1f
 
 /*
   Auto-negotiation Advertisement Values.
