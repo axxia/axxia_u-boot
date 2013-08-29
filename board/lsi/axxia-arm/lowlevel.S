@@ -187,7 +187,11 @@ clear_page_tables:
 	@  Virtual: 0x0000_0000
 	@     Size: 1G
 
-        ldr     r0, =0x40c1e		@ Start at 0x00_0000_0000
+#ifdef RUN_UNCACHED
+        ldr     r0, =0x40c12		@ Start at 0x00_0000_0000
+#else
+        ldr     r0, =0x50c1e		@ Start at 0x00_0000_0000
+#endif
         mov     r1, r3
         add     r2, r3, #0x1000
 1:    	mov     r9, #0
@@ -205,10 +209,11 @@ clear_page_tables:
 	@  Virtual: 0x4000_0000
 	@     Size: 1G
 
-#ifndef SYSCACHE_ONLY_MODE
-        ldr     r0, =0x40c52		@ Start at 0x20_0000_0000
-#else
+#ifdef SYSCACHE_ONLY_MODE
+	@ When running in L3 cache, don't write to ram!
         ldr     r0, =0x50c5e		@ Start at 0x20_0000_0000
+#else
+        ldr     r0, =0x40c52		@ Start at 0x20_0000_0000
 #endif
         add     r1, r3, #0x1000
         add     r2, r3, #0x2000
@@ -273,10 +278,10 @@ clear_page_tables:
 
 	@ First 1G of RAM, sharable, cacheable and bufferable.
 
-#ifdef CONFIG_SPL_MTEST
-	ldr     r0, =0x1c12
+#ifdef RUN_UNCACHED
+	ldr     r0, =0xc12
 #else
-	ldr     r0, =0x11c1e
+	ldr     r0, =0x10c1e
 #endif
         mov     r1, r3
         add     r2, r1, #0x1000
@@ -299,7 +304,7 @@ clear_page_tables:
 
 	@ Second Level Table
 
-#ifdef CONFIG_SPL_MTEST
+#ifdef RUN_UNCACHED
 	ldr	r0, =0x300033
 #else
 	ldr	r0, =0x30043f

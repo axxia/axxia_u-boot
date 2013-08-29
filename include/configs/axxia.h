@@ -349,7 +349,7 @@ int write_parameters(parameters_t *);
 #ifndef CONFIG_SPL_BUILD
 
 #define CONFIG_AXXIA_FEMAC
-#define CONFIG_AXXIA_EIOA
+/*#define CONFIG_AXXIA_EIOA*/
 
 #if defined(CONFIG_AXXIA_FEMAC) || defined(CONFIG_AXXIA_EIOA)
 #define CONFIG_AXXIA_NET
@@ -441,6 +441,7 @@ int sysmem_reset(void);
 
 /*#define CONFIG_SPL_MTEST*/
 /*#define SM_PLL_533_MHZ*/
+#define RUN_UNCACHED
 
 /*
   ===============================================================================

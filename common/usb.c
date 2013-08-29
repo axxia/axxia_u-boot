@@ -54,6 +54,10 @@
 #include <asm/io.h>
 
 #include <usb.h>
+#ifdef CONFIG_AXXIA_ARM
+#include <usb/ulpi.h>
+#endif
+
 #ifdef CONFIG_4xx
 #include <asm/4xx_pci.h>
 #endif
@@ -89,7 +93,13 @@ int usb_init(void)
 	void *ctrl;
 	struct usb_device *dev;
 	int i, start_index = 0;
+#ifdef CONFIG_AXXIA_ARM
+        struct ulpi_viewport ulpi_vp;
 	unsigned long value;
+
+        ulpi_vp.viewport_addr = CONFIG_USB_ADDR+ 0x170;
+        ulpi_vp.port_num = 0x0;
+#endif
 
 	dev_index = 0;
 	asynch_allowed = 1;
@@ -101,22 +111,34 @@ int usb_init(void)
 		usb_dev[i].devnum = -1;
 	} 
 
-#ifdef CONFIG_AXXI_ARM
+#ifdef CONFIG_AXXIA_ARM
 	/* setup ULPI viewport register to access FUSB2805 PHY reg 0x7 to complement VBUS signal for FAULT */
-	writel(0x40070000, CONFIG_USB_ADDR+0x170));
+        value = ulpi_read(&ulpi_vp, 0x7);
+	if (value == ULPI_ERROR) {
+		printf("ULPI PHY read failed\n");
+		return -1;
+	}
+        if (ulpi_write(&ulpi_vp, 0x7, (value| 1 << 5))) {
+		printf("ULPI PHY write failed\n");
+		return -1;
+	}
+	
+#if 0
+	/* setup ULPI viewport register to access FUSB2805 PHY reg 0x7 to complement VBUS signal for FAULT */
+	writel(0x40070000, CONFIG_USB_ADDR+0x170);
 	do {
-		value = readl(CONFIG_USB_ADDR+0x170));
-	} while ((value&0x40000000)); 
+		value = readl(CONFIG_USB_ADDR+0x170);
+	} while (value&0x40000000); 
 
 	value = (value >> 8) & 0xff;
 	writel((0x60070000 | (value | 1 << 5)), (CONFIG_USB_ADDR+0x170));
 
-	writel(0x40070000, CONFIG_USB_ADDR+0x170));
+	writel(0x40070000, CONFIG_USB_ADDR+0x170);
 	do {
-		value = readl(CONFIG_USB_ADDR+0x170));
-	} while ((value&0x40000000)); 
+		value = readl(CONFIG_USB_ADDR+0x170);
+	} while (value&0x40000000); 
 #endif
-
+#endif
 
 	/* init low_level USB */
 	for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
