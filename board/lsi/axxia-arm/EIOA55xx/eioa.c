@@ -3652,22 +3652,18 @@ static int config_port(int index)
          (eioaPort == NCP_USE_ALL_PORTS))) {
         if(port_type_by_index[index] == EIOA_PORT_TYPE_GMAC && 
            index_by_port_gmac[port_by_index[index]] != -1) {
+            debug("Configuring gmac%d index=%d...", port_by_index[index], index);
             rc = ncp_dev_configure(eioa_gmacs[index]);
+            debug("done.\n");
         } else if(port_type_by_index[index] == EIOA_PORT_TYPE_XGMAC && 
                   index_by_port_xgmac[port_by_index[index]] != -1) {
+            debug("Configuring xgmac%d...", port_by_index[index]);
             rc = ncp_dev_configure(eioa_xgmacs[index]);
+            debug("done.\n");
         }
     }
 
     return rc;
-}
-
-#include "hss_gmac.c"
-#include "hss_xgmac.c"
-
-static int config_hss(int index)
-{
-    return 0;
 }
 
 static ncr_command_t eioa[] = {
@@ -9315,14 +9311,6 @@ static ncr_command_t eioa[] = {
     {NCR_COMMAND_FUNC, 0, (unsigned long)config_port, 9, 0},
 	/* End NCP_GMAC20 config */
 
-    /* HSS0 init Start */
-    {NCR_COMMAND_FUNC, 0, (unsigned long)config_hss, 0, 0},
-    /* HSS0 init End */
-
-    /* HSS1 init Start */
-    {NCR_COMMAND_FUNC, 0, (unsigned long)config_hss, 1, 0},
-    /* HSS1 init End */
-    
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(23, 16), 0x00150000, 0x80000000, 0},
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(23, 16), 0x00150010, 0x80000100, 0},
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(23, 16), 0x00150020, 0x80000200, 0},
@@ -11924,10 +11912,6 @@ static ncr_command_t eioa[] = {
 
 	/* MACSec config End */
 
-    /* HSS2 init Start */
-    {NCR_COMMAND_FUNC, 0, (unsigned long)config_hss, 2, 0},
-    /* HSS2 init End */
-    
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(41, 16), 0x00150000, 0x80000001, 0},
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(41, 16), 0x00150010, 0x80000101, 0},
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(41, 16), 0x00150020, 0x80000201, 0},
@@ -13706,10 +13690,6 @@ static ncr_command_t eioa[] = {
     {NCR_COMMAND_FUNC, 0, (unsigned long)config_port, 17, 0},
 	/* End NCP_GMAC81 config */
 
-    /* HSS3 init Start */
-    {NCR_COMMAND_FUNC, 0, (unsigned long)config_hss, 3, 0},
-    /* HSS3 init End */
-    
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(43, 16), 0x00150000, 0x80000001, 0},
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(43, 16), 0x00150010, 0x80000101, 0},
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(43, 16), 0x00150020, 0x80000201, 0},
@@ -15488,10 +15468,6 @@ static ncr_command_t eioa[] = {
     {NCR_COMMAND_FUNC, 0, (unsigned long)config_port, 21, 0},
 	/* End NCP_GMAC113 config */
 
-    /* HSS4 init Start */
-    {NCR_COMMAND_FUNC, 0, (unsigned long)config_hss, 4, 0},
-    /* HSS4 init End */
-    
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(45, 16), 0x00150000, 0x80000001, 0},
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(45, 16), 0x00150010, 0x80000101, 0},
 	{NCR_COMMAND_WRITE, NCP_REGION_ID(45, 16), 0x00150020, 0x80000201, 0},
