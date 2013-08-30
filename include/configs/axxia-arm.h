@@ -123,7 +123,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 #ifndef __ASSEMBLY__
 #define CONFIG_CMD_I2C
-#define CONFIG_AXXIA_I2C
+#define CONFIG_AXXIA_AXM_I2C
+#define CONFIG_CMD_SDRAM
 #define CONFIG_I2C_MULTI_BUS
 #define CONFIG_SYS_MAX_I2C_BUS 4
 #define CONFIG_SYS_I2C_SPEED 100000
