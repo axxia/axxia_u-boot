@@ -28,6 +28,7 @@
 */
 
 /* #define DEBUG */
+/* #define NCR_DEBUG */
 /*#define LSI_LOGIO*/
 #include <config.h>
 #include <common.h>
@@ -279,12 +280,12 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 			    NCP_TARGET_ID(command->region), command->offset);
 		return -1;
 	}
-
+#ifdef NCR_DEBUG
 	debug("Read 0x%08lx from n=0x%lx t=0x%lx o=0x%lx\n",
 		    *value, NCP_NODE_ID(command->region),
 		    NCP_TARGET_ID(command->region),
 		    command->offset);
-
+#endif
 	return 0;
 }
 
@@ -296,9 +297,10 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 static int
 ncp_dev_do_write(ncr_command_t *command)
 {
+#ifdef NCR_DEBUG
 	debug(" WRITE: r=0x%lx o=0x%lx v=0x%lx\n",
 		    command->region, command->offset, command->value);
-
+#endif
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
 		*((volatile unsigned *)command->offset) = command->value;
 #ifdef USE_CACHE_SYNC
@@ -360,11 +362,11 @@ ncp_dev_do_modify(ncr_command_t *command)
 
 		return -1;
 	} else {
-
+#ifdef NCR_DEBUG
 		debug("MODIFY: r=0x%lx o=0x%lx m=0x%lx v=0x%lx\n",
 			    command->region, command->offset,
 			    command->mask, command->value);
-
+#endif
 	}
 
 	return 0;
@@ -423,7 +425,9 @@ ncp_dev_configure(ncr_command_t *commands) {
 			rc = ncp_dev_do_modify(commands);
 			break;
 		case NCR_COMMAND_USLEEP:
+#ifdef NCR_DEBUG
 			debug("USLEEP: v=0x%lx\n", commands->value);
+#endif
 			udelay(commands->value);
 			break;
 		case NCR_COMMAND_POLL:

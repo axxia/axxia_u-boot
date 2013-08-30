@@ -3652,12 +3652,12 @@ static int config_port(int index)
          (eioaPort == NCP_USE_ALL_PORTS))) {
         if(port_type_by_index[index] == EIOA_PORT_TYPE_GMAC && 
            index_by_port_gmac[port_by_index[index]] != -1) {
-            debug("Configuring gmac%d index=%d...", port_by_index[index], index);
+            debug("Configuring gmac%d, index=%d...", port_by_index[index], index);
             rc = ncp_dev_configure(eioa_gmacs[index]);
             debug("done.\n");
         } else if(port_type_by_index[index] == EIOA_PORT_TYPE_XGMAC && 
                   index_by_port_xgmac[port_by_index[index]] != -1) {
-            debug("Configuring xgmac%d...", port_by_index[index]);
+            debug("Configuring xgmac%d, index=%d...", port_by_index[index], index);
             rc = ncp_dev_configure(eioa_xgmacs[index]);
             debug("done.\n");
         }
