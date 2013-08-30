@@ -637,7 +637,7 @@ void dump_packet(const char *, void *, int);
   ======================================================================
   ======================================================================
 */
-#define CONFIG_AXXIA_I2C
+#define CONFIG_AXXIA_ACP_I2C
 #define CONFIG_HARD_I2C         /* Hardware I2C */
 #define CONFIG_CMD_I2C
 #define CONFIG_SYS_I2C_MULTI_EEPROMS
