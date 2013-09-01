@@ -28,6 +28,7 @@
 */
 
 /* #define DEBUG */
+/* #define NCR_DEBUG */
 /*#define LSI_LOGIO*/
 #include <config.h>
 #include <common.h>
@@ -233,6 +234,8 @@ ncp_task_uboot_unconfig(void);
 #include "EIOA55xx/vp.c"
 #include "EIOA55xx/nca.c"
 #include "EIOA55xx/eioa.c"
+#include "EIOA55xx/hss_gmac.c"
+#include "EIOA55xx/hss_xgmac.c"
 #else
 #error "EIOA is not defined for this architecture!"
 #endif
@@ -277,12 +280,12 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 			    NCP_TARGET_ID(command->region), command->offset);
 		return -1;
 	}
-
+#ifdef NCR_DEBUG
 	debug("Read 0x%08lx from n=0x%lx t=0x%lx o=0x%lx\n",
 		    *value, NCP_NODE_ID(command->region),
 		    NCP_TARGET_ID(command->region),
 		    command->offset);
-
+#endif
 	return 0;
 }
 
@@ -294,9 +297,10 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 static int
 ncp_dev_do_write(ncr_command_t *command)
 {
+#ifdef NCR_DEBUG
 	debug(" WRITE: r=0x%lx o=0x%lx v=0x%lx\n",
 		    command->region, command->offset, command->value);
-
+#endif
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
 		*((volatile unsigned *)command->offset) = command->value;
 #ifdef USE_CACHE_SYNC
@@ -358,11 +362,11 @@ ncp_dev_do_modify(ncr_command_t *command)
 
 		return -1;
 	} else {
-
+#ifdef NCR_DEBUG
 		debug("MODIFY: r=0x%lx o=0x%lx m=0x%lx v=0x%lx\n",
 			    command->region, command->offset,
 			    command->mask, command->value);
-
+#endif
 	}
 
 	return 0;
@@ -421,7 +425,9 @@ ncp_dev_configure(ncr_command_t *commands) {
 			rc = ncp_dev_do_modify(commands);
 			break;
 		case NCR_COMMAND_USLEEP:
+#ifdef NCR_DEBUG
 			debug("USLEEP: v=0x%lx\n", commands->value);
+#endif
 			udelay(commands->value);
 			break;
 		case NCR_COMMAND_POLL:
@@ -537,38 +543,38 @@ line_setup(int index)
 	} else if (12 > index) {
 	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(40, 16); /* 0x28.0x10 */
-        gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(40, 17) : /* 0x1f.0x11 */ 
-                                           NCP_REGION_ID(40, 18)); /* 0x1f.0x12 */
+        gmacRegion = ((index == 10) ? NCP_REGION_ID(40, 17) : /* 0x1f.0x11 */ 
+                                      NCP_REGION_ID(40, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (14 > index) {
 	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(41, 16); /* 0x29.0x10 */
-        gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(41, 17) : /* 0x1f.0x11 */ 
-                                           NCP_REGION_ID(41, 18)); /* 0x1f.0x12 */
+        gmacRegion = ((index == 12) ? NCP_REGION_ID(41, 17) : /* 0x1f.0x11 */ 
+                                      NCP_REGION_ID(41, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (16 > index) {
 	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(42, 16); /* 0x2a.0x10 */
-        gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(42, 17) : /* 0x1f.0x11 */ 
-                                           NCP_REGION_ID(42, 18)); /* 0x1f.0x12 */
+        gmacRegion = ((index == 14) ? NCP_REGION_ID(42, 17) : /* 0x1f.0x11 */ 
+                                      NCP_REGION_ID(42, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (18 > index) {
 	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(43, 16); /* 0x2b.0x10 */
-        gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(43, 17) : /* 0x1f.0x11 */ 
-                                           NCP_REGION_ID(43, 18)); /* 0x1f.0x12 */
+        gmacRegion = ((index == 16) ? NCP_REGION_ID(43, 17) : /* 0x1f.0x11 */ 
+                                      NCP_REGION_ID(43, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (20 > index) {
 	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(44, 16); /* 0x2c.0x10 */
-        gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(44, 17) : /* 0x1f.0x11 */ 
-                                           NCP_REGION_ID(44, 18)); /* 0x1f.0x12 */
+        gmacRegion = ((index == 18) ? NCP_REGION_ID(44, 17) : /* 0x1f.0x11 */ 
+                                      NCP_REGION_ID(44, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (22 > index) {
 	    hwPortIndex = 0;
 		eioaRegion = NCP_REGION_ID(45, 16); /* 0x2d.0x10 */
-        gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(45, 17) : /* 0x1f.0x11 */ 
-                                           NCP_REGION_ID(45, 18)); /* 0x1f.0x12 */
+        gmacRegion = ((index == 20) ? NCP_REGION_ID(45, 17) : /* 0x1f.0x11 */ 
+                                      NCP_REGION_ID(45, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else {
 	    printf("Invalid gmac port %d\n", port_by_index[index]);
@@ -951,18 +957,19 @@ initialize_task_io(struct eth_device *dev)
 		return -1;
 	}
     debug("done\n");
-
-    debug("Configuring HSS...");
+    
     if((NCP_USE_ALL_PORTS == eioaPort && port_type_by_index[0] == EIOA_PORT_TYPE_GMAC) ||
        (NCP_USE_ALL_PORTS != eioaPort && port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_GMAC)) {
+        debug("Configuring all HSS for GMAC...");
     	if (0 != ncp_dev_configure(hss_gmac)) {
-    		printf("HSS Configuration Failed for GMACs.\n");
+    		printf("HSS Configuration failed for GMACs.\n");
     		return -1;
     	}
     } else if((NCP_USE_ALL_PORTS == eioaPort && port_type_by_index[0] == EIOA_PORT_TYPE_XGMAC) ||
        (NCP_USE_ALL_PORTS != eioaPort && port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_XGMAC)) {
+        debug("Configuring all HSS for XGMAC...");
     	if (0 != ncp_dev_configure(hss_xgmac)) {
-    		printf("HSS Configuration Failed for XGMACs.\n");
+    		printf("HSS Configuration failed for XGMACs.\n");
     		return -1;
     	}
     }
