@@ -340,65 +340,6 @@ set_clusters(void)
   ==============================================================================
 */
 
-/*
-  -------------------------------------------------------------------------------
-  flush_l3
-*/
-
-void flush_l3(void)
-{
-#ifndef RUN_UNCACHED
-	unsigned long hnf_offsets[] = {
-		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
-	};
-	int i;
-        unsigned long status, id;
-	int retries;
-
-	puts("Flushing L3 Cache\n");
-	
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		/* set state NOL3 */
-		writel(0x0, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
-	}
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		retries = 10000;
-
-		do {
-			status = readl(DICKENS +
-				       (0x10000 * hnf_offsets[i]) + 0x18);
-			udelay(1);
-		} while ((0 < --retries) && (0x0 != (status & 0xf)));
-
-		if (0 == retries)
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-	}
-
-	/* */
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		/* set state NOL3 */
-		writel(0x3, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
-	}
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		retries = 10000;
-
-		do {
-			status = readl(DICKENS +
-				       (0x10000 * hnf_offsets[i]) + 0x18);
-			udelay(1);
-		} while ((0 < --retries) && (0xc != (status & 0xf)));
-
-		if (0 == retries)
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-	}
-#endif
-
-	return;
-}
-
 /**
  * @brief board_init
  *
