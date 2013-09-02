@@ -158,9 +158,6 @@ static void cache_disable(uint32_t cache_bit)
 	cp_delay();
 	if (cache_bit == (CR_C | CR_M)) {
 		flush_dcache_all();
-#ifdef CONFIG_AXXIA
-		flush_l3();
-#endif
 	}
 	set_cr(reg & ~cache_bit);
 }
