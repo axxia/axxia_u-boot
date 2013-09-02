@@ -443,6 +443,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 	int pci_srio_select, i;
 	int pci_srio_mode;
 	unsigned long phy0_ctrl, phy1_ctrl;
+	unsigned long tmp;
 	rx_serdes_value_t rx_serdes_values[] = {
                 {0x008e, 0x0487},
                 {0x028e, 0x0487},
@@ -462,31 +463,35 @@ int pciesrio_setcontrol(unsigned long new_control)
 	phy1_ctrl = new_control & 0x60800004;
 
 	for (i = 0;
-		i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
-		++i) {
+	     i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
+	     ++i) {
 		ncr_write16(NCP_REGION_ID(0x115, 1),
-                            rx_serdes_values[i].offset,
-                            rx_serdes_values[i].value);
+			    rx_serdes_values[i].offset,
+			    rx_serdes_values[i].value);
 		ncr_write16(NCP_REGION_ID(0x115, 4),
-                            rx_serdes_values[i].offset,
-                            rx_serdes_values[i].value);
+			    rx_serdes_values[i].offset,
+			    rx_serdes_values[i].value);
 	}
 
-	switch (new_control) {
+	/* PCIE0 */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl | 0x20);
+	udelay(100000);
+	/* Select PLL_A for all channels */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
+	/* Power up PLL_A, keep PLL_B in powered down. */
+	ncr_read32(NCP_REGION_ID(0x115, 0), 0x228, &tmp);
+	tmp &= ~1;
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, tmp);
+	/* Enable RX detect */
+	ncr_read32(NCP_REGION_ID(0x115, 0), 0x22c, &tmp);
+	tmp |= 0xF<<16;
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c, tmp);
+	udelay(100000);
+	/* Set new phy_ctrl value */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl);
 
-	case 0x00400001:
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl | 0x20);
-		udelay(100000);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000000);
-		udelay(100000);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl);
-		udelay(100000);
-		break;
-	default:
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl);
-		ncr_write32(NCP_REGION_ID(0x115, 3), 0x200, phy1_ctrl);
-		break;
-	}
+	/* PCIE1 */
+	ncr_write32(NCP_REGION_ID(0x115, 3), 0x200, phy1_ctrl);
+
 	return 0;
 }
