@@ -87,7 +87,7 @@ axxia_initialize(void)
 
 #ifndef CONFIG_AXXIA_EMU
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
-		if (0 != pciesrio_init())
+		if (0 != pciesrio_init(pciesrio->control))
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 
