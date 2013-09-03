@@ -593,7 +593,7 @@ line_setup(int index)
 	envstring = getenv("macspeed");
 
 	if (NULL != envstring) {
-		printf("Setting gmac%d to %s\n", port_by_index[index], envstring);
+		debug("Setting gmac%d to %s\n", port_by_index[index], envstring);
 
 		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
 				    &ncr_status));
@@ -1015,27 +1015,16 @@ initialize_task_io(struct eth_device *dev)
     				return -1;
     			}
             }
-#if 0
-            else {
-                if (0 != line_setup_xgmac(i)) {
-    				return -1;
-    			}
-            }
-#endif
 		}
 	} else {
         if(port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_GMAC) {
+            printf("Using EIOA Port GMAC%02d\n", eioaPort);
     		if (0 != line_setup(index_by_port[eioaPort])) {
     			return -1;
     		}
+        } else {
+            printf("Using EIOA Port XGMAC%02d\n", eioaPort);
         }
-#if 0
-        else {
-            if (0 != line_setup_xgmac(index_by_port[eioaPort])) {
-				return -1;
-			}
-        }
-#endif
 	}
 
 	initialized = 1;
@@ -1338,7 +1327,11 @@ lsi_eioa_eth_rx(struct eth_device *dev)
 
     	if (NCP_USE_ALL_PORTS == eioaPort) {
     		eioaPort = task->params[0];
-    		printf("Selecting EIOA Port GMAC%02d\n", eioaPort);
+            if(port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_GMAC) {
+    		    printf("Using EIOA Port GMAC%02d\n", eioaPort);
+            } else {
+                printf("Using EIOA Port XGMAC%02d\n", eioaPort);
+            }
     	}
 
     	bytes_received = task->pduSegSize0;
