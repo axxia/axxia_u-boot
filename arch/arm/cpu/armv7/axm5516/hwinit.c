@@ -244,16 +244,19 @@ void init_omap_revision(void)
 	}
 }
 
-void reset_cpu(ulong ignored)
+void
+reset_cpu(ulong ignored)
 {
-	u32 omap_rev = omap_revision();
-
 	/*
-	 * WARM reset is not functional in case of OMAP5430 ES1.0 soc.
-	 * So use cold reset in case instead.
-	 */
-	if (omap_rev == OMAP5430_ES1_0)
-		writel(PRM_RSTCTRL_RESET << 0x1, PRM_RSTCTRL);
-	else
-		writel(PRM_RSTCTRL_RESET, PRM_RSTCTRL);
+	  Chip Reset
+	*/
+
+	writel(0x000000ab, 0x90031000); /* Access Key */
+	writel(0x00000040, 0x90031004); /* Internal Boot, 0xffff0000 Target */
+ 	writel(0x80000000, 0x9003180c);	/* Set ResetReadDone */
+ 	writel(0x00080802, 0x90031008);	/* Chip Reset */
+
+	printf("Reset failed!\n"); /* Should never get here... */
+
+	return;
 }
