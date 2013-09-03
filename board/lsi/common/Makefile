@@ -38,14 +38,15 @@ else
 ################################################################################
 ## SPL Build
 
-COBJS += sysmem_reset.o sysmem_bist.o
+COBJS += sysmem_reset.o sysmem_bist.o spi_flash.o
 
 endif
 
 ################################################################################
 ## All Builds
 
-COBJS += version.o lsi.o ncr.o ssp.o parameters.o
+COBJS += version.o lsi.o ncr.o parameters.o
+COBJS-$(CONFIG_AXXIA_SERIAL_FLASH) += spi_flash.o
 
 ################################################################################
 

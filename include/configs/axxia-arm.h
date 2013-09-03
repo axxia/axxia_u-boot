@@ -93,6 +93,13 @@ int is_asic( void );
 #else  /* CONFIG_AXXIA_EMU */
 #define SYSTIMER_RATE		256000000
 #endif	/* CONFIG_AXXIA_EMU */
+
+/*
+   Flash
+ */
+#define CONFIG_SPI_FLASH
+#define CONFIG_SPI_FLASH_SPANSION
+
 /*
   ================================================================================
   ================================================================================
@@ -125,6 +132,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_CMD_I2C
 #define CONFIG_AXXIA_AXM_I2C
 #define CONFIG_CMD_SDRAM
+#define CONFIG_AXXIA_I2C
 #define CONFIG_I2C_MULTI_BUS
 #define CONFIG_SYS_MAX_I2C_BUS 4
 #define CONFIG_SYS_I2C_SPEED 100000
@@ -616,9 +624,11 @@ int serial_early_init(void);
 
 /* Enabled commands */
 #if 0
-#define CONFIG_CMD_I2C		/* I2C serial bus support	*/
 #define CONFIG_CMD_MMC		/* MMC support                  */
 #endif
+#define CONFIG_CMD_I2C		/* I2C serial bus support	*/
+#define CONFIG_CMD_SPI		/* I2C serial bus support	*/
+#define CONFIG_CMD_SF 		/* Serial flash commands        */
 #define CONFIG_CMD_SAVEENV
 
 /* Disabled commands */
@@ -720,6 +730,13 @@ int serial_early_init(void);
 #define CONFIG_SYS_DEFAULT_LPDDR2_TIMINGS
 #endif
 
+
+/*
+  SPI
+*/
+#define CONFIG_PL022_SPI
+#define CONFIG_SYS_SPI_CLK  spi_get_per_clk()
+#define CONFIG_SYS_SPI_BASE (IO+0x88000)
 
 /*
   ======================================================================
@@ -975,6 +992,7 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_SYS_U_BOOT_MAX_SIZE_SECTORS	0x200 /* 256 KB */
 #define CONFIG_SPL_FAT_LOAD_PAYLOAD_NAME	"u-boot.img"
 
+#define CONFIG_SPL_SPI_SUPPORT
 #define CONFIG_SPL_LIBCOMMON_SUPPORT
 #define CONFIG_SPL_LIBDISK_SUPPORT
 #define CONFIG_SPL_I2C_SUPPORT

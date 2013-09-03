@@ -413,6 +413,8 @@ typedef enum {
 
 int acp_clock_get(acp_clock_t, unsigned long *);
 
+unsigned int spi_get_per_clk(void);
+
 #endif /* __ASSEMBLY__ */
 
 /*

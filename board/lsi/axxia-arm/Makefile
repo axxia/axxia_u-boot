@@ -58,7 +58,7 @@ endif
 ################################################################################
 ## All Builds
 
-COBJS   += failure.o version.o axxia_clocks.o cache.o
+COBJS   += failure.o version.o axxia_clocks.o cache.o spi.o
 SOBJS   += lowlevel.o
 
 ################################################################################
