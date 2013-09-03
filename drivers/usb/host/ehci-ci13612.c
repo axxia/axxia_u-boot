@@ -41,7 +41,7 @@ int ehci_hcd_init(int index, struct ehci_hccr **hccr, struct ehci_hcor **hcor)
 	*hccr = (struct ehci_hccr *)(CONFIG_USB_ADDR+0x100);
         *hcor = (struct ehci_hcor *)((uint32_t) *hccr +
 				     HC_LENGTH(ehci_readl(&(*hccr)->cr_capbase)));
-#ifdef CONFIG_AXXIA_ARM
+#if defined(CONFIG_AXXIA_ARM) && defined(RUN_UNCACHED)
 	/* Setup hprot for non-cacheable/non-bufferable for USB DMA */
 	writel(0x0, GPREG+0x74);
 #else
