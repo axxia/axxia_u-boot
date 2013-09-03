@@ -175,6 +175,14 @@ dump_config(ncp_dev_hdl_t dev,
     }
 
     printf("\n");
+    dump_regs(dev, region, 0x8000, 2);
+    printf("\n");
+    dump_regs(dev, region, 0x8800, 2);
+    printf("\n");
+    dump_regs(dev, region, 0x9000, 2);
+    printf("\n");
+    dump_regs(dev, region, 0x9800, 2);
+    printf("\n");
 
 NCP_RETURN_LABEL
     return ncpStatus;
@@ -1086,6 +1094,7 @@ ncp_sm_lsiphy_static_init(
     ncp_uint32_t    phy_adr_imp;
     ncp_uint32_t    phy_dat_imp;
     ncp_uint32_t    phy_rcv_imp;
+    ncp_int32_t     rlrank_adj;
 
     ncp_phy_CFG_SYSMEM_PHY_DPCONFIG2_BLx_r_t   dpconfig2  = {0};
     ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG1_r_t      phyconfig1 = {0};
@@ -1218,11 +1227,18 @@ ncp_sm_lsiphy_static_init(
      * make it 3.
      */
 
-    if (parms->min_phy_cal_delay < 3) {
-        parms->min_phy_cal_delay = 3;
+    if (parms->version == NCP_CHIP_ACP25xx) 
+    {
+        rlrank_adj = -3;
+    } else {
+        rlrank_adj = 1;
     }
 
-    phyconfig3.rdlatrank = parms->min_phy_cal_delay - 3;
+    if (parms->min_phy_cal_delay < rlrank_adj) {
+        parms->min_phy_cal_delay = rlrank_adj;
+    }
+
+    phyconfig3.rdlatrank = parms->min_phy_cal_delay + rlrank_adj;
     phyconfig3.rdlatgate = parms->min_phy_cal_delay;
     for (i = 0; i < parms->num_bytelanes; i++) 
     {
@@ -1381,7 +1397,7 @@ ncp_sm_lsiphy_static_init(
         phy_rcv_imp = (parms->phy_rcv_imp >> 16) & 0x3;
     }
 
-    printf("setting SMID%d  phy_dat=%d rcv_imp=%d phy_adr=%d\n", smId, phy_dat_imp, phy_rcv_imp, phy_adr_imp);
+/*     printf("setting SMID%d  phy_dat=%d rcv_imp=%d phy_adr=%d\n", smId, phy_dat_imp, phy_rcv_imp, phy_adr_imp); */
 
     adrioset.adrdrvac  = phy_adr_imp;
     adrioset.adrdrvck0 = phy_adr_imp;
@@ -1397,6 +1413,7 @@ ncp_sm_lsiphy_static_init(
     {
         ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR3_ADRIOSET, *(ncp_uint32_t *) &adrioset);
     }
+
 
     /* 
      * TEMP : set to strongest slew rate until
@@ -2599,6 +2616,15 @@ sm_bytelane_test_elm(
     int i;
     ncp_uint32_t  beatSize= num_bls * 2;
 
+#ifdef UBOOT 
+    ncp_uint32_t  *p32 = (NCA + 0x1000); 
+    unsigned uppAddr;
+    unsigned lowAddr;
+#else 
+    ncp_uint8_t   rbuf[NCP_SM_BURST_SIZE];
+    ncp_uint32_t  *p32 = (ncp_uint32_t *) rbuf;
+#endif
+
     ncp_region_id_t elmRegion = NCP_REGION_ID(elmNode, 0);
     ncp_uint32_t  burstSize;
     ncp_uint32_t  blockSize;
@@ -2729,10 +2755,37 @@ sm_bytelane_test_elm(
         expVal += valAdj;
     }
 
+
+
 #ifdef SM_BYTELANE_TEST_DEBUG
     printf("*bad_bl_bad=0x%x *bad_bl_early=0x%x *bad_bl_late=0x%x\n",
            *bad_bl_bad, *bad_bl_early, *bad_bl_late);
+
+#ifdef UBOOT 
+    uppAddr = ( (unsigned) (address >> 32) );
+    lowAddr = ( (unsigned) (address & 0xffffffff) );
+
+    if (0 != ncr_read( NCP_REGION_ID( 512, 1 ), uppAddr, lowAddr, blockSize, NULL )) {
+      printf("%d : ncr_write() failed!\n", __LINE__);
+      return -1;
+    }
+    p32 = (NCA + 0x1000); 
+#else 
+    NCP_CALL(ncp_block_read8(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
+                                rbuf, blockSize, 0));
+    p32 = (ncp_uint32_t *)rbuf;
 #endif
+    {
+        int idx;
+
+        for (idx = 0; idx < (blockSize/4); ++idx) {
+            printf("(%03x:0x%08lx)", (idx * 4), p32[idx]);
+            if ( (idx & 0x3) == 3) printf("\n");
+        }
+
+        printf("\n");
+    }
+#endif /* SM_ECC_BYTELANE_TEST_DEBUG */
 
 NCP_RETURN_LABEL
     return 0;
@@ -2857,6 +2910,11 @@ sm_ecc_bytelane_test_elm(
     /* clear ECC interrupt status bits */
     intrStatFn(dev, ctrlRegion, ecc_mask);
 
+#ifdef SM_ECC_BYTELANE_TEST_DEBUG
+    printf("ECC bytelane test  address 0x%012llx\n", address);
+
+#endif
+
     /*
      * calculate the block size for this test. 
      * One DDR burst is 8 beats, or 8 bytes per bytelane.
@@ -2909,7 +2967,8 @@ sm_ecc_bytelane_test_elm(
         int idx;
 
         for (idx = 0; idx < (blockSizeWords); ++idx) {
-            printf("<%03d:0x%08lx>", (idx * 4), p32[idx]);
+            printf("<%03x:0x%08lx>", (idx * 4), p32[idx]);
+            if ( (idx & 0x3) == 3) printf("\n");
         }
 
         printf("\n");
@@ -3063,6 +3122,12 @@ ncp_sm_sm_coarse_write_leveling(
 
     NCP_COMMENT("sysmem phy coarse write leveling - rank %d, addr 0x%012llx",
             rank, addr);
+
+#ifdef SM_BYTELANE_TEST_DEBUG
+    printf("sysmem phy coarse write leveling - rank %d, addr 0x%012llx\n",
+            rank, addr);
+#endif
+
 
     switch (parms->version) 
     {
