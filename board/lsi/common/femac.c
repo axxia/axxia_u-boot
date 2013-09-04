@@ -4121,14 +4121,18 @@ phy_enable_(int phy)
 
 	phy_address_ = phy;
 
-	value = mdio_read( phy_address_, PHY_BCM_TEST_REG );
 	/* Access Shadow reg 0x1d */
-	value = value | 0x80;
+	value = mdio_read( phy_address_, PHY_BCM_TEST_REG );
+	value |= 0x80;
 	mdio_write( phy_address_, PHY_BCM_TEST_REG, value);
 
 	/* Set RX FIFO size to 0x7 */
 	mdio_write( phy_address_, PHY_AUXILIARY_MODE3, 0x7);
 	
+	/* Back to regular register access. */
+	value &= ~0x80;
+	mdio_write( phy_address_, PHY_BCM_TEST_REG, value);
+
 	macspeed = getenv( "macspeed" );
 
 	/*
