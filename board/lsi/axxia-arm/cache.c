@@ -90,7 +90,7 @@ v7_outer_cache_flush_all(void)
 	/* */
 
 	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		/* set state NOL3 */
+		/* set state FAM */
 		writel(0x3, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
 	}
 
