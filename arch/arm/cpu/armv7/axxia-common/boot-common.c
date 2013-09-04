@@ -38,6 +38,7 @@ struct omap_boot_parameters boot_params __attribute__ ((section(".data")));
  * We would not typically need to save these parameters in regular
  * U-Boot. This is needed only in SPL at the moment.
  */
+#if 0
 u32 omap_bootmode = MMCSD_MODE_FAT;
 
 u32 spl_boot_device(void)
@@ -56,6 +57,7 @@ void spl_board_init(void)
 	gpmc_init();
 #endif
 }
+#endif
 
 int board_mmc_init(bd_t *bis)
 {

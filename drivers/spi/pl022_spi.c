@@ -22,9 +22,7 @@
  */
 
 #include <common.h>
-#ifndef CONFIG_SPL_BUILD
 #include <malloc.h>
-#endif
 #include <spi.h>
 #include <asm/io.h>
 
@@ -80,10 +78,6 @@ struct pl022_spi_slave {
 	void *regs;
 	unsigned int freq;
 };
-
-#ifdef CONFIG_SPL_BUILD
-static struct spi_slave spl_spi_slave;
-#endif
 
 static inline struct pl022_spi_slave *to_pl022_spi(struct spi_slave *slave)
 {
@@ -143,14 +137,12 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 	if (!spi_cs_is_valid(bus, cs))
 		return NULL;
 
-#ifdef CONFIG_SPL_BUILD
-	ps = &spl_spi_slave;
-#else
 	ps = malloc(sizeof(struct pl022_spi_slave));
 	if (!ps)
 		return NULL;
-#endif
 
+	ps->slave.bus = bus;
+	ps->slave.cs = cs;
 	ps->freq = max_hz;
 
 	switch (bus) {
@@ -225,11 +217,9 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 
 void spi_free_slave(struct spi_slave *slave)
 {
-#ifndef CONFIG_SPL_BUILD
 	struct pl022_spi_slave *ps = to_pl022_spi(slave);
 
 	free(ps);
-#endif
 }
 
 int spi_claim_bus(struct spi_slave *slave)

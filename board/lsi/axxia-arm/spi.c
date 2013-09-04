@@ -33,6 +33,5 @@ spi_get_per_clk(void)
 	else
 		per_clk *= 1000;
 
-	printf("spi_get_per_clk() = %lu\n", per_clk);
 	return per_clk;
 }

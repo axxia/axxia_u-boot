@@ -27,6 +27,7 @@
 
 #ifndef __ASSEMBLY__
 #include <linux/types.h>
+#include <asm/sizes.h>
 #endif
 
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -74,13 +75,9 @@ int is_asic( void );
  * High Level Configuration Options
  */
 #define CONFIG_ARMV7	/* This is an ARM V7 CPU core */
-#define CONFIG_OMAP	/* in a TI OMAP core */
 #define CONFIG_AXXIA_ARM	/* in a TI OMAP core */
 #define CONFIG_AXXIA
 #define CONFIG_ACP
-#define CONFIG_OMAP54XX	/* which is a 54XX */
-#define CONFIG_OMAP5430	/* which is in a 5430 */
-#define CONFIG_5430EVM	/* working with EVM */
 #define CONFIG_AXXIA_PCI
 #define CONFIG_AXXIA_USB
 
@@ -93,6 +90,10 @@ int is_asic( void );
 #else  /* CONFIG_AXXIA_EMU */
 #define SYSTIMER_RATE		256000000
 #endif	/* CONFIG_AXXIA_EMU */
+
+#define CONFIG_SYS_MONITOR_LEN  SZ_512K
+#define CONFIG_SYS_UBOOT_START  0
+#define CONFIG_SYS_SPI_U_BOOT_OFFS       SZ_1M
 
 /*
    Flash
@@ -982,6 +983,7 @@ void dump_packet(const char *, void *, int);
 /* Defines for SPL */
 #define CONFIG_SPL
 #define CONFIG_SPL_FRAMEWORK
+#define CONFIG_SPL_BOARD_INIT
 #define CONFIG_SPL_TEXT_BASE		0x20000000
 #define CONFIG_SPL_MAX_SIZE		0x19000	/* 100K */
 #define CONFIG_SPL_STACK		(LSM + (256 * 1024) - (8 * 1024))
@@ -992,7 +994,14 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_SYS_U_BOOT_MAX_SIZE_SECTORS	0x200 /* 256 KB */
 #define CONFIG_SPL_FAT_LOAD_PAYLOAD_NAME	"u-boot.img"
 
+#define CONFIG_SPL_SPI_BUS		0
+#define CONFIG_SPL_SPI_CS		0
+#define CONFIG_SF_DEFAULT_SPEED         1000000
+#define CONFIG_SF_DEFAULT_MODE          SPI_MODE_0
+
+#define CONFIG_SPL_SPI_LOAD
 #define CONFIG_SPL_SPI_SUPPORT
+#define CONFIG_SPL_SPI_FLASH_SUPPORT
 #define CONFIG_SPL_LIBCOMMON_SUPPORT
 #define CONFIG_SPL_LIBDISK_SUPPORT
 #define CONFIG_SPL_I2C_SUPPORT
@@ -1022,8 +1031,8 @@ void dump_packet(const char *, void *, int);
  */
 #define CONFIG_SPL_BSS_START_ADDR	0x84000000
 #define CONFIG_SPL_BSS_MAX_SIZE		0x100000	/* 1 MB */
-#define CONFIG_SYS_SPL_MALLOC_START	0x84100000
-#define CONFIG_SYS_SPL_MALLOC_SIZE	0x100000	/* 1 MB */
+#define CONFIG_SYS_SPL_MALLOC_START	(LSM + SZ_256K - SZ_8K - SZ_4K - SZ_16K)
+#define CONFIG_SYS_SPL_MALLOC_SIZE	SZ_16K
 
 #define CONFIG_AXXIA_SERIAL_FLASH_ENV
 #define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
