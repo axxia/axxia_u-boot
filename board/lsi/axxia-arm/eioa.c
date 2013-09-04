@@ -870,7 +870,7 @@ initialize_task_io(struct eth_device *dev)
     debug("eioaport=%s\n", eioaport);
 
     if (NULL != eioaport) {
-        if(strcmp(eioaport, "auto-gmac") == 0) {
+        if(strcmp(eioaport, "rx-gmac") == 0) {
             /* set same port type for all ports */
             memset_int(port_type_by_index, EIOA_PORT_TYPE_GMAC, EIOA_NUM_PORTS);
             memcpy(index_by_port, index_by_port_gmac, sizeof(index_by_port));
@@ -886,7 +886,7 @@ initialize_task_io(struct eth_device *dev)
                 printf("Invalid gmac port %d\n", eioaPort);
 			    return -1;
             }
-        } else if (0 == strcmp(eioaport, "auto-xgmac")) {
+        } else if (0 == strcmp(eioaport, "rx-xgmac")) {
             /* set same port type for all ports */
             memset_int(port_type_by_index, EIOA_PORT_TYPE_XGMAC, 
                     EIOA_NUM_PORTS);
@@ -905,10 +905,10 @@ initialize_task_io(struct eth_device *dev)
             }
         } else {
 			printf("If set, eioaport must be one of the following:\n"
-                "\tauto-gmac,\n"
-                "\tauto-xgmac,\n"
                 "\tgmac[0-4,16-20,32,33,48,49,64,65,80,81,96,97,112,113],\n"
-                "\txgmac[0,1,16,17,32,33,48,49,64,65,80,81,96,97,112,113]\n");
+                "\txgmac[0,1,16,17,32,33,48,49,64,65,80,81,96,97,112,113]\n"
+                "\trx-gmac,\n"
+                "\trx-xgmac,\n");
 			return -1;
 		}
     }
