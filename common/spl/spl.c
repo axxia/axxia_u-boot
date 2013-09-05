@@ -210,11 +210,9 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 		break;
 #endif
 #ifdef CONFIG_SPL_SPI_SUPPORT
-#if 0
 	case BOOT_DEVICE_SPI:
 		spl_spi_load_image();
 		break;
-#endif
 #endif
 #ifdef CONFIG_SPL_ETH_SUPPORT
 	case BOOT_DEVICE_CPGMAC:

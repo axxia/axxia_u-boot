@@ -19,7 +19,10 @@
  */
 
 #include <common.h>
-#include <asm/spl.h>
+#include <spl.h>
+#include <spi_flash.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /*
   ==============================================================================
@@ -387,27 +390,16 @@ check_memory_ranges(void)
 	}
 }
 
-/*
-  ------------------------------------------------------------------------------
-  board_init_f
 
-  This function is declared "void __weak" in arch/arm/lib/spl.c.  It's
-  overridden here to handle the SPL boot on Axxia ARM systems.
-*/
-
-DECLARE_GLOBAL_DATA_PTR;
-extern gd_t gdata;
+u32 spl_boot_device(void)
+{
+	return (u32) BOOT_DEVICE_SPI;
+}
 
 void
-board_init_f(ulong bootflag)
+spl_board_init(void)
 {
 	int rc;
-
-	/* Clear BSS */
-	memset(__bss_start, 0, __bss_end__ - __bss_start);
-
-	/* Set the global data pointer. */
-	gd = &gdata;
 
 	gd->baudrate = CONFIG_BAUDRATE;
 	serial_initialize();
@@ -418,8 +410,8 @@ board_init_f(ulong bootflag)
 	     " / __ |\\ \\ /\\ \\ // / _ `/ / /_/ /___/ _  / _ \\/ _ \\/ __/ _\\ \\/ ___/ /__\n"
 	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ /___/_/  /____/\n");
 	printf("\nLSI Version: %s\n", get_lsi_version());
-	rc = axxia_initialize();
 
+	rc = axxia_initialize();
 	if (0 != rc)
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
@@ -464,13 +456,39 @@ board_init_f(ulong bootflag)
 		check_memory_ranges();
 
 	printf("System initialized\n");
-	ssp_init(0, 1);
-	rc = ssp_read((void *)0x40000000, 0x100000, 0x200000);
-	printf("U-Boot Copied\n");
-	reset_cpu_fabric();
-	acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
 #endif
-
-	return;
 }
+
+void spl_spi_load_image(void)
+{
+	struct spi_flash *flash;
+	struct image_header header;
+
+	/*
+	 * Load U-Boot image from SPI flash into RAM
+	 */
+
+	flash = spi_flash_probe(CONFIG_SPL_SPI_BUS, CONFIG_SPL_SPI_CS,
+				CONFIG_SF_DEFAULT_SPEED, CONFIG_SF_DEFAULT_MODE);
+	if (!flash) {
+		puts("SPI probe failed.\n");
+		hang();
+	}
+
+	/* Load u-boot, mkimage header is 64 bytes. */
+	spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS, 0x40, &header);
+	spl_parse_image_header(&header);
+	spl_image.load_addr = 0x40000000;
+	spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
+		       spl_image.size, (void *)spl_image.load_addr);
+}
+
+void __noreturn
+jump_to_image_no_args(struct spl_image_info *spl_image)
+{
+	printf("image entry point: 0x%X\n", spl_image->entry_point);
+	reset_cpu_fabric();
+	acp_failure(__FILE__, __FUNCTION__, __LINE__);
+}
+

@@ -31,7 +31,7 @@
  * configured and available since this code loads the main U-Boot image
  * from SPI into SDRAM and starts it from there.
  */
-void spl_spi_load_image(void)
+__weak void spl_spi_load_image(void)
 {
 	struct spi_flash *flash;
 	struct image_header *header;
