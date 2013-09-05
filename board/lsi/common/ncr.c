@@ -775,7 +775,7 @@ ncr_read32_0x153(unsigned long region, unsigned long offset, unsigned long *valu
 {
 	unsigned long address;
 
-	address = IO + 0x0 + (NCP_TARGET_ID(region) * 0x800) + offset;
+	address = IO + 0x0 + (NCP_TARGET_ID(region) * 0x10) + offset;
 	*value = readl(address);
 
 	return 0;
@@ -791,7 +791,7 @@ ncr_write32_0x153(unsigned long region, unsigned long offset, unsigned long valu
 {
 	unsigned long address;
 
-	address = IO + 0x0 + (NCP_TARGET_ID(region) * 0x800) + offset;
+	address = IO + 0x0 + (NCP_TARGET_ID(region) * 0x10) + offset;
 	writel(value, address);
 
 	return 0;
