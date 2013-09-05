@@ -133,16 +133,19 @@ i2c_send_stop(unsigned long i2c_addr)
  * i2c_write_bytes - Perform single I2C write with an optional stop condition at the
  * end.
  *
- * <START> <chip_addr R/nW=0> <buffer[0]> <buffer[1]> ... <buffer[len-1]> [<STOP>]
+ * <START> <chip_addr R/nW=0> <addr[0]> ... <addr[len-1]> <data[0]> <data[1]> ... <data[len-1]> [<STOP>]
  */
 int
-i2c_write_bytes(unsigned long i2c_addr, uchar chip, const uchar *buffer, int len, int stop)
+i2c_write_bytes(unsigned long i2c_addr, uchar chip,
+		const uchar *addr, int alen,
+		const uchar *data, int dlen, int stop)
 {
 	int result = 0;
+	int len = alen + dlen;
 	unsigned int status;
 
-	debug("_i2c_write: chip=%#x, buffer=[%02x %02x %02x %02x], len=%d, stop=%d\n",
-	      chip, buffer[0], buffer[1], buffer[2], buffer[3], len, stop);
+	debug("_i2c_write: chip=%#x, addr=[%02x %02x] alen=%d buffer=[%02x %02x %02x %02x], len=%d, stop=%d\n",
+	      chip, addr[0], addr[1], alen, data[0], data[1], data[2], data[3], len, stop);
 
 	/* TX # bytes */
 	writel(len, i2c_addr + AI2C_REG_I2C_X7_MST_TX_XFER);
@@ -161,7 +164,14 @@ i2c_write_bytes(unsigned long i2c_addr, uchar chip, const uchar *buffer, int len
 			/* Data to TX FIFO (at least five bytes of space) */
 			int i;
 			for (i=0; i<5 && len > 0; i++) {
-				writel(*buffer++, i2c_addr + AI2C_REG_I2C_X7_MST_DATA);
+				unsigned txbyte = 0;
+				if (alen > 0) {
+					txbyte = *addr++;
+					--alen;
+				} else {
+					txbyte = *data++;
+				}
+				writel(txbyte, i2c_addr + AI2C_REG_I2C_X7_MST_DATA);
 				--len;
 			}
 		}
@@ -292,7 +302,7 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 	if (alen > 0) {
 		uchar abuf[4];
 		i2c_addr_to_buf(addr, alen, abuf);
-		if (i2c_write_bytes(i2c_addr, chip, abuf, alen, 0) < 0)
+		if (i2c_write_bytes(i2c_addr, chip, NULL, 0, abuf, alen, 0) < 0)
 			return -1;
 	}
 
@@ -309,6 +319,7 @@ int
 i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 {
 	unsigned long i2c_addr = i2c_base_addr();
+	int rc;
 
 	if (!i2c_initialized())
 		return -1;
@@ -326,14 +337,12 @@ i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 	if (alen > 0) {
 		uchar abuf[4];
 		i2c_addr_to_buf(addr, alen, abuf);
-		if (i2c_write_bytes(i2c_addr, chip, abuf, alen, 0) < 0)
-			return -1;
+		rc =  i2c_write_bytes(i2c_addr, chip, abuf, alen, buffer, len, 1);
+	} else {
+		rc = i2c_write_bytes(i2c_addr, chip, NULL, 0, buffer, len, 1);
 	}
 
-	if (len == 0)
-		return 0;
-
-	return i2c_write_bytes(i2c_addr, chip, buffer, len, 1);
+	return rc;
 }
 
 /*
