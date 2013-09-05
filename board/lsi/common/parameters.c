@@ -29,8 +29,6 @@
 #ifndef CONFIG_SPL_BUILD
 #include <malloc.h>
 #endif
-#include <spi.h>
-#include <spi_flash.h>
 
 /*
   ==============================================================================
@@ -129,8 +127,11 @@ read_parameters(void)
 	if (PARAMETERS_MAGIC != PSWAB(header->magic)) {
 		/* Initialize the SEEPROM (device 0, read only). */
 		ssp_init(0, 1);
+
 		/* Copy the parameters from SPI device 0. */
-		rc = ssp_read(parameters, PARAMETERS_OFFSET_IN_FLASH, PARAMETERS_SIZE);
+		rc = ssp_read(parameters,
+			      PARAMETERS_OFFSET_IN_FLASH, PARAMETERS_SIZE);
+
 		if (0 != rc || PARAMETERS_MAGIC != PSWAB(header->magic))
 			/* No parameters available, fail. */
 			return -1;
