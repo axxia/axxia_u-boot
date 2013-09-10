@@ -31,6 +31,36 @@
   ===============================================================================
 */
 
+static const unsigned char hnf_offsets[] = {
+	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
+};
+
+static int l3_enabled = 1;
+
+static void
+set_pstate(unsigned long req_state, unsigned long act_state)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(hnf_offsets); ++i) {
+		/* set state */
+		writel(req_state, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(hnf_offsets); ++i) {
+		int retries = 10000;
+		unsigned long status;
+
+		do {
+			status = readl(DICKENS + (0x10000 * hnf_offsets[i]) + 0x18);
+			udelay(1);
+		} while ((0 < --retries) && (act_state != (status & 0xf)));
+
+		if (0 == retries)
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	}
+}
+
 /*
   -------------------------------------------------------------------------------
   v7_outer_cache_enable
@@ -39,6 +69,10 @@
 void
 v7_outer_cache_enable(void)
 {
+#ifndef RUN_UNCACHED
+	set_pstate(0x03, 0xc);
+	l3_enabled = 1;
+#endif
 }
 
 /*
@@ -49,6 +83,8 @@ v7_outer_cache_enable(void)
 void
 v7_outer_cache_disable(void)
 {
+	set_pstate(0x00, 0x00);
+	l3_enabled = 0;
 }
 
 /*
@@ -60,55 +96,11 @@ void
 v7_outer_cache_flush_all(void)
 {
 #ifndef RUN_UNCACHED
-	unsigned long hnf_offsets[] = {
-		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
-	};
-	int i;
-        unsigned long status, id;
-	int retries;
-
-	puts("Flushing L3 Cache\n");
-	
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		/* set state NOL3 */
-		writel(0x0, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
-	}
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		retries = 10000;
-
-		do {
-			status = readl(DICKENS +
-				       (0x10000 * hnf_offsets[i]) + 0x18);
-			udelay(1);
-		} while ((0 < --retries) && (0x0 != (status & 0xf)));
-
-		if (0 == retries)
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-	}
-
-	/* */
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		/* set state FAM */
-		writel(0x3, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
-	}
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		retries = 10000;
-
-		do {
-			status = readl(DICKENS +
-				       (0x10000 * hnf_offsets[i]) + 0x18);
-			udelay(1);
-		} while ((0 < --retries) && (0xc != (status & 0xf)));
-
-		if (0 == retries)
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	if (l3_enabled) {
+		set_pstate(0x00, 0x00);
+		set_pstate(0x03, 0xc);
 	}
 #endif
-
-	return;
 }
 
 /*
