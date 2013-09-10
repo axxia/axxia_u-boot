@@ -91,9 +91,9 @@ int is_asic( void );
 #define SYSTIMER_RATE		256000000
 #endif	/* CONFIG_AXXIA_EMU */
 
-#define CONFIG_SYS_MONITOR_LEN  SZ_512K
-#define CONFIG_SYS_UBOOT_START  0
-#define CONFIG_SYS_SPI_U_BOOT_OFFS       SZ_1M
+#define CONFIG_SYS_UBOOT_START       0
+#define CONFIG_SYS_SPI_U_BOOT_OFFS   SZ_1M
+#define CONFIG_SYS_MONITOR_LEN       SZ_2M
 
 /*
    Flash
