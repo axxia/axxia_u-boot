@@ -412,7 +412,6 @@ ft_board_setup(void *blob, bd_t *bd)
 	int i;
 	char cpu_string[40];
 	int node;
-	unsigned long release_addr;
 	int rc;
 	acp_clock_t clocks[] = {
 		clock_core, clock_peripheral, clock_emmc
@@ -420,6 +419,9 @@ ft_board_setup(void *blob, bd_t *bd)
 	const char *clock_names[] = {
 		"/clocks/cpu", "/clocks/peripheral", "/clocks/emmc"
 	};
+	char *ad_value;
+	char *macspeed;
+	unsigned long tmp;
 
 	/*
   	  Set up the coherency domains and clusters.  This is handled
@@ -434,28 +436,27 @@ ft_board_setup(void *blob, bd_t *bd)
 	*/
 
 	for (i = 0; i < (sizeof(clocks) / sizeof(acp_clock_t)); ++i) {
-		unsigned long clock_frequency;
-
 		node = fdt_path_offset(blob, clock_names[i]);
 
 		if (0 > node)
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
-		acp_clock_get(clocks[i], &clock_frequency);
-		clock_frequency *= 1000;
-		clock_frequency = htonl(clock_frequency);
+		acp_clock_get(clocks[i], &tmp);
+		tmp *= 1000;
+		tmp = htonl(tmp);
 		rc = fdt_setprop(blob, node, "frequency",
-				 &clock_frequency, sizeof(unsigned long));
+				 &tmp, sizeof(unsigned long));
 
 		if (0 != rc)
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+			printf("%s:%d - Couldn't set PLLs!\n",
+			       __FILE__, __LINE__);
 	}				 
 
 	/*
 	  Fix up the spin table addresses.
 	*/
 
-	release_addr = htonl(_spin_table_start_ofs + spin_loop_release_offset);
+	tmp = htonl(_spin_table_start_ofs + spin_loop_release_offset);
 
 	for (i = 1; i < 16; ++i) {
 		sprintf(cpu_string, "/cpus/cpu@%d", i);
@@ -465,12 +466,59 @@ ft_board_setup(void *blob, bd_t *bd)
 			continue;
 
 		rc = fdt_setprop(blob, node, "cpu-release-addr",
-				 &release_addr, sizeof(unsigned long));
+				 &tmp, sizeof(unsigned long));
 
 		if (0 != rc) {
 			printf("%s:%d - Error setting property, %d!\n",
 			       __FILE__, __LINE__, rc);
 			continue;
+		}
+	}
+
+	/*
+	  Set the PHY link type.
+
+	  The default is auto (auto-negotiate) if macspeed is not set.
+	*/
+
+	node = fdt_path_offset(blob, "/femac@0x2010120000");
+
+	if (0 <= node) {
+		macspeed = getenv("macspeed");
+
+		if (NULL == macspeed)
+			macspeed = "auto";
+
+		if (0 == strncmp(macspeed, "auto", strlen("auto"))) {
+			ad_value = getenv("ad_value");
+
+			if (NULL == ad_value) {
+				tmp = 0x1e1;
+			} else {
+				tmp = simple_strtoul(ad_value, NULL, 0);
+			}
+
+			printf("%s:%d - tmp=0x%x\n", __FILE__, __LINE__, tmp);
+			rc = fdt_setprop(blob, node, "ad-value", &tmp,
+					 sizeof(unsigned long));
+
+			if (0 != rc) 
+				printf("%s:%d - Couldn't set ad-value!\n",
+				       __FILE__, __LINE__);
+
+			rc = fdt_setprop(blob, node, "phy-link", "auto",
+					 strlen("auto"));
+
+			if (0 != rc)
+				printf("%s:%d - Couldn't set phy-link!\n",
+				       __FILE__, __LINE__);
+		} else {
+			rc = fdt_setprop(blob, node, "phy-link", macspeed,
+					 strlen(macspeed));
+
+			if (0 != rc)
+				printf("%s:%d - Couldn't set phy-link!\n",
+				       __FILE__, __LINE__);
 		}
 	}
 
