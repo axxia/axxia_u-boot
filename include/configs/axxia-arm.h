@@ -623,6 +623,8 @@ int serial_early_init(void);
 /* commands to include */
 #include <config_cmd_default.h>
 
+#define CONFIG_CMDLINE_EDITING
+
 /* Enabled commands */
 #if 0
 #define CONFIG_CMD_MMC		/* MMC support                  */
