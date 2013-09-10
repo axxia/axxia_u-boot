@@ -2552,8 +2552,8 @@ static int dump_descriptors = 0;
 static int loopback = 0;
 DECLARE_GLOBAL_DATA_PTR;
 
-#undef AMARILLO_WAS
-#define AMARILLO_WAS
+#undef AMARILLO_WA
+/*#define AMARILLO_WA*/
 
 /*
   ======================================================================
@@ -3682,7 +3682,7 @@ static int rx_enable_( void ) {
 
 	rx_configuration_ |= 0x4;
 
-#ifdef AMARILLO_WAS
+#ifdef AMARILLO_WA
 	printf("%s:%d - Amarillo WA: RX Config: 0x%x -> 0x%x\n",
 	       __FILE__, __LINE__,
 	       rx_configuration_, rx_configuration_ & ~0x1000);
@@ -3787,7 +3787,7 @@ tx_enable_(struct eth_device *device)
 
 	}
 
-#ifdef AMARILLO_WAS
+#ifdef AMARILLO_WA
 	printf("%s:%d - Amarillo WA: TX Config: 0x%x -> 0x%x\n",
 	       __FILE__, __LINE__,
 	       tx_configuration_, tx_configuration_ & ~0x1000);
