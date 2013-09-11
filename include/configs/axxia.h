@@ -389,9 +389,8 @@ int write_parameters(parameters_t *);
 
 #ifndef __ASSEMBLY__
 int ssp_read(void *, unsigned long, unsigned long);
-int ssp_write(void *, unsigned long, unsigned long, int);
 int ssp_set_speed(unsigned long *);
-int ssp_init(int, int);
+int ssp_init(int);
 #endif
 
 /*

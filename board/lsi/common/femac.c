@@ -2552,6 +2552,9 @@ static int dump_descriptors = 0;
 static int loopback = 0;
 DECLARE_GLOBAL_DATA_PTR;
 
+#undef AMARILLO_WA
+/*#define AMARILLO_WA*/
+
 /*
   ======================================================================
   ======================================================================
@@ -3214,83 +3217,26 @@ dump_everything(void)
 */
 
 static void
-mac_loopback_test(void)
+mac_loopback_test(struct eth_device *device)
 {
-	packet_header_t *packet_headers;
-	void *packets;
-	void *pp;
 	void *input = (void *)(NetRxPackets[0]);
-	int i;
 	int size;
-	int logged = 0;
-	int total = 0;
-
-	packet_headers = malloc(sizeof(packet_header_t) * PACKET_LOG_NUMBER);
-
-	if (NULL == packet_headers) {
-		printf("Couldn't allocate packet header log.\n");
-		return;
-	}
-
-	packets = malloc(MAX_PACKET_SIZE * PACKET_LOG_NUMBER);
-
-	if (NULL == packets) {
-		printf("Couldn't allocate packet log.\n");
-		return;
-	}
-
-	pp = packets;
+	int looped = 0;
 
 	for (;;) {
+		if (ctrlc())
+			break;	
+
 		if (0 == (size = eth_rx()))
 			continue;
 
-		++total;
-
-		if (i < PACKET_LOG_NUMBER) {
-			packet_header_t *ph;
-			void *pp;
-
-			ph = &(packet_headers[logged++]);
-			ph->address = pp;
-			ph->size = size;
-			ph->queue_pointer.raw = rx_tail_copy_.raw;
-
-			if (size <= MAX_PACKET_SIZE) {
-				memcpy(pp, input, size);
-			} else {
-				printf("Packet larger than %d bytes!\n",
-				       MAX_PACKET_SIZE);
-			}
-
-			pp += MAX_PACKET_SIZE;
-
-			if (size != eth_send(input, size))
-				printf("eth_send() failed: index %d\n",
-				       logged - 1);
-		}
-
-		if (ctrlc())
-			break;
+		if (size != eth_send(input, size))
+			printf("eth_send() failed: index %d\n", looped);
+		else
+			++looped;
 	}
 
-	printf("Logged %d of %d packets received\n", logged, total);
-
-	for (i = 0; i < logged; ++i) {
-		packet_header_t *ph;
-
-		ph = &(packet_headers[i]);
-		printf("<%2d> address 0x%p generation %d offset 0x%x\n",
-		       i, ph->address, ph->queue_pointer.bits.generation_bit,
-		       ph->queue_pointer.bits.offset);
-		axxia_dump_packet_rx("loopback test", ph->address, ph->size);
-
-		if (ctrlc())
-			break;
-	}
-
-	free(packet_headers);
-	free(packets);
+	printf("Looped back %d packets\n", looped);
 
 	return;
 }
@@ -3305,7 +3251,7 @@ mac_loopback_test(void)
 #define PHY_LOOPBACK_PACKET_SIZE 1200
 
 static void
-phy_loopback_test(void)
+phy_loopback_test(struct eth_device *device)
 {
 	void *out = NULL;
 	void *in = (void *)(NetRxPackets[0]);
@@ -3313,14 +3259,11 @@ phy_loopback_test(void)
 	int size;
 	int i;
 
-	/* Turn on PHY loopback. */
-	/*phy_loopback(phy_address_, 1);*/
-
 	/* Drop any existing packets. */
 	while (0 != eth_rx())
 		printf("Dropping pre-existing packet.\n");
 
-	/* Writing pattern to buffers. */
+	/* Write a known pattern to the buffers. */
 	memset(rx_buffer_, 0x5a,
 	       (rx_number_of_descriptors * rx_buffer_per_descriptor));
 	memset(tx_buffer_, 0x7f, TX_BUFFER_SIZE);
@@ -3333,19 +3276,16 @@ phy_loopback_test(void)
 		goto phy_loopback_test_over;
 	}
 
-	/* As a sort of "random" data, use part of the U-Boot text. */
-	/*memcpy(out, (void *)0x1000, PHY_LOOPBACK_PACKET_SIZE);*/
-
-	/* Fix up the header. */
-	((char *)out)[12] = 0x00;
-	((char *)out)[13] = 0x40;
-
-	axxia_dump_packet_tx("PHY Loopback TX", out, PHY_LOOPBACK_PACKET_SIZE);
-
 	for (;;) {
-		int retries = 100;
+		int retries = 100000;
 		unsigned char *packet;
 		int count;
+
+		if (ctrlc())
+			break;
+
+		/* As a sort of "random" data, use part of the U-Boot text. */
+		/*memcpy(out, (void *)0x1000, PHY_LOOPBACK_PACKET_SIZE);*/
 
 		/* Put a pattern in "out". */
 		packet = out;
@@ -3358,6 +3298,29 @@ phy_loopback_test(void)
 				count = 0;
 		}
 
+		/*
+		  Fix up the header.
+		*/
+
+		((char *)out)[0]  = device->enetaddr[0];
+		((char *)out)[1]  = device->enetaddr[1];
+		((char *)out)[2]  = device->enetaddr[2];
+		((char *)out)[3]  = device->enetaddr[3];
+		((char *)out)[4]  = device->enetaddr[4];
+		((char *)out)[5]  = device->enetaddr[5];
+		((char *)out)[6]  = device->enetaddr[0];
+		((char *)out)[7]  = device->enetaddr[1];
+		((char *)out)[8]  = device->enetaddr[2];
+		((char *)out)[9]  = device->enetaddr[3];
+		((char *)out)[10] = device->enetaddr[4];
+		((char *)out)[11] = device->enetaddr[5];
+
+		((char *)out)[12] = 0x00;
+		((char *)out)[13] = 0x40;
+
+		axxia_dump_packet_tx("PHY Loopback TX", out,
+				     PHY_LOOPBACK_PACKET_SIZE);
+
 		if (PHY_LOOPBACK_PACKET_SIZE !=
 		    eth_send(out, PHY_LOOPBACK_PACKET_SIZE)) {
 			printf("Error sending packet.\n");
@@ -3368,7 +3331,7 @@ phy_loopback_test(void)
 			size = eth_rx();
 
 			if (0 == size)
-				udelay(1);
+				udelay(10);
 		} while (0 == size && 0 < --retries);
 
 		if (0 == retries) {
@@ -3383,10 +3346,10 @@ phy_loopback_test(void)
 			goto phy_loopback_test_over;
 		}
 
-		if (0 != memcmp(out, in, PHY_LOOPBACK_PACKET_SIZE)) {
+		if (0 != memcmp(in, out, PHY_LOOPBACK_PACKET_SIZE)) {
 			printf("ERROR: Bad Packet Received (iteration %d).\n\n",
 				iteration);
-			dump_everything();
+			/*dump_everything();*/
 			axxia_dump_packet("out", out, size);
 			axxia_dump_packet("in", in, size);
 		}
@@ -3394,21 +3357,15 @@ phy_loopback_test(void)
 		while (0 != (size = eth_rx())) {
 			printf("ERROR: Extra Packet Received (iteration %d).\n\n",
 			       iteration);
-			dump_everything();
+			/*dump_everything();*/
 		}
 
 		++iteration;
-
-		if (ctrlc())
-			break;
 	}
-
-	printf("Ran test %d times.\n", iteration - 1);
 
 phy_loopback_test_over:
 
-	/* Turn off PHY loopback. */
-	/*phy_loopback(phy_address_, 0);*/
+	printf("Ran test %d times.\n", iteration);
 
 	if (NULL != out)
 		free(out);
@@ -3439,10 +3396,10 @@ lsi_femac_loopback_test(struct eth_device *dev, int type)
 
 	switch (type) {
 	case 1:
-		mac_loopback_test();
+		mac_loopback_test(dev);
 		break;
 	case 2:
-		phy_loopback_test();
+		phy_loopback_test(dev);
 		break;
 	default:
 		printf("Unknown test type.\n");
@@ -3724,6 +3681,13 @@ static int rx_enable_( void ) {
 	}
 
 	rx_configuration_ |= 0x4;
+
+#ifdef AMARILLO_WA
+	printf("%s:%d - Amarillo WA: RX Config: 0x%x -> 0x%x\n",
+	       __FILE__, __LINE__,
+	       rx_configuration_, rx_configuration_ & ~0x1000);
+	rx_configuration_ &= ~0x1000;
+#endif
 	writel( rx_configuration_, APP3XXNIC_RX_CONF );
 
 	/* that's all */
@@ -3823,6 +3787,12 @@ tx_enable_(struct eth_device *device)
 
 	}
 
+#ifdef AMARILLO_WA
+	printf("%s:%d - Amarillo WA: TX Config: 0x%x -> 0x%x\n",
+	       __FILE__, __LINE__,
+	       tx_configuration_, tx_configuration_ & ~0x1000);
+	tx_configuration_ &= ~0x1000;
+#endif
 	writel( tx_configuration_, APP3XXNIC_TX_CONF );
 
 	/* that's all */

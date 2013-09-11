@@ -24,6 +24,8 @@
  * MA 02111-1307 USA
  */
 
+/*#define DEBUG*/
+
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
@@ -80,28 +82,45 @@ mdio_read(int phy, int reg)
 	unsigned long status;
 
 #if defined(BZ33327_WA)
-	/* Set the mdio_busy (status) bit. */
+	/*
+	  Set the mdio_busy (status) bit.
+	*/
+
 	status = readl(MDIO_STATUS_RD_DATA);
 	status |= 0x40000000;
 	writel(status, MDIO_STATUS_RD_DATA);
 #endif /* BZ33327_WA */
 
-	/* Write the command.*/
+	/*
+	  Write the command.
+	*/
+
 	command = 0x10000000;	/* op_code: read */
 	command |= (phy & 0x1f) << 16; /* port_addr (target device) */
 	command |= (reg & 0x1f) << 21; /* device_addr (target register) */
 	writel(command, MDIO_CONTROL_RD_DATA);
 
 #if defined(BZ33327_WA)
-	/* Wait for the mdio_busy (status) bit to clear. */
+	/*
+	  Wait for the mdio_busy (status) bit to clear.
+	*/
+
 	do {
 		status = readl(MDIO_STATUS_RD_DATA);
 	} while(0 != (status & 0x40000000));
 #endif /* BZ33327_WA */
-	/* Wait for the mdio_busy (control) bit to clear. */
+
+	/*
+	  Wait for the mdio_busy (control) bit to clear.
+	*/
+
 	do {
 		command = readl(MDIO_CONTROL_RD_DATA);
 	} while(0 != (command & 0x80000000));
+
+	debug("%s - Read 0x%x from 0x%x register 0x%x.\n",
+	      __FUNCTION__, (unsigned short)(command & 0xffff),
+	      phy, reg);
 
 	return (unsigned short)(command & 0xffff);
 }
@@ -117,20 +136,28 @@ mdio_write(int phy, int reg, unsigned short value)
 	unsigned long command = 0;
 	unsigned long status;
 
-	/* Wait for mdio_busy (control) to be clear. */
+	/*
+	  Wait for mdio_busy (control) to be clear.
+	*/
 
 	do {
 		command = readl(MDIO_CONTROL_RD_DATA);
 	} while (0 != (command & 0x80000000));
 
 #if defined(BZ33327_WA)
-	/* Set the mdio_busy (status) bit. */
+	/*
+	  Set the mdio_busy (status) bit.
+	*/
+
 	status = readl(MDIO_STATUS_RD_DATA);
 	status |= 0x40000000;
 	writel(status, MDIO_STATUS_RD_DATA);
 #endif /* BZ33327_WA */
 
-	/* Write the command. */
+	/*
+	  Write the command.
+	*/
+
 	command = 0x08000000;	/* op_code: write */
 	command |= (phy & 0x1f) << 16; /* port_addr (target device) */
 	command |= (reg & 0x1f) << 21; /* device_addr (target register) */
@@ -138,16 +165,25 @@ mdio_write(int phy, int reg, unsigned short value)
 	writel(command, MDIO_CONTROL_RD_DATA);
 
 #if defined(BZ33327_WA)
-	/* Wait for the mdio_busy (status) bit to clear. */
+	/*
+	  Wait for the mdio_busy (status) bit to clear.
+	*/
+
 	do {
 		status = readl(MDIO_STATUS_RD_DATA);
 	} while (0 != (status & 0x40000000));
 #endif /* BZ33327_WA */
 
-	/* Wait for the mdio_busy (control) bit to clear. */
+	/*
+	  Wait for the mdio_busy (control) bit to clear.
+	*/
+
 	do {
 		command = readl(MDIO_CONTROL_RD_DATA);
 	} while (0 != (command & 0x80000000));
+
+	debug("%s - Wrote 0x%x to 0x%x register 0x%x\n",
+	      __FUNCTION__, value, phy, reg);
 
 	return;
 }

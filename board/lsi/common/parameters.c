@@ -126,7 +126,7 @@ read_parameters(void)
 	/* Verify that the paramater table is valid. */
 	if (PARAMETERS_MAGIC != PSWAB(header->magic)) {
 		/* Initialize the SEEPROM (device 0, read only). */
-		ssp_init(0, 1);
+		ssp_init(0);
 
 		/* Copy the parameters from SPI device 0. */
 		rc = ssp_read(parameters,

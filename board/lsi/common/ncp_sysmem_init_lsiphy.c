@@ -174,6 +174,11 @@ dump_config(ncp_dev_hdl_t dev,
         printf(" 0x%04x ", reg);
     }
 
+
+
+    ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_DPIOVREFSET, &reg);
+    printf("\nDPIOVREFSET = 0x%08x\n",  reg);
+
     printf("\n");
     dump_regs(dev, region, 0x8000, 2);
     printf("\n");
@@ -221,6 +226,7 @@ dump_qrtr(ncp_dev_hdl_t dev,
 NCP_RETURN_LABEL
     return ncpStatus;
 }
+
 
 static ncp_st_t 
 dump_wl(ncp_dev_hdl_t dev, 
@@ -1422,7 +1428,6 @@ ncp_sm_lsiphy_static_init(
     dpiovrefset.sldm   = 3;
     dpiovrefset.sldqs  = 3;
     dpiovrefset.sldq   = 3;
-    
 
     dpiovrefset.drvdq  = phy_dat_imp;
     dpiovrefset.drvdqs = phy_dat_imp;
@@ -1431,6 +1436,7 @@ ncp_sm_lsiphy_static_init(
     dpiovrefset.odtimpdq  = phy_rcv_imp;
     dpiovrefset.odtimpdqs = phy_rcv_imp;
     dpiovrefset.odtimpdm  = phy_rcv_imp;
+
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_DPIOVREFSET, *(ncp_uint32_t *) &dpiovrefset);
 
     /* check the PHY status */
@@ -2586,7 +2592,6 @@ NCP_RETURN_LABEL
                                     (n & 0x000000ff) << 24)
 
 
-
 /*
  *------------------------------------------------------------------------------
  *  sm_bytelane_test_elm
@@ -2634,6 +2639,7 @@ sm_bytelane_test_elm(
     ncp_uint8_t  readVal;
     ncp_int32_t   valAdj;
     ncp_int32_t   beatAdj;
+    ncp_uint32_t  reg;
 
     ncp_uint32_t  readData[2];
     ncp_uint8_t  *pDat;
@@ -2679,6 +2685,9 @@ sm_bytelane_test_elm(
      * the 64-byte cacheline, so we write the address shifted
      * by 6 bits.
      */
+#ifdef SM_BYTELANE_TEST_DEBUG
+    printf("ELM writing pattern %d to address %012llx\n", (pattern & 0x1), address);
+#endif
 
     ncr_write32( elmRegion, NCP_ELM_SYSMEM_INIT_CACHE_ADDR, (address >> 6));
 
@@ -2703,6 +2712,13 @@ sm_bytelane_test_elm(
 
     if (0 != (pattern & 0x2))
         return 0;
+
+    /* poll for init complete */
+    do {
+        ncr_read32(elmRegion, 0x1000, &reg);
+    } while ((reg & 0x00000080) == 0);
+    ncr_write32(elmRegion, 0x1000, 0x00000080);
+
 
     /* Read back and compare. */
     ncr_write32( elmRegion, NCP_ELM_SYSMEM_INIT_CACHE_ADDR, ((address + expValOffset) >> 6));
@@ -2734,23 +2750,12 @@ sm_bytelane_test_elm(
     for (i = 0; i < num_bls; ++i) {
         readVal = pDat[i];
 #ifdef SM_BYTELANE_TEST_DEBUG
-        printf("readVal=%02x, expVal=%02x, earlyVal=%02x, lateVal=%02x\n",
-                readVal, expVal, (expVal - beatAdj), (expVal + beatAdj));
+        printf("readVal=%02x, expVal=%02x\n",
+                readVal, expVal);
 #endif
         if (readVal != expVal) 
         {
-            if (readVal == (expVal - beatAdj) )
-            {
-                *bad_bl_early |= 1 << i;
-            }
-            else if (readVal == (expVal + beatAdj))
-            {
-                *bad_bl_late |= 1 << i;
-            }
-            else
-            {
                 *bad_bl_bad |= 1 << i;
-            }
         }
         expVal += valAdj;
     }
@@ -2758,9 +2763,9 @@ sm_bytelane_test_elm(
 
 
 #ifdef SM_BYTELANE_TEST_DEBUG
-    printf("*bad_bl_bad=0x%x *bad_bl_early=0x%x *bad_bl_late=0x%x\n",
-           *bad_bl_bad, *bad_bl_early, *bad_bl_late);
+    printf("*bad_bl_bad=0x%x \n", *bad_bl_bad);
 
+    printf("NCA reading address %012llx\n", address);
 #ifdef UBOOT 
     uppAddr = ( (unsigned) (address >> 32) );
     lowAddr = ( (unsigned) (address & 0xffffffff) );
@@ -2785,7 +2790,7 @@ sm_bytelane_test_elm(
 
         printf("\n");
     }
-#endif /* SM_ECC_BYTELANE_TEST_DEBUG */
+#endif /* SM_BYTELANE_TEST_DEBUG */
 
 NCP_RETURN_LABEL
     return 0;
@@ -3062,8 +3067,6 @@ NCP_RETURN_LABEL
 }
 
 
-
-
 ncp_st_t
 ncp_sm_sm_coarse_write_leveling(
         ncp_dev_hdl_t   dev,
@@ -3219,15 +3222,12 @@ ncp_sm_sm_coarse_write_leveling(
      *  - write two bursts of the eight beat pattern
      *  - read back starting at the address of the second burst
      *    and compare the value of each byte lane. If a byte lane
-     *    has incorrect data we can tell by the value whether the
-     *    write alignment is too early or too late.
+     *    has incorrect data we advance one clock
      *  - Set the WLDQSxGRP register to indicate which byte-lanes
      *    need to be advanced by one clock
      *  - set DFICNTLWLCNTL with the rank to adjust and the dly_delta
      *    set to one to increment the delay. Writing this register 
      *    will perform the adjustment.
-     *  - repeat the above two steps for byte-lanes that need to be
-     *    retarded by one clock
      *  - repeat the write/read/compare test using the walking zero
      *    pattern. If there are no errors then write-leveling has 
      *    succeeded.
@@ -3241,34 +3241,49 @@ ncp_sm_sm_coarse_write_leveling(
     NCP_CALL(bl_test_fn(dev, node, addr, 0, 
                 &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls));
 
-    if (bad_bl[0] != 0) 
-    {
-        /* if any bytelane failed for some reason that does not 
-         * appear to be write cycle alignment then it may be that
-         * the memory is in some funky state. We try another write
-         * to clear the state and rerun the test.
-         */
-        NCP_CALL(bl_test_fn(dev, node, addr, 1, 
-                &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls));
-
-        NCP_CALL(bl_test_fn(dev, node, addr, 0, 
-                &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls));
-
-        if (bad_bl[0] != 0) {
-#ifdef SM_REG_DUMP
-            ncp_sm_lsiphy_reg_dump(dev, smId, parms->version);
-#endif
-            /* if it's still bad then we bail out */
-            NCP_CALL(NCP_ST_SYSMEM_PHY_WL_ERR);
-        }
-    }
-
     /*
-     * advance or retard clocks for each failing bytelane
+     * advance one clock for each failing bytelane
      */
     for (bl = 0; bl < num_bls; bl++)
     {
-        if (bad_bl[1] & (1 << bl))
+        if (bad_bl[0] & (1 << bl))
+        {
+            /* advance forward one clock */
+            ncr_read32(region, 
+                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLUPP_BL_CS(bl, rank),
+                       &udly);
+            ncr_write32(region, 
+                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLUPP_BL_CS(bl, rank),
+                       udly + 4);
+
+            ncr_read32(region, 
+                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLLOW_BL_CS(bl, rank),
+                       &ldly);
+            ncr_write32(region, 
+                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLLOW_BL_CS(bl, rank),
+                       ldly + 4);
+
+        }
+    }
+
+    /* 
+     * re-run the test with walking zero
+     * It ought to pass. 
+     */
+    if (busAdaptor != NCP_DEV_BUS_FBRS) 
+    {
+        memset(&bad_bl, 0, sizeof(bad_bl));
+        NCP_CALL(bl_test_fn(dev, node, addr, 1, 
+                &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls));
+    }
+
+
+    /*
+     * advance clocks for each failing bytelane
+     */
+    for (bl = 0; bl < num_bls; bl++)
+    {
+        if (bad_bl[0] & (1 << bl))
         {
             /* advance forward one clock */
             ncr_read32(region, 
@@ -3288,34 +3303,6 @@ ncp_sm_sm_coarse_write_leveling(
 
         }
 
-        if (bad_bl[2] & (1 << bl))
-        {
-            /* retard one clock 
-             * if we don't have enough delay to go back
-             * one full clock return an error
-             */
-            ncr_read32(region, 
-                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLUPP_BL_CS(bl, rank),
-                       &udly);
-            if (udly < 4) 
-            {
-                NCP_CALL(NCP_ST_SYSMEM_PHY_WL_DLY_ERR);
-            }
-            ncr_write32(region, 
-                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLUPP_BL_CS(bl, rank),
-                       udly - 4);
-
-            ncr_read32(region, 
-                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLLOW_BL_CS(bl, rank),
-                       &ldly);
-            if (ldly < 4) 
-            {
-                NCP_CALL(NCP_ST_SYSMEM_PHY_WL_DLY_ERR);
-            }
-            ncr_write32(region, 
-                       NCP_PHY_CFG_SYSMEM_PHY_WRTLVLLOW_BL_CS(bl, rank),
-                       ldly - 4);
-        }
     }
 
     /* 
@@ -3325,9 +3312,10 @@ ncp_sm_sm_coarse_write_leveling(
     if (busAdaptor != NCP_DEV_BUS_FBRS) 
     {
         memset(&bad_bl, 0, sizeof(bad_bl));
-        NCP_CALL(bl_test_fn(dev, node, addr, 1, 
+        NCP_CALL(bl_test_fn(dev, node, addr, 0, 
                 &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls));
     }
+
 
 
     /* if we still have bad bytelanes then leveling has failed */
@@ -3455,6 +3443,8 @@ ncp_sm_sm_coarse_write_leveling(
 NCP_RETURN_LABEL
     return ncpStatus;
 }
+
+
 
 #ifndef UBOOT
 ncp_st_t
@@ -3829,6 +3819,7 @@ void ncp_sm_reset(void)
 void ncp_sm_reset(void)
 {
 
+
 }
 #endif
 #else 
@@ -4024,8 +4015,9 @@ ncp_sysmem_init_lsiphy(
         ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x100c, 0x00000000);
 
         /* set NCA TTYPES */
-    	ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x00220022);
+    	ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x00220026);
     	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x00000003);
+
     }
 
 

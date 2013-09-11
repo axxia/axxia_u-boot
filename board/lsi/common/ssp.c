@@ -37,11 +37,9 @@
 #include <exports.h>
 #include <asm/io.h>
 
-#define SECTOR_SIZE 0x10000 
+#define LARGE_ADDRESS_SIZE 1
 
 static int device = -1;
-static int read_only = -1;
-static int is_flash = -1;
 
 /*
   ------------------------------------------------------------------------------
@@ -111,246 +109,6 @@ ssp_write_device(unsigned short input, unsigned char *output)
 }
 
 /*
-  ----------------------------------------------------------------------
-  read_status
-*/
-
-static int
-read_status(unsigned char *status)
-{
-	int rc;
-
-	ssp_select_device();
-	rc = ssp_write_device(5, NULL);
-	rc |= ssp_write_device(0, status);
-	ssp_deselect_all();
-
-	return rc;
-}
-
-/*
-  ----------------------------------------------------------------------
-  write_enable
-*/
-
-static int
-write_enable(void)
-{
-	int rc;
-
-	ssp_select_device();
-	rc = ssp_write_device(6, NULL);
-	ssp_deselect_all();
-
-	return rc;
-}
-
-/*
-  ----------------------------------------------------------------------
-  write_disable
-*/
-
-static int
-write_disable(void)
-{
-	int rc;
-
-	ssp_select_device();
-	rc = ssp_write_device(4, NULL);
-	ssp_deselect_all();
-
-	return rc;
-}
-
-/*
-  ------------------------------------------------------------------------------
-  ssp_internal_write
-*/
-
-static int
-ssp_internal_write(void *buffer, unsigned long offset, unsigned long length)
-{
-	int rc;
-	unsigned char *input = (unsigned char *)buffer;
-
-	while (0 < length) {
-		int this_write;
-		int this_written = 0;
-
-		write_enable();
-		ssp_select_device();
-		rc |= ssp_write_device(2, NULL);
-
-		if (1 == is_flash) {
-			rc |= ssp_write_device((offset & 0x00ff0000) >> 16,
-					       NULL);
-			rc |= ssp_write_device((offset & 0x0000ff00) >> 8, NULL);
-			rc |= ssp_write_device(offset & 0x000000ff, NULL);
-		} else {
-			rc |= ssp_write_device((offset & 0x10000) >> 16, NULL);
-			rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
-			rc |= ssp_write_device(offset & 0xff, NULL);
-		}
-
-		this_write = 256 - ( offset % 256 );
-
-		while (0 == rc &&
-		       this_written < this_write &&
-		       0 < length) {
-			rc |= ssp_write_device(*input++, NULL);
-			++this_written;
-			--length;
-			++offset;
-		}
-
-		if (0 != rc)
-			return SSP_FAILURE();
-
-		ssp_deselect_all();
-
-		if (1 == is_flash) {
-			int retries = 700;
-			unsigned char status;
-
-			do {
-				udelay(10);
-				rc |= read_status(&status);
-			} while (0 == rc &&
-				 0 < --retries &&
-				 0 != (status & 1));
-
-			if (0 != rc)
-				return SSP_FAILURE();
-
-			if (0 == retries)
-				return SSP_FAILURE();
-		} else {
-			udelay(5000);	/* TODO: Why the delay? */
-		}
-	}
-
-	return 0;
-}
-
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
-
-/*
-  ------------------------------------------------------------------------------
-  serial_flash_sector_erase
-*/
-
-static int
-serial_flash_sector_erase(unsigned long offset)
-{
-	int rc;
-	int retries = 1000000;
-	unsigned long sector_offset;
-	unsigned char status;
-
-	sector_offset = (offset / SECTOR_SIZE) * SECTOR_SIZE;
-
-	write_enable();
-	ssp_select_device();
-	rc = ssp_write_device(0xd8, NULL);
-	rc |= ssp_write_device((sector_offset & 0x00ff0000) >> 16, NULL);
-	rc |= ssp_write_device((sector_offset & 0x0000ff00 ) >> 8, NULL);
-	rc |= ssp_write_device(sector_offset & 0x000000ff, NULL);
-	ssp_deselect_all();
-
-	do {
-		rc |= read_status(&status);
-	} while (0 == rc &&
-		 0 != (status & 1) &&
-		 0 < --retries);
-
-	if (0 != rc || 0 == retries)
-		return SSP_FAILURE();
-
-	return 0;
-}
-
-/*
-  ------------------------------------------------------------------------------
-  serial_flash_erase
-*/
-
-static int
-serial_flash_erase(unsigned long offset, unsigned long length)
-{
-	int rc = 0;
-
-	/*
-	  Handle offset not on a sector boundary.
-	*/
-
-	if (0 != offset % SECTOR_SIZE) {
-		unsigned long sector_offset;
-		void *buffer;
-
-		sector_offset = (offset / SECTOR_SIZE) * SECTOR_SIZE;
-		buffer = malloc(SECTOR_SIZE);
-
-		if (NULL == buffer)
-			return SSP_FAILURE();
-
-		rc = ssp_read(buffer, sector_offset, SECTOR_SIZE);
-		rc |= serial_flash_sector_erase(sector_offset);
-		rc |= ssp_internal_write(buffer, sector_offset,
-					 offset % SECTOR_SIZE);
-		free(buffer);
-
-		if (0 != rc)
-			return SSP_FAILURE();
-
-		length -= SECTOR_SIZE - (offset % SECTOR_SIZE);
-		offset += SECTOR_SIZE - (offset % SECTOR_SIZE);
-	}
-
-	/*
-	  Sectors to be fully erased.
-	*/
-
-	while (0 == rc &&
-	       SECTOR_SIZE <= length) {
-		rc |= serial_flash_sector_erase(offset);
-		offset += SECTOR_SIZE;
-		length -= SECTOR_SIZE;
-	}
-
-	if (0 != rc)
-		return SSP_FAILURE();
-
-	/*
-	  Handle erasing a partial sector.
-	*/
-
-	if (0 != length) {
-		unsigned long sector_offset;
-		void *buffer;
-
-		sector_offset = (offset / SECTOR_SIZE) * SECTOR_SIZE;
-		buffer = malloc(SECTOR_SIZE);
-
-		if (NULL == buffer)
-			return SSP_FAILURE();
-
-		rc = ssp_read(buffer, sector_offset, SECTOR_SIZE);
-		rc |= serial_flash_sector_erase(sector_offset);
-		rc |= ssp_internal_write((buffer + length),
-					 (sector_offset + length),
-					 SECTOR_SIZE - length);
-		free(buffer);
-
-		if (0 != rc)
-			return SSP_FAILURE();
-	}
-
-	return 0;
-}
-
-#endif /* defined(CONFIG_AXXIA_SERIAL_FLASH) */
-
-/*
   ======================================================================
   ======================================================================
   Public
@@ -372,15 +130,15 @@ ssp_read(void *buffer, unsigned long offset, unsigned long length)
 	ssp_select_device();
 	rc = ssp_write_device(3, NULL);
 
-	if (1 == is_flash) {
-		rc |= ssp_write_device((offset & 0x00ff0000) >> 16, NULL);
-		rc |= ssp_write_device((offset & 0x0000ff00) >> 8, NULL);
-		rc |= ssp_write_device(offset & 0x000000ff, NULL);
-	} else {
-		rc |= ssp_write_device((offset & 0x10000) >> 16, NULL);
-		rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
-		rc |= ssp_write_device(offset & 0xff, NULL);
-	}
+#ifdef LARGE_ADDRESS_SIZE
+	rc |= ssp_write_device((offset & 0x00ff0000) >> 16, NULL);
+	rc |= ssp_write_device((offset & 0x0000ff00) >> 8, NULL);
+	rc |= ssp_write_device(offset & 0x000000ff, NULL);
+#else
+	rc |= ssp_write_device((offset & 0x10000) >> 16, NULL);
+	rc |= ssp_write_device((offset & 0xff00 ) >> 8, NULL);
+	rc |= ssp_write_device(offset & 0xff, NULL);
+#endif
 
 	while (0 == rc &&
 	       0 < length--) {
@@ -394,73 +152,6 @@ ssp_read(void *buffer, unsigned long offset, unsigned long length)
 
 	if (0 != rc)
 		return SSP_FAILURE();
-
-	return 0;
-}
-
-/*
-  ----------------------------------------------------------------------
-  ssp_write
-*/
-
-int
-ssp_write(void *buffer, unsigned long offset, unsigned long length, int verify)
-{
-	int rc = 0;
-	unsigned char *vinput = (unsigned char *)buffer;
-	unsigned long voffset = offset;
-	unsigned long vlength = length;
-
-	/*
-	  If this is serial flash, erase first.
-	*/
-
-	if (1 == is_flash) {
-		rc = serial_flash_erase(offset, length);
-
-		if (0 != rc)
-			return SSP_FAILURE();
-	}
-	
-	rc = ssp_internal_write(buffer, offset, length);
-
-	if (0 != rc)
-		return SSP_FAILURE();
-
-	/*
-	  If requested, verify.
-	*/
-
-	if (0 != verify) {
-		ssp_select_device();
-		rc = ssp_write_device(3, NULL);
-
-		if (1 == is_flash) {
-			rc |= ssp_write_device((voffset & 0x00ff0000) >> 16,
-					       NULL);
-			rc |= ssp_write_device((voffset & 0x0000ff00) >> 8,
-					       NULL);
-			rc |= ssp_write_device(voffset & 0x000000ff,
-					       NULL);
-		} else {
-			rc |= ssp_write_device((voffset & 0x10000) >> 16, NULL);
-			rc |= ssp_write_device((voffset & 0xff00 ) >> 8, NULL);
-			rc |= ssp_write_device(voffset & 0xff, NULL);
-		}
-
-		while (0 == rc &&
-		       0 < vlength--) {
-			unsigned char value;
-
-			rc |= ssp_write_device(0, &value);
-
-			if (0 != rc ||
-			    *vinput++ != value)
-				return SSP_FAILURE();
-		}
-
-		ssp_deselect_all();
-	}
 
 	return 0;
 }
@@ -555,71 +246,14 @@ ssp_set_speed(unsigned long *new_speed)
 */
 
 int
-ssp_init(int input_device, int input_read_only)
+ssp_init(int input_device)
 {
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
-	int rc;
-	int i;
-	unsigned char value[3];
-#endif
 	unsigned long ssp_speed = SSP_DEFAULT_CLOCK;
 
 	device = input_device;
 
 	if (0 != ssp_set_speed(&ssp_speed))
 		return -1;
-
-	/*
-	  Clear out the SSP fifo.
-	*/
-
-	for (;;) {
-		unsigned long status;
-
-		status = readl(SSP + SSP_SR);
-
-		if (3 == status)
-			break;
-
-		(void)readl(SSP + SSP_DR);
-	}
-
-	/*
-	  Set read_only and is_flash.
-	*/
-
-	if (0 != input_read_only)
-		read_only = 1;
-	else
-		read_only = 0;
-
-	is_flash = 0;
-
-#if defined(CONFIG_AXXIA_SERIAL_FLASH)
-	/*
-	  In order to write, decide if this is EEPROM or serial flash.
-	*/
-
-	ssp_select_device();
-	rc = ssp_write_device(0x9f, NULL);
-
-	/* Skip the manufacturer bytes. */
-	for (i = 0; i < 16; ++i)
-		rc |= ssp_write_device(0, NULL);
-
-	/* Check for 'Q', 'R', and 'Y' at the beginning of identification. */
-	rc |= ssp_write_device(0, &value[0]);
-	rc |= ssp_write_device(0, &value[1]);
-	rc |= ssp_write_device(0, &value[2]);
-
-	ssp_deselect_all();
-
-	if (0 != rc)
-		return SSP_FAILURE();
-
-	if ('Q' == value[0] && 'R' == value[1] && 'Y' == value[2])
-		is_flash = 1;
-#endif
 
 	/*
 	  Clear out the SSP fifo.

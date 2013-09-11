@@ -208,7 +208,6 @@ COBJS-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
 COBJS-$(CONFIG_CMD_DFU) += cmd_dfu.o
 COBJS-$(CONFIG_CMD_GPT) += cmd_gpt.o
 COBJS-$(CONFIG_LSI_NET) += cmd_lsi_net.o
-COBJS-$(CONFIG_LSI_SSP) += cmd_lsi_ssp.o
 COBJS-$(CONFIG_LSI_NCR) += cmd_lsi_ncr.o
 COBJS-$(CONFIG_LSI_MDIO) += cmd_lsi_mdio.o
 COBJS-$(CONFIG_LSI_TEST) += cmd_lsi_test.o
