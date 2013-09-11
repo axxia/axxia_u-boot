@@ -38,7 +38,7 @@ static const unsigned char hnf_offsets[] = {
 static int l3_enabled = 1;
 
 static void
-set_pstatea(unsigned long req_state, unsigned long act_state)
+set_pstate(unsigned long req_state, unsigned long act_state)
 {
 	int i;
 
