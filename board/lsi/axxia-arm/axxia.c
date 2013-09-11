@@ -493,9 +493,9 @@ ft_board_setup(void *blob, bd_t *bd)
 			ad_value = getenv("ad_value");
 
 			if (NULL == ad_value) {
-				tmp = 0x1e1;
+				tmp = htonl(0x1e1);
 			} else {
-				tmp = simple_strtoul(ad_value, NULL, 0);
+				tmp = htonl(simple_strtoul(ad_value, NULL, 0));
 			}
 
 			printf("%s:%d - tmp=0x%x\n", __FILE__, __LINE__, tmp);
