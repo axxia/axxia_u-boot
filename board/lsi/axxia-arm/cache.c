@@ -67,8 +67,6 @@ v7_outer_cache_flush_all(void)
         unsigned long status, id;
 	int retries;
 
-	puts("Flushing L3 Cache\n");
-	
 	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
 		/* set state NOL3 */
 		writel(0x0, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
