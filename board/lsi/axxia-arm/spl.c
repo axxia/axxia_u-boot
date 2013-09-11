@@ -480,7 +480,7 @@ void spl_spi_load_image(void)
 	spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS, 0x40, &header);
 	spl_parse_image_header(&header);
 	/* Need offset as SDRAM is virtually mapped to 0x40000000 */
-	spl_image.load_addr += 0x40000000;
+	spl_image.load_addr = 0x40000000;
 	spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
 		       spl_image.size, (void *)spl_image.load_addr);
 }
@@ -488,7 +488,6 @@ void spl_spi_load_image(void)
 void __noreturn
 jump_to_image_no_args(struct spl_image_info *spl_image)
 {
-	printf("image entry point: 0x%X\n", spl_image->entry_point);
 	reset_cpu_fabric();
 	acp_failure(__FILE__, __FUNCTION__, __LINE__);
 }
