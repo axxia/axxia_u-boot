@@ -490,8 +490,12 @@ int pciesrio_setcontrol(unsigned long new_control)
 	/* Set new phy_ctrl value */
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl);
 
-	/* PCIE1 */
-	ncr_write32(NCP_REGION_ID(0x115, 3), 0x200, phy1_ctrl);
+	/* Check bit 2 as this determines PEI1 state */
+	if (new_control & 0x00000004)
+	{
+		/* PCIE1 */
+		ncr_write32(NCP_REGION_ID(0x115, 3), 0x200, phy1_ctrl);
+	}
 
 	return 0;
 }

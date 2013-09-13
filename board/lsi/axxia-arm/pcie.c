@@ -3,6 +3,7 @@
 #include <asm/processor.h>
 #include <asm/io.h>
 #include <pci.h>
+#include <config.h>
 
 #undef DEBUG_PCIE
 //#define DEBUG_PCIE
@@ -254,7 +255,7 @@ int pcie_write_config_dword(struct pci_controller *hose,pci_dev_t dev,int offset
 	return pcie_write_config(hose,(u32)dev,offset,4,(u32 )val);
 }
 
-int pci_476_init (struct pci_controller *hose, int port)
+int pci_axxia_init (struct pci_controller *hose, int port)
 {
 	volatile void *mbase = NULL;
 	u32 pci_config, pci_status, link_state;
@@ -264,7 +265,7 @@ int pci_476_init (struct pci_controller *hose, int port)
 	void __iomem *tpage_base;
 	pci_addr_t bus_start;   /* Start on the bus */
 	phys_addr_t phys_start;
-	unsigned long registers;
+	unsigned long registers, phy_status, pci_link;
 
 	pci_set_ops(hose, 
 		pcie_read_config_byte, 
@@ -276,9 +277,17 @@ int pci_476_init (struct pci_controller *hose, int port)
 
 	switch (port) {
 		case 0:
-#if defined (ACP_25xx)
 			ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &registers);
-			if (registers & 0x400001) {
+			printf("PEI0: Configuration: ");
+			if (registers & 0x1)
+			{
+				printf("Enabled");
+			} else {
+				printf("Disabled.\n");
+				return 0;
+			}
+			if ((registers & 0x400001) == 0x400001) {
+				printf(", Root Complex.\n");
 				/* PEI0 RC mode */
 				mbase = (u32 *)CONFIG_SYS_PCIE0_CFGADDR;
 				hose->cfg_data = (u8 *)CONFIG_SYS_PCIE0_MEMBASE;
@@ -286,34 +295,35 @@ int pci_476_init (struct pci_controller *hose, int port)
 				phys_start = CONFIG_PCIE0_PHY_START;
 				break;
 			} else {
+				printf(", End Point.\n");
 				return 0;
 			}
-#endif
-			/* PEI0 RC mode */
-			mbase = (u32 *)CONFIG_SYS_PCIE0_CFGADDR;
-			hose->cfg_data = (u8 *)CONFIG_SYS_PCIE0_MEMBASE;
-			bus_start = CONFIG_PCIE0_BUS_START;
-			phys_start = CONFIG_PCIE0_PHY_START;
-			break;
         case 1:
-#if defined (ACP_25xx)
-			ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &registers);
-			if (registers & 0x2) {
-				/* PEI1 enabled */
+			ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &registers);
+			printf("PEI1: Configuration: "); 
+			if (registers & 0x1)
+			{
+				printf("Enabled");
+			} else {
+				printf("Disabled.\n");
+				return 0;
+			}
+			if ((registers & 0x400001) == 0x400001) {
+				printf(", Root Complex.\n");
+				/* PEI1 RC Mode */
 				mbase = (u32 *)CONFIG_SYS_PCIE1_CFGADDR;
 				hose->cfg_data = (u8 *)CONFIG_SYS_PCIE1_MEMBASE;
 				bus_start = CONFIG_PCIE1_BUS_START;
 				phys_start = CONFIG_PCIE1_PHY_START;
 				break;
-			} else
+			} else {
+				printf(", End Point.\n");
 				return 0;
-#endif
-			mbase = (u32 *)CONFIG_SYS_PCIE1_CFGADDR;
-			hose->cfg_data = (u8 *)CONFIG_SYS_PCIE1_MEMBASE;
-			bus_start = CONFIG_PCIE1_BUS_START;
-			phys_start = CONFIG_PCIE1_PHY_START;
-			break;
+			}
 	}
+
+	/* We only get here if we are RC mode for either PEI0 or PEI1 */
+
 	hose->cfg_addr = mbase;
 #ifdef DEBUG_PCIE
 	printf("port = %d, hose = 0x%x, hose->cfg_addr = 0x%x\n", port, hose,mbase);
@@ -364,6 +374,19 @@ int pci_476_init (struct pci_controller *hose, int port)
 		return 0;
 	}
 
+	/* Read the "PEI Link Speed Change Command and Link Status" register */
+	pci_link = readl(mbase + 0x117c);
+
+	printf("PEI%d: x%d @ ", port, ((pci_link & 0x3f0) >> 4));	
+	switch (pci_link & 0xF)
+	{
+		case 1: printf("2.5Gbps\n"); break;
+		case 2: printf("5Gbps\n"); break;
+	}
+ 
+
+
+
 	/*
 	 * for v2 we need to set the 'axi_interface_rdy' bit
 	 * this bit didn't exist in X1V1, and means something
@@ -379,29 +402,30 @@ int pci_476_init (struct pci_controller *hose, int port)
 	/* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
 	 * 64 bit address space */
 	/* configures the RC Memory Space Configuration Register */
-        writel(0x0, mbase + 0x11f4);
+	writel(0x0, mbase + 0x11f4);
 
-        /* write all 1s to BAR0 register */
-        writel(0xffffffff, mbase + 0x10);
+	/* write all 1s to BAR0 register */
+	writel(0xffffffff, mbase + 0x10);
 
-        /* read back BAR0 */
-        bar0_size = readl(mbase + 0x10);
-        if (bar0_size != 0x0)
-                printf("Writing/Reading BAR0 reg failed\n");
+	/* read back BAR0 */
+	bar0_size = readl(mbase + 0x10);
+	/* Ignore the lower 4 bits as these indicate the type of memory */
+	if ((bar0_size & ~0xF) != 0x0)
+	        printf("Writing/Reading BAR0 reg failed\n");
 
-        /* set the BASE0 address to start of PCIe base 0x0 */
-        writel(0x0, mbase + 0x10);
+	/* set the BASE0 address to start of PCIe base 0x0 */
+	writel(0x0, mbase + 0x10);
 
-        /* setup TPAGE registers for inbound mapping */
-        /* We set the MSB of each TPAGE to select 128-bit AXI access.
-         * For the address field we simply program an incrementing value
-         * to map consecutive pages
-         */
-        tpage_base = mbase + 0x1050;
-        for (i = 0; i < 8; i++) {
-                writel((0x80000000 + i), tpage_base);
-                tpage_base += 4;
-        }
+	/* setup TPAGE registers for inbound mapping */
+	/* We set the MSB of each TPAGE to select 128-bit AXI access.
+	 * For the address field we simply program an incrementing value
+	 * to map consecutive pages
+	 */
+	tpage_base = mbase + 0x1050;
+	for (i = 0; i < 8; i++) {
+        writel((0x80000000 + i), tpage_base);
+        tpage_base += 4;
+	}
 
 	/* ACP X1 setup MPAGE registers */ 
 	/*
@@ -430,7 +454,7 @@ int pci_476_init (struct pci_controller *hose, int port)
 	hose->region_count = 1;
 	pci_register_hose(hose);
 #ifdef DEBUG_PCIE
-	printf("pci_476_init: Returned bus no after = %d\n", hose->last_busno);
+	printf("pci_axxia_init: Returned bus no after = %d\n", hose->last_busno);
 #endif
 	hose->first_busno = 0;
 	hose->current_busno = hose->last_busno+1;
@@ -442,13 +466,10 @@ int pci_476_init (struct pci_controller *hose, int port)
 
 void pci_init_board(void)
 {
-	unsigned long word0;
-	unsigned long word1;
-	unsigned long word2;
 	int busno;
 
-	busno = pci_476_init (&hose[0], 0);
-	busno = pci_476_init (&hose[1], 1);
+	busno = pci_axxia_init (&hose[0], 0);
+	busno = pci_axxia_init (&hose[1], 1);
 }
 
 #endif /* CONFIG_PCI */

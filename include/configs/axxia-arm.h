@@ -319,6 +319,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_PCI_PNP 1                          /* do pci plug-and-play*/
 #define CONFIG_CMD_PCI 1
 #define CONFIG_PCI_SCAN_SHOW 1
+#define CONFIG_CMD_PCI_ENUM
 #endif
 
 #define ACP_PEI0 1
