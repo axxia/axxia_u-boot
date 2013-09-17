@@ -329,10 +329,7 @@ extern void *retention;
 #endif
 
 int read_parameters(void);
-
-#ifdef CONFIG_MEMORY_RETENTION
-int write_parameters(parameters_t *);
-#endif
+int write_parameters(void);
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_CMD_LSI_PARAMETERS

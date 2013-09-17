@@ -26,6 +26,8 @@
 
 #include <config.h>
 #include <common.h>
+#include <spi.h>
+#include <spi_flash.h>
 #ifndef CONFIG_SPL_BUILD
 #include <malloc.h>
 #endif
@@ -38,13 +40,12 @@
   ==============================================================================
 */
 
-static void *parameters = (void *)1; /* Stay in the .data section, not .bss! */
+static void *parameters __attribute__ ((section ("data"))) = NULL;
 
 #if defined(CONFIG_AXXIA_PPC)
 /*
   For PPC (34xx, 25xx, 35xx), use version 4 of the parameters.
 */
-#define PSWAB(value) (value)
 #ifdef CONFIG_SPL_BUILD
 #define PARAMETERS_HEADER_ADDRESS \
 	(LCM + (128 * 1024) - sizeof(parameters_header_t))
@@ -58,7 +59,6 @@ static void *parameters = (void *)1; /* Stay in the .data section, not .bss! */
 /*
   For ARM (55xx), use version 6 of the parameters.
 */
-#define PSWAB(value) ntohl(value)
 #ifdef CONFIG_SPL_BUILD
 #define PARAMETERS_HEADER_ADDRESS \
 	(LSM + (256 * 1024) - sizeof(parameters_header_t))
@@ -73,17 +73,17 @@ static void *parameters = (void *)1; /* Stay in the .data section, not .bss! */
 #endif
 
 #ifdef CONFIG_SPL_BUILD
-parameters_header_t *header = (parameters_header_t *)PARAMETERS_HEADER_ADDRESS;
+parameters_header_t *header __attribute__ ((section ("data"))) = NULL;
 #else
-parameters_header_t *header = (parameters_header_t *)1;
+parameters_header_t *header __attribute__ ((section ("data"))) = NULL;
 #endif
-parameters_global_t *global = (parameters_global_t *)1;
-parameters_pciesrio_t *pciesrio = (parameters_pciesrio_t *)1;
-parameters_voltage_t *voltage = (parameters_voltage_t *)1;
-parameters_clocks_t *clocks = (parameters_clocks_t *)1;
-parameters_sysmem_t *sysmem = (parameters_sysmem_t *)1;
+parameters_global_t *global __attribute__ ((section ("data"))) = NULL;
+parameters_pciesrio_t *pciesrio __attribute__ ((section ("data"))) = NULL;
+parameters_voltage_t *voltage __attribute__ ((section ("data"))) = NULL;
+parameters_clocks_t *clocks __attribute__ ((section ("data"))) = NULL;
+parameters_sysmem_t *sysmem __attribute__ ((section ("data"))) = NULL;
 #ifdef CONFIG_AXXIA_ARM
-void *retention = (void *)1;
+void *retention __attribute__ ((section ("data"))) = NULL;
 #endif
 
 /*
@@ -124,7 +124,7 @@ read_parameters(void)
 	*/
 
 	/* Verify that the paramater table is valid. */
-	if (PARAMETERS_MAGIC != PSWAB(header->magic)) {
+	if (PARAMETERS_MAGIC != ntohl(header->magic)) {
 		/* Initialize the SEEPROM (device 0, read only). */
 		ssp_init(0);
 
@@ -132,16 +132,16 @@ read_parameters(void)
 		rc = ssp_read(parameters,
 			      PARAMETERS_OFFSET_IN_FLASH, PARAMETERS_SIZE);
 
-		if (0 != rc || PARAMETERS_MAGIC != PSWAB(header->magic))
+		if (0 != rc || PARAMETERS_MAGIC != ntohl(header->magic))
 			/* No parameters available, fail. */
 			return -1;
 	}
 
-	if (crc32(0, parameters, (PSWAB(header->size) - 12)) !=
-	    PSWAB(header->checksum) ) {
+	if (crc32(0, parameters, (ntohl(header->size) - 12)) !=
+	    ntohl(header->checksum) ) {
 		printf("Parameter table is corrupt. 0x%08x!=0x%08x\n",
-		       PSWAB(header->checksum),
-		       crc32(0, parameters, (PSWAB(header->size) - 12)));
+		       ntohl(header->checksum),
+		       crc32(0, parameters, (ntohl(header->size) - 12)));
 		return -1;
 	}
 
@@ -210,9 +210,72 @@ read_parameters(void)
 */
 
 int
-write_parameters(parameters_t *parameters)
+write_parameters(void)
 {
+#ifndef CONFIG_AXXIA_ARM
+
 	return 0;
+
+#else
+
+	struct spi_flash *flash = NULL;
+	void *compare = NULL;
+	int rc = -1;
+
+	compare = malloc(PARAMETERS_SIZE);
+
+	if (NULL == compare) {
+		printf("%s:%d - Couldn't Allocate Memory!\n",
+		       __FILE__, __LINE__);
+		goto release_and_return;
+	}
+
+	flash = spi_flash_probe(0, 0,
+				CONFIG_SF_DEFAULT_SPEED, CONFIG_SF_DEFAULT_MODE);
+
+	if (NULL == flash) {
+		printf("%s:%d - SF Probe Failed!\n", __FILE__, __LINE__);
+		goto release_and_return;
+	}
+
+	rc = spi_flash_read(flash,
+			    CONFIG_PARAMETER_OFFSET, PARAMETERS_SIZE,
+			    compare);
+
+	if (rc) {
+		printf("%s:%d - Error reading Serial Flash!\n",
+		       __FILE__, __LINE__);
+		goto release_and_return;
+	}
+
+	rc = memcmp(compare, parameters, PARAMETERS_SIZE);
+
+	if (0 == rc)
+		goto release_and_return;
+
+	/* Update the Checksum */
+
+	header->checksum =
+		htonl(crc32(0, parameters, (ntohl(header->size) - 12)));
+
+	rc = spi_flash_erase(flash, CONFIG_PARAMETER_OFFSET, PARAMETERS_SIZE);
+
+	if (0 == rc)
+		rc = spi_flash_write(flash,
+				     CONFIG_PARAMETER_OFFSET, PARAMETERS_SIZE,
+				     compare);
+
+release_and_return:
+
+	if (NULL != compare)
+		free(compare);
+
+	if (NULL != flash)
+		spi_flash_free(flash);
+
+	return rc;
+
+#endif
 }
 
 #endif	/* CONFIG_MEMORY_RETENTION */
