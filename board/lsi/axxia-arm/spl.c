@@ -379,8 +379,8 @@ check_memory_ranges(void)
 		unsigned long long offset = (unsigned long long)*ranges++;
 		unsigned long long length = (unsigned long long)*ranges++;
 
-		offset <<= 8;
-		length <<= 8;
+		offset <<= 20;
+		length <<= 20;
 
 		if (0ULL != length) {
 			printf("Testing Memory From 0x%llx, 0x%llx bytes\n",
@@ -491,4 +491,3 @@ jump_to_image_no_args(struct spl_image_info *spl_image)
 	reset_cpu_fabric();
 	acp_failure(__FILE__, __FUNCTION__, __LINE__);
 }
-
