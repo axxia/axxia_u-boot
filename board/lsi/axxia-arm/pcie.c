@@ -56,12 +56,12 @@ static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
 		mpage |= (fn << 19);
 
 		addr = ((u32)hose->cfg_addr) + ACPX1_PCIE_MPAGE_UPPER(7);
-		out_le32((u32 *) addr, 0x0);
+		writel(0x0, (u32 *) addr);
 		addr = ((u32)hose->cfg_addr) + ACPX1_PCIE_MPAGE_LOWER(7);
 #ifdef DEBUG_PCIE
 		printf("pcie_get_base: %02x:%02x:%02x setting mpage = 0x%08x in addr = 0x%08x\n", PCI_BUS(devfn), dev, fn, mpage, addr); 	
 #endif
-		out_le32((u32 *) addr, mpage);
+		writel(mpage, (u32 *) addr);
 	}
 		
 	return base;
@@ -383,35 +383,21 @@ int pci_axxia_init (struct pci_controller *hose, int port)
 		case 1: printf("2.5Gbps\n"); break;
 		case 2: printf("5Gbps\n"); break;
 	}
- 
 
+        /* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
+         * 64 bit address space */
+        /* configures the RC Memory Space Configuration Register */
+        writel(0x40000000, mbase + 0x11f4);
 
-
-	/*
-	 * for v2 we need to set the 'axi_interface_rdy' bit
-	 * this bit didn't exist in X1V1, and means something
-	 * else for X2...
-	 */
-#if defined (ACP_X1V2)
-	/* set up AXI_INTERFACE_RDY */
-	pci_config = readl(mbase + 0x1000);
-	out_le32(mbase + 0x1000, pci_config|0x40000);
-	pci_config = readl(mbase + 0x1000);
-#endif 
-	
-	/* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
-	 * 64 bit address space */
-	/* configures the RC Memory Space Configuration Register */
-	writel(0x0, mbase + 0x11f4);
-
-	/* write all 1s to BAR0 register */
-	writel(0xffffffff, mbase + 0x10);
-
-	/* read back BAR0 */
-	bar0_size = readl(mbase + 0x10);
-	/* Ignore the lower 4 bits as these indicate the type of memory */
-	if ((bar0_size & ~0xF) != 0x0)
-	        printf("Writing/Reading BAR0 reg failed\n");
+        /* Verify BAR0 size */
+        {
+                u32 bar0_size;
+                /* write all 1s to BAR0 register */
+                writel(~0, mbase + 0x10);
+                bar0_size = readl(mbase + 0x10);
+                if ((bar0_size & ~0xf) != 0x40000000)
+                        printf("PCIE%d: Config BAR0 failed\n", port);
+        }
 
 	/* set the BASE0 address to start of PCIe base 0x0 */
 	writel(0x0, mbase + 0x10);
