@@ -346,33 +346,57 @@ clear_page_tables:
         @ PEI0 is currently using 256 MB for outbound mapping
         @ and  16 MB for MPAGE7 for config access
         @
-        ldr     r0,=0x00040cd2          @ Start at 0x30_0000_0000
+        ldr     r0,=0x00040c72          @ Start at 0x30_0000_0000
         add     r1, r3, #0x3000
-        mov     r9, #0
-1:      str     r0, [r1], #4            @ Each supersection is repeated
+        add     r2, r3, #0x3400
+1:      mov     r9, #0
+2:      str     r0, [r1], #4            @ Each supersection is repeated
         add     r9, r9, #1              @ 16 times.
         cmp     r9, #16
+        blt     2b
+        add     r0, r0, #0x1000000      @ 16M
+        cmp     r1, r2
         blt     1b
 
-        ldr     r0,=0x38040cd2          @ Start at 0x30_3800_0000
-        add     r1, r3, #0x3040
-        str     r0, [r1], #4            @ Each supersection is repeated once
+        ldr     r0,=0x38040c72          @ Start at 0x30_3800_0000
+        add     r1, r3, #0x3400
+        add     r2, r3, #0x3440
+1:      mov     r9, #0
+2:      str     r0, [r1], #4            @ Each supersection is repeated
+        add     r9, r9, #1              @ 16 times.
+        cmp     r9, #16
+        blt     2b
+        add     r0, r0, #0x1000000      @ 16M
+        cmp     r1, r2
+        blt     1b
 
         @
         @ PEI1 is currently using 256 MB for outbound mapping
         @ and  16 MB for MPAGE7 for config access
         @
-        ldr     r0,=0x80040cd2          @ Start at 0x30_8000_0000
-        add     r1, r3, #0x3080
-        mov     r9, #0
-1:      str     r0, [r1], #4            @ Each supersection is repeated
+        ldr     r0,=0x80040c72          @ Start at 0x30_8000_0000
+        add     r1, r3, #0x3800
+        add     r2, r3, #0x3c00
+1:      mov     r9, #0
+2:      str     r0, [r1], #4            @ Each supersection is repeated
         add     r9, r9, #1              @ 16 times.
         cmp     r9, #16
+        blt     2b
+        add     r0, r0, #0x1000000      @ 16M
+        cmp     r1, r2
         blt     1b
 
-        ldr     r0,=0xb8040cd2          @ Start at 0x30_B800_0000
-        add     r1, r3, #0x30c0
-        str     r0, [r1], #4            @ Each supersection is repeated once
+        ldr     r0,=0xb8040c72          @ Start at 0x30_B800_0000
+        add     r1, r3, #0x3c00
+        add     r2, r3, #0x3c40
+1:      mov     r9, #0
+2:      str     r0, [r1], #4            @ Each supersection is repeated
+        add     r9, r9, #1              @ 16 times.
+        cmp     r9, #16
+        blt     2b
+        add     r0, r0, #0x1000000      @ 16M
+        cmp     r1, r2
+        blt     1b
 
 	@@
 	@ Turn it all on...
