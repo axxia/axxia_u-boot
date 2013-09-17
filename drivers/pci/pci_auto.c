@@ -18,7 +18,7 @@
 #include <pci.h>
 
 #undef DEBUG
-#ifdef CONFIG_ACP3                                            <
+#ifdef CONFIG_AXXIA_ARM                                            <
 #define DEBUG                                                 <
 #endif     
 #ifdef DEBUG

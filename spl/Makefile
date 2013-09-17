@@ -66,6 +66,7 @@ LIBS-$(CONFIG_SPL_FRAMEWORK) += common/spl/libspl.o
 LIBS-$(CONFIG_SPL_LIBCOMMON_SUPPORT) += common/libcommon.o
 LIBS-$(CONFIG_SPL_LIBDISK_SUPPORT) += disk/libdisk.o
 LIBS-$(CONFIG_SPL_I2C_SUPPORT) += drivers/i2c/libi2c.o
+LIBS-$(CONFIG_SPL_PCI_SUPPORT) += drivers/pci/libpci.o
 LIBS-$(CONFIG_SPL_GPIO_SUPPORT) += drivers/gpio/libgpio.o
 LIBS-$(CONFIG_SPL_MMC_SUPPORT) += drivers/mmc/libmmc.o
 LIBS-$(CONFIG_SPL_SERIAL_SUPPORT) += drivers/serial/libserial.o

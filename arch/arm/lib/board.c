@@ -76,7 +76,8 @@ extern void dataflash_print_info(void);
 /*****************************************************************
  * PCIe AXM55xx workaround
  *****************************************************************/
-#if defined(CONFIG_AXXIA_55XX) && defined(CONFIG_SPL_BUILD)
+//#if defined(CONFIG_AXXIA_55XX) && defined(CONFIG_SPL_BUILD)
+#ifdef CONFIG_SPL_PCI_SUPPORT
 typedef enum {
         PEI_2_5G = 1,
         PEI_5G = 2
@@ -348,12 +349,13 @@ static int init_func_i2c(void)
 }
 #endif
 
-#if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
+//#if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
+
 #include <pci.h>
 static int arm_pci_init(void)
 {
 
-#if defined(CONFIG_AXXIA_55XX) && defined(CONFIG_SPL_BUILD)
+#ifdef CONFIG_SPL_PCI_SUPPORT
 	{
 		char * env_value;
 		unsigned long pciStatus, linkState;
@@ -391,10 +393,12 @@ static int arm_pci_init(void)
 		}
 	}
 #endif
+#if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
 	pci_init();
+#endif
 	return 0;
 }
-#endif /* CONFIG_CMD_PCI || CONFIG_PCI */
+//#endif /* CONFIG_CMD_PCI || CONFIG_PCI */
 
 /*
  * Breathe some life into the board...
