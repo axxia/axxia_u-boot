@@ -17,7 +17,11 @@
  */
 #include <common.h>
 #include <asm/io.h>
+#include <div64.h>
 #include <i2c.h>
+
+/* Desired SCL timeout (ns) */
+#define SCL_LOW_TIMEOUT (25000000)
 
 static unsigned int current_speed = 0;
 static unsigned int current_bus = 0;
@@ -45,7 +49,7 @@ static unsigned int initialized = 0;
 static unsigned long
 ns_to_clk(unsigned long long ns, unsigned long clk_mhz)
 {
-	return ns*clk_mhz/1000;
+	return lldiv(ns*clk_mhz, 1000);
 }
 
 /*
@@ -92,6 +96,25 @@ i2c_initialized(void)
 }
 
 /*
+ * i2c_check_status - Check status of the current transfer. Return -1 on transfer error.
+ */
+static int
+i2c_check_status(unsigned int status, unsigned int *acc_status)
+{
+	if (status & MST_STATUS_ERR) {
+		debug("i2c: transfer ABORTED (status %#x/%#x)\n", status, *acc_status);
+		return -1;
+	}
+	if (status & MST_STATUS_SS) {
+		*acc_status |= MST_STATUS_SS;
+	}
+	if (status & MST_STATUS_SNS) {
+		*acc_status |= MST_STATUS_SNS;
+	}
+	return 0;
+}
+
+/*
  * i2c_addr_to_buf - Convert 32-bit integer to uchar buffer.
  */
 static void
@@ -101,32 +124,6 @@ i2c_addr_to_buf(uint addr, int alen, uchar *abuf)
 		abuf[alen] = addr & 0xff;
 		addr >>= 8;
 	}
-}
-
-/*
- * i2c_send_stop - Generate STOP
- */
-static int
-i2c_send_stop(unsigned long i2c_addr)
-{
-	int result = 0;
-	unsigned int status;
-
-	writel(0xb, i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND);
-
-	while (readl(i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND) & 0x8) {
-		status = readl(i2c_addr + AI2C_REG_I2C_X7_MST_INT_STATUS);
-		if (status & MST_STATUS_SCC) {
-			debug("i2c_stop: stop complete (status %#x)\n", status);
-			break;
-		}
-		if ((status & MST_STATUS_ERR) != 0) {
-			debug("i2c_stop: stop ABORTED (status %#x)\n", status);
-			result = -1;
-			break;
-		}
-	}
-	return result;
 }
 
 /*
@@ -143,6 +140,8 @@ i2c_write_bytes(unsigned long i2c_addr, uchar chip,
 	int result = 0;
 	int len = alen + dlen;
 	unsigned int status;
+	unsigned int acc_status = 0; /* Accumulated status bits to determine when transfer is complete */
+	unsigned int done_bits = stop ? MST_STATUS_SS : MST_STATUS_SNS;
 
 	debug("_i2c_write: chip=%#x, addr=[%02x %02x] alen=%d buffer=[%02x %02x %02x %02x], len=%d, stop=%d\n",
 	      chip, addr[0], addr[1], alen, data[0], data[1], data[2], data[3], len, stop);
@@ -154,10 +153,10 @@ i2c_write_bytes(unsigned long i2c_addr, uchar chip,
 	/* Chip address for write */
 	writel(CHIP_WRITE(chip), i2c_addr + AI2C_REG_I2C_X7_MST_ADDR_1);
 
-	/* Start manual mode */
+	/* Start (automatic mode with stop, manual mode without stop) */
 	writel(stop ? 0x9 : 0x8, i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND);
 
-	for (;;) {
+	while (acc_status != done_bits) {
 		status = readl(i2c_addr + AI2C_REG_I2C_X7_MST_INT_STATUS);
 
 		if (status & MST_STATUS_TFL) {
@@ -175,29 +174,20 @@ i2c_write_bytes(unsigned long i2c_addr, uchar chip,
 				--len;
 			}
 		}
-		if (status & (MST_STATUS_SNS | MST_STATUS_SS)) {
-			debug("_i2c_write: transfer complete (status %#x)\n", status);
-			break;
-		}
-		if (status & MST_STATUS_ERR) {
-			debug("_i2c_write: transfer ABORTED (status %#x)\n", status);
-			result = -1;
+		if ((result = i2c_check_status(status, &acc_status)) < 0) {
 			break;
 		}
 	}
+
+	/* Wait for state machine to go IDLE */
+	while (readl(i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND) & 0x8)
+		;
 
 	debug("i2c_write: transfer finished, xfr_rx=%u/%u xfr_tx=%u/%u\n",
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_RX_XFER),
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_RX_BYTES_XFRD),
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_TX_XFER),
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_TX_BYTES_XFRD));
-
-	if (0 && stop) {
-		/* Send STOP */
-		i2c_send_stop(i2c_addr);
-	}
-
-	debug("_i2c_write: done, result=%d\n", result);
 
 	return result;
 }
@@ -213,6 +203,8 @@ i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len, int s
 {
 	int result = 0;
 	unsigned int status;
+	unsigned int acc_status = 0; /* Accumulated status bits to determine when transfer is complete */
+	unsigned int done_bits = stop ? MST_STATUS_SS : MST_STATUS_SNS;
 
 	/* Read 'len' bytes */
 	writel(len, i2c_addr + AI2C_REG_I2C_X7_MST_RX_XFER);
@@ -221,10 +213,10 @@ i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len, int s
 	/* Chip address for read */
 	writel(CHIP_READ(chip), i2c_addr + AI2C_REG_I2C_X7_MST_ADDR_1);
 
-	/* Start manual mode */
+	/* Start (automatic mode with stop, manual mode without stop) */
 	writel(stop ? 0x9 : 0x8, i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND);
 
-	for (;;) {
+	while (acc_status != done_bits) {
 		status = readl(i2c_addr + AI2C_REG_I2C_X7_MST_INT_STATUS);
 
 		if (status & MST_STATUS_RFL) {
@@ -232,13 +224,7 @@ i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len, int s
 			*buffer++ = readl(i2c_addr + AI2C_REG_I2C_X7_MST_DATA);
 			--len;
 		}
-		if (status & (MST_STATUS_SNS | MST_STATUS_SS)) {
-			debug("i2c_read: transfer complete (status %#x)\n", status);
-			break;
-		}
-		if (status & MST_STATUS_ERR) {
-			debug("i2c_read: transfer ABORTED (status %#x)\n", status);
-			result = -1;
+		if ((result = i2c_check_status(status, &acc_status)) < 0) {
 			break;
 		}
 	}
@@ -246,21 +232,17 @@ i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len, int s
 	while (readl(i2c_addr + AI2C_REG_I2C_X7_MST_RX_FIFO) > 0) {
 		*buffer++ = readl(i2c_addr + AI2C_REG_I2C_X7_MST_DATA);
 		--len;
-		debug("i2c_read: (post) get %#x\n", buffer[-1]);
 	}
+
+	/* Wait for state machine to go IDLE */
+	while (readl(i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND) & 0x8)
+		;
 
 	debug("i2c_read: transfer finished, xfr_rx=%u/%u xfr_tx=%u/%u\n",
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_RX_XFER),
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_RX_BYTES_XFRD),
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_TX_XFER),
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_TX_BYTES_XFRD));
-
-	if (0 && stop) {
-		/* Send STOP */
-		i2c_send_stop(i2c_addr);
-	}
-
-	debug("i2c_read_bytes: done, result=%d\n", result);
 
 	return result;
 }
@@ -291,7 +273,7 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 	}
 
 	if (len > 255) {
-		printf("Unsuppoted transfer length (must be < 255)\n");
+		printf("Unsuppoted transfer length (max 255)\n");
 		return -1;
 	}
 
@@ -330,7 +312,7 @@ i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 	}
 
 	if (len > 255) {
-		printf("Unsuppoted transfer length (must be < 255)\n");
+		printf("Unsuppoted transfer length (max 255)\n");
 		return -1;
 	}
 
@@ -352,11 +334,12 @@ int
 i2c_probe(uchar chip)
 {
 	unsigned long i2c_addr = i2c_base_addr();
+	uchar dummy;
 
 	if (!i2c_initialized())
 		return -1;
 
-	return i2c_read_bytes(i2c_addr, chip, NULL, 0, 0);
+	return i2c_read_bytes(i2c_addr, chip, &dummy, 1, 1);
 }
 
 /*
@@ -391,8 +374,6 @@ i2c_set_bus_speed(unsigned int speed)
 
 	current_speed = speed;
 
-	debug("i2c_set_bus_speed(%u)\n", speed);
-
 	if (acp_clock_get(clock_peripheral, &per_clock) < 0) {
 		printf("Failed to retreive peripheral clock speed\n");
 		return -1;
@@ -426,24 +407,37 @@ i2c_set_bus_speed(unsigned int speed)
 	/* Filter > 50ns spikes */
 	writel(ns_to_clk(50, clk_mhz), i2c_addr + AI2C_REG_I2C_X7_SPIKE_FLTR_LEN); 
 
-	/* Configure Time-Out Registers */
+	/* Configure Time-Out Registers. Find a prescaler value that make the
+	 * timeout value fit into the 15-bit counter register.
+	 */
+	{
+		unsigned int tmo_clk = ns_to_clk(SCL_LOW_TIMEOUT, clk_mhz);
+		unsigned int prescale = 0; /* log2 of the prescale divider */
 
-	/* Divide by 32 (2^5) */
-	writel(1, i2c_addr + AI2C_REG_I2C_X7_TIMER_CLOCK_DIV); 
+		while (tmo_clk > 0x7fff && prescale < 15) {
+			++prescale;
+			tmo_clk >>= 1;
+		}
 
-	/* Desired Time-Out = 250ms */
-	writel((1<<15) | ns_to_clk(25000000, clk_mhz), i2c_addr + AI2C_REG_I2C_X7_WAIT_TIMER_CONTROL);
+		if (tmo_clk > 0x7fff) {
+			tmo_clk = 0x7fff;
+		}
 
-	printf("i2c: SDA_SETUP:        %08x\n",
-	       readl(i2c_addr+AI2C_REG_I2C_X7_SDA_SETUP_TIME));
-	printf("i2c: SDA_HOLD:         %08x\n",
-	       readl(i2c_addr+AI2C_REG_I2C_X7_SDA_HOLD_TIME));
-	printf("i2c: SPIKE_FILTER_LEN: %08x\n",
-	       readl(i2c_addr+AI2C_REG_I2C_X7_SPIKE_FLTR_LEN));
-	printf("i2c: TIMER_DIV:        %08x\n",
-	       readl(i2c_addr+AI2C_REG_I2C_X7_TIMER_CLOCK_DIV));
-	printf("i2c: WAIT_TIMER:       %08x\n",
-	       readl(i2c_addr+AI2C_REG_I2C_X7_WAIT_TIMER_CONTROL));
+		debug("i2c: tmo_clk %u, divider %u\n", tmo_clk, 1<<prescale);
+		writel(prescale, i2c_addr + AI2C_REG_I2C_X7_TIMER_CLOCK_DIV); 
+		writel((1<<15) | tmo_clk, i2c_addr + AI2C_REG_I2C_X7_WAIT_TIMER_CONTROL);
+	}
+
+	debug("i2c: SDA_SETUP:        %08x\n",
+	      readl(i2c_addr+AI2C_REG_I2C_X7_SDA_SETUP_TIME));
+	debug("i2c: SDA_HOLD:         %08x\n",
+	      readl(i2c_addr+AI2C_REG_I2C_X7_SDA_HOLD_TIME));
+	debug("i2c: SPIKE_FILTER_LEN: %08x\n",
+	      readl(i2c_addr+AI2C_REG_I2C_X7_SPIKE_FLTR_LEN));
+	debug("i2c: TIMER_DIV:        %08x\n",
+	      readl(i2c_addr+AI2C_REG_I2C_X7_TIMER_CLOCK_DIV));
+	debug("i2c: WAIT_TIMER:       %08x\n",
+	      readl(i2c_addr+AI2C_REG_I2C_X7_WAIT_TIMER_CONTROL));
 
 	return 0;
 }
