@@ -24,6 +24,8 @@
  * MA 02111-1307 USA
  */
 
+/*#define DEBUG*/
+
 #include <config.h>
 #include <common.h>
 #include <spi.h>
@@ -220,6 +222,8 @@ write_parameters(void)
 
 	struct spi_flash *flash = NULL;
 	void *compare = NULL;
+	unsigned long *buffer;
+	int i;
 	int rc = -1;
 
 	compare = malloc(PARAMETERS_SIZE);
@@ -248,22 +252,93 @@ write_parameters(void)
 		goto release_and_return;
 	}
 
+#ifdef CONFIG_AXXIA_ARM
+	buffer = compare;
+
+	for (i = 0; i < (PARAMETERS_SIZE / 4); ++i) {
+		*buffer = ntohl(*buffer);
+		++buffer;
+	}
+#endif
+
 	rc = memcmp(compare, parameters, PARAMETERS_SIZE);
+	debug("%s:%d - rc=%d\n", __FILE__, __LINE__, rc);
+
+#ifdef DEBUG
+	{
+		unsigned long *a = parameters;
+		unsigned long *b = compare;
+
+		printf("compare is at 0x%p\n"
+		       "parameters are at 0x%p\n",
+		       compare, parameters);
+
+		printf("-- Offset --\n"
+		       "     global = 0x%x\n"
+		       "   pciesrio = 0x%x\n"
+		       "    voltage = 0x%x\n"
+		       "     clocks = 0x%x\n"
+		       "     sysmem = 0x%x\n"
+		       "  retention = 0x%x\n",
+		       parameters + header->globalOffset,
+		       parameters + header->pciesrioOffset,
+		       parameters + header->voltageOffset,
+		       parameters + header->clocksOffset,
+		       parameters + header->sysmemOffset,
+		       parameters + header->retentionOffset);
+
+		for (i = 0; i < (PARAMETERS_SIZE / 4); ++i) {
+
+			if (*a != *b) {
+				printf("MISMATCH at 0x%04x: 0x%08x != 0x%08x\n",
+				       (i * 4), *a, *b);
+			}
+
+			++a;
+			++b;
+		}
+	}
+#endif
 
 	if (0 == rc)
 		goto release_and_return;
 
+#ifdef CONFIG_AXXIA_ARM
+	buffer = parameters;
+
+	for (i = 0; i < (PARAMETERS_SIZE / 4); ++i) {
+		*buffer = htonl(*buffer);
+		++buffer;
+	}
+#endif
+
 	/* Update the Checksum */
 
+	debug("%s:%d - header->size=0x%x header->checksum=0x%x\n",
+	      __FILE__, __LINE__, header->size, header->checksum);
 	header->checksum =
 		htonl(crc32(0, parameters, (ntohl(header->size) - 12)));
+	debug("%s:%d - header->checksum=0x%x\n",
+	      __FILE__, __LINE__, header->checksum);
 
-	rc = spi_flash_erase(flash, CONFIG_PARAMETER_OFFSET, PARAMETERS_SIZE);
+	debug("Erasing...\n");
+	rc = spi_flash_erase(flash, CONFIG_PARAMETER_OFFSET, flash->sector_size);
 
-	if (0 == rc)
+	if (0 == rc) {
+		debug("Writing...\n");
 		rc = spi_flash_write(flash,
 				     CONFIG_PARAMETER_OFFSET, PARAMETERS_SIZE,
-				     compare);
+				     parameters);
+	}
+
+#ifdef CONFIG_AXXIA_ARM
+	buffer = parameters;
+
+	for (i = 0; i < (PARAMETERS_SIZE / 4); ++i) {
+		*buffer = ntohl(*buffer);
+		++buffer;
+	}
+#endif
 
 release_and_return:
 
@@ -272,6 +347,8 @@ release_and_return:
 
 	if (NULL != flash)
 		spi_flash_free(flash);
+
+	debug("%s:%d - rc=%d\n", __FILE__, __LINE__, rc);
 
 	return rc;
 
