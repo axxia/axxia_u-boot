@@ -4132,7 +4132,6 @@ phy_enable_(int phy)
 	while ((0 == phy_link(phy)) &&
 	       (0 < --link_retries)) {
 		mdelay(1);
-		--link_retries;
 	}
 
 	if (0 == link_retries) {
