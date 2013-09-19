@@ -498,7 +498,6 @@ ft_board_setup(void *blob, bd_t *bd)
 				tmp = htonl(simple_strtoul(ad_value, NULL, 0));
 			}
 
-			printf("%s:%d - tmp=0x%x\n", __FILE__, __LINE__, tmp);
 			rc = fdt_setprop(blob, node, "ad-value", &tmp,
 					 sizeof(unsigned long));
 
