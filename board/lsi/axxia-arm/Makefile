@@ -32,7 +32,7 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-COBJS	+= axxia.o mdio.o phy.o pcie.o
+COBJS	+= axxia.o mdio.o phy.o pcie.o usb_phy.o
 
 ifdef CONFIG_AXXIA_EIOA
 COBJS  += eioa.o ncp_task_config_axm55xx.o ncp_task_axm55xx.o 
