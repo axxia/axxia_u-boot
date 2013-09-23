@@ -21,6 +21,7 @@
 #include <config.h>
 #include <common.h>
 #include <twl6035.h>
+#include <asm/io.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/arch/mmc_host_def.h>
 
@@ -385,6 +386,12 @@ void set_muxconf_regs_non_essential(void)
 int
 board_early_init_f(void)
 {
+	/*
+	  The bootROM code leaves SPI device 0 selected, BZ 45907.  Deselect here.
+	*/
+
+	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
+
 	gd->ram_size = 0x40000000;
 
 	return 0;

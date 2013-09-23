@@ -21,6 +21,7 @@
 #include <common.h>
 #include <spl.h>
 #include <spi_flash.h>
+#include <asm/io.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -400,6 +401,12 @@ void
 spl_board_init(void)
 {
 	int rc;
+
+	/*
+	  The bootROM code leaves SPI device 0 selected, BZ 45907.  Deselect here.
+	*/
+
+	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
 
 	gd->baudrate = CONFIG_BAUDRATE;
 	serial_initialize();
