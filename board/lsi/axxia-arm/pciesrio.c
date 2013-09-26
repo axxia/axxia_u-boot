@@ -493,6 +493,8 @@ int pciesrio_setcontrol(unsigned long new_control)
 	/* Check bit 2 as this determines PEI1 state */
 	if (new_control & 0x00000004)
 	{
+		
+		phy1_ctrl = (((phy1_ctrl & 0x60000000) >> 3) | ((phy1_ctrl & 0x00800000) >> 1) | 0x1);
 		/* PCIE1 */
 		ncr_write32(NCP_REGION_ID(0x115, 3), 0x200, phy1_ctrl);
 	}
