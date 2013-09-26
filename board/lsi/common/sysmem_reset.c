@@ -33,5 +33,12 @@
 int __weak
 sysmem_reset(void)
 {
-	return 0;
+
+    printf("reset SDRAM using GPIO pin 14\n");
+    gpio_request(14,NULL);
+    gpio_direction_output(14,0);
+    mdelay(1);
+    gpio_direction_input(14);
+    gpio_free(14);
+    return 0;
 }

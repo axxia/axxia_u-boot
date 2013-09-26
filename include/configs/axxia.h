@@ -256,6 +256,9 @@ typedef struct {
 	unsigned long syscacheDisable;
 	unsigned long half_mem;
 	unsigned long address_mirroring;
+    unsigned long ddrRetentionEnable;
+    unsigned long ddrRecovery;
+
 	unsigned long                  num_bytelanes;
     	unsigned long long           totalSize;
 #if 0

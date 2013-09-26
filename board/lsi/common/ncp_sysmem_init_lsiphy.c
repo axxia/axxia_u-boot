@@ -43,6 +43,7 @@
 #define NCP_SM_DATA_BYTELANES 8
 #define NCP_SM_WL_MAX_LOOPS   4
 
+#define SM_PHY_REG_RESTORE
 
 typedef struct {
     ncp_uint32_t    early;
@@ -557,7 +558,7 @@ NCP_RETURN_LABEL
 #endif /* SM_REG_DUMP */
      
 
-#if SM_PHY_REG_RESTORE
+#ifdef SM_PHY_REG_RESTORE
 /*
  * ncp_sm_lsiphy_reg_save/restore 
  *
@@ -592,14 +593,70 @@ ncp_sm_phy_reg_list_t ncp_sm_phy_regs[6] =
     { NCP_PHY_CFG_SYSMEM_PHY_RDALIGNDQ0_BL0CS0,  8,  4,  1,  1, NULL},
 };
 
+#ifndef UBOOT 
+/* 
+ * for testing from the external host
+ *
+ */
+#define PHY_REG_STORAGE_SIZE ( 4 * 1024 )
 
+void *retention=NULL;
 
+int
+ncp_map_phy_reg_file(void)
+{
+
+    char  fname[]  = "/tmp/sm_phy_regs.dat";
+    int   fd;
+    char null = '\0';
+
+    fd = open(fname, O_RDWR | O_CREAT, 0666);
+    if (fd == -1) {
+        perror("open");
+        return -1;
+    }
+
+#if 1
+    /* set the file size */
+    if (lseek(fd, PHY_REG_STORAGE_SIZE, SEEK_SET) < 0)
+    {
+        (perror("lseek"));
+        return -1; 
+    }
+
+    if (write(fd, (void *) &null, sizeof(char)) == -1)
+    {
+        (perror("write"));
+        return -1;
+    }
+#endif
+
+    retention = (ncp_uint8_t *)mmap( 0, PHY_REG_STORAGE_SIZE,
+                                     (PROT_READ | PROT_WRITE),
+                                     MAP_SHARED, fd, 0);
+
+    printf("retention = %p\n", retention);
+    if (retention == (ncp_uint8_t *) MAP_FAILED)
+    {
+        perror("mmap");
+        return -1;
+    }
+
+    return 0;
+
+}
+
+#else 
+#define ncp_map_phy_reg_file() 0
+
+#endif
 
 ncp_st_t
 ncp_sm_lsiphy_reg_save_restore(
         ncp_dev_hdl_t dev,
         ncp_region_id_t region,
-        ncp_uint8_t   *buf,
+        ncp_uint8_t    num_bytelanes,
+        ncp_uint32_t   *buf,
         ncp_bool_t    save)
 
 {
@@ -610,7 +667,7 @@ ncp_sm_lsiphy_reg_save_restore(
     ncp_uint32_t rank;
     ncp_uint32_t nreg; 
     ncp_uint32_t offset;
-    ncp_uint8_t  *pnt = buf;
+    ncp_uint8_t  *pnt = (ncp_uint8_t *) buf;
     ncp_uint8_t   val8;
     ncp_uint16_t  val16;
     ncp_uint16_t *p16;
@@ -624,7 +681,7 @@ ncp_sm_lsiphy_reg_save_restore(
 
         for (rank = 0; rank <= pList->nranks; rank++)
         {
-            for (bl = 0; bl < 5; bl++) 
+            for (bl = 0; bl < num_bytelanes; bl++) 
             {
                 offset = pList->baseOffset + (rank * 0x100) + (bl * 0x800);
                 for (nreg = 0; nreg < pList->nregs; nreg++) 
@@ -666,7 +723,7 @@ ncp_sm_lsiphy_reg_save_restore(
                             offset += pList->fudge[nreg];
                         }
 
-                        ncr_write32(region, offset, value);
+                        ncr_write32(region, offset, value); 
                     }
 
                     offset += pList->stride;
@@ -684,36 +741,68 @@ NCP_RETURN_LABEL
 ncp_st_t
 ncp_sm_lsiphy_reg_save(
         ncp_dev_hdl_t dev,
-        ncp_region_id_t region)
+        ncp_uint32_t smId,
+        ncp_sm_parms_t *parms)
 
 {
-    ncp_uint32_t *buf = CANNED_PHY_REGS_ADDRESS;
+    ncp_uint32_t *buf = retention + (smId * 512);
+    ncp_region_id_t regionId;
 
-    if (*buf != 0) {
-        printf("overwriting existing PHY regs?!?!?\n");
+    if (smId == 0) {
+        regionId = NCP_REGION_ID(34,1);
+    } else {
+        regionId = NCP_REGION_ID(15,1);
     }
 
-    *buf++ = CANNED_PHY_REGS_TAG_SAVE;
-    ncp_sm_lsiphy_reg_save_restore(dev, region, buf, 1);
+#if 0
+    if ((smId == 0) && (*buf != 0)) {
+        printf("overwriting existing PHY regs?!?!?\n");
+    }
+#endif
 
+    *buf++ = DDR_PHY_REGS_TAG_SAVE;
+
+    NCP_COMMENT("writing SMEM%d PHY registers to LSM\n", smId);
+    ncp_sm_lsiphy_reg_save_restore(dev, regionId,
+                    parms->num_bytelanes, buf, 1);
+
+#ifndef UBOOT
+    buf = retention + (smId * 512);
+    *buf = DDR_PHY_REGS_TAG_PROM;
+    printf("reg_save2buf @%p = 0x%08x\n", buf, *buf);
+#endif
 }
 
 
 ncp_st_t
 ncp_sm_lsiphy_reg_restore(
         ncp_dev_hdl_t dev,
-        ncp_region_id_t region)
+        ncp_uint32_t smId,
+        ncp_sm_parms_t *parms)
 
 {
 
-    ncp_uint32_t *buf = CANNED_PHY_REGS_ADDRESS;
+    ncp_uint32_t *buf = retention + (smId * 512);
+    ncp_region_id_t regionId;
+    ncp_uint32_t    num_bls;
 
+    if (smId == 0) {
+        regionId = NCP_REGION_ID(34,1);
+    } else {
+        regionId = NCP_REGION_ID(15,1);
+    }
 
-    if (*buf++ != CANNED_PHY_REGS_TAG_PROM) 
+    if ( (smId == 0) && (*buf != DDR_PHY_REGS_TAG_PROM) ) {
+        printf("SMEM%d DDR restore buffer invalid!\n", smId);
         return -1;
+    }
 
-    ncp_sm_lsiphy_reg_save_restore(dev, region, buf, 0);
+    buf++;
 
+    ncp_sm_lsiphy_reg_save_restore(dev, regionId,
+                    parms->num_bytelanes, buf, 0);
+
+    return NCP_ST_SUCCESS;
 }
 
 #else 
@@ -2626,8 +2715,10 @@ sm_bytelane_test_elm(
     unsigned uppAddr;
     unsigned lowAddr;
 #else 
+#ifdef SM_BYTELANE_TEST_DEBUG
     ncp_uint8_t   rbuf[NCP_SM_BURST_SIZE];
     ncp_uint32_t  *p32 = (ncp_uint32_t *) rbuf;
+#endif
 #endif
 
     ncp_region_id_t elmRegion = NCP_REGION_ID(elmNode, 0);
@@ -2714,9 +2805,11 @@ sm_bytelane_test_elm(
         return 0;
 
     /* poll for init complete */
-    do {
-        ncr_read32(elmRegion, 0x1000, &reg);
-    } while ((reg & 0x00000080) == 0);
+    if (0 != ncr_poll(elmRegion, 0x1000, 0x80, 0x80, 10, 10) )
+    {
+        /* shouldn't happen */
+        NCP_CALL(NCP_ST_ERROR);
+    }
     ncr_write32(elmRegion, 0x1000, 0x00000080);
 
 
@@ -3330,7 +3423,8 @@ ncp_sm_sm_coarse_write_leveling(
     /* 
      * If ECC is enabled now level the ECC byte lane 
      */
-    if (parms->enableECC) {
+    if ( (parms->enableECC) && (busAdaptor != NCP_DEV_BUS_FBRS) )
+    {
         NCP_COMMENT("sysmem phy coarse write leveling - ECC bytelane rank %d", rank);
 
         ecc_mask = NCP_SM_DENALI_V2_ECC_INTR_BITS;
@@ -3795,39 +3889,6 @@ calc_sdram_size(ncp_sm_parms_t *parms)
 }
 
 
-#ifdef UBOOT
-#ifdef CONFIG_AXXIA_25xx
-void ncp_sm_reset(void)
-{
-    ncp_uint32_t value;
-
-    /* enable protected writes */
-    value = dcr_read(0xd00);
-    dcr_write((value | 0xab), 0xd00);
-
-    /* reset sysmem */
-    dcr_write(0x00040000, 0x1703);
-    mdelay(1);
-    dcr_write(0x00000000, 0x1703);
-    mdelay(1);
-
-    /* restore protected writes */
-    dcr_write(value, 0xd00);
-}
-#else
-
-void ncp_sm_reset(void)
-{
-
-
-}
-#endif
-#else 
-
-#define ncp_sm_reset()
-
-#endif
-
 
 ncp_st_t
 ncp_sysmem_init_lsiphy(
@@ -3845,42 +3906,49 @@ ncp_sysmem_init_lsiphy(
     ncp_bool_t do_wr_lvl = TRUE;
     ncp_bool_t do_gt_trn = TRUE;
     ncp_bool_t did_training = FALSE;
+    ncp_bool_t restore_complete = FALSE;
+
     ncp_region_id_t ctlRegion;
     ncp_region_id_t phyRegion;
 
 #ifndef UBOOT 
-    ncp_bool_t ncp_sm_phy_reg_restore = FALSE;
-    ncp_bool_t ncp_sm_phy_reg_dump    = FALSE;
+    ncp_bool_t ncp_sm_phy_reg_restore = TRUE;
+    ncp_bool_t ncp_sm_phy_reg_dump    = TRUE;
 #endif
-
-
-    /* issue reset to sysmem block (u-boot only) */
-    ncp_sm_reset(); 
 
     /* static PHY setup */
     NCP_CALL(ncp_sm_lsiphy_static_init(dev, smId, parms));
 
-    /* Get the system memory parameters via I2C or from the config */
-    /* TODO */
+    /* for DDR retention save or check operating point */
+
+    if ((smId == 0) && ncp_map_phy_reg_file() != 0) {
+        printf("couldn't map PHY reg file\n");
+        NCP_CALL(NCP_ST_ERROR);
+    }
+
+    if (  parms->ddrRetentionEnable && (parms->ddrRecovery == TRUE) )
+    {
+        if (NCP_ST_SUCCESS == ncp_sm_lsiphy_reg_restore(dev, smId, parms ))
+        {
+            printf("SMEM%d DDR PHY register restore succeeded\n", smId); 
+            restore_complete = TRUE;
+        }
+        else {
+            printf("SMEM%d DDR PHY register restore failed\n", smId); 
+        }
+    }
 
     if (smId < NCP_SYSMEM_NUM_NODES) {
-        /* Initialize the system memory controller */
+        /* Initialize the system memory controller... */
         NCP_CALL(ncp_sm_denali_2041_init(dev, smId, parms)); 
 
         /* 
-         * TEMP!?
-         *   We enable the controller here instead of from within
-         *   the controller init function to allow the script 
-         *   framework to override controller init values.
+         * and enable it. 
+         *
+         * the enable is broken out in a separate function
+         * to facilitate script based test capability.
          */
-         
-        /* enable the controller ! */
-        ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
-        phyRegion = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_PHY);
-        ncr_write32( ctlRegion, 0x0030, 0x01010001 );
-
-        /* poll for MC init done */
-        NCP_CALL(pollControllerFn(dev, ctlRegion, NCP_SM_MC_INIT_DONE));
+        NCP_CALL(ncp_sm_denali_enable(dev, smId, parms));
     } 
 #ifndef UBOOT
     else 
@@ -3891,20 +3959,11 @@ ncp_sysmem_init_lsiphy(
 
 
     /* 
-     * attempt to restore canned PHY register settings. 
-     * if this is successful then we can skip the whole
-     * PHY training sequence. 
+     * if the PHY registers have not been restored then we must
+     * run the PHY training sequence.
      */
-    if ( ncp_sm_phy_reg_restore  &&
-          (NCP_ST_SUCCESS == ncp_sm_lsiphy_reg_restore(dev, NCP_REGION_ID(34,1)) ))
+    if (restore_complete == FALSE)
     {
-/*        printf("PHY register restore succeeded!!\n"); */
-
-    }
-    else 
-    {
-/*        printf("Could not restore PHY registers, training...\n"); */
-
         /* do read calibration and fine write-leveling on each rank */
         for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++) 
         {
@@ -3948,8 +4007,6 @@ ncp_sysmem_init_lsiphy(
                 }
             }
         }
-        did_training = TRUE;
-    }
 
 
 #if 0
@@ -3996,64 +4053,65 @@ ncp_sysmem_init_lsiphy(
 #endif
 
 
-    if (parms->version == NCP_CHIP_ACP55xx) 
-    {
-        ncp_uint32_t reg;
-
-        ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x1004, &reg);
-
-        /* set up NCA VAT to cover all sysmem space */
-        ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1000, 0x8000000f);
-        ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1004, 0xffffff00);
-        if (reg & 0x00000040) {
-            /* reset system memory map */
-            ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1008, 0x00000020);
-        } else {
-            /* mission mode memory map */
-            ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1008, 0x00000000);
-        }
-        ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x100c, 0x00000000);
-
-        /* set NCA TTYPES */
-    	ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x00220026);
-    	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x00000003);
-
-    }
-
-
-
-
-    for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++) 
-    {
-        if (topology & (1 << rank)) 
+        if (parms->version == NCP_CHIP_ACP55xx) 
         {
-            switch (rank) {
-                case 0:
-                default:
-                    addr = 0;
-                    break;
+            ncp_uint32_t reg;
+    
+            ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x1004, &reg);
 
-                case 1:
-                    /*
-                     * for the default setting of the syscache munge register
-                     * on dual-rank memory, the bottom half of memory is rank0
-                     * and the upper half is rank1
-                     */
-                    addr = calc_sdram_size(parms) >> 1;
-                    break;
+            /* set up NCA VAT to cover all sysmem space */
+            ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1000, 0x8000000f);
+            ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1004, 0xffffff00);
+            if (reg & 0x00000040) {
+                /* reset system memory map */
+                ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1008, 0x00000020);
+            } else {
+                /* mission mode memory map */
+                ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1008, 0x00000000);
             }
+            ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x100c, 0x00000000);
+
+            /* set NCA TTYPES */
+        	ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x00220026);
+        	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x00000003);
+
+        }
+
+
+        for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++) 
+        {
+            if (topology & (1 << rank)) 
+            {
+                switch (rank) {
+                    case 0:
+                    default:
+                        addr = 0;
+                        break;
+
+                    case 1:
+                        /*
+                         * for the default setting of the syscache munge register
+                         * on dual-rank memory, the bottom half of memory is rank0
+                         * and the upper half is rank1
+                         */
+                        addr = calc_sdram_size(parms) >> 1;
+                        break;
+                }
 
 #if 0
-            printf("coarse wrlvl smId %d rank %d addr 0x%012llx\n", 
+                printf("coarse wrlvl smId %d rank %d addr 0x%012llx\n", 
                                 smId, rank, addr);
 #endif
-            use_elm(dev, smId);
-            NCP_CALL(ncp_sm_lsiphy_coarse_write_leveling(dev, smId, rank, addr,
-                                                      parms));
+                use_elm(dev, smId);
+                NCP_CALL(ncp_sm_lsiphy_coarse_write_leveling(dev, 
+                            smId, rank, addr, parms));
+            }
         }
+
+        did_training = TRUE;
     }
 
-    if (ncp_sm_phy_reg_restore && did_training) 
+    if (parms->ddrRetentionEnable && did_training) 
     {
         /* 
          *  PHY training complete - perform memory test 
@@ -4063,7 +4121,7 @@ ncp_sysmem_init_lsiphy(
         /*
          * save these PHY training values for next time
          */
-        ncpStatus = ncp_sm_lsiphy_reg_save(dev, NCP_REGION_ID(34,1));
+        ncpStatus = ncp_sm_lsiphy_reg_save(dev, smId, parms);
     }
 
     NCP_CALL(ncp_sm_lsiphy_runtime_adj(dev, smId, parms));

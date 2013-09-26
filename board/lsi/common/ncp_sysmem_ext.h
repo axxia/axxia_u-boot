@@ -242,6 +242,9 @@ typedef struct {
     ncp_uint32_t                flags;
     ncp_bool_t                  half_mem;
 
+    ncp_bool_t                 ddrRetentionEnable;
+    ncp_bool_t                 ddrRecovery;
+
     ncp_uint8_t                 num_bytelanes;
     ncp_int64_t                 totalSize;
 

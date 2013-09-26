@@ -22,6 +22,14 @@
 #include <spl.h>
 #include <spi_flash.h>
 
+#ifdef CONFIG_MEMORY_RETENTION
+    extern void *retention;
+    extern unsigned long *phyRegs;
+
+#define DDR_PHY_REGS_TAG_SAVE 0x53415645
+#define DDR_PHY_REGS_TAG_PROM 0x50524f4d
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 /*
@@ -456,6 +464,19 @@ spl_board_init(void)
 		check_memory_ranges();
 
 	printf("System initialized\n");
+
+#ifdef CONFIG_MEMORY_RETENTION
+        phyRegs = (unsigned long *)retention;
+        if (*phyRegs == DDR_PHY_REGS_TAG_SAVE) {
+
+            printf("Writing DDR PHY registers to parameter space\n");
+            /* write to PROM/FLASH */
+           *phyRegs = DDR_PHY_REGS_TAG_PROM;
+
+           write_parameters();
+    }
+#endif
+
 
 #endif
 }

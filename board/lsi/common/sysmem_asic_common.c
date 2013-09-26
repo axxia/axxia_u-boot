@@ -285,6 +285,11 @@ sysmem_init(void)
 	unsigned char buffer;
 #endif
 
+#ifdef CONFIG_MEMORY_RETENTION
+    extern void *retention;
+    unsigned long *phyRegs = (unsigned long *)retention;
+#endif
+
 
 	/*
 	  ======================================================================
@@ -402,7 +407,6 @@ sysmem_init(void)
 #else
 
     ncr_read32(NCP_REGION_ID(34,0xff), 0, &sysmem->version);
-    printf("sysmem->version read from reg = 0x%x\n", sysmem->version);
     sysmem->version &= 0xff;
 #endif
 #endif
@@ -417,6 +421,17 @@ sysmem_init(void)
 	if (sysmem->num_interfaces == 1) {
 		sysmem->half_mem = 1;
 	}
+#endif
+
+#ifdef CONFIG_MEMORY_RETENTION
+    if (global->flags & 0x00010000) {
+        printf("DDR Retention enabled in U-Boot Parameter Flags\n");
+        sysmem->ddrRetentionEnable = 1;
+    }
+    else 
+    {
+        printf("DDR Retention disabled in U-Boot Parameter Flags\n");
+    }
 #endif
 
 #if 0
@@ -444,6 +459,27 @@ sysmem_init(void)
 	/* 
 	 * sysmem init goes here!! 
 	 */
+#ifdef CONFIG_MEMORY_RETENTION
+
+   /*
+    *  we use bit 0 of the persistent scratch register to
+    *  inidicate ddrRetention recovery.
+    */
+    ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x00dc, &value);
+    sysmem->ddrRecovery = (value & 0x1) ; 
+    value &= 0xfffffffe;
+    ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x00dc, value);
+ 
+    printf("ddrRetentionEnable = %d\n", sysmem->ddrRetentionEnable);
+    printf("ddrRecovery = %d\n", sysmem->ddrRecovery);
+ 
+    if (sysmem->ddrRecovery == 0) {
+        /* reset SDRAM */
+        sysmem_reset();
+    }
+#endif
+
+
 	for (i = 0; i < sysmem->num_interfaces; i++) {
 #if defined ( CONFIG_AXXIA_25xx ) || defined ( CONFIG_AXXIA_55XX )
 		ncr_sysmem_init_mode_enable();
@@ -512,8 +548,10 @@ ncp_st_t ncp_elm_init( ncp_dev_hdl_t dev, ncp_sm_parms_t *parms);
 ncp_st_t ncp_elm_sysmem_fill( ncp_dev_hdl_t dev, ncp_sm_parms_t *parms);
 
     ncp_elm_init(NULL, sysmem);
-if (sysmem->enableECC)
-    ncp_elm_sysmem_fill(NULL, sysmem);
+    if ((sysmem->enableECC) && (sysmem->ddrRecovery == 0)) {
+        ncp_elm_sysmem_fill(NULL, sysmem);
+    }
+
 #endif
 
 
