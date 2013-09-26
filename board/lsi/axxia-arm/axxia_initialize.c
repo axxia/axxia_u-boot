@@ -37,6 +37,7 @@ unsigned long sysmem_size = 1;
 unsigned long reset_enabled = 1;
 unsigned long ncp_sm_phy_reg_restore = 0;
 unsigned long ncp_sm_phy_reg_dump = 0;
+unsigned long *phyRegs;
                                                                                 
 #if defined (CONFIG_AXXIA_EMU)
 #include "sysmem_emulation.c"
@@ -63,9 +64,35 @@ int
 axxia_initialize(void)
 {
 	int i;
+    unsigned long value;
 
 	if (0 != read_parameters())
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+
+	/*
+	  ============
+	  Reset Reason
+	  ============
+	*/
+
+#ifndef CONFIG_AXXIA_EMU
+    /* read and clear reset status (write one to clear) */
+    ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x100, &value);
+    printf("Reset Status = 0x%08x\n", value);
+    ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x100, value);
+
+    /*
+     * if this is a power-up/pin reset then initialize
+     * persistent registers 
+     */
+    if ( (value & 0x00000001) ) {
+        printf("PowerUp/Pin Reset detected - initializng persistent registers\n");
+        for (i = 0; i < 9; i++) {
+            ncr_write32(NCP_REGION_ID(0x156, 0x00), (0xdc + (4 * i)), 0);
+        }
+    }
+#endif
 
 	/*
 	  =======
@@ -115,8 +142,6 @@ axxia_initialize(void)
 	ncr_l3tags();
 #else
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM)) {
-	  	sysmem_reset();
-
 		if (0 != sysmem_init())
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 	}

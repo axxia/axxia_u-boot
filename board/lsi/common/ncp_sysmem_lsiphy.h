@@ -49,6 +49,15 @@
 
 
 
+#ifdef CONFIG_MEMORY_RETENTION
+    extern void *retention;
+    extern unsigned long *phyRegs; 
+
+#define DDR_PHY_REGS_TAG_SAVE 0x53415645
+#define DDR_PHY_REGS_TAG_PROM 0x50524f4d
+#endif
+
+
 #ifndef UBOOT
 /* bindings for RTE build */
 
@@ -66,7 +75,7 @@ extern ncp_uint8_t tRFC_vals_667[];
  *
  *   TODO: not yet supported for external RTE 
  */
-/* #define NCP_SM_PHY_REG_RESTORE  */
+#define NCP_SM_PHY_REG_RESTORE 
 
 /* 
  * NCP_SM_PHY_REG_DUMP: 
@@ -199,6 +208,8 @@ typedef struct {
     unsigned long half_mem;
     unsigned long address_mirroring;
 
+    unsigned long ddrRetentionEnable;
+    unsigned long ddrRecovery;
     unsigned long                  num_bytelanes;
     unsigned long long           totalSize;
 } __attribute__((packed)) parameters_sysmem_t;
@@ -250,6 +261,7 @@ enum {
               __FILE__, __FUNCTION__, __LINE__); \
         goto ncp_return; \
     }
+
 
 #define NCP_SM_POLL_FOR_OP_DONE(_region) \
     do { \

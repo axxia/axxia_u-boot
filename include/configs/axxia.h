@@ -256,6 +256,9 @@ typedef struct {
 	unsigned long syscacheDisable;
 	unsigned long half_mem;
 	unsigned long address_mirroring;
+    unsigned long ddrRetentionEnable;
+    unsigned long ddrRecovery;
+
 	unsigned long                  num_bytelanes;
     	unsigned long long           totalSize;
 #if 0
@@ -329,10 +332,7 @@ extern void *retention;
 #endif
 
 int read_parameters(void);
-
-#ifdef CONFIG_MEMORY_RETENTION
-int write_parameters(parameters_t *);
-#endif
+int write_parameters(void);
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_CMD_LSI_PARAMETERS

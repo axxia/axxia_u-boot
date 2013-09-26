@@ -522,7 +522,7 @@ ncp_sm_denali_2041_init(
 
     ncr_write32(ctlReg,  0x0300, value);
        
-    /* DENALI_CTL_223 */
+    /* DENALI_CTL_223 - tdfi_rdlvl_max */
     ncr_write32(ctlReg,  0x037c, 0x00100000);
 
     /* DENALI_CTL_225 */
@@ -698,26 +698,38 @@ ncp_sm_denali_2041_init(
         SV( ncp_denali_DENALI_CTL_420_t, wr_order_req, 1);
         ncr_write32(ctlReg,  NCP_DENALI_CTL_420, value);
 #endif
-
-
-
     }
 
-#if 0
-    /* enable the controller ! */
-    ncr_write32(ctlReg,  0x0030, 0x01010001 );
+NCP_RETURN_LABEL
+    return ncpStatus;
+}
 
-    /* wait for controller MC init to complete */
-    if (0 != ncr_poll(ctlReg, NCP_DENALI_CTL_260, 0x200, 0x200, 100, 100) )
+ncp_st_t
+ncp_sm_denali_enable(
+    ncp_dev_hdl_t dev,
+    ncp_uint32_t  smId,
+    ncp_sm_parms_t *parms)
+{
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+    ncp_uint32_t mask, value;
+    ncp_region_id_t ctlReg = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
+
+    if (parms->ddrRecovery == TRUE)
     {
-        /* shouldn't happen */
-        NCP_CALL(NCP_ST_ERROR);
+        /* exit self-refresh */
+        mask = value = 0;
+        SMAV(ncp_denali_DENALI_CTL_07_t, pwrup_srefresh_exit, 1);
+        ncr_modify32(ctlReg,  NCP_DENALI_CTL_07, mask, value);
     }
-#endif
 
+    /* enable the controller ! */
+    mask = value = 0;
+    SMAV(ncp_denali_DENALI_CTL_12_t, start, 1);
+    ncr_modify32(ctlReg,  NCP_DENALI_CTL_12, mask, value);
 
-
-
+    /* poll for MC init done */
+    NCP_CALL(pollControllerFn(dev, ctlReg, NCP_SM_MC_INIT_DONE));
+                
 
 NCP_RETURN_LABEL
     return ncpStatus;
