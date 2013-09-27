@@ -111,11 +111,10 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
                 addr = PCIE1_CONFIG;
         }
 
+	if (peiCore == 0) {
         /* Read the PCIe mode control */
         ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &peiControl);
-        if (peiControl == 0x00480003) {
-                printf("Setup as dual PCIe controller\n");
-        } else if (peiControl == 0x00400001) {
+        if (peiControl == 0x00400001) {
                 printf("Setup as single PCIe controller\n");
         }
 
@@ -161,30 +160,7 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
                         printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
                 }
         } else if (changeSpeed == PEI_5G) {
-                if ((peiCore == 0) && (peiControl == 0x00480003) && (width == 0x2)) {
-
-                        /* Change PEI speed to Gen 2 */
-                        writel(0x2, (void *)(addr + 0x90));
-                        writel(0x10000, (void *)(addr + 0x117c));
-                        udelay(pei_delay);
-
-                        /* ncr w 0x115.1.0x68e 0x0406 */
-                        ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
-
-                        /* ncr w 0x115.1.0x88e 0x0406 */
-                        ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
-                } else if ((peiCore == 1) && (peiControl == 0x00480003) && (width == 0x2)) {
-                        /* Change PEI speed to Gen 2 */
-                        writel(0x2, (void *)(addr + 0x90));
-                        writel(0x10000, (void *)(addr + 0x117c));
-                        udelay(pei_delay);
-
-                        /* ncr w 0x115.1.0x08e 0x0406 */
-                        ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x8e, 0x0406 );
-
-                        /* ncr w 0x115.1.0x28e 0x0406 */
-                        ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x28e, 0x0406 );
-                } else if ((peiCore == 0) && (peiControl == 0x00400001) && (width == 0x4)) {
+                if ((peiCore == 0) && (peiControl == 0x00400001) && (width == 0x4)) {
                         /* Change PEI speed to Gen 2 */
                         writel(0x2, (void *)(addr + 0x90));
                         writel(0x10000, (void *)(addr + 0x117c));
@@ -236,6 +212,7 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
                         printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
                 }
         }
+	}	
 }
 #endif
 

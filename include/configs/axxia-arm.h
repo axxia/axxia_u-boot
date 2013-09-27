@@ -1007,6 +1007,7 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_SPL_LIBCOMMON_SUPPORT
 #define CONFIG_SPL_LIBDISK_SUPPORT
 #define CONFIG_SPL_I2C_SUPPORT
+#define CONFIG_SPL_PCI_SUPPORT
 #define CONFIG_SPL_GPIO_SUPPORT
 /* #define CONFIG_SPL_MMC_SUPPORT */
 #define CONFIG_SPL_FAT_SUPPORT
