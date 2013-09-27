@@ -577,12 +577,22 @@ acp_osg_is_boot_core(int core)
 		return 1;
 	}
 #else
+
+#if defined(AXM_35xx)
+
+/*SMP only for 35xx */
+if ((0 != ((1 << core) & BOOT(acp_osg_groups[0]->flags)))) {
+		return 1;
+	}
+
+#else
 	if ((0 != ((1 << core) & BOOT(acp_osg_groups[0]->flags))) ||
 	    (0 != ((1 << core) & BOOT(acp_osg_groups[1]->flags))) ||
 	    (0 != ((1 << core) & BOOT(acp_osg_groups[2]->flags))) ||
 	    (0 != ((1 << core) & BOOT(acp_osg_groups[3]->flags)))) {
 		return 1;
 	}
+#endif
 #endif
 
 	return 0;

@@ -198,7 +198,7 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 	while( 0 < retries ) {
 		-- retries;
 		if( 0 != core_up [ core ] ) break;
-		udelay( 100 );
+		udelay( 1000 );
 	}
 
 	if( 0 == retries ) {

@@ -699,11 +699,14 @@ acp_init_f( void )
 #else
 	cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
 #endif
-
+	 /* printf("acp_init_f() cold_start=%d core=%d\n", cold_start, core);*/
 	/* Fail if this is a cold start, and not core 0. */
-	if (cold_start && (SYSTEM_BOOTCORE != core))
+#if !defined(ACP_EMU)
+	if (cold_start && (SYSTEM_BOOTCORE != core)) {
+		printf("acp_init_f() cold_start=%d core=%d\n", cold_start, core);
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
+	}
+#endif
 	/* Initialize the Stage 3 Lock. */
 	if (cold_start && (SYSTEM_BOOTCORE == core)) {
 		acp_initialize_stage3_lock();
@@ -1747,6 +1750,7 @@ acp_init_r( void )
 				acp_failure(__FILE__, __FUNCTION__, __LINE__);
 		}
 
+
 		for (i = 0; i < ACP_NR_CORES; ++i) {
 			int group;
 			unsigned long os_base;
@@ -1759,18 +1763,19 @@ acp_init_r( void )
 				continue;
 
 			cores = acp_osg_group_get_res(group, ACP_OS_CORES);
-
 			if (0 == (cores & (1 << i)))
 				continue;
-
+		
 			if (acp_osg_is_boot_core(i) && cold_start) {
 				dcr_write((1 << i), 0xffc00040);
 			} else {
+			
 				os_base =
 					(acp_osg_group_get_res(group,
 							       ACP_OS_BASE) *
 					 1024 * 1024);
 				acp_spintable_init(i, cold_start, os_base);
+
 			}
 		}
 
@@ -1785,6 +1790,7 @@ acp_init_r( void )
 	}
 
 	/* Update the device trees for all groups. */
+	printf("updating device trees \n");
 	if (0 != acp_osg_initialize())
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
