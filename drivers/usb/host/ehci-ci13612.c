@@ -44,7 +44,9 @@ int ehci_hcd_init(int index, struct ehci_hccr **hccr, struct ehci_hcor **hcor)
 #if defined(CONFIG_AXXIA_ARM) && defined(RUN_UNCACHED)
 	/* Setup hprot for non-cacheable/non-bufferable for USB DMA */
 	writel(0x0, GPREG+0x74);
-#else
+#endif
+
+#ifndef CONFIG_AXXIA_ARM
 	hwtxbuf = ehci_readl(CONFIG_USB_ADDR+0x10);
 	txfulltuning = ehci_readl(CONFIG_USB_ADDR+0x164);
 
