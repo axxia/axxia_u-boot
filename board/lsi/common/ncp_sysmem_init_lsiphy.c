@@ -3787,6 +3787,14 @@ ncp_sm_lsiphy_runtime_adj(
         mask = value = 0;
         SMAV(ncp_denali_DENALI_CTL_334_t, ctrlupd_req, 1);
         ncr_modify32(ctlRegion, NCP_DENALI_CTL_334, mask, value);
+
+        /*
+         * TEMPORARY WORKAROUND
+         *   Enable auto-refresh now !!
+         */
+        mask = value = 0;
+        SMAV(ncp_denali_DENALI_CTL_14_t, tref_enable, 1);
+        ncr_modify32(ctlRegion, NCP_DENALI_CTL_14, mask, value);
     }
 
 
