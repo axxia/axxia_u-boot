@@ -87,7 +87,7 @@ axxia_initialize(void)
      * persistent registers 
      */
     if ( (value & 0x00000001) ) {
-        printf("PowerUp/Pin Reset detected - initializng persistent registers\n");
+        printf("PowerUp/Pin Reset detected - initializing persistent registers\n");
         for (i = 0; i < 9; i++) {
             ncr_write32(NCP_REGION_ID(0x156, 0x00), (0xdc + (4 * i)), 0);
         }
