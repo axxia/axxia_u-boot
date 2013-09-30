@@ -205,6 +205,7 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 		printf( "Core %d is hung!\n", core );
 	} else {
 		DEBUG_PRINT("Core %d woke up!\n", core);
+		printf("Core %d woke up!\n", core);
 	}
 
 	acp_osg_set_spintable_state(core, ACP_OSG_SPINTABLE_NOTAVAIL);
