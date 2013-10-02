@@ -31,27 +31,105 @@
 #include <command.h>
 #include <asm/io.h>
 
-#undef DEBUG
-/*#define DEBUG*/
-#ifdef DEBUG
-#define DEBUG_PRINT( format, args... ) do { \
-printf( "cmd_lsi_ncr:%s:%d - ", __FUNCTION__, __LINE__ ); \
-printf( format, ##args ); \
-} while( 0 );
-#else
-#define DEBUG_PRINT( format, args... )
-#endif
-
 /*
-  ======================================================================
-  Local Stuff
+  ------------------------------------------------------------------------------
+  do_ncr_read
 */
 
+static int
+do_ncr_read(unsigned long node, unsigned long target, unsigned long offset,
+	    int width)
+{
+	unsigned long value32;
+	unsigned short value16;
+	unsigned char value8;
+	int rc;
+
+	switch (width) {
+	case 4:
+		rc = ncr_read(NCP_REGION_ID(node, target),
+			      0, offset, width, &value32);
+		break;
+	case 2:
+		rc = ncr_read(NCP_REGION_ID(node, target),
+			      0, offset, width, &value16);
+		break;
+	case 1:
+		rc = ncr_read(NCP_REGION_ID(node, target),
+			      0, offset, width, &value8);
+		break;
+	default:
+		printf("Invalid Width!\n");
+		return -1;
+		break;
+	}
+
+	if (0 != rc) {
+		printf("ncr read failed: %d\n", rc);
+		return -1;
+	}
+
+	printf("0x%x.0x%x.0x%x : ", node, target, offset);
+
+	switch (width) {
+	case 4:
+		printf("0x%08x\n", value32);
+		break;
+	case 2:
+		printf("0x%08x\n", value16);
+		break;
+	case 1:
+		printf("0x%08x\n", value8);
+		break;
+	default:
+		/* Invalid Width is Handled Above */
+		break;
+	}
+
+	return 0;
+}
+
 /*
-  ======================================================================
-  U-Boot Stuff
-  ======================================================================
+  ------------------------------------------------------------------------------
+  do_ncr_write
 */
+
+static int
+do_ncr_write(unsigned long node, unsigned long target, unsigned long offset,
+	     int width, unsigned long value)
+{
+	unsigned short value16;
+	unsigned char value8;
+	int rc;
+
+	switch (width) {
+	case 4:
+		rc = ncr_write(NCP_REGION_ID(node, target),
+			       0, offset, width, &value);
+		break;
+	case 2:
+		value16 = (unsigned short)value;
+		rc = ncr_write(NCP_REGION_ID(node, target),
+			       0, offset, width, &value16);
+		break;
+	case 1:
+		value8 = (unsigned char)value;
+		rc = ncr_write(NCP_REGION_ID(node, target),
+			       0, offset, width, &value8);
+		break;
+	default:
+		printf("Invalid Width!\n");
+		return -1;
+		break;
+	}
+
+	if (0 != rc) {
+		printf("ncr write failed : %d\n", rc);
+		return -1;
+	}
+
+	return 0;
+}
 
 /*
   ----------------------------------------------------------------------
@@ -59,150 +137,77 @@ printf( format, ##args ); \
 */
   
 int
-do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
+do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
-	int return_code = 1;
+	unsigned node;
+	unsigned target;
+	unsigned offset;
+	unsigned width;
+	unsigned number;
+	char *token;
+	int index;
+	int rc;
 
-	DEBUG_PRINT( "flag=%d argc=%d\n", flag, argc );
+	if (0 == strncmp(argv[1], "h", strlen("h"))) {
+		printf("%s", cmdtp->usage);
+		return 0;
+	}
 
-	if( 0 == strncmp( argv[1], "h", strlen( "h" ) ) ) {
-#ifdef CFG_LONGHELP
-		printf( "%s", cmdtp->help );
-#else
-		printf( "%s", cmdtp->usage );
-#endif
-		return_code = 0;
-	} else if( 0 == strncmp( argv[1], "r", strlen( "r" ) ) ) {
-		unsigned node;
-		unsigned target;
-		unsigned offset;
-		unsigned length = 1;
-		char * token;
-		int index;
+	token = strsep(&(argv[2]), ".");
+	node = simple_strtoul(token, NULL, 0);
+	token = strsep(&(argv[2]), ".");
+	target = simple_strtoul(token, NULL, 0);
+	token = strsep(&(argv[2]), ".");
+	offset = simple_strtoul(token, NULL, 0);
 
-		token = strsep( & ( argv [ 2 ] ), "." );
-		node = simple_strtoul( token, NULL, 0 );
-		token = strsep( & ( argv [ 2 ] ), "." );
-		target = simple_strtoul( token, NULL, 0 );
-		token = strsep( & ( argv [ 2 ] ), "." );
-		offset = simple_strtoul( token, NULL, 0 );
+	if (0 == strncmp(argv[1], "r", strlen("r"))) {
+		if (4 == argc)
+			width = simple_strtoul(argv[3], NULL, 0);
+		else
+			width = 4;
 
-		if( 4 == argc ) {
-			length = simple_strtoul( argv [ 3 ], NULL, 0 );
+		if (5 == argc)
+			number = simple_strtoul(argv[4], NULL, 0);
+		else
+			number = 1;
+
+		while (0 < number--) {
+			rc = do_ncr_read(node, target, offset, width);
+
+			if (0 != rc)
+				return -1;
+
+			offset += 4;
 		}
 
-		DEBUG_PRINT( "Read %d values from 0x%x.0x%x.0x%x\n",
-			     length, node, target, offset );
-
-		if( ( 0x100 > node ) || ( 0x200 == node && 1 == target ) ) {
-			for( index = 0; index < length; ++ index ) {
-				unsigned long value;
-
-				ncr_read32( NCP_REGION_ID( node, target ),
-					    offset, ( void * ) & value );
-				printf( "0x%x.0x%x.0x%x : 0x%lx\n",
-					node, target, offset, value );
-				offset += 4;
-			}
-		} else {
-			/*
-			  Nodes from 0x100 on are "virtual".  Only some are
-			  handled!
-			*/
-			unsigned long base;
-
-			switch( NCP_REGION_ID( node, target ) ) {
-			case NCP_REGION_ID( 0x100, 0x4 ):
-				base = ( IO + 0xc0000 );
-				return_code = 0;
-				break;
-			default:
-				printf( "Unhandled Virtual Region!\n" );
-				break;
-			}
-
-			if( 0 == return_code ) {
-				for( index = 0; index < length; ++ index ) {
-					printf( "0x%x.0x%x.0x%x <0x%x> : " \
-						"0x%lx\n",
-						node, target, offset,
-						( base + offset ),
-						readl( base + offset ) );
-					offset += 4;
-				}
-			}
-		}
-
-		return_code = 0;
+		return 0;
 	} else if( 0 == strncmp( argv[1], "w", strlen( "w" ) ) ) {
-		unsigned node;
-		unsigned target;
-		unsigned offset;
-		char * token;
 		int index;
+		unsigned long value;
 
-		token = strsep( & ( argv [ 2 ] ), "." );
-		node = simple_strtoul( token, NULL, 0 );
-		token = strsep( & ( argv [ 2 ] ), "." );
-		target = simple_strtoul( token, NULL, 0 );
-		token = strsep( & ( argv [ 2 ] ), "." );
-		offset = simple_strtoul( token, NULL, 0 );
-
-		if( ( 0x100 > node ) || ( 0x200 == node && 1 == target ) ) {
-			for( index = 0; index < ( argc - 3 ); ++ index ) {
-				unsigned long value;
-
-				value =
-				  simple_strtoul( argv [ 3 + index ], NULL, 0 );
-				DEBUG_PRINT( "Writing 0x%lx to 0x%x.0x%x.0x%x\n",
-					     value, node, target, offset );
-				ncr_write32( NCP_REGION_ID( node, target ),
-					     offset, value );
-				offset += 4;
-			}
-		} else {
-			/*
-			  Nodes from 0x100 on are "virtual".  Only some are
-			  handled!
-			*/
-			unsigned long base;
-
-			switch( NCP_REGION_ID( node, target ) ) {
-			case NCP_REGION_ID( 0x100, 0x4 ):
-				base = ( IO + 0xc0000 );
-				return_code = 0;
-				break;
-			default:
-				printf( "Unhandled Virtual Region!\n" );
-				break;
-			}
-
-			if( 0 == return_code ) {
-				for( index = 0; index < ( argc - 3 );
-				     ++ index ) {
-					unsigned long value;
-
-					value =
-					  simple_strtoul( argv [ 3 + index ],
-							  NULL, 0 );
-					DEBUG_PRINT( "Writing 0x%lx to 0x%x." \
-						     "0x%x.0x%x <0x%x>\n",
-						     value, node, target, offset,
-						     ( base + offset ) );
-					writel( value, ( base + offset ) );
-					offset += 4;
-				}
-			}
+		if (5 > argc) {
+			printf("Too few arguments for a write!\n");
+			return -1;
 		}
 
-		return_code = 0;
+		width = simple_strtoul(argv[3], NULL, 0);
+		index = 4;
+
+		while (5 <= argc--) {
+			value = simple_strtoul(argv[index++], NULL, 0);
+			rc = do_ncr_write(node, target, offset, width, value);
+
+			if (0 != rc)
+				return -1;
+
+			offset += 4;
+		}
+
+		return 0;
 	}
 
-	if( 0 != return_code ) {
-		printf( "%s", cmdtp->usage );
-	}
-
-	return return_code;
+	printf( "%s", cmdtp->usage );
+	return -1;
 }
 
 /*
@@ -211,13 +216,13 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
   ======================================================================
 */
 
-U_BOOT_CMD( ncr, 5, 0, do_ncr,
+U_BOOT_CMD( ncr, CONFIG_SYS_MAXARGS, 0, do_ncr,
 	    "ncr help|read|write [arguments]\n",
 	    "h,elp\n" \
-	    "r,ead node.target.offset width number\n" \
+	    "r,ead node.target.offset [width] [number]\n" \
 	    "\tread number values of width bytes from node.target.offset\n" \
-	    "w,rite node.target.offset width value\n" \
-	    "\twrite value of size width bytes to node.target.offset\n" );
-
+	    "\tdefault width is 4 and default length is 1\n" \
+	    "w,rite node.target.offset width value [value2 ...]\n" \
+	    "\twrite value of size width bytes to node.target.offset\n");
 
 #endif /* CONFIG_ACP */
