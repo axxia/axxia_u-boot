@@ -445,18 +445,18 @@ int pciesrio_setcontrol(unsigned long new_control)
 	unsigned long phy0_ctrl, phy1_ctrl;
 	unsigned long tmp;
 	rx_serdes_value_t rx_serdes_values[] = {
-                {0x008e, 0x0487},
-                {0x028e, 0x0487},
-                {0x068e, 0x0487},
-                {0x088e, 0x0487},
-                {0x001e, 0xc001},
-                {0x021e, 0xc001},
-                {0x061e, 0xc001},
-                {0x081e, 0xc001},
-                {0x00ba, 0x0070},
-                {0x02ba, 0x0070},
-                {0x06ba, 0x0070},
-                {0x08ba, 0x0070}
+		{0x00ba, 0x0072},
+		{0x02ba, 0x0072},
+		{0x06ba, 0x0072},
+		{0x08ba, 0x0072},
+		{0x008e, 0x0487},
+		{0x028e, 0x0487},
+		{0x068e, 0x0487},
+		{0x088e, 0x0487},
+		{0x001e, 0xc001},
+		{0x021e, 0xc001},
+		{0x061e, 0xc001},
+		{0x081e, 0xc001}
 	};
 
 	phy0_ctrl = new_control & 0x1f700409;
@@ -487,6 +487,10 @@ int pciesrio_setcontrol(unsigned long new_control)
 	tmp |= 0xF<<16;
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c, tmp);
 	udelay(100000);
+
+	/* ncpWrite 0x115.0x0.0x214 0x00F00A0A */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x214, 0x00F00A0A);
+
 	/* Set new phy_ctrl value */
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl);
 
