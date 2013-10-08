@@ -123,16 +123,7 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x0030, 0x01000001);
 
     /* DENALI_CTL_14 */
-#if 0
     ncr_write32(ctlReg,  0x0038, 0x00010100);
-#else
-    /*
-     * TEMPORARY (?) WORKAROUND :
-     *    Do not enable auto-refresh until after
-     *    coarse write leveling
-     */
-    ncr_write32(ctlReg,  0x0038, 0x00000100);
-#endif
 
     /* DENALI_CTL_17 */
     ncr_write32(ctlReg,  0x0044, 0x00000100);
