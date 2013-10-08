@@ -2800,11 +2800,7 @@ sm_bytelane_test_elm(
     /* this initiates the write */
     ncr_write32( elmRegion, NCP_ELM_SYSMEM_INIT_DATA, 0);
 
-
-    if (0 != (pattern & 0x2))
-        return 0;
-
-    /* poll for init complete */
+    /* always wait for the write to complete */
     if (0 != ncr_poll(elmRegion, 0x1000, 0x80, 0x80, 10, 10) )
     {
         /* shouldn't happen */
@@ -2812,6 +2808,9 @@ sm_bytelane_test_elm(
     }
     ncr_write32(elmRegion, 0x1000, 0x00000080);
 
+    /* if we're not reading back just return now */
+    if (0 != (pattern & 0x2))
+        return 0;
 
     /* Read back and compare. */
     ncr_write32( elmRegion, NCP_ELM_SYSMEM_INIT_CACHE_ADDR, ((address + expValOffset) >> 6));
@@ -3004,6 +3003,7 @@ sm_ecc_bytelane_test_elm(
     ncp_uint32_t  blockSizeWords = blockSize / 4;
 
     int i;
+    ncp_uint32_t tmp;
 
     /* clear ECC interrupt status bits */
     intrStatFn(dev, ctrlRegion, ecc_mask);
@@ -3072,6 +3072,13 @@ sm_ecc_bytelane_test_elm(
         printf("\n");
     }
 #endif /* SM_ECC_BYTELANE_TEST_DEBUG */
+
+    /*
+     * perform a sacrificial config ring read. 
+     * This will guarantee that the preceedeing NCA SMBW
+     * operation has completed before we attemp to read it back
+     */
+    ncr_read32(NCP_REGION_ID(0x16, 0xff), 0, &tmp);
     
     /* 
      * Read back and compare.
@@ -3788,13 +3795,6 @@ ncp_sm_lsiphy_runtime_adj(
         SMAV(ncp_denali_DENALI_CTL_334_t, ctrlupd_req, 1);
         ncr_modify32(ctlRegion, NCP_DENALI_CTL_334, mask, value);
 
-        /*
-         * TEMPORARY WORKAROUND
-         *   Enable auto-refresh now !!
-         */
-        mask = value = 0;
-        SMAV(ncp_denali_DENALI_CTL_14_t, tref_enable, 1);
-        ncr_modify32(ctlRegion, NCP_DENALI_CTL_14, mask, value);
     }
 
 
