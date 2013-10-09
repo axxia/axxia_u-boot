@@ -2120,6 +2120,17 @@ ncp_sysmem_init_ibmphy(
 		SMAV( ncp_phy_phy_ctl6_r_t, imped_adr,     sysmem->phy_adr_imp );
 		ncr_modify32( phy, NCP_PHY_CTL6, mask, value );
 
+
+#ifdef CONFIG_SMEM_ODT_ENABLE
+		/* RDCALIEMCTERM */
+		mask = value = 0;
+		SMAV( ncp_phy_CFG_SYSMEM_PHY_RDCALIEMCTERM_r_t, mcterm_dqs_0, 1);
+		SMAV( ncp_phy_CFG_SYSMEM_PHY_RDCALIEMCTERM_r_t, mcterm_dqs_1, 1);
+		for (i = 0; i < 9; i++) {
+			ncr_modify32(phy, NCP_PHY_CFG_SYSMEM_PHY_RDCALIEMCTERM_BL(i), mask, value);
+		}
+#endif
+
 		/* NCP_PHY_CTL7 */
 		mask = value = 0;
 		SMAV( ncp_phy_phy_ctl7_r_t, rd_ptr_init, 4 );
