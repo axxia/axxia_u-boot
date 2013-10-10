@@ -2680,6 +2680,7 @@ NCP_RETURN_LABEL
                                     (n & 0x0000ff00) << 8  | \
                                     (n & 0x000000ff) << 24)
 
+#define NCP_BLTEST_NUM_CHECKS 8
 
 /*
  *------------------------------------------------------------------------------
@@ -2707,7 +2708,7 @@ sm_bytelane_test_elm(
     ncp_uint32_t  num_bls)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
-    int i;
+    int i, j;
     ncp_uint32_t  beatSize= num_bls * 2;
 
 #ifdef UBOOT 
@@ -2731,6 +2732,7 @@ sm_bytelane_test_elm(
     ncp_int32_t   valAdj;
     ncp_int32_t   beatAdj;
     ncp_uint32_t  reg;
+    ncp_uint32_t  nchecks;
 
     ncp_uint32_t  readData[2];
     ncp_uint8_t  *pDat;
@@ -2738,35 +2740,25 @@ sm_bytelane_test_elm(
     ncp_elm_sysmem_write_level_ctl_r_t wl_ctl = {0};
 
     /*
-     * calculate the block size for this test. 
+     * calculate the block size for this test.
      * One DDR burst is 8 beats, or 8 bytes per bytelane.
      * We will write two bursts, read two bursts, and compare
      * the data from the middle of the second burst.
      */
     burstSize = num_bls * 8;
-    blockSize = burstSize * 2; 
+    blockSize = burstSize * 2;
 
     /*
-     * The write data is either an incrementing byte pattern
-     * starting from 0, or a decrementing byte pattern starting
-     * from 0xff. For the incrementing pattern the expected 
-     * value for the byte at offset 'n' will be 'n', and for
-     * the decrementing pattern it will be the complement. 
-     *
-     * We add or subtract an adjustment factor equal to the 
+     * We add or subtract an adjustment factor equal to the
      * beat size to get the value for the previous and subsequent
-     * beat. 
+     * beat.
      */
-    expValOffset  = burstSize + (burstSize / 2);
     if ( (pattern & 0x01) == 0) {
-        expVal  = expValOffset;
         valAdj  = 1;
         beatAdj = -beatSize;
     } 
     else
     {
-        expVal  = -expValOffset;
-        expVal -= 1;
         valAdj  = -1;
         beatAdj = beatSize;
     }
@@ -2785,13 +2777,13 @@ sm_bytelane_test_elm(
     /*
      * the ELM sysmem init cache line count registers specifies
      * the number of 64-byte cachelines to be written. A value
-     * of zero indicates one cacheline. 
+     * of zero indicates one cacheline.
      */
     ncr_write32( elmRegion, NCP_ELM_SYSMEM_INIT_CACHE_COUNT, ((blockSize/64) - 1)); 
      
 
     /*
-     * write pattern into memory 
+     * write pattern into memory
      */
     wl_ctl.set_wl_pattern = 1;
     wl_ctl.invert_wl_pattern = (pattern & 0x01);
@@ -2800,11 +2792,7 @@ sm_bytelane_test_elm(
     /* this initiates the write */
     ncr_write32( elmRegion, NCP_ELM_SYSMEM_INIT_DATA, 0);
 
-
-    if (0 != (pattern & 0x2))
-        return 0;
-
-    /* poll for init complete */
+    /* always wait for the ELM to complete the write */
     if (0 != ncr_poll(elmRegion, 0x1000, 0x80, 0x80, 10, 10) )
     {
         /* shouldn't happen */
@@ -2812,45 +2800,72 @@ sm_bytelane_test_elm(
     }
     ncr_write32(elmRegion, 0x1000, 0x00000080);
 
-
-    /* Read back and compare. */
-    ncr_write32( elmRegion, NCP_ELM_SYSMEM_INIT_CACHE_ADDR, ((address + expValOffset) >> 6));
-    wl_ctl.set_wl_pattern = 0;
-    wl_ctl.data_selector  = expValOffset / 8;
-    ncr_write32( elmRegion, NCP_ELM_SYSMEM_WRITE_LEVEL_CTL, *(ncp_uint32_t *)&wl_ctl);
-
-
-    /*
-     * this initiates the memory block read and the read response
-     * for the selected beat of data is stored in these registers
-     */
-    ncr_read32(elmRegion, NCP_ELM_SYSMEM_WRITE_LEVEL_READ_0, &readData[0]);
-    ncr_read32(elmRegion, NCP_ELM_SYSMEM_WRITE_LEVEL_READ_1, &readData[1]);
-
-
-#ifdef NCP_BIG_ENDIAN
-    readData[0] = NCP_TEMP_SWAP32(readData[0]);
-    readData[1] = NCP_TEMP_SWAP32(readData[1]);
-
-#endif
-
-    pDat = (ncp_uint8_t *) &readData[0];
+    /* if we're not doing the readback and compare just return */
+    if (0 != (pattern & 0x2))
+        return 0;
 
     *bad_bl_bad = 0;
     *bad_bl_early = 0;
     *bad_bl_late = 0;
 
-    for (i = 0; i < num_bls; ++i) {
-        readVal = pDat[i];
+    for (j = 0; j < NCP_BLTEST_NUM_CHECKS; j++)
+    {
+        /*
+         * The write data is either an incrementing byte pattern
+         * starting from 0, or a decrementing byte pattern starting
+         * from 0xff. For the incrementing pattern the expected
+         * value for the byte at offset 'n' will be 'n', and for
+         * the decrementing pattern it will be the complement.
+         *
+         */
+        expValOffset  = burstSize + (j * burstSize / NCP_BLTEST_NUM_CHECKS);
+        if ( (pattern & 0x01) == 0) {
+            expVal  = expValOffset;
+        }
+        else
+        {
+            expVal  = -expValOffset;
+            expVal -= 1;
+        }
+
 #ifdef SM_BYTELANE_TEST_DEBUG
-        printf("readVal=%02x, expVal=%02x\n",
+        printf("checking data at offset 0x%04x\n", expValOffset);
+#endif
+
+        /* Read back and compare. */
+        ncr_write32( elmRegion, NCP_ELM_SYSMEM_INIT_CACHE_ADDR, ((address + expValOffset) >> 6));
+        wl_ctl.set_wl_pattern = 0;
+        wl_ctl.data_selector  = expValOffset / 8;
+        ncr_write32( elmRegion, NCP_ELM_SYSMEM_WRITE_LEVEL_CTL, *(ncp_uint32_t *)&wl_ctl);
+
+
+        /*
+         * this initiates the memory block read and the read response
+         * for the selected beat of data is stored in these registers
+         */
+        ncr_read32(elmRegion, NCP_ELM_SYSMEM_WRITE_LEVEL_READ_0, &readData[0]);
+        ncr_read32(elmRegion, NCP_ELM_SYSMEM_WRITE_LEVEL_READ_1, &readData[1]);
+
+
+#ifdef NCP_BIG_ENDIAN
+        readData[0] = NCP_TEMP_SWAP32(readData[0]);
+        readData[1] = NCP_TEMP_SWAP32(readData[1]);
+#endif
+
+        pDat = (ncp_uint8_t *) &readData[0];
+
+        for (i = 0; i < num_bls; ++i) {
+            readVal = pDat[i];
+#ifdef SM_BYTELANE_TEST_DEBUG
+            printf("readVal=%02x, expVal=%02x\n",
                 readVal, expVal);
 #endif
-        if (readVal != expVal) 
-        {
-                *bad_bl_bad |= 1 << i;
+            if (readVal != expVal)
+            {
+                    *bad_bl_bad |= 1 << i;
+            }
+            expVal += valAdj;
         }
-        expVal += valAdj;
     }
 
 
