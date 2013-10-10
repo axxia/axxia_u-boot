@@ -3019,6 +3019,7 @@ sm_ecc_bytelane_test_elm(
     ncp_uint32_t  blockSizeWords = blockSize / 4;
 
     int i;
+    ncp_uint32_t tmp;
 
     /* clear ECC interrupt status bits */
     intrStatFn(dev, ctrlRegion, ecc_mask);
@@ -3087,6 +3088,13 @@ sm_ecc_bytelane_test_elm(
         printf("\n");
     }
 #endif /* SM_ECC_BYTELANE_TEST_DEBUG */
+
+    /*
+     * perform a sacrificial config ring read. 
+     * This will guarantee that the preceedeing NCA SMBW
+     * operation has completed before we attemp to read it back
+     */
+    ncr_read32(NCP_REGION_ID(0x16, 0xff), 0, &tmp);
     
     /* 
      * Read back and compare.
@@ -3802,6 +3810,7 @@ ncp_sm_lsiphy_runtime_adj(
         mask = value = 0;
         SMAV(ncp_denali_DENALI_CTL_334_t, ctrlupd_req, 1);
         ncr_modify32(ctlRegion, NCP_DENALI_CTL_334, mask, value);
+
     }
 
 

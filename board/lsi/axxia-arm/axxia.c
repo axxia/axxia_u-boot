@@ -360,10 +360,13 @@ board_init(void)
 int
 misc_init_r(void)
 {
-	unsigned long sdcr_ddcr;
-
 	if (0 != set_cluster_coherency(0, 1))
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+	/* Enable SW access to cp14 registers and power on the ETB RAM modules
+	 * (via dbg_sw_enable register)
+	 */
+	writel(0xf, SYSCON + 0xcc);
 
 	return 0;
 }

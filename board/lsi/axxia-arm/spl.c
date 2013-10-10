@@ -316,6 +316,29 @@ spl_mtest(unsigned long *start, unsigned long *end)
 #endif
 
 /*
+  ------------------------------------------------------------------------------
+  fix_up_vat
+*/
+
+static int
+fix_up_vat(void)
+{
+	unsigned long buffer[4];
+	int rc;
+
+	rc = ncr_read(NCP_REGION_ID(0x16, 0x10), 0, 0x1000, 16, buffer);
+
+	if (0 != rc)
+		return -1;
+
+	buffer[2] = 0;
+	rc = ncr_write(NCP_REGION_ID(0x16, 0x10), 0, 0x1000, 16, buffer);
+
+	if (0 != rc)
+		return -1;
+}
+
+/*
   ==============================================================================
   ==============================================================================
   Global Stuff
@@ -338,6 +361,8 @@ void
 reset_cpu_fabric(void)
 {
 	unsigned long value;
+
+	fix_up_vat();
 
 	/*
 	  Don't use readl()/writel(), as those contain barriers.  The

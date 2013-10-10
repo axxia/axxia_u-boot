@@ -127,14 +127,18 @@ read_parameters(void)
 
 	/* Verify that the paramater table is valid. */
 	if (PARAMETERS_MAGIC != ntohl(header->magic)) {
-		/* Initialize the SEEPROM (device 0, read only). */
-		ssp_init(0);
+		struct spi_flash *flash;
 
-		/* Copy the parameters from SPI device 0. */
-		rc = ssp_read(parameters,
-			      PARAMETERS_OFFSET_IN_FLASH, PARAMETERS_SIZE);
+		flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
+					CONFIG_SF_DEFAULT_MODE);
 
-		if (0 != rc || PARAMETERS_MAGIC != ntohl(header->magic))
+		if (!flash)
+			return -1;
+
+		spi_flash_read(flash, PARAMETERS_OFFSET_IN_FLASH,
+			       PARAMETERS_SIZE, parameters);
+
+		if (PARAMETERS_MAGIC != ntohl(header->magic))
 			/* No parameters available, fail. */
 			return -1;
 	}
