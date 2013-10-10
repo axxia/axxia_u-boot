@@ -691,6 +691,24 @@ ncp_sm_denali_2041_init(
         SV( ncp_denali_DENALI_CTL_335_t, trcd, parms->CAS_latency );
         ncr_write32(ctlReg,  NCP_DENALI_CTL_335, value);
 
+        /* DENALI_CTL_337 */
+        /*
+         * TEMP: 
+         * For now, auto-zq calibration is enabled with a fixed
+         * interval of one second. In the future this will be a
+         * user configurable parameter.
+         *
+         * zq_interval specifies the auto-zq calibration interval
+         * in 'long count sequences'. By default each long count 
+         * sequence is 1024 clocks. 
+         *
+         * For one second, we have 800000000 clocks divided by 1024
+         * or 781250 long count sequences.
+         */
+        value = 0;
+        SV( ncp_denali_DENALI_CTL_337_t, zq_interval, 781250);
+        ncr_write32(ctlReg,  NCP_DENALI_CTL_337, value);
+
 
         /* DENALI_CTL_420 */
 #if 0  /* NOT YET */
