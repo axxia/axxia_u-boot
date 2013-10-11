@@ -25,7 +25,7 @@
 
 #define CONFIG_AXXIA_ARM
 
-#define NCR_TRACER
+/*#define NCR_TRACER*/
 
 #ifndef __ASSEMBLY__
 #include <linux/types.h>
