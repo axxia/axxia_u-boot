@@ -32,6 +32,14 @@
 
 #define CONFIG_LSI_NCR
 
+#ifndef __ASSEMBLY__
+void ncr_tracer_enable(void);
+void ncr_tracer_disable(void);
+int ncr_tracer_is_enabled(void);
+void ncr_sysmem_init_mode_enable(void);
+void ncr_sysmem_init_mode_disable(void);
+#endif
+
 /*
   ================================================================================
   ================================================================================

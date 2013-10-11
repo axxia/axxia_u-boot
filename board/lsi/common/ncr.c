@@ -28,15 +28,12 @@
 #define LOCK_DOMAIN 0
 
 static int ncr_sysmem_mode_disabled = 1;
-
-#ifdef CONFIG_SPL_BUILD
 static int ncr_tracer_disabled = 1;
 void ncr_tracer_enable( void ) { ncr_tracer_disabled = 0; }
 void ncr_tracer_disable( void ) { ncr_tracer_disabled = 1; }
 int ncr_tracer_is_enabled( void ) { return 0 == ncr_tracer_disabled ? 1 : 0; }
 void ncr_sysmem_init_mode_enable(void) { ncr_sysmem_mode_disabled = 0; }
 void ncr_sysmem_init_mode_disable(void) { ncr_sysmem_mode_disabled = 1; }
-#endif
 
 static __inline__ unsigned long ncr_register_read(unsigned *);
 static __inline__ void ncr_register_write(const unsigned, unsigned *);

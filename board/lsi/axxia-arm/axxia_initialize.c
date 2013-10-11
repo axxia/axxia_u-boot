@@ -142,8 +142,12 @@ axxia_initialize(void)
 	ncr_l3tags();
 #else
 	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM)) {
+		ncr_tracer_enable();
+
 		if (0 != sysmem_init())
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		ncr_tracer_disable();
 	}
 #endif
 
