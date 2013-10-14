@@ -75,9 +75,7 @@ int cleanup_before_linux(void)
 	 * So just invalidate the entire d-cache again to avoid coherency
 	 * problems for kernel
 	 */
-#ifndef CONFIG_AXXIA
 	invalidate_dcache_all();
-#endif
 
 	/*
 	 * Some CPU need more cache attention before starting the kernel.

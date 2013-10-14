@@ -87,6 +87,7 @@ v7_outer_cache_flush_all(void)
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 	}
 
+#if 0
 	/* */
 
 	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
@@ -106,6 +107,7 @@ v7_outer_cache_flush_all(void)
 		if (0 == retries)
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 	}
+#endif
 #endif
 
 	return;
