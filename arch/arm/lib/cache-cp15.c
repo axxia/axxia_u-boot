@@ -139,6 +139,8 @@ static void cache_enable(uint32_t cache_bit)
 	set_cr(reg | cache_bit);
 }
 
+#define ARM_ERRATA_784420
+
 /* cache_bit must be either CR_I or CR_C */
 static void cache_disable(uint32_t cache_bit)
 {
@@ -151,14 +153,25 @@ static void cache_disable(uint32_t cache_bit)
 		/* if cache isn;t enabled no need to disable */
 		if ((reg & CR_C) != CR_C)
 			return;
+#ifdef ARM_ERRATA_784420
+		/*
+		  if disabling data cache, disable mmu and branch prediction too
+		*/
+		cache_bit = cache_bit | CR_M | CR_Z;
+#else
 		/* if disabling data cache, disable mmu too */
 		cache_bit |= CR_M;
+#endif
 	}
 	reg = get_cr();
 	cp_delay();
-	if (cache_bit == (CR_C | CR_M)) {
+#ifdef ARM_ERRATA_784420
+	if (cache_bit == (CR_C | CR_M | CR_Z))
 		flush_dcache_all();
-	}
+#else
+	if (cache_bit == (CR_C | CR_M))
+		flush_dcache_all();
+#endif
 	set_cr(reg & ~cache_bit);
 }
 #endif
