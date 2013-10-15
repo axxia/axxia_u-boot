@@ -70,8 +70,8 @@ v7_outer_cache_flush_all(void)
 	puts("Flushing L3 Cache\n");
 	
 	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		/* set state NOL3 */
-		writel(0x0, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
+		/* set state SFONLY */
+		writel(0x1, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
 	}
 
 	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
@@ -81,17 +81,14 @@ v7_outer_cache_flush_all(void)
 			status = readl(DICKENS +
 				       (0x10000 * hnf_offsets[i]) + 0x18);
 			udelay(1);
-		} while ((0 < --retries) && (0x0 != (status & 0xf)));
+		} while ((0 < --retries) && (0x4 != (status & 0xf)));
 
 		if (0 == retries)
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 	}
 
-#if 0
-	/* */
-
 	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		/* set state FAM */
+		/* set state ALL */
 		writel(0x3, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
 	}
 
@@ -107,7 +104,6 @@ v7_outer_cache_flush_all(void)
 		if (0 == retries)
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 	}
-#endif
 #endif
 
 	return;

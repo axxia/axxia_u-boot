@@ -163,8 +163,13 @@ static void cache_disable(uint32_t cache_bit)
 		cache_bit |= CR_M;
 #endif
 	}
+
 	reg = get_cr();
-	cp_delay();
+ 	cp_delay();
+
+	if (CR_C == (cache_bit & CR_C))
+		set_cr(reg & ~CR_C);
+
 #ifdef ARM_ERRATA_784420
 	if (cache_bit == (CR_C | CR_M | CR_Z))
 		flush_dcache_all();
@@ -172,6 +177,7 @@ static void cache_disable(uint32_t cache_bit)
 	if (cache_bit == (CR_C | CR_M))
 		flush_dcache_all();
 #endif
+
 	set_cr(reg & ~cache_bit);
 }
 #endif
