@@ -222,8 +222,13 @@ unsigned long *get_acp_fdt(int);
 #define OS_GROUP0_DEFAULT "0xd31:0:0x100"
 #else
 #if defined (AXM_35xx) && defined (ACP_EMU)
+/*
 #define ACP_NR_CORES 1
 #define OS_GROUP0_DEFAULT "0x911:0:0x100"
+*/
+#define ACP_NR_CORES 4
+#define OS_GROUP0_DEFAULT "0xdf1:0:0x100"
+
 #else
 #define ACP_NR_CORES 4
 #define OS_GROUP0_DEFAULT "0xdf1:0:0x100"
@@ -317,11 +322,9 @@ void acp_osg_set_spintable_state(int, acp_osg_spintable_state_t);
 acp_osg_core_state_t acp_osg_get_core_state(int);
 void acp_osg_set_core_state(int, acp_osg_core_state_t);
 
-/* single core axm_35xx support */
-#if defined (AXM_35xx) && defined (ACP_EMU)
+/* ONLY SMP support for 35xx */
+#if defined (AXM_35xx)
 #define ACP_MAX_OS_GROUPS 1
-#else
-#define ACP_MAX_OS_GROUPS ACP_MAX_CORES
 #endif
 
 
