@@ -259,6 +259,7 @@ acp_osg_readenv(void)
 		/* Read the environment variable. */
 		sprintf(env_name, "osgroup%d", group);
 		env_value = getenv(env_name);
+		
 
 		if ((char *)0 == env_value) {
 			WARN_PRINT("%s doesn't exist, creating it.\n", env_name);
@@ -310,6 +311,7 @@ acp_osg_readenv(void)
 			    env_name, os_group->flags,
 			    BOOT(os_group->flags), CORES(os_group->flags),
 			    os_group->base, os_group->size);
+
 	}
 
 	for (core = 0; core < ACP_MAX_CORES; ++core) {
@@ -360,7 +362,7 @@ acp_osg_group_get_res(int group, acp_osg_group_res_t res)
 {
 	unsigned long long rv = 0;
 	acp_osg_group_t *acp_osg_group = acp_osg_groups[group];
-
+	
 	switch(res) {
 	case ACP_OS_BOOT_CORE:
 		rv = BOOT(acp_osg_group->flags);
@@ -536,8 +538,7 @@ int
 acp_osg_get_group(int core)
 {
 	int group;
-
-	for (group = 0; group < ACP_NR_CORES; ++group) {
+	for (group = 0; group < ACP_MAX_OS_GROUPS; ++group) {
 		if (0 != ((1 << core) & CORES(acp_osg_groups[group]->flags)))
 			return group;
 	}
@@ -578,7 +579,7 @@ acp_osg_is_boot_core(int core)
 	}
 #else
 
-#if defined(AXM_35xx)
+#if  defined(AXM_35xx)
 
 /*SMP only for 35xx */
 if ((0 != ((1 << core) & BOOT(acp_osg_groups[0]->flags)))) {

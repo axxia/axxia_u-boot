@@ -322,11 +322,9 @@ void acp_osg_set_spintable_state(int, acp_osg_spintable_state_t);
 acp_osg_core_state_t acp_osg_get_core_state(int);
 void acp_osg_set_core_state(int, acp_osg_core_state_t);
 
-/* single core axm_35xx support */
-#if defined (AXM_35xx) && defined (ACP_EMU)
+/* ONLY SMP support for 35xx */
+#if defined (AXM_35xx)
 #define ACP_MAX_OS_GROUPS 1
-#else
-#define ACP_MAX_OS_GROUPS ACP_MAX_CORES
 #endif
 
 
