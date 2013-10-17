@@ -325,6 +325,8 @@ void acp_osg_set_core_state(int, acp_osg_core_state_t);
 /* ONLY SMP support for 35xx */
 #if defined (AXM_35xx)
 #define ACP_MAX_OS_GROUPS 1
+#else
+#define ACP_MAX_OS_GROUPS ACP_NR_CORES
 #endif
 
 
