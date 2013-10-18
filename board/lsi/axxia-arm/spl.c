@@ -492,8 +492,13 @@ spl_board_init(void)
 
 #else
 
-	if (0 != (global->flags & PARAMETERS_GLOBAL_DDR_RANGE_TEST))
+	if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SYSMEM_BIST)) {
+		printf("Testing Memory From 0, 0x%llx bytes\n",
+		       sysmem->totalSize);
+		axxia_sysmem_bist(0ULL, sysmem->totalSize);
+	} else if (0 != (global->flags & PARAMETERS_GLOBAL_DDR_RANGE_TEST)) {
 		check_memory_ranges();
+	}
 
 	printf("System initialized\n");
 

@@ -526,15 +526,7 @@ sysmem_init(void)
 			sdram_capacity_bytes *
 			(primary_bus_width_bits / sdram_device_width_bits);
 
-        sysmem->totalSize = sdram_capacity_bytes;
-		sysmem_size = 0;
-
-		while (0 < sdram_capacity_bytes) {
-			++sysmem_size;
-			sdram_capacity_bytes >>= 1;
-		}
-
-		--sysmem_size;
+		sysmem->totalSize = sdram_capacity_bytes;
 	}
 
 	/* Just match the RTE trace... */

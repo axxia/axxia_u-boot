@@ -403,11 +403,20 @@ board_early_init_f(void)
 /*
   ------------------------------------------------------------------------------
   arch_early_init_r
+
+  Called just after the heap has been initialized.
 */
 
 int
 arch_early_init_r(void)
 {
+	/*
+	  System Memory Size
+	*/
+
+	printf("Sysmem Size: %llu Mb\n",
+	       (sysmem_size() / (1024ULL * 1024ULL)));
+	
 	return 0;
 }
 

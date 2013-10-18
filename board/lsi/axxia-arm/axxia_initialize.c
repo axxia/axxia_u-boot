@@ -33,7 +33,6 @@
   ===============================================================================
 */
 
-unsigned long sysmem_size = 1;
 unsigned long reset_enabled = 1;
 unsigned long ncp_sm_phy_reg_restore = 0;
 unsigned long ncp_sm_phy_reg_dump = 0;

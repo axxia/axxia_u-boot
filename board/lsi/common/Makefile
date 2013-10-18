@@ -45,7 +45,7 @@ endif
 ################################################################################
 ## All Builds
 
-COBJS += version.o lsi.o ncr.o parameters.o
+COBJS += version.o lsi.o ncr.o parameters.o sysmem_size.o
 
 ################################################################################
 
