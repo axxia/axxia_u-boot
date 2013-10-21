@@ -697,7 +697,11 @@ acp_init_f( void )
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
 #else
+#if defined(AXM_35xx)  /* 3500 emulation hardcode to cold start */
+	cold_start = 0x3f;
+#else
 	cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
+#endif
 #endif
 	 /* printf("acp_init_f() cold_start=%d core=%d\n", cold_start, core);*/
 	/* Fail if this is a cold start, and not core 0. */
@@ -1489,15 +1493,18 @@ acp_init_r( void )
 
 	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
 
-#if defined(ACP_25xx) && !defined(ACP_EMU)
+#if (defined(ACP_25xx) && !defined(ACP_EMU)) || (defined(AXM_35xx) && !defined(ACP_EMU))
 	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
 	cold_start = (0 != cold_start);
 #else
+#if defined(AXM_35xx)  /* 3500 emulation hardcode to cold start */
+	cold_start = 0x3f;
+#else
 	cold_start = (0 != (0x00ffe000 & dcr_read((DCR_RESET_BASE + 1))));
 #endif
-
+#endif
 	/*
 	  Enable Machine Checks.
 	*/

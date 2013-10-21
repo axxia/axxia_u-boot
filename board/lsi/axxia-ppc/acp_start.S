@@ -425,8 +425,9 @@ acp_relocate:
 	bne		continue_start
 
 	#; Determine whether this is a cold or warm reset.
-
-#if defined(ACP_25xx) && !defined(ACP_EMU)
+#;For 3500 EMU, do not read the reset status
+#if !(defined (AXM_35xx) && defined(ACP_EMU))
+#if (defined(ACP_25xx) && !defined(ACP_EMU)) || (defined(AXM_35xx)))
 	#; 2500 Case
 	lis		r23,(DCR_RESET_BASE + 0xe)@h
 	ori		r23,r23,(DCR_RESET_BASE + 0xe)@l
@@ -467,7 +468,7 @@ acp_relocate:
 	cmpwi		r22,0
 	beq		warm_start
 #else
-	#; Non-2500 Case
+	#; Non-2500/3500 Case
 	lis		r23,(DCR_RESET_BASE + 1)@h
 	ori		r23,r23,(DCR_RESET_BASE + 1)@l
 #if 0
@@ -483,6 +484,7 @@ acp_relocate:
 	and		r21,r21,r23
 	cmpwi		r21,0
 	beq		warm_start
+#endif
 #endif
 
 cold_start:
