@@ -445,10 +445,10 @@ int pciesrio_setcontrol(unsigned long new_control)
 	unsigned long phy0_ctrl, phy1_ctrl;
 	unsigned long tmp;
 	rx_serdes_value_t rx_serdes_values[] = {
-		{0x00ba, 0x0072},
-		{0x02ba, 0x0072},
-		{0x06ba, 0x0072},
-		{0x08ba, 0x0072},
+		{0x00ba, 0x0062},
+		{0x02ba, 0x0062},
+		{0x06ba, 0x0062},
+		{0x08ba, 0x0062},
 		{0x008e, 0x0487},
 		{0x028e, 0x0487},
 		{0x068e, 0x0487},
@@ -462,6 +462,36 @@ int pciesrio_setcontrol(unsigned long new_control)
 	phy0_ctrl = new_control & 0x1f700409;
 	phy1_ctrl = new_control & 0x60800004;
 
+
+
+        /* soft reset the phy, pipe, link layer */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x80);
+        udelay(100000);
+
+	/* PCIE0 */
+        /* assert reset to the Serdes */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x20);
+
+	/*
+	set 26 R/W dsbl_g12_rx_p1_pd Disable the Gen1/Gen2 configuration RX_P1_PD signal. 0x0
+	for pipe0 
+	*/
+	ncr_write32(NCP_REGION_ID(0x115, 2), 0x02c, 0x05008249);
+
+	udelay(100000);
+
+	/* wr ctrl0         0x200 0x00000021 */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x21);
+
+	/* wr ctrl2         0x208 0xFFFFFFFF */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
+
+	/* wr pll_a_ctrl  0x230 0x03176403 */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x230, 0x03176403);
+
+	/* ncpWrite 0x115.0x0.0x214 0x00F00A0A */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x214, 0x00F00A0A);
+
 	for (i = 0;
 	     i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
 	     ++i) {
@@ -473,25 +503,11 @@ int pciesrio_setcontrol(unsigned long new_control)
 			    rx_serdes_values[i].value);
 	}
 
-	/* PCIE0 */
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl | 0x20);
-	udelay(100000);
-	/* Select PLL_A for all channels */
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
-	/* Power up PLL_A, keep PLL_B in powered down. */
-	ncr_read32(NCP_REGION_ID(0x115, 0), 0x228, &tmp);
-	tmp &= ~1;
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, tmp);
-	/* Enable RX detect */
-	ncr_read32(NCP_REGION_ID(0x115, 0), 0x22c, &tmp);
-	tmp |= 0xF<<16;
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c, tmp);
-	udelay(100000);
-
-	/* ncpWrite 0x115.0x0.0x214 0x00F00A0A */
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x214, 0x00F00A0A);
+	/* wr ctrl10       0x228 0x00000100 */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000100);
 
 	/* Set new phy_ctrl value */
+	/* Remove serdes out of reset */
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl);
 
 	/* Check bit 2 as this determines PEI1 state */
