@@ -427,7 +427,7 @@ acp_relocate:
 	#; Determine whether this is a cold or warm reset.
 #;For 3500 EMU, do not read the reset status
 #if !(defined (AXM_35xx) && defined(ACP_EMU))
-#if (defined(ACP_25xx) && !defined(ACP_EMU)) || (defined(AXM_35xx)))
+#if (defined(ACP_25xx) && !defined(ACP_EMU)) || (defined(AXM_35xx))
 	#; 2500 Case
 	lis		r23,(DCR_RESET_BASE + 0xe)@h
 	ori		r23,r23,(DCR_RESET_BASE + 0xe)@l
