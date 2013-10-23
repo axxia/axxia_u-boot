@@ -445,10 +445,10 @@ int pciesrio_setcontrol(unsigned long new_control)
 	unsigned long phy0_ctrl, phy1_ctrl;
 	unsigned long tmp;
 	rx_serdes_value_t rx_serdes_values[] = {
-		{0x00ba, 0x0062},
-		{0x02ba, 0x0062},
-		{0x06ba, 0x0062},
-		{0x08ba, 0x0062},
+		{0x00ba, 0x0072},
+		{0x02ba, 0x0072},
+		{0x06ba, 0x0072},
+		{0x08ba, 0x0072},
 		{0x008e, 0x0487},
 		{0x028e, 0x0487},
 		{0x068e, 0x0487},
@@ -471,14 +471,6 @@ int pciesrio_setcontrol(unsigned long new_control)
 	/* PCIE0 */
         /* assert reset to the Serdes */
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x20);
-
-	/*
-	set 26 R/W dsbl_g12_rx_p1_pd Disable the Gen1/Gen2 configuration RX_P1_PD signal. 0x0
-	for pipe0 
-	*/
-	ncr_write32(NCP_REGION_ID(0x115, 2), 0x02c, 0x05008249);
-
-	udelay(100000);
 
 	/* wr ctrl0         0x200 0x00000021 */
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x21);
@@ -505,6 +497,9 @@ int pciesrio_setcontrol(unsigned long new_control)
 
 	/* wr ctrl10       0x228 0x00000100 */
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000100);
+
+	/* 100 ms delay */
+        udelay(100000);
 
 	/* Set new phy_ctrl value */
 	/* Remove serdes out of reset */
