@@ -135,18 +135,20 @@ do_ncr_write(unsigned long node, unsigned long target, unsigned long offset,
   ----------------------------------------------------------------------
   do_ncr
 */
-  
+
 int
 do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	unsigned node;
 	unsigned target;
 	unsigned offset;
-	unsigned width;
+	int width;
 	unsigned number;
 	char *token;
 	int index;
 	int rc;
+
+	width = cmd_get_data_size(argv[0], 4);
 
 	if (0 == strncmp(argv[1], "h", strlen("h"))) {
 		printf("%s", cmdtp->usage);
@@ -162,12 +164,7 @@ do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 	if (0 == strncmp(argv[1], "r", strlen("r"))) {
 		if (4 == argc)
-			width = simple_strtoul(argv[3], NULL, 0);
-		else
-			width = 4;
-
-		if (5 == argc)
-			number = simple_strtoul(argv[4], NULL, 0);
+			number = simple_strtoul(argv[3], NULL, 0);
 		else
 			number = 1;
 
@@ -181,19 +178,18 @@ do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		}
 
 		return 0;
-	} else if( 0 == strncmp( argv[1], "w", strlen( "w" ) ) ) {
+	} else if (0 == strncmp(argv[1], "w", strlen("w"))) {
 		int index;
 		unsigned long value;
 
-		if (5 > argc) {
+		if (4 > argc) {
 			printf("Too few arguments for a write!\n");
 			return -1;
 		}
 
-		width = simple_strtoul(argv[3], NULL, 0);
-		index = 4;
+		index = 3;
 
-		while (5 <= argc--) {
+		while (4 <= argc--) {
 			value = simple_strtoul(argv[index++], NULL, 0);
 			rc = do_ncr_write(node, target, offset, width, value);
 
@@ -206,7 +202,8 @@ do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		return 0;
 	}
 
-	printf( "%s", cmdtp->usage );
+	printf("%s", cmdtp->usage);
+
 	return -1;
 }
 
@@ -216,13 +213,14 @@ do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
   ======================================================================
 */
 
-U_BOOT_CMD( ncr, CONFIG_SYS_MAXARGS, 0, do_ncr,
-	    "ncr help|read|write [arguments]\n",
+U_BOOT_CMD(ncr, CONFIG_SYS_MAXARGS, 0, do_ncr,
+	    "ncr[.l|.w|.b] help|read|write [arguments]\n",
 	    "h,elp\n" \
-	    "r,ead node.target.offset [width] [number]\n" \
-	    "\tread number values of width bytes from node.target.offset\n" \
-	    "\tdefault width is 4 and default length is 1\n" \
-	    "w,rite node.target.offset width value [value2 ...]\n" \
-	    "\twrite value of size width bytes to node.target.offset\n");
+	    "r,ead node.target.offset [number]\n" \
+	    "\tread number values from node.target.offset\n" \
+	    "\tdefault length is 1\n" \
+	    "w,rite node.target.offset value [value2 ...]\n" \
+	    "\twrite value(s) to node.target.offset\n" \
+	    "Use .l, .w, or .b for 32, 16, or 8 bit access. Default is 32.\n");
 
 #endif /* CONFIG_ACP */
