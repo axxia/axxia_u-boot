@@ -39,6 +39,7 @@
 #include "ncp_sysmem_lsiphy.h"
 #endif
 
+extern ncp_sm_poll_controller_fn_t  pollControllerFn;
 
 
 #define NCP_SM_ENCODE_RTT_NOM(val)  \
@@ -65,11 +66,7 @@ ncp_sm_denali_2041_init(
     ncp_uint32_t row_diff;
     ncp_uint32_t ctl_32 = 0, ctl_33 = 0, ctl_34 = 0;
     ncp_region_id_t ctlReg = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
-    ncp_uint32_t rttNom;
-    ncp_uint32_t drvImp;
     ncp_uint32_t rttWr;
-    ncp_uint32_t shift;
-    ncp_uint32_t tshift;
 
 #ifdef SM_PLL_533_MHZ
     extern ncp_uint8_t tRFC_vals_533[5] ;
@@ -82,12 +79,6 @@ ncp_sm_denali_2041_init(
 #endif
 
     NCP_COMMENT("Sysmem %d Denali Controller init", smId);
-
-    if (( smId & 1) == 0 ) {
-        shift = 0;
-    } else {
-        shift = 16;
-    }
 
 
     /* DENALI_CTL_00 */
@@ -154,21 +145,20 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x0060, 0x06000000);
 
     /* DENALI_CTL_25 
-     *   set w2r_diffcs_dly = 1 
      */
-    ncr_write32(ctlReg,  0x0064, 0x00010605);
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_25_t, w2r_diffcs_dly, parms->added_rank_switch_delay);
+    SV( ncp_denali_DENALI_CTL_25_t, trtp, 6);
+    SV( ncp_denali_DENALI_CTL_25_t, trrd, 5);
+    ncr_write32(ctlReg,  0x0064, value);
 
     /* DENALI_CTL_26 */
-#if 0   /* TEMP until we have ASE config support */
-    value = 0x04040a00;
-#else
     value = 0x04040a00;
     if (parms->address_mirroring)
     {
         /* set the controller half-data path mode for 32-bit bus */
         SV( ncp_denali_DENALI_CTL_26_t, address_mirroring, 0xa);
     }
-#endif
     ncr_write32(ctlReg,  0x0068, value);
 
     /* DENALI_CTL_27 */
@@ -415,13 +405,18 @@ ncp_sm_denali_2041_init(
     /* DENALI_CTL_181 */
     ncr_write32(ctlReg,  0x02d4, 0x00010000);
 
-    /* TODO!!! handle added rank switch delays */
     /* DENALI_CTL_182 */
-    ncr_write32(ctlReg,  0x02d8, 0x02020001);
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_182_t, r2w_samecs_dly, 2);
+    SV( ncp_denali_DENALI_CTL_182_t, r2w_diffcs_dly, parms->added_rank_switch_delay + 1);
+    SV( ncp_denali_DENALI_CTL_182_t, r2r_diffcs_dly, parms->added_rank_switch_delay);
+    ncr_write32( ctlReg, 0x2d8, value);
 
-    /* TODO!!! handle added rank switch delays */
     /* DENALI_CTL_183 */
-    ncr_write32(ctlReg,  0x02dc, 0x00000104);
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_183_t, w2w_diffcs_dly, parms->added_rank_switch_delay);
+    SV( ncp_denali_DENALI_CTL_183_t, tccd, 4);
+    ncr_write32( ctlReg, 0x2dc, value);
 
     /* DENALI_CTL_184 */
     value = 0;
@@ -456,53 +451,35 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x02ec, value);
     ncr_write32(ctlReg,  0x02f0, value);
 
-    tshift = shift;
     /* DENALI_CTL_189 */
     /* DENALI_CTL_190 */
     /* MR1 rank 0 - 1 */
-    rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
-    drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
-
-    value  = NCP_SM_ENCODE_RTT_NOM(rttNom);
-    value |= NCP_SM_ENCODE_DRV_IMP(drvImp);
-
-    shift += 4;
-    rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
-    drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
-    value2  = NCP_SM_ENCODE_RTT_NOM(rttNom);
-    value2 |= NCP_SM_ENCODE_DRV_IMP(drvImp);
+    value   = NCP_SM_ENCODE_RTT_NOM(parms->per_sysmem[smId].sdram_rtt_nom[0]);
+    value  |= NCP_SM_ENCODE_DRV_IMP(parms->per_sysmem[smId].sdram_data_drv_imp[0]);
+    value2  = NCP_SM_ENCODE_RTT_NOM(parms->per_sysmem[smId].sdram_rtt_nom[1]);
+    value2 |= NCP_SM_ENCODE_DRV_IMP(parms->per_sysmem[smId].sdram_data_drv_imp[1]);
 
     value |= value2 << 16; 
     ncr_write32(ctlReg,  0x02f4, value);
 
     /* MR1 rank 2 - 3  */
-    shift += 4;
-    rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
-    drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
+    value   = NCP_SM_ENCODE_RTT_NOM(parms->per_sysmem[smId].sdram_rtt_nom[2]);
+    value  |= NCP_SM_ENCODE_DRV_IMP(parms->per_sysmem[smId].sdram_data_drv_imp[2]);
+    value2  = NCP_SM_ENCODE_RTT_NOM(parms->per_sysmem[smId].sdram_rtt_nom[3]);
+    value2 |= NCP_SM_ENCODE_DRV_IMP(parms->per_sysmem[smId].sdram_data_drv_imp[3]);
 
-    value  = NCP_SM_ENCODE_RTT_NOM(rttNom);
-    value |= NCP_SM_ENCODE_DRV_IMP(drvImp);
-
-    shift += 4;
-    rttNom = (parms->sdram_rtt_nom >> shift) & 0xf;
-    drvImp = (parms->sdram_data_drv_imp >> shift) & 0xf;
-    value2  = NCP_SM_ENCODE_RTT_NOM(rttNom);
-    value2 |= NCP_SM_ENCODE_DRV_IMP(drvImp);
-
-
+    value |= value2 << 16; 
     ncr_write32(ctlReg,  0x02f8, value);
 
     /* DENALI_CTL_191 */
     /* DENALI_CTL_192 */
     /* MR2 : FREQDEP */
     /* rank 0 - 1 */
-    shift = tshift;
-    rttWr  = (parms->sdram_rtt_wr >> shift) & 0xf;
+    rttWr  = parms->per_sysmem[smId].sdram_rtt_wr[0] ;
     value  = ( rttWr << 9) ; 
     value |= ( parms->CAS_write_latency - 5 ) << 3;
 
-    shift += 4;
-    rttWr  = (parms->sdram_rtt_wr >> shift) & 0xf;
+    rttWr  = parms->per_sysmem[smId].sdram_rtt_wr[1];
     value2  = ( rttWr << 9) ; 
     value2 |= ( parms->CAS_write_latency - 5 ) << 3;
 
@@ -510,16 +487,15 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x02fc, value);
 
     /* rank 2 - 3 */
-    shift += 4;
-    rttWr  = (parms->sdram_rtt_wr >> shift) & 0xf;
+    rttWr  = parms->per_sysmem[smId].sdram_rtt_wr[2];
     value  = ( rttWr << 9) ; 
     value |= ( parms->CAS_write_latency - 5 ) << 3;
 
-    shift += 4;
-    rttWr  = (parms->sdram_rtt_wr >> shift) & 0xf;
+    rttWr  = parms->per_sysmem[smId].sdram_rtt_wr[3];
     value2  = ( rttWr << 9) ; 
     value2 |= ( parms->CAS_write_latency - 5 ) << 3;
 
+    value |= ( value2 << 16 );
     ncr_write32(ctlReg,  0x0300, value);
        
     /* DENALI_CTL_223 - tdfi_rdlvl_max */
@@ -677,7 +653,8 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x0534, value);
 
     /* DENALI_CTL_334 */
-    ncr_write32(ctlReg,  0x0538, 0x07010000);
+    /* do not set ctrlupd_req_per_aref_en */
+    ncr_write32(ctlReg,  0x0538, 0x07000000);
 
     if (parms->version >= NCP_CHIP_ACP55xx)
     {
@@ -693,21 +670,22 @@ ncp_sm_denali_2041_init(
 
         /* DENALI_CTL_337 */
         /*
-         * TEMP: 
-         * For now, auto-zq calibration is enabled with a fixed
-         * interval of one second. In the future this will be a
-         * user configurable parameter.
-         *
          * zq_interval specifies the auto-zq calibration interval
          * in 'long count sequences'. By default each long count 
          * sequence is 1024 clocks. 
          *
-         * For one second, we have 800000000 clocks divided by 1024
-         * or 781250 long count sequences.
+         * an interval of zero indicates that auto-zq calibration 
+         * is disabled so we don't touch the register. 
          */
-        value = 0;
-        SV( ncp_denali_DENALI_CTL_337_t, zq_interval, 781250);
-        ncr_write32(ctlReg,  NCP_DENALI_CTL_337, value);
+        if (parms->zqcs_interval) {
+            value = parms->zqcs_interval * 800 / 1024;
+            if (value == 0) 
+            {
+                value = 1;
+            }
+
+            ncr_write32(ctlReg,  NCP_DENALI_CTL_337, value);
+        }
 
 
         /* DENALI_CTL_420 */

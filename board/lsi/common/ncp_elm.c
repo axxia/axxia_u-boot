@@ -38,6 +38,9 @@ ncp_elm_init(
     ncp_uint32_t     xorMask = 0;
     ncp_uint64_t     sdramSize; 
     ncp_uint32_t     mungeValue; 
+    ncp_uint32_t     hash_mask;
+    ncp_uint32_t     opsize;
+    ncp_uint32_t     bit; 
 
     /*
      *
@@ -45,44 +48,59 @@ ncp_elm_init(
     NCP_COMMENT("ELM initialization");
 
     /* 
-     * calculate the value of the ELM munger register 
+     * if open_page_size is non-zero then we
+     * calculate the setting of the ELM munge 
+     * register and program it.
      *
-     * first calculate the value of the XOR mask based on
-     * number of bits of address per controller and number
-     * of chip-selects
+     * if the open_page_size is zero then we 
+     * leave the munge register in it's default
+     * state (unmunged). 
      */
-    sdramSize = parms->totalSize / parms->num_interfaces; 
-    while ( 0 < sdramSize) {
-        ++ddrBits;
-        sdramSize >>= 1;
-    }
-    --ddrBits;
-
-    switch (parms->num_ranks_per_interface)
+    if (parms->open_page_size)
     {
-        case 1 : 
-            xorMask = 0x7 << (ddrBits - 24);
-            break;
+        /* 
+         * calculate the value of the ELM munge register 
+         *
+         * first calculate the value of the XOR mask based on
+         * number of bits of address per controller and number
+         * of chip-selects
+         */
+        sdramSize = parms->totalSize / parms->num_interfaces; 
+        while ( 0 < sdramSize) {
+            ++ddrBits;
+            sdramSize >>= 1;
+        }
+        --ddrBits;
 
-        case 2:
-            xorMask = 0xf << (ddrBits - 25);
-            break;
+        switch (parms->num_ranks_per_interface)
+        {
+            case 1 : 
+                xorMask = 0x7 << (ddrBits - 24);
+                break;
 
-        case 4:
-            xorMask = 0x1f << (ddrBits - 26);
-            break;
-    }
+            case 2:
+                xorMask = 0xf << (ddrBits - 25);
+                break;
 
-    /* 
-     * TODO: 
-     * Munge register hash mask should be configurable! 
-     * we need an open page size parameter.
-     */
-    mungeValue = (xorMask << 16) | 0xffff;
+            case 4:
+                xorMask = 0x1f << (ddrBits - 26);
+                break;
+        }
 
+        /*
+         * now calculate the value for the hash_mask 
+         * based on open_page_size
+         */
+        hash_mask = 0xffff;
+        opsize = parms->open_page_size;
+        bit = 0;
+        while (opsize > 64) {
+            hash_mask &= ~(1 << bit);
+            bit++;
+            opsize >>= 1;
+        }
 
-    if (parms->syscacheMode == NCP_SYSCACHE_MODE_PERFORMANCE) 
-    {
+        mungeValue = (xorMask << 16) | hash_mask;
         /* set ELM munge regsiter */
         ncr_write32 (NCP_REGION_ID(0x158, 0), 0x1c, mungeValue);
         ncr_write32 (NCP_REGION_ID(0x159, 0), 0x1c, mungeValue);
@@ -133,7 +151,7 @@ ncp_elm_sysmem_fill(
     ncr_poll(NCP_REGION_ID(0x159, 0), 0x44, 0x1fffffff, 0x0, 10000, 1000000);    
 
 	/* If ECC is enabled, clear the status bits. */
-	if (0 != parms->enableECC) {
+	if ((0 != parms->enableECC) && (intrStatFn != NULL)) {
 		/* clear ECC interrupt status bits */
 		for( i = 0; i < parms->num_interfaces; ++ i ) {
             intrStatFn(dev, 

@@ -170,6 +170,20 @@ typedef enum {
 } ncp_sm_poll_event_t;
 
 
+typedef struct {
+    unsigned char sdram_rtt_nom[4];
+    unsigned char sdram_rtt_wr[4];
+    unsigned char sdram_data_drv_imp[4];
+    unsigned long phy_min_cal_delay;
+    unsigned long phy_adr_phase_select;
+    unsigned long phy_dp_io_vref_set;
+    unsigned long phy_adr_io_vref_set;
+    unsigned long phy_rdlvl_cmp_even;
+    unsigned long phy_rdlvl_cmp_odd;
+    unsigned long phy_write_align_finetune;
+} __attribute__((packed)) ncp_per_sysmem_parms_t;
+
+
 
 #ifdef UBOOT
 #define NCP_CHIP_ACP25xx             6
@@ -227,7 +241,6 @@ typedef struct {
     ncp_uint32_t                sdram_rtt_nom;
     ncp_uint32_t                sdram_rtt_wr;
     ncp_uint32_t                sdram_data_drv_imp;
-
     ncp_uint32_t                phy_adr_imp;
     ncp_uint32_t                phy_dat_imp;
     ncp_uint32_t                phy_rcv_imp;
@@ -239,8 +252,15 @@ typedef struct {
     ncp_uint8_t                 syscacheMode;
     ncp_bool_t                  syscacheDisable;
 
+    /* new for 5500 */
+    ncp_uint32_t                zqcs_interval;
+    ncp_bool_t                  enable_runtime_updates;
+    ncp_uint32_t                open_page_size;
+    ncp_per_sysmem_parms_t      per_sysmem[2];
+
     ncp_uint32_t                flags;
     ncp_bool_t                  half_mem;
+    ncp_uint16_t                cmemMR1[2];
 
     ncp_bool_t                 ddrRetentionEnable;
     ncp_bool_t                 ddrRecovery;
@@ -324,5 +344,10 @@ ncp_cm_dram_init(
         ncp_dev_hdl_t dev,
         ncp_uint32_t  num_cmem);
 
+NCP_API ncp_st_t
+ncp_sm_denali_enable(
+    ncp_dev_hdl_t dev,
+    ncp_uint32_t  smId,
+    ncp_sm_parms_t *parms);
 #endif
 #endif

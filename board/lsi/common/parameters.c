@@ -69,7 +69,7 @@ static void *parameters __attribute__ ((section ("data"))) = NULL;
 #endif
 #define PARAMETERS_SIZE (4096)
 #define PARAMETERS_OFFSET_IN_FLASH 0x40000
-#define PARAMETERS_VERSION 6
+#define PARAMETERS_VERSION 7
 #else
 #error "Unknown Architecture!"
 #endif

@@ -200,35 +200,18 @@ typedef unsigned long           ncp_uint32_t;
 typedef void *                  ncp_dev_hdl_t;
 typedef unsigned long           ncp_region_id_t;
 
-#if 0
-typedef enum {
-    NCP_SM_MC_INIT_DONE = 1,
-    NCP_SM_LP_OP_DONE,
-    NCP_SM_BIST_DONE,
-    NCP_SM_LVL_OP_DONE,
-    NCP_SM_MR_OP_DONE
-} ncp_sm_poll_event_t;
-
-typedef ncp_uint32_t
-(*ncp_sm_intr_status_fn_t) (
-    ncp_dev_hdl_t   dev,
-    ncp_region_id_t regionId,
-    ncp_uint32_t    mask);
-
-typedef ncp_st_t
-(*ncp_sm_poll_controller_fn_t) (
-    ncp_dev_hdl_t   dev,
-    ncp_region_id_t regionId,
-    ncp_sm_poll_event_t event);
-
-
-typedef ncp_uint32_t
-(*ncp_sm_ecc_enb_fn_t) (
-    ncp_dev_hdl_t   dev,
-    ncp_region_id_t regionId,
-    ncp_uint32_t    value);
-
-#endif
+typedef struct {
+    unsigned char sdram_rtt_nom[4];
+    unsigned char sdram_rtt_wr[4];
+    unsigned char sdram_data_drv_imp[4];
+    unsigned long phy_min_cal_delay;
+    unsigned long phy_adr_phase_select;
+    unsigned long phy_dp_io_vref_set;
+    unsigned long phy_adr_io_vref_set;
+    unsigned long phy_rdlvl_cmp_even;
+    unsigned long phy_rdlvl_cmp_odd;
+    unsigned long phy_write_align_finetune;
+} __attribute__((packed)) per_sysmem_parms_t;
 
 
 typedef struct {
@@ -236,45 +219,30 @@ typedef struct {
 	unsigned long auto_detect;
 	unsigned long num_interfaces;
 	unsigned long num_ranks_per_interface;
-	unsigned long topology;
-	unsigned long sdram_device_density;
-	unsigned long sdram_device_width;
 	unsigned long primary_bus_width;
-	unsigned long CAS_latency;
-	unsigned long CAS_write_latency;
-	unsigned long enableECC;
-	unsigned long enable_deskew;
-	unsigned long enable_rdlvl;
-	unsigned long enable_auto_cpc;
-	unsigned long min_phy_cal_delay;
-	unsigned long min_ctrl_roundtrip_delay;
-	unsigned long single_bit_mpr;
-	unsigned long rdcal_cmp_even;
-	unsigned long rdcal_cmp_odd;
+	unsigned long topology;
 	unsigned long phy_rdlat;
 	unsigned long added_rank_switch_delay;
-	unsigned long high_temp_dram;
-	unsigned long sdram_rtt_nom;
-	unsigned long sdram_rtt_wr;
-	unsigned long sdram_data_drv_imp;
-	unsigned long phy_adr_imp;
-	unsigned long phy_dat_imp;
-	unsigned long phy_rcv_imp;
-	unsigned long syscacheMode;
-	unsigned long syscacheDisable;
-	unsigned long half_mem;
+    unsigned long zqcs_interval;
+	unsigned long enableECC;
+	unsigned long enable_runtime_updates;
+    unsigned long open_page_size;
+	unsigned long sdram_device_density;
+	unsigned long sdram_device_width;
+	unsigned long CAS_latency;
+	unsigned long CAS_write_latency;
 	unsigned long address_mirroring;
+	unsigned long registeredDIMM;
+	unsigned long single_bit_mpr;
+	unsigned long high_temp_dram;
+
+    per_sysmem_parms_t per_sysmem[2];
+
     unsigned long ddrRetentionEnable;
     unsigned long ddrRecovery;
 
 	unsigned long                  num_bytelanes;
-    	unsigned long long           totalSize;
-#if 0
-    	ncp_sm_intr_status_fn_t      intrStatFn;
-    	ncp_sm_ecc_enb_fn_t          eccEnbFn;
-    	ncp_sm_poll_controller_fn_t  pollControllerFn;
-#endif
-
+ 	unsigned long long           totalSize;
 } __attribute__((packed)) parameters_sysmem_t;
 
 #ifdef CONFIG_AXXIA_ARM

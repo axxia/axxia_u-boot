@@ -368,29 +368,52 @@ sysmem_init(void)
 	}
 #endif
 
-#define DISPLAY_PARAMETERS
+/* #define DISPLAY_PARAMETERS */
 #ifdef DISPLAY_PARAMETERS
-	printf("-- -- Sysmem\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
-	       sysmem->version, sysmem->auto_detect,
-	       sysmem->num_interfaces, sysmem->num_ranks_per_interface,
-	       sysmem->topology, sysmem->sdram_device_density,
-	       sysmem->sdram_device_width, sysmem->primary_bus_width,
-	       sysmem->CAS_latency, sysmem->CAS_write_latency,
-	       sysmem->enableECC, sysmem->enable_deskew,
-	       sysmem->enable_rdlvl, sysmem->enable_auto_cpc,
-	       sysmem->min_phy_cal_delay,
-	       sysmem->min_ctrl_roundtrip_delay, sysmem->single_bit_mpr,
-	       sysmem->rdcal_cmp_even, sysmem->rdcal_cmp_odd,
-	       sysmem->phy_rdlat, sysmem->added_rank_switch_delay,
-	       sysmem->high_temp_dram, sysmem->sdram_rtt_nom,
-	       sysmem->sdram_rtt_wr, sysmem->sdram_data_drv_imp,
-	       sysmem->phy_adr_imp, sysmem->phy_dat_imp,
-	       sysmem->phy_rcv_imp, sysmem->syscacheMode,
-	       sysmem->syscacheDisable, sysmem->half_mem, sysmem->address_mirroring);
+    {
+        unsigned long *p;
+        int i;
+    	printf("-- -- Sysmem Parameters \n");
+
+        printf("version=0x%08x\n", sysmem->version);
+        printf("auto_detect=0x%08x\n", sysmem->auto_detect);
+        printf("num_interfaces=0x%08x\n", sysmem->num_interfaces);
+        printf("num_ranks_per_interface=0x%08x\n", sysmem->num_ranks_per_interface);
+        printf("primary_bus_width=0x%08x\n", sysmem->primary_bus_width);
+        printf("topology=0x%08x\n", sysmem->topology);
+        printf("phy_rdlat=0x%08x\n", sysmem->phy_rdlat);
+        printf("added_rank_switch_delay=0x%08x\n", sysmem->added_rank_switch_delay);
+        printf("zqcs_interval=0x%08x\n", sysmem->zqcs_interval);
+        printf("enableECC=0x%08x\n", sysmem->enableECC);
+        printf("enable_runtime_updates=0x%08x\n", sysmem->enable_runtime_updates);
+        printf("open_page_size=0x%08x\n", sysmem->open_page_size);
+        printf("sdram_device_density=0x%08x\n", sysmem->sdram_device_density);
+        printf("sdram_device_width=0x%08x\n", sysmem->sdram_device_width);
+        printf("CAS_latency=0x%08x\n", sysmem->CAS_latency);
+        printf("CAS_write_latency=0x%08x\n", sysmem->CAS_write_latency);
+        printf("address_mirroring=0x%08x\n", sysmem->address_mirroring);
+        printf("registeredDIMM=0x%08x\n", sysmem->registeredDIMM);
+        printf("single_bit_mpr=0x%08x\n", sysmem->single_bit_mpr);
+        printf("high_temp_dram=0x%08x\n", sysmem->high_temp_dram);
+
+            
+        for (i = 0; i < 2; i++) {
+
+          p = (unsigned long *) sysmem->per_sysmem[i].sdram_rtt_nom;
+          printf("RTTnom=0x%08x\n", *p++);
+          printf("RTTwr=0x%08x\n", *p++);
+          printf("drvimp=0x%08x\n", *p++);
+
+          printf("phy_min_cal_delay=0x%08x\n", sysmem->per_sysmem[i].phy_min_cal_delay);
+          printf("phy_adr_phase_select=0x%08x\n", sysmem->per_sysmem[i].phy_adr_phase_select);
+          printf("phy_dp_io_vref_set=0x%08x\n", sysmem->per_sysmem[i].phy_dp_io_vref_set);
+          printf("phy_adr_io_vref_set=0x%08x\n", sysmem->per_sysmem[i].phy_adr_io_vref_set);
+          printf("phy_rdlvl_cmp_even=0x%08x\n", sysmem->per_sysmem[i].phy_rdlvl_cmp_even);
+          printf("phy_rdlvl_cmp_odd=0x%08x\n", sysmem->per_sysmem[i].phy_rdlvl_cmp_odd);
+          printf("phy_write_align_finetune=0x%08x\n", sysmem->per_sysmem[i].phy_write_align_finetune);
+        }
+    }
+
 #endif
 
 

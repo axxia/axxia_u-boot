@@ -209,6 +209,11 @@ extern "C" {
 #define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_ADRPWRMGR               (0x00009878)
 #define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_ADRGTSTAT               (0x000098e8)
 
+/* broadcast to all ADRs */
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR_BC_PHASE90SEL0           (0x0000f800)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR_BC_PHASE90SEL1           (0x0000f804)
+
+
 #define     NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0                   (0x00010000)
 #define     NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG1                   (0x00010004)
 #define     NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2                   (0x00010008)

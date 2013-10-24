@@ -49,15 +49,6 @@
 
 
 
-#ifdef CONFIG_MEMORY_RETENTION
-    extern void *retention;
-    extern unsigned long *phyRegs; 
-
-#define DDR_PHY_REGS_TAG_SAVE 0x53415645
-#define DDR_PHY_REGS_TAG_PROM 0x50524f4d
-#endif
-
-
 #ifndef UBOOT
 /* bindings for RTE build */
 
@@ -72,10 +63,19 @@ extern ncp_uint8_t tRFC_vals_667[];
 /*
  * NCP_SM_PHY_REG_RESTORE: 
  *   if defined, enable sysmem PHY register save/restore capability
+ *   this is required to support the DDR retention feature 
  *
  *   TODO: not yet supported for external RTE 
  */
+#ifdef CONFIG_MEMORY_RETENTION
 #define NCP_SM_PHY_REG_RESTORE 
+#define DDR_PHY_REGS_TAG_SAVE 0x53415645
+#define DDR_PHY_REGS_TAG_PROM 0x50524f4d
+extern void *retention;
+extern unsigned long *phyRegs; 
+
+#endif
+
 
 /* 
  * NCP_SM_PHY_REG_DUMP: 
@@ -173,50 +173,6 @@ typedef ncp_uint32_t
     ncp_uint32_t    value);
 
 
-#ifndef UBOOT
-typedef struct {
-    unsigned long version;
-    unsigned long auto_detect;
-    unsigned long num_interfaces;
-    unsigned long num_ranks_per_interface;
-    unsigned long topology;
-    unsigned long sdram_device_density;
-    unsigned long sdram_device_width;
-    unsigned long primary_bus_width;
-    unsigned long CAS_latency;
-    unsigned long CAS_write_latency;
-    unsigned long enableECC;
-    unsigned long enable_deskew;
-    unsigned long enable_rdlvl;
-    unsigned long enable_auto_cpc;
-    unsigned long min_phy_cal_delay;
-    unsigned long min_ctrl_roundtrip_delay;
-    unsigned long single_bit_mpr;
-    unsigned long rdcal_cmp_even;
-    unsigned long rdcal_cmp_odd;
-    unsigned long phy_rdlat;
-    unsigned long added_rank_switch_delay;
-    unsigned long high_temp_dram;
-    unsigned long sdram_rtt_nom;
-    unsigned long sdram_rtt_wr;
-    unsigned long sdram_data_drv_imp;
-    unsigned long phy_adr_imp;
-    unsigned long phy_dat_imp;
-    unsigned long phy_rcv_imp;
-    unsigned long syscacheMode;
-    unsigned long syscacheDisable;
-    unsigned long half_mem;
-    unsigned long address_mirroring;
-
-    unsigned long ddrRetentionEnable;
-    unsigned long ddrRecovery;
-    unsigned long                  num_bytelanes;
-    unsigned long long           totalSize;
-} __attribute__((packed)) parameters_sysmem_t;
-
-#endif
-
-
 
 typedef parameters_sysmem_t     ncp_sm_parms_t;
 
@@ -284,6 +240,15 @@ enum {
 
 #endif
 
+#ifdef NCP_BIG_ENDIAN
+#define NCP_SM_SWAP32(n) ((n & 0xff000000) >> 24 | \
+                                    (n & 0x00ff0000) >> 8  | \
+                                    (n & 0x0000ff00) << 8  | \
+                                    (n & 0x000000ff) << 24)
+
+#else
+#define NCP_SM_SWAP32(n) (n)
+#endif
 
 #define NCP_SYSMEM_PHY_TRAIN_DELAY_LOOPS 100
 #define NCP_SYSMEM_PHY_TRAIN_DELAY_USEC  10
