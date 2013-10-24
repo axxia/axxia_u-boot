@@ -520,7 +520,18 @@ sysmem_init(void)
 	 *         2GB                 5           512MB
 	 *         1GB                 6           256MB
 	 *       512MB                 7           128MB
-	 */
+	 *
+         *         3500
+         *   system_memory_size      value
+         *        8GB                 0
+         *        4GB                 1
+         *        2GB                 2
+         *        1GB                 3
+         *        512MB               4
+         *        256MB               5
+         *        128MB               6
+         *        64MB                7
+         */
 #if defined( ACP_X1V1 )
 	switch( ( 1 << ( sysmem_size - 20 ) ) ) {
 	case 512:
@@ -556,6 +567,11 @@ sysmem_init(void)
 	value = ( 1 << ( sysmem_size - 20 ) ) / num_sc_nodes;
 
 	switch( value ) {
+#if defined (AXM_35xx)
+	case 64:
+		value = 8;
+		break;
+#endif
 	case 128:
 		value = 7;
 		break;
@@ -577,9 +593,11 @@ sysmem_init(void)
 	case 8192:
 		value = 1;
 		break;
+#if !defined(AXM_35xx)
 	case 16384:
 		value = 0;
 		break;
+#endif
 	default:
 		printf( "Error Calculating Munge Value.\n" );
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
@@ -587,6 +605,13 @@ sysmem_init(void)
 	}
 #else
 #error "Unsupported System!"
+#endif
+
+#if defined(AXM_35xx)
+        /* get appropriate value to program into munge reg for 3500
+         * based on 3500 syscache table above
+         */
+        value = value-1;
 #endif
 
 	/* if syscacheMode == 1 set the munge reg 'field_order' to 2 */
