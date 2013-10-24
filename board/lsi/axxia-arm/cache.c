@@ -24,15 +24,63 @@
 #include <asm/armv7.h>
 
 /*
-  ===============================================================================
-  ===============================================================================
+  ------------------------------------------------------------------------------
+  set_outer_cache_state
+
+  Set the mode in (0x10000 * offset) + 0x10, bits 1:0.  Verify that it
+  got set by reading (0x10000 * offset) + 0x18), bits 3:2.
+
+  The modes are as follows.
+
+  0b00 - OFF
+  0b01 - SFONLY
+  0b10 - HALF
+  0b11 - FULL
+*/
+
+int
+set_outer_cache_state(unsigned long state)
+{
+	int i;
+        unsigned long status;
+	int retries;
+	unsigned long hnf_offsets[] = {
+		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
+	};
+
+	if (0 != (state & ~0x3))
+		return -1;
+
+	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
+		writel(state, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
+	}
+
+	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
+		retries = 10000;
+
+		do {
+			status = readl(DICKENS +
+				       (0x10000 * hnf_offsets[i]) + 0x18);
+			udelay(1);
+		} while ((0 < --retries) && ((state << 2) != (status & 0xf)));
+
+		if (0 == retries)
+			return -1;
+	}
+
+	return 0;
+}
+
+/*
+  ==============================================================================
+  ==============================================================================
   Outer Cache Functions
-  ===============================================================================
-  ===============================================================================
+  ==============================================================================
+  ==============================================================================
 */
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   v7_outer_cache_enable
 */
 
@@ -42,7 +90,7 @@ v7_outer_cache_enable(void)
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   v7_outer_cache_disable
 */
 
@@ -52,7 +100,7 @@ v7_outer_cache_disable(void)
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   v7_outer_cache_flush_all
 */
 
@@ -60,57 +108,18 @@ void
 v7_outer_cache_flush_all(void)
 {
 #ifndef RUN_UNCACHED
-	unsigned long hnf_offsets[] = {
-		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
-	};
-	int i;
-        unsigned long status, id;
-	int retries;
+	if (0 != set_outer_cache_state(0x1))
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
-	puts("Flushing L3 Cache\n");
-	
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		/* set state SFONLY */
-		writel(0x1, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
-	}
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		retries = 10000;
-
-		do {
-			status = readl(DICKENS +
-				       (0x10000 * hnf_offsets[i]) + 0x18);
-			udelay(1);
-		} while ((0 < --retries) && (0x4 != (status & 0xf)));
-
-		if (0 == retries)
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-	}
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		/* set state ALL */
-		writel(0x3, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
-	}
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		retries = 10000;
-
-		do {
-			status = readl(DICKENS +
-				       (0x10000 * hnf_offsets[i]) + 0x18);
-			udelay(1);
-		} while ((0 < --retries) && (0xc != (status & 0xf)));
-
-		if (0 == retries)
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-	}
+	if (0 != set_outer_cache_state(0x3))
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 
 	return;
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   v7_outer_cache_inval_all
 */
 
@@ -120,21 +129,31 @@ v7_outer_cache_inval_all(void)
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   v7_outer_cache_flush_range
 */
 
 void
 v7_outer_cache_flush_range(u32 start, u32 end)
 {
+	/*
+	  flushRange: DCCMVAC using the VA for the cache line we want
+	  to invalidate. Set CLIDR[26:24] to 3. (Step by 64B to
+	  increment through the range)
+	*/
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   v7_outer_cache_inval_range
 */
 
 void
 v7_outer_cache_inval_range(u32 start, u32 end)
 {
+	/*
+	  invalidateRange: DCIMVAC using the VA for the cache line we
+	  want to invalidate. Set CLIDR[26:24] to 3. (Step by 64B to
+	  increment through the range)
+	*/
 }
