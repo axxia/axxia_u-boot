@@ -463,10 +463,74 @@ int pciesrio_setcontrol(unsigned long new_control)
 	phy1_ctrl = new_control & 0x60800004;
 
 
+	if (phy0_ctrl == 0x10000008) {
+		printf("SRIO0 host mode\n");
+		/* SRIO0 host id 0 2.5 Gbps */
+		/* ncpWrite 0x115.0x0.0x228 0x00000101  # power down PLLA and PLLB */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000101);
+
+		/* ncpWrite 0x115.0x0.0x200 0x10000068  # setup AXM55xx for sRIO0x2_sRIO1x2 and reset PLLA/B */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10000068);
+
+		/* ncpWrite 0x115.0x0.0x204 0x00001000 # setup speed to 2.5Gbps for both sRIO0 and sRIO1 */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x204,0x00001000);
+
+		/* ncpWrite 0x115.0x0.0x22c 0x0000000F # the rest are all PLL settings. */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c,0x0000000F );
+
+		/* ncpWrite 0x115.0x0.0x208 0x77FF77FF */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x208,0x77FF77FF );
+
+		/* ncpWrite 0x115.0x0.0x230 0x06126527 */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,0x06126527 );
+
+		/* ncpWrite 0x115.0x0.0x244 0x33333333 */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x244,0x33333333 );
+
+		/* ncpWrite 0x115.0x0.0x228 0x00000100  # power up PLLA */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000100 );
+
+		/* ncpWrite 0x115.0x0.0x200 0x10000008 */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,0x10000008 );
+	return 0;
+
+	} else if (phy0_ctrl == 0x10200008) {
+		printf("SRIO0 agent mode\n");
+		/* SRIO0 agent 2.5 Gbps */
+
+		/* ncpWrite 0x115.0x0.0x228 0x00000101  # power down PLLA and PLLB */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000101);
+
+		/* ncpWrite 0x115.0x0.0x200 0x10000068  # setup AXM55xx for sRIO0x2_sRIO1x2 and reset PLLA/B */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10200068);
+
+		/* ncpWrite 0x115.0x0.0x204 0x00001000 # setup speed to 2.5Gbps for both sRIO0 and sRIO1 */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x204,0x00001000);
+
+		/* ncpWrite 0x115.0x0.0x22c 0x0000000F # the rest are all PLL settings. */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c,0x0000000F );
+
+		/* ncpWrite 0x115.0x0.0x208 0x77FF77FF */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x208,0x77FF77FF );
+
+		/* ncpWrite 0x115.0x0.0x230 0x06126527 */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,0x06126527 );
+
+		/* ncpWrite 0x115.0x0.0x244 0x33333333 */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x244,0x33333333 );
+
+		/* ncpWrite 0x115.0x0.0x228 0x00000100  # power up PLLA */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000100 );
+
+		/* ncpWrite 0x115.0x0.0x200 0x10000008 */
+        ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,0x10200008 );
+		return 0;
+	}
+
 
         /* soft reset the phy, pipe, link layer */
         ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x80);
-        udelay(100000);
+        udelay(100000);	return 0;
 
 	/* PCIE0 */
         /* assert reset to the Serdes */
