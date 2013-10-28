@@ -530,7 +530,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 
         /* soft reset the phy, pipe, link layer */
         ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x80);
-        udelay(100000);	return 0;
+        udelay(100000);
 
 	/* PCIE0 */
         /* assert reset to the Serdes */
