@@ -78,5 +78,24 @@ int ehci_hcd_init(int index, struct ehci_hccr **hccr, struct ehci_hcor **hcor)
  */
 int ehci_hcd_stop(int index)
 {
+	int cmd, status;
+	int count = 10;
+
+	cmd = ehci_readl(CONFIG_USB_ADDR+0x140);
+	cmd &= ~CMD_RUN;
+	ehci_writel(CONFIG_USB_ADDR+0x140, cmd);
+
+	do {
+		udelay(100);
+		status = ehci_readl(CONFIG_USB_ADDR+0x144);
+		count--;
+	} while ((count > 0) && ((status & STS_HALT)!=STS_HALT));
+
+	if ((status & STS_HALT) == STS_HALT) {
+		printf("USB HostController successfully stopped\n");
+	} else {
+		printf("USB HostController couldn't be stopped\n");
+	}
+
 	return 0;
 }
