@@ -40,6 +40,7 @@
 #ifndef __ASSEMBLY__
 void acp_failure(const char *, const char *, const int);
 int axxia_initialize(void);
+void display_va_attr(void *);
 #endif	/* __ASSEMBLY__ */
 
 /*
