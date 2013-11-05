@@ -40,7 +40,7 @@
   0b00 Non-cacheable.
 */
 
-struct par32_register {
+struct par32_reg {
 	unsigned long    f  :1;
 	unsigned long   ss  :1;
 	unsigned long outer :2;
@@ -54,9 +54,16 @@ struct par32_register {
 };
 
 static void
-short_descriptor(void *virtual, struct par32_register *par)
+short_descriptor(void *virtual, struct par32_reg *par)
 {
 	unsigned long long pa;
+
+	if (1 == par->f) {
+		/* Fault! */
+		printf("Fault: 0x%02lx\n", (*((unsigned long *)par) & 0x7e) >> 1);
+
+		return;
+	}
 
 	if (0 != par->ss) {
 		/* Supersection. */
@@ -238,7 +245,7 @@ short_descriptor(void *virtual, struct par32_register *par)
   11    Inner Sharable
 */
 
-struct par64_register {
+struct par64_reg {
 	unsigned long long    f :1;
 	unsigned long long      :6;
 	unsigned long long   sh :2;
@@ -261,17 +268,27 @@ print_id_warning(int attr)
 static void
 print_rw(int rw)
 {
-	printf("\tRead: %s Write: %s\n",
-	       (0 == (rw & 2)) ? "Don't Allocate" : "Allocate",
-	       (0 == (rw & 1)) ? "Don't Allocate" : "Allocate");
+	printf("\t%s %s\n",
+	       (0 == (rw & 2)) ?
+	       "No Read Allocate" : "Read Allocate",
+	       (0 == (rw & 1)) ?
+	       "No Write Allocate" : "Write Allocate");
 
 	return;
 }
 
 static void
-long_descriptor(void *virtual, struct par64_register *par)
+long_descriptor(void *virtual, struct par64_reg *par)
 {
 	unsigned long long pa;
+
+	if (1 == par->f) {
+		/* Fault! */
+		printf("Fault: 0x%02llx\n",
+		       (*((unsigned long long *)par) & 0x7e) >> 1);
+
+		return;
+	}
 
 	pa = ((unsigned long long)(par->pa) << 12) |
 		(unsigned long long)((unsigned long)virtual & 0xfff);
@@ -457,9 +474,9 @@ display_va_attr(void *virtual)
 	physical = ((unsigned long long)pah << 32) | (unsigned long long)pal;
 	
 	if (0 == (pal & (1 << 11)))
-		short_descriptor(virtual, (struct par32_register *)&pal);
+		short_descriptor(virtual, (struct par32_reg *)&pal);
 	else
-		long_descriptor(virtual, (struct par64_register *)&physical);
+		long_descriptor(virtual, (struct par64_reg *)&physical);
 
 	return;
 }
