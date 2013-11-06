@@ -48,18 +48,6 @@
 #endif
 
 
-
-#ifndef UBOOT
-/* bindings for RTE build */
-
-extern ncp_uint8_t tRFC_vals_800[];
-extern ncp_uint8_t tRFC_vals_667[];
-
-/*
- * sysmem compile time options 
- */
-
-
 /*
  * NCP_SM_PHY_REG_RESTORE: 
  *   if defined, enable sysmem PHY register save/restore capability
@@ -76,6 +64,15 @@ extern unsigned long *phyRegs;
 
 #endif
 
+#ifndef UBOOT
+/* bindings for RTE build */
+
+extern ncp_uint8_t tRFC_vals_800[];
+extern ncp_uint8_t tRFC_vals_667[];
+
+/*
+ * sysmem compile time options 
+ */
 
 /* 
  * NCP_SM_PHY_REG_DUMP: 

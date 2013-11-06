@@ -565,7 +565,7 @@ NCP_RETURN_LABEL
 #endif /* SM_REG_DUMP */
      
 
-#ifdef SM_PHY_REG_RESTORE
+#ifdef NCP_SM_PHY_REG_RESTORE
 /*
  * ncp_sm_lsiphy_reg_save/restore 
  *
