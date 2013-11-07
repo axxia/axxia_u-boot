@@ -43,6 +43,8 @@
 */
 
 static void *parameters __attribute__ ((section ("data"))) = NULL;
+static int copy_in_use __attribute__ ((section ("data"))) = 0;
+static int parameters_read __attribute__ ((section ("data"))) = 0;
 
 #if defined(CONFIG_AXXIA_PPC)
 /*
@@ -59,7 +61,7 @@ static void *parameters __attribute__ ((section ("data"))) = NULL;
 #define PARAMETERS_VERSION 4
 #elif defined(CONFIG_AXXIA_ARM)
 /*
-  For ARM (55xx), use version 6 of the parameters.
+  For ARM (55xx), use version 7 of the parameters.
 */
 #ifdef CONFIG_SPL_BUILD
 #define PARAMETERS_HEADER_ADDRESS \
@@ -89,11 +91,51 @@ void *retention __attribute__ ((section ("data"))) = NULL;
 #endif
 
 /*
-  ===============================================================================
-  ===============================================================================
+  ------------------------------------------------------------------------------
+  verify_parameters
+*/
+
+static int
+verify_parameters(void *parameters)
+{
+	parameters_header_t *lheader;
+
+	lheader = parameters + PARAMETERS_SIZE - sizeof(parameters_header_t);
+
+	/* Check for the magic number. */
+
+	if (PARAMETERS_MAGIC != ntohl(lheader->magic)) {
+		printf("Parameter table has wrong magic number!\n");
+		return -1;
+	}
+
+	/* Verify the checksum. */
+
+	if (crc32(0, parameters, (ntohl(lheader->size) - 12)) !=
+	    ntohl(lheader->checksum) ) {
+		printf("Parameter table is corrupt. 0x%08x!=0x%08x\n",
+		       ntohl(lheader->checksum),
+		       crc32(0, parameters, (ntohl(lheader->size) - 12)));
+		return -1;
+	}
+
+	/* Check the version. */
+
+	if (PARAMETERS_VERSION != ntohl(lheader->version)) {
+		printf("Parameter table should be version %d, not %d!\n",
+		       PARAMETERS_VERSION, lheader->version);
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  ==============================================================================
+  ==============================================================================
   Public
-  ===============================================================================
-  ===============================================================================
+  ==============================================================================
+  ==============================================================================
 */
 
 /*
@@ -135,21 +177,28 @@ read_parameters(void)
 		if (!flash)
 			return -1;
 
-		spi_flash_read(flash, PARAMETERS_OFFSET_IN_FLASH,
+		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
 			       PARAMETERS_SIZE, parameters);
 
-		if (PARAMETERS_MAGIC != ntohl(header->magic))
-			/* No parameters available, fail. */
-			return -1;
+		if (0 != verify_parameters(parameters)) {
+			printf("Primary Parameters are Corrupt, using Backup!\n");
+
+			/* Try the redunant copy. */
+			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
+				       PARAMETERS_SIZE, parameters);
+
+			if (0 != verify_parameters(parameters)) {
+				printf("Backup Parameters are Corrupt!\n");
+				return -1;
+			}
+
+			copy_in_use = 1;
+		} else {
+			copy_in_use = 0;
+		}
 	}
 
-	if (crc32(0, parameters, (ntohl(header->size) - 12)) !=
-	    ntohl(header->checksum) ) {
-		printf("Parameter table is corrupt. 0x%08x!=0x%08x\n",
-		       ntohl(header->checksum),
-		       crc32(0, parameters, (ntohl(header->size) - 12)));
-		return -1;
-	}
+	parameters_read = 1;
 
 #ifdef CONFIG_AXXIA_ARM
 	buffer = parameters;
@@ -197,12 +246,6 @@ read_parameters(void)
 	printf("version=%lu flags=0x%lx\n", global->version, global->flags);
 #endif
 
-	if (PARAMETERS_VERSION != header->version) {
-		printf("Parameter Table Must Be Version %d!\n",
-		       PARAMETERS_VERSION);
-		return -1;
-	}
-
 	printf("Parameter Table Version %lu\n", global->version);
 
 	return 0;
@@ -218,17 +261,17 @@ read_parameters(void)
 int
 write_parameters(void)
 {
-#ifndef CONFIG_AXXIA_ARM
-
-	return 0;
-
-#else
-
+#ifdef CONFIG_AXXIA_ARM
 	struct spi_flash *flash = NULL;
 	void *compare = NULL;
 	unsigned long *buffer;
 	int i;
 	int rc = -1;
+
+	if (0 == parameters_read) {
+		printf("Parameters haven't been read!\n");
+		return -1;
+	}
 
 	compare = malloc(PARAMETERS_SIZE);
 
@@ -247,8 +290,10 @@ write_parameters(void)
 	}
 
 	rc = spi_flash_read(flash,
-			    CONFIG_PARAMETER_OFFSET, PARAMETERS_SIZE,
-			    compare);
+			    (0 == copy_in_use) ?
+			    CONFIG_PARAMETER_OFFSET :
+			    CONFIG_PARAMETER_OFFSET_REDUND,
+			    PARAMETERS_SIZE, compare);
 
 	if (rc) {
 		printf("%s:%d - Error reading Serial Flash!\n",
@@ -325,14 +370,46 @@ write_parameters(void)
 	debug("%s:%d - header->checksum=0x%x\n",
 	      __FILE__, __LINE__, header->checksum);
 
+	/* Write to the copy NOT in use first. */
+
 	debug("Erasing...\n");
-	rc = spi_flash_erase(flash, CONFIG_PARAMETER_OFFSET, flash->sector_size);
+	rc = spi_flash_erase(flash,
+			     (0 == copy_in_use) ?
+			     CONFIG_PARAMETER_OFFSET_REDUND :
+			     CONFIG_PARAMETER_OFFSET,
+			     flash->sector_size);
 
 	if (0 == rc) {
 		debug("Writing...\n");
 		rc = spi_flash_write(flash,
-				     CONFIG_PARAMETER_OFFSET, PARAMETERS_SIZE,
-				     parameters);
+				     (0 == copy_in_use) ?
+				     CONFIG_PARAMETER_OFFSET_REDUND :
+				     CONFIG_PARAMETER_OFFSET,
+				     PARAMETERS_SIZE, parameters);
+	} else {
+		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
+		return -1;
+	}
+
+	/* Once that's done, update the other copy. */
+
+	debug("Erasing...\n");
+	rc = spi_flash_erase(flash,
+			     (0 == copy_in_use) ?
+			     CONFIG_PARAMETER_OFFSET :
+			     CONFIG_PARAMETER_OFFSET_REDUND,
+			     flash->sector_size);
+
+	if (0 == rc) {
+		debug("Writing...\n");
+		rc = spi_flash_write(flash,
+				     (0 == copy_in_use) ?
+				     CONFIG_PARAMETER_OFFSET : 
+				     CONFIG_PARAMETER_OFFSET_REDUND,
+				     PARAMETERS_SIZE, parameters);
+	} else {
+		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
+		return -1;
 	}
 
 #ifdef CONFIG_AXXIA_ARM
@@ -355,7 +432,8 @@ release_and_return:
 	debug("%s:%d - rc=%d\n", __FILE__, __LINE__, rc);
 
 	return rc;
-
+#else
+	return 0;
 #endif
 }
 
