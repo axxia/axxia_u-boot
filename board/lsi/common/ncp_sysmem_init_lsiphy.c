@@ -540,6 +540,8 @@ ncp_sm_lsiphy_reg_dump(
         case 3:
             regionId = NCP_REGION_ID(0x9, 0xa);
             break;
+        default:
+            NCP_CALL(NCP_ST_SYSMEM_INVALID_ID);
     }
 
 
@@ -3409,14 +3411,12 @@ ncp_sm_sm_coarse_write_leveling(
      * re-run the test with walking zero
      * It ought to pass. 
      */
+    memset(&bad_bl, 0, sizeof(bad_bl));
     if (busAdaptor != NCP_DEV_BUS_FBRS) 
     {
-        memset(&bad_bl, 0, sizeof(bad_bl));
         NCP_CALL(bl_test_fn(dev, node, addr, 0, 
                 &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls));
     }
-
-
 
     /* if we still have bad bytelanes then leveling has failed */
     if ((bad_bl[0] | bad_bl[1] | bad_bl[2]) != 0 ) {

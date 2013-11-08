@@ -67,6 +67,7 @@ ncp_sm_denali_2041_init(
     ncp_uint32_t ctl_32 = 0, ctl_33 = 0, ctl_34 = 0;
     ncp_region_id_t ctlReg = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
     ncp_uint32_t rttWr;
+    ncp_uint32_t *p32;
 
 #ifdef SM_PLL_533_MHZ
     extern ncp_uint8_t tRFC_vals_533[5] ;
@@ -687,6 +688,16 @@ ncp_sm_denali_2041_init(
             ncr_write32(ctlReg,  NCP_DENALI_CTL_337, value);
         }
 
+        /*
+         * if any RTTnom value is non-zero then enable ODT 
+         */
+        p32 = (ncp_uint32_t *) parms->per_sysmem[smId].sdram_rtt_nom;
+        if (p32 != 0) 
+        {
+            value = 0;
+            SV(ncp_denali_DENALI_CTL_340_t, odt_en, 1);
+            ncr_write32(ctlReg,  NCP_DENALI_CTL_340, value);
+        }
 
         /* DENALI_CTL_420 */
 #if 0  /* NOT YET */

@@ -233,6 +233,7 @@ enum {
         } \
     } while (0);
 
+#define ncp_status_print(a, b) 
 
 
 #endif
