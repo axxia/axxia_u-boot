@@ -90,6 +90,8 @@
 
 #define SSP_DEFAULT_CLOCK  4000000
 
+#define CONFIG_AXXIA_PCI
+
 #include <configs/axxia-arm.h>
 
 #endif	/* __CONFIGS_AXXIA_55XX_H */

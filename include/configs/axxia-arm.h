@@ -81,7 +81,6 @@ int is_asic( void );
 #define CONFIG_AXXIA_ARM	/* in a TI OMAP core */
 #define CONFIG_AXXIA
 #define CONFIG_ACP
-#define CONFIG_AXXIA_PCI
 #define CONFIG_AXXIA_USB
 
 #define CONFIG_LSI_NET 1
@@ -322,7 +321,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_PCI_PNP 1                          /* do pci plug-and-play*/
 #define CONFIG_CMD_PCI 1
 #define CONFIG_PCI_SCAN_SHOW 1
-#endif
 
 #define ACP_PEI0 1
 #define ACP_PEI1 1
@@ -344,6 +342,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 #define CONFIG_SYS_PCIE0_CFGADDR PCIE0_CONFIG
 #define CONFIG_SYS_PCIE1_CFGADDR PCIE1_CONFIG
+#endif
 
 /*
   ==============================================================================
