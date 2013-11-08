@@ -406,6 +406,7 @@ reset_cpu_fabric(void)
 static void
 check_memory_ranges(void)
 {
+#ifndef CONFIG_AXXIA_EMU
 	unsigned long *ranges = &global->memory_check_ranges;
 	int i;
 
@@ -422,6 +423,7 @@ check_memory_ranges(void)
 			axxia_sysmem_bist(offset, length);
 		}
 	}
+#endif
 }
 
 
