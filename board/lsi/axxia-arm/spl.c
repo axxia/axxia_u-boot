@@ -403,10 +403,11 @@ reset_cpu_fabric(void)
   check_memory_ranges
 */
 
+#ifndef CONFIG_AXXIA_EMU
+
 static void
 check_memory_ranges(void)
 {
-#ifndef CONFIG_AXXIA_EMU
 	unsigned long *ranges = &global->memory_check_ranges;
 	int i;
 
@@ -423,9 +424,9 @@ check_memory_ranges(void)
 			axxia_sysmem_bist(offset, length);
 		}
 	}
-#endif
 }
 
+#endif	/* CONFIG_AXXIA_EMU */
 
 u32 spl_boot_device(void)
 {
@@ -494,6 +495,7 @@ spl_board_init(void)
 
 #else
 
+#ifndef CONFIG_AXXIA_EMU
 	if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SYSMEM_BIST)) {
 		printf("Testing Memory From 0, 0x%llx bytes\n",
 		       sysmem->totalSize);
@@ -501,6 +503,7 @@ spl_board_init(void)
 	} else if (0 != (global->flags & PARAMETERS_GLOBAL_DDR_RANGE_TEST)) {
 		check_memory_ranges();
 	}
+#endif
 
 	printf("System initialized\n");
 
