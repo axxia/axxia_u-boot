@@ -32,6 +32,7 @@
 unsigned long long
 sysmem_size(void)
 {
+#if 0
 	unsigned long long sdram_capacity_bytes;
 	unsigned long sdram_device_width_bits;
 	unsigned long primary_bus_width_bits;
@@ -54,4 +55,7 @@ sysmem_size(void)
 	sysmem->totalSize = sdram_capacity_bytes;
 
 	return sysmem->totalSize;
+#else
+	return 0x100000000ULL;
+#endif
 }
