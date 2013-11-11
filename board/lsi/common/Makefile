@@ -38,7 +38,11 @@ else
 ################################################################################
 ## SPL Build
 
-COBJS += sysmem_reset.o sysmem_bist.o
+COBJS += sysmem_reset.o
+
+ifndef CONFIG_AXXIA_EMU
+COBJS += sysmem_bist.o
+endif
 
 endif
 

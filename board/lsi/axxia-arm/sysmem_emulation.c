@@ -381,11 +381,11 @@ initialize_elm(void)
 	 * to disable initializing the ELM munge registers 
 	 */
 
-	if (0 == sysmem->syscacheDisable) {
+	/*if (0 == sysmem->syscach) {*/
 		/* set ELM munge regsiter */
 		writel(0x0380ffff, (ELM0 + 0x1c));
 		writel(0x0380ffff, (ELM1 + 0x1c));
-	}
+		/*}*/
 
 
 	if (sysmem->enableECC) {
