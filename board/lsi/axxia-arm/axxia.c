@@ -275,21 +275,19 @@ set_clusters(void)
 		return -1;
 	}
 
-	puts("Setting up Coherencly for Clusters: 0");
+	puts("Setting up Coherency for Clusters: 0");
 
-	if (0 != (clusters & 0x2)) {
+	if (0 != (clusters & 0x2))
 		puts(",1");
 
+	puts("\n");
+
+	if (0 != (clusters & 0x2)) {
 		if (0 != set_cluster_coherency(1, 1))
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-	} else {
-		if (0 != set_cluster_coherency(1, 0))
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 	}
-
-	puts("\n");
 #else
-	puts("Setting up Coherencly for Clusters: 0");
+	puts("Setting up Coherency for Clusters: 0");
 
 	if (0 != (clusters & 0x2))
 		puts(",1");
@@ -472,7 +470,7 @@ ft_board_setup(void *blob, bd_t *bd)
 		if (0 != rc)
 			printf("%s:%d - Couldn't set PLLs!\n",
 			       __FILE__, __LINE__);
-	}				 
+	}
 
 	/*
 	  Fix up the spin table addresses.
