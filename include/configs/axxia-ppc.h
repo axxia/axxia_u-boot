@@ -485,9 +485,12 @@ int sbb_desecure_range(int, void *, size_t);
   ======================================================================
 */
 
-#if defined(ACP_25xx)
+#if defined(ACP_25xx) || defined(AXM_35xx)
 #define PCIE0_CONFIG (IO+0x180000)
 #define PCIE1_CONFIG (IO+0x188000)
+#if defined(AXM_35xx)
+#define PCIE2_CONFIG (IO+0x190000)
+#endif
 #else
 #if !defined(ACP_X1V1) && !defined(ACP_ISS)
 #define PCIE0_CONFIG (IO+0xc0000)

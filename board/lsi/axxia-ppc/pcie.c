@@ -69,7 +69,7 @@ static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
 		/* v1 only supports fn=0 */
 		if (fn)
 			return NULL;
-#elif defined(ACP_X1V2) || defined(ACP_X2V1) || defined(AXM_35xx)
+#elif defined(ACP_X1V2) || defined(ACP_X2V1)
 		/* v2 only supports fn0-3 and bus0-63 */
 		if ((fn > 3) || (PCI_BUS(devfn) > 63)) 
 			return NULL;
@@ -91,7 +91,7 @@ static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
 		(cfg_type << 5);
 
 		/* the function number moved for X2 */
-#if defined(ACP_X1V1) || defined(ACP_X1V2) || defined(AXM_35xx)
+#if defined(ACP_X1V1) || defined(ACP_X1V2)
 		mpage |= 0x11;	/* enable MPAGE for configuration access */
 		mpage |= (fn << 17);
 #else
@@ -441,17 +441,37 @@ int pci_476_init (struct pci_controller *hose, int port)
 	 * this bit didn't exist in X1V1, and means something
 	 * else for X2...
 	 */
-#if defined (ACP_X1V2) || defined(AXM_35xx)
+#if defined (ACP_X1V2)
 	/* set up AXI_INTERFACE_RDY */
 	pci_config = in_le32(mbase + 0x1000);
 	out_le32(mbase + 0x1000, pci_config|0x40000);
 	pci_config = in_le32(mbase + 0x1000);
 #endif 
-	
+
+#ifndef AXM_35xx	
 	/* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
 	 * 64 bit address space */
 	out_le32(mbase + 0x10, 0x1000000c);
 	out_le32(mbase + 0x14, 0x0); 
+#else
+       /* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
+         * 64 bit address space */
+        /* configures the RC Memory Space Configuration Register */
+	out_le32(mbase + 0x11f4, 0x40000000);
+
+        /* Verify BAR0 size */
+        {
+                u32 bar0_size;
+                /* write all 1s to BAR0 register */
+		out_le32(mbase + 0x10, ~0);
+		bar0_size = in_le32(mbase + 0x10);
+                if ((bar0_size & ~0xf) != 0x40000000)
+                        printf("PCIE%d: Config BAR0 failed\n", port);
+        }
+
+        /* set the BASE0 address to start of PCIe base 0x0 */
+	out_le32(mbase + 0x10, 0x0);
+#endif
 
 	out_8(hose->cfg_data + PCI_PRIMARY_BUS, hose->first_busno);
 	out_8(hose->cfg_data + PCI_SECONDARY_BUS, hose->first_busno + 1);
@@ -467,7 +487,7 @@ int pci_476_init (struct pci_controller *hose, int port)
 	num_pages = ( (size - 1) >> 27) + 1;
 	for (i = 0; i < num_pages; i++) {
 		mpage_lower = (pcial & 0xf8000000); 
-#if defined(ACP_X1V1) || defined(ACP_X1V2) || defined(AXM_35xx)
+#if defined(ACP_X1V1) || defined(ACP_X1V2)
 		mpage_lower |= 1;
 #endif
 		out_le32( mbase + ACPX1_PCIE_MPAGE_UPPER(i), pciah);
@@ -542,13 +562,23 @@ void pci_init_board(void)
 			"memory" );
 	busno = pci_476_init (&ppc476_hose[0], 0);
 
+	word0 = CONFIG_PCIE1_PHY_START | 0x9f0;
+	word2 = 0x00030507;
+
+#ifdef AXM_35xx
+
+	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
+	 * and MPAGE7 1 MB config space
+	 * 0x0020_8000_0000 to 0x0020_BFFF_FFFF */
+
+	word1 = 0x80000020;
+#else
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
 	 * and MPAGE7 1 MB config space
 	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
 
-	word0 = CONFIG_PCIE1_PHY_START | 0x9f0;
 	word1 = 0xc0000020;
-	word2 = 0x00030507;
+#endif
 
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \ 
 			"tlbwe %2,%0,1\n"               \ 
@@ -559,10 +589,14 @@ void pci_init_board(void)
 			"r" (word1),
 			"r" (word2) :
 			"memory" );
-
 	word0 = CONFIG_SYS_PCIE1_MEMBASE | 0x8f0;
-	word1 = 0xf8000020;
 	word2 = 0x00030507;
+
+#ifdef AXM_35xx
+	word1 = 0xb8000020;
+#else
+	word1 = 0xf8000020;
+#endif
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
 			"tlbwe %2,%0,1\n"               \
 			"tlbwe %3,%0,2\n"               \
@@ -572,15 +606,26 @@ void pci_init_board(void)
 			"r" (word1),
 			"r" (word2) :
 			"memory" );
+#ifndef ACP_EMU
 	busno = pci_476_init (&ppc476_hose[1], 1);
+#endif
 
+	word0 = CONFIG_PCIE2_PHY_START | 0x9f0;
+	word2 = 0x00030507;
+
+#ifdef AXM_35xx
+	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 2
+	 * and MPAGE7 1 MB config space
+	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
+
+	word1 = 0xc0000020;
+#else
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 2
 	 * and MPAGE7 1 MB config space
 	 * 0x0021_0000_0000 to 0x0021_3FFF_FFFF */
 
-	word0 = CONFIG_PCIE2_PHY_START | 0x9f0;
 	word1 = 0x00000021;
-	word2 = 0x00030507;
+#endif
 
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \ 
 			"tlbwe %2,%0,1\n"               \ 
@@ -593,8 +638,13 @@ void pci_init_board(void)
 			"memory" );
 
 	word0 = CONFIG_SYS_PCIE2_MEMBASE | 0x8f0;
-	word1 = 0x38000021;
 	word2 = 0x00030507;
+
+#ifdef AXM_35xx
+	word1 = 0xf8000020;
+#else
+	word1 = 0x38000021;
+#endif
 	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
 			"tlbwe %2,%0,1\n"               \
 			"tlbwe %3,%0,2\n"               \
@@ -604,7 +654,9 @@ void pci_init_board(void)
 			"r" (word1),
 			"r" (word2) :
 			"memory" );
+#ifndef ACP_EMU
 	busno = pci_476_init (&ppc476_hose[2], 2);
+#endif
 
 #elif defined(ACP_PEI0) && defined(ACP_PEI1)
 
@@ -646,7 +698,7 @@ void pci_init_board(void)
 	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
 
 	word0 = CONFIG_PCIE1_PHY_START | 0x9f0;
-#if defined (ACP_25xx)
+#if defined (ACP_25xx) || defined (AXM_35xx)
 	word1 = 0x80000020;
 #else
 	word1 = 0xc0000020;
@@ -664,7 +716,7 @@ void pci_init_board(void)
 			"memory" );
 
 	word0 = CONFIG_SYS_PCIE1_MEMBASE | 0x8f0;
-#if defined (ACP_25xx)
+#if defined (ACP_25xx) || defined (AXM_35xx)
 	word1 = 0xb8000020;
 #else
 	word1 = 0xf8000020;

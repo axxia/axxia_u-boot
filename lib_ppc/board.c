@@ -1880,6 +1880,10 @@ acp_init_r( void )
 	}
 #endif
 
+#if defined (CONFIG_ACP3) && defined(AXM_35xx) && defined(ACP_EMU)
+	pci_init_board();
+#endif
+
 #if (defined(CONFIG_ACP2) || defined(CONFIG_ACP3) && !defined(AXM_35xx))
 	/*
 	  Only set up PCI when in internal boot mode, in control of
