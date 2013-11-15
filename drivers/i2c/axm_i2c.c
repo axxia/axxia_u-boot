@@ -105,11 +105,11 @@ i2c_check_status(unsigned int status, unsigned int *acc_status)
 		debug("i2c: transfer ABORTED (status %#x/%#x)\n", status, *acc_status);
 		return -1;
 	}
-	if (status & MST_STATUS_SS) {
-		*acc_status |= MST_STATUS_SS;
-	}
 	if (status & MST_STATUS_SNS) {
 		*acc_status |= MST_STATUS_SNS;
+	}
+	if (status & MST_STATUS_SCC) {
+		*acc_status |= MST_STATUS_SCC;
 	}
 	return 0;
 }
@@ -127,24 +127,23 @@ i2c_addr_to_buf(uint addr, int alen, uchar *abuf)
 }
 
 /*
- * i2c_write_bytes - Perform single I2C write with an optional stop condition at the
- * end.
+ * i2c_write_bytes - Perform single I2C write.
  *
- * <START> <chip_addr R/nW=0> <addr[0]> ... <addr[len-1]> <data[0]> <data[1]> ... <data[len-1]> [<STOP>]
+ * <START> <chip_addr R/nW=0> <addr[0]> ... <addr[len-1]> <data[0]> <data[1]> ... <data[len-1]>
  */
 int
 i2c_write_bytes(unsigned long i2c_addr, uchar chip,
 		const uchar *addr, int alen,
-		const uchar *data, int dlen, int stop)
+		const uchar *data, int dlen)
 {
 	int result = 0;
 	int len = alen + dlen;
 	unsigned int status;
 	unsigned int acc_status = 0; /* Accumulated status bits to determine when transfer is complete */
-	unsigned int done_bits = stop ? MST_STATUS_SS : MST_STATUS_SNS;
+	unsigned int done_bits = MST_STATUS_SNS;
 
-	debug("_i2c_write: chip=%#x, addr=[%02x %02x] alen=%d buffer=[%02x %02x %02x %02x], len=%d, stop=%d\n",
-	      chip, addr[0], addr[1], alen, data[0], data[1], data[2], data[3], len, stop);
+	debug("_i2c_write: chip=%#x, addr=[%02x %02x] alen=%d buffer=[%02x %02x %02x %02x], len=%d\n",
+	      chip, addr[0], addr[1], alen, data[0], data[1], data[2], data[3], len);
 
 	/* TX # bytes */
 	writel(len, i2c_addr + AI2C_REG_I2C_X7_MST_TX_XFER);
@@ -153,8 +152,8 @@ i2c_write_bytes(unsigned long i2c_addr, uchar chip,
 	/* Chip address for write */
 	writel(CHIP_WRITE(chip), i2c_addr + AI2C_REG_I2C_X7_MST_ADDR_1);
 
-	/* Start (automatic mode with stop, manual mode without stop) */
-	writel(stop ? 0x9 : 0x8, i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND);
+	/* Start manual mode without stop */
+	writel(0x8, i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND);
 
 	while (acc_status != done_bits) {
 		status = readl(i2c_addr + AI2C_REG_I2C_X7_MST_INT_STATUS);
@@ -193,18 +192,17 @@ i2c_write_bytes(unsigned long i2c_addr, uchar chip,
 }
 
 /*
- * i2c_read_bytes - Performs a single I2C read on the specified chip followed
- * by an optional stop condition.
+ * i2c_read_bytes - Performs a single I2C read.
  *
- * <START> <chip_addr R/nW=1> <buffer[0]> <buffer[1]> ... <buffer[len-1]> [<STOP>]
+ * <START> <chip_addr R/nW=1> <buffer[0]> <buffer[1]> ... <buffer[len-1]>
  */
 int
-i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len, int stop)
+i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len)
 {
 	int result = 0;
 	unsigned int status;
 	unsigned int acc_status = 0; /* Accumulated status bits to determine when transfer is complete */
-	unsigned int done_bits = stop ? MST_STATUS_SS : MST_STATUS_SNS;
+	unsigned int done_bits = MST_STATUS_SNS;
 
 	/* Read 'len' bytes */
 	writel(len, i2c_addr + AI2C_REG_I2C_X7_MST_RX_XFER);
@@ -213,8 +211,8 @@ i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len, int s
 	/* Chip address for read */
 	writel(CHIP_READ(chip), i2c_addr + AI2C_REG_I2C_X7_MST_ADDR_1);
 
-	/* Start (automatic mode with stop, manual mode without stop) */
-	writel(stop ? 0x9 : 0x8, i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND);
+	/* Start manual mode without stop */
+	writel(0x8, i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND);
 
 	while (acc_status != done_bits) {
 		status = readl(i2c_addr + AI2C_REG_I2C_X7_MST_INT_STATUS);
@@ -249,6 +247,28 @@ i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len, int s
 
 
 /*
+ * i2c_stop - Generate STOP on the I2C bus to terminate a transaction.
+ */
+int
+i2c_stop(unsigned long i2c_addr)
+{
+	int rc;
+	unsigned int status;
+	unsigned int acc_status = 0;
+	unsigned int done_bits = MST_STATUS_SCC;
+
+	writel(0xb, i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND);
+
+	while (acc_status != done_bits) {
+		status = readl(i2c_addr + AI2C_REG_I2C_X7_MST_INT_STATUS);
+		if ((rc = i2c_check_status(status, &acc_status)) < 0)
+			break;
+	}
+
+	return rc;
+}
+
+/*
   ==============================================================================
   ==============================================================================
   U-Boot Interface
@@ -264,6 +284,7 @@ int
 i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 {
 	unsigned long i2c_addr = i2c_base_addr();
+	int rc;
 
 	if (!i2c_initialized())
 		return -1;
@@ -284,14 +305,17 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 	if (alen > 0) {
 		uchar abuf[4];
 		i2c_addr_to_buf(addr, alen, abuf);
-		if (i2c_write_bytes(i2c_addr, chip, NULL, 0, abuf, alen, 0) < 0)
+		if (i2c_write_bytes(i2c_addr, chip, NULL, 0, abuf, alen) < 0)
 			return -1;
 	}
 
 	if (len == 0)
 		return 0;
 
-	return i2c_read_bytes(i2c_addr, chip, buffer, len, 1);
+	rc = i2c_read_bytes(i2c_addr, chip, buffer, len);
+	i2c_stop(i2c_addr);
+
+	return rc;
 }
 
 /*
@@ -319,10 +343,12 @@ i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 	if (alen > 0) {
 		uchar abuf[4];
 		i2c_addr_to_buf(addr, alen, abuf);
-		rc =  i2c_write_bytes(i2c_addr, chip, abuf, alen, buffer, len, 1);
+		rc =  i2c_write_bytes(i2c_addr, chip, abuf, alen, buffer, len);
 	} else {
-		rc = i2c_write_bytes(i2c_addr, chip, NULL, 0, buffer, len, 1);
+		rc = i2c_write_bytes(i2c_addr, chip, NULL, 0, buffer, len);
 	}
+
+	i2c_stop(i2c_addr);
 
 	return rc;
 }
@@ -334,12 +360,17 @@ int
 i2c_probe(uchar chip)
 {
 	unsigned long i2c_addr = i2c_base_addr();
+	int rc;
 	uchar dummy;
+
 
 	if (!i2c_initialized())
 		return -1;
 
-	return i2c_read_bytes(i2c_addr, chip, &dummy, 1, 1);
+	rc = i2c_read_bytes(i2c_addr, chip, &dummy, 1);
+	i2c_stop(i2c_addr);
+
+	return rc;
 }
 
 /*
