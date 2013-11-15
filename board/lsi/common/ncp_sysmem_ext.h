@@ -169,8 +169,12 @@ typedef enum {
     NCP_SM_MR_OP_DONE
 } ncp_sm_poll_event_t;
 
-
+#ifdef _MSC_VER
+#pragma pack(1)
 typedef struct {
+#else
+typedef struct __attribute__((packed)) {
+#endif
     unsigned char sdram_rtt_nom[4];
     unsigned char sdram_rtt_wr[4];
     unsigned char sdram_data_drv_imp[4];
@@ -181,7 +185,7 @@ typedef struct {
     unsigned long phy_rdlvl_cmp_even;
     unsigned long phy_rdlvl_cmp_odd;
     unsigned long phy_write_align_finetune;
-} __attribute__((packed)) ncp_per_sysmem_parms_t;
+} ncp_per_sysmem_parms_t;
 
 
 
