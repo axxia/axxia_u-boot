@@ -1,24 +1,24 @@
 /*
- *  Copyright (C) 2013 LSI Corporation
- *
- * See file CREDITS for list of people who contributed to this
- * project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
+*  Copyright (C) 2013 LSI Corporation
+*
+* See file CREDITS for list of people who contributed to this
+* project.
+*
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License as
+* published by the Free Software Foundation; either version 2 of
+* the License, or (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+* MA 02111-1307 USA
+*/
 
 #include <config.h>
 #include <common.h>
@@ -27,17 +27,17 @@
 int pciesrio_setcontrol(unsigned long new_control);
 
 typedef struct {
-        unsigned short offset;
-        unsigned short value;
+unsigned short offset;
+unsigned short value;
 } rx_serdes_value_t;
 
 
 /*
-  ===============================================================================
-  ===============================================================================
-  Public Interface
-  ===============================================================================
-  ===============================================================================
+===============================================================================
+===============================================================================
+Public Interface
+===============================================================================
+===============================================================================
 */
 
 /************************************************************************************
@@ -68,6 +68,18 @@ typedef struct {
 #            2 - indicates not a host (agent)
 #            3 - RESERVED
 # Bit 10 : Enable SRIO1 controller
+# Bits 7:9 : SRIO1 speed selection
+#       0 -  indicates 1.25 Gbps
+#       1 -  indicates 2.5 Gbps
+#       2 -  indicates 3.125 Gbps
+#       3 -  indicates 5 Gbps
+#       4 -  indicates 6.25 Gbps
+# Bits 4:6 : SRIO0 speed selection
+#       0 -  indicates 1.25 Gbps
+#       1 -  indicates 2.5 Gbps
+#       2 -  indicates 3.125 Gbps
+#       3 -  indicates 5 Gbps
+#       4 -  indicates 6.25 Gbps
 # Bit  3  : Enable SRIO0 controller
 # Bit  2  : Enable PCIe1 controller
 # Bit  0  : Enable PCIe0 controller
@@ -425,8 +437,8 @@ Control         Description
 *********************************************************************************************************/
 
 /*
-  -------------------------------------------------------------------------------
-  pciesrio_init
+-------------------------------------------------------------------------------
+pciesrio_init
 */
 
 int
@@ -441,7 +453,8 @@ pciesrio_init(unsigned long parameter)
 int pciesrio_setcontrol(unsigned long new_control)
 {
 	int pci_srio_select, i;
-	int pci_srio_mode;
+	int pci_srio_mode, srio0_speed=0, srio1_speed=0;
+	int divMode0=0, divMode1=0;
 	unsigned long phy0_ctrl, phy1_ctrl;
 	unsigned long tmp;
 	rx_serdes_value_t rx_serdes_values[] = {
@@ -463,116 +476,234 @@ int pciesrio_setcontrol(unsigned long new_control)
 	phy1_ctrl = new_control & 0x60800004;
 
 
-	if (phy0_ctrl == 0x10000008) {
-		printf("SRIO0 host mode\n");
-		/* SRIO0 host id 0 2.5 Gbps */
+	if ((phy0_ctrl & 0x8) || (phy0_ctrl & 0x400) || (phy0_ctrl & 0x1)) {
+
+		/* SRIO0/SRIO1/PEI0 modes */
+
+		/* soft reset the phy, pipe, link layer */
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x80);
+
+		udelay(100000);
 		/* ncpWrite 0x115.0x0.0x228 0x00000101  # power down PLLA and PLLB */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000101);
-
-		/* ncpWrite 0x115.0x0.0x200 0x10000068  # setup AXM55xx for sRIO0x2_sRIO1x2 and reset PLLA/B */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10000068);
-
-		/* ncpWrite 0x115.0x0.0x204 0x00001000 # setup speed to 2.5Gbps for both sRIO0 and sRIO1 */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x204,0x00001000);
-
-		/* ncpWrite 0x115.0x0.0x22c 0x0000000F # the rest are all PLL settings. */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c,0x0000000F );
-
-		/* ncpWrite 0x115.0x0.0x208 0x77FF77FF */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x208,0x77FF77FF );
-
-		/* ncpWrite 0x115.0x0.0x230 0x06126527 */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,0x06126527 );
-
-		/* ncpWrite 0x115.0x0.0x244 0x33333333 */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x244,0x33333333 );
-
-		/* ncpWrite 0x115.0x0.0x228 0x00000100  # power up PLLA */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000100 );
-
-		/* ncpWrite 0x115.0x0.0x200 0x10000008 */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,0x10000008 );
-	return 0;
-
-	} else if (phy0_ctrl == 0x10200008) {
-		printf("SRIO0 agent mode\n");
-		/* SRIO0 agent 2.5 Gbps */
-
-		/* ncpWrite 0x115.0x0.0x228 0x00000101  # power down PLLA and PLLB */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000101);
-
-		/* ncpWrite 0x115.0x0.0x200 0x10000068  # setup AXM55xx for sRIO0x2_sRIO1x2 and reset PLLA/B */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10200068);
-
-		/* ncpWrite 0x115.0x0.0x204 0x00001000 # setup speed to 2.5Gbps for both sRIO0 and sRIO1 */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x204,0x00001000);
-
-		/* ncpWrite 0x115.0x0.0x22c 0x0000000F # the rest are all PLL settings. */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c,0x0000000F );
-
-		/* ncpWrite 0x115.0x0.0x208 0x77FF77FF */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x208,0x77FF77FF );
-
-		/* ncpWrite 0x115.0x0.0x230 0x06126527 */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,0x06126527 );
-
-		/* ncpWrite 0x115.0x0.0x244 0x33333333 */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x244,0x33333333 );
-
-		/* ncpWrite 0x115.0x0.0x228 0x00000100  # power up PLLA */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000100 );
-
-		/* ncpWrite 0x115.0x0.0x200 0x10000008 */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,0x10200008 );
-		return 0;
-	}
-
-
-        /* soft reset the phy, pipe, link layer */
-        ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x80);
-        udelay(100000);
-
-	/* PCIE0 */
-        /* assert reset to the Serdes */
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x20);
-
-	/* wr ctrl0         0x200 0x00000021 */
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x21);
-
-	/* wr ctrl2         0x208 0xFFFFFFFF */
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
-
-	/* wr pll_a_ctrl  0x230 0x03176403 */
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x230, 0x03176403);
-
-	/* ncpWrite 0x115.0x0.0x214 0x00F00A0A */
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x214, 0x00F00A0A);
-
-	for (i = 0;
-	     i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
-	     ++i) {
-		ncr_write16(NCP_REGION_ID(0x115, 1),
-			    rx_serdes_values[i].offset,
-			    rx_serdes_values[i].value);
-		ncr_write16(NCP_REGION_ID(0x115, 4),
-			    rx_serdes_values[i].offset,
-			    rx_serdes_values[i].value);
-	}
-
-	/* wr ctrl10       0x228 0x00000100 */
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000100);
-
-	/* 100 ms delay */
-        udelay(100000);
-
-	/* Set new phy_ctrl value */
-	/* Remove serdes out of reset */
-	ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, phy0_ctrl);
-
-	/* Check bit 2 as this determines PEI1 state */
-	if (new_control & 0x00000004)
-	{
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000101);
 		
+		/* setup AXM55xx for PEI0_sRIO0_sRIO1 specified lane width and reset PLLA/B */
+		pci_srio_mode = phy0_ctrl | 0x60;
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, pci_srio_mode);
+
+		if (phy0_ctrl & 0x1) {	
+			/* PEI0 enabled */
+			/* wr pll_a_ctrl  0x230 0x03176403 */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x230, 0x03176403);
+		
+			if ((phy0_ctrl & 0x04000000) || (phy0_ctrl & 0x08000000)) {
+				/* PEI0x2 uses PLL B */
+				ncr_write32(NCP_REGION_ID(0x115, 0), 0x234, 0x03176423);
+				if (phy0_ctrl & 0x08000000) {
+					/* SRIO0x2 uses PLLA */
+					ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,0x06126527 );
+				}
+			}
+		} else {
+			/* SRIO0 uses PLLA instead PLLB */
+			/* ncpWrite 0x115.0x0.0x230 0x06126527 */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,0x06126527 );
+		}
+
+		if (phy0_ctrl & 0x8) {
+			/* setup SRIO0 speed */
+			srio0_speed = (new_control & 0x70) << 8;
+
+			switch (srio0_speed >> 4) {
+				case 0:
+					/* 1.25 Gbps */
+					divMode0 = 0x00110011;
+					break;
+				case 1:
+					/* 2.5 Gbps */
+					divMode0 = 0x00330033;
+					break;
+				case 2:
+					/* 3.125 Gbps */
+					divMode0 = 0x00220022;
+					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
+						/* SRIO0x2 on SerDes ch 0,1 */
+						ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,0x030A7527 );
+					}
+					break;
+				case 3:
+					/* 5 Gbps*/
+					divMode0 = 0x00220022;
+					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
+						/* SRIO0x2 on SerDes ch 0,1 */
+						ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,0x06126527 );
+					}
+					break;
+				case 4:
+					/* 6.25 Gbps */
+					divMode0 = 0x0;
+					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
+						/* SRIO0x2 on SerDes ch 0,1 */
+						ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,0x030A7234 );
+					}
+				default:
+					/* invalid srio speed */
+					printf("Invalid SRIO0 speed\n");
+					return 1;
+			}
+		}
+		if (phy0_ctrl & 0x400) {
+			/* setup SRIO1 speed */
+			srio1_speed = (new_control & 0x380) << 9;
+
+			/* SRIO1 uses PLL B. If PEI0 is enabled then SRIO0 also uses PLL B*/
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x234,0x06126507 );
+
+			switch (srio1_speed >> 7) {
+				case 0:
+					/* 1.25 Gbps */
+					divMode1 = 0x11001100;
+					break;
+				case 1:
+					/* 2.5 Gbps */
+					divMode1 = 0x33003300;
+					break;
+				case 2:
+					/* 3.125 Gbps */
+					divMode1 = 0x22002200;
+					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
+						/* SRIO1x2 on SerDes ch 2,3 */
+						ncr_write32(NCP_REGION_ID(0x115, 0), 0x234,0x030A7214 );
+					}
+					break;
+				case 3:
+					/* 5 Gbps*/
+					divMode1 = 0x22002200;
+					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
+						/* SRIO1x2 on SerDes ch 2,3 */
+						ncr_write32(NCP_REGION_ID(0x115, 0), 0x234,0x06126214 );
+					}
+					break;
+				case 4:
+					/* 6.25 Gbps */
+					divMode1 = 0x0;
+					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
+						/* SRIO1x2 on SerDes ch 2,3 */
+						ncr_write32(NCP_REGION_ID(0x115, 0), 0x234,0x030A7214 );
+					}
+				default:
+					/* invalid srio speed */
+					printf("Invalid SRIO0 speed\n");
+					return 1;
+			}
+		}
+
+		if ((phy0_ctrl & 0x8) || (phy0_ctrl & 0x400))  {
+			/* # setup speed for both sRIO0 and sRIO1 */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x204,(srio0_speed | srio1_speed));
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x244,(divMode0|divMode1));
+		}
+
+		/* ncpWrite 0x115.0x0.0x22c 0x0000000F # the rest are all PLL settings. */
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c,0x0000000F );
+
+		/* PLL A/PLL B settings */
+		switch ((phy0_ctrl & 0x1c000000) >> 26) {
+		case 0x0:
+			/* PCIe0x4 on SerDes ch 0,1,2,3 */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x208,0xFFFFFFFF );
+			break;
+		case 0x1:
+			/* PCIe0x2 on SerDes ch 2,3 */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x208,0x77007700 );
+			break;
+		case 0x2:
+			/* SRIO0x2, PCIe0x2 SerDes ch 2, 3 */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x208,0x77FF77FF );
+			break;
+		case 0x4:
+			/* SRIO0x2 on SerDes ch 0, 1, SRIO1x2 SerDes ch 2, 3 */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x208,0x77FF77FF );
+			break;
+		case 0x5:
+			/* SRIO0x1 on SerDes ch 0, SRIO1x1 SerDes ch 2, PCIe0x1 on ch 3*/
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x208,0xF707F707 );
+			break;
+		default:
+			printf("Invalid PEI0/SRIO configuration\n");
+			return 1;
+		}
+
+		
+		/* SRIO workaround if SRIO speed is 6.25 Gb/s 
+		 * and SRIO0x2,SRIO1x2 
+		 * or SRIO0x2 PCIe0x2
+		 * or SRIO0x1 SRIO1x1, PCIe0x1*/	
+		if (((phy0_ctrl & 0x10000000) && (((srio0_speed >> 4) == 0x4) && 
+				((srio1_speed >> 7) == 0x4)))
+			|| ((phy0_ctrl & 0x80000000) 
+				&& ((srio0_speed >> 4) == 0x4))
+			|| ((phy0_ctrl & 0x14000000) 
+				&& (((srio0_speed >> 4) == 0x4) 
+				&& ((srio1_speed >> 7) == 0x4)))) {
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0xba,0x0062 );
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0xc,0x2400 );
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x2ba,0x0062 );
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x20c,0x2400 );
+
+			/* following enable eyefinder in the Serdes */
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x1e,0x8001 );
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x21e,0x8001 );
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x61e,0x8001 );
+			ncr_write16(NCP_REGION_ID(0x115, 1), 0x81e,0x8001 );
+		}
+
+		if (phy0_ctrl & 0x1) {		
+			for (i = 0;
+	     		i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
+	     		++i) {
+				ncr_write16(NCP_REGION_ID(0x115, 1),
+			    	rx_serdes_values[i].offset,
+			    	rx_serdes_values[i].value);
+			}
+		}
+
+		/* ncpWrite 0x115.0x0.0x228 0x00000000  # power up PLLA and PLLB */
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000000 );
+
+		/* 100 ms delay */
+		udelay(100000);
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,phy0_ctrl);
+	} else if (new_control & 0x00000004) {
+		/* Check bit 2 as this determines PEI1 state */
+
+		/* soft reset the phy, pipe, link layer */
+		ncr_write32(NCP_REGION_ID(0x115, 3), 0x200, 0x80);
+		udelay(100000);
+
+		ncr_write32(NCP_REGION_ID(0x115, 3), 0x228, 0x00000001);
+	
+		/* PLL A /PLL B config */	
+		ncr_write32(NCP_REGION_ID(0x115, 3), 0x208,0xFFFFFFFF );
+
+		/* wr pll_a_ctrl  0x230 0x03176403 */
+		ncr_write32(NCP_REGION_ID(0x115, 3), 0x230, 0x03176403);
+
+		for (i = 0;
+	     		i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
+	     		++i) {
+			ncr_write16(NCP_REGION_ID(0x115, 4),
+				rx_serdes_values[i].offset,
+				rx_serdes_values[i].value);
+		}
+
+		/* ncpWrite 0x115.0x0.0x228 0x00000000  # power up PLLA */
+		ncr_write32(NCP_REGION_ID(0x115, 3), 0x228,0x00000000 );
+
+		/* 100 ms delay */
+		udelay(100000);
+
 		phy1_ctrl = (((phy1_ctrl & 0x60000000) >> 3) | ((phy1_ctrl & 0x00800000) >> 1) | 0x1);
 		/* PCIE1 */
 		ncr_write32(NCP_REGION_ID(0x115, 3), 0x200, phy1_ctrl);
