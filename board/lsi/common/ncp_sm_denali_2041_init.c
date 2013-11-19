@@ -422,6 +422,8 @@ ncp_sm_denali_2041_init(
     /* DENALI_CTL_184 */
     value = 0;
     SV( ncp_denali_DENALI_CTL_184_t, trp_ab, parms->CAS_latency );
+    SV( ncp_denali_DENALI_CTL_184_t, add_odt_clk_difftype_diffcs, 2);
+    SV( ncp_denali_DENALI_CTL_184_t, add_odt_clk_sametype_diffcs, 2);
     ncr_write32(ctlReg,  0x02e0, value);
 
     /* DENALI_CTL_185 */
@@ -654,8 +656,9 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x0534, value);
 
     /* DENALI_CTL_334 */
-    /* do not set ctrlupd_req_per_aref_en */
-    ncr_write32(ctlReg,  0x0538, 0x07000000);
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_334_t, todtl_2cmd, 8);
+    ncr_write32(ctlReg,  NCP_DENALI_CTL_334, value);
 
     if (parms->version >= NCP_CHIP_ACP55xx)
     {
@@ -688,6 +691,13 @@ ncp_sm_denali_2041_init(
             ncr_write32(ctlReg,  NCP_DENALI_CTL_337, value);
         }
 
+        /* DENALI_CTL_339 */
+        value = 0;
+        SV( ncp_denali_DENALI_CTL_339_t, todth_wr, 6);
+        SV( ncp_denali_DENALI_CTL_339_t, todth_rd, 6);
+        ncr_write32(ctlReg,  NCP_DENALI_CTL_339, value);
+
+
         /*
          * if any RTTnom value is non-zero then enable ODT 
          */
@@ -700,11 +710,10 @@ ncp_sm_denali_2041_init(
         }
 
         /* DENALI_CTL_420 */
-#if 0  /* NOT YET */
         value = 0;
-        SV( ncp_denali_DENALI_CTL_420_t, wr_order_req, 1);
+/*         SV( ncp_denali_DENALI_CTL_420_t, wr_order_req, 1); */    /* NOT YET */
+        SV( ncp_denali_DENALI_CTL_420_t, rd_to_odth, 4);
         ncr_write32(ctlReg,  NCP_DENALI_CTL_420, value);
-#endif
     }
 
 NCP_RETURN_LABEL

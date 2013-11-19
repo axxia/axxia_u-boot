@@ -428,6 +428,9 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 	case clock_core:
 		*frequency = 2000;
 		break;
+	case clock_emmc:
+		*frequency = 2000;
+		break;
 	default:
 		return -1;
 		break;

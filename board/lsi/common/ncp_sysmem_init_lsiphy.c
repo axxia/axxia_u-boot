@@ -473,11 +473,11 @@ dump_ratio(ncp_dev_hdl_t dev,
             printf(" 0x%04x ", reg);
         }
     
-        printf("\n PLOWRATIO[%d]: ", j);
+        printf("\n NLOWRATIO[%d]: ", j);
         for (i = 0; i < num_bls; i++) 
         {
             ncr_read32( regionId, 
-                        NCP_PHY_CFG_SYSMEM_PHY_PLOWRATIO_BL_CS(i, j),
+                        NCP_PHY_CFG_SYSMEM_PHY_NLOWRATIO_BL_CS(i, j),
                         &reg);
             printf(" 0x%04x ", reg);
         }
