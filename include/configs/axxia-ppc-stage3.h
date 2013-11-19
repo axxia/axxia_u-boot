@@ -150,6 +150,8 @@
 #define CFG_INIT_RAM_ADDR1  (CFG_STACK_BASE - 0x4000)
 #define CFG_INIT_RAM_ADDR2  (CFG_STACK_BASE - 0x8000)
 #define CFG_INIT_RAM_ADDR3  (CFG_STACK_BASE - 0xc000)
+#define CFG_INIT_RAM_ADDR4  (CFG_STACK_BASE - 0x10000)
+#define CFG_INIT_RAM_ADDR5  (CFG_STACK_BASE - 0x14000)
 
 /*
   ----------------------------------------------------------------------
@@ -226,11 +228,11 @@ unsigned long *get_acp_fdt(int);
 #define ACP_NR_CORES 1
 #define OS_GROUP0_DEFAULT "0x911:0:0x100"
 */
-#define ACP_NR_CORES 4
+#define ACP_NR_CORES 6
 #define OS_GROUP0_DEFAULT "0xdf1:0:0x100"
 
 #else
-#define ACP_NR_CORES 4
+#define ACP_NR_CORES 6
 #define OS_GROUP0_DEFAULT "0xdf1:0:0x100"
 #endif
 #endif

@@ -531,6 +531,28 @@ cold_start:
 	subf		r5,r5,r6
 	bl		memcpy
 
+	lis		r3,_core_copy_core4@h
+	ori		r3,r3,_core_copy_core4@l
+	lis		r4,_core_copy_beginning@h
+	ori		r4,r4,_core_copy_beginning@l
+	mr		r5,r4
+	lis		r6,_core_copy_end@h
+	ori		r6,r6,_core_copy_end@l
+	subf		r5,r5,r6
+	bl		memcpy
+
+	lis		r3,_core_copy_core5@h
+	ori		r3,r3,_core_copy_core5@l
+	lis		r4,_core_copy_beginning@h
+	ori		r4,r4,_core_copy_beginning@l
+	mr		r5,r4
+	lis		r6,_core_copy_end@h
+	ori		r6,r6,_core_copy_end@l
+	subf		r5,r5,r6
+	bl		memcpy
+
+
+
 	b		continue_start
 
 warm_start:
@@ -766,7 +788,11 @@ acp_icache_init:
 	beq		sis_core1
 	cmpwi		r0,2
 	beq		sis_core2
-	b		sis_core3
+	cmpwi		r0,3
+	beq		sis_core3
+	cmpwi		r0,4
+	beq		sis_core4
+	b		sis_core5
 
 sis_core0:
 
@@ -794,6 +820,17 @@ sis_core3:
 	ori		r1,r1,CFG_INIT_RAM_ADDR3@l
 	b		stackstuff
 
+sis_core4:
+
+	lis		r1,CFG_INIT_RAM_ADDR4@h
+	ori		r1,r1,CFG_INIT_RAM_ADDR4@l
+	b		stackstuff
+
+sis_core5:
+
+	lis		r1,CFG_INIT_RAM_ADDR5@h
+	ori		r1,r1,CFG_INIT_RAM_ADDR5@l
+	b		stackstuff
 
 stackstuff:
 

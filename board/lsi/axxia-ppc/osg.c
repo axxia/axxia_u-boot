@@ -57,9 +57,19 @@ typedef struct {
 #define BOOT_SHIFT    0
 #define BOOT(flags)   (((flags) & BOOT_MASK) >> BOOT_SHIFT)
 
+#ifndef AXM_35xx
 #define CORES_MASK    0xf0
 #define CORES_SHIFT   4
 #define CORES(flags)  (((flags) & CORES_MASK) >> CORES_SHIFT)
+#else
+/* AXM35xx 6 cores, use bit[29:28] for core [5,4] in osgroup0 env. variable */
+/* CORES(flags) = [8:4]>>4 | [29:28] >> 24  this will result in 6 bits [5:0] for CORES*/
+#define CORES_MASK0    0xf0
+#define CORES_MASK1    0x30000000
+#define CORES_SHIFT0   4
+#define CORES_SHIFT1   24
+#define CORES(flags)  ((((flags) & CORES_MASK0) >> CORES_SHIFT0) | (((flags) & CORES_MASK1) >> CORES_SHIFT1))
+#endif
 
 #define UART0_MASK    0x100
 #define UART0_SHIFT   8
@@ -117,14 +127,18 @@ static acp_osg_core_t *acp_osg_cores[] = {
 	(void *)&__acp_osg_cores + (0 * sizeof(acp_osg_core_t)),
 	(void *)&__acp_osg_cores + (1 * sizeof(acp_osg_core_t)),
 	(void *)&__acp_osg_cores + (2 * sizeof(acp_osg_core_t)),
-	(void *)&__acp_osg_cores + (3 * sizeof(acp_osg_core_t))
+	(void *)&__acp_osg_cores + (3 * sizeof(acp_osg_core_t)),
+	(void *)&__acp_osg_cores + (4 * sizeof(acp_osg_core_t)),
+	(void *)&__acp_osg_cores + (5 * sizeof(acp_osg_core_t))
 };
 
 static acp_osg_group_t *acp_osg_groups[] = {
 	(void *)&__acp_osg_groups + (0 * sizeof(acp_osg_group_t)),
 	(void *)&__acp_osg_groups + (1 * sizeof(acp_osg_group_t)),
 	(void *)&__acp_osg_groups + (2 * sizeof(acp_osg_group_t)),
-	(void *)&__acp_osg_groups + (3 * sizeof(acp_osg_group_t))
+	(void *)&__acp_osg_groups + (3 * sizeof(acp_osg_group_t)),
+	(void *)&__acp_osg_groups + (4 * sizeof(acp_osg_group_t)),
+	(void *)&__acp_osg_groups + (5 * sizeof(acp_osg_group_t))
 };
 
 static int current_group = 0;
@@ -442,9 +456,16 @@ acp_osg_group_set_res(int group, acp_osg_group_res_t res, unsigned long value)
 			((value << BOOT_SHIFT) & BOOT_MASK);
 		break;
 	case ACP_OS_CORES:
+		#ifndef AXM_35xx
 		acp_osg_groups[group]->flags &= ~CORES_MASK;
 		acp_osg_groups[group]->flags |=
 			((value << CORES_SHIFT) & CORES_MASK);
+		#else
+		/* assumption: core bit set in value in [5:0], */
+		acp_osg_groups[group]->flags &= ~(CORES_MASK0 |CORES_MASK1  );
+		acp_osg_groups[group]->flags |=
+		((((value) & CORES_MASK0) << CORES_SHIFT0) | (((value) & CORES_MASK1) << CORES_SHIFT1));
+		#endif
 		break;
 	case ACP_OS_BASE:
 		acp_osg_groups[group]->base = value;
@@ -537,6 +558,7 @@ acp_osg_group_set_res(int group, acp_osg_group_res_t res, unsigned long value)
 int
 acp_osg_get_group(int core)
 {
+#ifndef AXM_35xx
 	int group;
 	for (group = 0; group < ACP_MAX_OS_GROUPS; ++group) {
 		if (0 != ((1 << core) & CORES(acp_osg_groups[group]->flags)))
@@ -544,6 +566,10 @@ acp_osg_get_group(int core)
 	}
 
 	return -1;
+#else
+	/* single group SMP for AXM35xx */
+	return 0;
+#endif
 }
 
 /*
@@ -633,10 +659,13 @@ acp_osg_jump_to_os(int group)
 		   unsigned long, unsigned long);
 
 
-	printf("%s() group=%d\n",__func__,group);
 	acp_osg_dump(group);
 	os = acp_osg_groups[group]->os;
+	if(os == 0) {
+		printf("invalid OS for group=%d\n",group);
+	}
       
+	
 	/* Release the stage 3 lock. */
 	acp_unlock_stage3();
 
@@ -644,6 +673,7 @@ acp_osg_jump_to_os(int group)
 	__asm__ __volatile__ ("lis            6,0\n"   \
 			      "mtmsr          6");
 
+	printf("jumping to OS ...\n");
 	/* Jump to the OS. */
 	(*os)(acp_osg_groups[group]->arguments[0],
 	      acp_osg_groups[group]->arguments[1],
@@ -719,7 +749,9 @@ acp_osg_update_dt(void *input, int group)
 		"/cpus/cpu@0",
 		"/cpus/cpu@1",
 		"/cpus/cpu@2",
-		"/cpus/cpu@3"
+		"/cpus/cpu@3",
+		"/cpus/cpu@4",
+		"/cpus/cpu@5"
 	};
 	unsigned long ppc_clk;
 	unsigned long clk_per;

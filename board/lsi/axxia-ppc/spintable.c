@@ -37,7 +37,7 @@
 #define ALIGNMENT 32UL
 
 acp_spintable_t *acp_spintable[ACP_NR_CORES];
-static int core_up[] = {0, 0, 0, 0};
+static int core_up[] = {0, 0, 0, 0, 0, 0};
 extern unsigned long _spintables;
 
 /*
@@ -98,7 +98,9 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 		"/cpus/cpu@0",
 		"/cpus/cpu@1",
 		"/cpus/cpu@2",
-		"/cpus/cpu@3"
+		"/cpus/cpu@3",
+		"/cpus/cpu@4",
+		"/cpus/cpu@5"
 	};
 	acp_spintable_t *spintable;
 	unsigned long long release_address;
@@ -108,8 +110,13 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 	int retries = 1000;
 
 	/* Get the group this core belongs to. */
+#ifndef AXM_35xx
 	if (-1 == (group = acp_osg_get_group(core)))
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+#else
+	/*AXM35xx supports SMP only */
+	group = 0;
+#endif
 
 	/* Get a pointer to the device tree. */
 	if (NULL == (dt = (struct fdt_header *)get_acp_fdt(group)))
