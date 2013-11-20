@@ -210,18 +210,18 @@ axxia_sysmem_bist_start(unsigned long region, int bits, int test,
 		  specified memory size. (i.e. 2GB ==
 		  31 bits).
 		*/
-		ncr_or( region, 0xa4,	( bits << 24 ) );
+		ncr_or(region, 0xa4, ((bits - 1) << 24));
 	}
 
 	/* Erase the interrupt status from the previous run. */
 #if defined(CONFIG_AXXIA_25xx) || defined (CONFIG_AXXIA_55XX)
-	ncr_or( region, INT_STATUS_CLEAR_OFFSET, 0x200 );
+	ncr_or(region, INT_STATUS_CLEAR_OFFSET, 0x200);
 #else
-	ncr_or( region, INT_STATUS_CLEAR_OFFSET, 0x600 );
+	ncr_or(region, INT_STATUS_CLEAR_OFFSET, 0x600);
 #endif
 
 	/* Start the test. */
-	ncr_or( region, 0x8, 0x1 );
+	ncr_or(region, 0x8, 0x1);
 
 	return;
 }
