@@ -205,6 +205,9 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 		}
 	}
 
+	if (2 > cpsr)
+		cpsr = 2;	/* 2 is the minimum */
+
 	if (cpsr & 0x1)
 		cpsr++;
 
