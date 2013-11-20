@@ -421,6 +421,7 @@ int sysmem_reset(void);
 /*#define CONFIG_SPL_MTEST*/
 /*#define SM_PLL_533_MHZ*/
 /*#define RUN_UNCACHED*/
+/*#define RUN_NONSECURE*/
 
 /*
   ===============================================================================

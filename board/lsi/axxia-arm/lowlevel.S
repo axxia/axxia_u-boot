@@ -138,6 +138,26 @@ set_actlr2:
 #endif
 	mcr	p15, 0, r0, c14, c0, 0
 
+#ifdef RUN_NONSECURE
+	@@
+	@ Switch to non-secure mode.  Note that some things have to be done
+	@ before this happens.  Those things are
+	@
+	@ 1 - CNTFRQ (set just above)
+	@ 2 - NSACR (not currently modified)
+	@ 3 - Some GIC Registers?
+#ifdef CONFIG_SPL_BUILD
+	@ Set the secure access bit in Dickens
+	mov	r0, #0
+	mov	r1, #1
+	str	r1, [r0]
+#endif
+	@ And set the NS bit in the SCR
+	mrc	p15, 0, r0, c1, c1, 0
+	orr	r0, r0, #1
+	mcr	p15, 0, r0, c1, c1, 0
+#endif
+
 #ifndef CONFIG_SPL_BUILD
 
 	@@
@@ -192,6 +212,9 @@ clear_page_tables:
 #else
         ldr     r0, =0x50c1e		@ Start at 0x00_0000_0000
 #endif
+#ifdef RUN_NONSECURE
+	orr	r0, r0, #0x80000	@ Set the NS bit.
+#endif
         mov     r1, r3
         add     r2, r3, #0x1000
 1:    	mov     r9, #0
@@ -215,6 +238,9 @@ clear_page_tables:
 #else
         ldr     r0, =0x40c52		@ Start at 0x20_0000_0000
 #endif
+#ifdef RUN_NONSECURE
+	orr	r0, r0, #0x80000	@ Set the NS bit.
+#endif
         add     r1, r3, #0x1000
         add     r2, r3, #0x2000
 1:    	mov     r9, #0
@@ -233,6 +259,9 @@ clear_page_tables:
 	@     Size: 1G
 
         ldr     r0, =0x40c12		@ Start at 0x00_0000_0000
+#ifdef RUN_NONSECURE
+	orr	r0, r0, #0x80000	@ Set the NS bit.
+#endif
         add     r1, r3, #0x2000
         add     r2, r3, #0x3000
 1:    	mov     r9, #0
@@ -283,8 +312,14 @@ clear_page_tables:
 #else
 	ldr     r0, =0x10c1e
 #endif
+#ifdef RUN_NONSECURE
+	orr	r0, r0, #0x80000	@ Set the NS bit.
+#endif
         mov     r1, r3
         add     r2, r1, #0x1000
+
+	@ First 3M as sections.
+
 	str	r0, [r1], #4
 	add	r0, r0, #0x100000
 	str	r0, [r1], #4
@@ -292,7 +327,12 @@ clear_page_tables:
 	str	r0, [r1], #4
 	add	r0, r0, #0x100000
 
+	@ Fourth 1M points to a second level table (below).
+
 	ldr	r9, =0x4001
+#ifdef RUN_NONSECURE
+	orr	r9, r9, #0x4		@ Set the NS bit.
+#endif
 	add	r9, r9, r3
 	str	r9, [r1], #4
 	add	r0, r0, #0x100000
@@ -327,6 +367,9 @@ clear_page_tables:
 	@ Third 1G is IO, not cacheable or bufferable.
 
         ldr     r0,=0x40c52		@ Start at 0x20_0000_0000
+#ifdef RUN_NONSECURE
+	orr	r0, r0, #0x80000	@ Set the NS bit.
+#endif
         add     r1, r3, #0x2000
         add     r2, r3, #0x3000
 1:      mov     r9, #0
@@ -347,6 +390,9 @@ clear_page_tables:
         @ and  16 MB for MPAGE7 for config access
         @
         ldr     r0,=0x00040c72          @ Start at 0x30_0000_0000
+#ifdef RUN_NONSECURE
+	orr	r0, r0, #0x80000	@ Set the NS bit.
+#endif
         add     r1, r3, #0x3000
         add     r2, r3, #0x3400
 1:      mov     r9, #0
@@ -359,6 +405,9 @@ clear_page_tables:
         blt     1b
 
         ldr     r0,=0x38040c72          @ Start at 0x30_3800_0000
+#ifdef RUN_NONSECURE
+	orr	r0, r0, #0x80000	@ Set the NS bit.
+#endif
         add     r1, r3, #0x3400
         add     r2, r3, #0x3440
 1:      mov     r9, #0
@@ -375,6 +424,9 @@ clear_page_tables:
         @ and  16 MB for MPAGE7 for config access
         @
         ldr     r0,=0x80040c72          @ Start at 0x30_8000_0000
+#ifdef RUN_NONSECURE
+	orr	r0, r0, #0x80000	@ Set the NS bit.
+#endif
         add     r1, r3, #0x3800
         add     r2, r3, #0x3c00
 1:      mov     r9, #0
@@ -387,6 +439,9 @@ clear_page_tables:
         blt     1b
 
         ldr     r0,=0xb8040c72          @ Start at 0x30_B800_0000
+#ifdef RUN_NONSECURE
+	orr	r0, r0, #0x80000	@ Set the NS bit.
+#endif
         add     r1, r3, #0x3c00
         add     r2, r3, #0x3c40
 1:      mov     r9, #0
