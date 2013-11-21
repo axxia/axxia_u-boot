@@ -38,6 +38,7 @@
 #define CONFIG_4xx   1		/* ... PPC4xx family         */
 #define CONFIG_BOOKE 1
 
+#if !defined (AXM_35xx) && !defined (ACP_EMU)
 #define CONFIG_PCI 1
 #define CONFIG_PCI_PNP 1                          /* do pci plug-and-play*/
 #define CONFIG_CMD_PCI 1
@@ -93,6 +94,8 @@
 #define CONFIG_SYS_PCIE_NR_PORTS 2
 #else
 #define CONFIG_SYS_PCIE_NR_PORTS 3
+#endif
+
 #endif
 
 #if !defined(USE_HOSTCC)
