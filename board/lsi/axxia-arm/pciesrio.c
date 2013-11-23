@@ -68,13 +68,13 @@ Public Interface
 #            2 - indicates not a host (agent)
 #            3 - RESERVED
 # Bit 10 : Enable SRIO1 controller
-# Bits 7:9 : SRIO1 speed selection
+# Bits 9:7 : SRIO1 speed selection
 #       0 -  indicates 1.25 Gbps
 #       1 -  indicates 2.5 Gbps
 #       2 -  indicates 3.125 Gbps
 #       3 -  indicates 5 Gbps
 #       4 -  indicates 6.25 Gbps
-# Bits 4:6 : SRIO0 speed selection
+# Bits 6:4 : SRIO0 speed selection
 #       0 -  indicates 1.25 Gbps
 #       1 -  indicates 2.5 Gbps
 #       2 -  indicates 3.125 Gbps
@@ -475,7 +475,6 @@ int pciesrio_setcontrol(unsigned long new_control)
 	phy0_ctrl = new_control & 0x1f700409;
 	phy1_ctrl = new_control & 0x60800004;
 
-
 	if ((phy0_ctrl & 0x8) || (phy0_ctrl & 0x400) || (phy0_ctrl & 0x1)) {
 
 		/* SRIO0/SRIO1/PEI0 modes */
@@ -513,17 +512,22 @@ int pciesrio_setcontrol(unsigned long new_control)
 		if (phy0_ctrl & 0x8) {
 			/* setup SRIO0 speed */
 			srio0_speed = (new_control & 0x70) << 8;
+			printf("new_control = 0x%x\n",new_control);
+			printf("srio0_speed = 0x%x\n", srio0_speed);
 
-			switch (srio0_speed >> 4) {
+			switch ((new_control & 0x70) >> 4) {
 				case 0:
+					printf("SRIO0 -- 1.25 Gbps\n");
 					/* 1.25 Gbps */
 					divMode0 = 0x00110011;
 					break;
 				case 1:
+					printf("SRIO0 -- 2.5 Gbps\n");
 					/* 2.5 Gbps */
 					divMode0 = 0x00330033;
 					break;
 				case 2:
+					printf("SRIO0 -- 3.125 Gbps\n");
 					/* 3.125 Gbps */
 					divMode0 = 0x00220022;
 					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
@@ -532,6 +536,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 					}
 					break;
 				case 3:
+					printf("SRIO0 -- 5 Gbps\n");
 					/* 5 Gbps*/
 					divMode0 = 0x00220022;
 					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
@@ -540,12 +545,14 @@ int pciesrio_setcontrol(unsigned long new_control)
 					}
 					break;
 				case 4:
+					printf("SRIO0 -- 6.25 Gbps\n");
 					/* 6.25 Gbps */
 					divMode0 = 0x0;
 					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
 						/* SRIO0x2 on SerDes ch 0,1 */
 						ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,0x030A7234 );
 					}
+					break;
 				default:
 					/* invalid srio speed */
 					printf("Invalid SRIO0 speed\n");
@@ -559,16 +566,19 @@ int pciesrio_setcontrol(unsigned long new_control)
 			/* SRIO1 uses PLL B. If PEI0 is enabled then SRIO0 also uses PLL B*/
 			ncr_write32(NCP_REGION_ID(0x115, 0), 0x234,0x06126507 );
 
-			switch (srio1_speed >> 7) {
+			switch ((new_control & 0x380) >> 7) {
 				case 0:
+					printf("SRIO1 -- 1.25 Gbps\n");
 					/* 1.25 Gbps */
 					divMode1 = 0x11001100;
 					break;
 				case 1:
+					printf("SRIO1 -- 2.5 Gbps\n");
 					/* 2.5 Gbps */
 					divMode1 = 0x33003300;
 					break;
 				case 2:
+					printf("SRIO1 -- 3.125 Gbps\n");
 					/* 3.125 Gbps */
 					divMode1 = 0x22002200;
 					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
@@ -577,6 +587,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 					}
 					break;
 				case 3:
+					printf("SRIO1 -- 5 Gbps\n");
 					/* 5 Gbps*/
 					divMode1 = 0x22002200;
 					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
@@ -585,15 +596,17 @@ int pciesrio_setcontrol(unsigned long new_control)
 					}
 					break;
 				case 4:
+					printf("SRIO1 -- 6.25 Gbps\n");
 					/* 6.25 Gbps */
 					divMode1 = 0x0;
 					if ((phy0_ctrl & 0x10000000) || (phy0_ctrl & 0x08000000)) {
 						/* SRIO1x2 on SerDes ch 2,3 */
 						ncr_write32(NCP_REGION_ID(0x115, 0), 0x234,0x030A7214 );
 					}
+					break;
 				default:
 					/* invalid srio speed */
-					printf("Invalid SRIO0 speed\n");
+					printf("Invalid SRIO1 speed\n");
 					return 1;
 			}
 		}
@@ -639,13 +652,13 @@ int pciesrio_setcontrol(unsigned long new_control)
 		 * and SRIO0x2,SRIO1x2 
 		 * or SRIO0x2 PCIe0x2
 		 * or SRIO0x1 SRIO1x1, PCIe0x1*/	
-		if (((phy0_ctrl & 0x10000000) && (((srio0_speed >> 4) == 0x4) && 
-				((srio1_speed >> 7) == 0x4)))
+		if (((phy0_ctrl & 0x10000000) && (((new_control & 0x70) >> 4) == 0x4) && 
+				(((new_control & 0x380) >> 7) == 0x4))
 			|| ((phy0_ctrl & 0x80000000) 
-				&& ((srio0_speed >> 4) == 0x4))
+				&& (((new_control & 0x70) >> 4) == 0x4))
 			|| ((phy0_ctrl & 0x14000000) 
-				&& (((srio0_speed >> 4) == 0x4) 
-				&& ((srio1_speed >> 7) == 0x4)))) {
+				&& (((new_control & 0x70) >> 4) == 0x4) 
+				&& (((new_control & 0x380) >> 7) == 0x4))) {
 			ncr_write16(NCP_REGION_ID(0x115, 1), 0xba,0x0062 );
 			ncr_write16(NCP_REGION_ID(0x115, 1), 0xc,0x2400 );
 			ncr_write16(NCP_REGION_ID(0x115, 1), 0x2ba,0x0062 );
@@ -666,16 +679,24 @@ int pciesrio_setcontrol(unsigned long new_control)
 			    	rx_serdes_values[i].offset,
 			    	rx_serdes_values[i].value);
 			}
-		}
-
-		/* ncpWrite 0x115.0x0.0x228 0x00000000  # power up PLLA and PLLB */
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000000 );
+			/* ncpWrite 0x115.0x0.0x228 0x00000000  # power up PLLA and PLLB */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000000 );
+		} else if (phy0_ctrl & 0x400) {
+			/* SRIO1 enabled */
+			/* ncpWrite 0x115.0x0.0x228 0x00000000  # power up PLLA and PLLB */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000000 );
+		} else {
+			/* SRIO1 not enabled, only SRIO0 is used */
+			/* ncpWrite 0x115.0x0.0x228 0x00000000  # power up only PLLA */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000100 );
+		} 
 
 		/* 100 ms delay */
 		udelay(100000);
-
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,phy0_ctrl);
-	} else if (new_control & 0x00000004) {
+	} 
+
+	if (new_control & 0x00000004) {
 		/* Check bit 2 as this determines PEI1 state */
 
 		/* soft reset the phy, pipe, link layer */
