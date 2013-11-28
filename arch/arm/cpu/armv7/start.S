@@ -124,6 +124,14 @@ _spin_table_start_ofs:
 _spin_table_end_ofs:
 	.word __spin_table_end - _start
 
+.global	_secure_page_table_start
+_secure_page_table_start:
+	.word __secure_page_table_start - _start
+
+.global	_secure_page_table_end
+_secure_page_table_end:
+	.word __secure_page_table_end - _start
+
 .global	_page_table_start
 _page_table_start:
 	.word __page_table_start - _start

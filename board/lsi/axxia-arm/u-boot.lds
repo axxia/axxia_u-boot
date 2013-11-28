@@ -26,6 +26,11 @@ SECTIONS
 	 */
 
 	. = ALIGN(0x4000);
+	__secure_page_table_start = .;
+	. += 0x5000;
+	__secure_page_table_end = .;
+
+	. = ALIGN(0x4000);
 	__page_table_start = .;
 	. += 0x5000;
 	__page_table_end = .;

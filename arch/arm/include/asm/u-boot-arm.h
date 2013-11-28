@@ -40,6 +40,8 @@ extern ulong _spin_table_end_ofs;
 #endif
 extern ulong _parameters_start;
 extern ulong _parameters_end;
+extern ulong _secure_page_table_start;
+extern ulong _secure_page_table_end;
 extern ulong _page_table_start;
 extern ulong _page_table_end;
 #endif

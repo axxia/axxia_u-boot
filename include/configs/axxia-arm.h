@@ -305,11 +305,14 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define GPIO0_ADDRESS (IO + 0x92000)
 #define GPIO1_ADDRESS (IO + 0x93000)
 
-#define GPREG                   (IO+0x94000)
-#define GPREG_GPDMA             (GPREG+0x00)
-#define GPREG_MAC               (GPREG+0x04)
-#define GPREG_USB               (GPREG+0x08)
-#define GPREG_STATUS            (GPREG+0x0c)
+#define GPREG        (IO + 0x94000)
+#define GPREG_GPDMA  (GPREG + 0x00)
+#define GPREG_MAC    (GPREG + 0x04)
+#define GPREG_USB    (GPREG + 0x08)
+#define GPREG_STATUS (GPREG + 0x0c)
+
+#define GIC_DIST_BASE (DICKENS + 0x1001000)
+#define GIC_CPU_BASE  (DICKENS + 0x1002000)
 
 /*
   ==============================================================================
