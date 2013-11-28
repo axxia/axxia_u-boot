@@ -483,6 +483,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x80);
 
 		udelay(100000);
+
 		/* ncpWrite 0x115.0x0.0x228 0x00000101  # power down PLLA and PLLB */
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x00000101);
 		
@@ -615,10 +616,10 @@ int pciesrio_setcontrol(unsigned long new_control)
 			/* # setup speed for both sRIO0 and sRIO1 */
 			ncr_write32(NCP_REGION_ID(0x115, 0), 0x204,(srio0_speed | srio1_speed));
 			ncr_write32(NCP_REGION_ID(0x115, 0), 0x244,(divMode0|divMode1));
-		}
 
-		/* ncpWrite 0x115.0x0.0x22c 0x0000000F # the rest are all PLL settings. */
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c,0x0000000F );
+			/* ncpWrite 0x115.0x0.0x22c 0x0000000F # the rest are all PLL settings. */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c,0x0000000F );
+		}
 
 		/* PLL A/PLL B settings */
 		switch ((phy0_ctrl & 0x1c000000) >> 26) {
@@ -672,6 +673,9 @@ int pciesrio_setcontrol(unsigned long new_control)
 		}
 
 		if (phy0_ctrl & 0x1) {		
+			/* ncpWrite 0x115.0x0.0x214 0x00F00A0A */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x214, 0x00F00A0A);
+
 			for (i = 0;
 	     		i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
 	     		++i) {
@@ -679,8 +683,12 @@ int pciesrio_setcontrol(unsigned long new_control)
 			    	rx_serdes_values[i].offset,
 			    	rx_serdes_values[i].value);
 			}
-			/* ncpWrite 0x115.0x0.0x228 0x00000000  # power up PLLA and PLLB */
-			ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000000 );
+			if ((phy0_ctrl & 0x1c000000) == 0) {
+				/* PEI0 x4 mode -- PLLA used -- power only PLLA */
+				ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000100 );
+			} else {
+				ncr_write32(NCP_REGION_ID(0x115, 0), 0x228,0x00000000 );
+			}
 		} else if (phy0_ctrl & 0x400) {
 			/* SRIO1 enabled */
 			/* ncpWrite 0x115.0x0.0x228 0x00000000  # power up PLLA and PLLB */
