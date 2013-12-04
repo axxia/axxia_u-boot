@@ -387,6 +387,14 @@ initialize_elm(void)
 		writel(0x0380ffff, (ELM1 + 0x1c));
 		/*}*/
 
+#ifdef SINGLE_SMEM_MODE
+		value = readl(ELM0 + 0x4);
+		value &= 0xfffffdff;
+		writel(value, (ELM0 + 0x4));
+		value = readl(ELM0 + 0x4);
+		printf("%s:%d - 0x%08x\n", __FILE__, __LINE__, value); /* ZZZ */
+#endif
+
 
 	if (sysmem->enableECC) {
 		/* 
@@ -400,20 +408,28 @@ initialize_elm(void)
 		writel(0x00ffffff, (ELM0 + 0x44));
 		writel(0x00000000, (ELM0 + 0x48));
 
+#ifndef SINGLE_SMEM_MODE
+
 		/* elm1 */
 		writel(0x00000000, (ELM1 + 0x40));
 		writel(0x00ffffff, (ELM1 + 0x44));
 		writel(0x00000000, (ELM1 + 0x48));
+
+#endif
 
 		/* poll elm0 for completion */
 		do {
 			value = readl(ELM0 + 0x44);
 		} while (0 != (value & 0x1fffffff));
 
+#ifndef SINGLE_SMEM_MODE
+
 		/* poll elm1 for completion */
 		do {
 			value = readl(ELM1 + 0x44);
 		} while (0 != (value & 0x1fffffff));
+
+#endif
 	}
 
 	return 0;
@@ -439,15 +455,49 @@ sysmem_init(void)
 {
 	int rc;
 
+#ifdef SINGLE_SMEM_MODE
+
+	unsigned long offset;
+
+	offset = DICKENS | (0x20 << 16);
+	writel(0x4, (offset + 0x8));
+
+	offset = DICKENS | (0x21 << 16);
+	writel(0x4, (offset + 0x8));
+
+	offset = DICKENS | (0x22 << 16);
+	writel(0x4, (offset + 0x8));
+
+	offset = DICKENS | (0x23 << 16);
+	writel(0x4, (offset + 0x8));
+
+	offset = DICKENS | (0x24 << 16);
+	writel(0x4, (offset + 0x8));
+
+	offset = DICKENS | (0x25 << 16);
+	writel(0x4, (offset + 0x8));
+
+	offset = DICKENS | (0x26 << 16);
+	writel(0x4, (offset + 0x8));
+
+	offset = DICKENS | (0x27 << 16);
+	writel(0x4, (offset + 0x8));
+
+#endif
+
 	rc = initialize_memory_node(0x22);
 
 	if (0 != rc)
 		return -1;
 
+#ifndef SINGLE_SMEM_MODE
+
 	rc = initialize_memory_node(0xf);
 
 	if (0 != rc)
 		return -1;
+
+#endif
 
 	rc = initialize_elm();
 

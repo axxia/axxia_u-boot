@@ -422,6 +422,7 @@ int sysmem_reset(void);
 /*#define SM_PLL_533_MHZ*/
 /*#define RUN_UNCACHED*/
 /*#define RUN_NONSECURE*/
+/*#define SINGLE_SMEM_MODE*/
 
 /*
   ===============================================================================
