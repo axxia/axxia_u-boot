@@ -380,7 +380,7 @@ set_actlr2:
 	@@
 	@ Set the CNTFRQ
 #ifdef CONFIG_AXXIA_EMU
-	ldr	r0, =4096000
+	ldr	r0, =256000000
 #else
 	ldr	r0, =256000000
 #endif
