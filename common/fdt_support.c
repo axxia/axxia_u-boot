@@ -421,6 +421,20 @@ int fdt_fixup_memory_banks(void *blob, u64 start[], u64 size[], int banks)
 	addr_cell_len = get_cells_len(blob, "#address-cells");
 	size_cell_len = get_cells_len(blob, "#size-cells");
 
+#ifdef CONFIG_AXXIA_ARM
+
+	/*
+	  In this case, most boards in use have more than 4G or ram.
+	*/
+
+	len = 0;
+	write_cell(tmp + len, 0, addr_cell_len);
+	len += addr_cell_len;
+	write_cell(tmp + len, sysmem_size(), size_cell_len);
+	len += size_cell_len;
+
+#else
+
 	for (bank = 0, len = 0; bank < banks; bank++) {
 		write_cell(tmp + len, start[bank], addr_cell_len);
 		len += addr_cell_len;
@@ -428,6 +442,8 @@ int fdt_fixup_memory_banks(void *blob, u64 start[], u64 size[], int banks)
 		write_cell(tmp + len, size[bank], size_cell_len);
 		len += size_cell_len;
 	}
+
+#endif
 
 	err = fdt_setprop(blob, nodeoffset, "reg", tmp, len);
 	if (err < 0) {
