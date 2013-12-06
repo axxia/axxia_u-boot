@@ -508,7 +508,7 @@ set_actlr2:
 
 	mov	r8, lr
 	bl	enter_ns
-	bl	enable_hyp
+	bl	enter_hyp
 	mov	lr, r8
 	b	jump_to_spin_table
 
@@ -521,7 +521,7 @@ set_actlr2:
 	mov	r8, lr
 	bl	monitor_init
 	bl	enter_ns
-	bl	enable_hyp
+	bl	enter_hyp
 	mov	lr, r8
 	b	turn_on_mmu
 

@@ -43,8 +43,6 @@ COBJS += eioa.o ncp_task_config_axm55xx.o ncp_task_axm55xx.o
 COBJS += ncp_task_api_entry.o ncp_task_uboot_config_axm55xx.o
 endif
 
-SOBJS += monitor.o
-
 else
 
 ################################################################################
@@ -64,7 +62,7 @@ endif
 ## All Builds
 
 COBJS   += failure.o version.o axxia_clocks.o cache.o spi.o debug.o
-SOBJS   += lowlevel.o
+SOBJS   += lowlevel.o monitor.o
 
 ################################################################################
 
