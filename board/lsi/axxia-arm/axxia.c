@@ -442,6 +442,7 @@ ft_board_setup(void *blob, bd_t *bd)
 	char *ad_value;
 	char *macspeed;
 	unsigned long tmp;
+	unsigned long phy0_ctrl;
 
 	/*
   	  Set up the coherency domains and clusters.  This is handled
@@ -538,6 +539,43 @@ ft_board_setup(void *blob, bd_t *bd)
 			if (0 != rc)
 				printf("%s:%d - Couldn't set phy-link!\n",
 				       __FILE__, __LINE__);
+		}
+	}
+
+	/*
+	  Enable SRI00/SRIO1 controllers */
+
+	node = fdt_path_offset(blob, "/rapidio@0x3100000000");
+
+	if (0 <= node) {
+		/* check if SRIO0 is enabled */
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200,&phy0_ctrl);
+		if (phy0_ctrl & 0x8) {
+			/* SRIO0 is enabled */
+			rc = fdt_setprop(blob, node, "status", "ok",
+					 strlen("ok"));
+
+			if (0 != rc)
+				printf("%s:%d - Couldn't set SRIO0 status!\n",
+				       __FILE__, __LINE__);
+			printf("SRIO0 is enabled\n");
+		}
+	}
+
+	node = fdt_path_offset(blob, "/rapidio@0x3140000000");
+
+	if (0 <= node) {
+		/* check if SRIO1 is enabled */
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200,&phy0_ctrl);
+		if (phy0_ctrl & 0x400) {
+			/* SRIO1 is enabled */
+			rc = fdt_setprop(blob, node, "status", "ok",
+					 strlen("ok"));
+
+			if (0 != rc)
+				printf("%s:%d - Couldn't set SRIO1 status!\n",
+				       __FILE__, __LINE__);
+			printf("SRIO1 is enabled\n");
 		}
 	}
 
