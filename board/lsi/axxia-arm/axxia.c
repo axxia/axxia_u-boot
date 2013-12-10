@@ -442,7 +442,7 @@ ft_board_setup(void *blob, bd_t *bd)
 	char *ad_value;
 	char *macspeed;
 	unsigned long tmp;
-	unsigned long phy0_ctrl;
+	unsigned long phy0_ctrl, phy1_ctrl;
 
 	/*
   	  Set up the coherency domains and clusters.  This is handled
@@ -539,6 +539,42 @@ ft_board_setup(void *blob, bd_t *bd)
 			if (0 != rc)
 				printf("%s:%d - Couldn't set phy-link!\n",
 				       __FILE__, __LINE__);
+		}
+	}
+
+	/*
+	  Enable PEI0/PEI1 controllers */
+
+	node = fdt_path_offset(blob, "/pciex@0x3000000000");
+
+	if (0 <= node) {
+		/* check if PEI0 is enabled */
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200,&phy0_ctrl);
+		if (phy0_ctrl & 0x1) {
+			/* PEI0 is enabled */
+			rc = fdt_setprop(blob, node, "status", "ok",
+					 strlen("ok"));
+
+			if (0 != rc)
+				printf("%s:%d - Couldn't set PEI0 status!\n",
+				       __FILE__, __LINE__);
+			printf("PEI0 is enabled\n");
+		}
+	}
+
+	node = fdt_path_offset(blob, "/pciex@0x3080000000");
+	if (0 <= node) {
+		/* check if PEI1 is enabled */
+		ncr_read32(NCP_REGION_ID(0x115, 3), 0x200,&phy1_ctrl);
+		if (phy1_ctrl & 0x1) {
+			/* PEI1 is enabled */
+			rc = fdt_setprop(blob, node, "status", "ok",
+					 strlen("ok"));
+
+			if (0 != rc)
+				printf("%s:%d - Couldn't set PEI1 status!\n",
+				       __FILE__, __LINE__);
+			printf("PEI1 is enabled\n");
 		}
 	}
 
