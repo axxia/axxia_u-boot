@@ -496,7 +496,15 @@ sysmem_init(void)
     printf("ddrRetentionEnable = %d\n", sysmem->ddrRetentionEnable);
     printf("ddrRecovery = %d\n", sysmem->ddrRecovery);
  
-    if (sysmem->ddrRecovery == 0) {
+    if (sysmem->ddrRecovery == 1) {
+        ncp_uint32_t *tag = retention;
+        if ( *tag != DDR_PHY_REGS_TAG_PROM) {
+            printf("DDR restore buffer invalid - disabling ddrRecovery\n");
+            sysmem->ddrRecovery = 0;
+        }
+    }
+
+   if (sysmem->ddrRecovery == 0) {
         /* reset SDRAM */
         sysmem_reset();
     }
