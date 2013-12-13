@@ -456,6 +456,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 	int pci_srio_mode, srio0_speed=0, srio1_speed=0;
 	int divMode0=0, divMode1=0;
 	unsigned long phy0_ctrl, phy1_ctrl;
+	unsigned long pei0_config, pei1_config;	
 	unsigned long tmp;
 	rx_serdes_value_t rx_serdes_values[] = {
 		{0x00ba, 0x0072},
@@ -702,6 +703,14 @@ int pciesrio_setcontrol(unsigned long new_control)
 		/* 100 ms delay */
 		udelay(100000);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,phy0_ctrl);
+
+		/* 100 ms delay */
+		udelay(100000);
+
+		/* Force Gen1 speed */
+		pei0_config = readl((void *)(PCIE0_CONFIG + 0x1000));
+		pei0_config = pei0_config | 0x00040000;
+		writel(pei0_config, (void *)(PCIE0_CONFIG + 0x1000));
 	} 
 
 	if (new_control & 0x00000004) {
@@ -736,6 +745,11 @@ int pciesrio_setcontrol(unsigned long new_control)
 		phy1_ctrl = (((phy1_ctrl & 0x60000000) >> 3) | ((phy1_ctrl & 0x00800000) >> 1) | 0x1);
 		/* PCIE1 */
 		ncr_write32(NCP_REGION_ID(0x115, 3), 0x200, phy1_ctrl);
+
+		/* Force Gen1 speed */
+		pei1_config = readl((void *)(PCIE1_CONFIG + 0x1000));
+		pei1_config = pei1_config | 0x00040000;
+		writel(pei1_config, (void *)(PCIE1_CONFIG + 0x1000));
 	}
 
 	return 0;

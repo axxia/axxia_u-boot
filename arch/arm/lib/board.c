@@ -84,135 +84,221 @@ typedef enum {
 } peiSpeed_t;
 
 void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
-        unsigned long lnkStatus, addr;
-        unsigned width;
-        peiSpeed_t speedBefore, speedAfter;
-        unsigned long ln0PipeStatus;
-        unsigned long regValue, peiControl;
-        int count;
-        unsigned long pei_delay;
-        char * env_value;
+	unsigned long lnkStatus, addr;
+	unsigned width;
+	peiSpeed_t speedBefore, speedAfter;
+	unsigned long ln0PipeStatus;
+	unsigned long regValue, peiControl;
+	int count;
+	unsigned long peiDelay, peiConfig;
+	char * env_value;
 
-        env_value = getenv("pei_speed_change_delay");
-        if ((char *)0 != env_value) {
+	env_value = getenv("pei_speed_change_delay");
+	if ((char *)0 != env_value) {
+		peiDelay = simple_strtoul(env_value, NULL, 0);
+		if (peiDelay <= 0) {
+			peiDelay = 1;
+		}
+	} else {
+		peiDelay = 1;
+	}
+	printf("delay used after PEI speed change = %d usecs\n", peiDelay);
 
-                pei_delay = simple_strtoul(env_value, NULL, 0);
-                if (pei_delay <= 0) {
-                        pei_delay = 1;
-                }
-        } else {
-                        pei_delay = 1;
-        }
-        printf("delay used after PEI speed change = %d usecs\n", pei_delay);
-
-        if (peiCore == 0) {
-                addr = PCIE0_CONFIG;
-        } else {
-                addr = PCIE1_CONFIG;
-        }
 
 	if (peiCore == 0) {
-        /* Read the PCIe mode control */
-        ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &peiControl);
-        if (peiControl == 0x00400001) {
-                printf("Setup as single PCIe controller\n");
-        }
+		addr = PCIE0_CONFIG;
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &peiControl);
+	} else {
+		addr = PCIE1_CONFIG;
+		ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &peiControl);
+	}
 
-        lnkStatus = readl((void *)(addr + 0x117c));
-        printf("PEI%d 0x117c LnkStatus = 0x%x\n",  peiCore,lnkStatus);
-        speedBefore = lnkStatus & 0xf;
-        width = (lnkStatus & 0xf0) >> 4;
-        printf("PEI%d width - %d lane \n",peiCore, width);
 
-        if (changeSpeed == speedBefore) {
-                if (changeSpeed == PEI_2_5G)
-                        printf("PEI%d speed already set to (2.5 Gb/s)\n", peiCore);
-                else
-                        printf("PEI%d speed already set to (5 Gb/s)\n", peiCore);
-        } else if (changeSpeed == PEI_2_5G) {
-                /* Change PEI speed to Gen 1 */
-                writel(0x1, (void *)(addr + 0x90));
-                writel(0x10000, (void *)(addr + 0x117c));
+	lnkStatus = readl((void *)(addr + 0x117c));
+	printf("PEI%d 0x117c LnkStatus = 0x%x\n",  peiCore,lnkStatus);
+	speedBefore = lnkStatus & 0xf;
+	width = (lnkStatus & 0xf0) >> 4;
+	printf("PEI%d width - %d lane \n",peiCore, width);
 
-                /* delay for 1000ms */
-                mdelay(1000);
-                lnkStatus = readl((void *)(addr + 0x117c));
-                printf("pei%d lnkStatus 0x117c after speed initiation = 0x%x\n", peiCore, lnkStatus);
-                speedAfter = lnkStatus & 0xf;
-                if ((lnkStatus & 0xc00) == 0xc00) {
-                        /* Please note that this is also ensuring that there is no link training error */
-                        printf("PEI%d has Link Training error\n", peiCore);
-                        if (lnkStatus & 0x10000) {
-                                /* clear speed change initiation bit */
-                                writel(0x20000, (void *)(addr + 0x117c));
-                        }
-                        return;
-                }
-                if ((lnkStatus & 0x10000) != 0x10000) {
-                        if (speedAfter == changeSpeed) {
-                                printf("Successfully changed PEI%d speed from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s)\n", peiCore);
-                        } else {
-                                printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
-                        }
-                } else {
-                        /* clear speed change initiation bit */
-                        writel(0x20000, (void *)(addr + 0x117c));
-                        printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
-                }
-        } else if (changeSpeed == PEI_5G) {
-                if ((peiCore == 0) && (peiControl == 0x00400001) && (width == 0x4)) {
-                        /* Change PEI speed to Gen 2 */
-                        writel(0x2, (void *)(addr + 0x90));
-                        writel(0x10000, (void *)(addr + 0x117c));
-                        udelay(pei_delay);
+	if (changeSpeed == speedBefore) {
+		if (changeSpeed == PEI_2_5G)
+			printf("PEI%d speed already set to (2.5 Gb/s)\n", peiCore);
+		else
+			printf("PEI%d speed already set to (5 Gb/s)\n", peiCore);
+	} else if (changeSpeed == PEI_2_5G) {
+		/* Change PEI speed to Gen 1 */
+		writel(0x1, (void *)(addr + 0x90));
+		writel(0x10000, (void *)(addr + 0x117c));
 
-                        /* ncr w 0x115.1.0x08e 0x0406 */
-                        ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x8e, 0x0406 );
+		/* delay for 1000ms */
+		mdelay(1000);
+		lnkStatus = readl((void *)(addr + 0x117c));
+		printf("pei%d lnkStatus 0x117c after speed initiation = 0x%x\n", peiCore, lnkStatus);
+		speedAfter = lnkStatus & 0xf;
+		if ((lnkStatus & 0xc00) == 0xc00) {
+			/* Please note that this is also ensuring that there is no link training error */
+			printf("PEI%d has Link Training error\n", peiCore);
+			if (lnkStatus & 0x10000) {
+				/* clear speed change initiation bit */
+				writel(0x20000, (void *)(addr + 0x117c));
+			}
+			return;
+		}
+		if ((lnkStatus & 0x10000) != 0x10000) {
+			if (speedAfter == changeSpeed) {
+				printf("Successfully changed PEI%d speed from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s)\n", peiCore);
+			} else {
+				printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
+			}
+		} else {
+			/* clear speed change initiation bit */
+			writel(0x20000, (void *)(addr + 0x117c));
+			printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
+		}
+	} else if (changeSpeed == PEI_5G) {
+		if ((peiCore == 0) && ((peiControl & 0x1c400001)== 0x00400001)) {
+			/* PEI0 RC x4 */
+			peiConfig = readl((void *)(addr + 0x1000));
+			/* clear force gen1 bit 18 */
+			peiConfig = peiConfig & 0xfffbffff;
+			writel(peiConfig, (void *)(addr + 0x1000));
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
 
-                        /* ncr w 0x115.1.0x28e 0x0406 */
-                        ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x28e, 0x0406 );
+			/* ncr w 0x115.1.0x08e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x8e, 0x0406 );
 
-                        /* ncr w 0x115.1.0x68e 0x0406 */
-                        ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
+			/* ncr w 0x115.1.0x28e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x28e, 0x0406 );
 
-                        /* ncr w 0x115.1.0x88e 0x0406 */
-                        ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+			/* ncr w 0x115.1.0x68e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
+		
+			/* ncr w 0x115.1.0x88e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+		} else if ((peiCore == 1) && ((peiControl & 0x0c400001)== 0x00400001)) {
+			/* PEI1 RC x4 */
+			peiConfig = readl((void *)(addr + 0x1000));
+			/* clear force gen1 bit 18 */
+			peiConfig = peiConfig & 0xfffbffff;
+			writel(peiConfig, (void *)(addr + 0x1000));
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
 
-                } else {
-                        /* Change PEI speed to Gen 2 */
-                        writel(0x2, (void *)(addr + 0x90));
-                        writel(0x10000, (void *)(addr + 0x117c));
-                }
+			/* ncr w 0x115.4.0x08e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
 
-                /* delay for 1000 ms */
-                mdelay(1000);
-                lnkStatus = readl((void *)(addr + 0x117c));
-                printf("pei%d lnkStatus 0x117c after speed initiation = 0x%x\n", peiCore, lnkStatus);
-                speedAfter = lnkStatus & 0xf;
+			/* ncr w 0x115.4.0x28e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x28e, 0x0406 );
 
-                if ((lnkStatus & 0xc00) == 0xc00) {
-                        /* Please note that this is also ensuring that there is no link training error */
-                        printf("PEI%d has Link Training error\n", peiCore);
-                        if (lnkStatus & 0x10000) {
-                                /* clear speed change initiation bit */
-                                writel(0x20000, (void *)(addr + 0x117c));
-                        }
-                        return;
-                }
+			/* ncr w 0x115.4.0x68e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x68e, 0x0406 );
+		
+			/* ncr w 0x115.4.0x88e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x88e, 0x0406 );
+		} else if ((peiCore == 0) && ((peiControl & 0x1c400001)== 0x04400001) 
+			||((peiControl & 0x1c400001)== 0x08400001)) {
+			/* PEI0 RC x2 */
+			peiConfig = readl((void *)(addr + 0x1000));
+			/* clear force gen1 bit 18 */
+			peiConfig = peiConfig & 0xfffbffff;
+			writel(peiConfig, (void *)(addr + 0x1000));
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
 
-                if ((lnkStatus & 0x10000) != 0x10000) {
-                        if (speedAfter == changeSpeed) {
-                                printf("Successfully changed PEI%d speed from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s)\n", peiCore);
-                        } else {
-                                printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
-                        }
-                } else {
-                        /* clear speed change initiation bit */
-                        writel(0x20000, (void *)(addr + 0x117c));
-                        printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
-                }
-        }
-	}	
+			/* ncr w 0x115.1.0x68e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
+		
+			/* ncr w 0x115.1.0x88e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+		} else if ((peiCore == 1) && ((peiControl & 0x0c400001)== 0x04400001)) {
+			/* PEI1 RC x2 */
+			peiConfig = readl((void *)(addr + 0x1000));
+			/* clear force gen1 bit 18 */
+			peiConfig = peiConfig & 0xfffbffff;
+			writel(peiConfig, (void *)(addr + 0x1000));
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
+
+			/* ncr w 0x115.4.0x08e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
+
+			/* ncr w 0x115.4.0x28e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x28e, 0x0406 );
+
+		} else if ((peiCore == 0) && ((peiControl & 0x1c400001)== 0x14400001)) {
+			/* PEI0 RC x1 */
+			peiConfig = readl((void *)(addr + 0x1000));
+			/* clear force gen1 bit 18 */
+			peiConfig = peiConfig & 0xfffbffff;
+			writel(peiConfig, (void *)(addr + 0x1000));
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
+
+			/* ncr w 0x115.1.0x88e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+		} else if ((peiCore == 1) && ((peiControl & 0x0c400001)== 0x08400001)) {
+			/* PEI1 RC x1 */
+			peiConfig = readl((void *)(addr + 0x1000));
+			/* clear force gen1 bit 18 */
+			peiConfig = peiConfig & 0xfffbffff;
+			writel(peiConfig, (void *)(addr + 0x1000));
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
+
+			/* ncr w 0x115.4.0x08e 0x0406 */
+			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
+
+		} else {
+			printf("Unsupported PEI%d config = 0x%x\n", peiCore, peiControl);
+			return;
+		}
+		/* delay for 1000 ms */
+		mdelay(1000);
+		lnkStatus = readl((void *)(addr + 0x117c));
+		printf("pei%d lnkStatus 0x117c after speed initiation = 0x%x\n", peiCore, lnkStatus);
+		speedAfter = lnkStatus & 0xf;
+
+		if ((lnkStatus & 0xc00) == 0xc00) {
+			/* Please note that this is also ensuring that there is no link training error */
+			printf("PEI%d has Link Training error\n", peiCore);
+			if (lnkStatus & 0x10000) {
+				/* clear speed change initiation bit */
+				writel(0x20000, (void *)(addr + 0x117c));
+			}
+			return;
+		}
+
+		if ((lnkStatus & 0x10000) != 0x10000) {
+			if (speedAfter == changeSpeed) {
+				printf("Successfully changed PEI%d speed from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s)\n", peiCore);
+			} else {
+				printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
+			}
+		} else {
+			/* clear speed change initiation bit */
+			writel(0x20000, (void *)(addr + 0x117c));
+			printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
+		}
+	}
 }
 #endif
 

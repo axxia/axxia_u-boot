@@ -106,18 +106,6 @@ axxia_initialize(void)
 #endif
 
 	/*
-	  =========
-	  PCIe/SRIO
-	  =========
-	*/
-
-#ifndef CONFIG_AXXIA_EMU
-	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
-		if (0 != pciesrio_init(pciesrio->control))
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-#endif
-
-	/*
 	  ======
 	  Clocks
 	  ======
@@ -148,6 +136,17 @@ axxia_initialize(void)
 
 		ncr_tracer_disable();
 	}
+#endif
+	/*
+	  =========
+	  PCIe/SRIO
+	  =========
+	*/
+
+#ifndef CONFIG_AXXIA_EMU
+	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
+		if (0 != pciesrio_init(pciesrio->control))
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 
 	return 0;
