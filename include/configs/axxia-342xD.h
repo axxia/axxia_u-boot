@@ -50,6 +50,12 @@
 #define CONFIG_AXXIA_SERIAL_FLASH
 #define CONFIG_AXXIA_NAND_ENV
 
+#define CONFIG_AXXIA_FEMAC
+#define CONFIG_AXXIA_EIOA
+#define CONFIG_SPL
+
+#define CONFIG_BOOTDELAY 3
+
 #include <configs/axxia-ppc.h>
 
 #endif	/* __CONFIGS_AXXIA_342XD_H */

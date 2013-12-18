@@ -531,7 +531,7 @@ ncr_write32_0x115(unsigned long region, unsigned long offset,
 
 #endif	/* ACP_25xx */
 
-#if defined(CONFIG_AXXIA_55XX) || defined(CONFIG_AXXIA_55XX_EMU)
+#if defined(CONFIG_AXXIA_55XX) || defined(CONFIG_AXXIA_55XX_EMU) || defined(CONFIG_AXXIA_SIM)
 
 /*
   -------------------------------------------------------------------------------
@@ -921,7 +921,7 @@ ncr_write32_0x159(unsigned long region, unsigned long offset, unsigned long valu
 	return 0;
 }
 
-#endif	/* CONFIG_AXXXIA_55XX */
+#endif	/* CONFIG_AXXIA_55XX */
 
 /*
   ======================================================================

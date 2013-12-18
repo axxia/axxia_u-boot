@@ -1745,11 +1745,7 @@ int serial_early_init(void);
 /*
  * Miscellaneous configurable options
  */
-#ifdef ACP_ISS
-#define CONFIG_BOOTDELAY	1	/* autoboot after 5 seconds	*/
-#else
-#define CONFIG_BOOTDELAY	5	/* autoboot after 5 seconds	*/
-#endif
+
 #define CFG_LOAD_ADDR		0x400000  /* default load address	*/
 #define CONFIG_SYS_LOAD_ADDR	0x400000  /* default load address	*/
 #define CFG_HZ			1000	/* decrementer freq: 1 ms ticks	*/

@@ -41,6 +41,7 @@
 int
 set_outer_cache_state(unsigned long state)
 {
+#ifndef CONFIG_AXXIA_SIM
 	int i;
         unsigned long status;
 	int retries;
@@ -67,6 +68,7 @@ set_outer_cache_state(unsigned long state)
 		if (0 == retries)
 			return -1;
 	}
+#endif
 
 	return 0;
 }

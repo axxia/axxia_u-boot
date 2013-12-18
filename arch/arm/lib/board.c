@@ -911,18 +911,6 @@ extern unsigned long _u_boot_list__start; /* SR */
 	dataflash_print_info();
 #endif
 
-#if 0
-#ifndef CONFIG_AXXIA_ARM
-
-	/* initialize environment */
-	if (should_load_env())
-		env_relocate();
-	else
-#endif
-	/* SR env */
-		set_default_env(NULL);
-#endif
-
 	/* initialize environment */
 	if (should_load_env())
 		env_relocate();

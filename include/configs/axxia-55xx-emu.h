@@ -92,6 +92,43 @@
 
 #define SSP_DEFAULT_CLOCK  1000000
 
+#define CONFIG_AXXIA_FEMAC
+#define CONFIG_AXXIA_EIOA
+#define CONFIG_SPL
+
+#define CONFIG_BOOTDELAY 3
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"loadaddr=0x82000000\0" \
+	"console=ttyO2,115200n8\0" \
+	"usbtty=cdc_acm\0" \
+	"vram=16M\0" \
+	"mmcdev=0\0" \
+	"mmcroot=/dev/mmcblk0p2 rw\0" \
+	"mmcrootfstype=ext3 rootwait\0" \
+	"mmcargs=setenv bootargs console=${console} " \
+		"vram=${vram} " \
+		"root=${mmcroot} " \
+		"rootfstype=${mmcrootfstype}\0" \
+	"loadbootscript=fatload mmc ${mmcdev} ${loadaddr} boot.scr\0" \
+	"bootscript=echo Running bootscript from mmc${mmcdev} ...; " \
+		"source ${loadaddr}\0" \
+	"loaduimage=fatload mmc ${mmcdev} ${loadaddr} uImage\0" \
+	"mmcboot=echo Booting from mmc${mmcdev} ...; " \
+		"run mmcargs; " \
+		"bootm ${loadaddr}\0" \
+
+#define CONFIG_BOOTCOMMAND \
+	"mmc dev ${mmcdev}; if mmc rescan; then " \
+		"if run loadbootscript; then " \
+			"run bootscript; " \
+		"else " \
+			"if run loaduimage; then " \
+				"run mmcboot; " \
+			"fi; " \
+		"fi; " \
+	"fi"
+
 #include <configs/axxia-arm.h>
 
 #endif	/* __CONFIGS_AXXIA_55XX_EMU_H */

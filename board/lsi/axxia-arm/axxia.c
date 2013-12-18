@@ -49,6 +49,7 @@ const struct omap_sysinfo sysinfo = {
 static int
 set_cluster_coherency(unsigned cluster, unsigned state)
 {
+#ifndef CONFIG_AXXIA_SIM
 	unsigned long sdcr_offsets[] = {
 		0x00,		/* This is the DVM */
 		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
@@ -106,7 +107,7 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 		if (0 == retries)
 			return -1;
 	}
-
+#endif	/* CONFIG_AXXIA_SIM */
 	return 0;
 }
 
@@ -417,7 +418,7 @@ arch_early_init_r(void)
 
 	printf("Sysmem Size: %llu Mb\n",
 	       (sysmem_size() / (1024ULL * 1024ULL)));
-	
+
 	return 0;
 }
 
@@ -456,6 +457,7 @@ ft_board_setup(void *blob, bd_t *bd)
 	  Set the PLL/Clock frequencies.
 	*/
 
+#ifndef CONFIG_AXXIA_SIM
 	for (i = 0; i < (sizeof(clocks) / sizeof(acp_clock_t)); ++i) {
 		node = fdt_path_offset(blob, clock_names[i]);
 
@@ -464,6 +466,7 @@ ft_board_setup(void *blob, bd_t *bd)
 
 		acp_clock_get(clocks[i], &tmp);
 		tmp *= 1000;
+		printf("%s/frequency: %u\n", clock_names[i], tmp);
 		tmp = htonl(tmp);
 		rc = fdt_setprop(blob, node, "frequency",
 				 &tmp, sizeof(unsigned long));
@@ -472,6 +475,7 @@ ft_board_setup(void *blob, bd_t *bd)
 			printf("%s:%d - Couldn't set PLLs!\n",
 			       __FILE__, __LINE__);
 	}
+#endif
 
 	/*
 	  Fix up the spin table addresses.
@@ -545,6 +549,7 @@ ft_board_setup(void *blob, bd_t *bd)
 	/*
 	  Enable PEI0/PEI1 controllers */
 
+#ifndef CONFIG_AXXIA_SIM
 	node = fdt_path_offset(blob, "/pciex@0x3000000000");
 
 	if (0 <= node) {
@@ -579,7 +584,8 @@ ft_board_setup(void *blob, bd_t *bd)
 	}
 
 	/*
-	  Enable SRI00/SRIO1 controllers */
+	  Enable SRI00/SRIO1 controllers
+	*/
 
 	node = fdt_path_offset(blob, "/rapidio@0x3100000000");
 
@@ -614,6 +620,7 @@ ft_board_setup(void *blob, bd_t *bd)
 			printf("SRIO1 is enabled\n");
 		}
 	}
+#endif
 
 	return;
 }

@@ -307,22 +307,61 @@ get_pll(unsigned long prms, unsigned long seldiv)
 #endif
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   axxia_clock_get
 */
 
 int
 acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 {
-#ifndef CONFIG_AXXIA_EMU
+#if defined(CONFIG_AXXIA_SIM)
+
+	switch (clock) {
+	case clock_system:
+		*frequency = 387000;
+		break;
+	case clock_peripheral:
+		*frequency = 200000;
+		break;
+	case clock_core:
+		*frequency = 1400000;
+		break;
+	case clock_emmc:
+		*frequency = 200000;
+		break;
+	default:
+		*frequency = 0ULL;
+		return -1;
+		break;
+	}
+	return 0;
+
+#elif defined(CONFIG_AXXIA_EMU)
+
+	switch (clock) {
+	case clock_system:
+		*frequency = 4096;
+		break;
+	case clock_peripheral:
+		*frequency = 2000;
+		break;
+	case clock_core:
+		*frequency = 2000;
+		break;
+	case clock_emmc:
+		*frequency = 2000;
+		break;
+	default:
+		*frequency = 0ULL;
+		return -1;
+		break;
+	}
+	return 0;
+
+#else
 	unsigned long csw;
 	unsigned long div;
 	unsigned long prms;
-#endif
-
-	*frequency = 0ULL;
-
-#ifndef CONFIG_AXXIA_EMU
 
 	switch (clock) {
 	case clock_fab:
@@ -412,37 +451,13 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 		break;
 	}
 
-#else
-
-	/*
-	  Clocks are only available on the ASIC.
-	*/
-
-	switch (clock) {
-	case clock_system:
-		*frequency = 4096;
-		break;
-	case clock_peripheral:
-		*frequency = 2000;
-		break;
-	case clock_core:
-		*frequency = 2000;
-		break;
-	case clock_emmc:
-		*frequency = 2000;
-		break;
-	default:
-		return -1;
-		break;
-	}
-
 #endif
 	
 	return 0;
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
 */
 
 void

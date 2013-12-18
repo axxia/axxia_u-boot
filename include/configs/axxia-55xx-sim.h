@@ -20,10 +20,11 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __CONFIGS_AXXIA_344X_H
-#define __CONFIGS_AXXIA_344X_H
+#ifndef __CONFIGS_AXXIA_55XX_SIM_H
+#define __CONFIGS_AXXIA_55XX_SIM_H
 
-#define CONFIG_AXXIA_344X
+#define CONFIG_AXXIA_55XX_SIM
+#define CONFIG_AXXIA_SIM
 
 /*
   ===============================================================================
@@ -35,26 +36,37 @@
 
 #define CONFIG_BAUDRATE    9600
 
-#define CONFIG_AXXIA_SERIAL
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_AXXIA_USB
-#define CONFIG_AXXIA_PCI
-#define CONFIG_AXXIA_NET
-/*#define CONFIG_AXXIA_EIOA*/
-#define CONFIG_AXXIA_FEMAC
-#define CONFIG_AXXIA_PHY_ADDRESS 0x1e
-#endif
 
-#define CONFIG_AXXIA_NAND
-#define CONFIG_AXXIA_SERIAL_FLASH
-#define CONFIG_AXXIA_NAND_ENV
+/********** FEMAC PHY ADDRESS *************/
+#define CONFIG_AXXIA_PHY_ADDRESS 0x3
 
-#define CONFIG_AXXIA_FEMAC
-#define CONFIG_AXXIA_EIOA
-#define CONFIG_SPL
 
-#define CONFIG_BOOTDELAY 3
+/* HACK: Define it until cache coherency is figured out */
+/* #define USE_CACHE_SYNC */
 
-#include <configs/axxia-ppc.h>
+/*
+  ==============================================================================
+  ==============================================================================
+  Features.
+  ==============================================================================
+  ==============================================================================
+*/
 
-#endif	/* __CONFIGS_AXXIA_344X_H */
+#define V_MIN   795
+#define V_SAFE  940
+#define V_MAX  1050
+
+#define SSP_DEFAULT_CLOCK  1000000
+
+#define CONFIG_ENV_IS_NOWHERE
+#define CONFIG_ENV_OFFSET    0x80000
+#define CONFIG_ENV_SIZE      0x20000
+#define CONFIG_ENV_SECT_SIZE 0x20000
+
+#define CONFIG_BOOTDELAY 0
+#define CONFIG_BOOTCOMMAND \
+  "setenv fdt_high 0xffffffff ; setenv bootargs console=ttyAMA root=/dev/mmcblk0 rootwait ; bootm 4010000 - 4000000\0"
+
+#include <configs/axxia-arm.h>
+
+#endif	/* __CONFIGS_AXXIA_55XX_SIM_H */

@@ -49,7 +49,11 @@ endif
 ################################################################################
 ## All Builds
 
-COBJS += version.o lsi.o ncr.o parameters.o sysmem_size.o
+COBJS += version.o lsi.o ncr.o sysmem_size.o
+
+ifndef CONFIG_AXXIA_SIM
+COBJS += parameters.o
+endif
 
 ################################################################################
 
