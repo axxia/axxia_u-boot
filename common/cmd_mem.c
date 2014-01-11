@@ -27,6 +27,7 @@
  * Copied from FADS ROM, Dan Malek (dmalek@jlc.net)
  */
 
+#include <config.h>
 #include <common.h>
 #include <command.h>
 #ifdef CONFIG_HAS_DATAFLASH
@@ -670,6 +671,7 @@ static int do_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 
 
 		if (iteration_limit && iterations > iteration_limit) {
+			axxia_mtest_check_ecc();
 			printf("Tested %d iteration(s) with %lu errors.\n",
 				iterations-1, errs);
 			return errs != 0;
@@ -895,6 +897,8 @@ static int do_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 		}
 
 		if (iteration_limit && iterations > iteration_limit) {
+			/* Check for ECC errors */
+			axxia_mtest_check_ecc();
 			printf("Tested %d iteration(s) with %lu errors.\n",
 				iterations-1, errs);
 			return errs != 0;
@@ -912,7 +916,7 @@ static int do_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 			val  += incr;
 		}
 
-		puts ("Reading...");
+		puts ("Reading...\n");
 
 		for (addr=start,val=pattern; addr<end; addr++) {
 			WATCHDOG_RESET();

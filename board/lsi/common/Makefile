@@ -40,16 +40,16 @@ else
 
 COBJS += sysmem_reset.o
 
-ifndef CONFIG_AXXIA_EMU
-COBJS += sysmem_bist.o
-endif
-
 endif
 
 ################################################################################
 ## All Builds
 
 COBJS += version.o lsi.o ncr.o sysmem_size.o
+
+ifndef CONFIG_AXXIA_EMU
+COBJS += sysmem_bist.o
+endif
 
 ifndef CONFIG_AXXIA_SIM
 COBJS += parameters.o

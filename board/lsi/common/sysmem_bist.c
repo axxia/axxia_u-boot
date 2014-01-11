@@ -354,3 +354,11 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length)
 
 	return 0;
 }
+
+void
+axxia_mtest_check_ecc() {
+	axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
+
+	if (1 < sysmem->num_interfaces)
+		axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x00f, 0));
+}

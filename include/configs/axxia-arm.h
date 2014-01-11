@@ -41,6 +41,7 @@
 void acp_failure(const char *, const char *, const int);
 int axxia_initialize(void);
 void display_va_attr(void *);
+void axxia_mtest_check_ecc(void);
 #endif	/* __ASSEMBLY__ */
 
 /*
