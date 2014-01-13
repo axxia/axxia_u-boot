@@ -114,8 +114,15 @@ axxia_sysmem_asic_check_ecc(unsigned long region)
 	ncr_read32(region, NCP_DENALI_CTL_421, &value);
 
 	if (1 != ((ncp_denali_DENALI_CTL_421_t *)&value)->ecc_en) {
-		printf("ECC is not enabled for node 0x%03lx\n",
+		if (NCP_NODE_ID(region) == 0x22) {
+			/* SM0 */
+			printf("ECC is not enabled for SM0 node 0x%03lx\n",
 		       NCP_NODE_ID(region));
+		} else if (NCP_NODE_ID(region) == 0xf) {
+			/* SM1 */
+			printf("ECC is not enabled for SM1 node 0x%03lx\n",
+		       NCP_NODE_ID(region));
+		}
 		return;
 	}
 #else
@@ -131,16 +138,36 @@ axxia_sysmem_asic_check_ecc(unsigned long region)
 	ncr_read32(region, INT_STATUS_OFFSET, &value);
 
 	if (0 == (value & ECC_ERROR_MASK)) {
-		printf("No ECC Errors Detected on Node 0x%03lx.\n",
+#ifdef CONFIG_AXXIA_55XX
+		if (NCP_NODE_ID(region) == 0x22) {
+			printf("No ECC Errors Detected on SM0 Node 0x%03lx.\n",
 		       NCP_NODE_ID(region));
+		} else if (NCP_NODE_ID(region) == 0xf) {
+			printf("No ECC Errors Detected on SM1 Node 0x%03lx.\n",
+		       NCP_NODE_ID(region));
+		}
+#else
+			printf("No ECC Errors Detected on Node 0x%03lx.\n",
+		       NCP_NODE_ID(region));
+#endif
 	} else {
 		int i;
 		unsigned long offsets[] = {
 			0x0ac, 0x258, 0x260, 0x264, 0x288, 0x28c, 0x290, 0x294
 		};
 
+#ifdef CONFIG_AXXIA_55XX
+		if (NCP_NODE_ID(region) == 0x22) {
+			printf("ECC Errors Detected on SM0 Node 0x%03lx: 0x%02lx\n",
+		       NCP_NODE_ID(region), (value & ECC_ERROR_MASK));
+		} else if (NCP_NODE_ID(region) == 0xf) {
+			printf("ECC Errors Detected on SM1 Node 0x%03lx: 0x%02lx\n",
+		       NCP_NODE_ID(region), (value & ECC_ERROR_MASK));
+		}
+#else
 		printf("ECC Errors Detected on Node 0x%03lx: 0x%02lx\n",
 		       NCP_NODE_ID(region), (value & ECC_ERROR_MASK));
+#endif
 
 		for (i = 0; i < (sizeof(offsets) / sizeof(unsigned long));
 		     ++ i) {
