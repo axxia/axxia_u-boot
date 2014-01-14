@@ -671,7 +671,9 @@ static int do_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 
 
 		if (iteration_limit && iterations > iteration_limit) {
+#ifdef CONFIG_AXXIA_55XX
 			axxia_mtest_check_ecc();
+#endif
 			printf("Tested %d iteration(s) with %lu errors.\n",
 				iterations-1, errs);
 			return errs != 0;
@@ -897,8 +899,10 @@ static int do_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 		}
 
 		if (iteration_limit && iterations > iteration_limit) {
+#ifdef CONFIG_AXXIA_55XX
 			/* Check for ECC errors */
 			axxia_mtest_check_ecc();
+#endif
 			printf("Tested %d iteration(s) with %lu errors.\n",
 				iterations-1, errs);
 			return errs != 0;

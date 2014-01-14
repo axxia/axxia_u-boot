@@ -47,7 +47,7 @@ endif
 
 COBJS += version.o lsi.o ncr.o sysmem_size.o
 
-ifndef CONFIG_AXXIA_EMU
+ifdef CONFIG_AXXIA_55XX
 COBJS += sysmem_bist.o
 endif
 
