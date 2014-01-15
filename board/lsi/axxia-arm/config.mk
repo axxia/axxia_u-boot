@@ -1,0 +1,3 @@
+ifdef CROSS_LIBS
+PLATFORM_LDFLAGS += -L $(CROSS_LIBS)
+endif
