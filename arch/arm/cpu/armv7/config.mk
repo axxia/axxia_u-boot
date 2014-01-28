@@ -22,6 +22,9 @@
 #
 PLATFORM_RELFLAGS += -fno-common -ffixed-r8 -msoft-float
 
+# DS-5 doesn't support dwarf 4 until version 5.16.
+PLATFORM_RELFLAGS += -gdwarf-3
+
 # If armv7-a is not supported by GCC fall-back to armv5, which is
 # supported by more tool-chains
 PF_CPPFLAGS_ARMV7 := $(call cc-option, -march=armv7-a, -march=armv5)
