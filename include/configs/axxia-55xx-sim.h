@@ -65,7 +65,7 @@
 
 #define CONFIG_BOOTDELAY 0
 #define CONFIG_BOOTCOMMAND \
-  "setenv fdt_high 0xffffffff ; setenv bootargs console=ttyAMA root=/dev/mmcblk0 rootwait ; bootm 4010000 - 4000000\0"
+  "setenv fdt_high 0xffffffff ; setenv bootargs console=ttyAMA root=/dev/mmcblk0 rootwait mem=1024M ; bootm 4010000 - 4000000\0"
 
 #include <configs/axxia-arm.h>
 
