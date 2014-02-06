@@ -118,7 +118,7 @@ pcie_lsdq_workaround(int pei)
 int
 pciesrio_setcontrol_acp34xx(unsigned long new_control)
 {
-#if !defined(ACP_EMU) && !defined(ACP_ISS) && !defined(ACP_X1V1)
+#if !defined(ACP_EMU) && !defined(ACP_ISS) && !defined(ACP_X1V1) && !defined(AXM_35xx)
 	unsigned long old_control;
 	unsigned long linkStatus;
 

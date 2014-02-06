@@ -253,6 +253,9 @@ int acp_init( void );
 #if defined(ACP_25xx)
 #define CONFIG_I2C_MULTI_BUS
 #define CONFIG_SYS_MAX_I2C_BUS 2
+#elif (defined(AXM_35xx) && !defined(ACP_EMU))
+#define CONFIG_I2C_MULTI_BUS
+#define CONFIG_SYS_MAX_I2C_BUS 3
 #endif
 #endif
 

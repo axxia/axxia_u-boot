@@ -193,6 +193,9 @@
 #if defined(ACP_25xx)
 #define CONFIG_I2C_MULTI_BUS
 #define CONFIG_SYS_MAX_I2C_BUS 2
+#elif (defined(AXM_35xx) && !defined(ACP_EMU))
+#define CONFIG_I2C_MULTI_BUS
+#define CONFIG_SYS_MAX_I2C_BUS 3
 #endif
 #endif
 
@@ -225,19 +228,12 @@ unsigned long *get_acp_fdt(int);
 #if defined(ACP_X2V1) || defined(ACP_25xx)
 #define ACP_NR_CORES 2
 #define OS_GROUP0_DEFAULT "0xd31:0:0x100"
-#else
-#if defined (AXM_35xx) && defined (ACP_EMU)
-/*
-#define ACP_NR_CORES 1
-#define OS_GROUP0_DEFAULT "0x911:0:0x100"
-*/
+#elif defined (AXM_35xx)
 #define ACP_NR_CORES 6
 #define OS_GROUP0_DEFAULT "0xdf1:0:0x100"
-
 #else
-#define ACP_NR_CORES 6
+#define ACP_NR_CORES 4
 #define OS_GROUP0_DEFAULT "0xdf1:0:0x100"
-#endif
 #endif
 
 #define OS_MEMORY_DEFAULT 0x100
