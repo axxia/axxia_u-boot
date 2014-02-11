@@ -30,9 +30,7 @@
 #include <common.h>
 #include <spi.h>
 #include <spi_flash.h>
-#ifndef CONFIG_SPL_BUILD
 #include <malloc.h>
-#endif
 
 /*
   ==============================================================================
@@ -146,10 +144,9 @@ verify_parameters(void *parameters)
 int
 read_parameters(void)
 {
-	int rc;
 #ifdef CONFIG_AXXIA_ARM
 	int i;
-	unsigned long *buffer;
+	unsigned *buffer;
 #endif
 
 #ifdef CONFIG_SPL_BUILD
@@ -246,7 +243,7 @@ read_parameters(void)
 	printf("version=%lu flags=0x%lx\n", global->version, global->flags);
 #endif
 
-	printf("Parameter Table Version %lu\n", global->version);
+	printf("Parameter Table Version %u\n", global->version);
 
 	return 0;
 }
@@ -264,7 +261,7 @@ write_parameters(void)
 #ifdef CONFIG_AXXIA_ARM
 	struct spi_flash *flash = NULL;
 	void *compare = NULL;
-	unsigned long *buffer;
+	unsigned *buffer;
 	int i;
 	int rc = -1;
 
@@ -315,8 +312,8 @@ write_parameters(void)
 
 #ifdef DEBUG
 	{
-		unsigned long *a = parameters;
-		unsigned long *b = compare;
+		unsigned *a = parameters;
+		unsigned *b = compare;
 
 		printf("compare is at 0x%p\n"
 		       "parameters are at 0x%p\n",

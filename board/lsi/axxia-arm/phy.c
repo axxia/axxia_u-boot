@@ -242,7 +242,6 @@ static int
 bcm5222_phy_duplex( int phy )
 {
 	bcm5222_phy_auxiliary_control_status_t aux;
-	unsigned short duplex;
 	
 	aux.raw = mdio_read( phy, BCM5222_PHY_AUXILIARY_CONTROL_STATUS );
 
@@ -478,12 +477,9 @@ phy_duplex( int phy )
 int
 phy_link( int phy )
 {
-	phy_control_t control;
 	phy_status_t status;
 
-	DEBUG_PRINT( "phy=%d\n", phy );
-
-	control.raw = mdio_read( phy, PHY_CONTROL );
+	(void)mdio_read( phy, PHY_CONTROL );
 	status.raw = mdio_read( phy, PHY_STATUS );
 	status.raw = mdio_read( phy, PHY_STATUS );
 

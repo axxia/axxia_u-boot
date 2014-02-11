@@ -19,6 +19,7 @@
  */
 
 #include <common.h>
+#include <serial.h>
 #include <spl.h>
 #include <spi_flash.h>
 #include <asm/io.h>
@@ -336,6 +337,8 @@ fix_up_vat(void)
 
 	if (0 != rc)
 		return -1;
+
+	return 0;
 }
 
 /*
@@ -408,7 +411,7 @@ reset_cpu_fabric(void)
 static void
 check_memory_ranges(void)
 {
-	unsigned long *ranges = &global->memory_check_ranges;
+	unsigned long *ranges = (unsigned long *)&global->memory_check_ranges;
 	int i;
 
 	for (i = 0; i < 8; ++i) {
@@ -548,7 +551,7 @@ void spl_spi_load_image(void)
 		       spl_image.size, (void *)spl_image.load_addr);
 }
 
-void __noreturn
+void
 jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	reset_cpu_fabric();

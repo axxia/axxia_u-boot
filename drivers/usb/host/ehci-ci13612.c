@@ -31,9 +31,11 @@
  */
 int ehci_hcd_init(int index, struct ehci_hccr **hccr, struct ehci_hcor **hcor)
 {
+#ifndef CONFIG_AXXIA_ARM
 	int ret;
 	int USB_TXFIFOTHRES, VUSB_HS_TX_BURST;
 	int hwtxbuf, txfulltuning, deviceMode;
+#endif
 
 	/* Setup GPREG for USB to enable the 6-bit address line */
         writel(0x0, GPREG_USB);

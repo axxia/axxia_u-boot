@@ -231,7 +231,7 @@ ncp_task_v2_hdl_create(
 #endif
          
         tmpPtr
-        = (void *)
+	  = (void *)(unsigned)
              NCP_TASK_MEM_MMAP(myTaskHdl->dev, 
                           (void *)(ncp_raw_addr_t)pPoolEntry->pool_VA,     
                           pPoolEntry->pool_Size,
@@ -929,12 +929,14 @@ ncp_task_ncav2_recv(
 #else
     ncp_pvt_task_hdl_t *myTaskHdl = (ncp_pvt_task_hdl_t *)taskHdl;
     ncp_pvt_task_recv_queue_t   *myRecvQueue;
+#if 0 /* UBOOT */
     ncp_recv_queue_level1_bind_wrapper_t* pBindTableEntry;
-    ncp_pvt_task_recv_queue_t   *firstRecvQueue;
     ncp_uint8_t                  templateId;
     ncp_vp_hdl_t                 thisVpHdl;
-    ncp_task_pcq_t               *pcq;
     ncp_uint8_t                  thisEngSeqId;
+    ncp_task_pcq_t               *pcq;
+#endif
+    ncp_pvt_task_recv_queue_t   *firstRecvQueue;
     ncp_uint8_t                  buffSizeBits;
 
     NCP_CHECK((NULL != pNcpNcaV2_TaskSwState), NCP_ST_TASK_NO_GSM);
@@ -959,10 +961,13 @@ ncp_task_ncav2_recv(
 
     do {
 
+#if 0 /* UBOOT */
 ncp_recv_retry:
+#endif
 
-
+#if 0 /* UBOOT */
         pcq = myRecvQueue->taskQueue;
+#endif
 
 
         if (NCP_ST_SUCCESS == 
@@ -973,8 +978,10 @@ ncp_recv_retry:
                                          &buffSizeBits )))
         {
             ncp_task_ncaV2_recv_buf_t *myTask = (ncp_task_ncaV2_recv_buf_t *)*task;
+#if 0 /* UBOOT */
             ncp_recv_queue_level1_bind_t *pLevel1_bind;
             ncp_bool_t dropTask = FALSE;
+#endif
 
             debug("ncp_task_ncav2_recv(): received task!! task addr=0x%p\n", myTask);
             
@@ -4048,7 +4055,7 @@ ncp_task_v2_mmap_prepare_nca_mmio(ncp_hdl_t ncpHdl, ncp_dev_hdl_t devHdl, ncp_bo
             */
     
             pNcpNcaV2_domainBundle 
-            = (void *)
+	      = (void *)(unsigned)
                  NCP_TASK_MEM_MMAP(devHdl, 
                               (void *)pNcpNcaV2_TaskSwState->domainMemMap.domainBundle_VA,     
                                pNcpNcaV2_TaskSwState->domainMemMap.domainBundle_Size,
@@ -4099,7 +4106,9 @@ ncp_task_v2_mmap_prepare_nca_mmio(ncp_hdl_t ncpHdl, ncp_dev_hdl_t devHdl, ncp_bo
 
     if (!warmRestart)
     {
+#if 0 /* UBOOT */
         ncp_vp_hdl_t vpHdl;
+#endif
         
         pNcpNcaV2_TaskSwState->inWarmRestart            = FALSE;
 
@@ -4724,7 +4733,7 @@ ncp_task_v2_mmap_attach(ncp_dev_hdl_t devHdl,
      */
 #ifndef NCP_KERNEL
     *pGSM
-    = (void *)
+      = (void *)(unsigned)
          NCP_TASK_MEM_MMAP(devHdl, 
                       (void *)pNcpNcaV2_TaskSwState->domainMemMap.domainBundle_VA,    
                        pNcpNcaV2_TaskSwState->domainMemMap.domainBundle_Size,

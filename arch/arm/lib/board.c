@@ -84,13 +84,11 @@ typedef enum {
 } peiSpeed_t;
 
 void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
-	unsigned long lnkStatus, addr;
+	unsigned lnkStatus, addr;
 	unsigned width;
 	peiSpeed_t speedBefore, speedAfter;
-	unsigned long ln0PipeStatus;
-	unsigned long regValue, peiControl;
-	int count;
-	unsigned long peiDelay, peiConfig;
+	unsigned peiControl;
+	unsigned peiDelay, peiConfig;
 	char * env_value;
 
 	env_value = getenv("pei_speed_change_delay");
@@ -202,8 +200,9 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 		
 			/* ncr w 0x115.4.0x88e 0x0406 */
 			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x88e, 0x0406 );
-		} else if ((peiCore == 0) && ((peiControl & 0x1c400001)== 0x04400001) 
-			||((peiControl & 0x1c400001)== 0x08400001)) {
+		} else if (((peiCore == 0) &&
+			    (((peiControl & 0x1c400001)== 0x04400001))) ||
+			   ((peiControl & 0x1c400001)== 0x08400001)) {
 			/* PEI0 RC x2 */
 			peiConfig = readl((void *)(addr + 0x1000));
 			/* clear force gen1 bit 18 */
@@ -421,7 +420,7 @@ static int arm_pci_init(void)
 #ifdef CONFIG_SPL_PCI_SUPPORT
 	{
 		char * env_value;
-		unsigned long pciStatus, linkState;
+		unsigned pciStatus, linkState;
 
 		pciStatus = readl((void *)(PCIE0_CONFIG + 0x1004));
 		printf("PEI0 pciStatus = 0x%x\n", pciStatus);
@@ -430,7 +429,7 @@ static int arm_pci_init(void)
 			printf("PCIE0 link State UP = 0x%x\n", linkState);
 			env_value = getenv("pei0_speed");
 			if ((char *)0 != env_value) {
-				unsigned long pei0_speed;
+				unsigned pei0_speed;
 
 				pei0_speed = simple_strtoul(env_value, NULL, 0);
 				pci_speed_change(0, pei0_speed);
@@ -446,7 +445,7 @@ static int arm_pci_init(void)
 			printf("PCIE1 link State UP = 0x%x\n", linkState);
 			env_value = getenv("pei1_speed");
 			if ((char *)0 != env_value) {
-				unsigned long pei1_speed;
+				unsigned pei1_speed;
 
 				pei1_speed = simple_strtoul(env_value, NULL, 0);
 				pci_speed_change(1, pei1_speed);
@@ -811,8 +810,8 @@ void board_init_r(gd_t *id, ulong dest_addr)
 #endif
 
 #if 0
-extern unsigned long _u_boot_list_cmd__start; /* SR */
-extern unsigned long _u_boot_list__start; /* SR */
+extern unsigned _u_boot_list_cmd__start; /* SR */
+extern unsigned _u_boot_list__start; /* SR */
 #endif
 
 	gd->flags |= GD_FLG_RELOC;	/* tell others: relocation done */

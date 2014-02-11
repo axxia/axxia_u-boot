@@ -26,6 +26,8 @@
 #include <asm/io.h>
 #include <malloc.h>
 
+extern void phy_debug(void);
+
 /*
   ======================================================================
   ======================================================================
@@ -107,7 +109,7 @@ decode_range(const char *input, int minimum, int maximum, int range[2])
 */
 
 int
-do_mdio(cmd_tbl_t *command_table, int flag, int argc, char *argv[])
+do_mdio(cmd_tbl_t *command_table, int flag, int argc, char * const argv[])
 {
 	mdio_initialize();
 

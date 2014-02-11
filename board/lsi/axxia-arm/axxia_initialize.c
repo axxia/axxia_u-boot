@@ -21,6 +21,7 @@
  */
 
 #include <common.h>
+#include <serial.h>
 
 #include "../common/ncp_sysmem_ext.h"
 #include "../common/ncp_sysmem_lsiphy.h"
@@ -33,10 +34,10 @@
   ===============================================================================
 */
 
-unsigned long reset_enabled = 1;
-unsigned long ncp_sm_phy_reg_restore = 0;
-unsigned long ncp_sm_phy_reg_dump = 0;
-unsigned long *phyRegs;
+unsigned reset_enabled = 1;
+unsigned ncp_sm_phy_reg_restore = 0;
+unsigned ncp_sm_phy_reg_dump = 0;
+unsigned *phyRegs;
                                                                                 
 #if defined (CONFIG_AXXIA_EMU)
 #include "sysmem_emulation.c"
@@ -63,7 +64,7 @@ int
 axxia_initialize(void)
 {
 	int i;
-    unsigned long value;
+    unsigned value;
 
 	if (0 != read_parameters())
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);

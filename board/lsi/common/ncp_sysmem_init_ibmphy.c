@@ -1006,6 +1006,11 @@ delay_table_t delay_table_sm1[] = {
 
 #endif
 
+static unsigned long rank_address_map [ 2 ] [ 2 ] = {
+    { 0x300, 0x100 },
+    { 0x400, 0x600 }
+};
+
 /*
   ------------------------------------------------------------------------------
   debug_dump

@@ -63,19 +63,20 @@ do_net(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 
 	if( 0 == strncmp( argv[1], "l", strlen( "l" ) ) ) {
-		int test;
+		int test = 0;
 
-		if (3 == argc)
-			if (0 == strncmp(argv[2], "n", strlen("n")))
+		if (3 == argc) {
+			if (0 == strncmp(argv[2], "n", strlen("n"))) {
 				test = 1;
-			else if (0 == strncmp(argv[2], "p", strlen("p")))
+			} else if (0 == strncmp(argv[2], "p", strlen("p"))) {
 				test = 2;
-			else {
+			} else {
 				printf("Unknow Loopback Type!\n");
 				return -1;
 			}
+		}
 
-		printf("Starting Loopback Test -- Ctrl-C to Exit.\n", test);
+		printf("Starting Loopback Test -- Ctrl-C to Exit.\n");
 		lsi_net_loopback_test(eth_get_dev(), test);
 
 		return 0;

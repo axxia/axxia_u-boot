@@ -1829,7 +1829,7 @@ typedef struct ncp_nca_s {
 
 #ifdef NCP_TASK_NCA_GLOBALS
     extern ncp_t gNCP;
-    ncp_dev_t       gDEV = { 0 };                   /* UBOOT */
+ncp_dev_t       gDEV = { { 0 } };                   /* UBOOT */
     ncp_dev_hdl_t   ncp_dev_hdls[NCP_MAX_DEVS] = { &gDEV }; /* UBOOT */
     int     memPoolMapped[NCP_X7_NUM_TASK_MEMORY_POOLS] = {0};
     ncp_task_ncaV2_t *pNcpNcaV2_TaskSwState = NULL;    /* task I/O module state              */

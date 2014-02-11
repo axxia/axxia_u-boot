@@ -60,7 +60,7 @@
 #define DDR_PHY_REGS_TAG_SAVE 0x53415645
 #define DDR_PHY_REGS_TAG_PROM 0x50524f4d
 extern void *retention;
-extern unsigned long *phyRegs; 
+extern unsigned *phyRegs; 
 
 #endif
 
@@ -141,14 +141,14 @@ do { \
 
 typedef long long               ncp_int64_t;
 typedef unsigned long long      ncp_uint64_t;
-typedef unsigned long           ncp_uint32_t;
+typedef unsigned                ncp_uint32_t;
 typedef long                    ncp_int32_t;
 typedef unsigned short          ncp_uint16_t;
 typedef unsigned char           ncp_uint8_t;
 typedef unsigned char           ncp_bool_t;
 typedef void *                  ncp_dev_hdl_t;
-typedef unsigned long           ncp_st_t;
-typedef unsigned long           ncp_region_id_t;
+typedef unsigned                ncp_st_t;
+typedef unsigned                ncp_region_id_t;
 
 typedef ncp_uint32_t 
 (*ncp_sm_intr_status_fn_t) (
@@ -175,7 +175,7 @@ typedef parameters_sysmem_t     ncp_sm_parms_t;
 
 #define TRUE   (1)
 #define FALSE  (0)
-#define NCP_RETURN_LABEL ncp_return:
+#define NCP_RETURN_LABEL goto ncp_return; ncp_return:
 #define NCP_DEV_BUS_FBRS 0xdead
 
 #include "ncp_sysmem_ext.h"

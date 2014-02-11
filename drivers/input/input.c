@@ -491,12 +491,12 @@ int input_init(struct input_config *config, int leds)
 
 int input_stdio_register(struct stdio_dev *dev)
 {
+#ifndef CONFIG_ACP
 	int error;
 
 	error = stdio_register(dev);
 
 	/* check if this is the standard input device */
-#ifndef CONFIG_ACP
 	if (!error && strcmp(getenv("stdin"), dev->name) == 0) {
 		/* reassign the console */
 		if (OVERWRITE_CONSOLE ||

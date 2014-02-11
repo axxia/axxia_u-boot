@@ -192,8 +192,8 @@ goto ncp_return; \
 #endif
 
 typedef struct {
-	unsigned long region;
-	unsigned long offset;
+	unsigned region;
+	unsigned offset;
 } ncr_location_t;
 
 typedef enum {
@@ -208,10 +208,10 @@ typedef enum {
 
 typedef struct {
 	ncr_command_code_t command;
-	unsigned long region;
-	unsigned long offset;
-	unsigned long value;
-	unsigned long mask;
+	unsigned region;
+	unsigned offset;
+	unsigned value;
+	unsigned mask;
 } ncr_command_t;
 
 typedef int (*func_config_port)(int index);
@@ -240,9 +240,6 @@ ncp_task_uboot_unconfig(void);
 #error "EIOA is not defined for this architecture!"
 #endif
 
-ncp_st_t
-ncp_task_lite_uboot_unconfig();
-
 /*
   ------------------------------------------------------------------------------
   ncp_dev_reset
@@ -251,8 +248,6 @@ ncp_task_lite_uboot_unconfig();
 static int
 ncp_dev_reset(void)
 {
-	unsigned long value;
-
 	/*
 	  Reset Modules
 	*/
@@ -268,20 +263,20 @@ ncp_dev_reset(void)
 */
 
 static int
-ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
+ncp_dev_do_read(ncr_command_t *command, unsigned *value)
 {
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
 		*value = *((volatile unsigned *)command->offset);
 
 		return 0;
 	} else if (0 != ncr_read32(command->region, command->offset, value)) {
-		printf("READ ERROR: n=0x%lx t=0x%lx o=0x%lx\n",
+		printf("READ ERROR: n=0x%x t=0x%x o=0x%x\n",
 			    NCP_NODE_ID(command->region),
 			    NCP_TARGET_ID(command->region), command->offset);
 		return -1;
 	}
 #ifdef NCR_DEBUG
-	debug("Read 0x%08lx from n=0x%lx t=0x%lx o=0x%lx\n",
+	debug("Read 0x%08x from n=0x%x t=0x%x o=0x%x\n",
 		    *value, NCP_NODE_ID(command->region),
 		    NCP_TARGET_ID(command->region),
 		    command->offset);
@@ -298,7 +293,7 @@ static int
 ncp_dev_do_write(ncr_command_t *command)
 {
 #ifdef NCR_DEBUG
-	debug(" WRITE: r=0x%lx o=0x%lx v=0x%lx\n",
+	debug(" WRITE: r=0x%x o=0x%x v=0x%x\n",
 		    command->region, command->offset, command->value);
 #endif
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
@@ -322,8 +317,8 @@ ncp_dev_do_write(ncr_command_t *command)
 #endif
 		if (0 != ncr_write32(command->region, command->offset,
 				     command->value)) {
-			printf("WRITE ERROR: n=0x%lx t=0x%lx o=0x%lx "
-				    "v=0x%lx\n",
+			printf("WRITE ERROR: n=0x%x t=0x%x o=0x%x "
+				    "v=0x%x\n",
 				    NCP_NODE_ID(command->region),
 				    NCP_TARGET_ID(command->region),
 				    command->offset, command->value);
@@ -354,8 +349,8 @@ ncp_dev_do_modify(ncr_command_t *command)
 		return 0;
 	} else if (0 != ncr_modify32(command->region, command->offset,
 			      command->mask, command->value)) {
-		printf("MODIFY ERROR: n=0x%lx t=0x%lx o=0x%lx m=0x%lx "
-			    "v=0x%lx\n",
+		printf("MODIFY ERROR: n=0x%x t=0x%x o=0x%x m=0x%x "
+			    "v=0x%x\n",
 			    NCP_NODE_ID(command->region),
 			    NCP_TARGET_ID(command->region), command->offset,
 			    command->mask, command->value);
@@ -363,7 +358,7 @@ ncp_dev_do_modify(ncr_command_t *command)
 		return -1;
 	} else {
 #ifdef NCR_DEBUG
-		debug("MODIFY: r=0x%lx o=0x%lx m=0x%lx v=0x%lx\n",
+		debug("MODIFY: r=0x%x o=0x%x m=0x%x v=0x%x\n",
 			    command->region, command->offset,
 			    command->mask, command->value);
 #endif
@@ -382,7 +377,7 @@ ncp_dev_do_poll(ncr_command_t *command)
 {
 	int timeout = 1000;
 	int delay = 1000;
-	unsigned long value;
+	unsigned value;
 
 	do {
 		udelay(delay);
@@ -410,7 +405,7 @@ ncp_dev_do_poll(ncr_command_t *command)
 static int
 ncp_dev_configure(ncr_command_t *commands) {
 	int rc = 0;
-	unsigned long value;
+	unsigned value;
     ncr_command_t *startCmd = commands;
 
 	while (NCR_COMMAND_NULL != commands->command) {
@@ -426,7 +421,7 @@ ncp_dev_configure(ncr_command_t *commands) {
 			break;
 		case NCR_COMMAND_USLEEP:
 #ifdef NCR_DEBUG
-			debug("USLEEP: v=0x%lx\n", commands->value);
+			debug("USLEEP: v=0x%x\n", commands->value);
 #endif
 			udelay(commands->value);
 			break;
@@ -442,8 +437,11 @@ ncp_dev_configure(ncr_command_t *commands) {
             break;
 		default:
 			printf("Unknown Command: 0x%x, startCmd=0x%x, curCmd=0x%x, entry#=%d\n",
-				    commands->command, startCmd, commands,
-				    ((unsigned long)commands - (unsigned long)startCmd)/sizeof(ncr_command_t));
+			       (unsigned int)commands->command,
+			       (unsigned int)startCmd,
+			       (unsigned int)commands,
+			       ((unsigned int)commands -
+				(unsigned int)startCmd)/sizeof(ncr_command_t));
 			rc = -1;
 			break;
 		}
@@ -476,8 +474,9 @@ task_send(ncp_task_ncaV2_send_meta_t *taskMetaData)
 #endif
 
         if(dumptx) {
-            axxia_dump_packet("LSI_EIOA TX", (void *)taskMetaData->pduSegAddr0, 
-                    taskMetaData->pduSegSize0);
+	  axxia_dump_packet("LSI_EIOA TX",
+			    (void *)((unsigned)taskMetaData->pduSegAddr0), 
+			    taskMetaData->pduSegSize0);
         }
         
 		ncpStatus = ncp_task_ncav2_send(taskHdl, NULL, taskMetaData, TRUE,
@@ -505,15 +504,15 @@ line_setup(int index)
 {
 	int rc;
 	int retries = 100000;
-	unsigned long eioaRegion;
-	unsigned long gmacRegion;
-	unsigned long gmacPortOffset;
-    unsigned long hwPortIndex;
-	unsigned long ncr_status;
+	unsigned eioaRegion;
+	unsigned gmacRegion;
+	unsigned gmacPortOffset;
+    unsigned hwPortIndex;
+	unsigned ncr_status;
 	char *envstring;
 	unsigned short status;
-	unsigned long top;
-	unsigned long bottom;
+	unsigned top;
+	unsigned bottom;
 	unsigned short ad_value;
 	unsigned short ge_ad_value;
 	unsigned short control;
@@ -1041,7 +1040,7 @@ void
 finalize_task_io(void)
 {
     int rc = 0;
-	unsigned long value;
+	unsigned value;
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
 	/*
 	  Stop the queue.
@@ -1220,7 +1219,7 @@ lsi_eioa_eth_init(struct eth_device *dev, bd_t *bd)
 */
 
 int
-lsi_eioa_eth_send(struct eth_device *dev, volatile void *packet, int length)
+lsi_eioa_eth_send(struct eth_device *dev, void *packet, int length)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
 	int bytes_sent = 0;
@@ -1228,7 +1227,8 @@ lsi_eioa_eth_send(struct eth_device *dev, volatile void *packet, int length)
 	int i;
     ncp_task_ncaV2_send_meta_t taskMetaData;
 
-    debug("lsi_eioa_eth_send(): packet=0x%p, length=%d\n");
+    debug("lsi_eioa_eth_send(): packet=0x%p, length=%d\n",
+	  packet, length);
 
 	for (i = 0; i < EIOA_NUM_PORTS; ++i) {
         /* if sending on single port, skip other ports */
@@ -1260,7 +1260,7 @@ lsi_eioa_eth_send(struct eth_device *dev, volatile void *packet, int length)
         taskMetaData.priority       = 0;
         taskMetaData.pduSegSize0    = length;
         taskMetaData.ptrCnt         = 1;
-        taskMetaData.pduSegAddr0    = (ncp_uint64_t)taskAddr;
+        taskMetaData.pduSegAddr0    = (ncp_uint64_t)((ncp_uint32_t)taskAddr);
         taskMetaData.params[0]   = port_by_index[i]; /* output port */
 /* HACK: Temporary invalidate until cache coherency is figured in uboot */
 #ifdef USE_CACHE_SYNC
@@ -1306,7 +1306,7 @@ lsi_eioa_eth_rx(struct eth_device *dev)
                 &task, NULL, FALSE));
 
     if(dumprx) {
-        axxia_dump_packet("LSI_EIOA RX", (void *)task->pduSegAddr0, 
+      axxia_dump_packet("LSI_EIOA RX", (void *)((unsigned)task->pduSegAddr0), 
                 task->pduSegSize0);
     }
 
@@ -1337,7 +1337,8 @@ lsi_eioa_eth_rx(struct eth_device *dev)
     	bytes_received = task->pduSegSize0;
 
         /* copy the received packet to the up layer buffer */
-    	memcpy((void *)NetRxPackets[0], (void *)task->pduSegAddr0, bytes_received);
+    	memcpy((void *)NetRxPackets[0], (void *)((unsigned)task->pduSegAddr0),
+	       bytes_received);
 
         /* give the packet to the up layer */
     	if (0 == loopback && 0 == rxtest)
@@ -1708,9 +1709,9 @@ static int
 line_renegotiate(int index)
 {
 	int rc;
-	unsigned long eioaRegion;
-	unsigned long gmacRegion;
-	unsigned long gmacPortOffset;
+	unsigned eioaRegion;
+	unsigned gmacRegion;
+	unsigned gmacPortOffset;
 	char *envstring;
 	unsigned short ad_value;
 	unsigned short ge_ad_value;

@@ -25,8 +25,8 @@
 #include <usb/ulpi.h>
 
 /*
-  -------------------------------------------------------------------------------
-  
+  ------------------------------------------------------------------------------
+  usb_phy_init
 */
 
 int __weak
@@ -38,13 +38,16 @@ usb_phy_init(void)
         ulpi_vp.viewport_addr = CONFIG_USB_ADDR+ 0x170;
         ulpi_vp.port_num = 0x0;
 
-        /* setup ULPI viewport register to access FUSB2805 PHY reg 0x7 to complement VBUS signal for FAULT */
-        value = ulpi_read(&ulpi_vp, 0x7);
+        /*
+	  setup ULPI viewport register to access FUSB2805 PHY reg 0x7
+	  to complement VBUS signal for FAULT
+	*/
+        value = ulpi_read(&ulpi_vp, (u8 *)0x7);
         if (value == ULPI_ERROR) {
                 printf("ULPI PHY read failed\n");
                 return -1;
         }
-        if (ulpi_write(&ulpi_vp, 0x7, (value| 1 << 5))) {
+        if (ulpi_write(&ulpi_vp, (u8 *)0x7, (value| 1 << 5))) {
                 printf("ULPI PHY write failed\n");
                 return -1;
         }

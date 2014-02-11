@@ -34,7 +34,6 @@
 
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define NCP_BIG_ENDIAN
-#warning "SETTING NCP_BIG_ENDIAN!!!"
 #endif
 
 #ifndef __ASSEMBLY__
@@ -368,6 +367,9 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_CMD_LSI_ULPI 1
 #endif
 
+#ifndef __ASSEMBLY__
+int usb_phy_init(void);
+#endif
 
 /*
   ==============================================================================
@@ -913,8 +915,8 @@ int lsi_eioa_eth_init(struct eth_device *, bd_t *);
 void lsi_femac_eth_halt(struct eth_device *);
 void lsi_eioa_eth_halt(struct eth_device *);
 
-int lsi_femac_eth_send(struct eth_device *, volatile void *, int);
-int lsi_eioa_eth_send(struct eth_device *, volatile void *, int);
+int lsi_femac_eth_send(struct eth_device *, void *, int);
+int lsi_eioa_eth_send(struct eth_device *, void *, int);
 
 int lsi_femac_eth_rx(struct eth_device *);
 int lsi_eioa_eth_rx(struct eth_device *);
@@ -1008,6 +1010,21 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_AXXIA_SERIAL_FLASH_ENV
 #define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
 #define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
+
+/*
+  ======================================================================
+  ======================================================================
+  Errata
+  ======================================================================
+  ======================================================================
+*/
+
+#ifndef __ASSEMBLY__
+void axxia_display_clocks(void);
+int clocks_init(void);
+int voltage_init(void);
+int pciesrio_init(unsigned long);
+#endif
 
 /*
   ==============================================================================

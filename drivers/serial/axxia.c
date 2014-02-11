@@ -62,7 +62,6 @@ static int
 __serial_start(void)
 {
 	unsigned long lcr_h;
-	unsigned long divisor = 0;
 	unsigned long ibrd;
 	unsigned long fbrd;
 	unsigned long per_clock; 
@@ -71,7 +70,8 @@ __serial_start(void)
 		for (;;) {
 			int rc;
 
-			rc = acp_clock_get(clock_peripheral, &per_clock);
+			rc = acp_clock_get(clock_peripheral,
+					   (ncp_uint32_t *)&per_clock);
 
 			if (0 == rc) {
 				per_clock *= 1000;
@@ -190,6 +190,8 @@ __serial_stop(void)
   __serial_setbrg
 */
 
+#ifndef CONFIG_SPL_BUILD
+
 static void
 __serial_setbrg(void)
 {
@@ -199,6 +201,8 @@ __serial_setbrg(void)
 
 	return;
 }
+
+#endif
 
 /*
   ----------------------------------------------------------------------

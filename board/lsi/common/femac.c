@@ -75,8 +75,8 @@ static int eh_stats_initialized = 0;
 */
 
 #undef DUMP_DESCRIPTOR
-#define DUMP_DESCRIPTOR
-#define DUMP_DESCRIPTOR_COMPACT
+/*#define DUMP_DESCRIPTOR*/
+/*#define DUMP_DESCRIPTOR_COMPACT*/
 #ifdef DUMP_DESCRIPTOR
 #define DUMP_DESCRIPTOR_( address ) dump_descriptor_( __LINE__, ( address ) )
 #else  /* DUMP_DESCRIPTOR */
@@ -606,7 +606,7 @@ static app3xxnic_dma_descriptor_t * rx_descriptors_;
 static void * rx_buffer_;
 static int rx_enabled_ = 0;
 static app3xxnic_queue_pointer_t rx_tail_copy_;
-static volatile app3xxnic_queue_pointer_t * rx_tail_;
+static  app3xxnic_queue_pointer_t * rx_tail_;
 static app3xxnic_queue_pointer_t rx_head_;
 
 #define TX_NUMBER_OF_DESCRIPTORS 512
@@ -616,7 +616,7 @@ static app3xxnic_dma_descriptor_t * tx_descriptors_;
 static void * tx_buffer_;
 static int tx_enabled_ = 0;
 static app3xxnic_queue_pointer_t tx_tail_copy_;
-static volatile app3xxnic_queue_pointer_t * tx_tail_;
+static  app3xxnic_queue_pointer_t * tx_tail_;
 static app3xxnic_queue_pointer_t tx_head_;
 
 /*
@@ -1011,7 +1011,7 @@ static int rx_enable_( void ) {
 
 	rx_configuration_ = APP3XXNIC_RX_CONF_STRIPCRC;
 	DEBUG_PRINT( "smii_status_=0x%x\n",
-		     * ( ( volatile unsigned long * )
+		     * ( (  unsigned long * )
 			 APP3XXNIC_RX_SMII_STATUS ) );
 	DEBUG_PRINT( "phy_link=%d phy_speed=%d phy_duplex=%d\n",
 		     phy_link( phy_address_ ), phy_speed( phy_address_ ),
@@ -1181,6 +1181,7 @@ void tx_disable_( void ) {
   N.B. If you combine the printf statements, bad things will happen:>
 */
 
+#if 0
 #ifdef DUMP_DESCRIPTOR
 
 static void
@@ -1285,6 +1286,7 @@ static void dump_packet_( int direction, void * data, int length ) {
 }
 
 #endif /* DUMP_PACKETS */
+#endif
 
 /*
   ======================================================================
@@ -2282,7 +2284,7 @@ lsi_femac_eth_rx(struct eth_device *dev)
 */
 
 int
-lsi_femac_eth_send(struct eth_device *dev, volatile void * packet, int length)
+lsi_femac_eth_send(struct eth_device *dev,  void * packet, int length)
 {
 	int bytes_sent_ = 0;
 
@@ -2476,7 +2478,7 @@ static int eh_stats_initialized = 0;
 #define DUMP_DESCRIPTOR_( address )
 #endif /* DUMP_DESCRIPTOR */
 
-static void dump_descriptor_( unsigned long, void *);
+/*static void dump_descriptor_( unsigned long, void *);*/
 
 #undef DUMP_PACKETS
 /* #define DUMP_PACKETS */
@@ -2987,7 +2989,7 @@ static app3xxnic_dma_descriptor_t * rx_descriptors_;
 static void * rx_buffer_;
 static int rx_enabled_ = 0;
 static app3xxnic_queue_pointer_t rx_tail_copy_;
-static volatile app3xxnic_queue_pointer_t * rx_tail_;
+static  app3xxnic_queue_pointer_t * rx_tail_;
 static app3xxnic_queue_pointer_t rx_head_;
 
 #define TX_NUMBER_OF_DESCRIPTORS 64 /* We only use one, but 64 is the minimum. */
@@ -2997,7 +2999,7 @@ static app3xxnic_dma_descriptor_t * tx_descriptors_;
 static void * tx_buffer_;
 static int tx_enabled_ = 0;
 static app3xxnic_queue_pointer_t tx_tail_copy_;
-static volatile app3xxnic_queue_pointer_t * tx_tail_;
+static  app3xxnic_queue_pointer_t * tx_tail_;
 static app3xxnic_queue_pointer_t tx_head_;
 
 /*
@@ -3010,6 +3012,7 @@ static app3xxnic_queue_pointer_t tx_head_;
   ======================================================================
 */
 
+#if 0
 static void
 dump_configuration(void)
 {
@@ -3024,6 +3027,7 @@ dump_configuration(void)
 	       (unsigned long)readl(APP3XXNIC_TX_TIME_VALUE_CONF),
 	       (unsigned long)readl(APP3XXNIC_TX_MODE));
 }
+#endif
 
 static void
 dump_rx_stats(void)
@@ -3110,6 +3114,7 @@ typedef struct {
   dump_everything
 */
 
+#if 0
 static void
 dump_everything(void)
 {
@@ -3205,6 +3210,7 @@ dump_everything(void)
 
 	return;
 }
+#endif
 
 /*
   -------------------------------------------------------------------------------
@@ -3427,6 +3433,7 @@ lsi_femac_loopback_test(struct eth_device *dev, int type)
   allocate_dma_memory
 */
 
+#if 0
 static void *
 allocate_dma_memory(size_t size)
 {
@@ -3441,6 +3448,7 @@ allocate_dma_memory(size_t size)
 #error "Unknown Architecture!"
 #endif
 }
+#endif
 
 #if 0
 
@@ -3643,7 +3651,7 @@ static int rx_enable_( void ) {
 
 	rx_configuration_ = APP3XXNIC_RX_CONF_STRIPCRC;
 	DEBUG_PRINT( "smii_status_=0x%lx\n",
-		     * ( ( volatile unsigned long * )
+		     * ( (  unsigned long * )
 			 APP3XXNIC_RX_SMII_STATUS ) );
 	DEBUG_PRINT( "phy_link=%d phy_speed=%d phy_duplex=%d\n",
 		     phy_link( phy_address_ ), phy_speed( phy_address_ ),
@@ -3814,6 +3822,7 @@ void tx_disable_( void ) {
   N.B. If you combine the printf statements, bad things will happen:>
 */
 
+#if 0
 #ifdef DUMP_DESCRIPTOR
 
 static void
@@ -3911,6 +3920,8 @@ static void dump_packet_(const char *header, void *packet, int length)
 
 	printf("\n");
 }
+
+#endif
 
 /*
   ======================================================================
@@ -4112,7 +4123,7 @@ phy_enable_(int phy)
 		} else if( 0 == strncmp(macspeed, "10MF", strlen("10MF") ) ) {
 			speed = 0;
 			duplex = 1;
-		} else if( 0 == strncmp(macspeed, "10MH", strlen("10MH") ) ) {
+		} else /*if( 0 == strncmp(macspeed, "10MH", strlen("10MH") ) ) */ {
 			speed = 0;
 			duplex = 0;
 		}
@@ -4646,9 +4657,9 @@ lsi_femac_eth_rx(struct eth_device *dev)
 		destination_ = (unsigned char *)NetRxPackets[0];
 
 		if (0 != rx_allow_all ||
-		    0 == memcmp((const void *)&(destination_[0]),
+		    0 == memcmp((const void *)&(((unsigned char *)destination_)[0]),
 				(const void *)&(dev->enetaddr[0]), 6) ||
-		    0 == memcmp((const void *)&(destination_[0]),
+		    0 == memcmp((const void *)&(((unsigned char *)destination_)[0]),
 				(const void *)&(broadcast_[0]), 6)) {
 			if (0 == rx_debug)
 				NetReceive(NetRxPackets[0], bytes_received_);
@@ -4684,7 +4695,7 @@ lsi_femac_eth_rx(struct eth_device *dev)
 */
 
 int
-lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
+lsi_femac_eth_send(struct eth_device *device,  void *packet, int length)
 {
 	int bytes_sent_ = 0;
 	int tries_;
@@ -4710,7 +4721,6 @@ lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 	    queue_initialized_( tx_head_, swab_queue_pointer( tx_tail_ ),
 				TX_NUMBER_OF_DESCRIPTORS ) ) {
 		app3xxnic_dma_descriptor_t descriptor_;
-		unsigned long packets_sent_;
 
 		TX_DEBUG_PRINT( "Transmit descriptor available, "
 				"head=0x%x/%d tail=0x%x/%d\n",
@@ -4754,8 +4764,6 @@ lsi_femac_eth_send(struct eth_device *device, volatile void *packet, int length)
 			printf("%s:%d - Transmit Timed Out!\n",
 			       __FILE__, __LINE__);
 			return -1;
-		} else {
-			packets_sent_ = readl( APP3XXNIC_TX_STAT_PACKET_OK );
 		}
 
 		bytes_sent_ = length;

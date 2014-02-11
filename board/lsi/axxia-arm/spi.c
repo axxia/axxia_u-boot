@@ -26,7 +26,7 @@ spi_cs_deactivate(struct spi_slave *slave)
 unsigned int
 spi_get_per_clk(void)
 {
-	unsigned long per_clk;
+	unsigned per_clk;
 
 	if (0 != acp_clock_get(clock_peripheral, &per_clk))
 		per_clk = CLK_REF0;

@@ -50,14 +50,14 @@ static int
 set_cluster_coherency(unsigned cluster, unsigned state)
 {
 #ifndef CONFIG_AXXIA_SIM
-	unsigned long sdcr_offsets[] = {
+	ncp_uint32_t sdcr_offsets[] = {
 		0x00,		/* This is the DVM */
 		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
 	};
 	int i;
 	int retries;
-	unsigned long mask;
-	unsigned long value;
+	ncp_uint32_t mask;
+	ncp_uint32_t value;
 #ifdef CONFIG_AXXIA_EMU
 	int bit_by_cluster[] = {19, 9};
 #else
@@ -78,7 +78,7 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 	       state ? "to" : "from");
 	mask = (1 << bit_by_cluster[cluster]);
 
-	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(unsigned long)); ++i) {
+	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(ncp_uint32_t)); ++i) {
 		int offset;
 
 		offset = DICKENS | (sdcr_offsets[i] << 16);
@@ -119,8 +119,8 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 static int
 power_down_cluster(int cluster)
 {
-	unsigned long value;
-	unsigned long mask;
+	ncp_uint32_t value;
+	ncp_uint32_t mask;
 	int i;
 
 	printf("Powering down cluster %d.\n", cluster);
@@ -252,7 +252,7 @@ static int
 set_clusters(void)
 {
 	char *clusters_env;
-	unsigned long clusters;
+	ncp_uint32_t clusters;
 
 	if (NULL != (clusters_env = getenv("clusters"))) {
 		clusters = simple_strtoul(clusters_env, NULL, 0);
@@ -395,7 +395,7 @@ board_early_init_f(void)
 	  The bootROM code leaves SPI device 0 selected, BZ 45907.  Deselect here.
 	*/
 
-	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
+	writel(0x1f, (ncp_uint32_t *)(SSP + SSP_CSR));
 
 	gd->ram_size = 0x40000000;
 
@@ -442,8 +442,8 @@ ft_board_setup(void *blob, bd_t *bd)
 	};
 	char *ad_value;
 	char *macspeed;
-	unsigned long tmp;
-	unsigned long phy0_ctrl, phy1_ctrl;
+	ncp_uint32_t tmp;
+	ncp_uint32_t phy0_ctrl, phy1_ctrl;
 
 	/*
   	  Set up the coherency domains and clusters.  This is handled
@@ -469,7 +469,7 @@ ft_board_setup(void *blob, bd_t *bd)
 		printf("%s/frequency: %u\n", clock_names[i], tmp);
 		tmp = htonl(tmp);
 		rc = fdt_setprop(blob, node, "frequency",
-				 &tmp, sizeof(unsigned long));
+				 &tmp, sizeof(ncp_uint32_t));
 
 		if (0 != rc)
 			printf("%s:%d - Couldn't set PLLs!\n",
@@ -491,7 +491,7 @@ ft_board_setup(void *blob, bd_t *bd)
 			continue;
 
 		rc = fdt_setprop(blob, node, "cpu-release-addr",
-				 &tmp, sizeof(unsigned long));
+				 &tmp, sizeof(ncp_uint32_t));
 
 		if (0 != rc) {
 			printf("%s:%d - Error setting property, %d!\n",
@@ -524,7 +524,7 @@ ft_board_setup(void *blob, bd_t *bd)
 			}
 
 			rc = fdt_setprop(blob, node, "ad-value", &tmp,
-					 sizeof(unsigned long));
+					 sizeof(ncp_uint32_t));
 
 			if (0 != rc) 
 				printf("%s:%d - Couldn't set ad-value!\n",

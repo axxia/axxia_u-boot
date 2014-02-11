@@ -92,7 +92,7 @@ axxia_sysmem_bist_failure(unsigned long region)
 	};
 
 	for (i = 0; i < (sizeof(offsets) / sizeof(unsigned long)); ++i) {
-		ncr_read32(region, offsets[i], &value);
+		ncr_read32(region, offsets[i], (ncp_uint32_t *)&value);
 		printf("\t\tRegion:0x%08lx Offset:0x%04lx Value:0x%08lx\n",
 		       region, offsets[i], value);
 	}
@@ -111,7 +111,7 @@ axxia_sysmem_asic_check_ecc(unsigned long region)
 	unsigned long value;
 
 #ifdef CONFIG_AXXIA_55XX
-	ncr_read32(region, NCP_DENALI_CTL_421, &value);
+	ncr_read32(region, NCP_DENALI_CTL_421, (ncp_uint32_t *)&value);
 
 	if (1 != ((ncp_denali_DENALI_CTL_421_t *)&value)->ecc_en) {
 		if (NCP_NODE_ID(region) == 0x22) {
@@ -135,7 +135,7 @@ axxia_sysmem_asic_check_ecc(unsigned long region)
 	}
 #endif
 
-	ncr_read32(region, INT_STATUS_OFFSET, &value);
+	ncr_read32(region, INT_STATUS_OFFSET, (ncp_uint32_t *)&value);
 
 	if (0 == (value & ECC_ERROR_MASK)) {
 #ifdef CONFIG_AXXIA_55XX
@@ -171,7 +171,7 @@ axxia_sysmem_asic_check_ecc(unsigned long region)
 
 		for (i = 0; i < (sizeof(offsets) / sizeof(unsigned long));
 		     ++ i) {
-			ncr_read32(region, offsets[i], &value);
+			ncr_read32(region, offsets[i], (ncp_uint32_t *)&value);
 			printf("\tRegion:0x%08lx Offset:0x%04lx Value:0x%08lx\n",
 			       region, offsets[i], value);
 		}
@@ -206,7 +206,8 @@ axxia_sysmem_bist_start(unsigned long region, int bits, int test,
 	ncr_write32(region, 0x250, /* bottom 32 bits */
 		    (unsigned long)(address & 0xffffffff));
 	ncr_write32(region, 0x254, /* top 4 bits */
-		    ((unsigned long)(address & 0xffffffff00000000) >> 32) & 0xf);
+		    ((unsigned long)((address & 0xffffffff00000000ULL) >> 32)) &
+		    0xf);
 
 	/* Program the data mask. */
 #if defined(CONFIG_AXXIA_25xx) || defined(CONFIG_AXXIA_55XX)
@@ -264,7 +265,6 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length)
 	unsigned long bits;
 	int test;
 	unsigned long result;
-	int smid;
 	unsigned long interrupt_status;
 	unsigned long long temp;
 
@@ -283,7 +283,7 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length)
 		temp <<= 1;
 	}
 
-	printf("Running the Built In Self Test on 2^%d bytes at 0x%llx.\n",
+	printf("Running the Built In Self Test on 2^%lu bytes at 0x%llx.\n",
 	       bits, address);
 
 	/* Check for ECC errors. */
@@ -318,10 +318,11 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length)
 			       NCP_NODE_ID(smregion0));
 		} else {
 			ncr_read32(smregion0, INT_STATUS_OFFSET,
-				   &interrupt_status);
+				   (ncp_uint32_t *)&interrupt_status);
 			ncr_write32(smregion0,
 				    INT_STATUS_CLEAR_OFFSET, interrupt_status);
-			ncr_read32(smregion0, BIST_STATUS_OFFSET, &result);
+			ncr_read32(smregion0, BIST_STATUS_OFFSET,
+				   (ncp_uint32_t *)&result);
 
 			if (result & (1 << test)) {
 				printf("\tSM Node 0 PASSED\n");
@@ -339,11 +340,11 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length)
 				       NCP_NODE_ID(smregion1));
 			} else {
 				ncr_read32(smregion1, INT_STATUS_OFFSET,
-					   &interrupt_status);
+					   (ncp_uint32_t *)&interrupt_status);
 				ncr_write32(smregion1, INT_STATUS_CLEAR_OFFSET,
 					    interrupt_status);
 				ncr_read32(smregion1, BIST_STATUS_OFFSET,
-					   &result);
+					   (ncp_uint32_t *)&result);
 
 				if(result & (1 << test)) {
 					printf("\tSM Node 1 PASSED\n");
@@ -362,14 +363,15 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length)
 		ncr_and(smregion0, 0x8, 0xfffffffe);
 
 		do {
-			ncr_read32(smregion0, 0x8, &result);
+			ncr_read32(smregion0, 0x8, (ncp_uint32_t *)&result);
 		} while (0 != (result & 1));
 
 		if (1 < sysmem->num_interfaces) {
 			ncr_and(smregion1, 0x8, 0xfffffffe);
 
 			do {
-				ncr_read32(smregion1, 0x8, &result);
+				ncr_read32(smregion1, 0x8,
+					   (ncp_uint32_t *)&result);
 			} while (0 != (result & 1));
 		}
 	}

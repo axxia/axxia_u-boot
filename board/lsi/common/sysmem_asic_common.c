@@ -72,11 +72,6 @@ static unsigned long sm_nodes [ ] = {
 	0x22, 0x0f, 0x08, 0x09
 };
 
-static unsigned long rank_address_map [ 2 ] [ 2 ] = {
-    { 0x300, 0x100 },
-    { 0x400, 0x600 }
-}; 
-
 /*
  * tRFC values based on device density
  *
@@ -261,13 +256,10 @@ check_for_failure(int display, char *file, unsigned long line)
 int
 sysmem_init(void)
 {
-	unsigned long num_sc_nodes;
-	unsigned long controller;
-	unsigned long phy;
-	unsigned long mask;
-	unsigned long value;
-	unsigned long munge_reg;
-	unsigned long num_bls;
+#ifndef CONFIG_AXXIA_55XX
+	unsigned num_sc_nodes;
+#endif
+	unsigned value;
 	int i;
 	int rc;
 #ifdef CONFIG_SPD
@@ -287,7 +279,6 @@ sysmem_init(void)
 
 #ifdef CONFIG_MEMORY_RETENTION
     extern void *retention;
-    unsigned long *phyRegs = (unsigned long *)retention;
 #endif
 
 
@@ -438,7 +429,9 @@ sysmem_init(void)
 	 * determine number of syscaches and half_mem setting 
 	 * based on chipType and num_interfaces 
 	 */
+#ifndef CONFIG_AXXIA_55XX
 	num_sc_nodes = sysmem->num_interfaces * 4;
+#endif
 
 #if defined (ACP_X1V1) || defined (CONFIG_AXXIA_344X)
 	if (sysmem->num_interfaces == 1) {
@@ -463,12 +456,6 @@ sysmem_init(void)
 		delay_dump(__LINE__, sm_nodes[1]);
 	}
 #endif
-
-	if (sysmem->primary_bus_width == 2) {
-		num_bls = 4;    
-	} else {
-		num_bls = 8;
-	}
 
 #ifndef CONFIG_AXXIA_55XX
 	/*

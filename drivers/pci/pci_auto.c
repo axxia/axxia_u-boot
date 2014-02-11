@@ -18,9 +18,9 @@
 #include <pci.h>
 
 #undef DEBUG
-#ifdef CONFIG_AXXIA_ARM                                            <
-#define DEBUG                                                 <
-#endif     
+#ifdef CONFIG_AXXIA_ARM
+#define DEBUG
+#endif
 #ifdef DEBUG
 #define DEBUGF(x...) printf(x)
 #else

@@ -637,7 +637,6 @@ int usb_restart_device(struct usb_device *dev)
 static int hub_port_wait_reset(struct usb_device *dev, int port,
 			unsigned int delay, unsigned short *portstatus_ret)
 {
-	int tries;
 	int delay_time, ret;
 	struct usb_port_status portsts;
 	unsigned short portstatus, portchange;

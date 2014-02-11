@@ -43,17 +43,19 @@ read(unsigned long offset)
 {
 	int rc;
 	struct ulpi_viewport ulpi_vp;
+	unsigned short *reg;
 
 	ulpi_vp.viewport_addr = CONFIG_USB_ADDR+ 0x170;
 	ulpi_vp.port_num = 0x0;
+	reg = (unsigned short *)&offset;
 
-	rc = ulpi_read(&ulpi_vp, offset);
+	rc = ulpi_read(&ulpi_vp, (u8 *)reg);
 
 	if (rc == ULPI_ERROR) {
-		printf("Reading offset 0x%x FAILED\n", offset);
+		printf("Reading offset 0x%lx FAILED\n", offset);
 		return CMD_RET_FAILURE;
 	}
-	printf("offset 0x%x = 0x%x\n", offset, rc);
+	printf("offset 0x%lx = 0x%x\n", offset, rc);
 	return CMD_RET_SUCCESS;
 }
 
@@ -71,8 +73,8 @@ write(unsigned long offset, unsigned long value)
 	ulpi_vp.viewport_addr = CONFIG_USB_ADDR+ 0x170;
 	ulpi_vp.port_num = 0x0;
 
-	printf("Writing offset 0x%x = 0x%x\n", offset, value);
-	rc = ulpi_write(&ulpi_vp, offset, value);
+	printf("Writing offset 0x%lx = 0x%lx\n", offset, value);
+	rc = ulpi_write(&ulpi_vp, (u8 *)offset, value);
 
 	if (1 == rc) {
 		printf("FAILED\n");

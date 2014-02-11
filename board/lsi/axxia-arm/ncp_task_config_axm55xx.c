@@ -830,6 +830,7 @@ ncp_task_v2_init_version_specific_features(ncp_dev_hdl_t dev,
             */
 #ifdef NCP_TASK_OTBP_ALLOWED              
             {
+#if 0 /* UBOOT */
                 ncp_uint64_t otaskBackPressurePhysAddr;  
                 ncp_nca_otbp_vi_reg0_55xx_t r0;
                 ncp_nca_otbp_vi_reg1_55xx_t r1;
@@ -838,6 +839,7 @@ ncp_task_v2_init_version_specific_features(ncp_dev_hdl_t dev,
                 
                 pR0 = (ncp_uint32_t *)&r0;
                 pR1 = (ncp_uint32_t *)&r1;
+#endif
                 
                 NCP_CALL(NCP_TASK_INITIALIZE_DOMAIN_OBJ_VA(
                     pNcpNcaV2_TaskSwState->otbpInfo_Offset,
@@ -845,6 +847,7 @@ ncp_task_v2_init_version_specific_features(ncp_dev_hdl_t dev,
                     &pNcpNcaV2_TaskSwState->otbpInfo_VA,
                     TRUE));                
                     
+#if 0 /* UBOOT */
                 otaskBackPressurePhysAddr     
                     = NCP_TASK_VA_2_PA(pNcpNcaV2_TaskSwState->otbpInfo_VA, 
                                        0); 
@@ -867,6 +870,7 @@ ncp_task_v2_init_version_specific_features(ncp_dev_hdl_t dev,
                     NCP_REGION_NCA_AXI,NCP_NCA_OTBP_VI_UPPER_55XX, *pR0);        
                 NCP_DEV_NCA_WRITE_REG32(dev, 
                     NCP_REGION_NCA_AXI,NCP_NCA_OTBP_VI_LOWER_55XX, *pR1);  
+#endif
                 
 #ifdef NCP_TASK_PRINT_BASE_ADDRESSES_AND_MAPPINGS
     NCP_MSG(NCP_MSG_INFO, "initialized otbp base address PA=0x%llx, VA=%p\n",
@@ -885,12 +889,12 @@ ncp_task_v2_init_version_specific_features(ncp_dev_hdl_t dev,
             * Enable routing of interrupts on a per group basis 
             */
             { 
+#if 0 /* FIXME - enable after all isrs present */                   
                 ncp_nca_mpic_ctrl_reg_55xx_t mpic_ctl;
 
                 /* all groups regardless of domain,  and all non nca ints go to grp 0 */
                 mpic_ctl.grp_int_en 
                     = pNcpNcaV2_TaskSwState->allGrpMask;  
-#if 0 /* FIXME - enable after all isrs present */                   
                 /* Enable h/w int too */
                 mpic_ctl.hw_int_en = 1;
 #endif                
@@ -965,7 +969,8 @@ ncp_task_v2_init_version_specific_features(ncp_dev_hdl_t dev,
             } 
             
         } /* for */
-            
+
+#if 0 /* UBOOT */
         {
             ncp_nca_hw_poke_and_timer_enable_reg_55xx_t r32={0};
             ncp_uint32_t *pR32;
@@ -1014,7 +1019,7 @@ ncp_task_v2_init_version_specific_features(ncp_dev_hdl_t dev,
                     *pR32);
             }        
         }  
-            
+#endif
     }   /* !warm restart */
                                    
 NCP_RETURN_LABEL
@@ -1030,6 +1035,7 @@ ncp_task_v2_pcq_disable(
     ncp_uint32_t queueId)
 {    
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+#if 0 /* UBOOT */
     ncp_nca_PCQ_desc_reg0_55xx_t pcq_desc_r0 = {0};    
     ncp_uint32_t offset;
     
@@ -1065,6 +1071,7 @@ ncp_task_v2_pcq_disable(
                                      
         
 NCP_RETURN_LABEL
+#endif
     return(ncpStatus);   
 }   
        
@@ -1082,6 +1089,7 @@ ncp_task_v2_pcq_hw_init(
     ncp_uint32_t singleSegmentOnly)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+#if 0 /* UBOOT */
     ncp_nca_PCQ_desc_reg0_55xx_t pcq_desc_r0 = {0};
     ncp_nca_PCQ_desc_reg1_55xx_t pcq_desc_r1 = {0};
     ncp_nca_PCQ_desc_reg2_55xx_t pcq_desc_r2 = {0};
@@ -1181,6 +1189,7 @@ ncp_task_v2_pcq_hw_init(
                                      ((ncp_uint32_t *)&pcq_desc_r0));
                                      
 NCP_RETURN_LABEL
+#endif
     return ncpStatus;
 }
 
@@ -1194,6 +1203,7 @@ ncp_task_v2_pcq_group_init_base_addresses(
     ncp_uint32_t groupId)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+#if 0 /* UBOOT */
     ncp_uint64_t pgitBarAddr;
     ncp_uint64_t cpuPgitBarAddr;
     ncp_dev_pcq_grp_init_t pcq_grp_init = {{0}}; 
@@ -1271,6 +1281,7 @@ ncp_task_v2_pcq_group_init_base_addresses(
     }    /* uMode */
     
 NCP_RETURN_LABEL
+#endif
     return ncpStatus;
 }
 
@@ -1290,7 +1301,9 @@ ncp_task_v2_pcq_group_init(
     ncp_bool_t warmRestart)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+#if 0 /* UBOOT */
     ncp_dev_pcq_grp_init_t pcq_grp_init = {{0}}; 
+#endif
     ncp_task_v2_pcq_grp_t *pPCQgrp = &pNcpNcaV2_TaskSwState->pcq_grp[i];
     ncp_uint32_t groupId = pPCQgrp->id;
     
@@ -1312,7 +1325,7 @@ ncp_task_v2_pcq_group_init(
          * FIXME - 
          * 1) for AMP,  memsel may not be same as local primary domain 
          */
-         
+#if 0 /* UBOOT */         
         pcq_grp_init.r0.num_out_queues            = pPCQgrp->num_oPCQs;
         pcq_grp_init.r0.num_in_queues             = pPCQgrp->num_iPCQs;
 #if 0   /* FIXME */     
@@ -1339,6 +1352,7 @@ ncp_task_v2_pcq_group_init(
                          NCP_REGION_NCA_AXI,
                          NCP_NCA_NCA_PCQ_INIT_TABLE_GRP_PCQ_GRP_R1_55XX(groupId),
                          (ncp_uint32_t *)&pcq_grp_init.r1);
+#endif
     
         if (pNcpNcaV2_TaskSwState->myDomain != domain)
         {
@@ -1801,6 +1815,7 @@ ncp_task_v2_set_nca_config_init_reg(
      ncp_uint8_t     pgit_r_num_beat)        
 {
     ncp_st_t ncpStatus=NCP_ST_SUCCESS;
+#if 0 /* UBOOT */
     ncp_nca_config_init_reg_55xx_t regVal32;
     
     if (pNcpNcaV2_TaskSwState->inUmode)
@@ -1831,6 +1846,7 @@ ncp_task_v2_set_nca_config_init_reg(
     } /* user mode */
     
 NCP_RETURN_LABEL
+#endif
     return(ncpStatus);    
 }
 
@@ -1926,6 +1942,7 @@ ncp_task_v2_read_rbp_depths(ncp_dev_hdl_t dev, int rbpoolID, ncp_uint32_t *pDept
         ncp_uint32_t *pDepth_sz1, ncp_uint32_t *pDepth_sz2, ncp_uint32_t *pDepth_sz3)
 {
     ncp_st_t ncpStatus=NCP_ST_SUCCESS;
+#if 0 /* UBOOT */
     ncp_uint32_t u32Val0, u32Val1;           
     ncp_nca_rbp_depths_reg0_34xx_t *reg0 = (ncp_nca_rbp_depths_reg0_34xx_t *)&u32Val0;
     ncp_nca_rbp_depths_reg1_34xx_t *reg1 = (ncp_nca_rbp_depths_reg1_34xx_t *)&u32Val1;
@@ -1946,7 +1963,7 @@ ncp_task_v2_read_rbp_depths(ncp_dev_hdl_t dev, int rbpoolID, ncp_uint32_t *pDept
     *pDepth_sz3 = reg1->rbp_depth_size3;
 
 NCP_RETURN_LABEL
-
+#endif
     return(ncpStatus);                         
 }
 
@@ -3167,11 +3184,13 @@ ncp_task_v2_program_xlat_tables(ncp_dev_hdl_t dev)
         
         ncp_task_ncaV2_pool_t *pPoolEntry
          = &pNcpNcaV2_TaskSwState->taskMemoryPool[poolID];         
+#if 0 /* UBOOT */
         ncp_uint32_t vaBaseLow;
         ncp_uint32_t vaBaseHigh;
         ncp_uint32_t vaDynamicLow;
         ncp_uint32_t vaDynamicHigh;
         ncp_uint32_t ota_regAddr = 0x14000 + (poolID*0x10);
+#endif
 
         if (NCP_TASK_IS_SHARED_POOL(poolID)
            && (FALSE == pNcpNcaV2_TaskSwState->inUmode)) 
@@ -3183,15 +3202,18 @@ ncp_task_v2_program_xlat_tables(ncp_dev_hdl_t dev)
             continue;
         } 
         
-        
+
         if (NCP_TASK_IS_SHARED_POOL(poolID) 
             || (pNcpNcaV2_TaskSwState->inUmode == pPoolEntry->uMode))
         {    
+#if 0 /* UBOOT */
             ncp_uint64_t poolVA     = (ncp_uint64_t)pPoolEntry->pool_VA;
+#endif
             ncp_uint64_t poolEndVA  = (ncp_uint64_t)pPoolEntry->pool_EndVA;
             
             poolEndVA++;    /* need to add 1 due to h/w dropping 8 bits */
             
+#if 0 /* UBOOT */        
             if (sizeof(void *) > 4)
             {
                 vaBaseHigh = (poolVA & 0xFFFFFFFF00000000LL) >> 32;
@@ -3224,7 +3246,7 @@ ncp_task_v2_program_xlat_tables(ncp_dev_hdl_t dev)
             NCP_DEV_NCA_WRITE_REG32(dev, NCP_REGION_NCA_AXI,  
                                 ota_regAddr+12, 
                                 vaDynamicLow);        
-                                
+#endif
         }   /* execution mode same as pool mode */    
     }   /* for */       
 

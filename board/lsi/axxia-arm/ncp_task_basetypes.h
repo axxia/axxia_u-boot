@@ -51,7 +51,7 @@
  */
 typedef unsigned char      __uint8_t;
 typedef unsigned short     __uint16_t;
-typedef unsigned long      __uint32_t;
+typedef unsigned           __uint32_t;
 typedef unsigned long long __uint64_t;
 
 typedef int8_t     ncp_int8_t;

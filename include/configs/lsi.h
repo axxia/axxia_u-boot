@@ -46,22 +46,22 @@ const char *get_lsi_version(void);
 
 #ifndef __ASSEMBLY__
 #define NCP_REGION_ID( node, target ) \
-( unsigned long ) ( ( ( ( node ) & 0xffff ) << 16 ) | ( ( target ) & 0xffff ) )
+( ncp_uint32_t ) ( ( ( ( node ) & 0xffff ) << 16 ) | ( ( target ) & 0xffff ) )
 #define NCP_NODE_ID( region ) ( ( ( region ) >> 16 ) & 0xffff )
 #define NCP_TARGET_ID( region ) ( ( region ) & 0xffff )
-int ncr_read(unsigned long, unsigned long, unsigned long, int, void *);
-int ncr_read8( unsigned long, unsigned long, unsigned char * );
-int ncr_read16( unsigned long, unsigned long, unsigned short * );
-int ncr_read32( unsigned long, unsigned long, unsigned long * );
-int ncr_write(unsigned long, unsigned long, unsigned long, int, void *);
-int ncr_write8( unsigned long, unsigned long, unsigned char );
-int ncr_write16( unsigned long, unsigned long, unsigned short );
-int ncr_write32( unsigned long, unsigned long, unsigned long );
-int ncr_modify32( unsigned long, unsigned long, unsigned long, unsigned long );
-int ncr_and( unsigned long, unsigned long, unsigned long );
-int ncr_or( unsigned long, unsigned long, unsigned long );
-int ncr_poll( unsigned long, unsigned long, unsigned long,
-              unsigned long, unsigned long, unsigned long );
+int ncr_read(ncp_uint32_t, ncp_uint32_t, ncp_uint32_t, int, void *);
+int ncr_read8( ncp_uint32_t, ncp_uint32_t, unsigned char * );
+int ncr_read16( ncp_uint32_t, ncp_uint32_t, unsigned short * );
+int ncr_read32( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t * );
+int ncr_write(ncp_uint32_t, ncp_uint32_t, ncp_uint32_t, int, void *);
+int ncr_write8( ncp_uint32_t, ncp_uint32_t, unsigned char );
+int ncr_write16( ncp_uint32_t, ncp_uint32_t, unsigned short );
+int ncr_write32( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t );
+int ncr_modify32( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t, ncp_uint32_t );
+int ncr_and( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t );
+int ncr_or( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t );
+int ncr_poll( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t,
+              ncp_uint32_t, ncp_uint32_t, ncp_uint32_t );
 void ncr_tracer_enable( void );
 void ncr_tracer_disable( void );
 int ncr_tracer_is_enabled( void );

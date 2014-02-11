@@ -69,11 +69,11 @@ do_ncr_read(unsigned long node, unsigned long target, unsigned long offset,
 		return -1;
 	}
 
-	printf("0x%x.0x%x.0x%x : ", node, target, offset);
+	printf("0x%lx.0x%lx.0x%lx : ", node, target, offset);
 
 	switch (width) {
 	case 4:
-		printf("0x%08x\n", value32);
+		printf("0x%08lx\n", value32);
 		break;
 	case 2:
 		printf("0x%08x\n", value16);
@@ -137,7 +137,7 @@ do_ncr_write(unsigned long node, unsigned long target, unsigned long offset,
 */
 
 int
-do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned node;
 	unsigned target;
@@ -145,8 +145,8 @@ do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	int width;
 	unsigned number;
 	char *token;
-	int index;
 	int rc;
+	char *input = argv[2];
 
 	width = cmd_get_data_size(argv[0], 4);
 
@@ -155,11 +155,11 @@ do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		return 0;
 	}
 
-	token = strsep(&(argv[2]), ".");
+	token = strsep(&input, ".");
 	node = simple_strtoul(token, NULL, 0);
-	token = strsep(&(argv[2]), ".");
+	token = strsep(&input, ".");
 	target = simple_strtoul(token, NULL, 0);
-	token = strsep(&(argv[2]), ".");
+	token = strsep(&input, ".");
 	offset = simple_strtoul(token, NULL, 0);
 
 	if (0 == strncmp(argv[1], "r", strlen("r"))) {

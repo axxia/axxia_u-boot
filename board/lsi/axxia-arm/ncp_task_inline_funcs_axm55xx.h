@@ -2145,7 +2145,9 @@ ncp_task_v2_put_tOutput(ncp_pvt_task_hdl_t *myTaskHdl,
     ncp_uint32_t *wordsExt;
     int savCmdCode;
     int producerIdx = p_oPCQ->u.opcq_info.opcqProducerIdx;
+#if 0 /* UBOOT */
     ncp_uint8_t vpId;
+#endif
 
     debug("ncp_task_v2_put_tOutput(): pOutputQueueEntry=0x%p, producerIdx=%d\n",
         pOutputQueueEntry, producerIdx);
@@ -2444,7 +2446,7 @@ NCP_RETURN_LABEL
 
 #ifdef USE_CACHE_SYNC
 /* align it with lower 64 byte aligned address */
-#define INVALIDATE_DCACHE_RANGE_ALIGN(buf, size) \    
+#define INVALIDATE_DCACHE_RANGE_ALIGN(buf, size) \
     invalidate_dcache_range(((unsigned long)buf & ~(0x3f)), (((unsigned long)buf & ~(0x3f)) + 64))
 #endif
 

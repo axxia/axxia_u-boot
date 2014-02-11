@@ -26,7 +26,6 @@ static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
 	int cfg_type=0;
 	u32 addr;
 	unsigned mpage;
-	int relbus;
 
 	if (PCI_BUS(devfn) == 0) {
 		return((u8 *)hose->cfg_addr);
@@ -73,7 +72,7 @@ static int pcie_read_config(struct pci_controller *hose, unsigned int devfn,
 
 	u8 *address;
 	*val = 0;
-	u32 bus_addr, val32, mcsr;
+	u32 bus_addr, val32;
 	int bo = offset & 0x3;
 	int wo;
 
@@ -147,8 +146,6 @@ static int pcie_write_config(struct pci_controller *hose, unsigned int devfn,
 
 	u8 *address;
 	u32 bus_addr, val32;
-	int bo = offset & 0x3;
-	int wo;
 
 	/*
 	 * Same constraints as in pcie_read_config().
@@ -257,15 +254,15 @@ int pcie_write_config_dword(struct pci_controller *hose,pci_dev_t dev,int offset
 
 int pci_axxia_init (struct pci_controller *hose, int port)
 {
-	volatile void *mbase = NULL;
+	void *mbase = NULL;
 	u32 pci_config, pci_status, link_state;
 	int i, num_pages;
 	u32 mpage_lower, pciah, pcial;
-	u64 pci_addr, plb_addr, size, flags, bar0_size;
+	u64 pci_addr, size;
 	void __iomem *tpage_base;
-	pci_addr_t bus_start;   /* Start on the bus */
-	phys_addr_t phys_start;
-	unsigned long registers, phy_status, pci_link;
+	pci_addr_t bus_start = 0;   /* Start on the bus */
+	phys_addr_t phys_start = 0;
+	unsigned registers, pci_link;
 
 	pci_set_ops(hose, 
 		pcie_read_config_byte, 
@@ -450,12 +447,11 @@ int pci_axxia_init (struct pci_controller *hose, int port)
 	return hose->last_busno;
 }
 
-void pci_init_board(void)
+void
+pci_init_board(void)
 {
-	int busno;
-
-	busno = pci_axxia_init (&hose[0], 0);
-	busno = pci_axxia_init (&hose[1], 1);
+	(void)pci_axxia_init (&hose[0], 0);
+	(void)pci_axxia_init (&hose[1], 1);
 }
 
 #endif /* CONFIG_PCI */

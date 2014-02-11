@@ -252,7 +252,7 @@ i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len)
 int
 i2c_stop(unsigned long i2c_addr)
 {
-	int rc;
+	int rc = 0;
 	unsigned int status;
 	unsigned int acc_status = 0;
 	unsigned int done_bits = MST_STATUS_SCC;
@@ -397,11 +397,11 @@ i2c_init(int speed, int slave)
 int
 i2c_set_bus_speed(unsigned int speed)
 {
-	unsigned long i2c_addr = i2c_base_addr();
-	unsigned long per_clock;
-	unsigned long clk_mhz;
-	unsigned long divisor;
-	unsigned long t_setup; 
+	unsigned i2c_addr = i2c_base_addr();
+	unsigned per_clock;
+	unsigned clk_mhz;
+	unsigned divisor;
+	unsigned t_setup; 
 
 	current_speed = speed;
 
@@ -414,7 +414,8 @@ i2c_set_bus_speed(unsigned int speed)
 
 	clk_mhz = per_clock / 1000;
 
-	debug("i2c_set_bus_speed: per_clk=%luMHz -> ratio=1:%lu\n", clk_mhz, divisor);
+	debug("i2c_set_bus_speed: per_clk=%uMHz -> ratio=1:%u\n",
+	      clk_mhz, divisor);
 
 	/* SCL High Time */
 	writel(divisor/2, i2c_addr + AI2C_REG_I2C_X7_SCL_HIGH_PERIOD); 

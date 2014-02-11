@@ -35,7 +35,7 @@ int ncr_tracer_is_enabled( void ) { return 0 == ncr_tracer_disabled ? 1 : 0; }
 void ncr_sysmem_init_mode_enable(void) { ncr_sysmem_mode_disabled = 0; }
 void ncr_sysmem_init_mode_disable(void) { ncr_sysmem_mode_disabled = 1; }
 
-static __inline__ unsigned long ncr_register_read(unsigned *);
+static __inline__ ncp_uint32_t ncr_register_read(unsigned *);
 static __inline__ void ncr_register_write(const unsigned, unsigned *);
 
 static int
@@ -45,8 +45,8 @@ ncr_fail(const char *file, const char *function, const int line)
 		return -1;
 	
 	printf("Config Ring Access Failed: 0x%08lx 0x%08lx\n",
-	       ncr_register_read((u32 *)(NCA + 0xe4)),
-	       ncr_register_read((u32 *)(NCA + 0xe8)));
+	       (unsigned long)ncr_register_read((u32 *)(NCA + 0xe4)),
+	       (unsigned long)ncr_register_read((u32 *)(NCA + 0xe8)));
 	acp_failure(file, function, line);
 
 	return -1;
@@ -56,7 +56,7 @@ ncr_fail(const char *file, const char *function, const int line)
 static int short_read_count = 100;	/* Make sure this isn't in bss. */
 
 void
-ncr_trace_read8(unsigned long region, unsigned long offset)
+ncr_trace_read8(ncp_uint32_t region, ncp_uint32_t offset)
 {
 	if (100 == short_read_count)
 		short_read_count = 0;
@@ -78,7 +78,7 @@ ncr_trace_read8(unsigned long region, unsigned long offset)
 }
 
 void
-ncr_trace_read16(unsigned long region, unsigned long offset)
+ncr_trace_read16(ncp_uint32_t region, ncp_uint32_t offset)
 {
 	printf("ncpRead    0.%lu.%lu.0x00%08lx 1\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
@@ -87,7 +87,7 @@ ncr_trace_read16(unsigned long region, unsigned long offset)
 }
 
 void
-ncr_trace_read32(unsigned long region, unsigned long offset)
+ncr_trace_read32(ncp_uint32_t region, ncp_uint32_t offset)
 {
 	printf("ncpRead    0.%lu.%lu.0x00%08lx 1\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
@@ -98,7 +98,7 @@ ncr_trace_read32(unsigned long region, unsigned long offset)
 static int short_write_count = 100;	/* Make sure this isn't in bss. */
 
 void
-ncr_trace_write8(unsigned long region, unsigned long offset, unsigned long value)
+ncr_trace_write8(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
 	if (100 == short_write_count)
 		short_write_count = 0;
@@ -122,8 +122,8 @@ ncr_trace_write8(unsigned long region, unsigned long offset, unsigned long value
 }
 
 void
-ncr_trace_write16(unsigned long region,
-		  unsigned long offset, unsigned long value)
+ncr_trace_write16(ncp_uint32_t region,
+		  ncp_uint32_t offset, ncp_uint32_t value)
 {
 	printf("ncpWrite   0.%lu.%lu.0x00%08lx 0x%04lx\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
@@ -132,8 +132,8 @@ ncr_trace_write16(unsigned long region,
 }
 
 void
-ncr_trace_write32(unsigned long region,
-		  unsigned long offset, unsigned long value)
+ncr_trace_write32(ncp_uint32_t region,
+		  ncp_uint32_t offset, ncp_uint32_t value)
 {
 	printf("ncpWrite   0.%lu.%lu.0x00%08lx 0x%08lx\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
@@ -142,8 +142,8 @@ ncr_trace_write32(unsigned long region,
 }
 
 void
-ncr_trace_modify(unsigned long region,
-		 unsigned long offset, unsigned long mask, unsigned long value)
+ncr_trace_modify(ncp_uint32_t region,
+		 ncp_uint32_t offset, ncp_uint32_t mask, ncp_uint32_t value)
 {
 	printf("ncpModify  0.%lu.%lu.0x00%08lx 0x%08lx 0x%08lx\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, mask, value);
@@ -152,9 +152,9 @@ ncr_trace_modify(unsigned long region,
 }
 
 void
-ncr_trace_poll(unsigned long region,
-	       unsigned long loops, unsigned long delay,
-	       unsigned long offset, unsigned long mask, unsigned long value)
+ncr_trace_poll(ncp_uint32_t region,
+	       ncp_uint32_t loops, ncp_uint32_t delay,
+	       ncp_uint32_t offset, ncp_uint32_t mask, ncp_uint32_t value)
 {
 	printf("ncpPoll -l %lu -t %lu  0.%lu.%lu.0x00%08lx " \
 	       "0x%08lx 0x%08lx\n",
@@ -210,50 +210,50 @@ ncr_trace_poll(unsigned long region,
 /* Note that NCA in this case means nca_axi (0x101.0.0) */
 
 typedef union {
-	unsigned long raw;
+	ncp_uint32_t raw;
 	struct {
 #ifndef NCP_BIG_ENDIAN
-		unsigned long dbs                 : 16;
-		unsigned long cmd_type            : 4;
-		unsigned long cfg_cmpl_int_enable : 1;
-		unsigned long byte_swap_enable    : 1;
-		unsigned long status              : 2;
-		unsigned long local_bit           : 1;
-		unsigned long sysmem_access_type  : 4;
-		unsigned long                     : 2;
-		unsigned long start_done          : 1;
+		ncp_uint32_t dbs                 : 16;
+		ncp_uint32_t cmd_type            : 4;
+		ncp_uint32_t cfg_cmpl_int_enable : 1;
+		ncp_uint32_t byte_swap_enable    : 1;
+		ncp_uint32_t status              : 2;
+		ncp_uint32_t local_bit           : 1;
+		ncp_uint32_t sysmem_access_type  : 4;
+		ncp_uint32_t                     : 2;
+		ncp_uint32_t start_done          : 1;
 #else
-		unsigned long start_done          : 1;
-		unsigned long                     : 2;
-		unsigned long sysmem_access_type  : 4;
-		unsigned long local_bit           : 1;
-		unsigned long status              : 2;
-		unsigned long byte_swap_enable    : 1;
-		unsigned long cfg_cmpl_int_enable : 1;
-		unsigned long cmd_type            : 4;
-		unsigned long dbs                 : 16;
+		ncp_uint32_t start_done          : 1;
+		ncp_uint32_t                     : 2;
+		ncp_uint32_t sysmem_access_type  : 4;
+		ncp_uint32_t local_bit           : 1;
+		ncp_uint32_t status              : 2;
+		ncp_uint32_t byte_swap_enable    : 1;
+		ncp_uint32_t cfg_cmpl_int_enable : 1;
+		ncp_uint32_t cmd_type            : 4;
+		ncp_uint32_t dbs                 : 16;
 #endif
 	} __attribute__ ( ( packed ) ) bits;
 } __attribute__ ( ( packed ) ) command_data_register_0_t;
 
 typedef union {
-	unsigned long raw;
+	ncp_uint32_t raw;
 	struct {
-		unsigned long target_address : 32;
+		ncp_uint32_t target_address : 32;
 	} __attribute__ ( ( packed ) ) bits;
 } __attribute__ ( ( packed ) ) command_data_register_1_t;
 
 typedef union {
-	unsigned long raw;
+	ncp_uint32_t raw;
 	struct {
 #ifndef NCP_BIG_ENDIAN
-		unsigned long target_id_address_upper : 8;
-		unsigned long target_node_id          : 8;
-		unsigned long                         : 16;
+		ncp_uint32_t target_id_address_upper : 8;
+		ncp_uint32_t target_node_id          : 8;
+		ncp_uint32_t                         : 16;
 #else
-		unsigned long                         : 16;
-		unsigned long target_node_id          : 8;
-		unsigned long target_id_address_upper : 8;
+		ncp_uint32_t                         : 16;
+		ncp_uint32_t target_node_id          : 8;
+		ncp_uint32_t target_id_address_upper : 8;
 #endif
 	} __attribute__ ( ( packed ) ) bits;
 } __attribute__ ( ( packed ) ) command_data_register_2_t;
@@ -264,7 +264,7 @@ typedef union {
   ncr_register_read
 */
 
-static __inline__ unsigned long
+static __inline__ ncp_uint32_t
 ncr_register_read(unsigned *address)
 {
 	return in_be32(address);
@@ -290,8 +290,8 @@ static int
 ncr_lock(int domain)
 {
 #ifndef CONFIG_SPL_BUILD
-	unsigned long offset;
-	unsigned long value;
+	ncp_uint32_t offset;
+	ncp_uint32_t value;
 	int loops = 400000;
 
 	offset=(0xff80 + (domain * 4));
@@ -319,7 +319,7 @@ static void
 ncr_unlock(int domain)
 {
 #ifndef CONFIG_SPL_BUILD
-	unsigned long offset;
+	ncp_uint32_t offset;
 
 	offset=(0xff80 + (domain * 4));
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
@@ -339,7 +339,7 @@ ncr_unlock(int domain)
 */
 
 static int
-ncr_read16_0x115(unsigned long region, unsigned long offset,
+ncr_read16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		 unsigned short *value)
 {
 	int wfc_timeout = WFC_TIMEOUT;
@@ -349,7 +349,7 @@ ncr_read16_0x115(unsigned long region, unsigned long offset,
 	*/
 
 	if (NCP_REGION_ID(0x115, 1) == region) {
-		unsigned long base;
+		ncp_uint32_t base;
 
 		base = (IO + 0x3000);
 
@@ -381,7 +381,7 @@ ncr_read16_0x115(unsigned long region, unsigned long offset,
 */
 
 static int
-ncr_write16_0x115(unsigned long region, unsigned long offset,
+ncr_write16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		  unsigned short *value)
 {
 	int wfc_timeout = WFC_TIMEOUT;
@@ -391,7 +391,7 @@ ncr_write16_0x115(unsigned long region, unsigned long offset,
 	*/
 
 	if (NCP_REGION_ID(0x115, 1) == region) {
-		unsigned long base;
+		ncp_uint32_t base;
 
 		base = (IO + 0x3000);
 
@@ -422,8 +422,8 @@ ncr_write16_0x115(unsigned long region, unsigned long offset,
 */
 
 static int
-ncr_read32_0x115(unsigned long region, unsigned long offset,
-		 unsigned long *value)
+ncr_read32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
+		 ncp_uint32_t *value)
 {
 	int wfc_timeout = WFC_TIMEOUT;
 
@@ -434,7 +434,7 @@ ncr_read32_0x115(unsigned long region, unsigned long offset,
 	if ((NCP_REGION_ID(0x115, 0) == region) ||
 	    (NCP_REGION_ID(0x115, 2) == region) ||
 	    (NCP_REGION_ID(0x115, 3) == region)) {
-		unsigned long base = 0;
+		ncp_uint32_t base = 0;
 
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
@@ -479,8 +479,8 @@ ncr_read32_0x115(unsigned long region, unsigned long offset,
 */
 
 static int
-ncr_write32_0x115(unsigned long region, unsigned long offset,
-		  unsigned long *value)
+ncr_write32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
+		  ncp_uint32_t *value)
 {
 	int wfc_timeout = WFC_TIMEOUT;
 
@@ -491,7 +491,7 @@ ncr_write32_0x115(unsigned long region, unsigned long offset,
 	if ((NCP_REGION_ID(0x115, 0) == region) ||
 	    (NCP_REGION_ID(0x115, 2) == region) ||
 	    (NCP_REGION_ID(0x115, 3) == region)) {
-		unsigned long base = 0;
+		ncp_uint32_t base = 0;
 
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
@@ -539,11 +539,11 @@ ncr_write32_0x115(unsigned long region, unsigned long offset,
 */
 
 static int
-ncr_read16_0x115(unsigned long region, unsigned long offset,
+ncr_read16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		 unsigned short *value)
 {
 	int wfc_timeout = WFC_TIMEOUT;
-	unsigned long temp;
+	ncp_uint32_t temp;
 
 	/*
 	  Handle the 0x115.1 and 0x115.4 nodes on the AXM55xx.
@@ -551,7 +551,7 @@ ncr_read16_0x115(unsigned long region, unsigned long offset,
 
 	if ((NCP_REGION_ID(0x115, 1) == region) ||
 	    (NCP_REGION_ID(0x115, 4) == region)) {
-		unsigned long base;
+		ncp_uint32_t base;
 
 		if (NCP_REGION_ID(0x115, 1) == region)
 			base = (IO + 0x1f0);
@@ -586,11 +586,11 @@ ncr_read16_0x115(unsigned long region, unsigned long offset,
 */
 
 static int
-ncr_write16_0x115(unsigned long region, unsigned long offset,
+ncr_write16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		  unsigned short value)
 {
 	int wfc_timeout = WFC_TIMEOUT;
-	unsigned long temp;
+	ncp_uint32_t temp;
 
 	/*
 	  Handle the 0x115 nodes on AXM25xx
@@ -598,7 +598,7 @@ ncr_write16_0x115(unsigned long region, unsigned long offset,
 
 	if ((NCP_REGION_ID(0x115, 1) == region) ||
 	    (NCP_REGION_ID(0x115, 4) == region)) {
-		unsigned long base;
+		ncp_uint32_t base;
 
 		if (NCP_REGION_ID(0x115, 1) == region)
 			base = (IO + 0x1f0);
@@ -632,8 +632,8 @@ ncr_write16_0x115(unsigned long region, unsigned long offset,
 */
 
 static int
-ncr_read32_0x115(unsigned long region, unsigned long offset,
-		 unsigned long *value)
+ncr_read32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
+		 ncp_uint32_t *value)
 {
 	int wfc_timeout = WFC_TIMEOUT;
 
@@ -647,7 +647,7 @@ ncr_read32_0x115(unsigned long region, unsigned long offset,
 	    (NCP_REGION_ID(0x115, 3) == region) ||
 	    (NCP_REGION_ID(0x115, 4) == region) ||
 	    (NCP_REGION_ID(0x115, 5) == region)) {
-		unsigned long base = 0;
+		ncp_uint32_t base = 0;
 
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
@@ -701,8 +701,8 @@ ncr_read32_0x115(unsigned long region, unsigned long offset,
 */
 
 static int
-ncr_write32_0x115(unsigned long region, unsigned long offset,
-		  unsigned long value)
+ncr_write32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
+		  ncp_uint32_t value)
 {
 	int wfc_timeout = WFC_TIMEOUT;
 
@@ -716,7 +716,7 @@ ncr_write32_0x115(unsigned long region, unsigned long offset,
 	    (NCP_REGION_ID(0x115, 3) == region) ||
 	    (NCP_REGION_ID(0x115, 4) == region) ||
 	    (NCP_REGION_ID(0x115, 5) == region)) {
-		unsigned long base = 0;
+		ncp_uint32_t base = 0;
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
 			base = (IO + 0x1e0);
@@ -768,9 +768,9 @@ ncr_write32_0x115(unsigned long region, unsigned long offset,
 */
 
 static int
-ncr_read32_0x153(unsigned long region, unsigned long offset, unsigned long *value)
+ncr_read32_0x153(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
-	unsigned long address;
+	ncp_uint32_t address;
 
 	address = IO + 0x0 + (NCP_TARGET_ID(region) * 0x10) + offset;
 	*value = readl(address);
@@ -784,9 +784,9 @@ ncr_read32_0x153(unsigned long region, unsigned long offset, unsigned long *valu
 */
 
 static int
-ncr_write32_0x153(unsigned long region, unsigned long offset, unsigned long value)
+ncr_write32_0x153(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
-	unsigned long address;
+	ncp_uint32_t address;
 
 	address = IO + 0x0 + (NCP_TARGET_ID(region) * 0x10) + offset;
 	writel(value, address);
@@ -800,9 +800,9 @@ ncr_write32_0x153(unsigned long region, unsigned long offset, unsigned long valu
 */
 
 static int
-ncr_read32_0x155(unsigned long region, unsigned long offset, unsigned long *value)
+ncr_read32_0x155(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
-	unsigned long address;
+	ncp_uint32_t address;
 
 	address = IO + 0x20000 + (NCP_TARGET_ID(region) * 0x800) + offset;
 	*value = readl(address);
@@ -816,9 +816,9 @@ ncr_read32_0x155(unsigned long region, unsigned long offset, unsigned long *valu
 */
 
 static int
-ncr_write32_0x155(unsigned long region, unsigned long offset, unsigned long value)
+ncr_write32_0x155(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
-	unsigned long address;
+	ncp_uint32_t address;
 
 	address = IO + 0x20000 + (NCP_TARGET_ID(region) * 0x800) + offset;
 	writel(value, address);
@@ -832,9 +832,9 @@ ncr_write32_0x155(unsigned long region, unsigned long offset, unsigned long valu
 */
 
 static int
-ncr_read32_0x156(unsigned long region, unsigned long offset, unsigned long *value)
+ncr_read32_0x156(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
-	unsigned long address;
+	ncp_uint32_t address;
 
 	address = IO + 0x30000 + (NCP_TARGET_ID(region) * 0x1800) + offset;
 	*value = readl(address);
@@ -848,9 +848,9 @@ ncr_read32_0x156(unsigned long region, unsigned long offset, unsigned long *valu
 */
 
 static int
-ncr_write32_0x156(unsigned long region, unsigned long offset, unsigned long value)
+ncr_write32_0x156(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
-	unsigned long address;
+	ncp_uint32_t address;
 
 	address = IO + 0x30000 + (NCP_TARGET_ID(region) * 0x1800) + offset;
 	writel(value, address);
@@ -863,9 +863,9 @@ ncr_write32_0x156(unsigned long region, unsigned long offset, unsigned long valu
 */
 
 static int
-ncr_read32_0x158(unsigned long region, unsigned long offset, unsigned long *value)
+ncr_read32_0x158(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
-	unsigned long address;
+	ncp_uint32_t address;
 
 	address = IO + 0x60000 + offset;
 	*value = readl(address);
@@ -879,9 +879,9 @@ ncr_read32_0x158(unsigned long region, unsigned long offset, unsigned long *valu
 */
 
 static int
-ncr_write32_0x158(unsigned long region, unsigned long offset, unsigned long value)
+ncr_write32_0x158(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
-	unsigned long address;
+	ncp_uint32_t address;
 
 	address = IO + 0x60000 + offset;
 	writel(value, address);
@@ -895,9 +895,9 @@ ncr_write32_0x158(unsigned long region, unsigned long offset, unsigned long valu
 */
 
 static int
-ncr_read32_0x159(unsigned long region, unsigned long offset, unsigned long *value)
+ncr_read32_0x159(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
-	unsigned long address;
+	ncp_uint32_t address;
 
 	address = IO + 0x70000 + offset;
 	*value = readl(address);
@@ -911,9 +911,9 @@ ncr_read32_0x159(unsigned long region, unsigned long offset, unsigned long *valu
 */
 
 static int
-ncr_write32_0x159(unsigned long region, unsigned long offset, unsigned long value)
+ncr_write32_0x159(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
-	unsigned long address;
+	ncp_uint32_t address;
 
 	address = IO + 0x70000 + offset;
 	writel(value, address);
@@ -937,8 +937,8 @@ ncr_write32_0x159(unsigned long region, unsigned long offset, unsigned long valu
 */
 
 int
-ncr_read(unsigned long region,
-	 unsigned long address_upper, unsigned long address,
+ncr_read(ncp_uint32_t region,
+	 ncp_uint32_t address_upper, ncp_uint32_t address,
 	 int number, void *buffer)
 {
 	command_data_register_0_t cdr0;	/* 0x101.0.0xf0 */
@@ -955,7 +955,7 @@ ncr_read(unsigned long region,
 		case 3:
 		case 5:
 			return ncr_read32_0x115(region, address,
-						(unsigned long *)buffer);
+						(ncp_uint32_t *)buffer);
 			break;
 		case 1:
 		case 4:
@@ -967,25 +967,25 @@ ncr_read(unsigned long region,
 		}
 		break;
 	case 0x153:
-		return ncr_read32_0x153(region, address, (unsigned long *)buffer);
+		return ncr_read32_0x153(region, address, (ncp_uint32_t *)buffer);
 		break;
 	case 0x155:
-		return ncr_read32_0x155(region, address, (unsigned long *)buffer);
+		return ncr_read32_0x155(region, address, (ncp_uint32_t *)buffer);
 		break;
 	case 0x156:
-		return ncr_read32_0x156(region, address, (unsigned long *)buffer);
+		return ncr_read32_0x156(region, address, (ncp_uint32_t *)buffer);
 		break;
 	case 0x158:
-		return ncr_read32_0x158(region, address, (unsigned long *)buffer);
+		return ncr_read32_0x158(region, address, (ncp_uint32_t *)buffer);
 		break;
 	case 0x159:
-		return ncr_read32_0x159(region, address, (unsigned long *)buffer);
+		return ncr_read32_0x159(region, address, (ncp_uint32_t *)buffer);
 		break;
 	case 0x101:
 	case 0x109:
 		/* if reading from within NCA/MME_POKE, just do the plain and simple read */
 		if (NULL != buffer) {
-			unsigned long offset = 0;
+			ncp_uint32_t offset = 0;
 
 			if(NCP_NODE_ID(region) == 0x101) {
 				offset = (NCA + address);
@@ -994,7 +994,7 @@ ncr_read(unsigned long region,
 			}
 
 			while (4 <= number) {
-				*((unsigned long *)buffer) =
+				*((ncp_uint32_t *)buffer) =
 					ncr_register_read((unsigned *)offset);
 				offset += 4;
 				buffer += 4;
@@ -1002,7 +1002,7 @@ ncr_read(unsigned long region,
 			}
 
 			if (0 < number) {
-				unsigned long temp;
+				ncp_uint32_t temp;
 
 				temp = ncr_register_read((unsigned *)offset);
 				memcpy(buffer, (void *)&temp, number);
@@ -1014,8 +1014,10 @@ ncr_read(unsigned long region,
 		break;
 	default:
 		if(NCP_NODE_ID(region) >= 0x100) {
-			printf("Unhandled read to 0x%x.0x%x.0x%llx\n", NCP_NODE_ID(region),
-			       NCP_TARGET_ID(region), address);
+			printf("Unhandled read to 0x%lx.0x%lx.0x%lx\n",
+			       (unsigned long)NCP_NODE_ID(region),
+			       (unsigned long)NCP_TARGET_ID(region),
+			       (unsigned long)address);
 			return -1;
 		}
 		/* Actual config ring acces, continue. */
@@ -1101,12 +1103,12 @@ ncr_read(unsigned long region,
 	*/
 
 	if (NULL != buffer) {
-		unsigned long address;
+		ncp_uint32_t address;
 
 		address = (NCA + 0x1000);
 
 		while (4 <= number) {
-			*((unsigned long *)buffer) =
+			*((ncp_uint32_t *)buffer) =
 				ncr_register_read((unsigned *)address);
 			address += 4;
 			number -= 4;
@@ -1114,7 +1116,7 @@ ncr_read(unsigned long region,
 		}
 
 		if (0 < number) {
-			unsigned long temp;
+			ncp_uint32_t temp;
 
 			temp = ncr_register_read((unsigned *)address);
 			memcpy(buffer, (void *)&temp, number);
@@ -1131,7 +1133,7 @@ ncr_read(unsigned long region,
 */
 
 int
-ncr_read8(unsigned long region, unsigned long offset, unsigned char *value)
+ncr_read8(ncp_uint32_t region, ncp_uint32_t offset, unsigned char *value)
 {
 	int rc;
 
@@ -1150,7 +1152,7 @@ ncr_read8(unsigned long region, unsigned long offset, unsigned char *value)
 */
 
 int
-ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
+ncr_read16(ncp_uint32_t region, ncp_uint32_t offset, unsigned short *value)
 {
 	int rc = 0;
 
@@ -1173,7 +1175,7 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 */
 
 int
-ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
+ncr_read32(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
 	int rc = 0;
 
@@ -1193,9 +1195,9 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 */
 
 int
-ncr_poll( unsigned long region, unsigned long offset,
-	  unsigned long mask, unsigned long desired_value,
-	  unsigned long delay_time, unsigned long delay_loops )
+ncr_poll( ncp_uint32_t region, ncp_uint32_t offset,
+	  ncp_uint32_t mask, ncp_uint32_t desired_value,
+	  ncp_uint32_t delay_time, ncp_uint32_t delay_loops )
 {
 	int i;
 	int rc = 0;
@@ -1204,7 +1206,7 @@ ncr_poll( unsigned long region, unsigned long offset,
 		       offset, mask, desired_value);
 
 	for( i = 0; i < delay_loops; ++ i ) {
-		unsigned long value;
+		ncp_uint32_t value;
 
 		rc |= ncr_read(region, 0, offset, 4, &value);
 
@@ -1231,8 +1233,8 @@ ncr_poll( unsigned long region, unsigned long offset,
 */
 
 int
-ncr_write(unsigned long region,
-	  unsigned long address_upper, unsigned long address,
+ncr_write(ncp_uint32_t region,
+	  ncp_uint32_t address_upper, ncp_uint32_t address,
 	  int number, void *buffer)
 {
 	command_data_register_0_t cdr0;
@@ -1250,7 +1252,7 @@ ncr_write(unsigned long region,
 		case 3:
 		case 5:
 			return ncr_write32_0x115(region, address,
-						 *((unsigned long *)buffer));
+						 *((ncp_uint32_t *)buffer));
 			break;
 		case 1:
 		case 4:
@@ -1261,28 +1263,28 @@ ncr_write(unsigned long region,
 		break;
 	case 0x153:
 		return ncr_write32_0x153(region, address,
-					 *((unsigned long *)buffer));
+					 *((ncp_uint32_t *)buffer));
 		break;
 	case 0x155:
 		return ncr_write32_0x155(region, address,
-					 *((unsigned long *)buffer));
+					 *((ncp_uint32_t *)buffer));
 		break;
 	case 0x156:
 		return ncr_write32_0x156(region, address,
-					 *((unsigned long *)buffer));
+					 *((ncp_uint32_t *)buffer));
 		break;
 	case 0x158:
 		return ncr_write32_0x158(region, address,
-					 *((unsigned long *)buffer));
+					 *((ncp_uint32_t *)buffer));
 		break;
 	case 0x159:
 		return ncr_write32_0x159(region, address,
-					 *((unsigned long *)buffer));
+					 *((ncp_uint32_t *)buffer));
 		break;
 	case 0x101:
 	case 0x109:
 		if (NULL != buffer) {
-			unsigned long offset = 0;
+			ncp_uint32_t offset = 0;
 
 			if(NCP_NODE_ID(region) == 0x101) {
 				offset = (NCA + address);
@@ -1291,7 +1293,7 @@ ncr_write(unsigned long region,
 			}
 
 			while (4 <= number) {
-				ncr_register_write(*((unsigned long *)buffer),
+				ncr_register_write(*((ncp_uint32_t *)buffer),
 						   (unsigned *)offset);
 				offset += 4;
 				buffer += 4;
@@ -1299,7 +1301,7 @@ ncr_write(unsigned long region,
 			}
 
 			if (0 < number) {
-				unsigned long temp;
+				ncp_uint32_t temp;
 
 				memcpy((void *)&temp, buffer, number);
 				ncr_register_write(temp, (unsigned *)offset);
@@ -1311,8 +1313,10 @@ ncr_write(unsigned long region,
 		break;
 	default:
 		if(NCP_NODE_ID(region) >= 0x100) {
-			printf("Unhandled write to 0x%x.0x%x.0x%llx\n", NCP_NODE_ID(region),
-			       NCP_TARGET_ID(region), address);
+			printf("Unhandled write to 0x%lx.0x%lx.0x%lx\n",
+			       (unsigned long)NCP_NODE_ID(region),
+			       (unsigned long)NCP_TARGET_ID(region),
+			       (unsigned long)address);
 			return -1;
 		}
 		/* Actual config ring acces, continue. */
@@ -1353,10 +1357,10 @@ ncr_write(unsigned long region,
 	*/
 
 	if (NULL != buffer) {
-		unsigned long offset = (NCA + 0x1000);
+		ncp_uint32_t offset = (NCA + 0x1000);
 
 		while (4 <= number) {
-			ncr_register_write(*((unsigned long *)buffer),
+			ncr_register_write(*((ncp_uint32_t *)buffer),
 					   (unsigned *)offset);
 			offset += 4;
 			buffer += 4;
@@ -1364,7 +1368,7 @@ ncr_write(unsigned long region,
 		}
 
 		if (0 < number) {
-			unsigned long temp;
+			ncp_uint32_t temp;
 
 			memcpy((void *)&temp, buffer, number);
 			ncr_register_write(temp, (unsigned *)offset);
@@ -1414,11 +1418,16 @@ ncr_write(unsigned long region,
 	  Check status.
 	*/
 
-	if(0x3 != ((ncr_register_read((unsigned *)(NCA + 0xf0)) & 0x00c00000) >> 22)) {
-		printf("ncr_write( ) failed: 0x%lx, status1=0x%x, status2=0x%x\n",
-		       ((ncr_register_read((unsigned *)(NCA + 0xf0)) & 0x00c00000) >> 22),
-		       ncr_register_read((unsigned *)(NCA + 0xe4)),
-		       ncr_register_read((unsigned *)(NCA + 0xe8)));
+	if(0x3 !=
+	   ((ncr_register_read((unsigned *)(NCA + 0xf0)) & 0x00c00000) >> 22)) {
+		printf("ncr_write( ) failed: 0x%lx, status1=0x%lx, status2=0x%lx\n",
+		       (unsigned long)((ncr_register_read((unsigned *)(NCA +
+								       0xf0)) &
+					0x00c00000) >> 22),
+		       (unsigned long)ncr_register_read((unsigned *)(NCA +
+								     0xe4)),
+		       (unsigned long)ncr_register_read((unsigned *)(NCA +
+								     0xe8)));
 		ncr_unlock(LOCK_DOMAIN);
 
 		return -1;
@@ -1434,7 +1443,7 @@ ncr_write(unsigned long region,
 */
 
 int
-ncr_write8( unsigned long region, unsigned long offset, unsigned char value )
+ncr_write8( ncp_uint32_t region, ncp_uint32_t offset, unsigned char value )
 {
 	int rc;
 
@@ -1453,7 +1462,7 @@ ncr_write8( unsigned long region, unsigned long offset, unsigned char value )
 */
 
 int
-ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
+ncr_write16( ncp_uint32_t region, ncp_uint32_t offset, unsigned short value )
 {
 	int rc;
 
@@ -1476,7 +1485,7 @@ ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 */
 
 int
-ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
+ncr_write32(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
 	int rc;
 
@@ -1495,9 +1504,9 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 */
 
 int
-ncr_and( unsigned long region, unsigned long offset, unsigned long value )
+ncr_and( ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value )
 {
-	unsigned long temp;
+	ncp_uint32_t temp;
 	int rc = 0;
 
 	rc |= ncr_read(region, 0, offset, 4, &temp);
@@ -1516,9 +1525,9 @@ ncr_and( unsigned long region, unsigned long offset, unsigned long value )
 */
 
 int
-ncr_or( unsigned long region, unsigned long offset, unsigned long value )
+ncr_or( ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value )
 {
-	unsigned long temp;
+	ncp_uint32_t temp;
 	int rc = 0;
 
 	rc |= ncr_read(region, 0, offset, 4, &temp);
@@ -1537,13 +1546,13 @@ ncr_or( unsigned long region, unsigned long offset, unsigned long value )
 */
 
 int
-ncr_modify(unsigned long region, unsigned long address, int count,
+ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 	   void *masks, void *values)
 {
 	command_data_register_0_t cdr0;
 	command_data_register_1_t cdr1;
 	command_data_register_2_t cdr2;
-	unsigned long data_word_base;
+	ncp_uint32_t data_word_base;
 	int wfc_timeout = WFC_TIMEOUT;
 
 	if (0 != ncr_lock(LOCK_DOMAIN))
@@ -1581,10 +1590,10 @@ ncr_modify(unsigned long region, unsigned long address, int count,
 	data_word_base += 4;
 
 	while( 0 < count ) {
-		ncr_register_write( * ( ( unsigned long * ) masks ),
+		ncr_register_write( * ( ( ncp_uint32_t * ) masks ),
 				    ( unsigned * ) data_word_base );
 		data_word_base += 4;
-		ncr_register_write( * ( ( unsigned long * ) values ),
+		ncr_register_write( * ( ( ncp_uint32_t * ) values ),
 				    ( unsigned * ) data_word_base );
 		data_word_base += 4;
 		masks += 4;
@@ -1646,8 +1655,8 @@ ncr_modify(unsigned long region, unsigned long address, int count,
 */
 
 int
-ncr_modify32( unsigned long region, unsigned long offset,
-	      unsigned long mask, unsigned long value )
+ncr_modify32( ncp_uint32_t region, ncp_uint32_t offset,
+	      ncp_uint32_t mask, ncp_uint32_t value )
 {
 	int rc;
 
@@ -1671,7 +1680,7 @@ void
 ncr_l3tags(void)
 {
 	int i;
-	unsigned long address;
+	ncp_uint32_t address;
 
 	/*donotwrite = 0;*/
 

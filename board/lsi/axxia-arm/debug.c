@@ -9,6 +9,8 @@
  * (at your option) any later version.
  */
 
+#include <common.h>
+
 /*
   ------------------------------------------------------------------------------
   Short Descriptors

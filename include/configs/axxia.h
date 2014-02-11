@@ -74,216 +74,216 @@ void ncr_sysmem_init_mode_disable(void);
 #ifdef CONFIG_AXXIA_ARM
 
 typedef struct {
-	unsigned long version;
-	unsigned long flags;
-	unsigned long baud_rate;
-	unsigned long memory_check_ranges;
+	unsigned version;
+	unsigned flags;
+	unsigned baud_rate;
+	unsigned memory_check_ranges;
 } __attribute__((packed)) parameters_global_t;
 
 #else  /* CONFIG_AXXIA_ARM */
 
 typedef struct {
-	unsigned long version;
-	unsigned long flags;
+	unsigned version;
+	unsigned flags;
 } __attribute__((packed)) parameters_global_t;
 
 #endif	/* CONFIG_AXXIA_ARM */
 
 typedef struct {
-	unsigned long control;
+	unsigned control;
 } __attribute__((packed)) parameters_pciesrio_t;
 
 typedef struct {
-	unsigned long checksum;
-	unsigned long version;
-	unsigned long vofs;
-	unsigned long tvid;
+	unsigned checksum;
+	unsigned version;
+	unsigned vofs;
+	unsigned tvid;
 	unsigned long long twait;
-	unsigned long VIDChecks;
+	unsigned VIDChecks;
 	unsigned char vidLT[64];
 } __attribute__((packed)) parameters_voltage_t;
 
 #ifdef CONFIG_AXXIA_ARM
 
 typedef struct {
-	unsigned long flags;
-	unsigned long syspll_prms;
-	unsigned long syspll_ctrl;
-	unsigned long syspll_csw;
-	unsigned long syspll_div;
-	unsigned long syspll_psd;
-	unsigned long cpupll_prms;
-	unsigned long cpupll_ctrl;
-	unsigned long cpupll_csw;
-	unsigned long cpupll_div;
-	unsigned long cpupll_psd;
-	unsigned long sm0pll_prms;
-	unsigned long sm0pll_ctrl;
-	unsigned long sm0pll_csw;
-	unsigned long sm0pll_div;
-	unsigned long sm0pll_psd;
-	unsigned long sm1pll_prms;
-	unsigned long sm1pll_ctrl;
-	unsigned long sm1pll_csw;
-	unsigned long sm1pll_div;
-	unsigned long sm1pll_psd;
-	unsigned long tmpll_prms;
-	unsigned long tmpll_ctrl;
-	unsigned long tmpll_csw;
-	unsigned long tmpll_div;
-	unsigned long tmpll_psd;
-	unsigned long fabpll_prms;
-	unsigned long fabpll_ctrl;
-	unsigned long fabpll_csw;
-	unsigned long fabpll_div;
-	unsigned long fabpll_psd;
-	unsigned long nrcpinput_csw;
-	unsigned long nrcpinput_div;
-	unsigned long per_csw;
-	unsigned long per_div;
-	unsigned long emmc_csw;
-	unsigned long emmc_div;
-	unsigned long debug_csw;
-	unsigned long stop_csw;
+	unsigned flags;
+	unsigned syspll_prms;
+	unsigned syspll_ctrl;
+	unsigned syspll_csw;
+	unsigned syspll_div;
+	unsigned syspll_psd;
+	unsigned cpupll_prms;
+	unsigned cpupll_ctrl;
+	unsigned cpupll_csw;
+	unsigned cpupll_div;
+	unsigned cpupll_psd;
+	unsigned sm0pll_prms;
+	unsigned sm0pll_ctrl;
+	unsigned sm0pll_csw;
+	unsigned sm0pll_div;
+	unsigned sm0pll_psd;
+	unsigned sm1pll_prms;
+	unsigned sm1pll_ctrl;
+	unsigned sm1pll_csw;
+	unsigned sm1pll_div;
+	unsigned sm1pll_psd;
+	unsigned tmpll_prms;
+	unsigned tmpll_ctrl;
+	unsigned tmpll_csw;
+	unsigned tmpll_div;
+	unsigned tmpll_psd;
+	unsigned fabpll_prms;
+	unsigned fabpll_ctrl;
+	unsigned fabpll_csw;
+	unsigned fabpll_div;
+	unsigned fabpll_psd;
+	unsigned nrcpinput_csw;
+	unsigned nrcpinput_div;
+	unsigned per_csw;
+	unsigned per_div;
+	unsigned emmc_csw;
+	unsigned emmc_div;
+	unsigned debug_csw;
+	unsigned stop_csw;
 } __attribute__ ((packed)) parameters_clocks_t;
 
 #else  /* CONFIG_AXXIA_ARM */
 
 typedef struct {
 #ifdef CONFIG_AXXIA_25xx
-	unsigned long syspll_prms;
-	unsigned long syspll_ctrl;
-	unsigned long syspll_mcgc;
-	unsigned long syspll_mcgc1;
-	unsigned long syspll_psd;
-	unsigned long ppcpll_prms;
-	unsigned long ppcpll_ctrl;
-	unsigned long ppcpll_mcgc;
-	unsigned long ppcpll_mcgc1;
-	unsigned long ppcpll_psd;
-	unsigned long smpll_prms;
-	unsigned long smpll_ctrl;
-	unsigned long smpll_mcgc;
-	unsigned long smpll_mcgc1;
-	unsigned long smpll_psd;
-	unsigned long tmpll_prms;
-	unsigned long tmpll_ctrl;
-	unsigned long tmpll_mcgc;
-	unsigned long tmpll_mcgc1;
-	unsigned long tmpll_psd;
-	unsigned long per_mcgc;
-	unsigned long per_mcgc1;
+	unsigned syspll_prms;
+	unsigned syspll_ctrl;
+	unsigned syspll_mcgc;
+	unsigned syspll_mcgc1;
+	unsigned syspll_psd;
+	unsigned ppcpll_prms;
+	unsigned ppcpll_ctrl;
+	unsigned ppcpll_mcgc;
+	unsigned ppcpll_mcgc1;
+	unsigned ppcpll_psd;
+	unsigned smpll_prms;
+	unsigned smpll_ctrl;
+	unsigned smpll_mcgc;
+	unsigned smpll_mcgc1;
+	unsigned smpll_psd;
+	unsigned tmpll_prms;
+	unsigned tmpll_ctrl;
+	unsigned tmpll_mcgc;
+	unsigned tmpll_mcgc1;
+	unsigned tmpll_psd;
+	unsigned per_mcgc;
+	unsigned per_mcgc1;
 #else
-	unsigned long sys_control;
-	unsigned long sys_lftune_upper;
-	unsigned long sys_lftune_lower;
-	unsigned long sys_fftune;
-	unsigned long sys_locktune;
-	unsigned long ppc_control;
-	unsigned long ppc_lftune_upper;
-	unsigned long ppc_lftune_lower;
-	unsigned long ppc_fftune;
-	unsigned long ppc_locktune;
-	unsigned long ddr0_control;
-	unsigned long ddr1_control;
-	unsigned long ddr_lftune_upper;
-	unsigned long ddr_lftune_lower;
-	unsigned long ddr_fftune;
-	unsigned long ddr_locktune;
+	unsigned sys_control;
+	unsigned sys_lftune_upper;
+	unsigned sys_lftune_lower;
+	unsigned sys_fftune;
+	unsigned sys_locktune;
+	unsigned ppc_control;
+	unsigned ppc_lftune_upper;
+	unsigned ppc_lftune_lower;
+	unsigned ppc_fftune;
+	unsigned ppc_locktune;
+	unsigned ddr0_control;
+	unsigned ddr1_control;
+	unsigned ddr_lftune_upper;
+	unsigned ddr_lftune_lower;
+	unsigned ddr_fftune;
+	unsigned ddr_locktune;
 #endif
 } __attribute__ ((packed)) parameters_clocks_t;
 
 #endif	/* CONFIG_AXXIA_ARM */
 
 
-typedef unsigned long           ncp_uint32_t;
-typedef void *                  ncp_dev_hdl_t;
-typedef unsigned long           ncp_region_id_t;
+typedef unsigned ncp_uint32_t;
+typedef void *   ncp_dev_hdl_t;
+typedef unsigned ncp_region_id_t;
 
 typedef struct {
     unsigned char sdram_rtt_nom[4];
     unsigned char sdram_rtt_wr[4];
     unsigned char sdram_data_drv_imp[4];
-    unsigned long phy_min_cal_delay;
-    unsigned long phy_adr_phase_select;
-    unsigned long phy_dp_io_vref_set;
-    unsigned long phy_adr_io_vref_set;
-    unsigned long phy_rdlvl_cmp_even;
-    unsigned long phy_rdlvl_cmp_odd;
-    unsigned long phy_write_align_finetune;
+    unsigned phy_min_cal_delay;
+    unsigned phy_adr_phase_select;
+    unsigned phy_dp_io_vref_set;
+    unsigned phy_adr_io_vref_set;
+    unsigned phy_rdlvl_cmp_even;
+    unsigned phy_rdlvl_cmp_odd;
+    unsigned phy_write_align_finetune;
 } __attribute__((packed)) per_sysmem_parms_t;
 
 
 typedef struct {
-	unsigned long version;
-	unsigned long auto_detect;
-	unsigned long num_interfaces;
-	unsigned long num_ranks_per_interface;
-	unsigned long primary_bus_width;
-	unsigned long topology;
-	unsigned long phy_rdlat;
-	unsigned long added_rank_switch_delay;
-    unsigned long zqcs_interval;
-	unsigned long enableECC;
-	unsigned long enable_runtime_updates;
-    unsigned long open_page_size;
-	unsigned long sdram_device_density;
-	unsigned long sdram_device_width;
-	unsigned long CAS_latency;
-	unsigned long CAS_write_latency;
-	unsigned long address_mirroring;
-	unsigned long registeredDIMM;
-	unsigned long single_bit_mpr;
-	unsigned long high_temp_dram;
+	unsigned version;
+	unsigned auto_detect;
+	unsigned num_interfaces;
+	unsigned num_ranks_per_interface;
+	unsigned primary_bus_width;
+	unsigned topology;
+	unsigned phy_rdlat;
+	unsigned added_rank_switch_delay;
+    unsigned zqcs_interval;
+	unsigned enableECC;
+	unsigned enable_runtime_updates;
+    unsigned open_page_size;
+	unsigned sdram_device_density;
+	unsigned sdram_device_width;
+	unsigned CAS_latency;
+	unsigned CAS_write_latency;
+	unsigned address_mirroring;
+	unsigned registeredDIMM;
+	unsigned single_bit_mpr;
+	unsigned high_temp_dram;
 
     per_sysmem_parms_t per_sysmem[2];
 
-    unsigned long ddrRetentionEnable;
-    unsigned long ddrRecovery;
+    unsigned ddrRetentionEnable;
+    unsigned ddrRecovery;
 
-	unsigned long                  num_bytelanes;
+	unsigned                  num_bytelanes;
  	unsigned long long           totalSize;
 } __attribute__((packed)) parameters_sysmem_t;
 
 #ifdef CONFIG_AXXIA_ARM
 
 typedef struct {
-	unsigned long retentionSize;
-	unsigned long retentionOffset;
-	unsigned long sysmemSize;
-	unsigned long sysmemOffset;
-	unsigned long clocksSize;
-	unsigned long clocksOffset;
-	unsigned long voltageSize;
-	unsigned long voltageOffset;
-	unsigned long pciesrioSize;
-	unsigned long pciesrioOffset;
-	unsigned long globalSize;
-	unsigned long globalOffset;
-	unsigned long version;
-	unsigned long flags;
-	unsigned long checksum;
-	unsigned long size;
-	unsigned long magic;
+	unsigned retentionSize;
+	unsigned retentionOffset;
+	unsigned sysmemSize;
+	unsigned sysmemOffset;
+	unsigned clocksSize;
+	unsigned clocksOffset;
+	unsigned voltageSize;
+	unsigned voltageOffset;
+	unsigned pciesrioSize;
+	unsigned pciesrioOffset;
+	unsigned globalSize;
+	unsigned globalOffset;
+	unsigned version;
+	unsigned flags;
+	unsigned checksum;
+	unsigned size;
+	unsigned magic;
 } __attribute__((packed)) parameters_header_t;
 
 #else  /* CONFIG_AXXIA_ARM */
 
 typedef struct {
-	unsigned long sysmemSize;
-	unsigned long sysmemOffset;
-	unsigned long clocksSize;
-	unsigned long clocksOffset;
-	unsigned long voltageSize;
-	unsigned long voltageOffset;
-	unsigned long pciesrioSize;
-	unsigned long pciesrioOffset;
-	unsigned long globalSize;
-	unsigned long globalOffset;
-	unsigned long version;
-	unsigned long checksum;
-	unsigned long size;
-	unsigned long magic;
+	unsigned sysmemSize;
+	unsigned sysmemOffset;
+	unsigned clocksSize;
+	unsigned clocksOffset;
+	unsigned voltageSize;
+	unsigned voltageOffset;
+	unsigned pciesrioSize;
+	unsigned pciesrioOffset;
+	unsigned globalSize;
+	unsigned globalOffset;
+	unsigned version;
+	unsigned checksum;
+	unsigned size;
+	unsigned magic;
 } __attribute__((packed)) parameters_header_t;
 
 #endif	/* CONFIG_AXXIA_ARM */
@@ -367,8 +367,8 @@ int write_parameters(void);
 #define SSP_MAXIMUM_CLOCK 25000000
 
 #ifndef __ASSEMBLY__
-int ssp_read(void *, unsigned long, unsigned long);
-int ssp_set_speed(unsigned long *);
+int ssp_read(void *, unsigned, unsigned);
+int ssp_set_speed(unsigned *);
 int ssp_init(int);
 #endif
 
@@ -389,7 +389,7 @@ typedef enum {
 	clock_fab, clock_treemem, clock_emmc
 } acp_clock_t;
 
-int acp_clock_get(acp_clock_t, unsigned long *);
+int acp_clock_get(acp_clock_t, ncp_uint32_t *);
 
 unsigned int spi_get_per_clk(void);
 

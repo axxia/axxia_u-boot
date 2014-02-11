@@ -147,9 +147,6 @@ static int ehci_reset(int index)
 	uint32_t tmp;
 	uint32_t *reg_ptr;
 	int ret = 0;
-#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
-	int result = USB_EFAIL;
-#endif
 
 	cmd = ehci_readl(&ehcic[index].hcor->or_usbcmd);
 	cmd = (cmd & ~CMD_RUN) | CMD_RESET;
@@ -239,7 +236,7 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 	uint32_t endpt, maxpacket, token, usbsts;
 	uint32_t c, toggle;
 	uint32_t cmd;
-	int timeout;
+	/*int timeout;*/
 	int ret = 0;
 	struct ehci_ctrl *ctrl = dev->controller;
 #if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
@@ -503,7 +500,7 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 	 */
 	ts = get_timer(0);
 	vtd = &qtd[qtd_counter - 1];
-	timeout = USB_TIMEOUT_MS(pipe);
+	/*timeout = USB_TIMEOUT_MS(pipe);*/
 	do {
 		/* Invalidate dcache */
 		invalidate_dcache_range((uint32_t)&ctrl->qh_list,
@@ -790,7 +787,9 @@ ehci_submit_root(struct usb_device *dev, unsigned long pipe, void *buffer,
 				ehci_writel(status_reg, reg);
 				break;
 			} else {
+#ifndef CONFIG_AXXIA_ARM
 				int ret;
+#endif
 
 				reg |= EHCI_PS_PR;
 #if 0
@@ -897,6 +896,8 @@ int usb_lowlevel_init(int index, void **controller)
 	struct QH *qh_list;
 #if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
 	u32 port_status;
+#endif
+#if defined (CONFIG_ACP3)
 	unsigned burst_size;
 #endif
 

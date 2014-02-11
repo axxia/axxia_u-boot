@@ -47,7 +47,7 @@
 */
   
 int
-do_clocks(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+do_clocks(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	axxia_display_clocks();
 

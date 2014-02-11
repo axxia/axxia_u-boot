@@ -452,12 +452,11 @@ pciesrio_init(unsigned long parameter)
 
 int pciesrio_setcontrol(unsigned long new_control)
 {
-	int pci_srio_select, i;
+	int i;
 	int pci_srio_mode, srio0_speed=0, srio1_speed=0;
 	int divMode0=0, divMode1=0;
 	unsigned long phy0_ctrl, phy1_ctrl;
 	unsigned long pei0_config, pei1_config;	
-	unsigned long tmp;
 	rx_serdes_value_t rx_serdes_values[] = {
 		{0x00ba, 0x0072},
 		{0x02ba, 0x0072},
@@ -514,7 +513,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 		if (phy0_ctrl & 0x8) {
 			/* setup SRIO0 speed */
 			srio0_speed = (new_control & 0x70) << 8;
-			printf("new_control = 0x%x\n",new_control);
+			printf("new_control = 0x%lx\n",new_control);
 			printf("srio0_speed = 0x%x\n", srio0_speed);
 
 			switch ((new_control & 0x70) >> 4) {

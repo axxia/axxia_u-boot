@@ -386,7 +386,7 @@ set_actlr2:
 #endif
 	mcr	p15, 0, r0, c14, c0, 0
 
-#endif	@ CONFIG_SPL_BUILD
+#endif
 
 #ifdef RUN_NONSECURE
 
@@ -525,7 +525,7 @@ set_actlr2:
 	mov	lr, r8
 	b	turn_on_mmu
 
-#else	@ RUN_NONSECURE
+#else
 
 	@@
 	@ Secure Mode
@@ -542,11 +542,11 @@ set_actlr2:
 	cmp	r0, #0
 	bne	jump_to_spin_table
 
-#endif	@ CONFIG_SPL_BUILD
+#endif
 
 	b	turn_on_mmu
 
-#endif	@ RUN_NONSECURE
+#endif
 
 	@@
 	@ Jump to the spin table

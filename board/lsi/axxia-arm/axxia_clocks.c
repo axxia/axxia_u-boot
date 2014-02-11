@@ -44,10 +44,10 @@
 #define CONTROL_MASK 0x3df300
 
 static int
-pll_init_5500(unsigned long region, unsigned long *parameters)
+pll_init_5500(ncp_uint32_t region, ncp_uint32_t *parameters)
 {
 	int i, timeout = 10000;
-	unsigned long value, prms;
+	ncp_uint32_t value, prms;
 
 	/*
 	  Set the parameter value and reset the PLL, with
@@ -56,7 +56,7 @@ pll_init_5500(unsigned long region, unsigned long *parameters)
 	  Enable the PLL.
 	*/
 	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0xc00);
-	prms = parameters[0] & PARAMETER_MASK | 0x80000000;
+	prms = (parameters[0] & PARAMETER_MASK) | 0x80000000;
 	ncr_write32(region, 0x0, prms);
 	udelay(100);
 	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0xc02);
@@ -146,7 +146,7 @@ pll_init_5500(unsigned long region, unsigned long *parameters)
 int
 clocks_init( void )
 {
-	unsigned long value;
+	ncp_uint32_t value;
 
 #ifdef DISPLAY_PARAMETERS
 	printf("-- -- Clocks\n"
@@ -284,13 +284,13 @@ clocks_init( void )
 
 #endif
 
-static unsigned long
-get_pll(unsigned long prms, unsigned long seldiv)
+static ncp_uint32_t
+get_pll(ncp_uint32_t prms, ncp_uint32_t seldiv)
 {
-	unsigned long frequency;
-	unsigned long postdiv;
-	unsigned long fbdiv;
-	unsigned long refdiv;
+	ncp_uint32_t frequency;
+	ncp_uint32_t postdiv;
+	ncp_uint32_t fbdiv;
+	ncp_uint32_t refdiv;
 
 	postdiv = (prms & 0xf) + 1;
 	fbdiv = ((prms & 0xfff0) >> 4) + 3;
@@ -312,7 +312,7 @@ get_pll(unsigned long prms, unsigned long seldiv)
 */
 
 int
-acp_clock_get(acp_clock_t clock, unsigned long *frequency)
+acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 {
 #if defined(CONFIG_AXXIA_SIM)
 
@@ -359,9 +359,9 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 	return 0;
 
 #else
-	unsigned long csw;
-	unsigned long div;
-	unsigned long prms;
+	ncp_uint32_t csw;
+	ncp_uint32_t div;
+	ncp_uint32_t prms;
 
 	switch (clock) {
 	case clock_fab:
@@ -463,48 +463,48 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 void
 axxia_display_clocks(void)
 {
-	unsigned long speed;
-	unsigned long loss_count0;
-	unsigned long loss_count1;
+	ncp_uint32_t speed;
+	ncp_uint32_t loss_count0;
+	ncp_uint32_t loss_count1;
 
 	acp_clock_get(clock_system, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 5), 0xc, &loss_count0);
-	printf("    System: %4lu MHz Loss of Lock Count %lu\n",
+	printf("    System: %4u MHz Loss of Lock Count %u\n",
 	       speed, loss_count0);
 
 	acp_clock_get(clock_core, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 4), 0xc, &loss_count0);
-	printf("       Cpu: %4lu MHz Loss of Lock Count %lu\n",
+	printf("       Cpu: %4u MHz Loss of Lock Count %u\n",
 	       speed, loss_count0);
 
 	acp_clock_get(clock_memory, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 6), 0xc, &loss_count0);
 	ncr_read32(NCP_REGION_ID(0x155, 7), 0xc, &loss_count1);
-	printf("    Memory: %4lu MHz Loss of Lock Count %lu/%lu\n",
+	printf("    Memory: %4u MHz Loss of Lock Count %u/%u\n",
 	       speed, loss_count0, loss_count1);
 
 	acp_clock_get(clock_fab, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 3), 0xc, &loss_count0);
-	printf("    Fabric: %4lu MHz Loss of Lock Count %lu\n",
+	printf("    Fabric: %4u MHz Loss of Lock Count %u\n",
 	       speed, loss_count0);
 
 	acp_clock_get(clock_treemem, &speed);
 	speed /= 1000;
 	ncr_read32(NCP_REGION_ID(0x155, 8), 0xc, &loss_count0);
-	printf("      Tree: %4lu MHz Loss of Lock Count %lu\n",
+	printf("      Tree: %4u MHz Loss of Lock Count %u\n",
 	       speed, loss_count0);
 
 	acp_clock_get(clock_peripheral, &speed);
 	speed /= 1000;
-	printf("Peripheral: %4lu MHz\n", speed);
+	printf("Peripheral: %4u MHz\n", speed);
 
 	acp_clock_get(clock_emmc, &speed);
 	speed /= 1000;
-	printf("   SD/eMMC: %4lu MHz\n", speed);
+	printf("   SD/eMMC: %4u MHz\n", speed);
 
 	return;
 }

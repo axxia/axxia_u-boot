@@ -273,8 +273,10 @@ int usb_stor_scan(int mode)
 			/* OK, it's a storage device.  Iterate over its LUNs
 			 * and populate `usb_dev_desc'.
 			 */
-			int lun, max_lun, start = usb_max_devs;
-
+			int lun, max_lun;
+#if ! defined (CONFIG_ACP3) && ! defined (CONFIG_AXXIA_ARM)
+			int start = usb_max_devs;
+#endif
 			max_lun = usb_get_max_lun(&usb_stor[usb_max_devs]);
 			for (lun = 0;
 			     lun <= max_lun && usb_max_devs < USB_MAX_STOR_DEV;
@@ -292,6 +294,7 @@ int usb_stor_scan(int mode)
 				 * e.g. Patriot Rage ID 13fe:3800
 				 */
 				printf (".");
+				extern int usb_restart_device(struct usb_device *);
 				usb_restart_device(dev);  /* ignore return value */
 				result = usb_stor_get_info(dev, &usb_stor[usb_max_devs],
 						&usb_dev_desc[usb_max_devs]);

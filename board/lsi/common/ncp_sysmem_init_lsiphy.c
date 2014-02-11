@@ -116,7 +116,7 @@ dump_regs(ncp_dev_hdl_t dev, ncp_uint32_t region, ncp_uint32_t offset, ncp_uint3
     ncp_uint32_t reg;
     for (i = 0; i < num;  i++) 
     {
-        if ( (i & 0x3) == 0) printf("  %d.%d.0x%08x  ", NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
+        if ( (i & 0x3) == 0) printf("  %u.%u.0x%08ux  ", NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
 
         ncr_read32(region, offset, &reg);
         printf(" %08x", reg);
@@ -779,6 +779,8 @@ ncp_sm_lsiphy_reg_save(
     *buf = DDR_PHY_REGS_TAG_PROM;
     printf("reg_save2buf @%p = 0x%08x\n", buf, *buf);
 #endif
+
+    return NCP_ST_SUCCESS;
 }
 
 
@@ -792,7 +794,6 @@ ncp_sm_lsiphy_reg_restore(
 
     ncp_uint32_t *buf = retention + (smId * 512);
     ncp_region_id_t regionId;
-    ncp_uint32_t    num_bls;
 
     if (smId == 0) {
         regionId = NCP_REGION_ID(34,1);
@@ -828,7 +829,6 @@ ncp_sm_intr_status_25xx(
     ncp_region_id_t regionId,
     ncp_uint32_t    mask)
 {
-    ncp_st_t ncpStatus;
     ncp_uint32_t value;
     /* read interrupt status */
     ncr_read32( regionId, NCP_DENALI_CTL_260, &value );
@@ -849,8 +849,8 @@ ncp_sm_poll_controller_25xx(
     ncp_region_id_t regionId,
     ncp_sm_poll_event_t event)
 {
-    ncp_st_t ncpStatus;
     ncp_uint32_t value;
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
 
     switch (event)
     {
@@ -898,7 +898,6 @@ ncp_sm_ecc_enb_25xx(
     ncp_region_id_t regionId,
     ncp_uint32_t    eccEnb)
 {
-    ncp_st_t ncpStatus;
     ncp_uint32_t mask, value;
 
     mask = value = 0;
@@ -917,7 +916,6 @@ ncp_sm_intr_status_55xx(
     ncp_region_id_t regionId,
     ncp_uint32_t    mask)
 {
-    ncp_st_t ncpStatus;
     ncp_uint32_t value;
     /* read interrupt status */
     ncr_read32( regionId, NCP_DENALI_CTL_260, &value );
@@ -988,7 +986,6 @@ ncp_sm_ecc_enb_55xx(
     ncp_region_id_t regionId,
     ncp_uint32_t    eccEnb)
 {
-    ncp_st_t ncpStatus;
     ncp_uint32_t mask, value;
 
     mask = value = 0;
@@ -1248,22 +1245,21 @@ ncp_sm_lsiphy_static_init(
          * be prior to PHY static init
          */
         ncp_sm_dfi_init_start(dev, ctlRegion, parms);
-    }
+    } else {
 #ifndef UBOOT 
-    else 
-    {
         NCP_COMMENT("treemem %d PHY static init", smId - NCP_SYSMEM_NUM_NODES);
-        region    = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_PHY);
-        ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
         isSysMem = FALSE;
         parms->num_bytelanes = 2;
-        memId = smId - NCP_SYSMEM_NUM_NODES;
         /* TODO??? intrStat/eccEnb functions? */
-
         ncp_cm_dfi_init_start(dev, ctlRegion, parms);
-    }
+        memId = smId - NCP_SYSMEM_NUM_NODES;
+        region    = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_PHY);
+        ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
+#else
+	printf("Unexpected smId: 0x%x\n", smId);
+	NCP_CALL(NCP_ST_ERROR);
 #endif
-
+    }
 
     /* Disable Dynamic ODT */
     mask = value = 0;
@@ -2254,7 +2250,7 @@ sm_bytelane_test(
     ncp_uint32_t  cmpOff; 
 
 #ifdef UBOOT
-    ncp_uint32_t  *p32 = (unsigned long *)(NCA + 0x1000);
+    ncp_uint32_t  *p32 = (unsigned *)(NCA + 0x1000);
     ncp_uint8_t   *p8 = (unsigned char *)(NCA + 0x1000);
     unsigned uppAddr;
     unsigned lowAddr;
@@ -2333,7 +2329,7 @@ sm_bytelane_test(
     lowAddr = ( (unsigned) (address & 0xffffffff) );
 
     if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), uppAddr, lowAddr, blockSize, NULL )) {
-      printf("%d : ncr_write() failed: 0x%08lx 0x%08lx\n",
+      printf("%d : ncr_write() failed: 0x%08x 0x%08x\n",
          __LINE__, in_be32(NCA + 0xe4), in_be32(NCA + 0xe8));
       return -1;
     }
@@ -2352,7 +2348,7 @@ sm_bytelane_test(
     /* Read back and compare. */
 #ifdef UBOOT
     if (0 != ncr_read( NCP_REGION_ID( 512, 1 ), uppAddr, lowAddr, blockSize, NULL )) {
-      printf("%d : ncr_read() failed: 0x%08lx 0x%08lx\n",
+      printf("%d : ncr_read() failed: 0x%08x 0x%08x\n",
          __LINE__, in_be32(NCA + 0xe4), in_be32(NCA + 0xe8));
     }
     NCR_TRACE("ncpRead   -w8 0.512.1.0x00%012llx 128\n", address);
@@ -2412,7 +2408,7 @@ sm_bytelane_test(
     pTmp = p32;
 
     for (i = 0; i < (blockSize / num_bls); ++i) {
-      unsigned long temp;
+      unsigned temp;
 
       if (0 == pattern)
         temp = value32;
@@ -2474,12 +2470,11 @@ sm_ecc_bytelane_test(
         ncp_uint32_t  num_bls,
         ncp_uint32_t *bad_bl)
 {
-    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_uint32_t value;
     ncp_uint32_t this_value;
     ncp_uint32_t temp;
 #ifdef UBOOT 
-    ncp_uint32_t  *p32 = (NCA + 0x1000); 
+    ncp_uint32_t  *p32 = (ncp_uint32_t *)(NCA + 0x1000); 
     unsigned uppAddr;
     unsigned lowAddr;
 #else 
@@ -2529,7 +2524,7 @@ sm_ecc_bytelane_test(
       printf("%d : ncr_write() failed!\n", __LINE__);
       return -1;
     }
-    p32 = (NCA + 0x1000); 
+    p32 = (ncp_uint32_t *)(NCA + 0x1000); 
 #else 
     NCP_CALL(ncp_block_write8(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
                                 wbuf, blockSize, 0));
@@ -2588,7 +2583,7 @@ sm_ecc_bytelane_test(
         rc = in_be32(NCA + 0xe4);
 
     NCR_TRACE( "ncpRead    0.%lu.5.0x%010x 32\n", node, (address >> 2) );
-    p32 = (NCA + 0x1000); 
+    p32 = (ncp_uint32_t *)(NCA + 0x1000); 
 #else
     rc = ncp_block_read32(dev, NCP_REGION_ID(node, 5), (address >> 2), 
                                 (ncp_uint32_t *)rbuf, blockSizeWords, 0);
@@ -2705,13 +2700,8 @@ sm_bytelane_test_elm(
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     int i, j;
-    ncp_uint32_t  beatSize= num_bls * 2;
 
-#ifdef UBOOT 
-    ncp_uint32_t  *p32 = (NCA + 0x1000); 
-    unsigned uppAddr;
-    unsigned lowAddr;
-#else 
+#ifndef UBOOT 
 #ifdef SM_BYTELANE_TEST_DEBUG
     ncp_uint8_t   rbuf[NCP_SM_BURST_SIZE];
     ncp_uint32_t  *p32 = (ncp_uint32_t *) rbuf;
@@ -2726,7 +2716,6 @@ sm_bytelane_test_elm(
     ncp_uint8_t  expVal;
     ncp_uint8_t  readVal;
     ncp_int32_t   valAdj;
-    ncp_int32_t   beatAdj;
 
     ncp_uint32_t  readData[2];
     ncp_uint8_t  *pDat;
@@ -2747,15 +2736,10 @@ sm_bytelane_test_elm(
      * beat size to get the value for the previous and subsequent
      * beat.
      */
-    if ( (pattern & 0x01) == 0) {
+    if ( (pattern & 0x01) == 0)
         valAdj  = 1;
-        beatAdj = -beatSize;
-    } 
     else
-    {
         valAdj  = -1;
-        beatAdj = beatSize;
-    }
 
     /* 
      * the ELM sysmem init cache address register specifies
@@ -2992,7 +2976,7 @@ sm_ecc_bytelane_test_elm(
 
     ncp_uint32_t this_value;
 #ifdef UBOOT 
-    ncp_uint32_t  *p32 = (NCA + 0x1000); 
+    ncp_uint32_t  *p32 = (ncp_uint32_t *)(NCA + 0x1000); 
     unsigned uppAddr;
     unsigned lowAddr;
 #else 
@@ -3061,7 +3045,7 @@ sm_ecc_bytelane_test_elm(
       printf("%d : ncr_write() failed!\n", __LINE__);
       return -1;
     }
-    p32 = (NCA + 0x1000); 
+    p32 = (ncp_uint32_t *)(NCA + 0x1000); 
 #else 
     NCP_CALL(ncp_block_write8(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
                                 wbuf, blockSize, 0));
@@ -3687,16 +3671,18 @@ ncp_sm_lsiphy_runtime_adj(
         isSysMem = TRUE;
 
     }
-#ifndef UBOOT
     else 
     {
+#ifndef UBOOT
         NCP_COMMENT("treemem %d PHY runtime adjustment", 
                             smId - NCP_SYSMEM_NUM_NODES);
         region = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_PHY);
         ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
         isSysMem = FALSE;
-    }
+#else
+	NCP_CALL(NCP_ST_SYSMEM_INVALID_ID);
 #endif
+    }
 
     /* indicate PHY initial training complete */
 
@@ -4054,7 +4040,6 @@ NCP_RETURN_LABEL
        	ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x12221222);
      	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x0000000b);
     }
-
 
 #ifdef NCP_SM_PHY_REG_DUMP
   if ( (NCP_ST_SUCCESS != returnStatus) || ncp_sm_phy_reg_dump ) 
