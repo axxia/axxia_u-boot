@@ -1,23 +1,21 @@
-/**************************************************************************
- **                                                                        *
- **   LSI Corporation, Inc. CONFIDENTIAL                                   *
- **                                                                        *
- **                       PROPRIETARY NOTE                                 *
- **                                                                        *
- **    This software contains information confidential and proprietary     *
- **    to LSI Corporation Inc.  It shall not be reproduced in whole or in  *
- **    part, or transferred to other documents, or disclosed to third      *
- **    parties, or used for any purpose other than that for which it was   *
- **    obtained, without the prior written consent of LSI Corporation Inc. *
- **    (c) 2008-2013, LSI Corporation Inc.  All rights reserved.           *
- **                                                                        *
- **  ***********************************************************************
- **
- **  ***********************************************************************
- **   File:       $HeadURL: http://txasoft2.agere.com/svn/software/src/trunk/rte/api/mme/ncp_mme_pvt.h $
- **   Version:    $Revision: 3317 $
- **   Date:       $Date: 2008-11-15 00:57:17 -0600 (Sat, 15 Nov 2008) $
- ** **************************************************************************/
+/*
+ *  Copyright (C) 2014 LSI (john.jacques@lsi.com)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #ifndef  __NCP_MME_PVT_H__
 #define  __NCP_MME_PVT_H__
 
