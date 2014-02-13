@@ -554,6 +554,21 @@ set_actlr2:
 #ifndef CONFIG_SPL_BUILD
 jump_to_spin_table:
 
+#if !defined(CONFIG_SPL_BUILD)
+	@@
+	@ Turn 'wfe' into a nop for v1.0 silicon
+	ldr	r3, =pfuse
+	ldr	r4, [r3]
+	bic	r4, r4, #0x3e
+	mov	r4, r4, lsr#5
+	cmp	r4, #0
+	bne	1f
+	mrc	p15, 0, r0, c1, c0, 1
+	orr	r0, r0, #(1 << 7)
+	mcr	p15, 0, r0, c1, c0, 1
+1:
+#endif
+
 	ldr	r0, =_spin_table_start_ofs
 	ldr	r0, [r0]
 	mov	pc, r0
@@ -612,8 +627,27 @@ turn_on_mmu:
 	cmp	r1, r2
 	blt	1b
 
+	@@
+	@ Read, and save, pfuse.
+	ldr	r3, =SYSCON
+	ldr	r4, [r3, #0x34]
+	ldr	r3, =pfuse
+	str	r4, [r3]
+
+	@@
+	@ Turn 'wfe' into a nop for v1.0 silicon.
+	bic	r3, r4, #0x3e
+	mov	r3, r3, lsr#5
+	cmp	r3, #0
+	bne	1f
+	mrc	p15, 0, r0, c1, c0, 1
+	orr	r0, r0, #(1 << 7)
+	mcr	p15, 0, r0, c1, c0, 1
+1:
 #endif
 
+	@@
+	@ Return
 	mov	pc, lr
 
 ###
