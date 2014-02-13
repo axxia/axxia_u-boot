@@ -411,7 +411,7 @@ static int init_func_i2c(void)
 }
 #endif
 
-//#if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
+#if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
 
 #include <pci.h>
 static int arm_pci_init(void)
@@ -460,7 +460,7 @@ static int arm_pci_init(void)
 #endif
 	return 0;
 }
-//#endif /* CONFIG_CMD_PCI || CONFIG_PCI */
+#endif /* CONFIG_CMD_PCI || CONFIG_PCI */
 
 /*
  * Breathe some life into the board...

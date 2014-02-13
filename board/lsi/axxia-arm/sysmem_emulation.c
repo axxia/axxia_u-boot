@@ -33,6 +33,7 @@
   ==============================================================================
 */
 
+#undef NCP_CALL
 #define NCP_CALL(s) do {				\
     ncpStatus = (s);					\
     if (ncpStatus != 0) {				\
@@ -350,7 +351,8 @@ initialize_memory_node(int node)
 	NCP_CALL(ncr_write32(NCP_REGION_ID(node, 0), 0x030, 0x01010001));
 
 	do {
-		NCP_CALL(ncr_read32(NCP_REGION_ID(node, 0), 0x410, &value32));
+		NCP_CALL(ncr_read32(NCP_REGION_ID(node, 0), 0x410,
+				    (ncp_uint32_t *)&value32));
 		value32 &= 0x100;
 	} while (0 == value32);
 

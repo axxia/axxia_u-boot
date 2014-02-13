@@ -63,8 +63,10 @@ unsigned *phyRegs;
 int
 axxia_initialize(void)
 {
+#ifndef CONFIG_AXXIA_EMU
 	int i;
-    unsigned value;
+	unsigned value;
+#endif
 
 	if (0 != read_parameters())
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);

@@ -503,7 +503,11 @@ static int
 line_setup(int index)
 {
 	int rc;
+#if defined(CONFIG_AXXIA_55XX)
 	int retries = 100000;
+	unsigned short ad_value;
+	unsigned short ge_ad_value;
+#endif
 	unsigned eioaRegion;
 	unsigned gmacRegion;
 	unsigned gmacPortOffset;
@@ -513,8 +517,6 @@ line_setup(int index)
 	unsigned short status;
 	unsigned top;
 	unsigned bottom;
-	unsigned short ad_value;
-	unsigned short ge_ad_value;
 	unsigned short control;
 
     if(index >= 128 || (index < 128 && index_by_port[port_by_index[index]] == -1))

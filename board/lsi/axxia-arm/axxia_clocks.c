@@ -284,6 +284,7 @@ clocks_init( void )
 
 #endif
 
+#ifndef CONFIG_AXXIA_SIM
 static ncp_uint32_t
 get_pll(ncp_uint32_t prms, ncp_uint32_t seldiv)
 {
@@ -303,6 +304,7 @@ get_pll(ncp_uint32_t prms, ncp_uint32_t seldiv)
 
 	return frequency;
 }
+#endif
 
 #endif
 

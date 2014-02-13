@@ -116,9 +116,11 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   power_down_cluster
 */
+
+#ifndef CONFIG_AXXIA_EMU
 
 static int
 power_down_cluster(int cluster)
@@ -247,8 +249,10 @@ power_down_cluster(int cluster)
 	return 0;
 }
 
+#endif
+
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   set_clusters
 */
 
@@ -438,16 +442,18 @@ ft_board_setup(void *blob, bd_t *bd)
 	char cpu_string[40];
 	int node;
 	int rc;
+#ifndef CONFIG_AXXIA_SIM
 	acp_clock_t clocks[] = {
 		clock_core, clock_peripheral, clock_emmc
 	};
 	const char *clock_names[] = {
 		"/clocks/cpu", "/clocks/peripheral", "/clocks/emmc"
 	};
+	ncp_uint32_t phy0_ctrl, phy1_ctrl;
+#endif
 	char *ad_value;
 	char *macspeed;
 	ncp_uint32_t tmp;
-	ncp_uint32_t phy0_ctrl, phy1_ctrl;
 
 	/*
   	  Set up the coherency domains and clusters.  This is handled
