@@ -26,12 +26,12 @@
 
 #include <asm/io.h>
 
-#if defined (ACP_X1V2) || defined (ACP_X2V1) || defined(AXM_35xx)
+#if defined (ACP_X1V2) || defined (ACP_X2V1)
 #include "regs/ncp_denali_regs.h"
 #include "regs/ncp_denali_reg_defines.h"
 #include "regs/ncp_phy_regs.h"
 #include "regs/ncp_phy_reg_defines.h"
-#elif defined (ACP_25xx) 
+#elif defined (ACP_25xx) || defined (AXM_35xx)
 #include "regs/ncp_denali_regs_acp2500.h"
 #include "regs/ncp_denali_reg_defines_acp2500.h"
 #include "regs/ncp_phy_regs_acp2500.h"
@@ -125,6 +125,19 @@ typedef struct {
 } __attribute__ ((packed)) parameters_clocks_t;
 
 typedef struct {
+    unsigned char sdram_rtt_nom[4];
+    unsigned char sdram_rtt_wr[4];
+    unsigned char sdram_data_drv_imp[4];
+    unsigned long phy_min_cal_delay;
+    unsigned long phy_adr_phase_select;
+    unsigned long phy_dp_io_vref_set;
+    unsigned long phy_adr_io_vref_set;
+    unsigned long phy_rdlvl_cmp_even;
+    unsigned long phy_rdlvl_cmp_odd;
+    unsigned long phy_write_align_finetune;
+} __attribute__((packed)) per_sysmem_parms_t;
+
+typedef struct {
 	unsigned long version;
 	unsigned long auto_detect;
 	unsigned long num_interfaces;
@@ -157,6 +170,14 @@ typedef struct {
 	unsigned long syscacheDisable;
 	unsigned long half_mem;
 	unsigned long address_mirroring;
+
+	/* new for 3500 */
+	per_sysmem_parms_t per_sysmem[2];
+	unsigned long num_bytelanes;
+	unsigned long enable_runtime_updates;
+	unsigned long zqcs_interval;
+	unsigned long ddrClockSpeedMHz;
+
 } __attribute__((packed)) parameters_sysmem_t;
 
 typedef struct {
@@ -1077,10 +1098,10 @@ clocks_init( void )
 #include "sysmem_emulation.c"
 #else
 #include "sysmem_asic_common.c"
-#if defined (ACP_X1V2) || defined (ACP_X2V1) || defined(AXM_35xx)
+#if defined (ACP_X1V2) || defined (ACP_X2V1)
 #include "ncp_sysmem_init_ibmphy.c"
 #endif
-#if defined (ACP_25xx) 
+#if defined (ACP_25xx) || defined (AXM_35xx)
 #include "ncp_sysmem_init_lsiphy.c"
 #endif
 #endif

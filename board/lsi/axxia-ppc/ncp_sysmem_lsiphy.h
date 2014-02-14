@@ -1,6 +1,6 @@
 /**************************************************************************
  **                                                                        *
- **   LSI Corporation, Inc. CONFIDENTIAL                                   *
+ **                           LSI CONFIDENTIAL           *
  **                                                                        *
  **                       PROPRIETARY NOTE                                 *
  **                                                                        *
@@ -9,14 +9,9 @@
  **    part, or transferred to other documents, or disclosed to third      *
  **    parties, or used for any purpose other than that for which it was   *
  **    obtained, without the prior written consent of LSI Corporation Inc. *
- **    (c) 2008-2011, LSI Corporation Inc.  All rights reserved.           *
+ **    (c) 2008-2014, LSI Corporation Inc.  All rights reserved.           *
  **                                                                        *
- **  ***********************************************************************
  **
- **  ***********************************************************************
- **   File:       $HeadURL: http://txasoft2.agere.com/svn/software/src/trunk/rte/api/common/ncp_config.h $
- **   Version:    $Revision: 3667 $
- **   Date:       $Date: 2008-11-25 15:51:36 -0600 (Tue, 25 Nov 2008) $
  **  
  **************************************************************************/
 /*! @file      ncp_sysmem.h
@@ -48,6 +43,21 @@
 #endif
 
 
+/*
+ * NCP_SM_PHY_REG_RESTORE: 
+ *   if defined, enable sysmem PHY register save/restore capability
+ *   this is required to support the DDR retention feature 
+ *
+ *   TODO: not yet supported for external RTE 
+ */
+#ifdef CONFIG_MEMORY_RETENTION
+#define NCP_SM_PHY_REG_RESTORE 
+#define DDR_PHY_REGS_TAG_SAVE 0x53415645
+#define DDR_PHY_REGS_TAG_PROM 0x50524f4d
+extern void *retention;
+extern unsigned long *phyRegs; 
+
+#endif
 
 #ifndef UBOOT
 /* bindings for RTE build */
@@ -58,15 +68,6 @@ extern ncp_uint8_t tRFC_vals_667[];
 /*
  * sysmem compile time options 
  */
-
-
-/*
- * NCP_SM_PHY_REG_RESTORE: 
- *   if defined, enable sysmem PHY register save/restore capability
- *
- *   TODO: not yet supported for external RTE 
- */
-/* #define NCP_SM_PHY_REG_RESTORE  */
 
 /* 
  * NCP_SM_PHY_REG_DUMP: 
@@ -128,25 +129,54 @@ do { \
 #define NCR_TRACE(args...) 
 
 #else 
+
+#include <asm/io.h>
+#include "ncp_sysmem_ext.h"
+
 /* bindings for UBOOT built */
 
 typedef long long               ncp_int64_t;
 typedef unsigned long long      ncp_uint64_t;
 typedef unsigned long           ncp_uint32_t;
+typedef long                    ncp_int32_t;
 typedef unsigned short          ncp_uint16_t;
 typedef unsigned char           ncp_uint8_t;
 typedef unsigned char           ncp_bool_t;
 typedef void *                  ncp_dev_hdl_t;
 typedef unsigned long           ncp_st_t;
 typedef unsigned long           ncp_region_id_t;
+
+typedef ncp_uint32_t 
+(*ncp_sm_intr_status_fn_t) (
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_uint32_t    mask);
+
+typedef ncp_st_t
+(*ncp_sm_poll_controller_fn_t) (
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_sm_poll_event_t event);
+
+
+typedef ncp_uint32_t 
+(*ncp_sm_ecc_enb_fn_t) (
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_uint32_t    value);
+
+
+
 typedef parameters_sysmem_t     ncp_sm_parms_t;
 
 #define TRUE   (1)
 #define FALSE  (0)
 #define NCP_RETURN_LABEL ncp_return:
+#define NCP_DEV_BUS_FBRS 0xdead
 
+#if 0
 #include "ncp_sysmem_ext.h"
-#include "ncp_sysmem_lsiphy.h"
+#endif
 
 /* TODO : don't need all this checking for u-boot */
 #define NCP_SYSMEM_NUM_NODES 2
@@ -201,10 +231,20 @@ enum {
         } \
     } while (0);
 
+#define ncp_status_print(a, b) 
 
 
 #endif
 
+#ifdef NCP_BIG_ENDIAN
+#define NCP_SM_SWAP32(n) ((n & 0xff000000) >> 24 | \
+                                    (n & 0x00ff0000) >> 8  | \
+                                    (n & 0x0000ff00) << 8  | \
+                                    (n & 0x000000ff) << 24)
+
+#else
+#define NCP_SM_SWAP32(n) (n)
+#endif
 
 #define NCP_SYSMEM_PHY_TRAIN_DELAY_LOOPS 100
 #define NCP_SYSMEM_PHY_TRAIN_DELAY_USEC  10
@@ -323,7 +363,8 @@ ncp_sm_lsiphy_status_get(
 NCP_API ncp_st_t
 ncp_sm_lsiphy_reg_dump(
         ncp_dev_hdl_t dev,
-        ncp_uint32_t  smId);
+        ncp_uint32_t  smId,
+        ncp_uint32_t  chipType);
 
 NCP_API ncp_st_t
 ncp_sm_lsiphy_training_run(

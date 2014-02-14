@@ -118,9 +118,6 @@ i2c_base_addr(void)
 	case 2:
 		i2c_addr = I2C2;
 		break;
-	case 3:
-		i2c_addr = I2C3;
-		break;
 #endif
 	default:
 		return 0;

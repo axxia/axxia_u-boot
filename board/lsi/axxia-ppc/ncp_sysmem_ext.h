@@ -1,6 +1,6 @@
 /**************************************************************************
  **                                                                        *
- **   LSI Corporation, Inc. CONFIDENTIAL                                   *
+ **                           LSI CONFIDENTIAL           *
  **                                                                        *
  **                       PROPRIETARY NOTE                                 *
  **                                                                        *
@@ -9,14 +9,9 @@
  **    part, or transferred to other documents, or disclosed to third      *
  **    parties, or used for any purpose other than that for which it was   *
  **    obtained, without the prior written consent of LSI Corporation Inc. *
- **    (c) 2008-2011, LSI Corporation Inc.  All rights reserved.           *
+ **    (c) 2008-2014, LSI Corporation Inc.  All rights reserved.           *
  **                                                                        *
- **  ***********************************************************************
  **
- **  ***********************************************************************
- **   File:       $HeadURL: http://txasoft2.agere.com/svn/software/src/trunk/rte/api/common/ncp_config.h $
- **   Version:    $Revision: 3667 $
- **   Date:       $Date: 2008-11-25 15:51:36 -0600 (Tue, 25 Nov 2008) $
  **  
  **************************************************************************/
 /*! @file      ncp_sysmem.h
@@ -33,6 +28,8 @@
 
 #ifndef UBOOT
 #include "ncp_pvt.h"
+/* #define SM_PLL_533_MHZ */
+
 
 /*
  * the number syscache clients on the ASIC.
@@ -44,7 +41,7 @@ NCP_API ncp_uint32_t sc_nodes[NCP_SYSCACHE_NUM_NODES];
 /*
  * Includes both sysmem and treemem nodes
  */
-NCP_API ncp_uint32_t sm_nodes[NCP_SYSMEM_NUM_NODES];
+NCP_API ncp_uint32_t sm_nodes[NCP_EXTMEM_NUM_NODES];
 
 #endif
 
@@ -159,7 +156,62 @@ typedef enum {
     NCP_SYSMEM_PHY_GATE_TRAINING 
 } ncp_sm_phy_training_mode_t;
 
-#ifndef UBOOT
+typedef enum {
+    NCP_SM_MC_INIT_DONE = 1,
+    NCP_SM_LP_OP_DONE,
+    NCP_SM_BIST_DONE,
+    NCP_SM_LVL_OP_DONE,
+    NCP_SM_MR_OP_DONE
+} ncp_sm_poll_event_t;
+
+#ifdef _MSC_VER
+#pragma pack(1)
+typedef struct {
+#else
+typedef struct __attribute__((packed)) {
+#endif
+    unsigned char sdram_rtt_nom[4];
+    unsigned char sdram_rtt_wr[4];
+    unsigned char sdram_data_drv_imp[4];
+    unsigned long phy_min_cal_delay;
+    unsigned long phy_adr_phase_select;
+    unsigned long phy_dp_io_vref_set;
+    unsigned long phy_adr_io_vref_set;
+    unsigned long phy_rdlvl_cmp_even;
+    unsigned long phy_rdlvl_cmp_odd;
+    unsigned long phy_write_align_finetune;
+} ncp_per_sysmem_parms_t;
+
+
+
+#ifdef UBOOT
+#define NCP_CHIP_ACP25xx             6
+#define NCP_CHIP_ACP25xx_V2          7
+#define NCP_CHIP_ACP55xx             9       /* AXM55xx, aka X7     */
+#define NCP_CHIP_ACP55xxV2_FPGA     10       /* X7v2, FPGA only  */
+#define NCP_CHIP_ACP35xx            16       /* AXM35xx, aka X3     */
+
+
+#else 
+/* RTE code */
+typedef ncp_uint32_t 
+(*ncp_sm_intr_status_fn_t) (
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_uint32_t    mask);
+
+typedef ncp_st_t 
+(*ncp_sm_poll_controller_fn_t) (
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_sm_poll_event_t event);
+
+
+typedef ncp_uint32_t 
+(*ncp_sm_ecc_enb_fn_t) (
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_uint32_t    value);
 
 typedef struct {
     ncp_uint8_t                 version;
@@ -185,31 +237,46 @@ typedef struct {
     ncp_uint8_t                 added_rank_switch_delay;
     ncp_bool_t                  high_temp_dram;
 
-    ncp_sm_sdram_rtt_imp_t      sdram_rtt_nom;
-    ncp_sm_sdram_rtt_imp_t      sdram_rtt_wr;
-    ncp_sm_sdram_drv_imp_t      sdram_data_drv_imp;
+    ncp_uint32_t                sdram_rtt_nom;
+    ncp_uint32_t                sdram_rtt_wr;
+    ncp_uint32_t                sdram_data_drv_imp;
+    ncp_uint32_t                phy_adr_imp;
+    ncp_uint32_t                phy_dat_imp;
+    ncp_uint32_t                phy_rcv_imp;
 
-    ncp_uint8_t                 phy_adr_imp;
-    ncp_uint8_t                 phy_dat_imp;
-    ncp_uint8_t                 phy_rcv_imp;
     ncp_uint8_t                 phy_rdlat;
     ncp_uint8_t                 address_mirroring;
+    ncp_uint8_t                 fixed_read_lat;
+    ncp_uint8_t                 bubble_clobber;
+    ncp_uint8_t                 syscacheMode;
+    ncp_bool_t                  syscacheDisable;
+
+    /* new for 5500 */
+    ncp_uint32_t                zqcs_interval;
+    ncp_bool_t                  enable_runtime_updates;
+    ncp_uint32_t                open_page_size;
+    ncp_per_sysmem_parms_t      per_sysmem[2];
 
     ncp_uint32_t                flags;
     ncp_bool_t                  half_mem;
+    ncp_uint16_t                cmemMR1[2];
 
-    ncp_int64_t                totalSize;
+    ncp_bool_t                 ddrRetentionEnable;
+    ncp_bool_t                 ddrRecovery;
+
+    ncp_uint8_t                 num_bytelanes;
+    ncp_int64_t                 totalSize;
+
 } ncp_sm_parms_t;
 
 /* 
  * user-specified configuration parameters 
  */
 typedef struct {
-    ncp_uint32_t    cacheMode;
-    ncp_bool_t      cacheDisable;
     ncp_sm_parms_t  sm_parms;
     ncp_sm_parms_t  cm_parms;
 } ncp_sysmem_t;
+
 
 
 #define NCP_SYSMEM_PHY_TRAIN_DELAY_LOOPS 100
@@ -237,6 +304,9 @@ NCP_API ncp_st_t
 ncp_sysmem_init_fpga (ncp_dev_hdl_t dev, ncp_uint32_t smId, ncp_sm_parms_t *parms);
 
 NCP_API ncp_st_t
+ncp_treemem_init_fpga (ncp_dev_hdl_t dev, ncp_uint32_t treememId, ncp_sm_parms_t *parms);
+
+NCP_API ncp_st_t
 ncp_sysmem_init_ibmphy (ncp_dev_hdl_t dev, 
                       ncp_uint32_t smId, 
                       ncp_sm_parms_t *parms);
@@ -255,6 +325,12 @@ ncp_syscache_enable (ncp_t *ncp);
 NCP_API ncp_st_t
 ncp_syscache_init (ncp_t *ncp);
 
+NCP_API ncp_st_t 
+ncp_elm_init( ncp_dev_hdl_t dev, ncp_sm_parms_t *parms);
+
+NCP_API ncp_st_t 
+ncp_elm_sysmem_fill( ncp_dev_hdl_t dev, ncp_sm_parms_t *parms);
+
 
 NCP_API ncp_st_t
 ncp_cm_controller_init(
@@ -262,5 +338,15 @@ ncp_cm_controller_init(
         ncp_uint32_t  smId,
         ncp_sm_parms_t *parms);
 
+NCP_API ncp_st_t
+ncp_cm_dram_init(
+        ncp_dev_hdl_t dev,
+        ncp_uint32_t  num_cmem);
+
+NCP_API ncp_st_t
+ncp_sm_denali_enable(
+    ncp_dev_hdl_t dev,
+    ncp_uint32_t  smId,
+    ncp_sm_parms_t *parms);
 #endif
 #endif

@@ -1,21 +1,16 @@
 /**************************************************************************
  **                                                                       *
- **   LSI CONFIDENTIAL                                                    *
+ **                           LSI CONFIDENTIAL                            *
  **                           PROPRIETARY NOTE                            *
  **                                                                       *
  **    This software contains information confidential and proprietary    *
- **    to LSI Inc.  It shall not be reproduced in whole or in             *
+ **    to LSI Corporation Inc.  It shall not be reproduced in whole or in *
  **    part, or transferred to other documents, or disclosed to third     *
  **    parties, or used for any purpose other than that for which it was  *
- **    obtained, without the prior written consent of LSI Inc.            *
- **    (c) 2001-2008, LSI Inc.  All rights reserved.                      *
+ **    obtained, without the prior written consent of LSI Corporation Inc.*
+ **    (c) 2001-2014, LSI Corporation Inc.  All rights reserved.          *
  **                                                                       *
- **  **********************************************************************
  **                                                                       *
- **  **********************************************************************
- **  File:       $HeadURL: $                                              *
- **  Version:    $Revision: $                                             *
- **  Date:       $Date: $                                                 *
  **  **********************************************************************/
 
 
@@ -1286,7 +1281,7 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  7;
-     unsigned      weighted_round_robin_latency_control      :  1;
+     unsigned      weighted_round_robin_latency_control      :  1; /* obsolete for 5500 */
      unsigned      reserved1                                 :  7;
      unsigned      tref_enable                               :  1;
      unsigned      reserved2                                 :  7;
@@ -1738,7 +1733,7 @@ typedef struct
      unsigned      reserved0                                 :  6;
      unsigned      rdlvl_cs                                  :  2;
      unsigned      reserved1                                 :  6;
-     unsigned      ctrl_raw                                  :  2;
+     unsigned      ctrl_raw                                  :  2;  /* obsolete for 5500 */
      unsigned      reserved2                                 :  6;
      unsigned      bist_result                               :  2;
 #else    /* Little Endian */
@@ -1839,7 +1834,7 @@ typedef struct
      unsigned      reserved1                                 :  6;
      unsigned      wrlvl_cs                                  :  2;
      unsigned      reserved2                                 :  6;
-     unsigned      weighted_round_robin_weight_sharing       :  2;
+     unsigned      weighted_round_robin_weight_sharing       :  2;  /* obsolete for 5500 */
      unsigned      reserved3                                 :  6;
      unsigned      sw_leveling_mode                          :  2;
 #else    /* Little Endian */
@@ -1954,20 +1949,21 @@ typedef struct
  *  </tr>
  *   <tr>
  *     <td width="30%"> @param reserved0 </td>
- *     <td width="20%" align="center"> 5 </td>
- *     <td width="20%" align="center"> 27 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param lvl_status </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *     <td width="20%" align="center"> 24 </td>
- *   <td width="30%"> Status of write level, read level, and gate training
- *        requests. This is used with the LVL_REQ interrupt.
- *        Bit (0) correlates to write leveling request, bit
- *        (1) correlates to read leveling request, and bit (2)
- *        correlates to gate training request. Value of 1 indicates
- *        request received. READ-ONLY
+ *   <td width="30%"> Status of write level, data eye training, and gate
+ *        training requests. This is used with the LVL_REQ interrupt.
+ *        Bit (0) correlates to a write leveling request, bit
+ *        (1) correlates to a data eye training request, bit
+ *        (2) correlates to a gate training request, and bit
+ *        (3) is reserved. Value of 1 indicates request received.
+ *        READ-ONLY
  *   </td>
  * </tr>
  *   <tr>
@@ -1997,15 +1993,15 @@ typedef struct
  *   <td width="30%"> Additional cycles to delay CKE for status reporting. </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_23_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_23_t
  *
  */
  
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
-     unsigned      reserved0                                 :  5;
-     unsigned      lvl_status                                :  3;
+     unsigned      reserved0                                 :  4;
+     unsigned      lvl_status                                :  4;  /* only 3 bits on 2500 */
      unsigned      command_age_count                         :  8;
      unsigned      obsolete1                                 :  8;
      unsigned      reserved1                                 :  5;
@@ -2015,8 +2011,8 @@ typedef struct
      unsigned      reserved1                                 :  5;
      unsigned      obsolete1                                 :  8;
      unsigned      command_age_count                         :  8;
-     unsigned      lvl_status                                :  3;
-     unsigned      reserved0                                 :  5;
+     unsigned      lvl_status                                :  4;
+     unsigned      reserved0                                 :  4;
 #endif
 } ncp_denali_DENALI_CTL_23_t;
 
@@ -2049,13 +2045,13 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved1 </td>
- *     <td width="20%" align="center"> 5 </td>
- *     <td width="20%" align="center"> 19 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 20 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param q_fullness </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *     <td width="20%" align="center"> 16 </td>
  *   <td width="30%"> Quantity that determines command queue full. </td>
  * </tr>
@@ -2080,7 +2076,7 @@ typedef struct
  *   </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_24_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_24_t
  *
  */
  
@@ -2089,8 +2085,8 @@ typedef struct
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  5;
      unsigned      tcke                                      :  3;
-     unsigned      reserved1                                 :  5;
-     unsigned      q_fullness                                :  3;
+     unsigned      reserved1                                 :  4;
+     unsigned      q_fullness                                :  4;  /* only 3 bites on 2500 */
      unsigned      obsolete1                                 :  8;
      unsigned      reserved2                                 :  5;
      unsigned      max_cs_reg                                :  3;
@@ -2098,8 +2094,8 @@ typedef struct
      unsigned      max_cs_reg                                :  3;
      unsigned      reserved2                                 :  5;
      unsigned      obsolete1                                 :  8;
-     unsigned      q_fullness                                :  3;
-     unsigned      reserved1                                 :  5;
+     unsigned      q_fullness                                :  4;
+     unsigned      reserved1                                 :  4;
      unsigned      tcke                                      :  3;
      unsigned      reserved0                                 :  5;
 #endif
@@ -2390,6 +2386,13 @@ typedef struct
 #endif
 } ncp_denali_DENALI_CTL_27_t;
 
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+
 /*! @struct ncp_denali_DENALI_CTL_28_t
  *  @brief null
  *  @details null
@@ -2488,6 +2491,12 @@ typedef struct
      unsigned      reserved0                                 :  4;
 #endif
 } ncp_denali_DENALI_CTL_28_t;
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
 
 /*! @struct ncp_denali_DENALI_CTL_29_t
  *  @brief null
@@ -2587,6 +2596,12 @@ typedef struct
      unsigned      reserved0                                 :  4;
 #endif
 } ncp_denali_DENALI_CTL_29_t;
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
 
 /*! @struct ncp_denali_DENALI_CTL_30_t
  *  @brief null
@@ -2685,6 +2700,12 @@ typedef struct
      unsigned      reserved0                                 :  4;
 #endif
 } ncp_denali_DENALI_CTL_30_t;
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
 
 /*! @struct ncp_denali_DENALI_CTL_31_t
  *  @brief null
@@ -2771,6 +2792,12 @@ typedef struct
      unsigned      reserved0                                 :  4;
 #endif
 } ncp_denali_DENALI_CTL_31_t;
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
+/* TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP */
 
 /*! @struct ncp_denali_DENALI_CTL_32_t
  *  @brief null
@@ -3100,16 +3127,17 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved0 </td>
- *     <td width="20%" align="center"> 3 </td>
- *     <td width="20%" align="center"> 21 </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 23 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param tdfi_phy_wrlat </td>
- *     <td width="20%" align="center"> 5 </td>
+ *     <td width="20%" align="center"> 7 </td>
  *     <td width="20%" align="center"> 16 </td>
- *   <td width="30%"> Holds the calculated DFI tPHY_WRLAT timing parameter.
- *        READ-ONLY
+ *   <td width="30%"> Holds the calculated DFI tPHY_WRLAT timing parameter
+ *        (in DFI PHY clocks), the maximum cycles between a
+ *        write command and a dfi_wrdata_en assertion. READ-ONLY
  *   </td>
  * </tr>
  *   <tr>
@@ -3122,7 +3150,10 @@ typedef struct
  *     <td width="30%"> @param tdfi_ctrlupd_min </td>
  *     <td width="20%" align="center"> 4 </td>
  *     <td width="20%" align="center"> 8 </td>
- *   <td width="30%"> Holds the DFI tCTRLUPD_MIN timing parameter. READ-ONLY </td>
+ *   <td width="30%"> Reports the DFI tCTRLUPD_MIN timing parameter (in
+ *        DFI clocks), the minimum cycles that dfi_ctrlupd_req
+ *        must be asserted. READ-ONLY
+ *   </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved2 </td>
@@ -3139,7 +3170,7 @@ typedef struct
  *   </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_35_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_35_t
  *
  */
  
@@ -3147,8 +3178,8 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete3                                 :  8;
-     unsigned      reserved0                                 :  3;
-     unsigned      tdfi_phy_wrlat                            :  5;
+     unsigned      reserved0                                 :  1;
+     unsigned      tdfi_phy_wrlat                            :  7;  /* only 5 bits on 2500 */
      unsigned      reserved1                                 :  4;
      unsigned      tdfi_ctrlupd_min                          :  4;
      unsigned      reserved2                                 :  4;
@@ -3158,8 +3189,8 @@ typedef struct
      unsigned      reserved2                                 :  4;
      unsigned      tdfi_ctrlupd_min                          :  4;
      unsigned      reserved1                                 :  4;
-     unsigned      tdfi_phy_wrlat                            :  5;
-     unsigned      reserved0                                 :  3;
+     unsigned      tdfi_phy_wrlat                            :  7;
+     unsigned      reserved0                                 :  1;
      unsigned      obsolete3                                 :  8;
 #endif
 } ncp_denali_DENALI_CTL_35_t;
@@ -3316,7 +3347,7 @@ typedef struct
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete3                                 :  8;
      unsigned      reserved0                                 :  4;
-     unsigned      wrr_param_value_err                       :  4;
+     unsigned      wrr_param_value_err                       :  4;  /* obsolete on 5500 */
      unsigned      reserved1                                 :  3;
      unsigned      wrlat_adj                                 :  5;
      unsigned      reserved2                                 :  3;
@@ -3450,13 +3481,13 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved1 </td>
- *     <td width="20%" align="center"> 2 </td>
- *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 23 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param rdlat_adj </td>
- *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 7 </td>
  *     <td width="20%" align="center"> 16 </td>
  *   <td width="30%"> Adjustment value for PHY read timing. </td>
  * </tr>
@@ -3489,7 +3520,7 @@ typedef struct
  *   </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_39_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_39_t
  *
  */
  
@@ -3498,8 +3529,8 @@ typedef struct
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  2;
      unsigned      tdal                                      :  6;
-     unsigned      reserved1                                 :  2;
-     unsigned      rdlat_adj                                 :  6;
+     unsigned      reserved1                                 :  1;
+     unsigned      rdlat_adj                                 :  7;  /* only 6 bits on 2500 */
      unsigned      reserved2                                 :  2;
      unsigned      out_of_range_type                         :  6;
      unsigned      reserved3                                 :  3;
@@ -3509,8 +3540,8 @@ typedef struct
      unsigned      reserved3                                 :  3;
      unsigned      out_of_range_type                         :  6;
      unsigned      reserved2                                 :  2;
-     unsigned      rdlat_adj                                 :  6;
-     unsigned      reserved1                                 :  2;
+     unsigned      rdlat_adj                                 :  7;
+     unsigned      reserved1                                 :  1;
      unsigned      tdal                                      :  6;
      unsigned      reserved0                                 :  2;
 #endif
@@ -3551,32 +3582,36 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved1 </td>
- *     <td width="20%" align="center"> 2 </td>
- *     <td width="20%" align="center"> 14 </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 15 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param tdfi_rddata_en </td>
- *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 7 </td>
  *     <td width="20%" align="center"> 8 </td>
- *   <td width="30%"> Holds the calculated DFI tRDDATA_EN timing parameter.
- *        READ-ONLY
+ *   <td width="30%"> Holds the calculated DFI tRDDATA_EN timing parameter
+ *        (in DFI PHY clocks), the maximum cycles between a
+ *        read command and a dfi_rddata_en assertion. READ-ONLY
  *   </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved2 </td>
- *     <td width="20%" align="center"> 2 </td>
- *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 7 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param tdfi_phy_rdlat </td>
- *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 7 </td>
  *     <td width="20%" align="center"> 0 </td>
- *   <td width="30%"> Holds the DFI tPHY_RDLAT timing parameter. </td>
+ *   <td width="30%"> Defines the DFI tPHY_RDLAT timing parameter (in DFI
+ *        PHY clocks), the maximum cycles between a dfi_rddata_en
+ *        assertion and a dfi_rddata_valid assertion.
+ *   </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_40_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_40_t
  *
  */
  
@@ -3586,15 +3621,15 @@ typedef struct
      unsigned      reserved0                                 :  2;
      unsigned      tfaw                                      :  6;
      unsigned      obsolete2                                 :  8;
-     unsigned      reserved1                                 :  2;
-     unsigned      tdfi_rddata_en                            :  6;
-     unsigned      reserved2                                 :  2;
-     unsigned      tdfi_phy_rdlat                            :  6;
+     unsigned      reserved1                                 :  1;
+     unsigned      tdfi_rddata_en                            :  7;  /* only 6 bits on 2500 */
+     unsigned      reserved2                                 :  1;
+     unsigned      tdfi_phy_rdlat                            :  7;  /* only 6 bits on 2500 */
 #else    /* Little Endian */
-     unsigned      tdfi_phy_rdlat                            :  6;
-     unsigned      reserved2                                 :  2;
-     unsigned      tdfi_rddata_en                            :  6;
-     unsigned      reserved1                                 :  2;
+     unsigned      tdfi_phy_rdlat                            :  7;
+     unsigned      reserved2                                 :  1;
+     unsigned      tdfi_rddata_en                            :  7;
+     unsigned      reserved1                                 :  1;
      unsigned      obsolete2                                 :  8;
      unsigned      tfaw                                      :  6;
      unsigned      reserved0                                 :  2;
@@ -3671,7 +3706,7 @@ typedef struct
      unsigned      reserved0                                 :  2;
      unsigned      addr_space                                :  6;
      unsigned      reserved1                                 :  2;
-     unsigned      twr_int                                   :  6;
+     unsigned      twr_int                                   :  6;  /* obsolete on 5500 */
      unsigned      trc                                       :  8;
      unsigned      reserved2                                 :  3;
      unsigned      tmrd                                      :  5;
@@ -3817,7 +3852,7 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete3                                 :  8;
-     unsigned      out_of_range_length                       :  8;
+     unsigned      out_of_range_length                       :  8;  /* obsolete on 5500 */
      unsigned      ecc_u_synd                                :  8;
      unsigned      ecc_c_synd                                :  8;
 #else    /* Little Endian */
@@ -4555,7 +4590,7 @@ typedef struct
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
-     unsigned      trcd_int                                  :  8;
+     unsigned      trcd_int                                  :  8;  /* obsolete in 5500 */
      unsigned      tras_min                                  :  8;
      unsigned      tmod                                      :  8;
      unsigned      obsolete0                                 :  8;
@@ -7703,18 +7738,18 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved0 </td>
- *     <td width="20%" align="center"> 5 </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param bist_fail_addr </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *     <td width="20%" align="center"> 0 </td>
  *   <td width="30%"> Address of BIST error. READ-ONLY </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_147_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_147_t
  *
  */
  
@@ -7722,11 +7757,11 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
-     unsigned      reserved0                                 :  5;
-     unsigned      bist_fail_addr                            :  3;
+     unsigned      reserved0                                 :  4;
+     unsigned      bist_fail_addr                            :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
-     unsigned      bist_fail_addr                            :  3;
-     unsigned      reserved0                                 :  5;
+     unsigned      bist_fail_addr                            :  4;
+     unsigned      reserved0                                 :  4;
      unsigned      obsolete1                                 : 24;
 #endif
 } ncp_denali_DENALI_CTL_147_t;
@@ -7785,18 +7820,18 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved0 </td>
- *     <td width="20%" align="center"> 5 </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param bist_start_address </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *     <td width="20%" align="center"> 0 </td>
  *   <td width="30%"> Start BIST checking at this address. </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_149_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_149_t
  *
  */
  
@@ -7804,11 +7839,11 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
-     unsigned      reserved0                                 :  5;
-     unsigned      bist_start_address                        :  3;
+     unsigned      reserved0                                 :  4;
+     unsigned      bist_start_address                        :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
-     unsigned      bist_start_address                        :  3;
-     unsigned      reserved0                                 :  5;
+     unsigned      bist_start_address                        :  4;
+     unsigned      reserved0                                 :  4;
      unsigned      obsolete1                                 : 24;
 #endif
 } ncp_denali_DENALI_CTL_149_t;
@@ -7867,18 +7902,18 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved0 </td>
- *     <td width="20%" align="center"> 5 </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param ecc_c_addr </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *     <td width="20%" align="center"> 0 </td>
  *   <td width="30%"> Address of correctable ECC event. READ-ONLY </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_151_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_151_t
  *
  */
  
@@ -7886,11 +7921,11 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
-     unsigned      reserved0                                 :  5;
-     unsigned      ecc_c_addr                                :  3;
+     unsigned      reserved0                                 :  4;
+     unsigned      ecc_c_addr                                :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
-     unsigned      ecc_c_addr                                :  3;
-     unsigned      reserved0                                 :  5;
+     unsigned      ecc_c_addr                                :  4;
+     unsigned      reserved0                                 :  4;
      unsigned      obsolete1                                 : 24;
 #endif
 } ncp_denali_DENALI_CTL_151_t;
@@ -7949,18 +7984,18 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved0 </td>
- *     <td width="20%" align="center"> 5 </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param ecc_u_addr </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *     <td width="20%" align="center"> 0 </td>
  *   <td width="30%"> Address of uncorrectable ECC event. READ-ONLY </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_153_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_153_t
  *
  */
  
@@ -7968,11 +8003,11 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
-     unsigned      reserved0                                 :  5;
-     unsigned      ecc_u_addr                                :  3;
+     unsigned      reserved0                                 :  4;
+     unsigned      ecc_u_addr                                :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
-     unsigned      ecc_u_addr                                :  3;
-     unsigned      reserved0                                 :  5;
+     unsigned      ecc_u_addr                                :  4;
+     unsigned      reserved0                                 :  4;
      unsigned      obsolete1                                 : 24;
 #endif
 } ncp_denali_DENALI_CTL_153_t;
@@ -8033,20 +8068,20 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved0 </td>
- *     <td width="20%" align="center"> 5 </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param out_of_range_addr </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *     <td width="20%" align="center"> 0 </td>
  *   <td width="30%"> Address of command that caused an out-of-range interrupt.
  *        READ-ONLY
  *   </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_155_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_155_t
  *
  */
  
@@ -8054,11 +8089,11 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
-     unsigned      reserved0                                 :  5;
-     unsigned      out_of_range_addr                         :  3;
+     unsigned      reserved0                                 :  4;
+     unsigned      out_of_range_addr                         :  4; /* only 3 bits on 2500 */
 #else    /* Little Endian */
-     unsigned      out_of_range_addr                         :  3;
-     unsigned      reserved0                                 :  5;
+     unsigned      out_of_range_addr                         :  4;
+     unsigned      reserved0                                 :  4;
      unsigned      obsolete1                                 : 24;
 #endif
 } ncp_denali_DENALI_CTL_155_t;
@@ -8087,7 +8122,7 @@ typedef struct
  *   </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_156_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_156_t
  *
  */
  
@@ -8119,20 +8154,20 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved0 </td>
- *     <td width="20%" align="center"> 5 </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param port_cmd_error_addr </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *     <td width="20%" align="center"> 0 </td>
  *   <td width="30%"> Address of command that caused the PORT command error.
  *        READ-ONLY
  *   </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_157_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_157_t
  *
  */
  
@@ -8140,11 +8175,11 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
-     unsigned      reserved0                                 :  5;
-     unsigned      port_cmd_error_addr                       :  3;
+     unsigned      reserved0                                 :  4;
+     unsigned      port_cmd_error_addr                       :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
-     unsigned      port_cmd_error_addr                       :  3;
-     unsigned      reserved0                                 :  5;
+     unsigned      port_cmd_error_addr                       :  4;
+     unsigned      reserved0                                 :  4;
      unsigned      obsolete1                                 : 24;
 #endif
 } ncp_denali_DENALI_CTL_157_t;
@@ -11671,7 +11706,7 @@ typedef struct
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
-     unsigned      wrlvl_refresh_interval                    : 16;
+     unsigned      wrlvl_refresh_interval                    : 16;  /* obsolete in 5500 */
      unsigned      reserved0                                 :  7;
      unsigned      wrlvl_en                                  :  1;
      unsigned      reserved1                                 :  4;
@@ -12204,7 +12239,7 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  6;
-     unsigned      reg_dimm_parity_error                     :  2;
+     unsigned      reg_dimm_parity_error                     :  2;  /* obsolete in 5500 */
      unsigned      rdimm_tstab                               : 24;
 #else    /* Little Endian */
      unsigned      rdimm_tstab                               : 24;
@@ -13169,29 +13204,29 @@ typedef struct
  *  </tr>
  *   <tr>
  *     <td width="30%"> @param reserved0 </td>
- *     <td width="20%" align="center"> 7 </td>
- *     <td width="20%" align="center"> 25 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 26 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param int_status </td>
- *     <td width="20%" align="center"> 25 </td>
+ *     <td width="20%" align="center"> 26 </td>
  *     <td width="20%" align="center"> 0 </td>
  *   <td width="30%"> Status of interrupt features in the controller. READ-ONLY </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_260_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_260_t
  *
  */
  
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
-     unsigned      reserved0                                 :  7;
-     unsigned      int_status                                : 25;
+     unsigned      reserved0                                 :  6;
+     unsigned      int_status                                : 26;  /* only 25 bits on 2500 */
 #else    /* Little Endian */
-     unsigned      int_status                                : 25;
-     unsigned      reserved0                                 :  7;
+     unsigned      int_status                                : 26;
+     unsigned      reserved0                                 :  6;
 #endif
 } ncp_denali_DENALI_CTL_260_t;
 
@@ -13212,31 +13247,31 @@ typedef struct
  *  </tr>
  *   <tr>
  *     <td width="30%"> @param reserved0 </td>
- *     <td width="20%" align="center"> 7 </td>
- *     <td width="20%" align="center"> 25 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 26 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param int_mask </td>
- *     <td width="20%" align="center"> 25 </td>
+ *     <td width="20%" align="center"> 26 </td>
  *     <td width="20%" align="center"> 0 </td>
  *   <td width="30%"> Mask for controller_int signals from the INT_STATUS
  *        parameter.
  *   </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_261_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_261_t
  *
  */
  
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
-     unsigned      reserved0                                 :  7;
-     unsigned      int_mask                                  : 25;
+     unsigned      reserved0                                 :  6;
+     unsigned      int_mask                                  : 26;  /* only 25 bits on 2500 */
 #else    /* Little Endian */
-     unsigned      int_mask                                  : 25;
-     unsigned      reserved0                                 :  7;
+     unsigned      int_mask                                  : 26;
+     unsigned      reserved0                                 :  6;
 #endif
 } ncp_denali_DENALI_CTL_261_t;
 
@@ -16980,13 +17015,13 @@ typedef struct
  * </tr>
  *   <tr>
  *     <td width="30%"> @param reserved2 </td>
- *     <td width="20%" align="center"> 5 </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *   <td width="30%"> Reserved for future use </td>
  * </tr>
  *   <tr>
  *     <td width="30%"> @param num_q_entries_act_disable </td>
- *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 4 </td>
  *     <td width="20%" align="center"> 0 </td>
  *   <td width="30%"> Number of queue entries in which ACT requests will
  *        be disabled. Setting to X will disable ACT requests
@@ -16994,7 +17029,7 @@ typedef struct
  *   </td>
  * </tr>
  * </table>
- * Applies to: acp2500 --> ncp_denali_DENALI_CTL_330_t
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_330_t
  *
  */
  
@@ -17006,11 +17041,11 @@ typedef struct
      unsigned      lp_auto_mem_gate_en                       :  2;
      unsigned      reserved1                                 :  7;
      unsigned      in_order_accept                           :  1;
-     unsigned      reserved2                                 :  5;
-     unsigned      num_q_entries_act_disable                 :  3;
+     unsigned      reserved2                                 :  4;
+     unsigned      num_q_entries_act_disable                 :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
-     unsigned      num_q_entries_act_disable                 :  3;
-     unsigned      reserved2                                 :  5;
+     unsigned      num_q_entries_act_disable                 :  4;
+     unsigned      reserved2                                 :  4;
      unsigned      in_order_accept                           :  1;
      unsigned      reserved1                                 :  7;
      unsigned      lp_auto_mem_gate_en                       :  2;
@@ -17302,6 +17337,4994 @@ typedef struct
      unsigned      reserved0                                 :  3;
 #endif
 } ncp_denali_DENALI_CTL_334_t;
+
+/*! @struct ncp_denali_DENALI_CTL_335_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_335_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 7 </td>
+ *     <td width="20%" align="center"> 25 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param optimal_rmodw_en </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> Enables optimized RMODW logic in the controller. A
+ *        value of 1 enables optimized RMODW operation. All
+ *        RMODW operations are still supported in a non-optimal
+ *        manner when the value is 0.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param twr </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> DRAM TWR value in cycles. </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param trcd </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> DRAM TRCD value in cycles. </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved2 </td>
+ *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 5 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param additive_lat </td>
+ *     <td width="20%" align="center"> 5 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> DRAM additive latency value in cycles. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_335_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  7;
+     unsigned      optimal_rmodw_en                          :  1;
+     unsigned      reserved1                                 :  2;
+     unsigned      twr                                       :  6;
+     unsigned      trcd                                      :  8;
+     unsigned      reserved2                                 :  3;
+     unsigned      additive_lat                              :  5;
+#else    /* Little Endian */
+     unsigned      additive_lat                              :  5;
+     unsigned      reserved2                                 :  3;
+     unsigned      trcd                                      :  8;
+     unsigned      twr                                       :  6;
+     unsigned      reserved1                                 :  2;
+     unsigned      optimal_rmodw_en                          :  1;
+     unsigned      reserved0                                 :  7;
+#endif
+} ncp_denali_DENALI_CTL_335_t;
+
+/*! @struct ncp_denali_DENALI_CTL_336_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_336_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 7 </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Reserved for future use. Must be cleared to 0x0. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_336_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 24;
+     unsigned      reserved                                  :  7;
+     unsigned      reserved0                                 :  1;
+#else    /* Little Endian */
+     unsigned      reserved0                                 :  1;
+     unsigned      reserved                                  :  7;
+     unsigned      obsolete1                                 : 24;
+#endif
+} ncp_denali_DENALI_CTL_336_t;
+
+/*! @struct ncp_denali_DENALI_CTL_337_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_337_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param zq_interval </td>
+ *     <td width="20%" align="center"> 32 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Number of long count sequences allowed between automatic
+ *        ZQCS commands.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_337_t
+ *
+ */
+ 
+typedef struct
+{
+     unsigned  int               zq_interval;
+} ncp_denali_DENALI_CTL_337_t;
+
+/*! @struct ncp_denali_DENALI_CTL_338_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_338_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 7 </td>
+ *     <td width="20%" align="center"> 25 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param int_ack </td>
+ *     <td width="20%" align="center"> 25 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Clear mask of the INT_STATUS parameter. WRITE-ONLY </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_338_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  7;
+     unsigned      int_ack                                   : 25;
+#else    /* Little Endian */
+     unsigned      int_ack                                   : 25;
+     unsigned      reserved0                                 :  7;
+#endif
+} ncp_denali_DENALI_CTL_338_t;
+
+/*! @struct ncp_denali_DENALI_CTL_339_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_339_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param todth_rd </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> Defines the DRAM minimum ODT high time after an ODT
+ *        assertion for a read command.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 20 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param todth_wr </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Defines the DRAM minimum ODT high time after an ODT
+ *        assertion for a write command.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved2 </td>
+ *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 13 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param out_of_range_length </td>
+ *     <td width="20%" align="center"> 13 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Length of command that caused an out-of-range interrupt.
+ *        READ-ONLY
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_339_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      todth_rd                                  :  4;
+     unsigned      reserved1                                 :  4;
+     unsigned      todth_wr                                  :  4;
+     unsigned      reserved2                                 :  3;
+     unsigned      out_of_range_length                       : 13;
+#else    /* Little Endian */
+     unsigned      out_of_range_length                       : 13;
+     unsigned      reserved2                                 :  3;
+     unsigned      todth_wr                                  :  4;
+     unsigned      reserved1                                 :  4;
+     unsigned      todth_rd                                  :  4;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_339_t;
+
+/*! @struct ncp_denali_DENALI_CTL_340_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_340_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param wrlvl_interval </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Number of long count sequences counted between automatic
+ *        write leveling commands.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 7 </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param odt_en </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Enable support of DRAM ODT. When enabled, controller
+ *        will assert and de-assert ODT output to DRAM as needed.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_340_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      wrlvl_interval                            : 16;
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  7;
+     unsigned      odt_en                                    :  1;
+#else    /* Little Endian */
+     unsigned      odt_en                                    :  1;
+     unsigned      reserved0                                 :  7;
+     unsigned      obsolete1                                 :  8;
+     unsigned      wrlvl_interval                            : 16;
+#endif
+} ncp_denali_DENALI_CTL_340_t;
+
+/*! @struct ncp_denali_DENALI_CTL_341_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_341_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 7 </td>
+ *     <td width="20%" align="center"> 25 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_fixed_port_priority_enable </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> Defines the priority control for AXI port 0 as per-port
+ *        or per-command. Set to 1 for per-port with priority
+ *        defined through the AXI.18._R_PRIORITY and AXI.18._W_PRIORITY
+ *        parameters. Clear to 0 for per-command.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 7 </td>
+ *     <td width="20%" align="center"> 17 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_all_strobes_used_enable </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Enables use of the AWALLSTRB signal for AXI port 0.
+ *        Set to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved2 </td>
+ *     <td width="20%" align="center"> 7 </td>
+ *     <td width="20%" align="center"> 9 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 9 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Reserved for future use. Must be cleared to 0x0. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_341_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  7;
+     unsigned      axi0_fixed_port_priority_enable           :  1;
+     unsigned      reserved1                                 :  7;
+     unsigned      axi0_all_strobes_used_enable              :  1;
+     unsigned      reserved2                                 :  7;
+     unsigned      reserved                                  :  9;
+#else    /* Little Endian */
+     unsigned      reserved                                  :  9;
+     unsigned      reserved2                                 :  7;
+     unsigned      axi0_all_strobes_used_enable              :  1;
+     unsigned      reserved1                                 :  7;
+     unsigned      axi0_fixed_port_priority_enable           :  1;
+     unsigned      reserved0                                 :  7;
+#endif
+} ncp_denali_DENALI_CTL_341_t;
+
+/*! @struct ncp_denali_DENALI_CTL_342_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_342_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_w_priority </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Priority of write commands from AXI port 0. 0 is the
+ *        highest priority.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_r_priority </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Priority of read commands from AXI port 0. 0 is the
+ *        highest priority.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_342_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 : 16;
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_w_priority                           :  4;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_r_priority                           :  4;
+#else    /* Little Endian */
+     unsigned      axi0_r_priority                           :  4;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_w_priority                           :  4;
+     unsigned      reserved0                                 :  4;
+     unsigned      obsolete2                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_342_t;
+
+/*! @struct ncp_denali_DENALI_CTL_343_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_343_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_4 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 4. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_343_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_4                         : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_4                         : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_343_t;
+
+/*! @struct ncp_denali_DENALI_CTL_344_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_344_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_4 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 4. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_344_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_4                           : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_4                           : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_344_t;
+
+/*! @struct ncp_denali_DENALI_CTL_345_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_345_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_5 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 5. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_345_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_5                         : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_5                         : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_345_t;
+
+/*! @struct ncp_denali_DENALI_CTL_346_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_346_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_5 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 5. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_346_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_5                           : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_5                           : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_346_t;
+
+/*! @struct ncp_denali_DENALI_CTL_347_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_347_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_6 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 6. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_347_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_6                         : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_6                         : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_347_t;
+
+/*! @struct ncp_denali_DENALI_CTL_348_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_348_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_6 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 6. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_348_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_6                           : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_6                           : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_348_t;
+
+/*! @struct ncp_denali_DENALI_CTL_349_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_349_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_7 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 7. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_349_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_7                         : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_7                         : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_349_t;
+
+/*! @struct ncp_denali_DENALI_CTL_350_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_350_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_7 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 7. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_350_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_7                           : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_7                           : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_350_t;
+
+/*! @struct ncp_denali_DENALI_CTL_351_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_351_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_8 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 8. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_351_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_8                         : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_8                         : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_351_t;
+
+/*! @struct ncp_denali_DENALI_CTL_352_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_352_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_8 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 8. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_352_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_8                           : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_8                           : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_352_t;
+
+/*! @struct ncp_denali_DENALI_CTL_353_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_353_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_9 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 9. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_353_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_9                         : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_9                         : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_353_t;
+
+/*! @struct ncp_denali_DENALI_CTL_354_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_354_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_9 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 9. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_354_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_9                           : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_9                           : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_354_t;
+
+/*! @struct ncp_denali_DENALI_CTL_355_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_355_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_10 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 10. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_355_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_10                        : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_10                        : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_355_t;
+
+/*! @struct ncp_denali_DENALI_CTL_356_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_356_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_10 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 10. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_356_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_10                          : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_10                          : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_356_t;
+
+/*! @struct ncp_denali_DENALI_CTL_357_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_357_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_11 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 11. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_357_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_11                        : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_11                        : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_357_t;
+
+/*! @struct ncp_denali_DENALI_CTL_358_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_358_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_11 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 11. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_358_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_11                          : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_11                          : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_358_t;
+
+/*! @struct ncp_denali_DENALI_CTL_359_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_359_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_12 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 12. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_359_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_12                        : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_12                        : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_359_t;
+
+/*! @struct ncp_denali_DENALI_CTL_360_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_360_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_12 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 12. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_360_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_12                          : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_12                          : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_360_t;
+
+/*! @struct ncp_denali_DENALI_CTL_361_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_361_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_13 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 13. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_361_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_13                        : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_13                        : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_361_t;
+
+/*! @struct ncp_denali_DENALI_CTL_362_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_362_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_13 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 13. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_362_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_13                          : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_13                          : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_362_t;
+
+/*! @struct ncp_denali_DENALI_CTL_363_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_363_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_14 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 14. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_363_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_14                        : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_14                        : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_363_t;
+
+/*! @struct ncp_denali_DENALI_CTL_364_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_364_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_14 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 14. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_364_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_14                          : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_14                          : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_364_t;
+
+/*! @struct ncp_denali_DENALI_CTL_365_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_365_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_start_addr_15 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Start address of port 0 address range 15. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_365_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_start_addr_15                        : 22;
+#else    /* Little Endian */
+     unsigned      axi0_start_addr_15                        : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_365_t;
+
+/*! @struct ncp_denali_DENALI_CTL_366_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_366_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_end_addr_15 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> End address of port 0 address range 15. </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_366_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 :  8;
+     unsigned      reserved0                                 :  2;
+     unsigned      axi0_end_addr_15                          : 22;
+#else    /* Little Endian */
+     unsigned      axi0_end_addr_15                          : 22;
+     unsigned      reserved0                                 :  2;
+     unsigned      obsolete1                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_366_t;
+
+/*! @struct ncp_denali_DENALI_CTL_367_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_367_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_0 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 0. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_0 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 0. Bit (0)
+ *        correlates to requestor 0, bit (1) correlates to requestor
+ *        1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_367_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      axi0_range_wid_check_bits_0               : 16;
+     unsigned      axi0_range_rid_check_bits_0               : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_rid_check_bits_0               : 16;
+     unsigned      axi0_range_wid_check_bits_0               : 16;
+#endif
+} ncp_denali_DENALI_CTL_367_t;
+
+/*! @struct ncp_denali_DENALI_CTL_368_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_368_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 1. Bit (0)
+ *        correlates to requestor 0, bit (1) correlates to requestor
+ *        1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete0 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_368_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      axi0_range_rid_check_bits_1               : 16;
+     unsigned      obsolete0                                 : 16;
+#else    /* Little Endian */
+     unsigned      obsolete0                                 : 16;
+     unsigned      axi0_range_rid_check_bits_1               : 16;
+#endif
+} ncp_denali_DENALI_CTL_368_t;
+
+/*! @struct ncp_denali_DENALI_CTL_369_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_369_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 1. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_369_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_1               : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_1               : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_369_t;
+
+/*! @struct ncp_denali_DENALI_CTL_370_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_370_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_2 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 2. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_2 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 2. Bit (0)
+ *        correlates to requestor 0, bit (1) correlates to requestor
+ *        1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_370_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      axi0_range_wid_check_bits_2               : 16;
+     unsigned      axi0_range_rid_check_bits_2               : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_rid_check_bits_2               : 16;
+     unsigned      axi0_range_wid_check_bits_2               : 16;
+#endif
+} ncp_denali_DENALI_CTL_370_t;
+
+/*! @struct ncp_denali_DENALI_CTL_371_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_371_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_3 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 3. Bit (0)
+ *        correlates to requestor 0, bit (1) correlates to requestor
+ *        1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete0 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_371_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      axi0_range_rid_check_bits_3               : 16;
+     unsigned      obsolete0                                 : 16;
+#else    /* Little Endian */
+     unsigned      obsolete0                                 : 16;
+     unsigned      axi0_range_rid_check_bits_3               : 16;
+#endif
+} ncp_denali_DENALI_CTL_371_t;
+
+/*! @struct ncp_denali_DENALI_CTL_372_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_372_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_3 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 3. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_372_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_3               : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_3               : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_372_t;
+
+/*! @struct ncp_denali_DENALI_CTL_373_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_373_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_4 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 4. Bit (0)
+ *        correlates to requestor 0, bit (1) correlates to requestor
+ *        1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_4 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        4. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_373_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_4               : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_4                    :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_4                    :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_4               : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_373_t;
+
+/*! @struct ncp_denali_DENALI_CTL_374_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_374_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_4 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 4. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_374_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_4               : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_4               : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_374_t;
+
+/*! @struct ncp_denali_DENALI_CTL_375_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_375_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_5 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 5. Bit (0)
+ *        correlates to requestor 0, bit (1) correlates to requestor
+ *        1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_5 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        5. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_375_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_5               : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_5                    :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_5                    :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_5               : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_375_t;
+
+/*! @struct ncp_denali_DENALI_CTL_376_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_376_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_5 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 5. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_376_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_5               : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_5               : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_376_t;
+
+/*! @struct ncp_denali_DENALI_CTL_377_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_377_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_6 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 6. Bit (0)
+ *        correlates to requestor 0, bit (1) correlates to requestor
+ *        1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        6. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_377_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_6               : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_6                    :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_6                    :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_6               : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_377_t;
+
+/*! @struct ncp_denali_DENALI_CTL_378_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_378_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_6 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 6. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_378_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_6               : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_6               : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_378_t;
+
+/*! @struct ncp_denali_DENALI_CTL_379_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_379_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_7 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 7. Bit (0)
+ *        correlates to requestor 0, bit (1) correlates to requestor
+ *        1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_7 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        7. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_379_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_7               : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_7                    :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_7                    :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_7               : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_379_t;
+
+/*! @struct ncp_denali_DENALI_CTL_380_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_380_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_7 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 7. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_380_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_7               : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_7               : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_380_t;
+
+/*! @struct ncp_denali_DENALI_CTL_381_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_381_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_8 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 8. Bit (0)
+ *        correlates to requestor 0, bit (1) correlates to requestor
+ *        1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_8 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        8. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_381_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_8               : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_8                    :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_8                    :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_8               : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_381_t;
+
+/*! @struct ncp_denali_DENALI_CTL_382_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_382_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_8 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 8. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_382_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_8               : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_8               : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_382_t;
+
+/*! @struct ncp_denali_DENALI_CTL_383_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_383_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_9 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 9. Bit (0)
+ *        correlates to requestor 0, bit (1) correlates to requestor
+ *        1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_9 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        9. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_383_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_9               : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_9                    :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_9                    :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_9               : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_383_t;
+
+/*! @struct ncp_denali_DENALI_CTL_384_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_384_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_9 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 9. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_384_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_9               : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_9               : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_384_t;
+
+/*! @struct ncp_denali_DENALI_CTL_385_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_385_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_10 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 10. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_10 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        10. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_385_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_10              : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_10                   :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_10                   :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_10              : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_385_t;
+
+/*! @struct ncp_denali_DENALI_CTL_386_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_386_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_10 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 10. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_386_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_10              : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_10              : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_386_t;
+
+/*! @struct ncp_denali_DENALI_CTL_387_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_387_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_11 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 11. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_11 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        11. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_387_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_11              : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_11                   :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_11                   :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_11              : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_387_t;
+
+/*! @struct ncp_denali_DENALI_CTL_388_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_388_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_11 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 11. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_388_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_11              : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_11              : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_388_t;
+
+/*! @struct ncp_denali_DENALI_CTL_389_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_389_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 12. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_12 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        12. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_389_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_12              : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_12                   :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_12                   :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_12              : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_389_t;
+
+/*! @struct ncp_denali_DENALI_CTL_390_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_390_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 12. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_390_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_12              : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_12              : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_390_t;
+
+/*! @struct ncp_denali_DENALI_CTL_391_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_391_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_13 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 13. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_13 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        13. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_391_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_13              : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_13                   :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_13                   :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_13              : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_391_t;
+
+/*! @struct ncp_denali_DENALI_CTL_392_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_392_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_13 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 13. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_392_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_13              : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_13              : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_392_t;
+
+/*! @struct ncp_denali_DENALI_CTL_393_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_393_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_14 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 14. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_14 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        14. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_393_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_14              : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_14                   :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_14                   :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_14              : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_393_t;
+
+/*! @struct ncp_denali_DENALI_CTL_394_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_394_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_14 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 14. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_394_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_14              : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_14              : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_394_t;
+
+/*! @struct ncp_denali_DENALI_CTL_395_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_395_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_15 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Allowed read IDs for port 0 address range 15. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_prot_bits_15 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed transaction types for port 0 address range
+ *        15. Set to 0 for privileged and secure only, set to
+ *        1 for secure (with or without privileged), set to
+ *        2 for privileged (with or without secure), or set
+ *        to 3 for full access.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_395_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      axi0_range_rid_check_bits_15              : 16;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_prot_bits_15                   :  2;
+#else    /* Little Endian */
+     unsigned      axi0_range_prot_bits_15                   :  2;
+     unsigned      reserved0                                 :  6;
+     unsigned      axi0_range_rid_check_bits_15              : 16;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_395_t;
+
+/*! @struct ncp_denali_DENALI_CTL_396_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_396_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_15 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Allowed write IDs for port 0 address range 15. Bit
+ *        (0) correlates to requestor 0, bit (1) correlates
+ *        to requestor 1, etc. Set each bit to 1 to enable.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_396_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete1                                 : 16;
+     unsigned      axi0_range_wid_check_bits_15              : 16;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_15              : 16;
+     unsigned      obsolete1                                 : 16;
+#endif
+} ncp_denali_DENALI_CTL_396_t;
+
+/*! @struct ncp_denali_DENALI_CTL_397_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_397_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param rdlvl_gate_interval </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Number of long count sequences counted between automatic
+ *        gate training commands.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param rdlvl_interval </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Number of long count sequences counted between automatic
+ *        data eye training commands.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_397_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      rdlvl_gate_interval                       : 16;
+     unsigned      rdlvl_interval                            : 16;
+#else    /* Little Endian */
+     unsigned      rdlvl_interval                            : 16;
+     unsigned      rdlvl_gate_interval                       : 16;
+#endif
+} ncp_denali_DENALI_CTL_397_t;
+
+/*! @struct ncp_denali_DENALI_CTL_398_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_398_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param ecc_c_id </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Source ID associated with correctable ECC event. READ-ONLY </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param ecc_u_id </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Source ID associated with the uncorrectable ECC event.
+ *        READ-ONLY
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_398_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      ecc_c_id                                  : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      ecc_u_id                                  : 12;
+#else    /* Little Endian */
+     unsigned      ecc_u_id                                  : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      ecc_c_id                                  : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_398_t;
+
+/*! @struct ncp_denali_DENALI_CTL_399_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_399_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param port_cmd_error_id </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Source ID of command that caused the PORT command
+ *        error. READ-ONLY
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param out_of_range_source_id </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Source ID of command that caused an out-of-range interrupt.
+ *        READ-ONLY
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_399_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      port_cmd_error_id                         : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      out_of_range_source_id                    : 12;
+#else    /* Little Endian */
+     unsigned      out_of_range_source_id                    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      port_cmd_error_id                         : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_399_t;
+
+/*! @struct ncp_denali_DENALI_CTL_400_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_400_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete2 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 20 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_0 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_0.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 7 </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_address_range_enable </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Determines if port 0 will use the axi.0._arregion
+ *        / axi.0._awregion signals or the AXI.0._START_ADDR_Z
+ *        / AXI.0._END_ADDR_Z parameters to define the region/range.
+ *        Set to 1 for parameter control.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_400_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete2                                 :  8;
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_0     : 12;
+     unsigned      reserved1                                 :  7;
+     unsigned      axi0_address_range_enable                 :  1;
+#else    /* Little Endian */
+     unsigned      axi0_address_range_enable                 :  1;
+     unsigned      reserved1                                 :  7;
+     unsigned      axi0_range_rid_check_bits_id_lookup_0     : 12;
+     unsigned      reserved0                                 :  4;
+     unsigned      obsolete2                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_400_t;
+
+/*! @struct ncp_denali_DENALI_CTL_401_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_401_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_1 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_1.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_0 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_0.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_401_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_1     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_0     : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_0     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_1     : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_401_t;
+
+/*! @struct ncp_denali_DENALI_CTL_402_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_402_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_2 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_2.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_1 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_1.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_402_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_2     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_1     : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_1     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_2     : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_402_t;
+
+/*! @struct ncp_denali_DENALI_CTL_403_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_403_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_3 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_3.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_2 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_2.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_403_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_3     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_2     : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_2     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_3     : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_403_t;
+
+/*! @struct ncp_denali_DENALI_CTL_404_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_404_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_4.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_3 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_3.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_404_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_4     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_3     : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_3     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_4     : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_404_t;
+
+/*! @struct ncp_denali_DENALI_CTL_405_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_405_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_5 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_5.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_4.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_405_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_5     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_4     : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_4     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_5     : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_405_t;
+
+/*! @struct ncp_denali_DENALI_CTL_406_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_406_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_6 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_6.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_5 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_5.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_406_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_6     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_5     : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_5     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_6     : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_406_t;
+
+/*! @struct ncp_denali_DENALI_CTL_407_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_407_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_7 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_7.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_6 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_6.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_407_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_7     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_6     : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_6     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_7     : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_407_t;
+
+/*! @struct ncp_denali_DENALI_CTL_408_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_408_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_8 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_8.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_7 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_7.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_408_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_8     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_7     : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_7     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_8     : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_408_t;
+
+/*! @struct ncp_denali_DENALI_CTL_409_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_409_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_9 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_9.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_8 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_8.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_409_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_9     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_8     : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_8     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_9     : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_409_t;
+
+/*! @struct ncp_denali_DENALI_CTL_410_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_410_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_10 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_10.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_9 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_9.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_410_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_10    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_9     : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_9     : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_10    : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_410_t;
+
+/*! @struct ncp_denali_DENALI_CTL_411_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_411_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_11 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_11.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_10 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_10.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_411_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_11    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_10    : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_10    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_11    : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_411_t;
+
+/*! @struct ncp_denali_DENALI_CTL_412_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_412_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_12 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_12.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_11 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_11.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_412_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_12    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_11    : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_11    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_12    : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_412_t;
+
+/*! @struct ncp_denali_DENALI_CTL_413_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_413_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_13 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_13.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_12 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_12.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_413_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_13    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_12    : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_12    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_13    : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_413_t;
+
+/*! @struct ncp_denali_DENALI_CTL_414_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_414_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_14 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_14.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_13 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_13.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_414_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_14    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_13    : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_13    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_14    : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_414_t;
+
+/*! @struct ncp_denali_DENALI_CTL_415_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_415_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 28 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_rid_check_bits_id_lookup_15 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_RID_CHECK_BITS_15.
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_14 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_14.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_415_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_15    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_14    : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_14    : 12;
+     unsigned      reserved1                                 :  4;
+     unsigned      axi0_range_rid_check_bits_id_lookup_15    : 12;
+     unsigned      reserved0                                 :  4;
+#endif
+} ncp_denali_DENALI_CTL_415_t;
+
+/*! @struct ncp_denali_DENALI_CTL_416_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_416_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param read_data_fifo_ptr_width </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> Reports the width of the controller core read data
+ *        queue pointer. READ-ONLY
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param read_data_fifo_depth </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Reports the depth of the controller core read data
+ *        queue. READ-ONLY
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 4 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_range_wid_check_bits_id_lookup_15 </td>
+ *     <td width="20%" align="center"> 12 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Identifies which four ID bits to used to index into
+ *        AXI.0._RANGE_WID_CHECK_BITS_15.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_416_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      read_data_fifo_ptr_width                  :  8;
+     unsigned      read_data_fifo_depth                      :  8;
+     unsigned      reserved0                                 :  4;
+     unsigned      axi0_range_wid_check_bits_id_lookup_15    : 12;
+#else    /* Little Endian */
+     unsigned      axi0_range_wid_check_bits_id_lookup_15    : 12;
+     unsigned      reserved0                                 :  4;
+     unsigned      read_data_fifo_depth                      :  8;
+     unsigned      read_data_fifo_ptr_width                  :  8;
+#endif
+} ncp_denali_DENALI_CTL_416_t;
+
+/*! @struct ncp_denali_DENALI_CTL_417_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_417_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param memcd_rmodw_fifo_ptr_width </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> Reports the width of the controller core read/modify/write
+ *        FIFO pointer. READ-ONLY
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param memcd_rmodw_fifo_depth </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Reports the depth of the controller core read/modify/write
+ *        FIFO. READ-ONLY
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param write_data_fifo_ptr_width </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Reports the width of the controller core write data
+ *        latency queue pointer. READ-ONLY
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param write_data_fifo_depth </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Reports the depth of the controller core write data
+ *        latency queue. READ-ONLY
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_417_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      memcd_rmodw_fifo_ptr_width                :  8;
+     unsigned      memcd_rmodw_fifo_depth                    :  8;
+     unsigned      write_data_fifo_ptr_width                 :  8;
+     unsigned      write_data_fifo_depth                     :  8;
+#else    /* Little Endian */
+     unsigned      write_data_fifo_depth                     :  8;
+     unsigned      write_data_fifo_ptr_width                 :  8;
+     unsigned      memcd_rmodw_fifo_depth                    :  8;
+     unsigned      memcd_rmodw_fifo_ptr_width                :  8;
+#endif
+} ncp_denali_DENALI_CTL_417_t;
+
+/*! @struct ncp_denali_DENALI_CTL_418_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_418_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param obsolete3 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> PADDING_BITS </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_rdfifo_log2_depth </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Reports the depth of the AXI port 0 Read Data FIFO.
+ *        Value is the log2 value of the depth. READ-ONLY
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_cmdfifo_log2_depth </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Reports the depth of the AXI port 0 Command FIFO.
+ *        Value is the log2 value of the depth. READ-ONLY
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param async_cdc_stages </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Reports the number of synchronizer delays specified
+ *        for the asynchronous boundary crossings. READ-ONLY
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_418_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      obsolete3                                 :  8;
+     unsigned      axi0_rdfifo_log2_depth                    :  8;
+     unsigned      axi0_cmdfifo_log2_depth                   :  8;
+     unsigned      async_cdc_stages                          :  8;
+#else    /* Little Endian */
+     unsigned      async_cdc_stages                          :  8;
+     unsigned      axi0_cmdfifo_log2_depth                   :  8;
+     unsigned      axi0_rdfifo_log2_depth                    :  8;
+     unsigned      obsolete3                                 :  8;
+#endif
+} ncp_denali_DENALI_CTL_418_t;
+
+/*! @struct ncp_denali_DENALI_CTL_419_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_419_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 26 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param ca_parity_error </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> Contains one hot indication of registered DIMM parity
+ *        errors. Bit (0) correlates to DIMM0, bit (1) correlates
+ *        to DIMM1, etc. Value of 1 indicates an error on that
+ *        DIMM. READ-ONLY
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 7 </td>
+ *     <td width="20%" align="center"> 17 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved2 </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Reserved for future use. Must be cleared to 0x0. </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_wr_array_log2_depth </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Reports the depth of the AXI port 0 Write Data Array.
+ *        Value is the log2 value of the depth. READ-ONLY
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param axi0_wrcmd_proc_fifo_log2_depth </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Reports the depth of the AXI port 0 Write Command
+ *        Processing FIFO. Value is the log2 value of the depth.
+ *        READ-ONLY
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_419_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  6;
+     unsigned      ca_parity_error                           :  2;
+     unsigned      reserved1                                 :  7;
+     unsigned      reserved2                                 :  1;
+     unsigned      axi0_wr_array_log2_depth                  :  8;
+     unsigned      axi0_wrcmd_proc_fifo_log2_depth           :  8;
+#else    /* Little Endian */
+     unsigned      axi0_wrcmd_proc_fifo_log2_depth           :  8;
+     unsigned      axi0_wr_array_log2_depth                  :  8;
+     unsigned      reserved2                                 :  1;
+     unsigned      reserved1                                 :  7;
+     unsigned      ca_parity_error                           :  2;
+     unsigned      reserved0                                 :  6;
+#endif
+} ncp_denali_DENALI_CTL_419_t;
+
+/*! @struct ncp_denali_DENALI_CTL_420_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_420_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 3 </td>
+ *     <td width="20%" align="center"> 29 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param long_count_mask </td>
+ *     <td width="20%" align="center"> 5 </td>
+ *     <td width="20%" align="center"> 24 </td>
+ *   <td width="30%"> Reduces the length of the long counter from 1024 cycles.
+ *        The only supported values are 0x00 (1024 cycles),
+ *        0x10 (512 clocks), 0x18 (256 clocks), 0x1C (128 clocks),
+ *        0x1E (64 clocks) and 0x1F (32 clocks).
+ *   </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved1 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 22 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param rd_to_odth </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 16 </td>
+ *   <td width="30%"> Defines the delay from a read command to ODT assertion. </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved2 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 14 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param wr_to_odth </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 8 </td>
+ *   <td width="30%"> Defines the delay from a write command to ODT assertion. </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved3 </td>
+ *     <td width="20%" align="center"> 6 </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param wr_order_req </td>
+ *     <td width="20%" align="center"> 2 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> Determines if the controller can re-order write commands
+ *        from the same source ID and/or the same port. Bit
+ *        (0) controls source ID usage and bit (1) controls
+ *        port ID usage. Set each bit to 1 to enable usage in
+ *        placement logic.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_420_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  3;
+     unsigned      long_count_mask                           :  5;
+     unsigned      reserved1                                 :  2;
+     unsigned      rd_to_odth                                :  6;
+     unsigned      reserved2                                 :  2;
+     unsigned      wr_to_odth                                :  6;
+     unsigned      reserved3                                 :  6;
+     unsigned      wr_order_req                              :  2;
+#else    /* Little Endian */
+     unsigned      wr_order_req                              :  2;
+     unsigned      reserved3                                 :  6;
+     unsigned      wr_to_odth                                :  6;
+     unsigned      reserved2                                 :  2;
+     unsigned      rd_to_odth                                :  6;
+     unsigned      reserved1                                 :  2;
+     unsigned      long_count_mask                           :  5;
+     unsigned      reserved0                                 :  3;
+#endif
+} ncp_denali_DENALI_CTL_420_t;
+
+/*! @struct ncp_denali_DENALI_CTL_421_t
+ *  @brief null
+ *  @details null
+ *  <table width="70%" align="center">
+ *  <tr>
+ *   <td colspan="4" align="center">
+ *    struct ncp_denali_DENALI_CTL_421_t\n
+ *   </td>
+ *  </tr>
+ *  <tr>
+ *     <td width="30%"><b> Name </b></td>
+ *     <td width="20%" align="center"><b> Width </b></td>
+ *     <td width="20%" align="center"><b> Start Offset </b></td>
+ *     <td width="30%"><b> Description </b></td>
+ *  </tr>
+ *   <tr>
+ *     <td width="30%"> @param reserved0 </td>
+ *     <td width="20%" align="center"> 31 </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *   <td width="30%"> Reserved for future use </td>
+ * </tr>
+ *   <tr>
+ *     <td width="30%"> @param ecc_en </td>
+ *     <td width="20%" align="center"> 1 </td>
+ *     <td width="20%" align="center"> 0 </td>
+ *   <td width="30%"> ECC error checking and correcting control. Set to
+ *        0 to disable ECC or set to 1 for ECC reporting and
+ *        correcting.
+ *   </td>
+ * </tr>
+ * </table>
+ * Applies to: 5500 --> ncp_denali_DENALI_CTL_421_t
+ *
+ */
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 : 31;
+     unsigned      ecc_en                                    :  1;
+#else    /* Little Endian */
+     unsigned      ecc_en                                    :  1;
+     unsigned      reserved0                                 : 31;
+#endif
+} ncp_denali_DENALI_CTL_421_t;
 
 #ifdef __cplusplus
 }

@@ -1,21 +1,16 @@
 /**************************************************************************
  **                                                                       *
- **   LSI CONFIDENTIAL                                                    *
+ **                           LSI CONFIDENTIAL                            *
  **                           PROPRIETARY NOTE                            *
  **                                                                       *
  **    This software contains information confidential and proprietary    *
- **    to LSI Inc.  It shall not be reproduced in whole or in             *
+ **    to LSI Corporation Inc.  It shall not be reproduced in whole or in *
  **    part, or transferred to other documents, or disclosed to third     *
  **    parties, or used for any purpose other than that for which it was  *
- **    obtained, without the prior written consent of LSI Inc.            *
- **    (c) 2001-2008, LSI Inc.  All rights reserved.                      *
+ **    obtained, without the prior written consent of LSI Corporation Inc.*
+ **    (c) 2001-2014, LSI Corporation Inc.  All rights reserved.          *
  **                                                                       *
- **  **********************************************************************
  **                                                                       *
- **  **********************************************************************
- **  File:       $HeadURL: $                                              *
- **  Version:    $Revision: $                                             *
- **  Date:       $Date: $                                                 *
  **  **********************************************************************/
 
 
@@ -365,6 +360,94 @@ extern "C" {
 #define     NCP_DENALI_CTL_332                                  (0x00000530)
 #define     NCP_DENALI_CTL_333                                  (0x00000534)
 #define     NCP_DENALI_CTL_334                                  (0x00000538)
+#define     NCP_DENALI_CTL_335                                  (0x0000053c)
+#define     NCP_DENALI_CTL_336                                  (0x00000540)
+#define     NCP_DENALI_CTL_337                                  (0x00000544)
+#define     NCP_DENALI_CTL_338                                  (0x00000548)
+#define     NCP_DENALI_CTL_339                                  (0x0000054c)
+#define     NCP_DENALI_CTL_340                                  (0x00000550)
+#define     NCP_DENALI_CTL_341                                  (0x00000554)
+#define     NCP_DENALI_CTL_342                                  (0x00000558)
+#define     NCP_DENALI_CTL_343                                  (0x0000055c)
+#define     NCP_DENALI_CTL_344                                  (0x00000560)
+#define     NCP_DENALI_CTL_345                                  (0x00000564)
+#define     NCP_DENALI_CTL_346                                  (0x00000568)
+#define     NCP_DENALI_CTL_347                                  (0x0000056c)
+#define     NCP_DENALI_CTL_348                                  (0x00000570)
+#define     NCP_DENALI_CTL_349                                  (0x00000574)
+#define     NCP_DENALI_CTL_350                                  (0x00000578)
+#define     NCP_DENALI_CTL_351                                  (0x0000057c)
+#define     NCP_DENALI_CTL_352                                  (0x00000580)
+#define     NCP_DENALI_CTL_353                                  (0x00000584)
+#define     NCP_DENALI_CTL_354                                  (0x00000588)
+#define     NCP_DENALI_CTL_355                                  (0x0000058c)
+#define     NCP_DENALI_CTL_356                                  (0x00000590)
+#define     NCP_DENALI_CTL_357                                  (0x00000594)
+#define     NCP_DENALI_CTL_358                                  (0x00000598)
+#define     NCP_DENALI_CTL_359                                  (0x0000059c)
+#define     NCP_DENALI_CTL_360                                  (0x000005a0)
+#define     NCP_DENALI_CTL_361                                  (0x000005a4)
+#define     NCP_DENALI_CTL_362                                  (0x000005a8)
+#define     NCP_DENALI_CTL_363                                  (0x000005ac)
+#define     NCP_DENALI_CTL_364                                  (0x000005b0)
+#define     NCP_DENALI_CTL_365                                  (0x000005b4)
+#define     NCP_DENALI_CTL_366                                  (0x000005b8)
+#define     NCP_DENALI_CTL_367                                  (0x000005bc)
+#define     NCP_DENALI_CTL_368                                  (0x000005c0)
+#define     NCP_DENALI_CTL_369                                  (0x000005c4)
+#define     NCP_DENALI_CTL_370                                  (0x000005c8)
+#define     NCP_DENALI_CTL_371                                  (0x000005cc)
+#define     NCP_DENALI_CTL_372                                  (0x000005d0)
+#define     NCP_DENALI_CTL_373                                  (0x000005d4)
+#define     NCP_DENALI_CTL_374                                  (0x000005d8)
+#define     NCP_DENALI_CTL_375                                  (0x000005dc)
+#define     NCP_DENALI_CTL_376                                  (0x000005e0)
+#define     NCP_DENALI_CTL_377                                  (0x000005e4)
+#define     NCP_DENALI_CTL_378                                  (0x000005e8)
+#define     NCP_DENALI_CTL_379                                  (0x000005ec)
+#define     NCP_DENALI_CTL_380                                  (0x000005f0)
+#define     NCP_DENALI_CTL_381                                  (0x000005f4)
+#define     NCP_DENALI_CTL_382                                  (0x000005f8)
+#define     NCP_DENALI_CTL_383                                  (0x000005fc)
+#define     NCP_DENALI_CTL_384                                  (0x00000600)
+#define     NCP_DENALI_CTL_385                                  (0x00000604)
+#define     NCP_DENALI_CTL_386                                  (0x00000608)
+#define     NCP_DENALI_CTL_387                                  (0x0000060c)
+#define     NCP_DENALI_CTL_388                                  (0x00000610)
+#define     NCP_DENALI_CTL_389                                  (0x00000614)
+#define     NCP_DENALI_CTL_390                                  (0x00000618)
+#define     NCP_DENALI_CTL_391                                  (0x0000061c)
+#define     NCP_DENALI_CTL_392                                  (0x00000620)
+#define     NCP_DENALI_CTL_393                                  (0x00000624)
+#define     NCP_DENALI_CTL_394                                  (0x00000628)
+#define     NCP_DENALI_CTL_395                                  (0x0000062c)
+#define     NCP_DENALI_CTL_396                                  (0x00000630)
+#define     NCP_DENALI_CTL_397                                  (0x00000634)
+#define     NCP_DENALI_CTL_398                                  (0x00000638)
+#define     NCP_DENALI_CTL_399                                  (0x0000063c)
+#define     NCP_DENALI_CTL_400                                  (0x00000640)
+#define     NCP_DENALI_CTL_401                                  (0x00000644)
+#define     NCP_DENALI_CTL_402                                  (0x00000648)
+#define     NCP_DENALI_CTL_403                                  (0x0000064c)
+#define     NCP_DENALI_CTL_404                                  (0x00000650)
+#define     NCP_DENALI_CTL_405                                  (0x00000654)
+#define     NCP_DENALI_CTL_406                                  (0x00000658)
+#define     NCP_DENALI_CTL_407                                  (0x0000065c)
+#define     NCP_DENALI_CTL_408                                  (0x00000660)
+#define     NCP_DENALI_CTL_409                                  (0x00000664)
+#define     NCP_DENALI_CTL_410                                  (0x00000668)
+#define     NCP_DENALI_CTL_411                                  (0x0000066c)
+#define     NCP_DENALI_CTL_412                                  (0x00000670)
+#define     NCP_DENALI_CTL_413                                  (0x00000674)
+#define     NCP_DENALI_CTL_414                                  (0x00000678)
+#define     NCP_DENALI_CTL_415                                  (0x0000067c)
+#define     NCP_DENALI_CTL_416                                  (0x00000680)
+#define     NCP_DENALI_CTL_417                                  (0x00000684)
+#define     NCP_DENALI_CTL_418                                  (0x00000688)
+#define     NCP_DENALI_CTL_419                                  (0x0000068c)
+#define     NCP_DENALI_CTL_420                                  (0x00000690)
+#define     NCP_DENALI_CTL_421                                  (0x00000694)
+#define     NCP_DENALI_APB2AHB_BRIDGE_STATUS                    (0x000006fc)
 #ifdef __cplusplus
 }
 #endif

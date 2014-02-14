@@ -801,6 +801,10 @@ extern unsigned long _bss_end;
 #ifdef ACP_25xx
 #define I2C0 (IO + 0x27000)
 #define I2C1 (IO + 0x28000)
+#elif defined(AXM_35xx)
+#define I2C0 (IO + 0x26000)
+#define I2C1 (IO + 0x27000)
+#define I2C2 (IO + 0x28000)
 #else
 #define I2C0 (IO + 0x3000)
 #endif

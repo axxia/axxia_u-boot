@@ -1,21 +1,16 @@
 /**************************************************************************
  **                                                                       *
- **   LSI CONFIDENTIAL                                                    *
+ **                           LSI CONFIDENTIAL                            *
  **                           PROPRIETARY NOTE                            *
  **                                                                       *
  **    This software contains information confidential and proprietary    *
- **    to LSI Inc.  It shall not be reproduced in whole or in             *
+ **    to LSI Corporation Inc.  It shall not be reproduced in whole or in *
  **    part, or transferred to other documents, or disclosed to third     *
  **    parties, or used for any purpose other than that for which it was  *
- **    obtained, without the prior written consent of LSI Inc.            *
- **    (c) 2001-2008, LSI Inc.  All rights reserved.                      *
+ **    obtained, without the prior written consent of LSI Corporation Inc.*
+ **    (c) 2001-2014, LSI Corporation Inc.  All rights reserved.          *
  **                                                                       *
- **  **********************************************************************
  **                                                                       *
- **  **********************************************************************
- **  File:       $HeadURL: $                                              *
- **  Version:    $Revision: $                                             *
- **  Date:       $Date: $                                                 *
  **  **********************************************************************/
 
 
@@ -188,6 +183,32 @@ extern "C" {
 #define     NCP_PHY_CFG_SYSMEM_PHY_ADR2_GTDLYCTRL               (0x00009048)
 #define     NCP_PHY_CFG_SYSMEM_PHY_ADR2_ADRPWRMGR               (0x00009078)
 #define     NCP_PHY_CFG_SYSMEM_PHY_ADR2_ADRGTSTAT               (0x000090e8)
+
+/* ADR3 not in 2500 */
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_PHASE90SEL0             (0x00009800)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_PHASE90SEL1             (0x00009804)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL00            (0x00009808)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL01            (0x0000980c)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL02            (0x00009810)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL03            (0x00009814)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL04            (0x00009818)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL05            (0x0000981c)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL06            (0x00009820)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL07            (0x00009824)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL08            (0x00009828)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL09            (0x0000982c)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL10            (0x00009830)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_FINEDLYSEL11            (0x00009834)
+#define     NCP_PHY_CFG_SYSMEM_PHY_BC_ADR3_FINEDLYSELXX         (0x00009838)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_GTDLYCTRL               (0x00009848)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_ADRPWRMGR               (0x00009878)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_ADRGTSTAT               (0x000098e8)
+
+/* broadcast to all ADRs */
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR_BC_PHASE90SEL0           (0x0000f800)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR_BC_PHASE90SEL1           (0x0000f804)
+
+
 #define     NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0                   (0x00010000)
 #define     NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG1                   (0x00010004)
 #define     NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2                   (0x00010008)
@@ -279,11 +300,15 @@ extern "C" {
 #define     NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG3_BL3               (0x0001180c)
 #define     NCP_PHY_CFG_SYSMEM_PHY_RDLVLP2FDLY_BL3              (0x00011818)
 #define     NCP_PHY_CFG_SYSMEM_PHY_RDLVLF2PDLY_BL3              (0x0001181c)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_ADRIOSET                (0x0001189c)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_ADRIOPUPD               (0x000118a0)
 #define     NCP_PHY_CFG_SYSMEM_PHY_WRLVLRESP_BL3                (0x000118a4)
 #define     NCP_PHY_CFG_SYSMEM_PHY_DPRDDAT_BL3                  (0x000118a8)
 #define     NCP_PHY_CFG_SYSMEM_PHY_DPIOLPRCTRL_BL3              (0x000118b0)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_AD12_ADRIOLPRCTRL       (0x000118b8)
 #define     NCP_PHY_CFG_SYSMEM_PHY_FBLOWUPPOFF_BL3              (0x000118c0)
 #define     NCP_PHY_CFG_SYSMEM_PHY_BIST_PATT0_BL3               (0x000118e8)
+#define     NCP_PHY_CFG_SYSMEM_PHY_ADR3_BIST_PATT1              (0x000118ec)
 #define     NCP_PHY_CFG_SYSMEM_PHY_PUPPRATIO_BL3CS0             (0x000118f0)
 #define     NCP_PHY_CFG_SYSMEM_PHY_NUPPRATIO_BL3CS0             (0x000118f4)
 #define     NCP_PHY_CFG_SYSMEM_PHY_PLOWRATIO_BL3CS0             (0x000118f8)
@@ -543,6 +568,8 @@ extern "C" {
 #define     NCP_PHY_CFG_SYSMEM_PHY_NUPPRATIO_BL_CS(b, c)  (0x000100f4 + (b * 0x800) + (c * 0x100) )
 #define     NCP_PHY_CFG_SYSMEM_PHY_PLOWRATIO_BL_CS(b, c)  (0x000100f8 + (b * 0x800) + (c * 0x100) )
 #define     NCP_PHY_CFG_SYSMEM_PHY_NLOWRATIO_BL_CS(b, c)  (0x000100fc + (b * 0x800) + (c * 0x100) )
+
+#define     NCP_PHY_CFG_SYSMEM_PHY_ALIGN_DELAYS_BL(b)     (0x000100c8 + (b * 0x800))
 
 #ifdef __cplusplus
 }

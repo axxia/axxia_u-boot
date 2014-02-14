@@ -1,3 +1,18 @@
+/**************************************************************************
+ **                                                                       *
+ **                           LSI CONFIDENTIAL      *
+ **                           PROPRIETARY NOTE                            *
+ **                                                                       *
+ **    This software contains information confidential and proprietary    *
+ **    to LSI Corporation Inc.  It shall not be reproduced in whole or in *
+ **    part, or transferred to other documents, or disclosed to third     *
+ **    parties, or used for any purpose other than that for which it was  *
+ **    obtained, without the prior written consent of LSI Corporation Inc.*
+ **    (c) 2008-2014, LSI Corporation Inc.  All rights reserved.          *
+ **                                                                       *
+ **
+ **
+ **************************************************************************/
 
 /********************************************************************
  * ncp_sm_denali_init_v1.h

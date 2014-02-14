@@ -1,21 +1,16 @@
 /**************************************************************************
  **                                                                       *
- **   LSI CONFIDENTIAL                                                    *
+ **                           LSI CONFIDENTIAL                            *
  **                           PROPRIETARY NOTE                            *
  **                                                                       *
  **    This software contains information confidential and proprietary    *
- **    to LSI Inc.  It shall not be reproduced in whole or in             *
+ **    to LSI Corporation Inc.  It shall not be reproduced in whole or in *
  **    part, or transferred to other documents, or disclosed to third     *
  **    parties, or used for any purpose other than that for which it was  *
- **    obtained, without the prior written consent of LSI Inc.            *
- **    (c) 2001-2008, LSI Inc.  All rights reserved.                      *
+ **    obtained, without the prior written consent of LSI Corporation Inc.*
+ **    (c) 2001-2014, LSI Corporation Inc.  All rights reserved.          *
  **                                                                       *
- **  **********************************************************************
  **                                                                       *
- **  **********************************************************************
- **  File:       $HeadURL: $                                              *
- **  Version:    $Revision: $                                             *
- **  Date:       $Date: $                                                 *
  **  **********************************************************************/
 
 
@@ -4069,15 +4064,7 @@ typedef struct
      unsigned      rdrankmap                                 :  2;
      unsigned      wrrankmap                                 :  2;
      unsigned      freqchanprotoena                          :  1;
-     unsigned      dp8ena                                    :  1;
-     unsigned      dp7ena                                    :  1;
-     unsigned      dp6ena                                    :  1;
-     unsigned      dp5ena                                    :  1;
-     unsigned      dp4ena                                    :  1;
-     unsigned      dp3ena                                    :  1;
-     unsigned      dp2ena                                    :  1;
-     unsigned      dp1ena                                    :  1;
-     unsigned      dp0ena                                    :  1;
+     unsigned      dpen                                      :  9;
      unsigned      dfimanwrlvl                               :  1;
      unsigned      dfimangt                                  :  1;
      unsigned      dfimanrdlvl                               :  1;
@@ -4103,15 +4090,7 @@ typedef struct
      unsigned      dfimanrdlvl                               :  1;
      unsigned      dfimangt                                  :  1;
      unsigned      dfimanwrlvl                               :  1;
-     unsigned      dp0ena                                    :  1;
-     unsigned      dp1ena                                    :  1;
-     unsigned      dp2ena                                    :  1;
-     unsigned      dp3ena                                    :  1;
-     unsigned      dp4ena                                    :  1;
-     unsigned      dp5ena                                    :  1;
-     unsigned      dp6ena                                    :  1;
-     unsigned      dp7ena                                    :  1;
-     unsigned      dp8ena                                    :  1;
+     unsigned      dpen                                      :  9;
      unsigned      freqchanprotoena                          :  1;
      unsigned      wrrankmap                                 :  2;
      unsigned      rdrankmap                                 :  2;
@@ -4634,7 +4613,6 @@ typedef struct
  *     <td width="30%"> @param phyvers </td>
  *     <td width="20%" align="center"> 16 </td>
  *     <td width="20%" align="center"> 0 </td>
- *   <td width="30%"> PHY Version: This field is a static readable representation
  *        of the parameter P708_PHY_VERSION. The default value
  *        is the version number of this PHY in binary coded
  *        decimal format (01.00 for version 1.0).
