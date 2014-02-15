@@ -157,6 +157,94 @@ phy_ops_t micrel_phy_ops = {
 
 /*
   ======================================================================
+  3500 Micrel KSZ8081 
+  ======================================================================
+*/
+
+#define MICREL_KSZ8081_PHY_ID_LOW_MODEL 0x16
+
+/* -- -- */
+
+#define MICREL_KSZ8081_PHY_AUXILIARY_CONTROL_STATUS 0x1e
+
+typedef union {
+	unsigned short raw;
+
+	struct {
+#ifdef __BIG_ENDIAN
+		unsigned short rsvd_1             : 6;
+		unsigned short enable_pause       : 1;
+		unsigned short link_status        : 1;
+		unsigned short polarity_status    : 1;
+		unsigned short rsvd       	  : 1;
+		unsigned short mdi_state          : 1;
+		unsigned short energy_detect      : 1;
+		unsigned short isolate            : 1;
+		unsigned short op_mode_indication : 3;
+#else  /* __BIG_ENDIAN */
+#endif /* __BIG_ENDIAN */
+  } bits;
+} micrel_ksz8081_phy_auxiliary_control_status_t;
+
+/*
+  ----------------------------------------------------------------------
+  micrel_ksz8081_phy_duplex
+*/
+
+static int
+micrel_ksz8081_phy_duplex( int phy )
+{
+	micrel_ksz8081_phy_auxiliary_control_status_t aux;
+
+	aux.raw = mdio_read( phy, MICREL_KSZ8081_PHY_AUXILIARY_CONTROL_STATUS );
+	DEBUG_PRINT( "aux.raw=0x%x aux.bits.op_mode_indication=%d " \
+		     "aux.bits.isolate=%d aux.bits.energy_detect=%d " \
+		     "aux.bits.mdi_state=%d aux.bits.polarity_status=%d " \
+		     "aux.bits.link_status=%d aux.bits.enable_pause=%d\n ",
+		     aux.raw, aux.bits.op_mode_indication, aux.bits.isolate,
+		     aux.bits.energy_detect, aux.bits.mdi_state,
+		     aux.bits.polarity_status, aux.bits.link_status,
+		     aux.bits.enable_pause);
+
+	return ( ( aux.bits.op_mode_indication >> 2 ) & 0x1 );
+}
+
+/*
+  ----------------------------------------------------------------------
+  micrel_ksz8081_phy_speed
+*/
+
+static int
+micrel_ksz8081_phy_speed( int phy )
+{
+	micrel_ksz8081_phy_auxiliary_control_status_t aux;
+
+	aux.raw = mdio_read( phy, MICREL_KSZ8081_PHY_AUXILIARY_CONTROL_STATUS );
+	DEBUG_PRINT( "aux.raw=0x%x aux.bits.op_mode_indication=%d " \
+		     "aux.bits.isolate=%d aux.bits.energy_detect=%d " \
+		     "aux.bits.mdi_state=%d aux.bits.polarity_status=%d " \
+		     "aux.bits.link_status=%d aux.bits.enable_pause=%d\n ",
+		     aux.raw, aux.bits.op_mode_indication, aux.bits.isolate,
+		     aux.bits.energy_detect, aux.bits.mdi_state,
+		     aux.bits.polarity_status, aux.bits.link_status,
+		     aux.bits.enable_pause);
+
+	switch( ( aux.bits.op_mode_indication & 3 ) ) {
+	case 2: return 1; break;
+	case 1:	return 0; break;
+	default: break;
+	}
+
+	return -1;
+}
+
+phy_ops_t micrel_ksz8081_phy_ops = {
+	.duplex = micrel_ksz8081_phy_duplex,
+	.speed = micrel_ksz8081_phy_speed
+};
+
+/*
+  ======================================================================
   Broadcomm
   ======================================================================
 */
@@ -275,6 +363,14 @@ phy_identify( int phy )
 			*/
 			phy_ops [ phy ] = & micrel_phy_ops;
 			DEBUG_PRINT( "Setting up Micrel Operations.\n" );
+			return 0;
+		} else if( ( MICREL_PHY_ID_LOW_ID == phy_id_low.bits.id ) &&
+		    ( MICREL_KSZ8081_PHY_ID_LOW_MODEL == phy_id_low.bits.model ) ) {
+			/*
+			  Micrel KSZ8081 PHYs is used on AXM35xx Galveston board
+			*/
+			phy_ops [ phy ] = & micrel_ksz8081_phy_ops;
+			DEBUG_PRINT( "Setting up Micrel KSZ8081 Operations.\n" );
 			return 0;
 		}
 		break;
@@ -454,6 +550,26 @@ void
 phy_debug( void )
 {
 #ifndef CONFIG_ACP2
+#if (defined(AXM_35xx) && !defined(ACP_EMU))
+	DEBUG_PRINT( "\n" );
+	/* PHY Access Test */
+	phy_renegotiate( 0x6, PHY_AUTONEG_ADVERTISE_100FULL );
+	printf( "phy_duplex( 0x6 ) returned 0x%x\n", phy_duplex( 0x6 ) );
+	printf( "phy_link( 0x6 ) returned 0x%x\n", phy_link( 0x6 ) );
+	printf( "phy_speed( 0x6 ) returned 0x%x\n", phy_speed( 0x6 ) );
+	phy_renegotiate( 0x6, PHY_AUTONEG_ADVERTISE_100 );
+	printf( "phy_duplex( 0x6 ) returned 0x%x\n", phy_duplex( 0x6 ) );
+	printf( "phy_link( 0x6 ) returned 0x%x\n", phy_link( 0x6 ) );
+	printf( "phy_speed( 0x6 ) returned 0x%x\n", phy_speed( 0x6 ) );
+	phy_renegotiate( 0x6, PHY_AUTONEG_ADVERTISE_10FULL );
+	printf( "phy_duplex( 0x6 ) returned 0x%x\n", phy_duplex( 0x6 ) );
+	printf( "phy_link( 0x6 ) returned 0x%x\n", phy_link( 0x6 ) );
+	printf( "phy_speed( 0x6 ) returned 0x%x\n", phy_speed( 0x6 ) );
+	phy_renegotiate( 0x6, PHY_AUTONEG_ADVERTISE_10 );
+	printf( "phy_duplex( 0x6 ) returned 0x%x\n", phy_duplex( 0x6 ) );
+	printf( "phy_link( 0x6 ) returned 0x%x\n", phy_link( 0x6 ) );
+	printf( "phy_speed( 0x6 ) returned 0x%x\n", phy_speed( 0x6 ) );
+#else
 	DEBUG_PRINT( "\n" );
 	/* PHY Access Test */
 	phy_renegotiate( 0x1e, PHY_AUTONEG_ADVERTISE_100FULL );
@@ -472,6 +588,7 @@ phy_debug( void )
 	printf( "phy_duplex( 0x1e ) returned 0x%x\n", phy_duplex( 0x1e ) );
 	printf( "phy_link( 0x1e ) returned 0x%x\n", phy_link( 0x1e ) );
 	printf( "phy_speed( 0x1e ) returned 0x%x\n", phy_speed( 0x1e ) );
+#endif
 #endif /* CONFIG_ACP2 */
 }
 

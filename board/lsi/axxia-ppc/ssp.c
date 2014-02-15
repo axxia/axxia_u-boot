@@ -496,8 +496,7 @@ ssp_init(int input_device, int input_read_only)
 	/*
 	  Set up the SSP.
 	*/
-
-#if defined(AXM_35xx)
+#if defined(ACP_EMU)
         writel(0x107, (unsigned long *)(SSP + SSP_CR0));
 #else
         writel(0x3107, (unsigned long *)(SSP + SSP_CR0));
@@ -562,11 +561,7 @@ ssp_init(int input_device, int input_read_only)
 		is_flash = 1;
 
 	if (1 == is_flash) {
-#if defined(AXM_35xx)
-        writel(0x107, (unsigned long *)(SSP + SSP_CR0));
-#else
-	writel(0x907, (unsigned long *)(SSP + SSP_CR0));
-#endif
+		writel(0x907, (unsigned long *)(SSP + SSP_CR0));
 	}
 
 #endif

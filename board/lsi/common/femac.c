@@ -1379,7 +1379,11 @@ phy_scan_( void )
 	TRACE_ENDING( "\n" );
 	return phy_;
 #else  /* CONFIG_ACP */
+#if (defined(AXM_35xx) && !defined(ACP_EMU))
+	return 0x6;
+#else
 	return 0x1e;
+#endif
 #endif /* CONFIG_ACP */
 }
 
@@ -1492,8 +1496,11 @@ phy_enable_( int phy )
 	}
 
 #else  /* CONFIG_ACP */
-
+#if (defined(AXM_35xx) && !defined(ACP_EMU))
+	phy_address_ = 0x6;
+#else
 	phy_address_ = 0x1e;
+#endif
 
 #endif /* CONFIG_ACP */
 
