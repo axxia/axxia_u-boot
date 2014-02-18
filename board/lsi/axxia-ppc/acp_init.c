@@ -177,6 +177,10 @@ typedef struct {
 	unsigned long enable_runtime_updates;
 	unsigned long zqcs_interval;
 	unsigned long ddrClockSpeedMHz;
+	/* RDIMM support */
+	unsigned long rdimm_ctl_0_0;
+	unsigned long rdimm_ctl_0_1;
+	unsigned long rdimm_misc;
 
 } __attribute__((packed)) parameters_sysmem_t;
 

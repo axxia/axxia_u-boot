@@ -176,6 +176,8 @@ ncp_sm_denali_2041_init(
     tREF =  (parms->high_temp_dram == TRUE) ?  3900 : 7800;
     tWR = ncp_ns_to_clk(clkMhz, 15); 
 
+    printf("rdimm_ctl_0_0=0x%x rdim_ctl_0_1=0x%x rdimm_misc=0x%x\n",
+		parms->rdimm_ctl_0_0, parms->rdimm_ctl_0_1, parms->rdimm_misc);
 
     /* DENALI_CTL_00 */
     /* TODO: at some point the AP field may be st */
@@ -202,7 +204,8 @@ ncp_sm_denali_2041_init(
         /* set the controller half-data path mode for 32-bit bus */
         SV( ncp_denali_DENALI_CTL_11_t, reduc, 1 );
     }
-    /* TODO: registered DIMM support !! */
+    /* registered DIMM support */
+    SV( ncp_denali_DENALI_CTL_11_t, reg_dimm_enable, (parms->rdimm_misc & 0x1) );
     ncr_write32(ctlReg, 0x002c, value);
 
 
@@ -696,32 +699,73 @@ ncp_sm_denali_2041_init(
     /* DENALI_CTL_232 */
     ncr_write32(ctlReg,  0x03a0, 0x07070000);
 
-    /* DENALI_CTL_234 */
-    ncr_write32(ctlReg,  0x03a8, 0x24101065);
+    if (parms->rdimm_misc & 0x1)
+    {
+        /* DENALI_CTL_234 */
+        ncr_write32(ctlReg,  0x03a8, parms->rdimm_ctl_0_0);
 
-    /* DENALI_CTL_235 */
-    ncr_write32(ctlReg,  0x03ac, 0x00001370);
+        /* DENALI_CTL_235 */
+        ncr_write32(ctlReg,  0x03ac, parms->rdimm_ctl_0_1);
+    }
+    else
+    {
+	/* is this really needed ? */
+        /* DENALI_CTL_234 */
+        ncr_write32(ctlReg,  0x03a8, 0x24101065);
+
+        /* DENALI_CTL_235 */
+        ncr_write32(ctlReg,  0x03ac, 0x00001370);
+    }
 
     /* DENALI_CTL_236 */
-    ncr_write32(ctlReg,  0x03b0, 0x00000003);
+    if (parms->rdimm_misc & 0x1)
+    {
+ 	/* specify which cs to enable for DIMM0 */
+        ncr_write32(ctlReg,  0x03b0, 0x00000003);
+    }
 
+#if 0
+    /* not needed, as currently supporting only 1 rdimm per sysmem intf */
     /* DENALI_CTL_237 */
     ncr_write32(ctlReg,  0x03b4, 0x13030154);
 
     /* DENALI_CTL_238 */
     ncr_write32(ctlReg,  0x03b8, 0x00001367);
+#endif
 
     /* DENALI_CTL_239 */
-    ncr_write32(ctlReg,  0x03bc, 0x000fff0c);
+    value = 0x000fff0c; /* legacy value */
+    /* [3:0] cs_map_dimm_1: currently only supporting 1 rdimm so this can be zero */
+    SV( ncp_denali_DENALI_CTL_239_t, cs_map_dimm_1, 0);
+    /* [23:8]: 1 bit for each ctl-word */
+    SV( ncp_denali_DENALI_CTL_239_t, rdimm_cw_map, ((parms->rdimm_misc & 0xffff0000)>>16));
+    ncr_write32(ctlReg,  0x03bc, value);
 
     /* DENALI_CTL_240 */
-    ncr_write32(ctlReg,  0x03c0, 0x00000800);
+    value = 0x00000800;
+    SV( ncp_denali_DENALI_CTL_240_t, rdimm_cw_hold_cke_en, (parms->rdimm_misc & 0x1));
+    SV( ncp_denali_DENALI_CTL_240_t, rdimm_tmrd, 8);
+    ncr_write32(ctlReg,  0x03c0, value);
 
     /* DENALI_CTL_241 */
-    ncr_write32(ctlReg,  0x03c4, 0x000012c0);
+    if (parms->rdimm_misc & 0x1)
+    {
+	/* rdimm_tstab is freq based, unit is cycles: for 933 it is 5usec, for other freq's it is 6 usec */
+	value = ((clkMhz == 933) ? 5 : 6);
+	value *= clkMhz;
+    	SV( ncp_denali_DENALI_CTL_241_t, rdimm_tstab, value);
+        ncr_write32(ctlReg,  0x03c4, value);
+    }
+    else
+    {
+     	/* is this really needed ?. */
+        ncr_write32(ctlReg,  0x03c4, 0x000012c0);
+    }
 
     /* DENALI_CTL_242 */
-    ncr_write32(ctlReg,  0x03c8, 0x00000005);
+    value = 0x0;
+    SV( ncp_denali_DENALI_CTL_242_t, tref_interval, ((parms->rdimm_misc & 0x1) ? 0x8 : 0x5));
+    ncr_write32(ctlReg,  0x03c8, value);
 
     /* DENALI_CTL_244 */
     /* bits [7:0] cksre 
