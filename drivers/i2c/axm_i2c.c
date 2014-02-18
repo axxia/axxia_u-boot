@@ -401,7 +401,7 @@ i2c_set_bus_speed(unsigned int speed)
 	unsigned per_clock;
 	unsigned clk_mhz;
 	unsigned divisor;
-	unsigned t_setup; 
+	unsigned t_high, t_low, t_setup; 
 
 	current_speed = speed;
 
@@ -417,25 +417,26 @@ i2c_set_bus_speed(unsigned int speed)
 	debug("i2c_set_bus_speed: per_clk=%uMHz -> ratio=1:%u\n",
 	      clk_mhz, divisor);
 
-	/* SCL High Time */
-	writel(divisor/2, i2c_addr + AI2C_REG_I2C_X7_SCL_HIGH_PERIOD); 
-	/* SCL Low Time */
-	writel(divisor/2, i2c_addr + AI2C_REG_I2C_X7_SCL_LOW_PERIOD); 
-
 	if (speed <= 100000) {
-		/* Standard mode tSU:DAT = 250 ns */
+		/* Standard mode SCL 50/50, tSU:DAT = 250 ns */
+		t_high  = divisor*1/2;
+		t_low   = divisor*1/2;
 		t_setup = ns_to_clk(250, clk_mhz);
 	} else {
-		/* Fast mode tSU:DAT = 100 ns */
+		/* Fast mode SCL 33/66, tSU:DAT = 100 ns */
+		t_high  = divisor*1/3;
+		t_low   = divisor*2/3;
 		t_setup = ns_to_clk(100, clk_mhz);
 	}
 
+	/* SCL High Time */
+	writel(t_high, i2c_addr + AI2C_REG_I2C_X7_SCL_HIGH_PERIOD); 
+	/* SCL Low Time */
+	writel(t_low, i2c_addr + AI2C_REG_I2C_X7_SCL_LOW_PERIOD); 
 	/* SDA Setup Time */
 	writel(t_setup, i2c_addr + AI2C_REG_I2C_X7_SDA_SETUP_TIME);
-
 	/* SDA Hold Time, 5ns */
 	writel(ns_to_clk(5, clk_mhz), i2c_addr + AI2C_REG_I2C_X7_SDA_HOLD_TIME); 
-
 	/* Filter > 50ns spikes */
 	writel(ns_to_clk(50, clk_mhz), i2c_addr + AI2C_REG_I2C_X7_SPIKE_FLTR_LEN); 
 
