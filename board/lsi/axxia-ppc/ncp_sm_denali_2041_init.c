@@ -234,7 +234,7 @@ ncp_sm_denali_2041_init(
 	 * 2: 1:2 port:core pseudo-sync
 	 * 3: sync
 	 */
-        ncr_write32(ctlReg,  0x0040, 0x00000003);
+        ncr_write32(ctlReg,  0x0040, 0x00000000);
     }
 
     /* DENALI_CTL_17 */
@@ -248,7 +248,7 @@ ncp_sm_denali_2041_init(
    	 *
     	 * bit[9:8] axi1_port_ordering
 	 */
-        ncr_write32(ctlReg,  0x0044, 0x00000103);
+        ncr_write32(ctlReg,  0x0044, 0x00000100);
     }
     else
     {
@@ -266,7 +266,7 @@ ncp_sm_denali_2041_init(
    	 *
     	 * bit[9:8] axi2_port_ordering
 	 */
-    	ncr_write32(ctlReg,  0x0048, 0x00000203);
+    	ncr_write32(ctlReg,  0x0048, 0x00000200);
     }
     else
     {
@@ -284,7 +284,7 @@ ncp_sm_denali_2041_init(
    	 *
     	 * bit[9:8] axi3_port_ordering
 	 */
-    	ncr_write32(ctlReg,  0x004c, 0x00000303);
+    	ncr_write32(ctlReg,  0x004c, 0x00000300);
     }
     else
     {

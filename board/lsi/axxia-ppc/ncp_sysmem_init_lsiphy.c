@@ -1435,7 +1435,7 @@ ncp_sm_lsiphy_static_init(
     }
 #endif
 
-    printf("min_cal_dly=%d\n", parms->per_sysmem[memId].phy_min_cal_delay);
+    printf("min_cal_dly=%ld\n", parms->per_sysmem[memId].phy_min_cal_delay);
     phyconfig3.rdlatrank = parms->per_sysmem[memId].phy_min_cal_delay + rlrank_adj;
     phyconfig3.rdlatgate = parms->per_sysmem[memId].phy_min_cal_delay;
     for (i = 0; i < parms->num_bytelanes; i++) 
@@ -2498,7 +2498,7 @@ sm_bytelane_test(
 
 #ifdef SM_BYTELANE_TEST_DEBUG
         printf("i=%d j=%d expect=0x%02x "
-               "p8=0x%08x/0x%02x/0x%02x/0x%02x\n",
+               "p8=0x%p/0x%02x/0x%02x/0x%02x\n",
                i, j, compare_value, p8, *p8, *(p8 - offset),
                *(p8 + offset));
 #endif
@@ -2646,7 +2646,7 @@ sm_ecc_bytelane_test(
         int idx;
 
         for (idx = 0; idx < (blockSizeWords); ++idx) {
-            printf("<%03d:0x%08lx>", (idx * 4), p32[idx]);
+            printf("<%03d:0x%08x>", (idx * 4), p32[idx]);
         }
 
         printf("\n");
@@ -2711,7 +2711,7 @@ sm_ecc_bytelane_test(
         int idx;
 
         for (idx = 0; idx < (blockSizeWords); ++idx) {
-            printf("(%03d:0x%08lx)", (idx * 4), p32[idx]);
+            printf("(%03d:0x%08x)", (idx * 4), p32[idx]);
         }
 
         printf("\n");
@@ -2993,7 +2993,7 @@ sm_bytelane_test_elm(
         int idx;
 
         for (idx = 0; idx < (blockSize/4); ++idx) {
-            printf("(%03x:0x%08lx)", (idx * 4), p32[idx]);
+            printf("(%03x:0x%08x)", (idx * 4), p32[idx]);
             if ( (idx & 0x3) == 3) printf("\n");
         }
 
@@ -3188,7 +3188,7 @@ sm_ecc_bytelane_test_elm(
         int idx;
 
         for (idx = 0; idx < (blockSizeWords); ++idx) {
-            printf("<%03x:0x%08lx>", (idx * 4), p32[idx]);
+            printf("<%03x:0x%08x>", (idx * 4), p32[idx]);
             if ( (idx & 0x3) == 3) printf("\n");
         }
 
@@ -3242,7 +3242,7 @@ sm_ecc_bytelane_test_elm(
 
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG
 	{
-	  unsigned long value;
+	  ncp_uint32_t value;
         printf("eccErrs = 0x%08x\n", eccErrs);
         ncr_read32(ctrlRegion, 0xac, &value);
         printf("syndrome = 0x%08x\n", value);
