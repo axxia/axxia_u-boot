@@ -239,10 +239,10 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 #ifdef ACP_EMU
 	*frequency = 6250UL;
 #else 
-	*frequency = 125000UL;
+	/**frequency = 125000UL;*/
+	*frequency = 220000UL;
 #endif
 	return 0;
-
 #else
 	unsigned long mcgc;
 	unsigned long mcgs;

@@ -253,6 +253,8 @@ typedef struct {
 } __attribute__((packed)) parameters_sysmem_t;
 
 typedef struct {
+	unsigned long retentionSize;
+	unsigned long retentinoOffset;
 	unsigned long sysmemSize;
 	unsigned long sysmemOffset;
 	unsigned long clocksSize;
@@ -264,6 +266,7 @@ typedef struct {
 	unsigned long globalSize;
 	unsigned long globalOffset;
 	unsigned long version;
+	unsigned long flags;
 	unsigned long checksum;
 	unsigned long size;
 	unsigned long magic;
@@ -1677,6 +1680,8 @@ acp_init( void )
 		mdelay( 500 );
 #endif
 		serial_early_init( );
+	} else {
+		printf("Skipping Clock Setup!\n");
 	}
 
 #if defined(ACP_25xx) && !defined(ACP_EMU)
@@ -1712,6 +1717,8 @@ acp_init( void )
 		if( 0 != ( returnCode = pciesrio_init( pciesrio->control ) ) ) {
 			goto acp_init_return;
 		}
+	} else {
+		printf("Skipping PCIe/SRIO Setup!\n");
 	}
 
 	/*
@@ -1750,6 +1757,8 @@ acp_init( void )
 				    (sysmem->num_interfaces * 4));
 		}
 #endif
+	} else {
+		printf("Skipping System Memory Setup!\n");
 	}
 
  acp_init_return:

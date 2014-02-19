@@ -359,6 +359,7 @@ sysmem_init(void)
 #endif
 
 #ifdef DISPLAY_PARAMETERS
+#ifndef AXM_35xx
 	printf("-- -- Sysmem\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
@@ -380,6 +381,44 @@ sysmem_init(void)
 	       sysmem->phy_adr_imp, sysmem->phy_dat_imp,
 	       sysmem->phy_rcv_imp, sysmem->sysCacheMode,
 	       sysmem->syscacheDisable, sysmem->half_mem, sysmem->address_mirroring);
+#else
+	printf("-- -- Sysmem\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
+	       sysmem->version,
+	       sysmem->ddrClockSpeedMHz,
+	       sysmem->auto_detect,
+	       sysmem->num_interfaces,
+	       sysmem->num_ranks_per_interface,
+	       sysmem->primary_bus_width,
+	       sysmem->topology,
+	       sysmem->phy_rdlat,
+	       sysmem->added_rank_switch_delay,
+	       sysmem->zqcs_interval,
+	       sysmem->enableECC,
+	       sysmem->enable_runtime_updates,
+	       sysmem->dramPrechargePolicy,
+	       sysmem->open_page_size,
+	       sysmem->syscacheDisable,
+	       sysmem->sdram_device_density,
+	       sysmem->sdram_device_width,
+	       sysmem->CAS_latency,
+	       sysmem->CAS_write_latency,
+	       sysmem->address_mirroring,
+	       sysmem->rdimm,
+	       sysmem->rdimm_ctl_0_0,
+	       sysmem->rdimm_ctl_0_1,
+	       sysmem->rdimm_misc,
+	       sysmem->write_odt_ctl,
+	       sysmem->read_odt_ctl,
+	       sysmem->single_bit_mpr,
+	       sysmem->high_temp_dram,
+	       sysmem->sysCacheMode,
+	       sysmem->half_mem,
+	       sysmem->num_bytelanes);
+#endif
 #endif
 
 
