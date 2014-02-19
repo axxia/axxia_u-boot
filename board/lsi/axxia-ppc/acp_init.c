@@ -104,6 +104,46 @@ typedef struct {
 	unsigned long tmpll_psd;
 	unsigned long per_mcgc;
 	unsigned long per_mcgc1;
+#elif defined AXM_35xx
+	unsigned long flags;
+	unsigned long syspll_prms;
+	unsigned long syspll_ctrl;
+	unsigned long syspll_csw;
+	unsigned long syspll_div;
+	unsigned long syspll_psd;
+	unsigned long cpupll_prms;
+	unsigned long cpupll_ctrl;
+	unsigned long cpupll_csw;
+	unsigned long cpupll_div;
+	unsigned long cpupll_psd;
+	unsigned long sm0pll_prms;
+	unsigned long sm0pll_ctrl;
+	unsigned long sm0pll_csw;
+	unsigned long sm0pll_div;
+	unsigned long sm0pll_psd;
+	unsigned long sm1pll_prms;
+	unsigned long sm1pll_ctrl;
+	unsigned long sm1pll_csw;
+	unsigned long sm1pll_div;
+	unsigned long sm1pll_psd;
+	unsigned long tmpll_prms;
+	unsigned long tmpll_ctrl;
+	unsigned long tmpll_csw;
+	unsigned long tmpll_div;
+	unsigned long tmpll_psd;
+	unsigned long fabpll_prms;
+	unsigned long fabpll_ctrl;
+	unsigned long fabpll_csw;
+	unsigned long fabpll_div;
+	unsigned long fabpll_psd;
+	unsigned long nrcpinput_csw;
+	unsigned long nrcpinput_div;
+	unsigned long per_csw;
+	unsigned long per_div;
+	unsigned long emmc_csw;
+	unsigned long emmc_div;
+	unsigned long debug_csw;
+	unsigned long stop_csw;
 #else
 	unsigned long sys_control;
 	unsigned long sys_lftune_upper;
@@ -138,6 +178,8 @@ typedef struct {
 } __attribute__((packed)) per_sysmem_parms_t;
 
 typedef struct {
+
+#ifndef AXM_35xx
 	unsigned long version;
 	unsigned long auto_detect;
 	unsigned long num_interfaces;
@@ -170,17 +212,43 @@ typedef struct {
 	unsigned long syscacheDisable;
 	unsigned long half_mem;
 	unsigned long address_mirroring;
-
-	/* new for 3500 */
-	per_sysmem_parms_t per_sysmem[2];
-	unsigned long num_bytelanes;
-	unsigned long enable_runtime_updates;
-	unsigned long zqcs_interval;
+#else
+	unsigned long version;
 	unsigned long ddrClockSpeedMHz;
-	/* RDIMM support */
+	unsigned long auto_detect;
+	unsigned long num_interfaces;
+	unsigned long num_ranks_per_interface;
+	unsigned long primary_bus_width;
+	unsigned long topology;
+	unsigned long phy_rdlat;
+	unsigned long added_rank_switch_delay;
+	unsigned long zqcs_interval;
+	unsigned long enableECC;
+	unsigned long enable_runtime_updates;
+	unsigned dramPrechargePolicy;
+	unsigned long open_page_size;
+	unsigned long syscacheDisable;
+	unsigned long sdram_device_density;
+	unsigned long sdram_device_width;
+	unsigned long CAS_latency;
+	unsigned long CAS_write_latency;
+	unsigned long address_mirroring;
+	unsigned long rdimm;
 	unsigned long rdimm_ctl_0_0;
 	unsigned long rdimm_ctl_0_1;
 	unsigned long rdimm_misc;
+	unsigned long write_odt_ctl;
+	unsigned long read_odt_ctl;
+	unsigned long single_bit_mpr;
+	unsigned long high_temp_dram;
+
+	unsigned long sysCacheMode;
+	unsigned long half_mem;
+
+	per_sysmem_parms_t per_sysmem[2];
+
+	unsigned long num_bytelanes;
+#endif
 
 } __attribute__((packed)) parameters_sysmem_t;
 
@@ -931,6 +999,8 @@ clocks_init( void )
 	unsigned long tune2;
 	unsigned long tune3;
 
+#ifndef AXM_35xx
+
 #ifdef DISPLAY_PARAMETERS
 	printf("-- -- Clocks\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
@@ -1094,6 +1164,7 @@ clocks_init( void )
 			 tune1, tune2, tune3 );
 
 	return 0;
+#endif
 }
 
 #endif
