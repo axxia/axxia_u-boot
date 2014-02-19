@@ -120,7 +120,7 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 	unsigned long ibrd;
 	unsigned long fbrd;
 	unsigned long per_clock;
-#if 0
+
 	do {
 		for (;;) {
 			int rc;
@@ -133,9 +133,6 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 			}
 		}
 	} while (0 == per_clock);
-#else
-	per_clock = 125000000;
-#endif
 
 	/*
 	 The input to the UART clock needs to be consistent, whether
