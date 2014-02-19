@@ -235,10 +235,14 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 
 	return 0;
 #else
-#ifdef AXM_35xx
+#if defined(AXM_35xx)
+#ifdef ACP_EMU
+	*frequency = 6250UL;
+#else 
 	*frequency = 125000UL;
-
+#endif
 	return 0;
+
 #else
 	unsigned long mcgc;
 	unsigned long mcgs;
