@@ -1024,6 +1024,7 @@ void axxia_display_clocks(void);
 int clocks_init(void);
 int voltage_init(void);
 int pciesrio_init(unsigned long);
+int sbb_verify_image(void *, void *, int);
 #ifndef CONFIG_SPL_BUILD
 extern unsigned long pfuse;
 #endif
