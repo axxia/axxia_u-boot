@@ -1415,11 +1415,17 @@ ncp_sm_lsiphy_static_init(
      *
      */
 
-    if ( (parms->version == NCP_CHIP_ACP25xx) ||
-         (parms->version == NCP_CHIP_ACP35xx) ) 
+    if ( parms->version == NCP_CHIP_ACP25xx)
     {
         rlrank_adj = -3;
-    } else {
+    }
+    else if (parms->version == NCP_CHIP_ACP35xx)
+    {
+	/* based on waveform readout */
+        rlrank_adj = -2;
+    } 
+    else 
+    {
         rlrank_adj = 1;
     }
 
@@ -4105,6 +4111,7 @@ ncp_sysmem_init_lsiphy(
 
         }
 
+        /* ncp_sm_lsiphy_reg_dump(dev, smId, parms->version); */
 
         for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++) 
         {
