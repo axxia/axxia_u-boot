@@ -252,12 +252,7 @@ void mmtest( unsigned long, unsigned long, unsigned long );
 #define CONFIG_SYS_BAUDRATE_TABLE   { 9600, 19200, 38400, 57600, 115200 }
 
 #ifdef ACP_EMU
-#if defined(AXM_35xx)
-#define UART_CLOCK_SPEED 6250000
-#else
 #define UART_CLOCK_SPEED  3250000
-#endif
-
 #else
 #define UART_CLOCK_SPEED 25000000
 #endif

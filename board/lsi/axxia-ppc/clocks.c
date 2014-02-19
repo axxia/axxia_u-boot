@@ -235,6 +235,11 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 
 	return 0;
 #else
+#ifdef AXM_35xx
+	*frequency = 125000UL;
+
+	return 0;
+#else
 	unsigned long mcgc;
 	unsigned long mcgs;
 	unsigned long dco = 0;
@@ -282,6 +287,7 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 	}
 
 	return 0;
+#endif
 #endif
 }
 

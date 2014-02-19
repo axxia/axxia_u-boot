@@ -100,8 +100,8 @@ acp_uart_t uart = {1, 1};
 typedef struct {
 
 	unsigned long divisor;
-	unsigned char ibrd;
-	unsigned char fbrd;
+	unsigned long ibrd;
+	unsigned long fbrd;
 
 } clock_stuff_t;
 
@@ -120,9 +120,7 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 	unsigned long ibrd;
 	unsigned long fbrd;
 	unsigned long per_clock;
-
-#ifndef AXM_35xx
-
+#if 0
 	do {
 		for (;;) {
 			int rc;
@@ -135,6 +133,9 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 			}
 		}
 	} while (0 == per_clock);
+#else
+	per_clock = 125000000;
+#endif
 
 	/*
 	 The input to the UART clock needs to be consistent, whether
@@ -142,10 +143,12 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 	 the input to timer1 can be either 125 MHz or 200 MHz.
 	*/
 
+#ifdef AXM_35xx
+	ibrd = per_clock / (16 * baud_rate);
+#else
 	divisor = (per_clock / UART_CLOCK_SPEED);
-
-#endif
 	ibrd = UART_CLOCK_SPEED / (16 * baud_rate);
+#endif
 
 	/*
 	  The following forumla is from the ARM document (ARM DDI 0183E).
@@ -173,18 +176,22 @@ get_clock_stuff(int baud_rate, clock_stuff_t * clock_stuff)
 	*/
 
 
-#ifndef AXM_35xx
-
-	fbrd = (per_clock / divisor) % (16 * baud_rate);
+#ifdef AXM_35xx
+	fbrd = per_clock % (16 * baud_rate);
 	fbrd *= 128;
 	fbrd += (16 * baud_rate);
 	fbrd /= (2 * (16 * baud_rate));
-	clock_stuff->divisor = (divisor - 1);
 #else
 	fbrd = (UART_CLOCK_SPEED % (16 * baud_rate)) / (16 * baud_rate);
+	clock_stuff->divisor = (divisor - 1);
 #endif
+#if 1
 	clock_stuff->ibrd = ibrd;
 	clock_stuff->fbrd = fbrd;
+#else
+	clock_stuff->ibrd = 0x32e;
+	clock_stuff->fbrd = 0x31;
+#endif
 
 	return 0;
 }
@@ -498,7 +505,6 @@ serial_init()
 #endif
 
 	get_clock_stuff(gd->baudrate, &clock_stuff);
-	/* get_clock_stuff(9600, &clock_stuff); */
 	acp_serial_init(clock_stuff.divisor, clock_stuff.ibrd, clock_stuff.fbrd);
 #endif
 	acp_failure_enable_console();
