@@ -52,10 +52,15 @@ typedef struct {
 
 
 /* globals */
-ncp_sm_intr_status_fn_t      intrStatFn = NULL;
-ncp_sm_ecc_enb_fn_t          eccEnbFn = NULL;
-ncp_sm_poll_controller_fn_t  pollControllerFn = NULL;
-
+#ifndef UBOOT
+ncp_sm_intr_status_fn_t intrStatFn = NULL;
+ncp_sm_ecc_enb_fn_t eccEnbFn = NULL;
+ncp_sm_poll_controller_fn_t pollControllerFn = NULL;
+#else
+ncp_sm_intr_status_fn_t intrStatFn __attribute__ ((section ("data"))) = NULL;
+ncp_sm_ecc_enb_fn_t eccEnbFn __attribute__ ((section ("data"))) = NULL;
+ncp_sm_poll_controller_fn_t pollControllerFn __attribute__ ((section ("data"))) = NULL;
+#endif
 
 /* temp */
 typedef void ncp_sm_phy_stat_t;
@@ -1298,7 +1303,6 @@ ncp_sm_lsiphy_static_init(
 
         switch (parms->version) 
         {
-            printf("parms->version = %d\n", parms->version);
             case NCP_CHIP_ACP25xx:
                 parms->num_bytelanes = 5;
                 intrStatFn = ncp_sm_intr_status_25xx;
@@ -1348,7 +1352,6 @@ ncp_sm_lsiphy_static_init(
     }
 #endif
 
-
     /* Disable Dynamic ODT */
     mask = value = 0;
     SMAV(ncp_phy_CFG_SYSMEM_PHY_DPCONFIG0_BLx_r_t, ovrdynodt, 1);
@@ -1394,7 +1397,6 @@ ncp_sm_lsiphy_static_init(
     
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, 
                         *(ncp_uint32_t *) &phyconfig2);
-
 
     /* 
      * RLRANK = RLGATE - tDFI_RDDATA_EN
