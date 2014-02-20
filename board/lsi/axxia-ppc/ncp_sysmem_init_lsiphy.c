@@ -1077,6 +1077,7 @@ ncp_sm_ecc_enb_35xx(
     ncp_uint32_t value=0;
 
     ncr_read32( regionId, NCP_DENALI_CTL_373, &value );
+	value &= ~(1<<8);
     value |= (eccEnb << 8);
     ncr_write32( regionId, NCP_DENALI_CTL_373, value );
 
