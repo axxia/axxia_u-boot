@@ -1753,6 +1753,8 @@ acp_init( void )
 #endif
 	} else {
 		printf("Skipping System Memory Setup!\n");
+		extern void sysmem_size_init(void);
+		sysmem_size_init();
 	}
 
  acp_init_return:

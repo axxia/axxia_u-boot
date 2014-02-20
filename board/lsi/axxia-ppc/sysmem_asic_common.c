@@ -253,6 +253,35 @@ check_for_failure(int display, char *file, unsigned long line)
   ==============================================================================
 */
 
+void
+sysmem_size_init(void)
+{
+	unsigned long long sdram_capacity_bytes;
+	unsigned long sdram_device_width_bits; 
+	unsigned long primary_bus_width_bits;
+
+	sdram_capacity_bytes =
+		(1 << sysmem->sdram_device_density) *
+		((256 * 1024 * 1024) / 8);
+	sdram_device_width_bits = 4 * (1 << sysmem->sdram_device_width);
+	primary_bus_width_bits = 8 * (1 << sysmem->primary_bus_width);
+	sdram_capacity_bytes =
+		sysmem->num_interfaces * sysmem->num_ranks_per_interface *
+		sdram_capacity_bytes *
+		(primary_bus_width_bits / sdram_device_width_bits);
+	sysmem_size = 0;
+
+	while (0 < sdram_capacity_bytes) {
+		++sysmem_size;
+		sdram_capacity_bytes >>= 1;
+	}
+
+	--sysmem_size;
+
+	return;
+}
+
+
 int
 sysmem_init(void)
 {
@@ -527,34 +556,10 @@ sysmem_init(void)
 	}
 
 	/*
-	  Calculate the size of system memory.
-
-	  This should match ncp_calc_mem_size().
+	  Initialize sysmem_size
 	*/
 
-	{
-		unsigned long long sdram_capacity_bytes;
-		unsigned long sdram_device_width_bits;
-		unsigned long primary_bus_width_bits;
-
-		sdram_capacity_bytes =
-			(1 << sysmem->sdram_device_density) *
-			((256 * 1024 * 1024) / 8);
-		sdram_device_width_bits = 4 * (1 << sysmem->sdram_device_width);
-		primary_bus_width_bits = 8 * (1 << sysmem->primary_bus_width);
-		sdram_capacity_bytes =
-			sysmem->num_interfaces * sysmem->num_ranks_per_interface *
-			sdram_capacity_bytes *
-			(primary_bus_width_bits / sdram_device_width_bits);
-		sysmem_size = 0;
-
-		while (0 < sdram_capacity_bytes) {
-			++sysmem_size;
-			sdram_capacity_bytes >>= 1;
-		}
-
-		--sysmem_size;
-	}
+	sysmem_size_init();
 
 	/* Just match the RTE trace... */
 	NCR_TRACE("ncpRead    0.24.255.0x0000000004 1\n");
