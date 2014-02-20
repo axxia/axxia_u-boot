@@ -3869,7 +3869,15 @@ ncp_sm_lsiphy_runtime_adj(
         if (parms->enableECC) 
         {
             NCP_COMMENT("enabling ECC");
-            eccEnbFn(dev, ctlRegion, 3);
+			if (parms->version == NCP_CHIP_ACP35xx)
+			{
+				eccEnbFn(dev, ctlRegion, 1);
+			}
+			else
+			{
+				/* not sure why we need 3 here- but leaving for legacy working */
+				eccEnbFn(dev, ctlRegion, 3);
+			}
         }
 
         /* clear controller interrupt status */
