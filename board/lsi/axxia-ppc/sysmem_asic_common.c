@@ -380,13 +380,14 @@ sysmem_init(void)
 	       sysmem->sdram_rtt_wr, sysmem->sdram_data_drv_imp,
 	       sysmem->phy_adr_imp, sysmem->phy_dat_imp,
 	       sysmem->phy_rcv_imp, sysmem->sysCacheMode,
-	       sysmem->syscacheDisable, sysmem->half_mem, sysmem->address_mirroring);
+	       sysmem->syscacheDisable, sysmem->half_mem,
+	       sysmem->address_mirroring);
 #else
 	printf("-- -- Sysmem\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
+	       "0x%lx 0x%lx 0x%lx 0x%lx\n",
 	       sysmem->version,
 	       sysmem->ddrClockSpeedMHz,
 	       sysmem->auto_detect,
@@ -401,7 +402,7 @@ sysmem_init(void)
 	       sysmem->enable_runtime_updates,
 	       sysmem->dramPrechargePolicy,
 	       sysmem->open_page_size,
-	       sysmem->syscacheDisable,
+	       sysmem->syscacheControl,
 	       sysmem->sdram_device_density,
 	       sysmem->sdram_device_width,
 	       sysmem->CAS_latency,
@@ -414,10 +415,40 @@ sysmem_init(void)
 	       sysmem->write_odt_ctl,
 	       sysmem->read_odt_ctl,
 	       sysmem->single_bit_mpr,
-	       sysmem->high_temp_dram,
-	       sysmem->sysCacheMode,
-	       sysmem->half_mem,
-	       sysmem->num_bytelanes);
+	       sysmem->high_temp_dram);
+	{
+		int i;
+		per_sysmem_parms_t *per_sysmem_parms;
+
+		for (i = 0; i < 2; ++i) {
+			per_sysmem_parms = &(sysmem->per_sysmem[i]);
+
+			printf("-- -- per sysmem %d\n", i);
+			printf("sdram_rtt_nom[] = {%d %d %d %d}\n"
+			       "sdram_rtt_wr[] = {%d %d %d %d}\n"
+			       "sdram_data_drv_imp[] = {%d %d %d %d}\n"
+			       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
+			       per_sysmem_parms->sdram_rtt_nom[0],
+			       per_sysmem_parms->sdram_rtt_nom[1],
+			       per_sysmem_parms->sdram_rtt_nom[2],
+			       per_sysmem_parms->sdram_rtt_nom[3],
+			       per_sysmem_parms->sdram_rtt_wr[0],
+			       per_sysmem_parms->sdram_rtt_wr[1],
+			       per_sysmem_parms->sdram_rtt_wr[2],
+			       per_sysmem_parms->sdram_rtt_wr[3],
+			       per_sysmem_parms->sdram_data_drv_imp[0],
+			       per_sysmem_parms->sdram_data_drv_imp[1],
+			       per_sysmem_parms->sdram_data_drv_imp[2],
+			       per_sysmem_parms->sdram_data_drv_imp[3],
+			       per_sysmem_parms->phy_min_cal_delay,
+			       per_sysmem_parms->phy_adr_phase_select,
+			       per_sysmem_parms->phy_dp_io_vref_set,
+			       per_sysmem_parms->phy_adr_io_vref_set,
+			       per_sysmem_parms->phy_rdlvl_cmp_even,
+			       per_sysmem_parms->phy_rdlvl_cmp_odd,
+			       per_sysmem_parms->phy_write_align_finetune);
+		}
+	}	       
 #endif
 #endif
 
@@ -536,7 +567,11 @@ sysmem_init(void)
 #if !defined(ACP_DISABLE_L3)
 	for (i = 0; i < num_sc_nodes; ++i) {
 		/* enable the cache - unless the user asked not to */
+#ifdef AXM_35xx
+		if (0 != (sysmem->syscacheControl & 0xff00))
+#else
 		if (!sysmem->syscacheDisable)
+#endif
 			/*
 			  TODO: This should only be done for
 			  architectures before ACP2500V2!
@@ -661,7 +696,11 @@ sysmem_init(void)
 #endif
 
 	/* if syscacheMode == 1 set the munge reg 'field_order' to 2 */
+#if defined(AXM_35xx)
+	munge_reg = value | ((sysmem->syscacheControl & 0xff) << 4);
+#else
 	munge_reg = value | (sysmem->sysCacheMode << 4);
+#endif
 
 	/* Just match the RTE trace... */
 	NCR_TRACE("ncpRead    0.24.255.0x0000000004 1\n");
@@ -736,6 +775,7 @@ sysmem_init(void)
 #endif
 
 	/* set up NHA */
+#ifndef AXM_35xx
 	if (sysmem->half_mem) {
 		/* and all the other sysmem clients */
 		mask = value = 0x10000000;
@@ -755,6 +795,7 @@ sysmem_init(void)
 		ncr_modify32( NCP_REGION_ID(0x1b, 0x05), 0x4, mask, value );
 		ncr_modify32( NCP_REGION_ID(0x00, 0x00), 0x4, mask, value );
 	}
+#endif
 
 	/* WA for 34575 (applies to X1V2 and X2). */
 #if defined(ACP_X1V2) || defined(ACP_X2V1)

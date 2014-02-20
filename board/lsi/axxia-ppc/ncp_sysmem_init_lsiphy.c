@@ -60,6 +60,7 @@ ncp_sm_poll_controller_fn_t pollControllerFn = NULL;
 ncp_sm_intr_status_fn_t intrStatFn __attribute__ ((section ("data"))) = NULL;
 ncp_sm_ecc_enb_fn_t eccEnbFn __attribute__ ((section ("data"))) = NULL;
 ncp_sm_poll_controller_fn_t pollControllerFn __attribute__ ((section ("data"))) = NULL;
+ncp_uint32_t num_bytelanes __attribute__ ((section ("data"))) = 0;
 #endif
 
 /* temp */
@@ -770,7 +771,7 @@ ncp_sm_lsiphy_reg_save(
 
     NCP_COMMENT("writing SMEM%d PHY registers to LSM\n", smId);
     ncp_sm_lsiphy_reg_save_restore(dev, regionId,
-                    parms->num_bytelanes, buf, 1);
+                    num_bytelanes, buf, 1);
 
 #ifndef UBOOT
     buf = retention + (smId * 512);
@@ -806,7 +807,7 @@ ncp_sm_lsiphy_reg_restore(
     buf++;
 
     ncp_sm_lsiphy_reg_save_restore(dev, regionId,
-                    parms->num_bytelanes, buf, 0);
+                    num_bytelanes, buf, 0);
 
     return NCP_ST_SUCCESS;
 }
@@ -1304,21 +1305,21 @@ ncp_sm_lsiphy_static_init(
         switch (parms->version) 
         {
             case NCP_CHIP_ACP25xx:
-                parms->num_bytelanes = 5;
+                num_bytelanes = 5;
                 intrStatFn = ncp_sm_intr_status_25xx;
                 eccEnbFn = ncp_sm_ecc_enb_25xx;
                 pollControllerFn = ncp_sm_poll_controller_25xx;
                 break;
 
             case NCP_CHIP_ACP35xx:
-                parms->num_bytelanes = 9; /* 8 8-bit data + 1 ecc lanes */
+                num_bytelanes = 9; /* 8 8-bit data + 1 ecc lanes */
                 intrStatFn = ncp_sm_intr_status_35xx;
                 eccEnbFn = ncp_sm_ecc_enb_35xx;
                 pollControllerFn = ncp_sm_poll_controller_35xx;
                 break;
 
             case NCP_CHIP_ACP55xx:
-                parms->num_bytelanes = 9;
+                num_bytelanes = 9;
                 intrStatFn = ncp_sm_intr_status_55xx;
                 eccEnbFn = ncp_sm_ecc_enb_55xx;
                 pollControllerFn = ncp_sm_poll_controller_55xx;
@@ -1344,7 +1345,7 @@ ncp_sm_lsiphy_static_init(
         region    = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_PHY);
         ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
         isSysMem = FALSE;
-        parms->num_bytelanes = 2;
+        num_bytelanes = 2;
         memId = smId - NCP_SYSMEM_NUM_NODES;
         /* TODO??? intrStat/eccEnb functions? */
 
@@ -1355,7 +1356,7 @@ ncp_sm_lsiphy_static_init(
     /* Disable Dynamic ODT */
     mask = value = 0;
     SMAV(ncp_phy_CFG_SYSMEM_PHY_DPCONFIG0_BLx_r_t, ovrdynodt, 1);
-    for (i = 0; i < parms->num_bytelanes; i++) 
+    for (i = 0; i < num_bytelanes; i++) 
     {
         ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG0_BL(i), 
                         mask, value);
@@ -1364,7 +1365,7 @@ ncp_sm_lsiphy_static_init(
     /* initial PHY configuration */
     dpconfig2.clrgate = 1;
     dpconfig2.enardpath = 0;
-    for (i = 0; i < parms->num_bytelanes; i++) 
+    for (i = 0; i < num_bytelanes; i++) 
     {
         ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG2_BL(i), 
                         *(ncp_uint32_t *) &dpconfig2);
@@ -1440,7 +1441,7 @@ ncp_sm_lsiphy_static_init(
     printf("min_cal_dly=%ld\n", parms->per_sysmem[memId].phy_min_cal_delay);
     phyconfig3.rdlatrank = parms->per_sysmem[memId].phy_min_cal_delay + rlrank_adj;
     phyconfig3.rdlatgate = parms->per_sysmem[memId].phy_min_cal_delay;
-    for (i = 0; i < parms->num_bytelanes; i++) 
+    for (i = 0; i < num_bytelanes; i++) 
     {
         ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG3_BL(i), 
                         *(ncp_uint32_t *) &phyconfig3);
@@ -1757,7 +1758,7 @@ ncp_sm_sysmem_phy_training_run(
         mask = value = 0;
         SMAV( ncp_phy_CFG_SYSMEM_PHY_DPCONFIG2_BLx_r_t, enardpath, 1 );
         SMAV( ncp_phy_CFG_SYSMEM_PHY_DPCONFIG2_BLx_r_t, clrgate, 1 );
-        for (i = 0; i < parms->num_bytelanes; i++) 
+        for (i = 0; i < num_bytelanes; i++) 
         {
             ncr_modify32( phyRegion, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG2_BL(i), mask, value );
         }
@@ -2099,7 +2100,7 @@ ncp_sm_lsiphy_gate_training(
     /* disable read path */
     mask = value = 0;
     SMAV( ncp_phy_CFG_SYSMEM_PHY_DPCONFIG2_BLx_r_t, enardpath, 0 );
-    for (i = 0; i < parms->num_bytelanes; i++) 
+    for (i = 0; i < num_bytelanes; i++) 
     {
         ncr_modify32( phyRegion, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG2_BL(i), mask, value );
     }
@@ -2135,7 +2136,7 @@ ncp_sm_lsiphy_gate_training(
         ncr_read32(phyRegion, NCP_PHY_CFG_SYSMEM_PHY_GTTRAINSTAT0, &value);
         gt_stat |= value;
 
-        for (i = 0; i < parms->num_bytelanes; i++)
+        for (i = 0; i < num_bytelanes; i++)
         {
             bl_stat = (ncp_uint32_t) gt_stat & 0xf;
             if (bl_stat == 0) 
@@ -2217,7 +2218,7 @@ NCP_RETURN_LABEL
         mask = value = 0;
         SMAV( ncp_phy_CFG_SYSMEM_PHY_DPCONFIG2_BLx_r_t, enardpath, 1 );
         SMAV( ncp_phy_CFG_SYSMEM_PHY_DPCONFIG2_BLx_r_t, clrgate, 1 );
-        for (i = 0; i < parms->num_bytelanes; i++) 
+        for (i = 0; i < num_bytelanes; i++) 
         {
             ncr_modify32( phyRegion, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG2_BL(i), mask, value );
         }
@@ -3410,7 +3411,7 @@ ncp_sm_sm_coarse_write_leveling(
     }
 
     /* number of data bytelanes (sans ECC) */
-    num_bls = parms->num_bytelanes - 1;
+    num_bls = num_bytelanes - 1;
 
     /* disable ECC */
     eccEnbFn(dev, ctlRegion, 0);
@@ -3425,7 +3426,7 @@ ncp_sm_sm_coarse_write_leveling(
     /* Enable Dynamic ODT */
     mask = value = 0;
     SMAV(ncp_phy_CFG_SYSMEM_PHY_DPCONFIG0_BLx_r_t, ovrdynodt, 0);
-    for (bl = 0; bl < parms->num_bytelanes; bl++) 
+    for (bl = 0; bl < num_bytelanes; bl++) 
     {
         ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG0_BL(bl), 
                         mask, value);

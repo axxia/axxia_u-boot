@@ -225,9 +225,9 @@ typedef struct {
 	unsigned long zqcs_interval;
 	unsigned long enableECC;
 	unsigned long enable_runtime_updates;
-	unsigned dramPrechargePolicy;
+	unsigned long dramPrechargePolicy;
 	unsigned long open_page_size;
-	unsigned long syscacheDisable;
+	unsigned long syscacheControl;
 	unsigned long sdram_device_density;
 	unsigned long sdram_device_width;
 	unsigned long CAS_latency;
@@ -241,13 +241,7 @@ typedef struct {
 	unsigned long read_odt_ctl;
 	unsigned long single_bit_mpr;
 	unsigned long high_temp_dram;
-
-	unsigned long sysCacheMode;
-	unsigned long half_mem;
-
 	per_sysmem_parms_t per_sysmem[2];
-
-	unsigned long num_bytelanes;
 #endif
 
 } __attribute__((packed)) parameters_sysmem_t;
