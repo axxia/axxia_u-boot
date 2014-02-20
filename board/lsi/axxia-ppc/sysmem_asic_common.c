@@ -433,6 +433,10 @@ sysmem_init(void)
 	sysmem->version = 3;
 #endif
 
+#ifdef AXM_35xx
+	sysmem->version = 16;
+#endif
+
 	/*
 	 * determine number of syscaches and half_mem setting 
 	 * based on chipType and num_interfaces 
