@@ -514,7 +514,8 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 {
 	int rc = 0;
 
-#ifdef ACP_25xx
+#if defined(ACP_25xx)
+
 	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
@@ -561,7 +562,24 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 
 		return 0;
 	}
-#endif	/* ACP_25xx */
+
+#elif defined(AXM_35xx)
+
+	/*
+	  Handle the 0x155.t nodes on AXM35xx
+	*/
+
+	if (0x155 == NCP_NODE_ID(region)) {
+		unsigned long address;
+
+		address = IO + 0x8000 +
+			(NCP_TARGET_ID(region) * 0x800) + offset;
+		*value = READL(address);
+
+		return 0;
+	}
+
+#endif
 
 	NCR_TRACE_READ32(region, offset);
 	rc = ncr_read(region, offset, 4, value);
@@ -817,7 +835,9 @@ int
 ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 {
 	int rc;
-#ifdef ACP_25xx
+
+#if defined(ACP_25xx)
+
 	int wfc_timeout = WFC_TIMEOUT;
 
 	/*
@@ -863,7 +883,24 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 
 		return 0;
 	}
-#endif	/* ACP_25xx */
+
+#elif defined(AXM_35xx)
+
+	/*
+	  Handle the 0x155.t nodes on AXM35xx
+	*/
+
+	if (0x155 == NCP_NODE_ID(region)) {
+		unsigned long address;
+
+		address = IO + 0x8000 +
+			(NCP_TARGET_ID(region) * 0x800) + offset;
+		WRITEL(value, address);
+
+		return 0;
+	}
+
+#endif
 
 	NCR_TRACE_WRITE32(region, offset, value);
 	rc = ncr_write(region, offset, 4, &value);

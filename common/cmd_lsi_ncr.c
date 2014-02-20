@@ -98,6 +98,9 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 			     length, node, target, offset );
 
 		if ((0x100 > node) ||
+#ifdef AXM_35xx
+		    (0x155 == node) ||
+#endif
 		    (0x200 == node && 1 == target) ||
 		    (0x115 == node && 0 == target) ||
 		    (0x115 == node && 2 == target) ||
@@ -107,8 +110,6 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 
 				ncr_read32(NCP_REGION_ID(node, target),
 					   offset, &value);
-				printf("0x%x.0x%x.0x%x : 0x%lx\n",
-				       node, target, offset, value);
 				offset += 4;
 			}
 		} else if (0x115 == node && 1 == target) {
@@ -164,6 +165,9 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 		offset = simple_strtoul( token, NULL, 0 );
 
 		if ((0x100 > node) ||
+#ifdef AXM_35xx
+		    (0x155 == node) ||
+#endif
 		    (0x200 == node && 1 == target) ||
 		    (0x115 == node && 0 == target) ||
 		    (0x115 == node && 2 == target) ||
