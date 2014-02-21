@@ -1077,7 +1077,7 @@ ncp_sm_ecc_enb_35xx(
     ncp_uint32_t value=0;
 
     ncr_read32( regionId, NCP_DENALI_CTL_373, &value );
-	value &= ~(1<<8);
+    value &= ~(1<<8);
     value |= (eccEnb << 8);
     ncr_write32( regionId, NCP_DENALI_CTL_373, value );
 
@@ -1260,7 +1260,6 @@ ncp_sm_lsiphy_status_check(
     NCP_SM_CHECK_STAT_STRUCT(phyStat.rdlvl, NCP_ST_SYSMEM_PHY_RD_LVL_ERR);
     NCP_SM_CHECK_STAT_STRUCT(phyStat.wrlvl, NCP_ST_SYSMEM_PHY_WR_LVL_ERR);
 
-
 NCP_RETURN_LABEL
     return ncpStatus;
 }
@@ -1298,6 +1297,8 @@ ncp_sm_lsiphy_static_init(
     if (smId < NCP_SYSMEM_NUM_NODES) 
     {
         NCP_COMMENT("sysmem %d PHY static init", smId);
+        /*printf("sysmem %d PHY static init", smId);
+ 	getchar(); ncp_sm_lsiphy_reg_dump(dev, smId, parms->version);*/
         region    = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_PHY);
         ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
         isSysMem = TRUE;
@@ -1305,6 +1306,7 @@ ncp_sm_lsiphy_static_init(
 
         switch (parms->version) 
         {
+            printf("parms->version = %d\n", parms->version);
             case NCP_CHIP_ACP25xx:
                 num_bytelanes = 5;
                 intrStatFn = ncp_sm_intr_status_25xx;
@@ -1337,6 +1339,8 @@ ncp_sm_lsiphy_static_init(
          * are disabled prior to issuing dfi_cntl_start, which must 
          * be prior to PHY static init
          */
+	/*printf ("Before DFI init start\n");
+	getchar();*/
         ncp_sm_dfi_init_start(dev, ctlRegion, parms);
     }
 #ifndef UBOOT 
@@ -1353,6 +1357,7 @@ ncp_sm_lsiphy_static_init(
         ncp_cm_dfi_init_start(dev, ctlRegion, parms);
     }
 #endif
+
 
     /* Disable Dynamic ODT */
     mask = value = 0;
@@ -1399,6 +1404,7 @@ ncp_sm_lsiphy_static_init(
     
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, 
                         *(ncp_uint32_t *) &phyconfig2);
+
 
     /* 
      * RLRANK = RLGATE - tDFI_RDDATA_EN
@@ -1682,10 +1688,11 @@ ncp_sm_sysmem_phy_training_run(
     SMAV( ncp_denali_DENALI_CTL_21_t, wrlvl_cs, rank );
     ncr_modify32( ctlRegion, NCP_DENALI_CTL_21, mask, value );
 
-
     switch (mode) {
         case NCP_SYSMEM_PHY_WRITE_LEVELING:
             NCP_COMMENT("Sysmem %d PHY write leveling rank %d", smId, rank);
+            /*printf("Sysmem %d PHY write leveling rank %d", smId, rank);
+ 	    getchar(); ncp_sm_lsiphy_reg_dump(dev, smId, parms->version);*/
             
             mask = value = 0;
             SMAV( ncp_denali_DENALI_CTL_231_t, wrlvl_en, 1 );
@@ -1699,6 +1706,8 @@ ncp_sm_sysmem_phy_training_run(
 
         case NCP_SYSMEM_PHY_GATE_TRAINING:
             NCP_COMMENT("Sysmem %d PHY gate training rank %d ", smId, rank);
+            /*printf("Sysmem %d PHY gate training rank %d ", smId, rank);
+ 	    getchar(); ncp_sm_lsiphy_reg_dump(dev, smId, parms->version);*/
 
             mask = value = 0;
             SMAV( ncp_denali_DENALI_CTL_08_t, rdlvl_gate_en, 1 );
@@ -1712,6 +1721,8 @@ ncp_sm_sysmem_phy_training_run(
 
         case NCP_SYSMEM_PHY_READ_LEVELING:
             NCP_COMMENT("Sysmem %d PHY read leveling rank %d %s edge", smId, rank, (edge == 0) ? "pos" : "neg");
+            /*printf("Sysmem %d PHY read leveling rank %d %s edge", smId, rank, (edge == 0) ? "pos" : "neg");
+ 	    getchar(); ncp_sm_lsiphy_reg_dump(dev, smId, parms->version);*/
 
             mask = value = 0;
             SMAV( ncp_denali_DENALI_CTL_08_t, rdlvl_en, 1 );
@@ -1765,7 +1776,6 @@ ncp_sm_sysmem_phy_training_run(
         }
 
     }
-
 
 NCP_RETURN_LABEL
     /* reset training enables */
@@ -2124,6 +2134,7 @@ ncp_sm_lsiphy_gate_training(
 
     while (dp_en) 
     {
+	/*printf ("In dp_en loop\n");*/
         /* run the training */
         NCP_CALL(trnFn(dev, smId, ctlRegion, phyRegion, 
                     rank, 0, NCP_SYSMEM_PHY_GATE_TRAINING, parms));
@@ -3349,12 +3360,13 @@ ncp_sm_sm_coarse_write_leveling(
 
     NCP_COMMENT("sysmem phy coarse write leveling - rank %d, addr 0x%012llx",
             rank, addr);
+    /*printf("sysmem phy coarse write leveling - rank %d, addr 0x%012llx", rank, addr);
+    getchar(); ncp_sm_lsiphy_reg_dump(dev, smId, parms->version);*/
 
 #ifdef SM_BYTELANE_TEST_DEBUG
     printf("sysmem phy coarse write leveling - rank %d, addr 0x%012llx\n",
             rank, addr);
 #endif
-
 
     switch (parms->version) 
     {
@@ -3552,6 +3564,8 @@ ncp_sm_sm_coarse_write_leveling(
     if ( (parms->enableECC) && (busAdaptor != NCP_DEV_BUS_FBRS) )
     {
         NCP_COMMENT("sysmem phy coarse write leveling - ECC bytelane rank %d", rank);
+        /*printf("sysmem phy coarse write leveling - ECC bytelane rank %d", rank);
+        getchar(); ncp_sm_lsiphy_reg_dump(dev, smId, parms->version);*/
 
         ecc_mask = NCP_SM_DENALI_V2_ECC_INTR_BITS;
 
@@ -3801,6 +3815,8 @@ ncp_sm_lsiphy_runtime_adj(
     if (smId < NCP_SYSMEM_NUM_NODES) 
     {
         NCP_COMMENT("sysmem %d PHY runtime adjustment", smId);
+        /*printf("sysmem %d PHY runtime adjustment", smId);
+    	getchar(); ncp_sm_lsiphy_reg_dump(dev, smId, parms->version);*/
         region = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_PHY);
         ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
         isSysMem = TRUE;
@@ -3816,6 +3832,15 @@ ncp_sm_lsiphy_runtime_adj(
         isSysMem = FALSE;
     }
 #endif
+
+    if (parms->version == NCP_CHIP_ACP35xx)
+    {
+	/* turn on tref_enable */
+    	ncr_read32(ctlRegion, NCP_DENALI_CTL_14, &value);
+    	value &= ~(1<<16);
+    	value |= (1<<16);
+    	ncr_write32(ctlRegion, NCP_DENALI_CTL_14, value);
+    }
 
     /* indicate PHY initial training complete */
 
@@ -3870,15 +3895,15 @@ ncp_sm_lsiphy_runtime_adj(
         if (parms->enableECC) 
         {
             NCP_COMMENT("enabling ECC");
-			if (parms->version == NCP_CHIP_ACP35xx)
-			{
-				eccEnbFn(dev, ctlRegion, 1);
-			}
-			else
-			{
-				/* not sure why we need 3 here- but leaving for legacy working */
-				eccEnbFn(dev, ctlRegion, 3);
-			}
+       	    if (parms->version == NCP_CHIP_ACP35xx)
+	    {
+            	eccEnbFn(dev, ctlRegion, 1);
+	    }
+	    else
+	    {
+		/* not sure why we need 3 here- but leaving for legacy working */
+            	eccEnbFn(dev, ctlRegion, 3);
+	    }
         }
 
         /* clear controller interrupt status */
@@ -4122,8 +4147,6 @@ ncp_sysmem_init_lsiphy(
         	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x00000003);
 
         }
-
-        /* ncp_sm_lsiphy_reg_dump(dev, smId, parms->version); */
 
         for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++) 
         {

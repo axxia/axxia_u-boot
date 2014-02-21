@@ -176,8 +176,8 @@ ncp_sm_denali_2041_init(
     tREF =  (parms->high_temp_dram == TRUE) ?  3900 : 7800;
     tWR = ncp_ns_to_clk(clkMhz, 15); 
 
-    printf("rdimm_ctl_0_0=0x%x rdim_ctl_0_1=0x%x rdimm_misc=0x%x\n",
-		parms->rdimm_ctl_0_0, parms->rdimm_ctl_0_1, parms->rdimm_misc);
+    /*printf("rdimm_ctl_0_0=0x%x rdim_ctl_0_1=0x%x rdimm_misc=0x%x\n",
+		parms->rdimm_ctl_0_0, parms->rdimm_ctl_0_1, parms->rdimm_misc);*/
 
     /* DENALI_CTL_00 */
     /* TODO: at some point the AP field may be st */
@@ -217,8 +217,9 @@ ncp_sm_denali_2041_init(
     if (parms->version == NCP_CHIP_ACP35xx)
     {
         /* bit24 set indicates free-running/limited WRR latency control
-	 * setting to free-running as default */
-        ncr_write32(ctlReg,  0x0038, 0x01010100);
+	 * setting to free-running as default
+	 * turn off tref_enable- gets turned back on at runtime_adjust */
+        ncr_write32(ctlReg,  0x0038, 0x01000100);
     }
     else
     {
