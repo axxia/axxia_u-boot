@@ -143,7 +143,7 @@ ncp_sm_denali_2041_init(
 
     NCP_COMMENT("Sysmem %d Denali Controller init", smId);
 
-    printf(" parms->ddrClockSpeedMHz = %d\n", parms->ddrClockSpeedMHz );
+    /*printf(" parms->ddrClockSpeedMHz = %d\n", parms->ddrClockSpeedMHz );*/
 
     clkIdx = NCP_DDR_CLOCK_400_MHZ;
     while (parms->ddrClockSpeedMHz > ncp_ddr_clock_speeds[clkIdx] ) clkIdx++;
@@ -155,18 +155,18 @@ ncp_sm_denali_2041_init(
 
     clkMhz = ncp_ddr_clock_speeds[clkIdx];
 
-    printf(" parms->ddrClockSpeedMHz = %d, clkIdx=%d, using %d MHz\n", 
-        parms->ddrClockSpeedMHz, clkIdx, clkMhz);
+    /*printf(" parms->ddrClockSpeedMHz = %d, clkIdx=%d, using %d MHz\n", 
+        parms->ddrClockSpeedMHz, clkIdx, clkMhz);*/
 
 
     tRFC = (ncp_uint16_t) ncp_ns_to_clk(clkMhz, 
                  tRFC_vals_ns [ parms->sdram_device_density ] );
 
     
-    printf("dens=%d\n", parms->sdram_device_density);
+    /*printf("dens=%d\n", parms->sdram_device_density);*/
 
-    printf("tRFCns=%d\n", 
-                 tRFC_vals_ns [ parms->sdram_device_density ] );
+    /*printf("tRFCns=%d\n", 
+                 tRFC_vals_ns [ parms->sdram_device_density ] );*/
 
 
     pVals = &speedbin_vals[clkIdx];
@@ -181,7 +181,7 @@ ncp_sm_denali_2041_init(
 
     /* DENALI_CTL_00 */
     /* TODO: at some point the AP field may be st */
-    ncr_write32(ctlReg,  0x0000, 0x01010100);
+    ncr_write32(ctlReg,  0x0000, 0x00010100);
 
     /* DENALI_CTL_01 */
     ncr_write32(ctlReg,  0x0004, 0x01010100);

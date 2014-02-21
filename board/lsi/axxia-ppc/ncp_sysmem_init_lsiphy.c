@@ -56,6 +56,7 @@ typedef struct {
 ncp_sm_intr_status_fn_t intrStatFn = NULL;
 ncp_sm_ecc_enb_fn_t eccEnbFn = NULL;
 ncp_sm_poll_controller_fn_t pollControllerFn = NULL;
+ncp_uint32_t num_bytelanes = 0;
 #else
 ncp_sm_intr_status_fn_t intrStatFn __attribute__ ((section ("data"))) = NULL;
 ncp_sm_ecc_enb_fn_t eccEnbFn __attribute__ ((section ("data"))) = NULL;
@@ -1159,6 +1160,7 @@ ncp_sm_lsiphy_status_get(
 {
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
     ncp_region_id_t region;
+    ncp_uint32_t    value = 0;
 
     if (smId >= NCP_EXTMEM_NUM_NODES) {
         NCP_CALL(NCP_ST_SYSMEM_INVALID_ID);
@@ -1177,6 +1179,9 @@ ncp_sm_lsiphy_status_get(
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, 
                         (ncp_uint32_t *) &stat->phyStat);
 
+    do {
+      ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, &value);
+    } while(value & 0x600);
 
     /* gate-training status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_GTTRAINSTAT0, 
@@ -1445,7 +1450,7 @@ ncp_sm_lsiphy_static_init(
     }
 #endif
 
-    printf("min_cal_dly=%ld\n", parms->per_sysmem[memId].phy_min_cal_delay);
+    /*printf("min_cal_dly=%ld\n", parms->per_sysmem[memId].phy_min_cal_delay);*/
     phyconfig3.rdlatrank = parms->per_sysmem[memId].phy_min_cal_delay + rlrank_adj;
     phyconfig3.rdlatgate = parms->per_sysmem[memId].phy_min_cal_delay;
     for (i = 0; i < num_bytelanes; i++) 
@@ -2313,7 +2318,7 @@ NCP_RETURN_LABEL
 
 
 
-#define SM_BYTELANE_TEST_DEBUG
+/*#define SM_BYTELANE_TEST_DEBUG*/
 
 /*
  *------------------------------------------------------------------------------
