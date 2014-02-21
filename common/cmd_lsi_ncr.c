@@ -110,6 +110,8 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 
 				ncr_read32(NCP_REGION_ID(node, target),
 					   offset, &value);
+				printf("0x%x.0x%x.0x%x : 0x%lx\n",
+				       node, target, offset, value);
 				offset += 4;
 			}
 		} else if (0x115 == node && 1 == target) {
