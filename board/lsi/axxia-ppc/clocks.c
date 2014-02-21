@@ -30,7 +30,7 @@
   ===============================================================================
 */
 
-#if defined(ACP_25xx)
+#if defined(ACP_25xx) || defined(AXM_35xx)
 
 static unsigned long
 get_pll(unsigned long prms, unsigned long seldiv)
@@ -104,13 +104,13 @@ static unsigned char mult[] = {
 
 /*
   ------------------------------------------------------------------------------
-  get_ppc_pll
+  get_pll
 
-  Assumes the the PPC PLL is locked...
+  Assumes that the PLL is locked...
 */
 
 static int
-get_ppc_pll(unsigned long *dco, unsigned long *pllouta, unsigned long *plloutb)
+get_pll(unsigned long *dco, unsigned long *pllouta, unsigned long *plloutb)
 {
 	unsigned long ctrl;
 
@@ -127,15 +127,15 @@ get_ppc_pll(unsigned long *dco, unsigned long *pllouta, unsigned long *plloutb)
 #endif
 
 /*
-  ===============================================================================
-  ===============================================================================
+  ==============================================================================
+  ==============================================================================
   Public Interface
-  ===============================================================================
-  ===============================================================================
+  ==============================================================================
+  ==============================================================================
 */
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   acp_clock_get
 */
 
@@ -175,7 +175,60 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 int
 acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 {
-#if defined(ACP_25xx)
+#if defined(AXM_35xx)
+	unsigned long csw;
+	unsigned long prms;
+
+	switch (clock) {
+	case clock_peripheral:
+		/* clock_peripheral */
+		csw = dcr_read(0xd00);
+
+		if (0 == (csw & 0x08000000)) {
+			*frequency = CLK_REF0 / 1000;
+		} else {
+			ncr_read32(NCP_REGION_ID(0x155,3), 0x0, &prms);
+			*frequency = get_pll(prms, ((csw & 0xf00) >> 8) + 1);
+		}
+		break;
+	case clock_sys:
+		csw = dcr_read(0xd00);
+
+		if (0 == (csw & 0x30000000)) {
+			*frequency = CLK_REF0 / 1000;
+		} else if (1 == ((csw & 0x30000000) >> 28)) {
+			ncr_read32(NCP_REGION_ID(0x155,2), 0x0, &prms);
+			*frequency = get_pll(prms, 1);
+		} else {
+			ncr_read32(NCP_REGION_ID(0x155,2), 0x0, &prms);
+			*frequency = get_pll(prms,
+					     ((csw & 0xf000) >> 12) + 1);
+		}
+		break;
+	case clock_ppc:
+		csw = dcr_read(0xd00);
+
+		if (0 == (csw & 0xc0000000)) {
+			*frequency = CLK_REF0 / 1000;
+		} else if (1 == ((csw & 0xc0000000) >> 30)) {
+			ncr_read32(NCP_REGION_ID(0x155,3), 0x0, &prms);
+			*frequency = get_pll(prms, 1);
+		} else {
+			ncr_read32(NCP_REGION_ID(0x155,3), 0x0, &prms);
+			*frequency = get_pll(prms, ((csw & 0xf0000) >> 16) + 1);
+		}
+		break;
+	case clock_ddr:
+		ncr_read32(NCP_REGION_ID(0x155, 0), 0x0, &prms);
+		*frequency = get_pll(prms, 1);
+		break;
+	default:
+		return -1;
+		break;
+	}
+
+	return 0;
+#elif defined(ACP_25xx)
 	unsigned long mcgc;
 	unsigned long mcgc1;
 	unsigned long prms;
@@ -188,7 +241,8 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 			*frequency = CLK_REF0 / 1000;
 		} else {
 			prms = dcr_read(0xd40);
-			*frequency = get_pll(prms, ((mcgc & 0xf0000) >> 16) + 1);
+			*frequency =
+				get_pll(prms, ((mcgc & 0xf0000) >> 16) + 1);
 		}
 		break;
 	case clock_ppc:
@@ -235,15 +289,6 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 
 	return 0;
 #else
-#if defined(AXM_35xx)
-#ifdef ACP_EMU
-	*frequency = 6250UL;
-#else 
-	/**frequency = 125000UL;*/
-	*frequency = 220000UL;
-#endif
-	return 0;
-#else
 	unsigned long mcgc;
 	unsigned long mcgs;
 	unsigned long dco = 0;
@@ -260,7 +305,7 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 		if (0 == (mcgc & 0xc0000000)) {
 			/* ppc_clk is clk_ref0 */
 			*frequency = CLK_REF0 / 1000;
-		} else if (0 == get_ppc_pll(&dco, &pllouta, &plloutb)) {
+		} else if (0 == get_pll(&dco, &pllouta, &plloutb)) {
 			if (1 == ((mcgc & 0xc0000000) >> 30)) {
 				*frequency = pllouta;
 			} else {
@@ -278,7 +323,7 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 			/* clk_per is clk_pllb_ppc */
 			if (0 == (mcgs & 0x80000000) ||
 			    (0 == dco &&
-			     0 != get_ppc_pll(&dco, &pllouta, &plloutb))) {
+			     0 != get_pll(&dco, &pllouta, &plloutb))) {
 				return -1;
 			}
 
@@ -291,7 +336,6 @@ acp_clock_get(acp_clock_t clock, unsigned long *frequency)
 	}
 
 	return 0;
-#endif
 #endif
 }
 
