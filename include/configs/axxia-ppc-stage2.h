@@ -267,7 +267,7 @@ int acp_init( void );
   ======================================================================
 */
 
-#define CONFIG_LSI_NET
+/*#define CONFIG_LSI_NET*/
 
 #if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
 #undef CONFIG_LSI_NET
