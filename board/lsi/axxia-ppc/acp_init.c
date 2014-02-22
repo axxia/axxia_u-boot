@@ -40,11 +40,11 @@
 
 
 /*
-  ===============================================================================
-  ===============================================================================
+  ==============================================================================
+  ==============================================================================
   Parameters
-  ===============================================================================
-  ===============================================================================
+  ==============================================================================
+  ==============================================================================
 */
 
 #define PARAMETERS_MAGIC 0x12af34ec
@@ -603,7 +603,277 @@ voltage_init(void)
 
 #endif
 
-#ifdef ACP_25xx
+#if defined(AXM_35xx)
+
+static int
+pll_init(unsigned long region, unsigned long parameters, unsigned long control)
+{
+	unsigned long c = 0;
+	unsigned long p = 0;
+	int rc;
+
+	/*
+	  Put the PLL in bypass mode and reset (active low).
+	*/
+
+	c = 0xc00;
+	ncr_write32(region, 4, c);
+
+	/*
+	  Clear out the current configuration.
+	*/
+
+	p = 0;
+	ncr_write32(region, 0, p);
+
+	/*
+	  Set VCO range, bias currrent, CVI adjust and voltage
+	  regulator.  Leave in bypass.
+	*/
+
+	/*0x3cf300*/
+	c |= (control & 0x3cf300);
+	ncr_write32(region, 4, c);
+
+	/*
+	  Enable the PLL and set pole, zero select and divider values.
+	*/
+
+	p |= parameters;
+	ncr_write32(region, 0, p);
+
+	mdelay(1);
+
+	/*
+	  Bring PLL out of reset (reset active low).
+	*/
+
+	c |= 2;
+	ncr_write32(region, 4, c);
+
+	/*
+	  In the case of PLL SM0, enable the clock syncs.
+	*/
+
+	if (NCP_REGION_ID(0x155, 0) == region) {
+		p |= 0x40000000;
+		ncr_write32(region, 0, p);
+	}
+
+	/*
+	  Wait for the PLL to lock.
+	*/
+
+	rc = ncr_poll(region, 0x20, 0x80000000, 0x80000000, 10000, 50000);
+
+	if (0 != rc) {
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		return -1;
+	}
+
+	/*
+	  Take the PLL out of bypass.
+	*/
+
+	c &= ~0x800;
+	ncr_write32(region, 4, c);
+
+	/*
+	  Clear the lock loss count and interrupt, and enable the count.
+	*/
+
+	ncr_write32(region, 0x0c, 0);
+	ncr_write32(region, 0x10, 1);
+	p |= 0x20000000;
+	ncr_write32(region, 0, p);
+
+	return 0;
+}
+
+int
+clocks_init(void)
+{
+	unsigned long region;
+	unsigned long mcgc;
+	unsigned long rst_mod;
+
+#ifdef DISPLAY_PARAMETERS
+	printf("-- -- Clocks\n"
+	       "0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx\n"
+	       "0x%lx\n"
+	       "0x%lx\n",
+	       clocks->flags,
+	       clocks->syspll_prms, clocks->syspll_ctrl, clocks->syspll_csw,
+	       clocks->syspll_div, clocks->syspll_psd,
+	       clocks->cpupll_prms, clocks->cpupll_ctrl, clocks->cpupll_csw,
+	       clocks->cpupll_div, clocks->cpupll_psd,
+	       clocks->sm0pll_prms, clocks->sm0pll_ctrl, clocks->sm0pll_csw,
+	       clocks->sm0pll_div, clocks->sm0pll_psd,
+	       clocks->sm1pll_prms, clocks->sm1pll_ctrl, clocks->sm1pll_csw,
+	       clocks->sm1pll_div, clocks->sm1pll_psd,
+	       clocks->tmpll_prms, clocks->tmpll_ctrl, clocks->tmpll_csw,
+	       clocks->tmpll_div, clocks->tmpll_psd,
+	       clocks->fabpll_prms, clocks->fabpll_ctrl, clocks->fabpll_csw,
+	       clocks->fabpll_div, clocks->fabpll_psd,
+	       clocks->nrcpinput_csw, clocks->nrcpinput_div,
+	       clocks->per_csw, clocks->per_div,
+	       clocks->emmc_csw, clocks->emmc_div,
+	       clocks->debug_csw,
+	       clocks->stop_csw);
+#endif
+	/*
+	  Set up the SYS PLL
+	*/
+
+	region = NCP_REGION_ID(0x155, 2);
+
+	if (0 != pll_init(region, clocks->syspll_prms, clocks->syspll_ctrl)) {
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		return -1;
+	}
+
+	mcgc = dcr_read(0xd00);
+
+	if (0 != clocks->syspll_div) {
+		mcgc &= 0xf000;
+		mcgc |= ((clocks->syspll_div & 0xf) << 12);
+		mcgc |= 8;
+		dcr_write(mcgc, 0xd00);
+		mcgc &= ~8;
+		dcr_write(mcgc, 0xd00);
+	}
+
+	mcgc |= ~0x30000000;
+	mcgc |= (clocks->syspll_csw & 0x3) << 28;
+	dcr_write(mcgc, 0xd00);
+
+	udelay(clocks->syspll_psd);
+
+	/*
+	  Set up the NT clock (Axxia clock in the RTE)
+	*/
+
+	if (0 != clocks->nrcpinput_div) {
+		mcgc &= 0xf0;
+		mcgc |= ((clocks->nrcpinput_div & 0xf) << 4);
+		mcgc |= 8;
+		dcr_write(mcgc, 0xd00);
+		mcgc &= ~8;
+		dcr_write(mcgc, 0xd00);
+	}
+
+	mcgc |= ~0x03000000;
+	mcgc |= (clocks->nrcpinput_csw & 0x3) << 24;
+	dcr_write(mcgc, 0xd00);
+	udelay(100);		/*udelay(?);*/
+
+	/*
+	  Set up the PPC PLL
+	*/
+
+	region = NCP_REGION_ID(0x155, 3);
+
+	if (0 != pll_init(region, clocks->cpupll_prms, clocks->cpupll_ctrl)) {
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		return -1;
+	}
+
+	mcgc = dcr_read(0xd00);
+
+	if (0 != clocks->cpupll_div) {
+		mcgc &= 0xf0000;
+		mcgc |= ((clocks->cpupll_div & 0xf) << 16);
+		mcgc |= 8;
+		dcr_write(mcgc, 0xd00);
+		mcgc &= ~8;
+		dcr_write(mcgc, 0xd00);
+	}
+
+	mcgc |= ~0xc0000000;
+	mcgc |= (clocks->cpupll_csw & 0x3) << 30;
+	dcr_write(mcgc, 0xd00);
+	udelay(clocks->cpupll_psd);
+
+	/*
+	  Switch the cpu timer clock to the PLL.
+	*/
+
+	mcgc |= 0x100000;
+	dcr_write(mcgc, 0xd00);
+
+	/*
+	  Set up the peripheral clock
+	*/
+
+	if (0 != clocks->per_csw) {
+		mcgc &= ~0xf00;
+		mcgc |= (clocks->per_div & 0xf) << 8;
+		mcgc |= 8;
+		dcr_write(mcgc, 0xd00);
+		mcgc &= ~8;
+		dcr_write(mcgc, 0xd00);
+		mcgc |= 0x8000000;
+		dcr_write(mcgc, 0xd00);
+		udelay(100);	/* udelay(?); */
+	}
+
+	/*
+	  Set up the DDR PLLs (SM0 and TM0)
+	*/
+
+	/* Enable protected writes. */
+	dcr_write(0xab, 0xd0a);
+
+	/* Put phy io and clock sync into reset. */
+	rst_mod = dcr_read(0xe03);
+	rst_mod |= 0xcc0000;
+	dcr_write(rst_mod, 0xe03);
+
+	region = NCP_REGION_ID(0x155, 0);
+
+	if (0 != pll_init(region, clocks->sm0pll_prms, clocks->sm0pll_ctrl)) {
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		return -1;
+	}
+
+	udelay(clocks->sm0pll_psd);
+
+	region = NCP_REGION_ID(0x155, 1);
+
+	if (0 != pll_init(region, clocks->tmpll_prms, clocks->tmpll_ctrl)) {
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		return -1;
+	}
+
+	udelay(clocks->tmpll_psd);
+
+	/* Take PHY IO and clock sync out of reset. */
+	rst_mod &= ~0xcc0000;
+	dcr_write(rst_mod, 0xe03);
+
+	udelay(1000);
+
+	/* Disable protected writes. */
+	dcr_write(0, 0xd0a);
+
+	return 0;
+}
+
+#elif defined(ACP_25xx)
 
 /*
   ------------------------------------------------------------------------------
@@ -857,9 +1127,9 @@ clocks_init( void )
 	dcr_write(value, 0xd01);
 #else
 	/*
-	  -----------------------------------------------------------------------
+	  ----------------------------------------------------------------------
 	  PLL Setup
-	  -----------------------------------------------------------------------
+	  ----------------------------------------------------------------------
 	*/
 
 	pll_init_2500(0xd40, &clocks->syspll_prms); /* system */
@@ -900,7 +1170,7 @@ clocks_init( void )
 	dcr_write(0, 0x1703);
 
 	/*
-	  -----------------------------------------------------------------------
+	  ----------------------------------------------------------------------
 	  Peripheral Clock Setup
 	*/
 
@@ -949,7 +1219,7 @@ clocks_init( void )
 #else
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   clocks_ddr_init
 */
 
