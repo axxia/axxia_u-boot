@@ -767,6 +767,10 @@ acp_osg_update_dt(void *input, int group)
 	int nodeoffset;
 	const struct fdt_property *property;
 	unsigned long *dma_ranges;
+#ifdef AXM_35xx
+	char *phy_addr;
+	unsigned long tmp;
+#endif
 
 	/*
 	  ============================================================
@@ -1022,9 +1026,30 @@ acp_osg_update_dt(void *input, int group)
 						  (sizeof(unsigned char) * 6), 1);
 
 		if (0 != rc) {
-			printf("Error setting up the FEMAC.\n");
+			printf("Error setting up the FEMAC. MAC address\n");
 			return -1;
 		}
+
+#ifdef AXM_35xx
+		phy_addr = getenv( "phy_address" );
+		if (phy_addr == NULL) {
+			tmp = htonl(0x6);
+		} else {
+			tmp = htonl(simple_strtoul(phy_addr, NULL, 0));
+		}
+		rc = fdt_find_and_setprop(dt, "/plb/opb/femac@00480000",
+					   "phy-address", (void *)&tmp,
+					   sizeof(unsigned long), 1);
+
+		if (0 != rc)
+			rc = fdt_find_and_setprop(dt, "/plb/opb/femac0",
+					   "phy-address", (void *)&tmp,
+					   sizeof(unsigned long), 1);
+		if (0 != rc) {
+			printf("Error setting up the FEMAC PHY address\n");
+			return -1;
+		}
+#endif
 	}
 	
 	/* PEI0 */
