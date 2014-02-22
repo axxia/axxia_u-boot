@@ -105,7 +105,7 @@ typedef ncp_st_t
         ncp_sm_parms_t             *parms);
 
 
-#define NCP_SM_PHY_REG_DUMP
+/*#define NCP_SM_PHY_REG_DUMP*/
 #ifdef  NCP_SM_PHY_REG_DUMP 
 
 static ncp_st_t 
@@ -1160,7 +1160,7 @@ ncp_sm_lsiphy_status_get(
 {
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
     ncp_region_id_t region;
-    ncp_uint32_t    value = 0;
+    ncp_uint32_t value = 0;
 
     if (smId >= NCP_EXTMEM_NUM_NODES) {
         NCP_CALL(NCP_ST_SYSMEM_INVALID_ID);
@@ -1179,9 +1179,12 @@ ncp_sm_lsiphy_status_get(
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, 
                         (ncp_uint32_t *) &stat->phyStat);
 
-    do {
-      ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, &value);
-    } while(value & 0x600);
+    /* Poll till feedback SM and qrtr cycle SM are settled */
+    ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, &value);
+    while(value & 0x600)
+    {
+        ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, &value);
+    }
 
     /* gate-training status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_GTTRAINSTAT0, 

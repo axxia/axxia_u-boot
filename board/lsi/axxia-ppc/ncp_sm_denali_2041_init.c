@@ -181,7 +181,15 @@ ncp_sm_denali_2041_init(
 
     /* DENALI_CTL_00 */
     /* TODO: at some point the AP field may be st */
-    ncr_write32(ctlReg,  0x0000, 0x00010100);
+    if (parms->version == NCP_CHIP_ACP35xx)
+    {
+	/* turning aref off */
+    	ncr_write32(ctlReg,  0x0000, 0x00010100);
+    }
+    else
+    {
+    	ncr_write32(ctlReg,  0x0000, 0x01010100);
+    }
 
     /* DENALI_CTL_01 */
     ncr_write32(ctlReg,  0x0004, 0x01010100);
@@ -1170,7 +1178,8 @@ ncp_sm_denali_2041_init(
 	 * using micro page mask for cmd q placement and selection.
 	 *
  	 * bit-8 disable ecc reporting and correcting, there is enable func separately */
-        ncr_write32(ctlReg,  0x05d4, 0x01000000);
+ 	value = (0x01000000 | (parms->enableECC << 8));
+        ncr_write32(ctlReg,  0x05d4, value);
 
         /* DENALI_CTL_374 */
         value = 0;
