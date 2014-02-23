@@ -282,11 +282,11 @@ static parameters_sysmem_t *sysmem = (parameters_sysmem_t *)1;
 #define PARAMETERS_SIZE (1024)
 
 /*
-  ===============================================================================
-  ===============================================================================
+  ==============================================================================
+  ==============================================================================
   Local
-  ===============================================================================
-  ===============================================================================
+  ==============================================================================
+  ==============================================================================
 */
 
 unsigned long sysmem_size = 1;
@@ -295,7 +295,7 @@ unsigned long ncp_sm_phy_reg_restore = 1;
 unsigned long ncp_sm_phy_reg_dump = 1;
 
 /*
-  ----------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   fill_sysmem
 */
 
@@ -321,11 +321,11 @@ fill_sysmem(unsigned long long address, unsigned long long size,
 			(sysmem_size_bytes / (16 * syscache_nodes)) - 1;
 
 		for (i = 0; i < syscache_nodes; ++i) {
-			ncr_write32(NCP_REGION_ID(sc_nodes[i], 0), 0x2c, words);
 			ncr_write32(NCP_REGION_ID(sc_nodes[i], 5), 0x0, 0);
 			ncr_write32(NCP_REGION_ID(sc_nodes[i], 5), 0x4, 0);
 			ncr_write32(NCP_REGION_ID(sc_nodes[i], 5), 0x8, 0);
 			ncr_write32(NCP_REGION_ID(sc_nodes[i], 5), 0xc, 0);
+			ncr_write32(NCP_REGION_ID(sc_nodes[i], 0), 0x2c, words);
 		}
 
 		for (i = 0; i < syscache_nodes; ++i) {
@@ -605,6 +605,11 @@ voltage_init(void)
 
 #if defined(AXM_35xx)
 
+/*
+  ------------------------------------------------------------------------------
+  pll_init
+*/
+
 static int
 pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 {
@@ -642,7 +647,7 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 	p |= parameters;
 	ncr_write32(region, 0, p);
 
-	mdelay(1);
+	udelay(10);
 
 	/*
 	  Bring PLL out of reset (reset active low).
@@ -691,6 +696,11 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 	return 0;
 }
 
+/*
+  ------------------------------------------------------------------------------
+  clocks_init
+*/
+
 int
 clocks_init(void)
 {
@@ -698,7 +708,8 @@ clocks_init(void)
 	unsigned long mcgc;
 	unsigned long rst_mod;
 
-#ifdef DISPLAY_PARAMETERS
+/*#ifdef DISPLAY_PARAMETERS*/
+#if 1
 	printf("-- -- Clocks\n"
 	       "0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
@@ -776,7 +787,7 @@ clocks_init(void)
 	mcgc |= ~0x03000000;
 	mcgc |= (clocks->nrcpinput_csw & 0x3) << 24;
 	dcr_write(mcgc, 0xd00);
-	udelay(100);		/*udelay(?);*/
+	udelay(clocks->syspll_psd);
 
 	/*
 	  Set up the PPC PLL
@@ -826,7 +837,7 @@ clocks_init(void)
 		dcr_write(mcgc, 0xd00);
 		mcgc |= 0x8000000;
 		dcr_write(mcgc, 0xd00);
-		udelay(100);	/* udelay(?); */
+		udelay(clocks->cpupll_psd);
 	}
 
 	/*
@@ -1093,7 +1104,7 @@ clocks_init( void )
 	dcr_write(0, 0x1703);
 
 	/*
-	  -----------------------------------------------------------------------
+	  ----------------------------------------------------------------------
 	  Peripheral Clock Setup
 	*/
 
@@ -1266,8 +1277,6 @@ clocks_init( void )
 	unsigned long tune2;
 	unsigned long tune3;
 
-#ifndef AXM_35xx
-
 #ifdef DISPLAY_PARAMETERS
 	printf("-- -- Clocks\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
@@ -1431,7 +1440,6 @@ clocks_init( void )
 			 tune1, tune2, tune3 );
 
 	return 0;
-#endif
 }
 
 #endif
@@ -1825,7 +1833,8 @@ acp_init( void )
 		}
 	}
 
-#ifdef DISPLAY_PARAMETERS
+/*#ifdef DISPLAY_PARAMETERS*/
+#if 1
 	printf("-- -- Header\n"
 	       "0x%08lx 0x%08lx 0x%08lx 0x%08lx\n"
 	       "0x%08lx 0x%08lx\n"
@@ -1871,7 +1880,8 @@ acp_init( void )
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 	}
 
-#ifdef DISPLAY_PARAMETERS
+/*#ifdef DISPLAY_PARAMETERS*/
+#if 1
 	printf("version=%lu flags=0x%lx\n",
 	       global->version, global->flags);
 #else
@@ -1926,7 +1936,7 @@ acp_init( void )
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS ) ) {
 #ifndef DISPLAY_PARAMETERS
-	  serial_exit(); /* Turn off the UART while updating the PLLs. */
+		serial_exit(); /* Turn off the UART while updating the PLLs. */
 #endif
 
 		if( 0 != ( returnCode = clocks_init( ) ) ) {
@@ -1999,9 +2009,9 @@ acp_init( void )
 		  Create a UTLB entry for system memory.
 		*/
 
-		__asm__ __volatile__ ( "tlbwe %1,%0,0\n"			\
-				       "tlbwe %2,%0,1\n"			\
-				       "tlbwe %3,%0,2\n"			\
+		__asm__ __volatile__ ( "tlbwe %1,%0,0\n"		\
+				       "tlbwe %2,%0,1\n"		\
+				       "tlbwe %3,%0,2\n"		\
 				       "isync\n"
 				       : :
 					 "r" (0x80000000),
