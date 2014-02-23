@@ -1880,7 +1880,7 @@ acp_init_r( void )
 	}
 #endif
 
-#if defined (CONFIG_ACP3) && defined(AXM_35xx) && defined(ACP_EMU) && defined(CONFIG_PCI)
+#if defined (CONFIG_ACP3) && defined(CONFIG_PCI) && defined (AXM_35xx)
 	pci_init_board();
 #endif
 

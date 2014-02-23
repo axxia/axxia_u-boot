@@ -459,9 +459,10 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 {
 	int rc = 0;
 
-#ifdef ACP_25xx
+#if defined(ACP_25xx) || defined(AXM_35xx)
 	int wfc_timeout = WFC_TIMEOUT;
 
+#ifdef ACP_25xx
 	/*
 	  Handle the 0x115.1 node on the AXM25xx.
 	*/
@@ -470,6 +471,15 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 		unsigned long base;
 
 		base = (IO + 0x3000);
+
+#elif defined (AXM_35xx)
+
+	/* Handle 0x107.1 node on the AXM35xx */
+	if (NCP_REGION_ID(0x107, 1) == region) {
+		unsigned long base;
+
+		base = (IO + 0x6010);
+#endif
 
 		if (0xffff < offset) {
 			printf("Bad Offset!\n");
@@ -514,10 +524,11 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 {
 	int rc = 0;
 
-#if defined(ACP_25xx)
+#if defined(ACP_25xx) || defined(AXM_35xx)
 
 	int wfc_timeout = WFC_TIMEOUT;
 
+#if defined(ACP_25xx)
 	/*
 	  Handle the 0x115.0, 0x115.2, and 0x115.3 nodes on the AXM25xx.
 	*/
@@ -542,6 +553,36 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 			break;
 		}
 
+#elif defined (AXM_35xx)
+	/*
+	  Handle the 0x107.0, 0x107.2, 0x107.3 and 0x107.4 nodes on the AXM35xx.
+	*/
+
+	if ((NCP_REGION_ID(0x107, 0) == region) ||
+	    (NCP_REGION_ID(0x107, 2) == region) ||
+	    (NCP_REGION_ID(0x107, 3) == region) ||
+	    (NCP_REGION_ID(0x107, 4) == region)) {
+		unsigned long base = 0;
+
+		switch (NCP_TARGET_ID(region)) {
+		case 0:
+			base = (IO + 0x6000);
+			break;
+		case 2:
+			base = (IO + 0x6020);
+			break;
+		case 3:
+			base = (IO + 0x6030);
+			break;
+		case 4:
+			base = (IO + 0x6040);
+			break;
+		default:
+			/* Unreachable, due to the if() above. */
+			break;
+		}
+#endif
+
 		if (0xffff < offset)
 			return -1;
 
@@ -561,15 +602,8 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 		*value = READL(base + 8);
 
 		return 0;
-	}
-
-#elif defined(AXM_35xx)
-
-	/*
-	  Handle the 0x155.t nodes on AXM35xx
-	*/
-
-	if (0x155 == NCP_NODE_ID(region)) {
+#if defined(AXM_35xx)
+	} else if (0x155 == NCP_NODE_ID(region)) {
 		unsigned long address;
 
 		address = IO + 0x8000 +
@@ -577,6 +611,7 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 		*value = READL(address);
 
 		return 0;
+#endif
 	}
 
 #endif
@@ -784,9 +819,10 @@ int
 ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 {
 	int rc;
-#ifdef ACP_25xx
+#if defined(ACP_25xx) || defined(AXM_35xx)
 	int wfc_timeout = WFC_TIMEOUT;
 
+#ifdef ACP_25xx
 	/*
 	  Handle the 0x115 nodes on AXM25xx
 	*/
@@ -795,6 +831,14 @@ ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 		unsigned long base;
 
 		base = (IO + 0x3000);
+#elif defined(AXM_35xx)
+	/* Handle 0x107.1 node on the AXM35xx */
+	if (NCP_REGION_ID(0x107, 1) == region) {
+		unsigned long base;
+
+		base = (IO + 0x6010);
+
+#endif
 
 		if (0xffff < offset)
 			return -1;
@@ -836,9 +880,10 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 {
 	int rc;
 
-#if defined(ACP_25xx)
+#if defined(ACP_25xx) || defined(AXM_35xx)
 
 	int wfc_timeout = WFC_TIMEOUT;
+#ifdef ACP_25xx
 
 	/*
 	  Handle the 0x115 nodes on AXM25xx
@@ -863,7 +908,35 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 			/* Unreachable, due to the if() above. */
 			break;
 		}
+#elif defined (AXM_35xx)
+	/*
+	  Handle the 0x107.0, 0x107.2, 0x107.3 and 0x107.4 nodes on the AXM35xx.
+	*/
 
+	if ((NCP_REGION_ID(0x107, 0) == region) ||
+	    (NCP_REGION_ID(0x107, 2) == region) ||
+	    (NCP_REGION_ID(0x107, 3) == region) ||
+	    (NCP_REGION_ID(0x107, 4) == region)) {
+		unsigned long base = 0;
+
+		switch (NCP_TARGET_ID(region)) {
+		case 0:
+			base = (IO + 0x6000);
+			break;
+		case 2:
+			base = (IO + 0x6020);
+			break;
+		case 3:
+			base = (IO + 0x6030);
+			break;
+		case 4:
+			base = (IO + 0x6040);
+			break;
+		default:
+			/* Unreachable, due to the if() above. */
+			break;
+		}
+#endif
 		if (0xffff < offset)
 			return -1;
 
@@ -882,15 +955,8 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 		}
 
 		return 0;
-	}
-
-#elif defined(AXM_35xx)
-
-	/*
-	  Handle the 0x155.t nodes on AXM35xx
-	*/
-
-	if (0x155 == NCP_NODE_ID(region)) {
+#if defined(AXM_35xx) 
+	} else if (0x155 == NCP_NODE_ID(region)) {
 		unsigned long address;
 
 		address = IO + 0x8000 +
@@ -898,6 +964,7 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 		WRITEL(value, address);
 
 		return 0;
+#endif
 	}
 
 #endif

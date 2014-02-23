@@ -38,7 +38,7 @@
 #define CONFIG_4xx   1		/* ... PPC4xx family         */
 #define CONFIG_BOOKE 1
 
-#if !defined (AXM_35xx) && !defined (ACP_EMU)
+#if !defined (ACP_EMU)
 #define CONFIG_PCI 1
 #define CONFIG_PCI_PNP 1                          /* do pci plug-and-play*/
 #define CONFIG_CMD_PCI 1

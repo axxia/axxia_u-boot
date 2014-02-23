@@ -22,7 +22,7 @@
 
 #include <common.h>
 
-#ifndef ACP_25xx
+#if (!defined(ACP_25xx) && !defined(AXM_35xx))
 
 /*
   ==============================================================================
@@ -118,7 +118,7 @@ pcie_lsdq_workaround(int pei)
 int
 pciesrio_setcontrol_acp34xx(unsigned long new_control)
 {
-#if !defined(ACP_EMU) && !defined(ACP_ISS) && !defined(ACP_X1V1) && !defined(AXM_35xx)
+#if !defined(ACP_EMU) && !defined(ACP_ISS) && !defined(ACP_X1V1)
 	unsigned long old_control;
 	unsigned long linkStatus;
 
@@ -199,7 +199,7 @@ pciesrio_setcontrol_acp34xx(unsigned long new_control)
 #endif
 }
 
-#else
+#elif defined(ACP_25xx)
 
 /*
   ==============================================================================
@@ -676,6 +676,47 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 	return 0;
 }
 
+#elif defined (AXM_35xx)
+typedef struct {
+	unsigned short offset;
+	unsigned short value;
+} rx_serdes_value_t;
+
+int
+pciesrio_setcontrol_axm35xx(unsigned long new_control)
+{
+	int srioHSSSpeed;
+	int i;
+	char * env_value;
+	unsigned short chResetVal;
+
+	printf("Setting PCI/SRIO to 0x%08lx\n", new_control);
+
+	if (new_control == 0x1) {
+		/*  PEI0 RC 0x4 mode */
+
+               /* soft reset the phy, pipe, link layer */
+                ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x80);
+
+                udelay(100000);
+
+		/* PLL B disable */
+                ncr_write32(NCP_REGION_ID(0x107, 0), 0x228, 0x100);
+
+		/* High Serdes reset_a */
+                ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x21);
+
+                ncr_write32(NCP_REGION_ID(0x107, 0), 0x208, 0xffffffff);
+		
+		/* wr pll_a_ctrl  0x230 0x03176403 */
+                ncr_write32(NCP_REGION_ID(0x107, 0), 0x230, 0x03176403);
+		
+		/* enable PEI0 */
+                ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x1);
+	}
+	return 0;
+}
+
 #endif
 
 /*
@@ -696,6 +737,8 @@ pciesrio_setcontrol(unsigned long control)
 {
 #if defined(ACP_25xx)
 	return pciesrio_setcontrol_axm25xx(control);
+#elif defined(AXM_35xx)
+	return pciesrio_setcontrol_axm35xx(control);
 #else
 	return pciesrio_setcontrol_acp34xx(control);
 #endif
