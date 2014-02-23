@@ -2589,7 +2589,7 @@ NCP_RETURN_LABEL
   sm_ecc_bytelane_test
 */
 
-#define SM_ECC_BYTELANE_TEST_DEBUG
+/* #define SM_ECC_BYTELANE_TEST_DEBUG */
 
 #include "ncp_sm_ecc_test_buffer.h"
 
@@ -2725,7 +2725,6 @@ sm_ecc_bytelane_test(
     rc = ncp_block_read32(dev, NCP_REGION_ID(node, 5), (address >> 2), 
                                 (ncp_uint32_t *)rbuf, blockSizeWords, 0);
 
-    ncp_status_print("block_read", rc);
     p32 = (ncp_uint32_t *)rbuf;
 #endif
 
