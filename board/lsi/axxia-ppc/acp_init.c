@@ -708,8 +708,7 @@ clocks_init(void)
 	unsigned long mcgc;
 	unsigned long rst_mod;
 
-/*#ifdef DISPLAY_PARAMETERS*/
-#if 1
+#ifdef DISPLAY_PARAMETERS
 	printf("-- -- Clocks\n"
 	       "0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
@@ -1833,8 +1832,7 @@ acp_init( void )
 		}
 	}
 
-/*#ifdef DISPLAY_PARAMETERS*/
-#if 1
+#ifdef DISPLAY_PARAMETERS
 	printf("-- -- Header\n"
 	       "0x%08lx 0x%08lx 0x%08lx 0x%08lx\n"
 	       "0x%08lx 0x%08lx\n"
@@ -1880,8 +1878,7 @@ acp_init( void )
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 	}
 
-/*#ifdef DISPLAY_PARAMETERS*/
-#if 1
+#ifdef DISPLAY_PARAMETERS
 	printf("version=%lu flags=0x%lx\n",
 	       global->version, global->flags);
 #else
