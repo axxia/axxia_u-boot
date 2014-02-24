@@ -145,6 +145,13 @@ ulong monitor_flash_len;
 #include <bedbug/type.h>
 #endif
 
+#ifdef AXM_35xx
+static unsigned long sc_nodes [ ] = {
+        0x20, 0x1e, 0x21, 0x1d
+};
+#endif
+
+
 /************************************************************************
  * Utilities								*
  ************************************************************************
@@ -645,6 +652,8 @@ acp_init_f( void )
 	register unsigned long addr;
 	unsigned long *s;
 	unsigned long core;
+	unsigned long value;
+	int i;
 #if defined(CONFIG_ACP3)
 	unsigned long cold_start;
 #endif
@@ -787,6 +796,25 @@ acp_init_f( void )
 	dcr_write(0x00210000, 0x1000);
 #else
 	dcr_write(0x00214000, 0x1000);
+#endif
+
+#ifdef AXM_35xx
+	/* loop through all syscaches */
+	for( i = 0; i < 4; ++ i ) {
+		/* set Atomic client id to 5 */
+		ncr_read32( NCP_REGION_ID( sc_nodes[i], 0 ),
+                        0x4, &value );
+		value &= 0xff0fffff;
+		value |= (0x5 << 20);
+		ncr_write32( NCP_REGION_ID(sc_nodes[i], 0), 0x4, value );
+
+		/* fix up speculative read client id -- NHA is client 2 */
+		ncr_read32( NCP_REGION_ID( sc_nodes[i], 0 ),
+			0x90, &value );
+		value &= 0xfffffff0;
+		value |= 2;
+		ncr_write32( NCP_REGION_ID(sc_nodes[i], 0), 0x90, value );
+	}
 #endif
 
 	/* Initialize voltage, clocks, and system memory */
