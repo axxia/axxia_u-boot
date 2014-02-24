@@ -321,11 +321,11 @@ fill_sysmem(unsigned long long address, unsigned long long size,
 			(sysmem_size_bytes / (16 * syscache_nodes)) - 1;
 
 		for (i = 0; i < syscache_nodes; ++i) {
+			ncr_write32(NCP_REGION_ID(sc_nodes[i], 0), 0x2c, words);
 			ncr_write32(NCP_REGION_ID(sc_nodes[i], 5), 0x0, 0);
 			ncr_write32(NCP_REGION_ID(sc_nodes[i], 5), 0x4, 0);
 			ncr_write32(NCP_REGION_ID(sc_nodes[i], 5), 0x8, 0);
 			ncr_write32(NCP_REGION_ID(sc_nodes[i], 5), 0xc, 0);
-			ncr_write32(NCP_REGION_ID(sc_nodes[i], 0), 0x2c, words);
 		}
 
 		for (i = 0; i < syscache_nodes; ++i) {
