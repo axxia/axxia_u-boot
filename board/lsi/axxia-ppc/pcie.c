@@ -330,7 +330,7 @@ int pci_476_init (struct pci_controller *hose, int port)
 	volatile void *mbase = NULL;
 	u32 pci_config, pci_status, link_state;
 	int i, num_pages;
-	u32 mpage_lower, pciah, pcial;
+	u32 mpage_lower, pciah=0x0, pcial=0x0;
 	u64 pci_addr, plb_addr, size, flags;
 	void __iomem *tpage_base;
 	pci_addr_t bus_start;   /* Start on the bus */
@@ -448,35 +448,6 @@ int pci_476_init (struct pci_controller *hose, int port)
 	pci_config = in_le32(mbase + 0x1000);
 #endif 
 
-#ifndef AXM_35xx	
-	/* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
-	 * 64 bit address space */
-	out_le32(mbase + 0x10, 0x1000000c);
-	out_le32(mbase + 0x14, 0x0); 
-#else
-       /* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
-         * 64 bit address space */
-        /* configures the RC Memory Space Configuration Register */
-	out_le32(mbase + 0x11f4, 0x40000000);
-
-        /* Verify BAR0 size */
-        {
-                u32 bar0_size;
-                /* write all 1s to BAR0 register */
-		out_le32(mbase + 0x10, ~0);
-		bar0_size = in_le32(mbase + 0x10);
-                if ((bar0_size & ~0xf) != 0x40000000)
-                        printf("PCIE%d: Config BAR0 failed\n", port);
-        }
-
-        /* set the BASE0 address to start of PCIe base 0x0 */
-	out_le32(mbase + 0x10, 0x0);
-#endif
-
-	out_8(hose->cfg_data + PCI_PRIMARY_BUS, hose->first_busno);
-	out_8(hose->cfg_data + PCI_SECONDARY_BUS, hose->first_busno + 1);
-	out_8(hose->cfg_data + PCI_SUBORDINATE_BUS, hose->last_busno); 
-
 	/* ACP X1 setup MPAGE registers */ 
 	/*
 	 * MPAGE7 is dedicated to config access, so we only 
@@ -510,6 +481,37 @@ int pci_476_init (struct pci_controller *hose, int port)
 
 	hose->region_count = 1;
 	pci_register_hose(hose);
+
+#ifndef AXM_35xx	
+	/* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
+	 * 64 bit address space */
+	out_le32(mbase + 0x10, pcial | 0xc);
+	out_le32(mbase + 0x14, pciah); 
+#else
+       /* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
+         * 64 bit address space */
+        /* configures the RC Memory Space Configuration Register */
+	out_le32(mbase + 0x11f4, 0x40000000);
+
+        /* Verify BAR0 size */
+        {
+                u32 bar0_size;
+                /* write all 1s to BAR0 register */
+		out_le32(mbase + 0x10, ~0);
+		bar0_size = in_le32(mbase + 0x10);
+                if ((bar0_size & ~0xf) != 0x40000000)
+                        printf("PCIE%d: Config BAR0 failed\n", port);
+        }
+
+        /* set the BASE0 address to PCIe base */
+	out_le32(mbase + 0x10, pcial);
+	out_le32(mbase + 0x14, pciah);
+#endif
+
+	out_8(hose->cfg_data + PCI_PRIMARY_BUS, hose->first_busno);
+	out_8(hose->cfg_data + PCI_SECONDARY_BUS, hose->first_busno + 1);
+	out_8(hose->cfg_data + PCI_SUBORDINATE_BUS, hose->last_busno); 
+
 #ifdef DEBUG_PCIE
 	printf("pci_476_init: Returned bus no after = %d\n", hose->last_busno);
 #endif
