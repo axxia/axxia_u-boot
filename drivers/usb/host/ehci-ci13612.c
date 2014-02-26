@@ -44,6 +44,8 @@ int ehci_hcd_init(void)
         hcor = (struct ehci_hcor *)((uint32_t) hccr +
                 HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
 
+#ifndef AXM_35xx
+
 	hwtxbuf = ehci_readl(CONFIG_SYS_PPC4XX_USB_ADDR+0x10);
 	txfulltuning = ehci_readl(CONFIG_SYS_PPC4XX_USB_ADDR+0x164);
 
@@ -53,7 +55,9 @@ int ehci_hcd_init(void)
 	USB_TXFIFOTHRES = (32 << 16);
 	txfulltuning = (txfulltuning  & 0xffc0ffff) | USB_TXFIFOTHRES;
 
-	writel( CONFIG_SYS_PPC4XX_USB_ADDR+0x164, txfulltuning);	
+	writel( txfulltuning, CONFIG_SYS_PPC4XX_USB_ADDR+0x164);
+
+#endif
 	return 0;
 }
 
