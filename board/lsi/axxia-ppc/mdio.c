@@ -59,8 +59,15 @@ int
 mdio_initialize(void)
 {
 	if (is_asic()) {
+#ifndef AXM_3500
 		WRITEL(0x10, MDIO_CLK_OFFSET);
 		WRITEL(0x2c, MDIO_CLK_PERIOD);
+#else
+		/* 1MHz MDIO clock */
+		WRITEL(0x1c, MDIO_CLK_OFFSET);
+		WRITEL(0xf0, MDIO_CLK_PERIOD);
+#endif
+
 	} else {
 		WRITEL(5, MDIO_CLK_OFFSET);
 		WRITEL(0x0c, MDIO_CLK_PERIOD);
