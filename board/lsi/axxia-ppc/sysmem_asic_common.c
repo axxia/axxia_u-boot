@@ -294,6 +294,10 @@ sysmem_init(void)
 	unsigned long num_bls;
 	int i;
 	int rc;
+#ifdef AXM_35xx
+	per_sysmem_parms_t *per_sysmem_parms;
+	unsigned long *temp;
+#endif
 #ifdef CONFIG_SPD
 	int count;
 	unsigned char i2c_chip = 0x50;
@@ -309,6 +313,24 @@ sysmem_init(void)
 	unsigned char buffer;
 #endif
 
+	/*
+	  Flip the "per rank" parameters, since this is big endian...
+	*/
+
+#ifdef AXM_35xx
+	for (i = 0; i < 2; ++i) {
+		per_sysmem_parms = &(sysmem->per_sysmem[i]);
+		temp = (unsigned long *)
+			(&per_sysmem_parms->sdram_rtt_nom[0]);
+		*temp = swab32(*temp);
+		temp = (unsigned long *)
+			(&per_sysmem_parms->sdram_rtt_wr[0]);
+		*temp = swab32(*temp);
+		temp = (unsigned long *)
+			(&per_sysmem_parms->sdram_data_drv_imp[0]);
+		*temp = swab32(*temp);
+	}
+#endif
 
 	/*
 	  ======================================================================
@@ -457,18 +479,18 @@ sysmem_init(void)
 			       "sdram_rtt_wr[] = {%d %d %d %d}\n"
 			       "sdram_data_drv_imp[] = {%d %d %d %d}\n"
 			       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
-			       per_sysmem_parms->sdram_rtt_nom[0],
-			       per_sysmem_parms->sdram_rtt_nom[1],
-			       per_sysmem_parms->sdram_rtt_nom[2],
 			       per_sysmem_parms->sdram_rtt_nom[3],
-			       per_sysmem_parms->sdram_rtt_wr[0],
-			       per_sysmem_parms->sdram_rtt_wr[1],
-			       per_sysmem_parms->sdram_rtt_wr[2],
+			       per_sysmem_parms->sdram_rtt_nom[2],
+			       per_sysmem_parms->sdram_rtt_nom[1],
+			       per_sysmem_parms->sdram_rtt_nom[0],
 			       per_sysmem_parms->sdram_rtt_wr[3],
-			       per_sysmem_parms->sdram_data_drv_imp[0],
-			       per_sysmem_parms->sdram_data_drv_imp[1],
-			       per_sysmem_parms->sdram_data_drv_imp[2],
+			       per_sysmem_parms->sdram_rtt_wr[2],
+			       per_sysmem_parms->sdram_rtt_wr[1],
+			       per_sysmem_parms->sdram_rtt_wr[0],
 			       per_sysmem_parms->sdram_data_drv_imp[3],
+			       per_sysmem_parms->sdram_data_drv_imp[2],
+			       per_sysmem_parms->sdram_data_drv_imp[1],
+			       per_sysmem_parms->sdram_data_drv_imp[0],
 			       per_sysmem_parms->phy_min_cal_delay,
 			       per_sysmem_parms->phy_adr_phase_select,
 			       per_sysmem_parms->phy_dp_io_vref_set,
@@ -805,6 +827,17 @@ sysmem_init(void)
 	/* WA for 34575 (applies to X1V2 and X2). */
 #if defined(ACP_X1V2) || defined(ACP_X2V1)
 	dcr_write(0, 0xf1f);
+#endif
+
+#if defined(ACP2)
+	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"			\
+			       "tlbwe %2,%0,1\n"			\
+			       "tlbwe %3,%0,2\n"			\
+			       "isync\n" : :
+			       "r" (0x80000000),
+			       "r" (0x00000bf0),
+			       "r" (0x00000000),
+			       "r" (0x00030207));
 #endif
 
 	return 0;

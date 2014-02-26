@@ -59,7 +59,9 @@ utlb_table:
 	#; Physical Address - 0x0000_0000_0000
 	#; Virtual Address - 0x0000_0000
 	#; Size - 256M (1 256M segment)
+#if defined(ACP3) || defined(ACP_EMU)
 	.long		0x80000000,0x00000bf0,0x00000000,0x00030207
+#endif
 
 #ifdef ACP_ISS
 	#; -- -- IO -- --
