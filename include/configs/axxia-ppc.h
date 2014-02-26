@@ -123,11 +123,11 @@ unsigned long get_sysmem_size( void );
 ( unsigned long ) ( ( ( ( node ) & 0xffff ) << 16 ) | ( ( target ) & 0xffff ) )
 #define NCP_NODE_ID( region ) ( ( ( region ) >> 16 ) & 0xffff )
 #define NCP_TARGET_ID( region ) ( ( region ) & 0xffff )
-int ncr_read(unsigned long, unsigned long, int, void *);
+int ncr_read(unsigned long, unsigned long, unsigned long, int, void *);
 int ncr_read8( unsigned long, unsigned long, unsigned char * );
 int ncr_read16( unsigned long, unsigned long, unsigned short * );
 int ncr_read32( unsigned long, unsigned long, unsigned long * );
-int ncr_write(unsigned long, unsigned long, int, void *);
+int ncr_write(unsigned long, unsigned long, unsigned long, int, void *);
 int ncr_write8( unsigned long, unsigned long, unsigned char );
 int ncr_write16( unsigned long, unsigned long, unsigned short );
 int ncr_write32( unsigned long, unsigned long, unsigned long );
