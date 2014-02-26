@@ -2457,14 +2457,10 @@ sm_bytelane_test(
 
     /* write it out and save the comparison value from the write buffer*/
 #ifdef UBOOT
-#ifndef AXM_35xx
     uppAddr = ( (unsigned) (address >> 32) );
     lowAddr = ( (unsigned) (address & 0xffffffff) );
 
     if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), uppAddr, lowAddr, blockSize, NULL )) {
-#else
-    if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), address, blockSize, NULL )) {
-#endif
       printf("%d : ncr_write() failed: 0x%08lx 0x%08lx\n",
          __LINE__, in_be32(NCA + 0xe4), in_be32(NCA + 0xe8));
       return -1;
@@ -2483,11 +2479,7 @@ sm_bytelane_test(
 
     /* Read back and compare. */
 #ifdef UBOOT
-#ifndef AXM_35xx
     if (0 != ncr_read( NCP_REGION_ID( 512, 1 ), uppAddr, lowAddr, blockSize, NULL )) {
-#else
-    if (0 != ncr_read( NCP_REGION_ID( 512, 1 ), address, blockSize, NULL )) {
-#endif
       printf("%d : ncr_read() failed: 0x%08lx 0x%08lx\n",
          __LINE__, in_be32(NCA + 0xe4), in_be32(NCA + 0xe8));
     }
@@ -2646,14 +2638,10 @@ sm_ecc_bytelane_test(
 
     /* write it out */
 #ifdef UBOOT 
-#ifndef AXM_35xx
     uppAddr = ( (unsigned) (address >> 32) );
     lowAddr = ( (unsigned) (address & 0xffffffff) );
 
     if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), uppAddr, lowAddr, blockSize, NULL )) {
-#else
-    if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), address, blockSize, NULL )) {
-#endif
       printf("%d : ncr_write() failed!\n", __LINE__);
       return -1;
     }
@@ -2708,13 +2696,9 @@ sm_ecc_bytelane_test(
      * This may fail if the ECC bytelane is out of level
      */
 #ifdef UBOOT
-#ifndef AXM_35xx
     uppAddr = ( (unsigned) ((address >> 2)  >> 32) );
     lowAddr = ( (unsigned) ((address >> 2)  & 0xffffffff) );
         rc = ncr_read( NCP_REGION_ID( node, 5 ), uppAddr, lowAddr, blockSizeWords, NULL );
-#else
-        rc = ncr_read( NCP_REGION_ID( node, 5 ), address, blockSizeWords, NULL );
-#endif
 
     if (-1 == rc)
         rc = in_be32(NCA + 0xe4);
@@ -2994,14 +2978,10 @@ sm_bytelane_test_elm(
 
     printf("NCA reading address %012llx\n", address);
 #ifdef UBOOT 
-#ifndef AXM_35xx
     uppAddr = ( (unsigned) (address >> 32) );
     lowAddr = ( (unsigned) (address & 0xffffffff) );
 
     if (0 != ncr_read( NCP_REGION_ID( 512, 1 ), uppAddr, lowAddr, blockSize, NULL )) {
-#else
-    if (0 != ncr_read( NCP_REGION_ID( 512, 1 ), address, blockSize, NULL )) {
-#endif
       printf("%d : ncr_write() failed!\n", __LINE__);
       return -1;
     }
@@ -3187,14 +3167,10 @@ sm_ecc_bytelane_test_elm(
 
     /* write it out */
 #ifdef UBOOT 
-#ifndef AXM_35xx
     uppAddr = ( (unsigned) (address >> 32) );
     lowAddr = ( (unsigned) (address & 0xffffffff) );
 
     if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), uppAddr, lowAddr, blockSize, NULL )) {
-#else
-    if (0 != ncr_write( NCP_REGION_ID( 512, 1 ), address, blockSize, NULL )) {
-#endif
       printf("%d : ncr_write() failed!\n", __LINE__);
       return -1;
     }

@@ -433,8 +433,10 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x0090, value );
 
     /* DENALI_CTL_37 */
-    /* TODO : LARRY */
-    ncr_write32(ctlReg,  0x0094, 0x00000808);
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_37_t, wrlat_adj, parms->CAS_write_latency );
+    SV( ncp_denali_DENALI_CTL_37_t, wrlat, parms->CAS_write_latency );
+    ncr_write32(ctlReg,  0x0094, value);
 
     /* DENALI_CTL_38 */
     value = 0;
