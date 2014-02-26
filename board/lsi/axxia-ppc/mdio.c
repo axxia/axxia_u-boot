@@ -58,14 +58,33 @@
 int
 mdio_initialize(void)
 {
+#ifdef AXM_35xx
+	unsigned long per_clock;
+	unsigned long mdio_clk_value;
+	int rc;
+#endif
 	if (is_asic()) {
-#ifndef AXM_3500
+#ifndef AXM_35xx
 		WRITEL(0x10, MDIO_CLK_OFFSET);
 		WRITEL(0x2c, MDIO_CLK_PERIOD);
 #else
-		/* 1MHz MDIO clock */
-		WRITEL(0x1c, MDIO_CLK_OFFSET);
-		WRITEL(0xf0, MDIO_CLK_PERIOD);
+		/* 1MHz MDIO clock which is 1000 ns MDIO clock period */
+		do {
+			for (;;) {
+				int rc;
+				rc = acp_clock_get(clock_peripheral, &per_clock);
+				if (0 == rc) {
+					break;
+				}
+			}
+		} while (0 == per_clock);
+
+		/* (MDIO period/clk_per period/2) */
+		mdio_clk_value = (per_clock/1000)/2;
+		
+		WRITEL(mdio_clk_value, MDIO_CLK_OFFSET);
+		WRITEL(mdio_clk_value, MDIO_CLK_PERIOD);
+
 #endif
 
 	} else {
