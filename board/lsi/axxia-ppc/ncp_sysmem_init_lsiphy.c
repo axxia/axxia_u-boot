@@ -104,8 +104,9 @@ typedef ncp_st_t
         ncp_sm_phy_training_mode_t  mode,
         ncp_sm_parms_t             *parms);
 
-
-/*#define NCP_SM_PHY_REG_DUMP*/
+#ifndef UBOOT
+#define NCP_SM_PHY_REG_DUMP
+#endif
 #ifdef  NCP_SM_PHY_REG_DUMP 
 
 static ncp_st_t 
