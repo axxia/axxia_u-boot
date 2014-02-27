@@ -636,7 +636,6 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 	  regulator.  Leave in bypass.
 	*/
 
-	/*0x3cf300*/
 	c |= (control & 0x3df300);
 	ncr_write32(region, 4, c);
 
@@ -646,7 +645,7 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 
 	p |= parameters;
 	ncr_write32(region, 0, p);
-	udelay(1000);
+	udelay(10);
 
 	/*
 	  Bring PLL out of reset (reset active low).
@@ -656,10 +655,11 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 	ncr_write32(region, 4, c);
 
 	/*
-	  In the case of PLL SM0, enable the clock syncs.
+	  In the case of PLL SM0 and TM0, enable the clock syncs.
 	*/
 
-	if (NCP_REGION_ID(0x155, 0) == region) {
+	if (NCP_REGION_ID(0x155, 0) == region ||
+	    NCP_REGION_ID(0x155, 1) == region) {
 		p |= 0x40000000;
 		ncr_write32(region, 0, p);
 	}
@@ -691,8 +691,6 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 	ncr_write32(region, 0x10, 1);
 	p |= 0x20000000;
 	ncr_write32(region, 0, p);
-
-	mdelay(1000);
 
 	return 0;
 }
@@ -743,13 +741,6 @@ clocks_init(void)
 	       clocks->stop_csw);
 #endif
 	/*
-	  Clear the control register.
-	*/
-
-	mcgc = 0;
-	dcr_write(mcgc, 0xd00);
-
-	/*
 	  Set up the SYS PLL
 	*/
 
@@ -761,8 +752,15 @@ clocks_init(void)
 		return -1;
 	}
 
+	/*
+	  Clear Out the MCGC (Main Clock Generator Control) Register
+	*/
+
+	mcgc = 0;
+	dcr_write(mcgc, 0xd00);
+
 	if (0 != clocks->syspll_div) {
-		mcgc &= 0xf000;
+		mcgc &= ~0xf000;
 		mcgc |= ((clocks->syspll_div & 0xf) << 12);
 		mcgc |= 8;
 		dcr_write(mcgc, 0xd00);
@@ -1799,8 +1797,6 @@ acp_sysmem_bist( void )
   acp_init
 */
 
-unsigned char ssp_test_buffer[100] __attribute__ ((section ("data")));
-
 int
 acp_init( void )
 {
@@ -1936,6 +1932,7 @@ acp_init( void )
 
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS ) ) {
+		printf("Setting Up PLLs/Clocks\n");
 #ifndef DISPLAY_PARAMETERS
 		serial_exit(); /* Turn off the UART while updating the PLLs. */
 #endif
