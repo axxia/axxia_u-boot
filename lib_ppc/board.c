@@ -1908,8 +1908,10 @@ acp_init_r( void )
 	}
 #endif
 
+#if 0
 #if defined (CONFIG_ACP3) && defined(CONFIG_PCI) && defined (AXM_35xx)
 	pci_init_board();
+#endif
 #endif
 
 #if (defined(CONFIG_ACP2) || defined(CONFIG_ACP3) && !defined(AXM_35xx))
