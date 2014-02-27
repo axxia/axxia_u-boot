@@ -637,7 +637,7 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 	*/
 
 	/*0x3cf300*/
-	c |= (control & 0x3cf300);
+	c |= (control & 0x3df300);
 	ncr_write32(region, 4, c);
 
 	/*
@@ -646,8 +646,7 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 
 	p |= parameters;
 	ncr_write32(region, 0, p);
-
-	udelay(10);
+	udelay(1000);
 
 	/*
 	  Bring PLL out of reset (reset active low).
@@ -669,7 +668,7 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 	  Wait for the PLL to lock.
 	*/
 
-	rc = ncr_poll(region, 0x20, 0x80000000, 0x80000000, 10000, 50000);
+	rc = ncr_poll(region, 0x20, 0x80000000, 0x80000000, 100, 50000);
 
 	if (0 != rc) {
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
@@ -692,6 +691,8 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 	ncr_write32(region, 0x10, 1);
 	p |= 0x20000000;
 	ncr_write32(region, 0, p);
+
+	mdelay(1000);
 
 	return 0;
 }
@@ -742,6 +743,13 @@ clocks_init(void)
 	       clocks->stop_csw);
 #endif
 	/*
+	  Clear the control register.
+	*/
+
+	mcgc = 0;
+	dcr_write(mcgc, 0xd00);
+
+	/*
 	  Set up the SYS PLL
 	*/
 
@@ -753,8 +761,6 @@ clocks_init(void)
 		return -1;
 	}
 
-	mcgc = dcr_read(0xd00);
-
 	if (0 != clocks->syspll_div) {
 		mcgc &= 0xf000;
 		mcgc |= ((clocks->syspll_div & 0xf) << 12);
@@ -764,10 +770,9 @@ clocks_init(void)
 		dcr_write(mcgc, 0xd00);
 	}
 
-	mcgc |= ~0x30000000;
+	mcgc &= ~0x30000000;
 	mcgc |= (clocks->syspll_csw & 0x3) << 28;
 	dcr_write(mcgc, 0xd00);
-
 	udelay(clocks->syspll_psd);
 
 	/*
@@ -775,7 +780,7 @@ clocks_init(void)
 	*/
 
 	if (0 != clocks->nrcpinput_div) {
-		mcgc &= 0xf0;
+		mcgc &= ~0xf0;
 		mcgc |= ((clocks->nrcpinput_div & 0xf) << 4);
 		mcgc |= 8;
 		dcr_write(mcgc, 0xd00);
@@ -783,7 +788,7 @@ clocks_init(void)
 		dcr_write(mcgc, 0xd00);
 	}
 
-	mcgc |= ~0x03000000;
+	mcgc &= ~0x03000000;
 	mcgc |= (clocks->nrcpinput_csw & 0x3) << 24;
 	dcr_write(mcgc, 0xd00);
 	udelay(clocks->syspll_psd);
@@ -800,10 +805,8 @@ clocks_init(void)
 		return -1;
 	}
 
-	mcgc = dcr_read(0xd00);
-
 	if (0 != clocks->cpupll_div) {
-		mcgc &= 0xf0000;
+		mcgc &= ~0xf0000;
 		mcgc |= ((clocks->cpupll_div & 0xf) << 16);
 		mcgc |= 8;
 		dcr_write(mcgc, 0xd00);
@@ -811,7 +814,7 @@ clocks_init(void)
 		dcr_write(mcgc, 0xd00);
 	}
 
-	mcgc |= ~0xc0000000;
+	mcgc &= ~0xc0000000;
 	mcgc |= (clocks->cpupll_csw & 0x3) << 30;
 	dcr_write(mcgc, 0xd00);
 	udelay(clocks->cpupll_psd);
@@ -874,7 +877,6 @@ clocks_init(void)
 	/* Take PHY IO and clock sync out of reset. */
 	rst_mod &= ~0xcc0000;
 	dcr_write(rst_mod, 0xe03);
-
 	udelay(1000);
 
 	/* Disable protected writes. */
@@ -1796,6 +1798,8 @@ acp_sysmem_bist( void )
   ------------------------------------------------------------------------------
   acp_init
 */
+
+unsigned char ssp_test_buffer[100] __attribute__ ((section ("data")));
 
 int
 acp_init( void )
