@@ -36,8 +36,14 @@
   ==============================================================================
 */
 
-#define ECM_BASE (IO+0x10031800)
-#define SBB_BASE (IO+0x10160000)
+#define ECM_BASE        (0x80000000 + 0x10031800)
+#define ECM_CTRL_REG    (ECM_BASE + 0x00)
+#define ECM_STAT_REG    (ECM_BASE + 0x04)
+#define ECM_ADDR_REG    (ECM_BASE + 0x14)
+#define ECM_RDAT_REG    (ECM_BASE + 0x40)
+
+#define SBB_BASE        (0x80000000 + 0x10160000)
+
 
 /*
   ------------------------------------------------------------------------------
@@ -55,7 +61,7 @@ read_ecm(int bit_address, int number_of_bits, int pe_means_zero,
 	  Verify that ReadEFuse is 0 (bit 0 of the control register).
 	*/
 
-	value = readl(ECM_BASE + 0x1300);
+	value = readl(ECM_CTRL_REG);
 
 	if (0 != (value & 1)) {
 		printf("ECM Read Error: ReadEFuse is not 0.\n");
@@ -66,22 +72,22 @@ read_ecm(int bit_address, int number_of_bits, int pe_means_zero,
 	  Set ClearReadData and PwrDown.  Clear PadEnb.
 	*/
 
-	writel(0x8080, ECM_BASE + 0x1300);
+	writel(0x8080, ECM_CTRL_REG);
 
 	/*
-	  Set ReadAddr 11:0 to the starting bit address.
+	  Set ReadAddr 12:0 to the starting bit address.
 	*/
 
-	value = readl(ECM_BASE + 0x1305);
+	value = readl(ECM_ADDR_REG);
 	value &= ~0x1fff;
 	value |= (bit_address & 0x1fff);
-	writel(value, ECM_BASE + 0x1305);
+	writel(value, ECM_ADDR_REG);
 
 	/*
 	  Clear PwrDown and PadEnb.
 	*/
 
-	writel(0, ECM_BASE + 0x1300);
+	writel(0, ECM_CTRL_REG);
 
 	/*
 	  Wait at least 900 ns.
@@ -93,26 +99,26 @@ read_ecm(int bit_address, int number_of_bits, int pe_means_zero,
 	  Clear the status bits.
 	*/
 
-	writel(0x1fbc0000, ECM_BASE + 0x1301);
+	writel(0x1fbc0000, ECM_STAT_REG);
 
 	/*
 	  Update ReadDataSize (number of bits to read).  Clear PwrDown and
 	  PadEnb.  Set ReadEFuse.
 	*/
 
-	value = readl(ECM_BASE + 0x1300);
+	value = readl(ECM_CTRL_REG);
 	value &= ~0xff000000;
 	value |= (number_of_bits & 0xff) << 24;
 	value &= ~(1 << 7);
 	value &= ~(1 << 6);
 	value |= 1;
-	writel(value, ECM_BASE + 0x1300);
+	writel(value, ECM_CTRL_REG);
 
 	/*
 	  Wait for LocalReadDone to be set.
 	*/
 
-	while (0 == (readl(ECM_BASE + 0x1301) & 0x20000000)) {
+	while (0 == (readl(ECM_STAT_REG) & 0x20000000)) {
 		udelay(1);
 	}
 
@@ -120,19 +126,19 @@ read_ecm(int bit_address, int number_of_bits, int pe_means_zero,
 	  Set PwrDown and clear PadEnb.
 	*/
 
-	writel(0x80, ECM_BASE + 0x1300);
+	writel(0x80, ECM_CTRL_REG);
 
 	/*
 	  Clear LocalReadDone.
 	*/
 
-	writel(0x20000000, ECM_BASE + 0x1301);
+	writel(0x20000000, ECM_STAT_REG);
 
 	/*
 	  Check the status.
 	*/
 
-	value = (0x1fbc0000 & readl(ECM_BASE + 0x1301));
+	value = (0x1fbc0000 & readl(ECM_STAT_REG));
 
 	if (0 != value) {
 		printf("ECM Read Error: Status is 0x%08lx.\n", value);
@@ -143,13 +149,42 @@ read_ecm(int bit_address, int number_of_bits, int pe_means_zero,
 		*/
 
 		for (i = 0; i <= (number_of_bits / 32); ++i)
+        {
 			if (3 == number_of_bits)
 				*destination++ =
-					readl(ECM_BASE + (0x1310 + i));
+					readl(ECM_RDAT_REG + (0x4 * i));
 			else
 				*destination++ =
-					swab32(readl(ECM_BASE + (0x1310 + i)));
+					swab32(readl(ECM_RDAT_REG + (0x4 * i)));
+        }
 	}
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  print_sbb_efuse
+*/
+
+static int
+print_sbb_efuse(char *label, int bit_address, int number_of_bits)
+{
+	unsigned long fuses[8];
+    int i;
+
+	memset((void *)fuses, 0, sizeof(unsigned long) * 8);
+
+	if (0 != read_ecm(bit_address, number_of_bits, 0, (void *)fuses)) {
+		printf("print_sbb_efuse():read_ecm() failed!\n");
+		return -1;
+	}
+
+	printf("%s:\n\t", label);
+	for (i = 0; i <= (number_of_bits/32); ++i) {
+		printf("%08lx", fuses[i]);
+	}
+	puts("\n");
 
 	return 0;
 }
@@ -163,18 +198,13 @@ static int
 verify_sbb_enabled(void)
 {
 	unsigned long fuses[8];
+    ncp_uint32_t  value;
 
-	/* Export Security Disable Bit. */
-	memset((void *)fuses, 0, sizeof(unsigned long) * 8);
-
-	if (0 != read_ecm(0x8, 0x3, 1, (void *)fuses)) {
-		printf("read_ecm() failed!\n");
-		return -1;
-	}
-
-	if (0 != (fuses[0] & 0x8)) {
-		printf("Export Security Disable is SET!\n");
-		return -1;
+	/* Check Force Fuse */
+	ncr_read32(NCP_REGION_ID(0x156,0), 0x1064, &value);
+	if (0 != (value & 0x800000)) {
+		printf("Secure Boot Enabled (Force Fuse)\n");
+		return 0;
 	}
 
 	/* Secure Boot Enable Bit. */
@@ -186,71 +216,12 @@ verify_sbb_enabled(void)
 	}
 
 	if (0 == (fuses[0] & 0x8)) {
-		printf("Secure Boot Enable is NOT SET!\n");
+		printf("Secure Boot Disabled\n");
 		return -1;
 	}
 
-#if 0
-	/* Master Key Expect. */
-	memset((void *)fuses, 0, sizeof(unsigned long) * 8);
+	printf("Secure Boot Enabled\n");
 
-	if (0 != read_ecm(0x518, 0x7f, 0, (void *)fuses)) {
-		printf("read_ecm() failed!\n");
-		return -1;
-	}
-
-	{
-		int i;
-
-		puts("Master Key Expect is\n\t");
-
-		for (i = 0; i < 4; ++i) {
-			printf("%08lx", fuses[i]);
-		}
-
-		puts("\n");
-	}
-
-	/* Authentication Key Expect. */
-	memset((void *)fuses, 0, sizeof(unsigned long) * 8);
-
-	if (0 != read_ecm(0x6b8, 0x7f, 0, (void *)fuses)) {
-		printf("read_ecm() failed!\n");
-		return -1;
-	}
-
-	{
-		int i;
-
-		puts("Authentication Key Expect is\n\t");
-
-		for (i = 0; i < 4; ++i) {
-			printf("%08lx", fuses[i]);
-		}
-
-		puts("\n");
-	}
-
-	/* Public Key */
-	memset((void *)fuses, 0, sizeof(unsigned long) * 8);
-
-	if (0 != read_ecm(0x808, 0xff, 0, (void *)fuses)) {
-		printf("read_ecm() failed!\n");
-		return -1;
-	}
-
-	{
-		int i;
-
-		puts("Public Key is\n\t");
-
-		for (i = 0; i < 8; ++i) {
-			printf("%08lx", fuses[i]);
-		}
-
-		puts("\n");
-	}
-#endif
 
 	return 0;
 }
@@ -299,12 +270,12 @@ report_errors(unsigned long sbb_interrupt_status)
 	}
 
 	if (0 != (sbb_interrupt_status & 0x8)) {
-		printf("SBB Error: Invalid Master Key\n");
+		printf("SBB Error: Invalid Key Encryption Key\n");
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x10)) {
-		printf("SBB Error: Invalid Authentication Key\n");
+		printf("SBB Error: Invalid Storage Root Key\n");
 		rc = -1;
 	}
 
@@ -368,6 +339,41 @@ report_errors(unsigned long sbb_interrupt_status)
 		rc = -1;
 	}
 
+	if (0 != (sbb_interrupt_status & 0x40000)) {
+		printf("SBB Error: Invalid Customer Key #1\n");
+		rc = -1;
+	}
+
+	if (0 != (sbb_interrupt_status & 0x80000)) {
+		printf("SBB Error: Invalid Customer Key #2\n");
+		rc = -1;
+	}
+
+	if (0 != (sbb_interrupt_status & 0x100000)) {
+		printf("SBB Error: Invalid Crypto Mode\n");
+		rc = -1;
+	}
+
+	if (0 != (sbb_interrupt_status & 0x200000)) {
+		printf("SBB Error: Invalid Key\n");
+		rc = -1;
+	}
+
+	if (0 != (sbb_interrupt_status & 0x400000)) {
+		printf("SBB Error: Invalid Hash Length\n");
+		rc = -1;
+	}
+
+	if (0 != (sbb_interrupt_status & 0x800000)) {
+		printf("SBB Error: Invalid Public Key Authentication Key\n");
+		rc = -1;
+	}
+
+	if (0 != (sbb_interrupt_status & 0x1000000)) {
+		printf("SBB Error: Signature Generation Timeout\n");
+		rc = -1;
+	}
+
 	return rc;
 }
 
@@ -407,7 +413,7 @@ run_sbb_function(int function,
 		return -1;
 
 	/* Wait for the "done" bit. */
-	value = readl(SBB_BASE + 0xa04);
+	value = readl(SBB_BASE + 0xc04);
 
 	while (0 == (value & 1)) {
 		udelay(1000);
@@ -417,7 +423,7 @@ run_sbb_function(int function,
 			return -1;
 		}
 
-		value = readl(SBB_BASE + 0xa04);
+		value = readl(SBB_BASE + 0xc04);
 	}
 
 	/* Release the semaphore. */
@@ -448,6 +454,20 @@ sbb_verify_image(void *source, void *destination, int safe)
 {
 	unsigned long parameters[4];
 
+    /* If SBB is disabled, return success */
+	if (0 != verify_sbb_enabled()) {
+		return 0;
+	}
+
+#if 0
+	/* KAKPubQx Copy 0 */
+	print_sbb_efuse("Public Key Authentication Key Qx (Copy 0)", 0x88, 0xff);
+	/* KAKPubQy Copy 0 */
+	print_sbb_efuse("Public Key Authentication Key Qy (Copy 0)", 0x228, 0xff);
+	/* SBKEK SHA2 Copy 0*/
+	print_sbb_efuse("Secret Secure Boot Key SHA2 (Copy 0)", 0x6b8, 0x7f);
+#endif
+
 	/* Set up the parameters. */
 	parameters[0] = 0;
 	parameters[1] = (unsigned long)source;
@@ -460,5 +480,6 @@ sbb_verify_image(void *source, void *destination, int safe)
 		return -1;
 	}
 
+	printf("SBB: Image Verification Successful\n");
 	return 0;
 }

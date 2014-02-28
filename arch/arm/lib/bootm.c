@@ -332,11 +332,6 @@ static void boot_jump_linux(bootm_headers_t *images)
 
 	kernel_entry = (void (*)(int, int, uint))images->ep;
 
-#ifdef CONFIG_AXXIA_ARM
-	if (0 != sbb_verify_image(kernel_entry, kernel_entry, 0))
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
-#endif
-
 	s = getenv("machid");
 	if (s) {
 		strict_strtoul(s, 16, &machid);

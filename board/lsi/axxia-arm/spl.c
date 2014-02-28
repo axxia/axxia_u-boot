@@ -549,6 +549,12 @@ void spl_spi_load_image(void)
 	spl_image.load_addr = 0x40000000;
 	spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
 		       spl_image.size, (void *)spl_image.load_addr);
+
+#ifndef CONFIG_AXXIA_EMU
+    if (0 != sbb_verify_image(0x00000000, 0x00000000, 0))
+        acp_failure(__FILE__, __FUNCTION__, __LINE__);
+#endif
+
 }
 
 void
