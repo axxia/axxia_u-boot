@@ -1168,13 +1168,13 @@ sm_bytelane_test(void * foo, unsigned long address, int pattern, unsigned long *
 	}
 #endif
 
-	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128, NULL );
+	ncr_write( NCP_REGION_ID( 512, 1 ),0, address, 128, NULL );
 
 	if (0 != (pattern & 0x2))
 		return 0;
 
 	/* Read back and compare. */
-	ncr_read( NCP_REGION_ID( 512, 1 ), address, 128, NULL );
+	ncr_read( NCP_REGION_ID( 512, 1 ), 0, address, 128, NULL );
 	NCR_TRACE("ncpRead   -w8 0.512.1.0x00%08lx 128", address);
 
 #ifdef SM_BYTELANE_TEST_DEBUG
@@ -1298,7 +1298,7 @@ sm_ecc_bytelane_test(void *foo, unsigned long region, unsigned long address,
 	}
 #endif /* SM_ECC_BYTELANE_TEST_DEBUG */
 
-	ncr_write( NCP_REGION_ID( 512, 1 ), address, 128, NULL );
+	ncr_write( NCP_REGION_ID( 512, 1 ), 0, address, 128, NULL );
 
 	/*
 	  ncr_read() returns the contents of "CFG Ring Command Error
@@ -1327,7 +1327,7 @@ sm_ecc_bytelane_test(void *foo, unsigned long region, unsigned long address,
 #endif
 
 	/* Read, Ignoring the Value Read */
-	rc = ncr_read( NCP_REGION_ID( node, 5 ), 0, 128/4, NULL );
+	rc = ncr_read( NCP_REGION_ID( node, 5 ), 0, 0, 128/4, NULL );
 
 	if (-1 == rc)
 		rc = in_be32(NCA + 0xe4);
@@ -1393,7 +1393,7 @@ sm_ecc_bytelane_test(void *foo, unsigned long region, unsigned long address,
 
 	/* Clear any ACK errors created during initialization. */
 	ncr_read32( NCP_REGION_ID( node, 0 ), 0, &temp);
-	ncr_write32( NCP_REGION_ID( node, 0 ), 0, temp);
+	ncr_write32( NCP_REGION_ID( node, 0 ),0, temp);
 
 	/* Check the interrupt status. */
 	ncr_read32( region, NCP_DENALI_CTL_91, & value );
