@@ -482,11 +482,12 @@ int pci_476_init (struct pci_controller *hose, int port)
 	hose->region_count = 1;
 	pci_register_hose(hose);
 
+	pciah = U64_TO_U32_HIGH(pci_addr);
+	pcial = U64_TO_U32_LOW(pci_addr);
+
 #ifndef AXM_35xx	
 	/* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
 	 * 64 bit address space */
-	pciah = U64_TO_U32_HIGH(pci_addr);
-	pcial = U64_TO_U32_LOW(pci_addr);
 	out_le32(mbase + 0x10, pcial | 0xc);
 	out_le32(mbase + 0x14, pciah); 
 #else
