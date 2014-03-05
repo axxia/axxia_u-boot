@@ -705,6 +705,10 @@ int acp_clock_lock_verify(int, int);
 #define CCR0_DEFAULT 0x00200000
 #define CCR1_DEFAULT 0x00000000
 #define CCR2_DEFAULT 0x00000000
+#elif defined(AXM_35xx)
+#define CCR0_DEFAULT 0x00200080
+#define CCR1_DEFAULT 0x00000000
+#define CCR2_DEFAULT 0x00000000
 #else
 #define CCR0_DEFAULT 0x00200000
 #define CCR1_DEFAULT 0x00000000
