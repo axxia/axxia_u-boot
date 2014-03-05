@@ -24,7 +24,7 @@
 #define __CONFIGS_ACP2_H
 
 #define CONFIG_ACP2 1
-//#define CONFIG_SPD 1
+/*#define CONFIG_SPD 1*/
 
 #ifdef CONFIG_FIT
 #error "CONFIG_FIT is DEFINED!!!"
@@ -267,7 +267,7 @@ int acp_init( void );
   ======================================================================
 */
 
-/*#define CONFIG_LSI_NET*/
+#define CONFIG_LSI_NET
 
 #if defined(ACP_ISS) || defined(NCR_TRACER) || defined(ACP2_SYSMEM_TEST)
 #undef CONFIG_LSI_NET
