@@ -1344,7 +1344,7 @@ void nic_loopback_test( void );
 volatile uchar * PktBuf;
 
 
-#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+#if (defined(ACP_25xx) || defined(AXM_35xx))  && defined(CONFIG_ACP2)
 typedef enum {
 	PEI_2_5G = 1,
 	PEI_5G = 2
@@ -1374,10 +1374,13 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 
 	if (peiCore == 0) {
 		addr = PCIE0_CONFIG;
-	} else {
+	} else if(peiCore == 1) {
 		addr = PCIE1_CONFIG;
+	} else {
+		addr = PCIE2_CONFIG;
 	}
 
+#ifndef AXM_35xx
 	/* Read the PCIe mode control */
 	ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &peiControl);
 	if (peiControl == 0x00480003) {
@@ -1385,6 +1388,7 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 	} else if (peiControl == 0x00400001) {
 		printf("Setup as single PCIe controller\n");
 	}
+#endif
 
 	lnkStatus = acpreadio((void *)(addr + 0x117c));
 	printf("PEI%d 0x117c LnkStatus = 0x%x\n",  peiCore,lnkStatus);
@@ -1428,12 +1432,20 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 			printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
 		}
 	} else if (changeSpeed == PEI_5G) {
+
+#ifdef AXM_35xx
+			/* Change PEI speed to Gen 2 */
+			acpwriteio(0x2, (void *)(addr + 0x90));
+			acpwriteio(0x10000, (void *)(addr + 0x117c));
+			udelay(pei_delay);
+#else
 		if ((peiCore == 0) && (peiControl == 0x00480003) && (width == 0x2)) {
 		
 			/* Change PEI speed to Gen 2 */
 			acpwriteio(0x2, (void *)(addr + 0x90));
 			acpwriteio(0x10000, (void *)(addr + 0x117c));
 			udelay(pei_delay);
+
 
 			/* ncr w 0x115.1.0x68e 0x0406 */
 			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
@@ -1474,6 +1486,7 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 			acpwriteio(0x2, (void *)(addr + 0x90));
 			acpwriteio(0x10000, (void *)(addr + 0x117c));
 		}
+#endif
 
 		/* delay for 1000 ms */
 		mdelay(1000);
@@ -1914,7 +1927,7 @@ acp_init_r( void )
 #endif
 #endif
 
-#if (defined(CONFIG_ACP2) || defined(CONFIG_ACP3) && !defined(AXM_35xx))
+#if (defined(CONFIG_ACP2) || defined(CONFIG_ACP3))
 	/*
 	  Only set up PCI when in internal boot mode, in control of
 	  one of the PEIs, and the root complex.
@@ -1958,6 +1971,17 @@ acp_init_r( void )
 			pei_mask |= 2;
 		}
 #endif
+#elif defined(AXM_35xx)
+		if (0 != ncr_read32(NCP_REGION_ID(0x107, 0), 0x200, &control)) {
+			printf("Error Reading PHY Control: "
+			       "Skipping PCI setup.\n");
+			control = 0;
+		}
+		if (0 != (control & 0x00400000))
+			pci_rc = 1;
+
+		boot_mode = 0;
+		pci_rc = 1;
 #else
 #if defined (CONFIG_ACP3)
 		control = dcr_read(DCR_RESET_BASE);
@@ -2010,7 +2034,7 @@ acp_init_r( void )
 
 
 		if (0 == boot_mode && 1 == pci_rc) {
-#if defined(ACP_25xx) && defined(CONFIG_ACP2)
+#if (defined(ACP_25xx) || defined(AXM_35xx)) && defined(CONFIG_ACP2)
 			{
 				char * env_value;
 				unsigned long pciStatus, linkState;
@@ -2046,7 +2070,25 @@ acp_init_r( void )
 				} else {
 					printf("PCIE1 link State DOWN = 0x%x\n", linkState);
 				}
+#ifdef AXM_35xx
+				pciStatus = acpreadio((void *)(PCIE2_CONFIG + 0x1004));
+				printf("PEI2 pciStatus = 0x%x\n", pciStatus);
+				linkState = (pciStatus & 0x3f00) >> 8;
+	
+				if (linkState == 0xb) {
+					printf("PCIE2 link State UP = 0x%x\n", linkState);
+					env_value = getenv("pei1_speed");
+					if ((char *)0 != env_value) {
+						unsigned long pei2_speed; 
+					
+						pei2_speed = simple_strtoul(env_value, NULL, 0); 
+						pci_speed_change(2, pei2_speed);
+					}
+				} else {
+					printf("PCIE2 link State DOWN = 0x%x\n", linkState);
+				}
 			}
+#endif
 #endif
 #if defined(CONFIG_ACP3) && defined(CONFIG_PCI)
 				pci_init_board();
