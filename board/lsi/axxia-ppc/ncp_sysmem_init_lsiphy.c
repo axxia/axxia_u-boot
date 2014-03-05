@@ -1161,7 +1161,6 @@ ncp_sm_lsiphy_status_get(
 {
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
     ncp_region_id_t region;
-    ncp_uint32_t value = 0;
 
     if (smId >= NCP_EXTMEM_NUM_NODES) {
         NCP_CALL(NCP_ST_SYSMEM_INVALID_ID);
@@ -1179,13 +1178,6 @@ ncp_sm_lsiphy_status_get(
     /* general PHY status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, 
                         (ncp_uint32_t *) &stat->phyStat);
-
-    /* Poll till feedback SM and qrtr cycle SM are settled */
-    ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, &value);
-    while(value & 0x600)
-    {
-        ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, &value);
-    }
 
     /* gate-training status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_GTTRAINSTAT0, 
@@ -1578,6 +1570,12 @@ ncp_sm_lsiphy_static_init(
     smctrl.initfb       = 1;
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_SMCTRL, 
                         *(ncp_uint32_t *) &smctrl);
+
+    /* Poll till feedback SM and qrtr cycle SM are settled */
+    if (0 != ncr_poll(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, 0x600, 0x000, 100, 100) )
+    {
+        NCP_CALL(NCP_ST_ERROR);
+    }
 
     if (parms->single_bit_mpr) {
         ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_RDLVLCMPDATEVN, 
