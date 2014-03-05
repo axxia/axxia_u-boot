@@ -692,7 +692,7 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 
 	printf("Setting PCI/SRIO to 0x%08lx\n", new_control);
 
-	if (new_control == 0x1) {
+	if (new_control == 0x400001) {
 		/*  PEI0 RC 0x4 mode */
 
                /* soft reset the phy, pipe, link layer */
@@ -711,8 +711,40 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 		/* wr pll_a_ctrl  0x230 0x03176403 */
                 ncr_write32(NCP_REGION_ID(0x107, 0), 0x230, 0x03176403);
 		
+                udelay(100000);
+
 		/* enable PEI0 */
-                ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x1);
+                ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, new_control);
+	} else if ((new_control & 0x1c70000f) == 0x18400007) {
+		/* PEI0x1, PEI1x1, PEI2x1 */
+		/* wr ctrl10       0x228 0x00000000 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x228, 0x0);
+
+		/* wr ctrl0         0x200 0x1800006F */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x1800006F);
+
+		/* wr ctrl1         0x204 0x00000000 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x204, 0x0);
+
+
+		/* wr ctrl11       0x22c 0x000000EF */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x22c, 0xef);
+
+		/* wr ctrl2         0x208 0xFFF7FFF7 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x208, 0xFFF7FFF7);
+
+		/* wr_pll_a_ctrl 0x230 0x03176403 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x230, 0x03176403);
+
+		/* wr_pll_b_ctrl 0x234 0x06126507 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x234, 0x06126507);
+
+		/* wr ctrl12        0x244 0x11111111 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x244, 0x11111111);
+
+		/* wr ctrl0         0x200 0x1800000F */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, new_control);
+	
 	}
 	return 0;
 }
