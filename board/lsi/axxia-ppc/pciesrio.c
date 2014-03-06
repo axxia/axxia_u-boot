@@ -711,10 +711,27 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 		/* wr pll_a_ctrl  0x230 0x03176403 */
                 ncr_write32(NCP_REGION_ID(0x107, 0), 0x230, 0x03176403);
 		
-                udelay(100000);
-
 		/* enable PEI0 */
                 ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, new_control);
+	} else if ((new_control & 0x1c70000f) == 0x10400005) {
+		/* PEI0x2, PEI1x2 */
+		/* wr ctrl10       0x228 0x00000000 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x228, 0x0);
+
+		/* wr ctrl0         0x200 0x10000063 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x10000063);
+
+		/* wr ctrl2         0x208 0x77ff77ff */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x208, 0x77ff77ff);
+
+		/* wr_pll_a_ctrl 0x230 0x03176403 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x230, 0x03176403);
+
+		/* wr_pll_b_ctrl 0x234 0x03176423 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x234, 0x03176423);
+
+		/* wr ctrl0         0x200 0x1800000F */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x10400003);
 	} else if ((new_control & 0x1c70000f) == 0x18400007) {
 		/* PEI0x1, PEI1x1, PEI2x1 */
 		/* wr ctrl10       0x228 0x00000000 */

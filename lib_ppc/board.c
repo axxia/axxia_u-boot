@@ -2038,6 +2038,15 @@ acp_init_r( void )
 			{
 				char * env_value;
 				unsigned long pciStatus, linkState;
+				unsigned long pei_link_delay;
+
+				/* delay to ensure that PCIe link is up */
+				env_value = getenv("pei_link_delay");
+				pei_link_delay = simple_strtoul(env_value, NULL, 0);
+				if (pei_link_delay <= 0)
+					pei_link_delay = 1000;
+				/* delay in ms */
+				mdelay(pei_link_delay);
 				
 				pciStatus = acpreadio((void *)(PCIE0_CONFIG + 0x1004));
 				printf("PEI0 pciStatus = 0x%x\n", pciStatus);
