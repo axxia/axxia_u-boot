@@ -338,7 +338,7 @@ typedef enum {
 	ACP_OS_UART0, ACP_OS_UART1, ACP_OS_NAND, ACP_OS_FEMAC,
 	ACP_OS_PCIE0, ACP_OS_PCIE1, ACP_OS_PCIE2, ACP_OS_SRIO,
 	ACP_OS_USB, ACP_OS_PLX, ACP_OS_SBB, ACP_OS_SSP,	ACP_OS_I2C,
-	ACP_OS_FDT
+	ACP_OS_I2C1, ACP_OS_I2C2, ACP_OS_FDT
 } acp_osg_group_res_t;
 
 unsigned long long acp_osg_group_get_res(int, acp_osg_group_res_t);

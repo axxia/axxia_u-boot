@@ -123,6 +123,16 @@ typedef struct {
 #define I2C_SHIFT     20
 #define I2C(flags)    (((flags) & I2C_MASK) >> I2C_SHIFT)
 
+#ifdef AXM_35xx
+#define I2C1_MASK      0x200000
+#define I2C1_SHIFT     21
+#define I2C1(flags)    (((flags) & I2C1_MASK) >> I2C1_SHIFT)
+
+#define I2C2_MASK      0x400000
+#define I2C2_SHIFT     22
+#define I2C2(flags)    (((flags) & I2C2_MASK) >> I2C2_SHIFT)
+#endif
+
 static acp_osg_core_t *acp_osg_cores[] = {
 	(void *)&__acp_osg_cores + (0 * sizeof(acp_osg_core_t)),
 	(void *)&__acp_osg_cores + (1 * sizeof(acp_osg_core_t)),
@@ -431,6 +441,14 @@ acp_osg_group_get_res(int group, acp_osg_group_res_t res)
 	case ACP_OS_I2C:
 		rv = I2C(acp_osg_group->flags);
 		break;
+#ifdef AXM_35xx
+	case ACP_OS_I2C1:
+		rv = I2C1(acp_osg_group->flags);
+		break;
+	case ACP_OS_I2C2:
+		rv = I2C2(acp_osg_group->flags);
+		break;
+#endif
 	case ACP_OS_FDT:
 		rv = (unsigned long)get_acp_fdt(group);
 		break;
@@ -540,6 +558,18 @@ acp_osg_group_set_res(int group, acp_osg_group_res_t res, unsigned long value)
 		acp_osg_groups[group]->flags |=
 			((value << I2C_SHIFT) & I2C_MASK);
 		break;
+#ifdef AXM_35xx
+	case ACP_OS_I2C1:
+		acp_osg_groups[group]->flags &= ~I2C1_MASK;
+		acp_osg_groups[group]->flags |=
+			((value << I2C1_SHIFT) & I2C1_MASK);
+		break;
+	case ACP_OS_I2C2:
+		acp_osg_groups[group]->flags &= ~I2C2_MASK;
+		acp_osg_groups[group]->flags |=
+			((value << I2C2_SHIFT) & I2C2_MASK);
+		break;
+#endif
 	case ACP_OS_FDT:
 		printf("The address of the device tree cannot be changed.\n");
 		break;
@@ -1334,7 +1364,7 @@ acp_osg_update_dt(void *input, int group)
 	if (0 != rc)
 		return -1;
 
-	/* I2C */
+	/* I2C0 */
 
 	if (0 != acp_osg_group_get_res(group, ACP_OS_I2C))
 		value = 1;
@@ -1347,9 +1377,53 @@ acp_osg_update_dt(void *input, int group)
 	rc |= fdt_find_and_setprop(dt, "/plb/opb/i2c0",
 				   "status", (void *)status[value],
 				   strlen(status[value]) + 1, 1);
+	rc != fdt_find_and_setprop(dt, "/plb/opb/i2c0",
+				   "clock-frequency",
+				   (void *)&clk_per,
+				   sizeof(unsigned long), 1);
 
 	if (0 != rc)
 		return -1;
+#ifdef AXM_35xx
+	/* I2C1 */
+	if (0 != acp_osg_group_get_res(group, ACP_OS_I2C1))
+		value = 1;
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/plb/opb/i2c1",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+	rc |= fdt_find_and_setprop(dt, "/plb/opb/i2c1",
+				   "status", (void *)status[value],
+				   strlen(status[value]) + 1, 1);
+	rc != fdt_find_and_setprop(dt, "/plb/opb/i2c1",
+				   "clock-frequency",
+				   (void *)&clk_per,
+				   sizeof(unsigned long), 1);
+
+	if (0 != rc)
+		return -1;
+
+	/* I2C2 */
+	if (0 != acp_osg_group_get_res(group, ACP_OS_I2C2))
+		value = 1;
+	else
+		value = 0;
+
+	rc = fdt_find_and_setprop(dt, "/plb/opb/i2c2",
+				  "enabled", (void *)&value,
+				  sizeof(unsigned long), 1);
+	rc |= fdt_find_and_setprop(dt, "/plb/opb/i2c2",
+				   "status", (void *)status[value],
+				   strlen(status[value]) + 1, 1);
+	rc != fdt_find_and_setprop(dt, "/plb/opb/i2c2",
+				   "clock-frequency",
+				   (void *)&clk_per,
+				   sizeof(unsigned long), 1);
+	if (0 != rc)
+		return -1;
+#endif
 
 	return rc;
 }
