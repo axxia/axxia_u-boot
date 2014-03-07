@@ -108,42 +108,30 @@ typedef struct {
 	unsigned long flags;
 	unsigned long syspll_prms;
 	unsigned long syspll_ctrl;
-	unsigned long syspll_csw;
+	unsigned long syspll_mcgc;
 	unsigned long syspll_div;
 	unsigned long syspll_psd;
 	unsigned long cpupll_prms;
 	unsigned long cpupll_ctrl;
-	unsigned long cpupll_csw;
+	unsigned long cpupll_mcgc;
 	unsigned long cpupll_div;
 	unsigned long cpupll_psd;
 	unsigned long sm0pll_prms;
 	unsigned long sm0pll_ctrl;
-	unsigned long sm0pll_csw;
+	unsigned long sm0pll_mcgc;
 	unsigned long sm0pll_div;
 	unsigned long sm0pll_psd;
-	unsigned long sm1pll_prms;
-	unsigned long sm1pll_ctrl;
-	unsigned long sm1pll_csw;
-	unsigned long sm1pll_div;
-	unsigned long sm1pll_psd;
-	unsigned long tmpll_prms;
-	unsigned long tmpll_ctrl;
-	unsigned long tmpll_csw;
-	unsigned long tmpll_div;
-	unsigned long tmpll_psd;
-	unsigned long fabpll_prms;
-	unsigned long fabpll_ctrl;
-	unsigned long fabpll_csw;
-	unsigned long fabpll_div;
-	unsigned long fabpll_psd;
-	unsigned long nrcpinput_csw;
-	unsigned long nrcpinput_div;
-	unsigned long per_csw;
+	unsigned long tm0pll_prms;
+	unsigned long tm0pll_ctrl;
+	unsigned long tm0pll_mcgc;
+	unsigned long tm0pll_div;
+	unsigned long tm0pll_psd;
+	unsigned long per_mcgc;
 	unsigned long per_div;
-	unsigned long emmc_csw;
-	unsigned long emmc_div;
-	unsigned long debug_csw;
-	unsigned long stop_csw;
+	unsigned long axxia_mcgc;
+	unsigned long axxia_div;
+	unsigned long timer_mcgc;
+	unsigned long clocks_v8_pad[13];
 #else
 	unsigned long sys_control;
 	unsigned long sys_lftune_upper;
@@ -643,7 +631,7 @@ pll_init(unsigned long region, unsigned long parameters, unsigned long control)
 	  Enable the PLL and set pole, zero select and divider values.
 	*/
 
-	p |= parameters;
+	p |= parameters | 0x80000000;
 	ncr_write32(region, 0, p);
 	udelay(10);
 
@@ -714,32 +702,30 @@ clocks_init(void)
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx\n"
-	       "0x%lx\n"
 	       "0x%lx\n",
 	       clocks->flags,
-	       clocks->syspll_prms, clocks->syspll_ctrl, clocks->syspll_csw,
+	       clocks->syspll_prms, clocks->syspll_ctrl, clocks->syspll_mcgc,
 	       clocks->syspll_div, clocks->syspll_psd,
-	       clocks->cpupll_prms, clocks->cpupll_ctrl, clocks->cpupll_csw,
+	       clocks->cpupll_prms, clocks->cpupll_ctrl, clocks->cpupll_mcgc,
 	       clocks->cpupll_div, clocks->cpupll_psd,
-	       clocks->sm0pll_prms, clocks->sm0pll_ctrl, clocks->sm0pll_csw,
+	       clocks->sm0pll_prms, clocks->sm0pll_ctrl, clocks->sm0pll_mcgc,
 	       clocks->sm0pll_div, clocks->sm0pll_psd,
-	       clocks->sm1pll_prms, clocks->sm1pll_ctrl, clocks->sm1pll_csw,
-	       clocks->sm1pll_div, clocks->sm1pll_psd,
-	       clocks->tmpll_prms, clocks->tmpll_ctrl, clocks->tmpll_csw,
-	       clocks->tmpll_div, clocks->tmpll_psd,
-	       clocks->fabpll_prms, clocks->fabpll_ctrl, clocks->fabpll_csw,
-	       clocks->fabpll_div, clocks->fabpll_psd,
-	       clocks->nrcpinput_csw, clocks->nrcpinput_div,
-	       clocks->per_csw, clocks->per_div,
-	       clocks->emmc_csw, clocks->emmc_div,
-	       clocks->debug_csw,
-	       clocks->stop_csw);
+	       clocks->tm0pll_prms, clocks->tm0pll_ctrl, clocks->tm0pll_mcgc,
+	       clocks->tm0pll_div, clocks->tm0pll_psd,
+	       clocks->per_mcgc, clocks->per_div,
+	       clocks->axxia_mcgc, clocks->axxia_div,
+	       clocks->timer_mcgc);
 #endif
+
+	/*
+	  Clear Out the MCGC (Main Clock Generator Control) Register
+	*/
+
+	mcgc = 0;
+	dcr_write(mcgc, 0xd00);
+
 	/*
 	  Set up the SYS PLL
 	*/
@@ -752,24 +738,14 @@ clocks_init(void)
 		return -1;
 	}
 
-	/*
-	  Clear Out the MCGC (Main Clock Generator Control) Register
-	*/
-
-	mcgc = 0;
-	dcr_write(mcgc, 0xd00);
-
 	if (0 != clocks->syspll_div) {
-		mcgc &= ~0xf000;
-		mcgc |= ((clocks->syspll_div & 0xf) << 12);
-		mcgc |= 8;
+		mcgc |= clocks->syspll_div;
 		dcr_write(mcgc, 0xd00);
 		mcgc &= ~8;
 		dcr_write(mcgc, 0xd00);
 	}
 
-	mcgc &= ~0x30000000;
-	mcgc |= (clocks->syspll_csw & 0x3) << 28;
+	mcgc |= clocks->syspll_mcgc;
 	dcr_write(mcgc, 0xd00);
 	udelay(clocks->syspll_psd);
 
@@ -777,17 +753,14 @@ clocks_init(void)
 	  Set up the NT clock (Axxia clock in the RTE)
 	*/
 
-	if (0 != clocks->nrcpinput_div) {
-		mcgc &= ~0xf0;
-		mcgc |= ((clocks->nrcpinput_div & 0xf) << 4);
-		mcgc |= 8;
+	if (0 != clocks->axxia_div) {
+		mcgc |= clocks->axxia_div;
 		dcr_write(mcgc, 0xd00);
 		mcgc &= ~8;
 		dcr_write(mcgc, 0xd00);
 	}
 
-	mcgc &= ~0x03000000;
-	mcgc |= (clocks->nrcpinput_csw & 0x3) << 24;
+	mcgc |= clocks->axxia_mcgc;
 	dcr_write(mcgc, 0xd00);
 	udelay(clocks->syspll_psd);
 
@@ -804,38 +777,33 @@ clocks_init(void)
 	}
 
 	if (0 != clocks->cpupll_div) {
-		mcgc &= ~0xf0000;
-		mcgc |= ((clocks->cpupll_div & 0xf) << 16);
-		mcgc |= 8;
+		mcgc |= clocks->cpupll_div;
 		dcr_write(mcgc, 0xd00);
 		mcgc &= ~8;
 		dcr_write(mcgc, 0xd00);
 	}
 
-	mcgc &= ~0xc0000000;
-	mcgc |= (clocks->cpupll_csw & 0x3) << 30;
+	mcgc |= clocks->cpupll_mcgc;
 	dcr_write(mcgc, 0xd00);
 	udelay(clocks->cpupll_psd);
 
 	/*
-	  Switch the cpu timer clock to the PLL.
+	  Switch the cpu timer clock.
 	*/
 
-	mcgc |= 0x100000;
+	mcgc |= clocks->timer_mcgc;
 	dcr_write(mcgc, 0xd00);
 
 	/*
 	  Set up the peripheral clock
 	*/
 
-	if (0 != clocks->per_csw) {
-		mcgc &= ~0xf00;
-		mcgc |= (clocks->per_div & 0xf) << 8;
-		mcgc |= 8;
+	if (0 != clocks->per_div) {
+		mcgc |= clocks->per_div;
 		dcr_write(mcgc, 0xd00);
 		mcgc &= ~8;
 		dcr_write(mcgc, 0xd00);
-		mcgc |= 0x8000000;
+		mcgc |= clocks->per_mcgc;
 		dcr_write(mcgc, 0xd00);
 		udelay(clocks->cpupll_psd);
 	}
@@ -851,6 +819,7 @@ clocks_init(void)
 	rst_mod = dcr_read(0xe03);
 	rst_mod |= 0xcc0000;
 	dcr_write(rst_mod, 0xe03);
+	udelay(1000);
 
 	region = NCP_REGION_ID(0x155, 0);
 
@@ -864,13 +833,13 @@ clocks_init(void)
 
 	region = NCP_REGION_ID(0x155, 1);
 
-	if (0 != pll_init(region, clocks->tmpll_prms, clocks->tmpll_ctrl)) {
+	if (0 != pll_init(region, clocks->tm0pll_prms, clocks->tm0pll_ctrl)) {
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
 		return -1;
 	}
 
-	udelay(clocks->tmpll_psd);
+	udelay(clocks->tm0pll_psd);
 
 	/* Take PHY IO and clock sync out of reset. */
 	rst_mod &= ~0xcc0000;
