@@ -1489,6 +1489,15 @@ acp_sysmem_asic_check_ecc(unsigned long region)
 {
 	unsigned long value;
 
+#ifdef AXM_35xx
+	ncr_read32(region, NCP_DENALI_CTL_373, &value);
+
+	if (0 == (value & 0x100)) {
+		printf("ECC is not enabled for node 0x%03lx\n",
+		       NCP_NODE_ID(region));
+		return;
+	}
+#else
 	ncr_read32(region, NCP_DENALI_CTL_20, &value);
 
 	if (3 != ((ncp_denali_DENALI_CTL_20_t *)&value)->ctrl_raw) {
@@ -1496,6 +1505,7 @@ acp_sysmem_asic_check_ecc(unsigned long region)
 		       NCP_NODE_ID(region));
 		return;
 	}
+#endif
 
 	ncr_read32(region, INT_STATUS_OFFSET, &value);
 
@@ -1565,13 +1575,20 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 	  The end address is specified by the number
 	  of address bits.
 	*/
+
 	if( 1 == test ) {
 		/*
 		  For address checking, the spec says
 		  the register value should be one
 		  less than the calculated value.
+
+		  Only for 34xx.
 		*/
-		ncr_or( region, 0xa4,	( ( bits - 1 ) << 24 ) );
+#if defined(ACP_X1V2) || defined(ACP_X2V1)
+		--bits;
+#else
+		ncr_or(region, 0xa4, (bits << 24));
+#endif
 	} else {
 		/*
 		  For data checking we just use the
@@ -1579,11 +1596,7 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 		  specified memory size. (i.e. 2GB ==
 		  31 bits).
 		*/
-#ifndef AXM_35xx
-		ncr_or( region, 0xa4,	( bits << 24 ) );
-#else
-		ncr_or( region, 0xa4,	( (bits - 1) << 24 ) );
-#endif
+		ncr_or(region, 0xa4, (bits  << 24));
 	}
 
 	/* Erase the interrupt status from the previous run. */
@@ -1660,7 +1673,8 @@ acp_sysmem_bist( void )
 		} else {
 			ncr_read32(smregion0, INT_STATUS_OFFSET,
 				   &interrupt_status);
-			ncr_write32(smregion0, INT_STATUS_CLEAR_OFFSET, interrupt_status);
+			ncr_write32(smregion0, INT_STATUS_CLEAR_OFFSET,
+				    interrupt_status);
 			ncr_read32( smregion0, 0x50, & result );
 
 			if( result & ( 1 << test ) ) {
@@ -1680,7 +1694,8 @@ acp_sysmem_bist( void )
 			} else {
 				ncr_read32(smregion1, INT_STATUS_OFFSET,
 					   &interrupt_status);
-				ncr_write32(smregion1, INT_STATUS_CLEAR_OFFSET, interrupt_status);
+				ncr_write32(smregion1, INT_STATUS_CLEAR_OFFSET,
+					    interrupt_status);
 				ncr_read32( smregion1, 0x50, & result );
 				
 				if( result & ( 1 << test ) ) {
@@ -1739,7 +1754,8 @@ acp_sysmem_bist( void )
 			ncr_read32(smregion, INT_STATUS_OFFSET,
 				   &interrupt_status);
 
-			ncr_write32(smregion, INT_STATUS_CLEAR_OFFSET, interrupt_status);
+			ncr_write32(smregion, INT_STATUS_CLEAR_OFFSET,
+				    interrupt_status);
 
 			/* Get the results. */
 			ncr_read32(smregion, 0x50, & result);
