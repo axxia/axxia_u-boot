@@ -1849,7 +1849,11 @@ acp_init_r( void )
 #if (defined(ACP_25xx) || defined(AXM_35xx)) && defined(CONFIG_ACP2) 
 	{
 		int rc;
+#ifdef AXM_35xx
+		unsigned long ncp_denali_ctl_373;
+#else
 		unsigned long ncp_denali_ctl_20;
+#endif
 		unsigned long ncp_denali_ctl_31;
 		unsigned long debug;
 		unsigned long system_pll;
@@ -1859,7 +1863,11 @@ acp_init_r( void )
 		unsigned long l2_0_sleep_state;
 		unsigned long l2_1_sleep_state;
 
+#ifdef AXM_35xx
+		ncr_read32(NCP_REGION_ID(0x22, 0), 0x5d4, &ncp_denali_ctl_373);
+#else
 		ncr_read32(NCP_REGION_ID(0x22, 0), 0x50, &ncp_denali_ctl_20);
+#endif
 		ncr_read32(NCP_REGION_ID(0x22, 0), 0x7c, &ncp_denali_ctl_31);
 		ncr_read32(NCP_REGION_ID(0x20, 0), 0x100, &debug);
 
@@ -1885,10 +1893,16 @@ acp_init_r( void )
 #else
 		       "Disabled",
 #endif
+#ifdef AXM_35xx
+		       (0x100 ==
+			(ncp_denali_ctl_373 & 0x100)) ? "On" : "Off",
+		       "Single",
+#else
 		       (0x300 ==
 			(ncp_denali_ctl_20 & 0x300)) ? "On" : "Off",
 		       (0x300 ==
 			(ncp_denali_ctl_31 & 0x300)) ? "Dual" : "Single",
+#endif
 		       (0x1 ==
 			(debug & 0x1)) ? "Disabled" : "Enabled",
 		       (0 == reset_enabled) ? "Disabled" : "Enabled",
