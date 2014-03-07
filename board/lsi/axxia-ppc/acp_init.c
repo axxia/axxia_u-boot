@@ -1461,7 +1461,7 @@ clocks_init( void )
 #define INT_STATUS_OFFSET 0x16c
 #define BIST_COMPLETION 0x200
 #define ECC_ERROR_MASK 0x3c
-#elif defined(ACP_X1V2) || defined(ACP_X2V1) || defined(AXM_35xx)
+#elif defined(ACP_X1V2) || defined(ACP_X2V1)
 #define INT_STATUS_OFFSET 0x16c
 #define BIST_COMPLETION 0x400
 #define ECC_ERROR_MASK 0x78
@@ -1469,6 +1469,16 @@ clocks_init( void )
 #define INT_STATUS_OFFSET 0x410
 #define BIST_COMPLETION 0x800
 #define ECC_ERROR_MASK 0x78
+#elif defined(AXM_35xx)
+#define INT_STATUS_OFFSET 0x568
+#define BIST_COMPLETION 0x400
+#define ECC_ERROR_MASK 0x78
+#endif
+
+#ifndef AXM_35xx
+#define INT_STATUS_CLEAR_OFFSET 0x164
+#else
+#define INT_STATUS_CLEAR_OFFSET 0x56c
 #endif
 
 /*
@@ -1483,7 +1493,7 @@ acp_sysmem_bist_failure(unsigned long region)
 	unsigned long value;
 	unsigned long offsets [] =
 	  { 0x248, 0x24c,
-#ifdef ACP_25xx
+#if defined(ACP_25xx) || defined(AXM_35xx)
 	    0x418, 0x41c, 0x420, 0x424, 0x428, 0x42c, 0x430, 0x434,
 	    0x438, 0x43c, 0x440, 0x444, 0x448, 0x44c, 0x450, 0x454
 #else
@@ -1551,6 +1561,9 @@ acp_sysmem_asic_check_ecc(unsigned long region)
 static void
 acp_sysmem_bist_start( unsigned long region, int bits, int test )
 {
+
+	unsigned long value;
+
 	/* Disable BIST_GO parameter */
 	ncr_and( region, 0x8, 0xfffffffe );
 
@@ -1569,7 +1582,7 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 	ncr_write32( region, 0x254, 0 );
 
 	/* Program the data mask. */
-#if defined(ACP_25xx)
+#if defined(ACP_25xx) || defined(AXM_35xx)
 	ncr_write32( region, 0x3f8, 0 );
 	ncr_write32( region, 0x3fc, 0 );
 	ncr_write32( region, 0x400, 0 );
@@ -1597,14 +1610,18 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 		  specified memory size. (i.e. 2GB ==
 		  31 bits).
 		*/
+#ifndef AXM_35xx
 		ncr_or( region, 0xa4,	( bits << 24 ) );
+#else
+		ncr_or( region, 0xa4,	( (bits - 1) << 24 ) );
+#endif
 	}
 
 	/* Erase the interrupt status from the previous run. */
-#if defined(ACP_25xx)
-	ncr_or( region, 0x164, 0x200 );
+#if defined(ACP_25xx) || defined(AXM_35xx)
+	ncr_or( region, INT_STATUS_CLEAR_OFFSET, 0x200 );
 #else
-	ncr_or( region, 0x164, 0x600 );
+	ncr_or( region, INT_STATUS_CLEAR_OFFSET, 0x600 );
 #endif
 
 	/* Start the test. */
@@ -1618,7 +1635,7 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
   acp_sysmem_bist
 */
 
-#define PARALLEL_BIST
+/* #define PARALLEL_BIST */
 
 static void
 acp_sysmem_bist( void )
@@ -1674,7 +1691,7 @@ acp_sysmem_bist( void )
 		} else {
 			ncr_read32(smregion0, INT_STATUS_OFFSET,
 				   &interrupt_status);
-			ncr_write32(smregion0, 0x164, interrupt_status);
+			ncr_write32(smregion0, INT_STATUS_CLEAR_OFFSET, interrupt_status);
 			ncr_read32( smregion0, 0x50, & result );
 
 			if( result & ( 1 << test ) ) {
@@ -1694,7 +1711,7 @@ acp_sysmem_bist( void )
 			} else {
 				ncr_read32(smregion1, INT_STATUS_OFFSET,
 					   &interrupt_status);
-				ncr_write32(smregion1, 0x164, interrupt_status);
+				ncr_write32(smregion1, INT_STATUS_CLEAR_OFFSET, interrupt_status);
 				ncr_read32( smregion1, 0x50, & result );
 				
 				if( result & ( 1 << test ) ) {
@@ -1752,7 +1769,8 @@ acp_sysmem_bist( void )
 
 			ncr_read32(smregion, INT_STATUS_OFFSET,
 				   &interrupt_status);
-			ncr_write32(smregion, 0x164, interrupt_status);
+
+			ncr_write32(smregion, INT_STATUS_CLEAR_OFFSET, interrupt_status);
 
 			/* Get the results. */
 			ncr_read32(smregion, 0x50, & result);
