@@ -249,7 +249,9 @@ typedef struct {
 	unsigned long globalSize;
 	unsigned long globalOffset;
 	unsigned long version;
+#ifdef AXM_35xx
 	unsigned long flags;
+#endif
 	unsigned long checksum;
 	unsigned long size;
 	unsigned long magic;
