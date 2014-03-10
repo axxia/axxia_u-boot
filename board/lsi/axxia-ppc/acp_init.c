@@ -25,6 +25,7 @@
 #ifdef CONFIG_ACP2
 
 #include <asm/io.h>
+#include <asm/processor.h>
 
 #if defined (ACP_X1V2) || defined (ACP_X2V1)
 #include "regs/ncp_denali_regs.h"
@@ -2006,23 +2007,22 @@ acp_init( void )
 
 	if( 0 ==
 	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM ) ) {
-		/*
-		  Create a UTLB entry for system memory.
-		*/
+#ifdef AXM_35xx
+		unsigned long ccr0_value;
 
-		__asm__ __volatile__ ( "tlbwe %1,%0,0\n"		\
-				       "tlbwe %2,%0,1\n"		\
-				       "tlbwe %3,%0,2\n"		\
-				       "isync\n"
-				       : :
-					 "r" (0x80000000),
-					 "r" (0x00000bf0),
-					 "r" (0x00000000),
-					 "r" (0x00030207));
+		ccr0_value = mfspr(SPRN_CCR0);
+		ccr0_value |= 0x80;
+		mtspr(SPRN_CCR0, ccr0_value);
+#endif
 
 		if( 0 != ( returnCode = sysmem_init( ) ) ) {
 			goto acp_init_return;
 		}
+
+#ifdef AXM_35xx
+		ccr0_value &= ~0x80;
+		mtspr(SPRN_CCR0, ccr0_value);
+#endif
 
 #if !defined(ACP_EMU)
 		if( 0 != ( global->flags &
