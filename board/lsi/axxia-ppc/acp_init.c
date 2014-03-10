@@ -225,8 +225,8 @@ typedef struct {
 	unsigned long rdimm_ctl_0_0;
 	unsigned long rdimm_ctl_0_1;
 	unsigned long rdimm_misc;
-	unsigned long write_odt_ctl;
-	unsigned long read_odt_ctl;
+	unsigned long write_ODT_ctl;
+	unsigned long read_ODT_ctl;
 	unsigned long single_bit_mpr;
 	unsigned long high_temp_dram;
 	per_sysmem_parms_t per_sysmem[2];

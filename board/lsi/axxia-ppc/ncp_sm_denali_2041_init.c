@@ -335,7 +335,16 @@ ncp_sm_denali_2041_init(
      */
     value = 0;
     SV( ncp_denali_DENALI_CTL_25_t, w2r_diffcs_dly, parms->added_rank_switch_delay);
-    SV( ncp_denali_DENALI_CTL_25_t, trtp, 6);
+    if (parms->version == NCP_CHIP_ACP35xx)
+    {
+	/* use same as twtr here */
+        SV( ncp_denali_DENALI_CTL_25_t, trtp, ncp_ns_to_clk(clkMhz, 8)); /* 7.5 ns */
+    }
+    else
+    {
+	/* TODO: X7 and other chip rev's should follow the same way as X3 tbd */
+        SV( ncp_denali_DENALI_CTL_25_t, trtp, 6);
+    }
     SV( ncp_denali_DENALI_CTL_25_t, trrd, 5);
     ncr_write32(ctlReg,  0x0064, value);
 
@@ -385,12 +394,21 @@ ncp_sm_denali_2041_init(
         case 0x3:
     	    if (parms->version == NCP_CHIP_ACP35xx)
 	    {
-		/* setting ODT_XX_MAP_CSX for dual-rank only support
-		 * extract from parms when ase/params configurability
-		 * is supported */
+		/* ODT_XX_MAP_CSX support
+		 * same applies to x7 as well */
+#if 0
                 ctl_32  = 0x01020000; /* ddr3 does not allow ODT during read */
                 ctl_33  = 0x03030000; /* dual-rank support WR */
                 ctl_34  = 0x00000000; /* cs2,3 invalid */
+#endif
+		ctl_32 =  ((parms->read_ODT_ctl & 0xf) << 16) |
+			   ((parms->read_ODT_ctl & 0xf0) << 20);
+		ctl_33 =  ((parms->read_ODT_ctl & 0xf00) >> 8) |
+			   ((parms->read_ODT_ctl & 0xf000) >> 4) |
+			   ((parms->write_ODT_ctl & 0xf) << 16) |
+			   ((parms->write_ODT_ctl & 0xf0) << 20);
+		ctl_34 =  ((parms->write_ODT_ctl & 0xf00) >> 8) |
+			   ((parms->write_ODT_ctl & 0xf000) >> 4);
 	    }
 	    else
 	    {
@@ -553,10 +571,28 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x0164, 0x00000000);
 
     /* DENALI_CTL_93 */
-    ncr_write32(ctlReg,  0x0174, 0x00000008);
+    if (parms->version == NCP_CHIP_ACP35xx)
+    {
+	/* tinit 700usec */
+        ncr_write32(ctlReg,  0x0174, ncp_ns_to_clk(clkMhz, 700000));
+    }
+    else
+    {
+	/* TODO: X7 and other chip rev's should follow the same way as X3 tbd */
+        ncr_write32(ctlReg,  0x0174, 0x00000008);
+    }
 
     /* DENALI_CTL_94 */
-    ncr_write32(ctlReg,  0x0178, 0x00000190);
+    if (parms->version == NCP_CHIP_ACP35xx)
+    {
+	/* cke_inactive 500usec */
+        ncr_write32(ctlReg,  0x0178, ncp_ns_to_clk(clkMhz, 500000));
+    }
+    else
+    {
+	/* TODO: X7 and other chip rev's should follow the same way as X3 tbd */
+        ncr_write32(ctlReg,  0x0178, 0x00000190);
+    }
 
     /* DENALI_CTL_95 */
     ncr_write32(ctlReg,  0x017c, 0x00008000);
