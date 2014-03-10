@@ -24,11 +24,7 @@
 
 #include <config.h>
 
-#ifdef CONFIG_LSI
-
-#define LSI_VERSION "4.8.1.88"
-
-const char * lsi_version = LSI_VERSION;
+const char *lsi_version = "GIT_VERSION_STRING";
 
 /*
   ----------------------------------------------------------------------
@@ -36,9 +32,7 @@ const char * lsi_version = LSI_VERSION;
 */
 
 const char *
-get_lsi_version( void )
+get_lsi_version(void)
 {
 	return lsi_version;
 }
-
-#endif /* CONFIG_LSI */

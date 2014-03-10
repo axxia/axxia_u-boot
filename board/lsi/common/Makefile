@@ -23,6 +23,8 @@
 
 include $(TOPDIR)/config.mk
 
+.PHONY: version
+
 ifneq ($(OBJTREE),$(SRCTREE))
 $(shell mkdir -p $(obj)board/$(VENDOR)/common)
 endif
@@ -43,6 +45,14 @@ clean:
 distclean:	clean
 	rm -f $(LIB) core *.bak $(obj).depend
 
+version.c: version
+
+$(obj)version.o: version.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+version: version.c.in
+	sed -e s/GIT_VERSION_STRING/`git describe --dirty`/ \
+		version.c.in >version.c
 #########################################################################
 
 # defines $(obj).depend target
