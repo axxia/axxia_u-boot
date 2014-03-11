@@ -734,11 +734,11 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 		ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x10400003);
 	} else if ((new_control & 0x1c70000f) == 0x18400007) {
 		/* PEI0x1, PEI1x1, PEI2x1 */
-		/* wr ctrl10       0x228 0x00000000 */
-		ncr_write32(NCP_REGION_ID(0x107, 0), 0x228, 0x0);
+		/* Keep PLLB powered down */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x228, 0x100);
 
-		/* wr ctrl0         0x200 0x1800006F */
-		ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x1800006F);
+		/* wr ctrl0         0x200 0x18000067 */
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x18000067);
 
 		/* wr ctrl1         0x204 0x00000000 */
 		ncr_write32(NCP_REGION_ID(0x107, 0), 0x204, 0x0);
@@ -753,14 +753,11 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 		/* wr_pll_a_ctrl 0x230 0x03176403 */
 		ncr_write32(NCP_REGION_ID(0x107, 0), 0x230, 0x03176403);
 
-		/* wr_pll_b_ctrl 0x234 0x06126507 */
-		ncr_write32(NCP_REGION_ID(0x107, 0), 0x234, 0x06126507);
-
 		/* wr ctrl12        0x244 0x11111111 */
 		ncr_write32(NCP_REGION_ID(0x107, 0), 0x244, 0x11111111);
 
 		/* wr ctrl0         0x200 0x1800000F */
-		ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, new_control);
+		ncr_write32(NCP_REGION_ID(0x107, 0), 0x200, 0x18400047);
 	
 	}
 	return 0;
