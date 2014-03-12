@@ -404,7 +404,7 @@ run_sbb_function(int function,
 	}
 
 	/* Clear the interrupt status registers. */
-	writel(0xffffffff, (SBB_BASE + 0xa04));
+	writel(0xffffffff, (SBB_BASE + 0xc04));
 
 	/* Write the function. */
 	writel(function, (SBB_BASE + 0x804));
