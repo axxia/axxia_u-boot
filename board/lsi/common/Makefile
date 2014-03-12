@@ -59,8 +59,8 @@ version: version.c.in
 		VERSION_STRING=`git describe --dirty 2>/dev/null` ; \
 		if [ 0 -ne $$? ] ; then \
 			echo "ERROR: not in a repository, version UNKNOWN" ; \
+			VERSION_STRING="UNKNOWN" ; \
 		fi ; \
-		VERSION_STRING="UNKNOWN" ; \
 	fi ; \
 	sed -e s/GIT_VERSION_STRING/$$VERSION_STRING/ version.c.in >version.c
 
