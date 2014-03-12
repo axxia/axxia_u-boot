@@ -78,8 +78,18 @@ ifdef CONFIG_SPL_BUILD
 endif
 
 version: version.c.in
-	sed -e s/GIT_VERSION_STRING/`git describe --dirty`/ \
-		version.c.in >version.c
+	@git --version >/dev/null 2>&1 ; \
+	if [ 0 -ne $$? ] ; then \
+		echo "ERROR: git is not available, version UNKNOWN" ; \
+		VERSION_STRING="UNKNOWN" ; \
+	else \
+		VERSION_STRING=`git describe --dirty 2>/dev/null` ; \
+		if [ 0 -ne $$? ] ; then \
+			echo "ERROR: not in a repository, version UNKNOWN" ; \
+		fi ; \
+		VERSION_STRING="UNKNOWN" ; \
+	fi ; \
+	sed -e s/GIT_VERSION_STRING/$$VERSION_STRING/ version.c.in >version.c
 
 # defines $(obj).depend target
 include $(SRCTREE)/rules.mk
