@@ -167,6 +167,9 @@ read_ecm(int bit_address, int number_of_bits, int pe_means_zero,
   print_sbb_efuse
 */
 
+#undef PRINT_SBB_EFUSE
+/*#define PRINT_SBB_EFUSE*/
+#ifdef PRINT_SBB_EFUSE
 static int
 print_sbb_efuse(char *label, int bit_address, int number_of_bits)
 {
@@ -188,6 +191,7 @@ print_sbb_efuse(char *label, int bit_address, int number_of_bits)
 
 	return 0;
 }
+#endif	/* PRINT_SBB_EFUSE */
 
 /*
   ------------------------------------------------------------------------------
@@ -459,14 +463,17 @@ sbb_verify_image(void *source, void *destination, int safe)
 		return 0;
 	}
 
-#if 0
+#ifdef PRINT_SBB_EFUSE
 	/* KAKPubQx Copy 0 */
-	print_sbb_efuse("Public Key Authentication Key Qx (Copy 0)", 0x88, 0xff);
+	print_sbb_efuse("Public Key Authentication Key Qx (Copy 0)",
+			0x88, 0xff);
 	/* KAKPubQy Copy 0 */
-	print_sbb_efuse("Public Key Authentication Key Qy (Copy 0)", 0x228, 0xff);
+	print_sbb_efuse("Public Key Authentication Key Qy (Copy 0)",
+			0x228, 0xff);
 	/* SBKEK SHA2 Copy 0*/
-	print_sbb_efuse("Secret Secure Boot Key SHA2 (Copy 0)", 0x6b8, 0x7f);
-#endif
+	print_sbb_efuse("Secret Secure Boot Key SHA2 (Copy 0)",
+			0x6b8, 0x7f);
+#endif	/* PRINT_SBB_EFUSE */
 
 	/* Set up the parameters. */
 	parameters[0] = 0;
