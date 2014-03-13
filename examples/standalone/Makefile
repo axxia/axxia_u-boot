@@ -68,7 +68,7 @@ ELF	:= $(addprefix $(obj),$(ELF))
 BIN	:= $(addprefix $(obj),$(BIN))
 SREC	:= $(addprefix $(obj),$(SREC))
 
-gcclibdir := $(shell dirname `$(CC) -print-libgcc-file-name`)
+gcclibdir := $(shell dirname `$(CC) --sysroot=$(SYSROOT) -print-libgcc-file-name`)
 
 CPPFLAGS += -I..
 
@@ -80,6 +80,8 @@ $(LIB):	$(obj).depend $(LIBOBJS)
 
 $(ELF):
 $(obj)%:	$(obj)%.o $(LIB)
+		@echo "CC is $(CC)"
+		@echo "SYSROOT is $(SYSROOT)"
 		$(LD) -g -Ttext $(STANDALONE_LOAD_ADDR) \
 			-o $@ -e $(SYM_PREFIX)$(notdir $(<:.o=)) $< $(LIB) \
 			-L$(gcclibdir) -lgcc
