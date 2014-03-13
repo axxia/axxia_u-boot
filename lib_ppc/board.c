@@ -1876,46 +1876,6 @@ acp_init_r( void )
 		dcr_write(0x80, 0x400);
 		l2_1_sleep_state = dcr_read(0x404);
 
-		printf("--------------- AXM2500/AXM35xx Settings ---------------\n"
-		       "               L2 State: %d %d\n"
-		       "   Reset instead of IPI: %s\n"
-		       "                    ECC: %s\n"
-		       "                 Memory: %s\n"
-		       "               SysCache: %s\n"
-		       "                  Reset: %s\n"
-#ifdef NCP_SM_PHY_REG_RESTORE
-		       "SM PHY Register Restore: %s\n"
-#endif
-		       "         PCIe Test Mode: %s\n\n",
-		       l2_0_sleep_state, l2_1_sleep_state,
-#ifdef RESET_INSTEAD_OF_IPI
-		       "Enabled",
-#else
-		       "Disabled",
-#endif
-#ifdef AXM_35xx
-		       (0x100 ==
-			(ncp_denali_ctl_373 & 0x100)) ? "On" : "Off",
-		       "Single",
-#else
-		       (0x300 ==
-			(ncp_denali_ctl_20 & 0x300)) ? "On" : "Off",
-		       (0x300 ==
-			(ncp_denali_ctl_31 & 0x300)) ? "Dual" : "Single",
-#endif
-		       (0x1 ==
-			(debug & 0x1)) ? "Disabled" : "Enabled",
-		       (0 == reset_enabled) ? "Disabled" : "Enabled",
-#ifdef NCP_SM_PHY_REG_RESTORE
-		       (0 == ncp_sm_phy_reg_restore) ? "Disabled" : "Enabled",
-#endif
-#ifdef ACP2_PCIE_TEST
-		       "Enabled"
-#else
-		       "Disabled"
-#endif
-		       );
-
 		rc = acp_clock_get(clock_sys, &system_pll);
 		rc |= acp_clock_get(clock_ppc, &ppc_pll);
 		rc |= acp_clock_get(clock_ddr, &ddr_pll);
