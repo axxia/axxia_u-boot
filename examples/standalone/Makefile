@@ -68,7 +68,7 @@ ELF	:= $(addprefix $(obj),$(ELF))
 BIN	:= $(addprefix $(obj),$(BIN))
 SREC	:= $(addprefix $(obj),$(SREC))
 
-gcclibdir := $(shell dirname `$(CC) -print-libgcc-file-name`)
+gcclibdir := $(shell dirname `$(CC) --sysroot=$(SYSROOT) -print-libgcc-file-name`)
 
 CPPFLAGS += -I..
 
