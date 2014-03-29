@@ -233,6 +233,7 @@ COBJS-y += image.o
 COBJS-y += memsize.o
 COBJS-y += stdio.o
 
+COBJS-y += cmd_memtest.o
 
 COBJS	:= $(sort $(COBJS-y))
 XCOBJS	:= $(sort $(XCOBJS-y))
