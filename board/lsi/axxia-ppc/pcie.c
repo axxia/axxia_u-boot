@@ -534,6 +534,8 @@ void pci_init_board(void)
 	int busno;
 	unsigned peiControl;
 
+	ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &peiControl);
+
 #if defined(ACP_PEI0) && defined(ACP_PEI1) && defined(ACP_PEI2)
 #ifdef AXM_35xx
 	if (peiControl & 0x1) {
