@@ -131,9 +131,9 @@ setup_page_tables:
 	@ First 1G of RAM, sharable, cacheable and bufferable.
 
 #ifdef RUN_UNCACHED
-	ldr     r0, =0xc12
+	ldr     r0, =0xc02
 #else
-	ldr     r0, =0x10c1e
+	ldr     r0, =0x10c0e
 #endif
 	cmp	r4, #0
 	orrne	r0, r0, #0x80000	@ Set the NS bit if r4 is not 0
@@ -427,7 +427,7 @@ set_actlr2:
 	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
 	orr     r0, r0, #0x003c         @ write buffer
 	orrne   r0, r0, #1              @ MMU enabled
-	movne   r1, #-1
+	movne   r1, #0xfd
 	mcrne   p15, 0, r3, c2, c0, 0   @ write page table pointer
 	mcrne   p15, 0, r1, c3, c0, 0   @ write domain access control
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
@@ -605,7 +605,11 @@ turn_on_mmu:
 	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
 	orr     r0, r0, #0x003c         @ write buffer
 	orrne   r0, r0, #1              @ MMU enabled
-	movne   r1, #-1
+#ifdef CONFIG_SPL_BUILD
+	movne	r1, #-1
+#else
+	movne   r1, #0xfd
+#endif
 	mcrne   p15, 0, r3, c2, c0, 0   @ load page table pointer
 	mcrne   p15, 0, r1, c3, c0, 0   @ load domain access control
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
