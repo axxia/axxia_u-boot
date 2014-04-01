@@ -532,8 +532,12 @@ void pci_init_board(void)
 	unsigned long word1;
 	unsigned long word2;
 	int busno;
+	unsigned peiControl;
 
 #if defined(ACP_PEI0) && defined(ACP_PEI1) && defined(ACP_PEI2)
+#ifdef AXM_35xx
+	if (peiControl & 0x1) {
+#endif
 
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0
 	 * and MPAGE7 1 MB config space
@@ -566,6 +570,11 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 	busno = pci_476_init (&ppc476_hose[0], 0);
+
+#ifdef AXM_35xx
+	}
+	if (peiControl & 0x2) {
+#endif
 
 	word0 = CONFIG_PCIE1_PHY_START | 0x9f0;
 	word2 = 0x00030507;
@@ -613,6 +622,10 @@ void pci_init_board(void)
 			"memory" );
 #ifndef ACP_EMU
 	busno = pci_476_init (&ppc476_hose[1], 1);
+#endif
+#ifdef AXM_35xx
+	}
+	if (peiControl & 0x4) {
 #endif
 
 	word0 = CONFIG_PCIE2_PHY_START | 0x9f0;
@@ -662,8 +675,15 @@ void pci_init_board(void)
 #ifndef ACP_EMU
 	busno = pci_476_init (&ppc476_hose[2], 2);
 #endif
+#ifdef AXM_35xx
+	}
+#endif
 
 #elif defined(ACP_PEI0) && defined(ACP_PEI1)
+
+#ifdef AXM_35xx
+	if (peiControl & 0x1) {
+#endif
 
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0
 	 * and MPAGE7 1 MB config space
@@ -697,6 +717,11 @@ void pci_init_board(void)
 			"memory" );
 	
 	busno = pci_476_init (&ppc476_hose[0], 0);
+
+#ifdef AXM_35xx
+	} 
+	if (peiControl & 0x2) {
+#endif
 
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
 	 * and MPAGE7 1 MB config space
@@ -737,8 +762,14 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 	busno = pci_476_init (&ppc476_hose[1], 1);
+#ifdef AXM_35xx
+	}
+#endif
 
 #elif defined(ACP_PEI0)
+#ifdef AXM_35xx
+	if (peiControl & 0x1) {
+#endif
 
 	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0
 	 * and MPAGE7 1 MB config space
@@ -771,6 +802,9 @@ void pci_init_board(void)
 			"r" (word2) :
 			"memory" );
 	busno = pci_476_init (&ppc476_hose[0], 0);
+#ifdef AXM_35xx
+	}
+#endif
 
 #endif
 

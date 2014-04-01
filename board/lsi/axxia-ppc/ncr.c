@@ -479,23 +479,16 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 
 #if defined(ACP_25xx) || defined(AXM_35xx)
 	int wfc_timeout = WFC_TIMEOUT;
-
-#ifdef ACP_25xx
 	/*
-	  Handle the 0x115.1 node on the AXM25xx.
+	  Handle the 0x115.1 node
 	*/
-
 	if (NCP_REGION_ID(0x115, 1) == region) {
 		unsigned long base;
 
+#ifdef ACP_25xx
 		base = (IO + 0x3000);
 
 #elif defined (AXM_35xx)
-
-	/* Handle 0x107.1 node on the AXM35xx */
-	if (NCP_REGION_ID(0x107, 1) == region) {
-		unsigned long base;
-
 		base = (IO + 0x6010);
 #endif
 
@@ -573,13 +566,13 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 
 #elif defined (AXM_35xx)
 	/*
-	  Handle the 0x107.0, 0x107.2, 0x107.3 and 0x107.4 nodes on the AXM35xx.
+	  Handle the 0x115.0, 0x115.2, 0x115.3 and 0x115.4 nodes on the AXM35xx.
 	*/
 
-	if ((NCP_REGION_ID(0x107, 0) == region) ||
-	    (NCP_REGION_ID(0x107, 2) == region) ||
-	    (NCP_REGION_ID(0x107, 3) == region) ||
-	    (NCP_REGION_ID(0x107, 4) == region)) {
+	if ((NCP_REGION_ID(0x115, 0) == region) ||
+	    (NCP_REGION_ID(0x115, 2) == region) ||
+	    (NCP_REGION_ID(0x115, 3) == region) ||
+	    (NCP_REGION_ID(0x115, 4) == region)) {
 		unsigned long base = 0;
 
 		switch (NCP_TARGET_ID(region)) {
@@ -833,23 +826,17 @@ ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
 	int rc;
 #if defined(ACP_25xx) || defined(AXM_35xx)
 	int wfc_timeout = WFC_TIMEOUT;
-
-#ifdef ACP_25xx
 	/*
-	  Handle the 0x115 nodes on AXM25xx
+	  Handle the 0x115 nodes 
 	*/
 
 	if (NCP_REGION_ID(0x115, 1) == region) {
 		unsigned long base;
 
+#ifdef ACP_25xx
 		base = (IO + 0x3000);
 #elif defined(AXM_35xx)
-	/* Handle 0x107.1 node on the AXM35xx */
-	if (NCP_REGION_ID(0x107, 1) == region) {
-		unsigned long base;
-
 		base = (IO + 0x6010);
-
 #endif
 
 		if (0xffff < offset)
@@ -922,13 +909,13 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 		}
 #elif defined (AXM_35xx)
 	/*
-	  Handle the 0x107.0, 0x107.2, 0x107.3 and 0x107.4 nodes on the AXM35xx.
+	  Handle the 0x115.0, 0x115.2, 0x115.3 and 0x115.4 nodes on the AXM35xx.
 	*/
 
-	if ((NCP_REGION_ID(0x107, 0) == region) ||
-	    (NCP_REGION_ID(0x107, 2) == region) ||
-	    (NCP_REGION_ID(0x107, 3) == region) ||
-	    (NCP_REGION_ID(0x107, 4) == region)) {
+	if ((NCP_REGION_ID(0x115, 0) == region) ||
+	    (NCP_REGION_ID(0x115, 2) == region) ||
+	    (NCP_REGION_ID(0x115, 3) == region) ||
+	    (NCP_REGION_ID(0x115, 4) == region)) {
 		unsigned long base = 0;
 
 		switch (NCP_TARGET_ID(region)) {

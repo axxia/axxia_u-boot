@@ -1946,7 +1946,7 @@ acp_init_r( void )
 		}
 #endif
 #elif defined(AXM_35xx)
-		if (0 != ncr_read32(NCP_REGION_ID(0x107, 0), 0x200, &control)) {
+		if (0 != ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &control)) {
 			printf("Error Reading PHY Control: "
 			       "Skipping PCI setup.\n");
 			control = 0;
@@ -1955,7 +1955,6 @@ acp_init_r( void )
 			pci_rc = 1;
 
 		boot_mode = 0;
-		pci_rc = 1;
 #else
 #if defined (CONFIG_ACP3)
 		control = dcr_read(DCR_RESET_BASE);
@@ -2013,6 +2012,11 @@ acp_init_r( void )
 				char * env_value;
 				unsigned long pciStatus, linkState;
 				unsigned long pei_link_delay;
+				unsigned peiControl;
+
+#ifdef AXM_35xx
+				ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &peiControl);
+#endif
 
 				/* delay to ensure that PCIe link is up */
 				env_value = getenv("pei_link_delay");
@@ -2021,6 +2025,9 @@ acp_init_r( void )
 					pei_link_delay = 1000;
 				/* delay in ms */
 				mdelay(pei_link_delay);
+#ifdef AXM_35xx
+				if (peiControl & 0x1) {
+#endif
 				
 				pciStatus = acpreadio((void *)(PCIE0_CONFIG + 0x1004));
 				printf("PEI0 pciStatus = 0x%x\n", pciStatus);
@@ -2033,10 +2040,19 @@ acp_init_r( void )
 
 						pei0_speed = simple_strtoul(env_value, NULL, 0);
 						pci_speed_change(0, pei0_speed);
+					} else {
+						pci_speed_change(0, 0x2);
 					}
 				} else {
 					printf("PCIE0 link State DOWN = 0x%x\n", linkState);
 				}
+#ifdef AXM_35xx
+}
+#endif
+
+#ifdef AXM_35xx
+				if (peiControl & 0x2) {
+#endif
 				pciStatus = acpreadio((void *)(PCIE1_CONFIG + 0x1004));
 				printf("PEI1 pciStatus = 0x%x\n", pciStatus);
 				linkState = (pciStatus & 0x3f00) >> 8;
@@ -2049,11 +2065,18 @@ acp_init_r( void )
 					
 						pei1_speed = simple_strtoul(env_value, NULL, 0); 
 						pci_speed_change(1, pei1_speed);
+					} else {
+						pci_speed_change(1, 0x2);
 					}
 				} else {
 					printf("PCIE1 link State DOWN = 0x%x\n", linkState);
 				}
+
 #ifdef AXM_35xx
+				}
+#endif
+#ifdef AXM_35xx
+				if (peiControl & 0x4) {
 				pciStatus = acpreadio((void *)(PCIE2_CONFIG + 0x1004));
 				printf("PEI2 pciStatus = 0x%x\n", pciStatus);
 				linkState = (pciStatus & 0x3f00) >> 8;
@@ -2066,9 +2089,12 @@ acp_init_r( void )
 					
 						pei2_speed = simple_strtoul(env_value, NULL, 0); 
 						pci_speed_change(2, pei2_speed);
+					} else {
+						pci_speed_change(2, 0x2);
 					}
 				} else {
 					printf("PCIE2 link State DOWN = 0x%x\n", linkState);
+				}
 				}
 			}
 #endif
