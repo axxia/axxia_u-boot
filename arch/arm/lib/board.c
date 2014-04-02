@@ -419,9 +419,14 @@ static int arm_pci_init(void)
 
 #ifdef CONFIG_SPL_PCI_SUPPORT
 	{
-		char * env_value;
-		unsigned pciStatus, linkState;
+	char *env_value;
+	unsigned pciStatus, linkState;
+	unsigned pei0Control, pei1Control;
 
+	ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &pei0Control);
+	ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &pei1Control);
+
+	if (pei0Control & 0x1) {
 		pciStatus = readl((void *)(PCIE0_CONFIG + 0x1004));
 		printf("PEI0 pciStatus = 0x%x\n", pciStatus);
 		linkState = (pciStatus & 0x3f00) >> 8;
@@ -437,6 +442,9 @@ static int arm_pci_init(void)
 		} else {
 			printf("PCIE0 link State DOWN = 0x%x\n", linkState);
 		}
+	}
+
+	if (pei1Control & 0x1) {
 		pciStatus = readl((void *)(PCIE1_CONFIG + 0x1004));
 		printf("PEI1 pciStatus = 0x%x\n", pciStatus);
 		linkState = (pciStatus & 0x3f00) >> 8;
@@ -454,6 +462,7 @@ static int arm_pci_init(void)
 			printf("PCIE1 link State DOWN = 0x%x\n", linkState);
 		}
 	}
+}
 #endif
 #if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
 	pci_init();
