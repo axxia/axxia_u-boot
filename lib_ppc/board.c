@@ -1592,7 +1592,15 @@ acp_init_r( void )
 #ifndef ACP_ISS
 	mdio_initialize( );
 #ifndef CONFIG_ACP2
+#ifndef AXM_35xx
 	i2c_init(CONFIG_SYS_I2C_SPEED, 0);
+#else
+	{
+		int bus;
+		for (bus = 0; bus < CONFIG_SYS_MAX_I2C_BUS; bus++)
+			i2c_set_bus_num(bus);
+	}
+#endif
 #endif
 #endif
 
