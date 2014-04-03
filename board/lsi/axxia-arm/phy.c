@@ -526,6 +526,17 @@ phy_renegotiate( int phy, int ad_value )
 	int autoneg_retries = PHY_RETRIES;
 	int autoneg_complete_retries = PHY_RETRIES;
 
+	/*
+	  If the link is already up, and the ad value is correct,
+	  don't renegotiate.
+	*/
+
+	status.raw = mdio_read(phy, PHY_STATUS);
+
+	if ((ad_value == mdio_read(phy, PHY_AUTONEG_ADVERTISE)) &&
+	    (0 != status.bits.autoneg_comp) && (1 == phy_link(phy)))
+		return 0;
+
 	mdio_write( phy, PHY_AUTONEG_ADVERTISE, ad_value );
 
 	do {
