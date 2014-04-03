@@ -86,7 +86,6 @@ calc_chip_vrun(void)
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
 	voltage = 800 + voltage + offset;
-	printf("Voltage should be set to %d mV.\n", voltage);
 
 	return voltage;
 }
