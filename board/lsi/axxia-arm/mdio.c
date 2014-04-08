@@ -57,15 +57,25 @@
 int
 mdio_initialize(void)
 {
+	char *mdio_clk_offset_value = NULL;
+	unsigned long offset = MDIO_CLK_OFFSET_DEFAULT;
+	char *mdio_clk_period_value = NULL;
+	unsigned long period = MDIO_CLK_PERIOD_DEFAULT;
 
-#ifdef CONFIG_AXXIA_EMU
-	writel(0x10, MDIO_CLK_OFFSET);
-	writel(0x2c, MDIO_CLK_PERIOD);
-#else
-	writel(0x1c, MDIO_CLK_OFFSET);
-	writel(0xf0, MDIO_CLK_PERIOD);
-#endif
+	mdio_clk_offset_value = getenv("mdio_clk_offset");
 
+	if (NULL != mdio_clk_offset_value)
+		offset = simple_strtoul(mdio_clk_offset_value, NULL, 0);
+
+	mdio_clk_period_value = getenv("mdio_clk_period");
+
+	if (NULL != mdio_clk_period_value)
+		period = simple_strtoul(mdio_clk_period_value, NULL, 0);
+
+	printf("MDIO: offset is 0x%x, period is 0x%x\n", offset, period);
+
+	writel(offset, MDIO_CLK_OFFSET);
+	writel(period, MDIO_CLK_PERIOD);
 
 	return 0;
 }
