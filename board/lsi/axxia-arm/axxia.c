@@ -567,7 +567,8 @@ ft_board_setup(void *blob, bd_t *bd)
 		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200,&phy0_ctrl);
 		if (phy0_ctrl & 0x1) {
 			/* PEI0 is enabled */
-			rc = fdt_set_node_status(blob, node, FDT_STATUS_OKAY, 0);
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
 
 			if (0 != rc)
 				printf("%s:%d - Couldn't set PEI0 status!\n",
@@ -602,7 +603,8 @@ ft_board_setup(void *blob, bd_t *bd)
 		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200,&phy0_ctrl);
 		if (phy0_ctrl & 0x8) {
 			/* SRIO0 is enabled */
-			rc = fdt_set_node_status(blob, node, FDT_STATUS_OKAY, 0);
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
 			if (0 != rc)
 				printf("%s:%d - Couldn't set SRIO0 status!\n",
 				       __FILE__, __LINE__);
@@ -617,7 +619,8 @@ ft_board_setup(void *blob, bd_t *bd)
 		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200,&phy0_ctrl);
 		if (phy0_ctrl & 0x400) {
 			/* SRIO1 is enabled */
-			rc = fdt_set_node_status(blob, node, FDT_STATUS_OKAY, 0);
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
 
 			if (0 != rc)
 				printf("%s:%d - Couldn't set SRIO1 status!\n",
