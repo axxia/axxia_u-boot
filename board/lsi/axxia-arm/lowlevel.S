@@ -352,6 +352,7 @@ set_l2ctlr:
 
 	mrc	p15, 1, r0, c9, c0, 2
 	orr	r0, r0, #(1 << 1)
+	orr	r0, r0, #(1 << 21)
 	mcr	p15, 1, r0, c9, c0, 2
 
 	@@
