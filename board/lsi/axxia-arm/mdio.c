@@ -72,7 +72,7 @@ mdio_initialize(void)
 	if (NULL != mdio_clk_period_value)
 		period = simple_strtoul(mdio_clk_period_value, NULL, 0);
 
-	printf("MDIO: offset is 0x%x, period is 0x%x\n", offset, period);
+	printf("MDIO: offset is 0x%lx, period is 0x%lx\n", offset, period);
 
 	writel(offset, MDIO_CLK_OFFSET);
 	writel(period, MDIO_CLK_PERIOD);
