@@ -100,7 +100,7 @@ calc_chip_vrun(void)
 int __weak
 set_vrm_to_vrun(unsigned long v_run)
 {
-	printf("To set the voltage to %d mV, implement set_vrm_to_vrun().\n",
+	printf("To set the voltage to %lu mV, implement set_vrm_to_vrun().\n",
 	       v_run);
 
 	return 0;
