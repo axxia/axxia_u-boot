@@ -59,9 +59,9 @@ setup_page_tables:
 	@     Size: 1G
 
 #ifdef RUN_UNCACHED
-        ldr     r0, =0x40c12		@ Start at 0x00_0000_0000
+        ldr     r0, =0x40c02		@ Start at 0x00_0000_0000
 #else
-        ldr     r0, =0x50c1e		@ Start at 0x00_0000_0000
+        ldr     r0, =0x50c0e		@ Start at 0x00_0000_0000
 #endif
 	cmp	r4, #0
 	orrne	r0, r0, #0x8000		@ Set the NS bit if r4 is not 0
@@ -605,11 +605,7 @@ turn_on_mmu:
 	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
 	orr     r0, r0, #0x003c         @ write buffer
 	orrne   r0, r0, #1              @ MMU enabled
-#ifdef CONFIG_SPL_BUILD
-	movne	r1, #-1
-#else
 	movne   r1, #0xfd
-#endif
 	mcrne   p15, 0, r3, c2, c0, 0   @ load page table pointer
 	mcrne   p15, 0, r1, c3, c0, 0   @ load domain access control
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
