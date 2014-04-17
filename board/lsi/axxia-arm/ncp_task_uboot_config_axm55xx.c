@@ -321,6 +321,12 @@ ncp_task_v2_uboot_config_mme_for_tqs(ncp_int32_t tqsID)
 NCP_RETURN_LABEL
     return(ncpStatus);
 }  
+
+void
+ncp_task_uboot_domain_bundle_clear(void)
+{
+    ncp_memset(DOMAINBUNDLE_PA, 0, DOMAINBUNDLE_SIZE);
+}
     
 ncp_st_t
 ncp_task_uboot_config(void)

@@ -22,6 +22,7 @@
 
 #include <common.h>
 #include <asm/io.h>
+#include "../axxia-arm/ncp_nca_reg_defines.h"
 
 #define WFC_TIMEOUT (400000)
 
@@ -45,8 +46,8 @@ ncr_fail(const char *file, const char *function, const int line)
 		return -1;
 	
 	printf("Config Ring Access Failed: 0x%08lx 0x%08lx\n",
-	       (unsigned long)ncr_register_read((u32 *)(NCA + 0xe4)),
-	       (unsigned long)ncr_register_read((u32 *)(NCA + 0xe8)));
+	       (unsigned long)ncr_register_read((u32 *)(NCA + NCP_NCA_CFG_RING_ERROR_STAT_R0)),
+	       (unsigned long)ncr_register_read((u32 *)(NCA + NCP_NCA_CFG_RING_ERROR_STAT_R1)));
 	acp_failure(file, function, line);
 
 	return -1;
@@ -983,7 +984,8 @@ ncr_read(ncp_uint32_t region,
 		break;
 	case 0x101:
 	case 0x109:
-		/* if reading from within NCA/MME_POKE, just do the plain and simple read */
+    case 0x1d0:
+		/* if reading from within NCA/MME_POKE/SCB, just do the plain and simple read */
 		if (NULL != buffer) {
 			ncp_uint32_t offset = 0;
 
@@ -991,7 +993,10 @@ ncr_read(ncp_uint32_t region,
 				offset = (NCA + address);
 			} else if(NCP_NODE_ID(region) == 0x109) {
 				offset = (MME_POKE + address);
+			} else if(NCP_NODE_ID(region) == 0x1d0) {
+				offset = (SCB + address);
 			}
+            
 
 			while (4 <= number) {
 				*((ncp_uint32_t *)buffer) =
@@ -1041,7 +1046,7 @@ ncr_read(ncp_uint32_t region,
 		cdr2.bits.target_id_address_upper = address_upper;
 	}
 
-	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
+	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR2 ) );
 
 	cdr1.raw = 0;
 
@@ -1051,7 +1056,7 @@ ncr_read(ncp_uint32_t region,
 		cdr1.bits.target_address = ( address >> 2 );
 	}
 
-	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + 0xf4 ) );
+	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR1 ) );
 
 	cdr0.raw = 0;
 	cdr0.bits.start_done = 1;
@@ -1069,7 +1074,7 @@ ncr_read(ncp_uint32_t region,
 
 	/* TODO: Verify number... */
 	cdr0.bits.dbs = ( number - 1 );
-	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + 0xf0 ) );
+	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) );
 
 	/*
 	  Wait for completion.
@@ -1078,7 +1083,7 @@ ncr_read(ncp_uint32_t region,
 	do {
 		--wfc_timeout;
 	} while( (0x80000000 ==
-		  ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+		  ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 		    0x80000000 ) ) &&
 		 0 < wfc_timeout);
 
@@ -1092,7 +1097,7 @@ ncr_read(ncp_uint32_t region,
 	  Check status.
 	*/
 
-	if( 0x3 != ( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+	if( 0x3 != ( ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 		       0x00c00000 ) >> 22 ) ) {
 		ncr_unlock(LOCK_DOMAIN);
 		return -1;
@@ -1105,7 +1110,7 @@ ncr_read(ncp_uint32_t region,
 	if (NULL != buffer) {
 		ncp_uint32_t address;
 
-		address = (NCA + 0x1000);
+		address = (NCA + NCP_NCA_CDAR_MEMORY_BASE);
 
 		while (4 <= number) {
 			*((ncp_uint32_t *)buffer) =
@@ -1283,6 +1288,7 @@ ncr_write(ncp_uint32_t region,
 		break;
 	case 0x101:
 	case 0x109:
+    case 0x1d0:
 		if (NULL != buffer) {
 			ncp_uint32_t offset = 0;
 
@@ -1290,6 +1296,8 @@ ncr_write(ncp_uint32_t region,
 				offset = (NCA + address);
 			} else if(NCP_NODE_ID(region) == 0x109) {
 				offset = (MME_POKE + address);
+			} else if(NCP_NODE_ID(region) == 0x1d0) {
+				offset = (SCB + address);
 			}
 
 			while (4 <= number) {
@@ -1340,7 +1348,7 @@ ncr_write(ncp_uint32_t region,
 		cdr2.bits.target_id_address_upper = address_upper;
 	}
 
-	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
+	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR2 ) );
 
 	cdr1.raw = 0;
 
@@ -1350,14 +1358,14 @@ ncr_write(ncp_uint32_t region,
 		cdr1.bits.target_address = ( address >> 2 );
 	}
 
-	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + 0xf4 ) );
+	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR1 ) );
 
 	/*
 	  Copy data from the buffer.
 	*/
 
 	if (NULL != buffer) {
-		ncp_uint32_t offset = (NCA + 0x1000);
+		ncp_uint32_t offset = (NCA + NCP_NCA_CDAR_MEMORY_BASE);
 
 		while (4 <= number) {
 			ncr_register_write(*((ncp_uint32_t *)buffer),
@@ -1395,7 +1403,7 @@ ncr_write(ncp_uint32_t region,
 
 	/* TODO: Verify number... */
 	cdr0.bits.dbs = dbs;
-	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + 0xf0 ) );
+	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) );
 
 	/*
 	  Wait for completion.
@@ -1404,7 +1412,7 @@ ncr_write(ncp_uint32_t region,
 	do {
 		--wfc_timeout;
 	} while( (0x80000000 ==
-		  ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+		  ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 		    0x80000000 ) ) &&
 		 0 < wfc_timeout);
 
@@ -1419,15 +1427,15 @@ ncr_write(ncp_uint32_t region,
 	*/
 
 	if(0x3 !=
-	   ((ncr_register_read((unsigned *)(NCA + 0xf0)) & 0x00c00000) >> 22)) {
+	   ((ncr_register_read((unsigned *)(NCA + NCP_NCA_CFG_PIO_CDR0)) & 0x00c00000) >> 22)) {
 		printf("ncr_write( ) failed: 0x%lx, status1=0x%lx, status2=0x%lx\n",
 		       (unsigned long)((ncr_register_read((unsigned *)(NCA +
-								       0xf0)) &
+								       NCP_NCA_CFG_PIO_CDR0)) &
 					0x00c00000) >> 22),
 		       (unsigned long)ncr_register_read((unsigned *)(NCA +
-								     0xe4)),
+								     NCP_NCA_CFG_RING_ERROR_STAT_R0)),
 		       (unsigned long)ncr_register_read((unsigned *)(NCA +
-								     0xe8)));
+								     NCP_NCA_CFG_RING_ERROR_STAT_R1)));
 		ncr_unlock(LOCK_DOMAIN);
 
 		return -1;
@@ -1569,7 +1577,7 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
 	}
 
-	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + 0xf8 ) );
+	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR2 ) );
 
 	cdr1.raw = 0;
 
@@ -1579,13 +1587,13 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 		cdr1.bits.target_address = ( address >> 2 );
 	}
 
-	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + 0xf4 ) );
+	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR1 ) );
 
 	/*
 	  Copy from buffer to the data words.
 	*/
 
-	data_word_base = ( NCA + 0x1000 );
+	data_word_base = ( NCA + NCP_NCA_CDAR_MEMORY_BASE );
 	ncr_register_write( count, ( unsigned * ) data_word_base );
 	data_word_base += 4;
 
@@ -1610,7 +1618,7 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 
 	cdr0.bits.cmd_type = 0x8;
 
-	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + 0xf0 ) );
+	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) );
 
 	/*
 	  Wait for completion.
@@ -1619,7 +1627,7 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 	do {
 		--wfc_timeout;
 	} while( (0x80000000 ==
-		  ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+		  ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 		    0x80000000 ) ) &&
 		 0 < wfc_timeout);
 
@@ -1634,11 +1642,11 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 	*/
 
 	if( 0x3 !=
-	    ( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+	    ( ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 		0x00c00000 ) >> 22 ) ) {
 #ifdef NCR_TRACER
 		printf( "ncr_write( ) failed: 0x%lx\n",
-			( ( ncr_register_read( ( unsigned * ) ( NCA + 0xf0 ) ) &
+			( ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 			    0x00c00000 ) >> 22 ) );
 #endif
 		ncr_unlock(LOCK_DOMAIN);
@@ -1698,7 +1706,7 @@ ncr_l3tags(void)
 	*/
 
 	for (i = 0; i < 64; ++i)
-		writel(0, (NCA + 0x1000 + (i * 4)));
+		writel(0, (NCA + NCP_NCA_CDAR_MEMORY_BASE + (i * 4)));
 
 	/*
 	  Write it

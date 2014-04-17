@@ -45,6 +45,8 @@
 
 #include "ncp_task_basetypes.h"
 #include "ncp_task.h"
+#include "ncp_nca_regs.h"
+#include "ncp_nca_reg_defines.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -222,6 +224,9 @@ ncp_dev_configure(ncr_command_t *commands);
 void
 axxia_dump_packet(const char *header, void *packet, int length);
 
+void
+ncp_task_uboot_domain_bundle_clear(void);
+
 ncp_st_t
 ncp_task_uboot_config(void);
 
@@ -240,6 +245,517 @@ ncp_task_uboot_unconfig(void);
 #error "EIOA is not defined for this architecture!"
 #endif
 
+ncp_uint32_t
+ncp_caal_regions_acp55xx[] =
+{
+    NCP_REGION_ID(0x0b, 0x05),      /* SPPV2   */
+    NCP_REGION_ID(0x0c, 0x05),      /* SED     */
+    NCP_REGION_ID(0x0e, 0x05),      /* DPI_HFA */
+    NCP_REGION_ID(0x14, 0x05),      /* MTM     */
+    NCP_REGION_ID(0x14, 0x0a),      /* MTM2    */
+    NCP_REGION_ID(0x15, 0x00),      /* MME     */
+    NCP_REGION_ID(0x16, 0x05),      /* NCAV2   */
+    NCP_REGION_ID(0x16, 0x10),      /* NCAV22  */
+    NCP_REGION_ID(0x17, 0x05),      /* EIOAM1  */
+    NCP_REGION_ID(0x19, 0x05),      /* TMGR    */
+    NCP_REGION_ID(0x1a, 0x05),      /* MPPY    */
+    NCP_REGION_ID(0x1a, 0x23),      /* MPPY2   */
+    NCP_REGION_ID(0x1a, 0x21),      /* MPPY3   */
+    NCP_REGION_ID(0x1b, 0x05),      /* PIC     */
+    NCP_REGION_ID(0x1c, 0x05),      /* PAB     */
+    NCP_REGION_ID(0x1f, 0x05),      /* EIOAM0  */
+    NCP_REGION_ID(0x31, 0x05),      /* ISB     */
+    NCP_REGION_ID(0xff, 0xff) 
+};
+
+ncp_uint32_t
+ncp_cnal_regions_acp55xx[] =
+{
+    NCP_REGION_ID(0x28, 0x05),      /* EIOASM0 */
+    NCP_REGION_ID(0x29, 0x05),      /* EIOASM1 */
+    NCP_REGION_ID(0x2a, 0x05),      /* EIOAS2  */
+    NCP_REGION_ID(0x2b, 0x05),      /* EIOAS3  */
+    NCP_REGION_ID(0x2c, 0x05),      /* EIOAS4  */
+    NCP_REGION_ID(0x2d, 0x05),      /* EIOAS5  */
+    NCP_REGION_ID(0x32, 0x05),      /* ISBS    */
+    NCP_REGION_ID(0xff, 0xff) 
+};
+
+/*
+  ------------------------------------------------------------------------------
+  ncp_dev_reset
+*/
+
+static ncp_st_t
+ncp_dev_quiesce(void)
+{
+    ncp_st_t         ncpStatus = NCP_ST_SUCCESS;
+    ncp_uint32_t    *pCnalRegions = ncp_cnal_regions_acp55xx;
+    ncp_uint32_t    *pCaalRegions = ncp_caal_regions_acp55xx;
+    ncp_uint32_t    *pRegion;
+    ncp_uint32_t     ort, owt;
+    ncp_uint32_t     buf = 0;
+    ncp_uint32_t     loop;
+
+    pRegion = pCnalRegions;
+    while (*pRegion != NCP_REGION_ID(0xff, 0xff) )
+    {
+
+        /* set read/write transaction limits to zero */
+        NCP_CALL(ncr_write32(*pRegion, 0x8, buf));
+        NCP_CALL(ncr_write32(*pRegion, 0xc, buf));
+        pRegion++;
+    }
+
+    pRegion = pCaalRegions;
+    while (*pRegion != NCP_REGION_ID(0xff, 0xff) )
+    {
+
+        /* set read/write transaction limits to zero */
+        NCP_CALL(ncr_write32(*pRegion, 0x8, buf));
+        NCP_CALL(ncr_write32(*pRegion, 0xc, buf));
+        pRegion++;
+    }
+
+
+    pRegion = pCaalRegions;
+    loop = 0;
+    while (*pRegion != NCP_REGION_ID(0xff, 0xff) )
+    {
+        /* read the number of outstanding read/write transactions */
+        NCP_CALL(ncr_read32(*pRegion, 0xf8, &ort));
+        NCP_CALL(ncr_read32(*pRegion, 0xfc, &owt));
+
+        if ( (ort == 0) && (owt == 0) )
+        {
+            /* this engine has been quiesced, move on to the next */
+            loop = 0;
+            pRegion++;
+        }
+        else 
+        {
+            if (loop++ > 10000) {
+                NCP_MSG(NCP_MSG_ERROR, "unable to quiesce region 0x%02x.0x%02x! \n",
+                        NCP_NODE_ID(*pRegion), NCP_TARGET_ID(*pRegion));
+                loop = 0;
+                continue;
+            }
+        }
+    }
+
+    pRegion = pCnalRegions;
+    loop = 0;
+    while (*pRegion != NCP_REGION_ID(0xff, 0xff) )
+    {
+        /* read the number of outstanding read/write transactions */
+        NCP_CALL(ncr_read32(*pRegion, 0x1c0, &ort));
+        NCP_CALL(ncr_read32(*pRegion, 0x1c4, &owt));
+
+        if ( (ort == 0) && (owt == 0) )
+        {
+            /* this engine has been quiesced, move on to the next */
+            loop = 0;
+            pRegion++;
+        }
+        else 
+        {
+            if (loop++ > 10000) {
+                NCP_MSG(NCP_MSG_ERROR, "unable to quiesce region 0x%02x.0x%02x! \n",
+                        NCP_NODE_ID(*pRegion), NCP_TARGET_ID(*pRegion));
+                loop = 0;
+                continue;
+            }
+        }
+    }
+
+
+NCP_RETURN_LABEL
+    return ncpStatus;
+}
+
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+          /* word 0 */
+     unsigned      ioctl_rst                                 :  1;
+     unsigned      ram_margin_rst                            :  1;
+     unsigned      pci_srio_phy_rst                          :  1;
+     unsigned      timestamp_rst                             :  1;
+     unsigned      mref2_rst                                 :  1;
+     unsigned      mref1_rst                                 :  1;
+     unsigned      mref0_rst                                 :  1;
+     unsigned      cmem1_phy_io_rst                          :  1;
+     unsigned      cmem0_phy_io_rst                          :  1;
+     unsigned      smem1_phy_io_rst                          :  1;
+     unsigned      smem0_phy_io_rst                          :  1;
+     unsigned      pbm_rst                                   :  1;
+     unsigned      ccms_rst                                  :  1;
+     unsigned      nic_rst                                   :  1;
+     unsigned      pkt_buffer_rst                            :  1;
+     unsigned      isbs_rst                                  :  1;
+     unsigned      eioa_phy4_rst                             :  1;
+     unsigned      eioa_phy3_rst                             :  1;
+     unsigned      eioa_phy2_rst                             :  1;
+     unsigned      eioa7_rst                                 :  1;
+     unsigned      eioa6_rst                                 :  1;
+     unsigned      eioa5_rst                                 :  1;
+     unsigned      eioa4_rst                                 :  1;
+     unsigned      eioa3_rst                                 :  1;
+     unsigned      eioa2_rst                                 :  1;
+     unsigned      reserved0                                 :  5;
+     unsigned      ring_bp_rst                               :  1;
+     unsigned      fab_pllctl_rst                            :  1;
+          /* word 1 */
+     unsigned      sys_pllctl_rst                            :  1;
+     unsigned      cpu_pllctl_rst                            :  1;
+     unsigned      smem1_phy_rst                             :  1;
+     unsigned      smem1_pllctl_rst                          :  1;
+     unsigned      smem1_rst                                 :  1;
+     unsigned      smem0_phy_rst                             :  1;
+     unsigned      smem0_pllctl_rst                          :  1;
+     unsigned      smem0_rst                                 :  1;
+     unsigned      ccm_rst                                   :  1;
+     unsigned      pcx_rst                                   :  1;
+     unsigned      isb_rst                                   :  1;
+     unsigned      eioa_phy1_rst                             :  1;
+     unsigned      eioa_phy0_rst                             :  1;
+     unsigned      eioa1_rst                                 :  1;
+     unsigned      eioa0_rst                                 :  1;
+     unsigned      scnt_dist_rst                             :  1;
+     unsigned      tmgr_rst                                  :  1;
+     unsigned      mtm_rst                                   :  1;
+     unsigned      sed_rst                                   :  1;
+     unsigned      pab_rst                                   :  1;
+     unsigned      pic_rst                                   :  1;
+     unsigned      dpi_rst                                   :  1;
+     unsigned      spp_rst                                   :  1;
+     unsigned      mme_rst                                   :  1;
+     unsigned      nca_rst                                   :  1;
+     unsigned      cmem_pllctl_rst                           :  1;
+     unsigned      reserved1                                 :  1;
+     unsigned      cmem1_rst                                 :  1;
+     unsigned      cmem_phy_rst                              :  1;
+     unsigned      cmem0_rst                                 :  1;
+     unsigned      treemem_rst                               :  1;
+     unsigned      mppy_rst                                  :  1;
+#else    /* Little Endian */
+          /* word 0 */
+     unsigned      fab_pllctl_rst                            :  1;
+     unsigned      ring_bp_rst                               :  1;
+     unsigned      reserved0                                 :  5;
+     unsigned      eioa2_rst                                 :  1;
+     unsigned      eioa3_rst                                 :  1;
+     unsigned      eioa4_rst                                 :  1;
+     unsigned      eioa5_rst                                 :  1;
+     unsigned      eioa6_rst                                 :  1;
+     unsigned      eioa7_rst                                 :  1;
+     unsigned      eioa_phy2_rst                             :  1;
+     unsigned      eioa_phy3_rst                             :  1;
+     unsigned      eioa_phy4_rst                             :  1;
+     unsigned      isbs_rst                                  :  1;
+     unsigned      pkt_buffer_rst                            :  1;
+     unsigned      nic_rst                                   :  1;
+     unsigned      ccms_rst                                  :  1;
+     unsigned      pbm_rst                                   :  1;
+     unsigned      smem0_phy_io_rst                          :  1;
+     unsigned      smem1_phy_io_rst                          :  1;
+     unsigned      cmem0_phy_io_rst                          :  1;
+     unsigned      cmem1_phy_io_rst                          :  1;
+     unsigned      mref0_rst                                 :  1;
+     unsigned      mref1_rst                                 :  1;
+     unsigned      mref2_rst                                 :  1;
+     unsigned      timestamp_rst                             :  1;
+     unsigned      pci_srio_phy_rst                          :  1;
+     unsigned      ram_margin_rst                            :  1;
+     unsigned      ioctl_rst                                 :  1;
+          /* word 1 */
+     unsigned      mppy_rst                                  :  1;
+     unsigned      treemem_rst                               :  1;
+     unsigned      cmem0_rst                                 :  1;
+     unsigned      cmem_phy_rst                              :  1;
+     unsigned      cmem1_rst                                 :  1;
+     unsigned      reserved1                                 :  1;
+     unsigned      cmem_pllctl_rst                           :  1;
+     unsigned      nca_rst                                   :  1;
+     unsigned      mme_rst                                   :  1;
+     unsigned      spp_rst                                   :  1;
+     unsigned      dpi_rst                                   :  1;
+     unsigned      pic_rst                                   :  1;
+     unsigned      pab_rst                                   :  1;
+     unsigned      sed_rst                                   :  1;
+     unsigned      mtm_rst                                   :  1;
+     unsigned      tmgr_rst                                  :  1;
+     unsigned      scnt_dist_rst                             :  1;
+     unsigned      eioa0_rst                                 :  1;
+     unsigned      eioa1_rst                                 :  1;
+     unsigned      eioa_phy0_rst                             :  1;
+     unsigned      eioa_phy1_rst                             :  1;
+     unsigned      isb_rst                                   :  1;
+     unsigned      pcx_rst                                   :  1;
+     unsigned      ccm_rst                                   :  1;
+     unsigned      smem0_rst                                 :  1;
+     unsigned      smem0_pllctl_rst                          :  1;
+     unsigned      smem0_phy_rst                             :  1;
+     unsigned      smem1_rst                                 :  1;
+     unsigned      smem1_pllctl_rst                          :  1;
+     unsigned      smem1_phy_rst                             :  1;
+     unsigned      cpu_pllctl_rst                            :  1;
+     unsigned      sys_pllctl_rst                            :  1;
+#endif
+} __attribute__ ( ( packed ) ) ncp_syscon_reset_mod_r_t;
+
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+          /* word 0 */
+     unsigned      reserved0                                 : 12;
+     unsigned      hold_po3                                  :  1;
+     unsigned      hold_po2                                  :  1;
+     unsigned      hold_po1                                  :  1;
+     unsigned      hold_po0                                  :  1;
+     unsigned      reserved1                                 :  5;
+     unsigned      ser2smart_rst                             :  1;
+     unsigned      cpu2tap_rst                               :  1;
+     unsigned      ipi_rst                                   :  1;
+     unsigned      cpm_logic_rst                             :  1;
+     unsigned      tvsense_rst                               :  1;
+     unsigned      nrcp_pllctl_rst                           :  1;
+     unsigned      nrcp_rst                                  :  1;
+     unsigned      apb2ser3_rst                              :  1;
+     unsigned      apb2ser2_rst                              :  1;
+     unsigned      apb2ser1_rst                              :  1;
+     unsigned      apb2ser0_rst                              :  1;
+          /* word 1 */
+     unsigned      sbb_rst                                   :  1;
+     unsigned      reserved2                                 :  1;
+     unsigned      spf_rst                                   :  1;
+     unsigned      usb2_rst                                  :  1;
+     unsigned      reserved3                                 :  7;
+     unsigned      cm3_rst                                   :  1;
+     unsigned      mtc_rst                                   :  1;
+     unsigned      xvrc_rst                                  :  1;
+     unsigned      gpdma_1_rst                               :  1;
+     unsigned      gpdma_0_rst                               :  1;
+     unsigned      trng_rst                                  :  1;
+     unsigned      pka_zeroiza_rst                           :  1;
+     unsigned      pka__rst                                  :  1;
+     unsigned      mdio_rst                                  :  1;
+     unsigned      ssp_rst                                   :  1;
+     unsigned      uart_3_rst                                :  1;
+     unsigned      uart_2_rst                                :  1;
+     unsigned      uart_1_rst                                :  1;
+     unsigned      uart_0_rst                                :  1;
+     unsigned      smb_0_rst                                 :  1;
+     unsigned      i2c_2_rst                                 :  1;
+     unsigned      i2c_1_rst                                 :  1;
+     unsigned      i2c_0_rst                                 :  1;
+     unsigned      emmc_rst                                  :  1;
+     unsigned      femac_rst                                 :  1;
+     unsigned      axis_rst                                  :  1;
+#else    /* Little Endian */
+          /* word 0 */
+     unsigned      apb2ser0_rst                              :  1;
+     unsigned      apb2ser1_rst                              :  1;
+     unsigned      apb2ser2_rst                              :  1;
+     unsigned      apb2ser3_rst                              :  1;
+     unsigned      nrcp_rst                                  :  1;
+     unsigned      nrcp_pllctl_rst                           :  1;
+     unsigned      tvsense_rst                               :  1;
+     unsigned      cpm_logic_rst                             :  1;
+     unsigned      ipi_rst                                   :  1;
+     unsigned      cpu2tap_rst                               :  1;
+     unsigned      ser2smart_rst                             :  1;
+     unsigned      reserved1                                 :  5;
+     unsigned      hold_po0                                  :  1;
+     unsigned      hold_po1                                  :  1;
+     unsigned      hold_po2                                  :  1;
+     unsigned      hold_po3                                  :  1;
+     unsigned      reserved0                                 : 12;
+          /* word 1 */
+     unsigned      axis_rst                                  :  1;
+     unsigned      femac_rst                                 :  1;
+     unsigned      emmc_rst                                  :  1;
+     unsigned      i2c_0_rst                                 :  1;
+     unsigned      i2c_1_rst                                 :  1;
+     unsigned      i2c_2_rst                                 :  1;
+     unsigned      smb_0_rst                                 :  1;
+     unsigned      uart_0_rst                                :  1;
+     unsigned      uart_1_rst                                :  1;
+     unsigned      uart_2_rst                                :  1;
+     unsigned      uart_3_rst                                :  1;
+     unsigned      ssp_rst                                   :  1;
+     unsigned      mdio_rst                                  :  1;
+     unsigned      pka__rst                                  :  1;
+     unsigned      pka_zeroiza_rst                           :  1;
+     unsigned      trng_rst                                  :  1;
+     unsigned      gpdma_0_rst                               :  1;
+     unsigned      gpdma_1_rst                               :  1;
+     unsigned      xvrc_rst                                  :  1;
+     unsigned      mtc_rst                                   :  1;
+     unsigned      cm3_rst                                   :  1;
+     unsigned      reserved3                                 :  7;
+     unsigned      usb2_rst                                  :  1;
+     unsigned      spf_rst                                   :  1;
+     unsigned      reserved2                                 :  1;
+     unsigned      sbb_rst                                   :  1;
+#endif
+} __attribute__ ( ( packed ) ) ncp_syscon_reset_axis_r_t;
+
+#define NCP_NODE_TIMER          0x19
+#define NCP_NODE_AXIS_APB2SER3  0x156
+
+#define NCP_REGION_TIMER_TMGR_SYSTEM_COUNT  NCP_REGION_ID(NCP_NODE_TIMER, 0x0012) /* 25.18 */
+#define NCP_REGION_AXIS_APB2SER3_SYSCON     NCP_REGION_ID(NCP_NODE_AXIS_APB2SER3, 0x0000) /* 342.0 */
+
+#define NCP_TMGR_SYSTEM_COUNT_CFG_SYSTEM_COUNTER_CONTROL_5500  (0x00000114)
+#define NCP_SYSCON_KEY                                         (0x00001000)
+#define NCP_SYSCON_RESET_MOD                                   (0x00001038)
+#define NCP_SYSCON_RESET_AXIS                                  (0x00001040)
+
+static ncp_st_t
+ncp_dev_reset_hw(void)
+{
+    ncp_st_t                    ncpStatus = NCP_ST_SUCCESS;
+    ncp_st_t                    st = NCP_ST_SUCCESS;
+    ncp_uint32_t                *reg = NULL;
+    ncp_syscon_reset_mod_r_t    resetReg = {0};
+    ncp_syscon_reset_axis_r_t   resetAxisReg = {0};
+
+    /* quiesce the system */
+    ncpStatus = ncp_dev_quiesce();
+    if (ncpStatus != NCP_ST_SUCCESS)
+    {
+        NCP_MSG(NCP_MSG_ERROR, "ncp_dev_quiesce failed with %d\n", ncpStatus);
+    }
+
+    /* Make sure the boot counter is decoupled from the Nuevo timestamp */
+    NCP_CALL(ncr_write32(NCP_REGION_TIMER_TMGR_SYSTEM_COUNT,
+         NCP_TMGR_SYSTEM_COUNT_CFG_SYSTEM_COUNTER_CONTROL_5500, 0));
+    
+    /* wait for the PIO to complete */
+    udelay(10000);
+
+    /* Enable protected writes.  Key is the only field in this register. */
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON, NCP_SYSCON_KEY, 0xAB));
+
+    resetReg.mppy_rst         = 1;
+    resetReg.treemem_rst      = 1;
+    resetReg.cmem0_rst        = 1;
+    resetReg.cmem_phy_rst     = 1;
+    resetReg.cmem1_rst        = 1;
+    resetReg.nca_rst          = 1;
+    resetReg.mme_rst          = 1;
+    resetReg.spp_rst          = 1;
+    resetReg.dpi_rst          = 1;
+    resetReg.pic_rst          = 1;
+    resetReg.pab_rst          = 1;
+    resetReg.sed_rst          = 1;
+    resetReg.mtm_rst          = 1;
+    resetReg.tmgr_rst         = 1;
+    resetReg.eioa0_rst        = 1;
+    resetReg.eioa1_rst        = 1;
+    resetReg.eioa_phy0_rst    = 1;
+    resetReg.eioa_phy1_rst    = 1;
+    resetReg.isb_rst          = 1;
+    resetReg.pcx_rst          = 1;
+    resetReg.ccm_rst          = 1;
+    resetReg.ring_bp_rst      = 1;
+    resetReg.eioa2_rst        = 1;
+    resetReg.eioa3_rst        = 1;
+    resetReg.eioa4_rst        = 1;
+    resetReg.eioa5_rst        = 1;
+    resetReg.eioa6_rst        = 1;
+    resetReg.eioa7_rst        = 1;
+    resetReg.eioa_phy2_rst    = 1;
+    resetReg.eioa_phy3_rst    = 1;
+    resetReg.eioa_phy4_rst    = 1;
+    resetReg.isbs_rst         = 1;
+    resetReg.pkt_buffer_rst   = 1;
+    resetReg.nic_rst          = 1;
+    resetReg.ccms_rst         = 1;
+    resetReg.pbm_rst          = 1;
+    resetReg.cmem0_phy_io_rst = 1;
+    resetReg.cmem1_phy_io_rst = 1;
+    resetReg.timestamp_rst    = 1;
+
+    reg = (ncp_uint32_t *)&resetReg;
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                         NCP_SYSCON_RESET_MOD, 
+                         *reg));
+    reg++;
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                         NCP_SYSCON_RESET_MOD + 4, 
+                         *reg));
+
+    resetAxisReg.nrcp_rst     = 1;
+
+    reg = (ncp_uint32_t *)&resetAxisReg;
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                       NCP_SYSCON_RESET_AXIS,
+                       *reg));
+    reg++;
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                       NCP_SYSCON_RESET_AXIS + 4,
+                       *reg));
+    udelay(10000);
+
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                         NCP_SYSCON_RESET_MOD, 
+                         0));
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                         NCP_SYSCON_RESET_MOD + 4, 
+                         0));
+    
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                         NCP_SYSCON_RESET_AXIS,
+                         0));
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                         NCP_SYSCON_RESET_AXIS + 4,
+                         0));
+    udelay(10000);
+
+    /* Disable protected writes */
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON, NCP_SYSCON_KEY, 0x0));
+
+cleanup:
+NCP_RETURN_LABEL
+    if(st != NCP_ST_SUCCESS)
+        ncpStatus = st;
+    return ncpStatus;
+}
+
+ncp_st_t
+ncp_dev_reset_sw(void)
+{
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+    ncp_uint32_t reg;
+    ncp_nca_config_init_reg_t *nca_cfg_init = (ncp_nca_config_init_reg_t *) &reg;
+    ncp_nca_cfg_ring_parity_reg_t *nca_cfg_ring_parity = (ncp_nca_cfg_ring_parity_reg_t *) &reg;
+
+    /* Enable NCA config ring timeouts */
+    ncr_read32(NCP_REGION_ID(0x101, 0), NCP_NCA_CONFIG_INIT_55XX, &reg);
+    nca_cfg_init->cfg_ring_ack_timer_en = 1;
+    ncr_write32(NCP_REGION_ID(0x101, 0), NCP_NCA_CONFIG_INIT_55XX, reg);
+
+    ncr_write32(NCP_REGION_ID(0x101, 0), NCP_NCA_CFG_RING_ACK_TIMER_CNT, 0x5f5e10);
+
+    /* Enable config ring parity checking */
+    ncr_read32(NCP_REGION_ID(0x101, 0), NCP_NCA_CFG_RING_PARITY, &reg);
+    nca_cfg_ring_parity->cfg_parity_err_en_ring0 = 1;
+    nca_cfg_ring_parity->cfg_parity_err_en_ring1 = 1;
+    nca_cfg_ring_parity->cfg_parity_err_en_ring2 = 1;
+    nca_cfg_ring_parity->multibit_ecc_detect_en = 1;
+    nca_cfg_ring_parity->singlebit_ecc_detect_en = 1;
+    nca_cfg_ring_parity->singlebit_ecc_correct_en = 1;
+    ncr_write32(NCP_REGION_ID(0x101, 0), NCP_NCA_CFG_RING_PARITY, reg);
+
+    /* make all masters secure */
+    ncr_write32(NCP_REGION_ID(0x1d0, 0), 0x0014, 0);
+
+NCP_RETURN_LABEL
+    return ncpStatus;
+}
+
 /*
   ------------------------------------------------------------------------------
   ncp_dev_reset
@@ -248,11 +764,30 @@ ncp_task_uboot_unconfig(void);
 static int
 ncp_dev_reset(void)
 {
-	/*
-	  Reset Modules
-	*/
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+    
+    /* Quiet the read/write smem transactions */
+    ncpStatus = ncp_dev_quiesce();
+    if(ncpStatus != NCP_ST_SUCCESS)
+    {
+        NCP_MSG(NCP_MSG_ERROR, "ncp_dev_quiesce failed with %d\n", ncpStatus);
+        return -1;
+    }
+    
+	/* Reset Modules */
+    ncpStatus = ncp_dev_reset_hw();
+    if(ncpStatus != NCP_ST_SUCCESS)
+    {
+        NCP_MSG(NCP_MSG_ERROR, "ncp_dev_reset_hw failed with %d\n", ncpStatus);
+        return -1;
+    }
 
-    /* TODO: Get the reset sequence here */
+    ncpStatus = ncp_dev_reset_sw();
+    if(ncpStatus != NCP_ST_SUCCESS)
+    {
+        NCP_MSG(NCP_MSG_ERROR, "ncp_dev_reset_sw failed with %d\n", ncpStatus);
+        return -1;
+    }
 
 	return 0;
 }
@@ -914,10 +1449,16 @@ initialize_task_io(struct eth_device *dev)
 		}
     }
 
+    debug("Resetting device...");
 	if (0 != ncp_dev_reset()) {
-		printf("Reset Failed\n");
+		printf("Device reset Failed\n");
 		return -1;
 	}
+    debug("done\n");
+
+    debug("Clearing NCA domain bundle...");
+    ncp_task_uboot_domain_bundle_clear();
+    debug("done\n");
 
     debug("Configuring MME...");
 	if (0 != ncp_dev_configure(mme)) {
@@ -1013,14 +1554,18 @@ initialize_task_io(struct eth_device *dev)
 		for (i = 0; i < EIOA_NUM_PORTS; ++i) {
             if(port_type_by_index[i] == EIOA_PORT_TYPE_GMAC) {
     			if (0 != line_setup(i)) {
+                    printf("line_setup failed for gmac%d (all)\n", 
+                            port_by_index[i]);
     				return -1;
     			}
             }
 		}
 	} else {
         if(port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_GMAC) {
-            printf("Using EIOA Port GMAC%02d\n", eioaPort);
+            printf("Using EIOA Port GMAC%d\n", eioaPort);
     		if (0 != line_setup(index_by_port[eioaPort])) {
+                printf("line_setup failed for gmac%d\n", 
+                            eioaPort);
     			return -1;
     		}
         } else {

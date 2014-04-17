@@ -283,6 +283,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define UART2_ADDRESS (IO + 0x82000)
 #define UART3_ADDRESS (IO + 0x83000)
 
+#define SCB (IO + 0x96000)
+
 #define MME_POKE (IO + 0x10040000)
 #define NCA (IO + 0x10100000)
 
