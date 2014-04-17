@@ -94,7 +94,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 
 		if (iterations > total_iterations) {
 			printf("Tested %d iteration(s) with %lu errors.\n",
-			       iterations, errs);
+			       iterations-1, errs);
 			return errs != 0;
 		}
 
