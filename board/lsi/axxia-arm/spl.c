@@ -190,8 +190,8 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			pattern = (vu_long) 0xaaaaaaaa;
 			anti_pattern = (vu_long) 0x55555555;
 
-			debug("%s:%d: length = 0x%.8lx\n",
-			      __FUNCTION__, __LINE__,
+			printf("%s:%d: length = 0x%.8lx\n",
+			      __FILE__, __LINE__,
 			      len);
 			/*
 			 * Write the default pattern at each of the
@@ -478,8 +478,8 @@ spl_board_init(void)
 	} else {
 		printf("SPL Memory Test SUCCESSFUL\n");
 	}
-		
-	
+
+
 #endif
 
 #ifdef SYSCACHE_ONLY_MODE
