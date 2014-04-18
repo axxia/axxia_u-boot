@@ -595,7 +595,7 @@ sysmem_init(void)
 	for (i = 0; i < num_sc_nodes; ++i) {
 		/* enable the cache - unless the user asked not to */
 #ifdef AXM_35xx
-		if (0 != (sysmem->syscacheControl & 0xff00))
+		if (0 == (sysmem->syscacheControl & 0xff00))
 #else
 		if (!sysmem->syscacheDisable)
 #endif
