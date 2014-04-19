@@ -43,22 +43,22 @@ DECLARE_GLOBAL_DATA_PTR;
 */
 
 /*
-  -------------------------------------------------------------------------------
+  ----------------------------------------------------------------------
   spl_mtest
 */
 
 #ifdef CONFIG_SPL_MTEST
 
-typedef enum {
+enum spl_mtest_type {
 	data = 0,
 	addr,
 	mtest,
 	all
-} spl_mtest_t;
+};
 
 int
 spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
-	spl_mtest_t type)
+	enum spl_mtest_type type)
 {
 	vu_long	*addr;
 	ulong	val;
@@ -92,18 +92,17 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 
 	for (;;) {
 
-		if (iterations > total_iterations) {
+		if (iterations >= total_iterations) {
 			printf("Tested %d iteration(s) with %lu errors.\n",
-			       iterations-1, errs);
+			       iterations, errs);
 			return errs != 0;
 		}
 
 		iterations++;
-		printf("Iteration: %6d\r", iterations);
+		printf("Iteration: %d\n", iterations);
 		debug("\n");
 
 		if ((type == data) || (type == all)) {
-
 			/*
 			 * Data line test: write a pattern to the first
 			 * location, write the 1's complement to a 'parking'
