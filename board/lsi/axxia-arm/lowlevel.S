@@ -379,6 +379,15 @@ set_actlr2:
 #ifndef CONFIG_SPL_BUILD
 
 	@@
+	@ Allow User Mode Access to the Performance Counter
+	@ and Disable Overflow Interrupts
+
+	ldr	r0, =1
+	mcr	p15, 0, r0, c9, c14, 0
+	ldr	r0, =0x8000000f
+	mcr	p15, 0, r0, c9, c14, 2
+
+	@@
 	@ Set the CNTFRQ
 #ifdef CONFIG_AXXIA_SIM
 	ldr	r0, =100000000
