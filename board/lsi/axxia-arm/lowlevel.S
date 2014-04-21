@@ -68,7 +68,7 @@ setup_page_tables:
         mov     r1, r3
         add     r2, r3, #0x1000
 1:    	mov     r9, #0
-2:      str     r0, [r1], #4            @ Each supersection is repeated	
+2:      str     r0, [r1], #4            @ Each supersection is repeated
         add     r9, r9, #1              @ 16 times.
         cmp     r9, #16
         blt     2b
@@ -93,7 +93,7 @@ setup_page_tables:
         add     r1, r3, #0x1000
         add     r2, r3, #0x2000
 1:    	mov     r9, #0
-2:      str     r0, [r1], #4            @ Each supersection is repeated	
+2:      str     r0, [r1], #4            @ Each supersection is repeated
         add     r9, r9, #1              @ 16 times.
         cmp     r9, #16
         blt     2b
@@ -113,7 +113,7 @@ setup_page_tables:
         add     r1, r3, #0x2000
         add     r2, r3, #0x3000
 1:    	mov     r9, #0
-2:      str     r0, [r1], #4            @ Each supersection is repeated	
+2:      str     r0, [r1], #4            @ Each supersection is repeated
         add     r9, r9, #1              @ 16 times.
         cmp     r9, #16
         blt     2b
@@ -125,7 +125,7 @@ setup_page_tables:
 
 	@@
 	@ U-Boot Page Tables
-	
+
 #ifndef SYSCACHE_ONLY_MODE
 
 	@ First 1G of RAM, sharable, cacheable and bufferable.
@@ -492,7 +492,7 @@ set_actlr2:
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
 
 	@ Get the core and cluster numbers
-	
+
 	mrc	p15, 0, r0, c0, c0, 5
 	ands	r10, r0, #3
 	lsr	r11, r0, #8
@@ -534,7 +534,7 @@ set_actlr2:
 #ifndef CONFIG_SPL_BUILD
 
 	@ Get the core and cluster numbers
-	
+
 	mrc	p15, 0, r0, c0, c0, 5
 	ands	r10, r0, #3
 	lsr	r11, r0, #8
