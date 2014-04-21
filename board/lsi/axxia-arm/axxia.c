@@ -30,7 +30,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef CONFIG_SPL_BUILD
-unsigned long pfuse = 0;
+unsigned long pfuse;
 #endif
 
 const struct omap_sysinfo sysinfo = {
@@ -105,12 +105,12 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 				if (mask == (mask & value))
 					break;
 			}
-					
 		} while (0 < retries);
 
 		if (0 == retries)
 			return -1;
 	}
+
 #endif	/* CONFIG_AXXIA_SIM */
 	return 0;
 }
@@ -192,49 +192,55 @@ power_down_cluster(int cluster)
 	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)), ~0xf00);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
 
-	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)), ~(0xff000));
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)),
+		~(0xff000));
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
+
 	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)), ~0xf00000);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
-	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)), ~0xff000000);
+
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1588 + (cluster * 0xc)),
+		~0xff000000);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
+
 	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xf);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1584 + (cluster * 0xc), &value);
-	
+
 	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xff0);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1584 + (cluster * 0xc), &value);
-	
+
 	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xf000);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
+
 	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xff0000);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
-	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xf000000);
+
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)),
+		~0xf000000);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
-	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)), ~0xf0000000);
+
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1584 + (cluster * 0xc)),
+		~0xf0000000);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
+
 	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xf);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
+
 	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xf0);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
+
 	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xff00);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
+
 	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xf0000);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
-	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xff00000);
+
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)),
+		~0xff00000);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
-	
-	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)), ~0xf0000000);
+
+	ncr_and(NCP_REGION_ID(0x156, 0), (0x1580 + (cluster * 0xc)),
+		~0xf0000000);
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1588 + (cluster * 0xc), &value);
 
 	/* Clear the hold bit for the cpus in this cluster. */
@@ -262,15 +268,16 @@ set_clusters(void)
 	char *clusters_env;
 	ncp_uint32_t clusters;
 
-	if (NULL != (clusters_env = getenv("clusters"))) {
-		clusters = simple_strtoul(clusters_env, NULL, 0);
-	} else {
 #ifdef CONFIG_AXXIA_EMU
-		clusters = 0x1;
+	clusters = 0x1;
 #else
-		clusters = 0xf;
+	clusters = 0xf;
 #endif
-	}
+
+	clusters_env = getenv("clusters");
+
+	if (NULL != clusters_env)
+		clusters = simple_strtoul(clusters_env, NULL, 0);
 
 	if (0 == (clusters & 1)) {
 		printf("Cluster 0 MUST be enabled, enabling.\n");
@@ -293,7 +300,7 @@ set_clusters(void)
 
 	if (0 != (clusters & 0x2)) {
 		if (0 != set_cluster_coherency(1, 1))
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+			acp_failure(__FILE__, __func__, __LINE__);
 	}
 #else
 	puts("Setting up Coherency for Clusters: 0");
@@ -313,27 +320,27 @@ set_clusters(void)
 		power_down_cluster(1);
 
 		if (0 != set_cluster_coherency(1, 0))
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+			acp_failure(__FILE__, __func__, __LINE__);
 	} else if (0 != set_cluster_coherency(1, 1)) {
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+		acp_failure(__FILE__, __func__, __LINE__);
 	}
 
 	if (0 == (clusters & 0x4)) {
 		power_down_cluster(2);
 
 		if (0 != set_cluster_coherency(2, 0))
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+			acp_failure(__FILE__, __func__, __LINE__);
 	} else if (0 != set_cluster_coherency(2, 1)) {
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+		acp_failure(__FILE__, __func__, __LINE__);
 	}
 
 	if (0 == (clusters & 0x8)) {
 		power_down_cluster(3);
 
 		if (0 != set_cluster_coherency(3, 0))
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+			acp_failure(__FILE__, __func__, __LINE__);
 	} else if (0 != set_cluster_coherency(3, 1)) {
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+		acp_failure(__FILE__, __func__, __LINE__);
 	}
 #endif
 
@@ -368,7 +375,7 @@ int
 misc_init_r(void)
 {
 	if (0 != set_cluster_coherency(0, 1))
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+		acp_failure(__FILE__, __func__, __LINE__);
 
 	/* Enable SW access to cp14 registers and power on the ETB RAM modules
 	 * (via dbg_sw_enable register)
@@ -400,7 +407,8 @@ int
 board_early_init_f(void)
 {
 	/*
-	  The bootROM code leaves SPI device 0 selected, BZ 45907.  Deselect here.
+	  The bootROM code leaves SPI device 0 selected, BZ 45907.
+	  Deselect here.
 	*/
 
 	writel(0x1f, (ncp_uint32_t *)(SSP + SSP_CSR));
@@ -456,12 +464,12 @@ ft_board_setup(void *blob, bd_t *bd)
 	ncp_uint32_t tmp;
 
 	/*
-  	  Set up the coherency domains and clusters.  This is handled
+	  Set up the coherency domains and clusters.  This is handled
 	  late in order to use the latest environment.
 	*/
 
 	if (0 != set_clusters())
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+		acp_failure(__FILE__, __func__, __LINE__);
 
 	/*
 	  Set the PLL/Clock frequencies.
@@ -472,7 +480,7 @@ ft_board_setup(void *blob, bd_t *bd)
 		node = fdt_path_offset(blob, clock_names[i]);
 
 		if (0 > node)
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+			acp_failure(__FILE__, __func__, __LINE__);
 
 		acp_clock_get(clocks[i], &tmp);
 		tmp *= 1000;
@@ -527,16 +535,15 @@ ft_board_setup(void *blob, bd_t *bd)
 		if (0 == strncmp(macspeed, "auto", strlen("auto"))) {
 			ad_value = getenv("ad_value");
 
-			if (NULL == ad_value) {
+			if (NULL == ad_value)
 				tmp = htonl(0x1e1);
-			} else {
+			else
 				tmp = htonl(simple_strtoul(ad_value, NULL, 0));
-			}
 
 			rc = fdt_setprop(blob, node, "ad-value", &tmp,
 					 sizeof(ncp_uint32_t));
 
-			if (0 != rc) 
+			if (0 != rc)
 				printf("%s:%d - Couldn't set ad-value!\n",
 				       __FILE__, __LINE__);
 
@@ -557,14 +564,16 @@ ft_board_setup(void *blob, bd_t *bd)
 	}
 
 	/*
-	  Enable PEI0/PEI1 controllers */
+	  Enable PEI0/PEI1 controllers
+	*/
 
 #ifndef CONFIG_AXXIA_SIM
 	node = fdt_path_offset(blob, "/pciex@0x3000000000");
 
 	if (0 <= node) {
 		/* check if PEI0 is enabled */
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200,&phy0_ctrl);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &phy0_ctrl);
+
 		if (phy0_ctrl & 0x1) {
 			/* PEI0 is enabled */
 			rc = fdt_set_node_status(blob, node,
@@ -573,17 +582,21 @@ ft_board_setup(void *blob, bd_t *bd)
 			if (0 != rc)
 				printf("%s:%d - Couldn't set PEI0 status!\n",
 				       __FILE__, __LINE__);
+
 			printf("PEI0 is enabled\n");
 		}
 	}
 
 	node = fdt_path_offset(blob, "/pciex@0x3080000000");
+
 	if (0 <= node) {
 		/* check if PEI1 is enabled */
-		ncr_read32(NCP_REGION_ID(0x115, 3), 0x200,&phy1_ctrl);
+		ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &phy1_ctrl);
+
 		if (phy1_ctrl & 0x1) {
 			/* PEI1 is enabled */
-			rc = fdt_set_node_status(blob, node, FDT_STATUS_OKAY, 0);
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
 
 			if (0 != rc)
 				printf("%s:%d - Couldn't set PEI1 status!\n",
@@ -600,7 +613,8 @@ ft_board_setup(void *blob, bd_t *bd)
 
 	if (0 <= node) {
 		/* check if SRIO0 is enabled */
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200,&phy0_ctrl);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &phy0_ctrl);
+
 		if (phy0_ctrl & 0x8) {
 			/* SRIO0 is enabled */
 			rc = fdt_set_node_status(blob, node,
@@ -616,7 +630,8 @@ ft_board_setup(void *blob, bd_t *bd)
 
 	if (0 <= node) {
 		/* check if SRIO1 is enabled */
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200,&phy0_ctrl);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &phy0_ctrl);
+
 		if (phy0_ctrl & 0x400) {
 			/* SRIO1 is enabled */
 			rc = fdt_set_node_status(blob, node,
