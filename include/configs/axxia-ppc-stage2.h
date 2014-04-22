@@ -126,6 +126,15 @@ printf( "# " format "\n", ##args ); \
 
 /*
   ----------------------------------------------------------------------
+  Classifier Memory (CMEM) DDR initialization support
+*/
+#ifdef AXM_35xx
+#define CONFIG_CMEM_INIT
+#endif
+
+
+/*
+  ----------------------------------------------------------------------
   Parameter Storage 
 */
  

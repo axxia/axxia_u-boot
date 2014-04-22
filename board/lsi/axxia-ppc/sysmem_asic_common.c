@@ -24,6 +24,7 @@
 #if defined(ACP_25xx) || defined(AXM_35xx)
 #include "ncp_sysmem_lsiphy.h"
 extern ncp_st_t ncp_sysmem_init_lsiphy(ncp_dev_hdl_t, ncp_uint32_t, ncp_sm_parms_t *);
+extern ncp_st_t ncp_cm_dram_init(ncp_dev_hdl_t, ncp_uint32_t);
 #else
 typedef long long               ncp_int64_t;
 typedef unsigned long long      ncp_uint64_t;
@@ -88,9 +89,9 @@ static unsigned long rank_address_map [ 2 ] [ 2 ] = {
  *           4GB     300 ns/clk          240      200      160
  *
  */
-ncp_uint8_t tRFC_vals_533[5] = { 0, 0x30, 0x3b, 0x56, 0xa0 } ;
-ncp_uint8_t tRFC_vals_667[5] = { 0, 0x3c, 0x4a, 0x6b, 0xc8 } ;
-ncp_uint8_t tRFC_vals_800[5] = { 0, 0x48, 0x58, 0x80, 0xf0 } ;
+ncp_uint8_t tRFC_vals_533[5] = { 0, 0x30, 0x3b, 0x56, 0x8b } ;
+ncp_uint8_t tRFC_vals_667[5] = { 0, 0x3c, 0x4a, 0x6b, 0xae } ;
+ncp_uint8_t tRFC_vals_800[5] = { 0, 0x48, 0x58, 0x80, 0xd0 } ;
 
 
 
@@ -282,6 +283,109 @@ sysmem_size_init(void)
 }
 
 
+/*#define DISPLAY_PARAMETERS*/
+#ifdef DISPLAY_PARAMETERS
+static void disp_ddr_parms(parameters_sysmem_t *parms)
+{
+#ifndef AXM_35xx
+	printf("-- -- Sysmem\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
+	       parms->version, parms->auto_detect,
+	       parms->num_interfaces, parms->num_ranks_per_interface,
+	       parms->topology, parms->sdram_device_density,
+	       parms->sdram_device_width, parms->primary_bus_width,
+	       parms->CAS_latency, parms->CAS_write_latency,
+	       parms->enableECC, parms->enable_deskew,
+	       parms->enable_rdlvl, parms->enable_auto_cpc,
+	       parms->min_phy_cal_delay,
+	       parms->min_ctrl_roundtrip_delay, parms->single_bit_mpr,
+	       parms->rdcal_cmp_even, parms->rdcal_cmp_odd,
+	       parms->phy_rdlat, parms->added_rank_switch_delay,
+	       parms->high_temp_dram, parms->sdram_rtt_nom,
+	       parms->sdram_rtt_wr, parms->sdram_data_drv_imp,
+	       parms->phy_adr_imp, parms->phy_dat_imp,
+	       parms->phy_rcv_imp, parms->sysCacheMode,
+	       parms->syscacheDisable, parms->half_mem,
+	       parms->address_mirroring);
+#else
+	printf("-- -- Sysmem\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
+	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
+	       parms->version,
+	       parms->ddrClockSpeedMHz,
+	       parms->auto_detect,
+	       parms->num_interfaces,
+	       parms->num_ranks_per_interface,
+	       parms->primary_bus_width,
+	       parms->topology,
+	       parms->phy_rdlat,
+	       parms->added_rank_switch_delay,
+	       parms->zqcs_interval,
+	       parms->enableECC,
+	       parms->enable_runtime_updates,
+	       parms->dramPrechargePolicy,
+	       parms->open_page_size,
+	       parms->syscacheControl,
+	       parms->sdram_device_density,
+	       parms->sdram_device_width,
+	       parms->CAS_latency,
+	       parms->CAS_write_latency,
+	       parms->address_mirroring,
+	       parms->rdimm,
+	       parms->rdimm_ctl_0_0,
+	       parms->rdimm_ctl_0_1,
+	       parms->rdimm_misc,
+	       parms->write_ODT_ctl,
+	       parms->read_ODT_ctl,
+	       parms->single_bit_mpr,
+	       parms->high_temp_dram,
+	       parms->min_ctrl_roundtrip_delay);
+	{
+		int i;
+		per_sysmem_parms_t *per_sysmem_parms;
+
+		for (i = 0; i < 2; ++i) {
+			per_sysmem_parms = &(parms->per_sysmem[i]);
+
+			printf("-- -- per sysmem %d\n", i);
+			printf("sdram_rtt_nom[] = {%d %d %d %d}\n"
+			       "sdram_rtt_wr[] = {%d %d %d %d}\n"
+			       "sdram_data_drv_imp[] = {%d %d %d %d}\n"
+			       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
+			       per_sysmem_parms->sdram_rtt_nom[3],
+			       per_sysmem_parms->sdram_rtt_nom[2],
+			       per_sysmem_parms->sdram_rtt_nom[1],
+			       per_sysmem_parms->sdram_rtt_nom[0],
+			       per_sysmem_parms->sdram_rtt_wr[3],
+			       per_sysmem_parms->sdram_rtt_wr[2],
+			       per_sysmem_parms->sdram_rtt_wr[1],
+			       per_sysmem_parms->sdram_rtt_wr[0],
+			       per_sysmem_parms->sdram_data_drv_imp[3],
+			       per_sysmem_parms->sdram_data_drv_imp[2],
+			       per_sysmem_parms->sdram_data_drv_imp[1],
+			       per_sysmem_parms->sdram_data_drv_imp[0],
+			       per_sysmem_parms->phy_min_cal_delay,
+			       per_sysmem_parms->phy_adr_phase_select,
+			       per_sysmem_parms->phy_dp_io_vref_set,
+			       per_sysmem_parms->phy_adr_io_vref_set,
+			       per_sysmem_parms->phy_rdlvl_cmp_even,
+			       per_sysmem_parms->phy_rdlvl_cmp_odd,
+			       per_sysmem_parms->phy_write_align_finetune);
+		}
+	}	       
+#endif
+}
+
+#else
+#define disp_ddr_parms(parms)
+#endif
+
+
 int
 sysmem_init(void)
 {
@@ -409,99 +513,6 @@ sysmem_init(void)
 	}
 #endif
 
-#ifdef DISPLAY_PARAMETERS
-#ifndef AXM_35xx
-	printf("-- -- Sysmem\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
-	       sysmem->version, sysmem->auto_detect,
-	       sysmem->num_interfaces, sysmem->num_ranks_per_interface,
-	       sysmem->topology, sysmem->sdram_device_density,
-	       sysmem->sdram_device_width, sysmem->primary_bus_width,
-	       sysmem->CAS_latency, sysmem->CAS_write_latency,
-	       sysmem->enableECC, sysmem->enable_deskew,
-	       sysmem->enable_rdlvl, sysmem->enable_auto_cpc,
-	       sysmem->min_phy_cal_delay,
-	       sysmem->min_ctrl_roundtrip_delay, sysmem->single_bit_mpr,
-	       sysmem->rdcal_cmp_even, sysmem->rdcal_cmp_odd,
-	       sysmem->phy_rdlat, sysmem->added_rank_switch_delay,
-	       sysmem->high_temp_dram, sysmem->sdram_rtt_nom,
-	       sysmem->sdram_rtt_wr, sysmem->sdram_data_drv_imp,
-	       sysmem->phy_adr_imp, sysmem->phy_dat_imp,
-	       sysmem->phy_rcv_imp, sysmem->sysCacheMode,
-	       sysmem->syscacheDisable, sysmem->half_mem,
-	       sysmem->address_mirroring);
-#else
-	printf("-- -- Sysmem\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
-	       "0x%lx 0x%lx 0x%lx 0x%lx\n",
-	       sysmem->version,
-	       sysmem->ddrClockSpeedMHz,
-	       sysmem->auto_detect,
-	       sysmem->num_interfaces,
-	       sysmem->num_ranks_per_interface,
-	       sysmem->primary_bus_width,
-	       sysmem->topology,
-	       sysmem->phy_rdlat,
-	       sysmem->added_rank_switch_delay,
-	       sysmem->zqcs_interval,
-	       sysmem->enableECC,
-	       sysmem->enable_runtime_updates,
-	       sysmem->dramPrechargePolicy,
-	       sysmem->open_page_size,
-	       sysmem->syscacheControl,
-	       sysmem->sdram_device_density,
-	       sysmem->sdram_device_width,
-	       sysmem->CAS_latency,
-	       sysmem->CAS_write_latency,
-	       sysmem->address_mirroring,
-	       sysmem->rdimm,
-	       sysmem->rdimm_ctl_0_0,
-	       sysmem->rdimm_ctl_0_1,
-	       sysmem->rdimm_misc,
-	       sysmem->write_odt_ctl,
-	       sysmem->read_odt_ctl,
-	       sysmem->single_bit_mpr,
-	       sysmem->high_temp_dram);
-	{
-		int i;
-		per_sysmem_parms_t *per_sysmem_parms;
-
-		for (i = 0; i < 2; ++i) {
-			per_sysmem_parms = &(sysmem->per_sysmem[i]);
-
-			printf("-- -- per sysmem %d\n", i);
-			printf("sdram_rtt_nom[] = {%d %d %d %d}\n"
-			       "sdram_rtt_wr[] = {%d %d %d %d}\n"
-			       "sdram_data_drv_imp[] = {%d %d %d %d}\n"
-			       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
-			       per_sysmem_parms->sdram_rtt_nom[3],
-			       per_sysmem_parms->sdram_rtt_nom[2],
-			       per_sysmem_parms->sdram_rtt_nom[1],
-			       per_sysmem_parms->sdram_rtt_nom[0],
-			       per_sysmem_parms->sdram_rtt_wr[3],
-			       per_sysmem_parms->sdram_rtt_wr[2],
-			       per_sysmem_parms->sdram_rtt_wr[1],
-			       per_sysmem_parms->sdram_rtt_wr[0],
-			       per_sysmem_parms->sdram_data_drv_imp[3],
-			       per_sysmem_parms->sdram_data_drv_imp[2],
-			       per_sysmem_parms->sdram_data_drv_imp[1],
-			       per_sysmem_parms->sdram_data_drv_imp[0],
-			       per_sysmem_parms->phy_min_cal_delay,
-			       per_sysmem_parms->phy_adr_phase_select,
-			       per_sysmem_parms->phy_dp_io_vref_set,
-			       per_sysmem_parms->phy_adr_io_vref_set,
-			       per_sysmem_parms->phy_rdlvl_cmp_even,
-			       per_sysmem_parms->phy_rdlvl_cmp_odd,
-			       per_sysmem_parms->phy_write_align_finetune);
-		}
-	}	       
-#endif
-#endif
 
 
 	/*
@@ -538,11 +549,14 @@ sysmem_init(void)
 	}
 #endif
 
+    disp_ddr_parms(sysmem);
+
 	if (sysmem->primary_bus_width == 2) {
 		num_bls = 4;    
 	} else {
 		num_bls = 8;
 	}
+
 
 	/*
 	  Put all system caches in "force_uncached" mode 
@@ -839,6 +853,80 @@ sysmem_init(void)
 			       "r" (0x00000000),
 			       "r" (0x00030207));
 #endif
+
+
+
+#ifdef CONFIG_CMEM_INIT
+    /* BugZ 48091 - initialize external treemem */
+    if (ncp_cmem_init)
+	{
+		int i;
+		per_sysmem_parms_t *per_sysmem_parms;
+        
+        /* TEMP !!!!! 
+         * for now we don't have a separate section in the parameter
+         * file for CMEM. So we will re-use the sysmem parameter space
+         * and fix up the configuration values for CMEM
+         */
+        cmem = sysmem;
+
+
+        cmem->ddrClockSpeedMHz = 667;
+        cmem->num_interfaces = 1;
+        cmem->num_ranks_per_interface = 1;
+        cmem->primary_bus_width = NCP_SM_PRIMARY_BUS_WIDTH_8BITS;
+        cmem->topology = 1;
+        cmem->phy_rdlat = 0;
+        cmem->added_rank_switch_delay = 0;
+        cmem->zqcs_interval = 0;
+        cmem->enableECC = 1;
+        cmem->enable_runtime_updates = 1;
+
+        cmem->sdram_device_density = NCP_SM_SDRAM_DENSITY_4GBIT;
+        cmem->sdram_device_width = NCP_SM_SDRAM_WIDTH_8BITS;
+        cmem->CAS_latency = 9;
+        cmem->CAS_write_latency = 6;
+        cmem->address_mirroring = 0;
+        cmem->single_bit_mpr = 0;
+        cmem->high_temp_dram = 0;
+        cmem->min_ctrl_roundtrip_delay = 1;
+
+        for (i = 0; i < cmem->num_interfaces; ++i) {
+
+            per_sysmem_parms = &(cmem->per_sysmem[i]);
+
+            per_sysmem_parms->sdram_rtt_nom[0] = NCP_SM_SDRAM_RTT_IMP_120_OHM;
+            per_sysmem_parms->sdram_rtt_wr[0] = NCP_SM_SDRAM_RTT_IMP_DISABLED;
+            per_sysmem_parms->sdram_data_drv_imp[0] = NCP_SM_SDRAM_DRV_IMP_34_OHM;
+            per_sysmem_parms->phy_min_cal_delay = 12;
+            per_sysmem_parms->phy_adr_phase_select = 0;
+            per_sysmem_parms->phy_dp_io_vref_set = 0x3f02a;
+            per_sysmem_parms->phy_adr_io_vref_set = 0xfff;
+            per_sysmem_parms->phy_write_align_finetune = 0;
+        }
+
+        disp_ddr_parms(cmem);
+
+        for (i = 0; i < cmem->num_interfaces; i++) {
+            rc = ncp_sysmem_init_lsiphy(NULL, i + 2, cmem); 
+
+            if (rc != 0) {
+              printf("*** Cmem Init Failed ***\n");
+              acp_failure( __FILE__, __FUNCTION__, __LINE__ );
+            }
+        }
+
+        if (cmem->enableECC)
+        {
+            rc = ncp_cm_dram_init(NULL, (ncp_uint32_t) cmem->num_interfaces);
+            if (rc != 0) {
+              printf("*** Cmem DRAM Init Failed ***\n");
+              acp_failure( __FILE__, __FUNCTION__, __LINE__ );
+            }
+        }
+    }
+#endif
+
 
 	return 0;
 }

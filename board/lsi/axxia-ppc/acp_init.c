@@ -55,6 +55,7 @@
 #define PARAMETERS_GLOBAL_IGNORE_SYSMEM      0x00000100
 #define PARAMETERS_GLOBAL_IGNORE_PCIESRIO    0x00001000
 
+#define PARAMETERS_GLOBAL_CMEM_INIT          0x00100000
 #define PARAMETERS_GLOBAL_RUN_SYSMEM_BIST    0x80000000
 #define PARAMETERS_GLOBAL_SET_L2_FTC         0x40000000
 #define PARAMETERS_GLOBAL_SET_L2_DISABLE_SL  0x20000000
@@ -231,6 +232,8 @@ typedef struct {
 	unsigned long single_bit_mpr;
 	unsigned long high_temp_dram;
 	per_sysmem_parms_t per_sysmem[2];
+    unsigned long min_ctrl_roundtrip_delay;
+    unsigned long cmemMR1[2];
 #endif
 
 } __attribute__((packed)) parameters_sysmem_t;
@@ -267,6 +270,7 @@ static parameters_pciesrio_t *pciesrio = (parameters_pciesrio_t *)1;
 static parameters_voltage_t *voltage = (parameters_voltage_t *)1;
 static parameters_clocks_t *clocks = (parameters_clocks_t *)1;
 static parameters_sysmem_t *sysmem = (parameters_sysmem_t *)1;
+static parameters_sysmem_t *cmem = (parameters_sysmem_t *)1;
 
 #define PARAMETERS_OFFSET (127 * 1024)
 #define PARAMETERS_ADDRESS (LCM + PARAMETERS_OFFSET)
@@ -284,6 +288,7 @@ unsigned long sysmem_size = 1;
 unsigned long reset_enabled = 1;
 unsigned long ncp_sm_phy_reg_restore = 1;
 unsigned long ncp_sm_phy_reg_dump = 1;
+unsigned long ncp_cmem_init = 1;
 
 /*
   ------------------------------------------------------------------------------
@@ -1907,6 +1912,14 @@ acp_init( void )
 #else
 	ncp_sm_phy_reg_dump = 0;
 #endif
+
+#ifdef CONFIG_CMEM_INIT
+	ncp_cmem_init = 
+		(global->flags & PARAMETERS_GLOBAL_CMEM_INIT) ? 1 : 0;
+#else
+	ncp_cmem_init = 0;
+#endif
+
 
 	/*
 	  =======
