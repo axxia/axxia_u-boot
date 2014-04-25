@@ -325,7 +325,7 @@ NCP_RETURN_LABEL
 void
 ncp_task_uboot_domain_bundle_clear(void)
 {
-    ncp_memset(DOMAINBUNDLE_PA, 0, DOMAINBUNDLE_SIZE);
+    ncp_memset((void *)DOMAINBUNDLE_PA, 0, DOMAINBUNDLE_SIZE);
 }
     
 ncp_st_t

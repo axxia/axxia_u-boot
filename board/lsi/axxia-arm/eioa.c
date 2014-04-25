@@ -717,7 +717,6 @@ ncp_dev_reset_hw(void)
     /* Disable protected writes */
     NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON, NCP_SYSCON_KEY, 0x0));
 
-cleanup:
 NCP_RETURN_LABEL
     if(st != NCP_ST_SUCCESS)
         ncpStatus = st;
