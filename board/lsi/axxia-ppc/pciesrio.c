@@ -676,50 +676,105 @@ pciesrio_setcontrol_axm25xx(unsigned long new_control)
 	return 0;
 }
 
-#elif defined (AXM_35xx)
-typedef struct {
-	unsigned short offset;
-	unsigned short value;
-} rx_serdes_value_t;
+#elif defined(AXM_35xx)
 
 int
 pciesrio_setcontrol_axm35xx(unsigned long new_control)
 {
-	int srioHSSSpeed;
-	int i;
-	char * env_value;
+	int srio0_speed = 0, divMode0 = 0;
+	int i = 0;
+	char *env_value;
 	unsigned short chResetVal;
+	unsigned short regValue;
 
 	printf("Setting PCI/SRIO to 0x%08lx\n", new_control);
 
+	/* Change the default of los_freeze_bypass to '0' */
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x26c, 0x007c0001);
+
+
+	if ((new_control & 0x8) == 0x8) {
+		/* SRIO0 enabled */
+		srio0_speed = (((new_control >> 4) & 0x7) << 12);
+		switch ((new_control >> 4) & 0x7) {
+		case 0:
+			printf("SRIO0 -- 1.25 Gbps\n");
+			/* 1.25 Gbps */
+			divMode0 = 0x11111111;
+			break;
+		case 1:
+			printf("SRIO0 -- 2.5 Gbps\n");
+			/* 2.5 Gbps */
+			if (((new_control >> 26) & 0x6) == 0x6) {
+				/* SRIO0x1 mode */
+				divMode0 = 0x11131113;
+			} else {
+				/* SRIO0x4 mode */
+				divMode0 = 0x33333333;
+			}
+			break;
+		case 2:
+			printf("SRIO0 -- 3.125 Gbps\n");
+			/* 3.125 Gbps */
+			if (((new_control >> 26) & 0x6) == 0x6) {
+				/* SRIO0x1 mode */
+				divMode0 = 0x11121112;
+			} else {
+				/* SRIO0x4 mode */
+				divMode0 = 0x22222222;
+			}
+			if (((new_control >> 26) & 0x6) == 0x6) {
+				/* SRIO0 x1 mode */
+				ncr_write32(NCP_REGION_ID(0x115, 0), 0x234,
+				0x030A7507);
+			} else {
+				/* SRIO0x4 mode */
+				ncr_write32(NCP_REGION_ID(0x115, 0), 0x230,
+				0x030A7527);
+			}
+			break;
+		default:
+			printf("Invalid SRIO0 speed\n");
+			return 1;
+		}
+	}
+
 	if (new_control == 0x400001) {
 		/*  PEI0 RC 0x4 mode */
+		/* soft reset the phy, pipe, link layer */
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x80);
 
-               /* soft reset the phy, pipe, link layer */
-                ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x80);
-
-                udelay(100000);
-
+		udelay(100000);
 		/* PLL B disable */
-                ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x100);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x100);
 
 		/* High Serdes reset_a */
-                ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x21);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x21);
 
-                ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
-		
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xffffffff);
+
 		/* wr pll_a_ctrl  0x230 0x03176403 */
-                ncr_write32(NCP_REGION_ID(0x115, 0), 0x230, 0x03176403);
-		
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x230, 0x03176403);
+
 		/* enable PEI0 */
-                ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control);
-	} else if ((new_control & 0x1c70000f) == 0x10400005) {
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, new_control);
+	} else if (((new_control & 0x1c40000f) == 0x10400005)
+		|| ((new_control & 0x1c40000f) == 0x10400001)
+		|| ((new_control & 0x1c40000f) == 0x10400004)) {
 		/* PEI0x2, PEI1x2 */
 		/* wr ctrl10       0x228 0x00000000 */
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x0);
 
-		/* wr ctrl0         0x200 0x10000063 */
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10000063);
+		if ((new_control & 0x1c40000f) == 0x10400001) {
+			/* only PEI0 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10000061);
+		} else if ((new_control & 0x1c40000f) == 0x10400004) {
+			/* only PEI1 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10000062);
+		} else {
+			/* both PEI0/PEI1 are enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10000063);
+		}
 
 		/* wr ctrl2         0x208 0x77ff77ff */
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0x77ff77ff);
@@ -730,19 +785,67 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 		/* wr_pll_b_ctrl 0x234 0x03176423 */
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x234, 0x03176423);
 
-		/* wr ctrl0         0x200 0x1800000F */
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10400003);
-	} else if ((new_control & 0x1c70000f) == 0x18400007) {
-		/* PEI0x1, PEI1x1, PEI2x1 */
-		/* Keep PLLB powered down */
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x100);
+		if ((new_control & 0x1c40000f) == 0x10400001) {
+			/* only PEI0 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10400001);
+		} else if ((new_control & 0x1c40000f) == 0x10400004) {
+			/* only PEI1 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10400002);
+		} else {
+			/* both PEI0/PEI1 are enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x10400003);
+		}
+	} else if (((new_control & 0x1c40000f) == 0x18400007)
+		|| ((new_control & 0x1c40000f) == 0x18000008)
+		|| ((new_control & 0x1c40000f) == 0x18400004)
+		|| ((new_control & 0x1c40000f) == 0x18400002)
+		|| ((new_control & 0x1c40000f) == 0x18400001)
+		|| ((new_control & 0x1c40000f) == 0x1840000f)) {
+		/* SRIO0x1, PEI0x1, PEI1x1, PEI2x1 */
+		if (new_control & 0x8) {
+			/* Power up PLLA/PLLB */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x0);
+		} else {
+			/* Keep PLLB powered down if SRIOx1 not enabled*/
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x100);
+		}
 
 		/* wr ctrl0         0x200 0x18000067 */
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18000067);
-
-		/* wr ctrl1         0x204 0x00000000 */
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x204, 0x0);
-
+		if ((new_control & 0x1c40000f) == 0x18400001) {
+			/* only PEI0 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18000061);
+		} else if ((new_control & 0x1c40000f) == 0x18400004) {
+			/* only PEI1 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18000062);
+		} else if ((new_control & 0x1c40000f) == 0x18400002) {
+			/* only PEI2 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18000064);
+		} else if ((new_control & 0x1c40000f) == 0x18400007) {
+			/* All 3 PEIs are enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18000067);
+		} else if (((new_control & 0x1c40000f) == 0x1840000f)
+			|| ((new_control & 0x1c40000f) == 0x18000008)) {
+			/* All 3 PEIs and SRIO0 are enabled -- SRIO0x1
+			 or SRIO0x1 mode */
+			if ((new_control & 0xf) == 0x8) {
+				/* SRIO0 x1 only mode */
+				ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,
+					0x18000068);
+			} else {
+				ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,
+					0x1800006f);
+			}
+			/* configure PLLB since SRIOx1 is enabled */
+			if (((new_control >> 4) & 0x7) != 0x2) {
+				/* SRIO speed is not 3.125 Gbps */
+				ncr_write32(NCP_REGION_ID(0x115, 0), 0x234,
+					0x06126507);
+			}
+			/* Program SRIO0 speed */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x204,
+				srio0_speed);
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x244, divMode0);
+		}
 
 		/* wr ctrl11       0x22c 0x000000EF */
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x22c, 0xef);
@@ -750,15 +853,55 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 		/* wr ctrl2         0x208 0xFFF7FFF7 */
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xFFF7FFF7);
 
-		/* wr_pll_a_ctrl 0x230 0x03176403 */
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x230, 0x03176403);
 
-		/* wr ctrl12        0x244 0x11111111 */
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x244, 0x11111111);
+		if ((new_control & 0x1c40000f) == 0x18400001) {
+			/* only PEI0 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18400041);
+		} else if ((new_control & 0x1c40000f) == 0x18400004) {
+			/* only PEI1 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18400042);
+		} else if ((new_control & 0x1c40000f) == 0x18400002) {
+			/* only PEI2 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18400044);
+		} else if ((new_control & 0x1c40000f) == 0x18400007) {
+			/* All 3 PEIs are enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18400047);
+		} else if (((new_control & 0x1c40000f) == 0x1840000f)
+			|| ((new_control & 0x1c40000f) == 0x18000008)) {
+			/* All 3 PEIs and SRIO0 are enabled or only
+			 * SRIO0 is enabled */
+			/* host or agent mode provided
+			   by user */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,
+				new_control & 0x1c70000f);
+			}
 
-		/* wr ctrl0         0x200 0x1800000F */
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18400047);
-	
+	} else if ((new_control & 0x1c00000f) == 0x08000008) {
+		/* SRIO0 x4 mode  */
+		/* PLL B disable */
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x228, 0x100);
+
+		/* wr ctrl0         0x200 0x08000028 */
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x08000028);
+
+		/* wr ctrl2         0x208 0xFFFFFFFF */
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x208, 0xFFFFFFFF);
+
+		/* Program SRIO0 speed */
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x204, srio0_speed);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x244, divMode0);
+
+		if (((new_control >> 4) & 0x7) != 0x2) {
+			/* SRIO speed is not 3.125 Gbps */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x230, 0x06126527);
+		}
+
+		/* Only SRIO0 is enabled, host or agent mode provided
+			   by user */
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,
+				new_control & 0x1c30000f);
+
 	}
 	return 0;
 }
