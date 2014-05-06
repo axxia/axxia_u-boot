@@ -444,6 +444,7 @@ int eioa_ethernet_configure(void);
 #define CONFIG_LSI_SERIAL_FLASH 
 #elif (defined(AXM_35xx) && !defined(ACP_EMU))
 #define CONFIG_LSI_SERIAL_FLASH 
+#define CONFIG_LSI_NAND  
 #else
 #define CONFIG_LSI_NAND  
 #define ACP_NAND_4BIT_ECC
