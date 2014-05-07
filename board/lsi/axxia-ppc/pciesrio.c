@@ -685,7 +685,6 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 	int i = 0;
 	char *env_value;
 	unsigned short chResetVal;
-	unsigned short regValue;
 
 	printf("Setting PCI/SRIO to 0x%08lx\n", new_control);
 
@@ -739,8 +738,9 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 		}
 	}
 
-	if (new_control == 0x400001) {
-		/*  PEI0 RC 0x4 mode */
+	if ((new_control == 0x400001) ||
+		(new_control == 0x00000001)) {
+		/*  PEI0 RC 0x4 mode or PEI0 EP mode */
 		/* soft reset the phy, pipe, link layer */
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x80);
 
