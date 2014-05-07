@@ -1042,6 +1042,15 @@ extern unsigned long pfuse;
 
 /*#define CONFIG_SYS_THUMB_BUILD*/
 
+#ifndef __ASSEMBLY__
+#ifdef CONFIG_MEMORY_RETENTION
+extern void *retention;
+extern unsigned *phyRegs;
+#define DDR_PHY_REGS_TAG_SAVE 0x53415645
+#define DDR_PHY_REGS_TAG_PROM 0x50524f4d
+#endif
+#endif
+
 /*
   ==============================================================================
   ==============================================================================

@@ -10,12 +10,12 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307	 USA
  */
 
 #include <common.h>
@@ -23,14 +23,6 @@
 #include <spl.h>
 #include <spi_flash.h>
 #include <asm/io.h>
-
-#ifdef CONFIG_MEMORY_RETENTION
-    extern void *retention;
-    extern unsigned long *phyRegs;
-
-#define DDR_PHY_REGS_TAG_SAVE 0x53415645
-#define DDR_PHY_REGS_TAG_PROM 0x50524f4d
-#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -58,7 +50,7 @@ enum spl_mtest_type {
 
 int
 spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
-	enum spl_mtest_type type)
+	  enum spl_mtest_type type)
 {
 	vu_long	*addr;
 	ulong	val;
@@ -123,26 +115,26 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			addr = start;
 			dummy = start + 1;
 			for (j = 0;
-				j < sizeof(bitpattern)/sizeof(bitpattern[0]);
-				j++) {
+			     j < sizeof(bitpattern)/sizeof(bitpattern[0]);
+			     j++) {
 				for (val = bitpattern[j]; val != 0; val <<= 1) {
 					*addr  = val;
 					/* clear the test data off of the bus */
-					*dummy  = ~val;
+					*dummy	= ~val;
 					readback = *addr;
 					if (readback != val) {
 						printf("FAILURE (data line): " \
-							"expected %08lx, actual %08lx\n",
-							val, readback);
+						       "expected %08lx, actual %08lx\n",
+						       val, readback);
 						errs++;
 					}
 					*addr  = ~val;
-					*dummy  = val;
+					*dummy	= val;
 					readback = *addr;
 					if (readback != ~val) {
 						printf("FAILURE (data line): " \
-							"Is %08lx, should be %08lx\n",
-							readback, ~val);
+						       "Is %08lx, should be %08lx\n",
+						       readback, ~val);
 						errs++;
 					}
 				}
@@ -164,23 +156,23 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			 * Address line test
 			 *
 			 * Description: Test the address bus wiring in a
-			 *              memory region by performing a walking
-			 *              1's test on the relevant bits of the
-			 *              address and checking for aliasing.
-			 *              This test will find single-bit
-			 *              address failures such as stuck -high,
-			 *              stuck-low, and shorted pins. The base
-			 *              address and size of the region are
-			 *              selected by the caller.
+			 *		memory region by performing a walking
+			 *		1's test on the relevant bits of the
+			 *		address and checking for aliasing.
+			 *		This test will find single-bit
+			 *		address failures such as stuck -high,
+			 *		stuck-low, and shorted pins. The base
+			 *		address and size of the region are
+			 *		selected by the caller.
 			 *
 			 * Notes:	For best results, the selected base
-			 *              address should have enough LSB 0's to
-			 *              guarantee single address bit changes.
-			 *              For example, to test a 64-Kbyte
-			 *              region, select a base address on a
-			 *              64-Kbyte boundary. Also, select the
-			 *              region size as a power-of-two if at
-			 *              all possible.
+			 *		address should have enough LSB 0's to
+			 *		guarantee single address bit changes.
+			 *		For example, to test a 64-Kbyte
+			 *		region, select a base address on a
+			 *		64-Kbyte boundary. Also, select the
+			 *		region size as a power-of-two if at
+			 *		all possible.
 			 *
 			 * Returns:
 			 * 0 if the test succeeds, 1 if the test fails.
@@ -190,8 +182,8 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			anti_pattern = (vu_long) 0x55555555;
 
 			printf("%s:%d: length = 0x%.8lx\n",
-			      __FILE__, __LINE__,
-			      len);
+			       __FILE__, __LINE__,
+			       len);
 			/*
 			 * Write the default pattern at each of the
 			 * power-of-two offsets.
@@ -209,11 +201,11 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 				temp = start[offset];
 				if (temp != pattern) {
 					printf("\nFAILURE: Address bit stuck" \
-						" high @ 0x%.8lx:" \
-						" expected 0x%.8lx," \
-						" actual 0x%.8lx\n", \
-						(ulong)&start[offset],
-						 pattern, temp);
+					       " high @ 0x%.8lx:" \
+					       " expected 0x%.8lx," \
+					       " actual 0x%.8lx\n", \
+					       (ulong)&start[offset],
+					       pattern, temp);
 					errs++;
 				}
 			}
@@ -223,7 +215,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			 * Check for addr bits stuck low or shorted.
 			 */
 			for (test_offset = 1; test_offset < len;
-				test_offset <<= 1) {
+			     test_offset <<= 1) {
 				start[test_offset] = anti_pattern;
 
 				for (offset = 1; offset < len; offset <<= 1) {
@@ -231,14 +223,14 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 					if ((temp != pattern) &&
 					    (offset != test_offset)) {
 						printf("\nFAILURE: Address bit"\
-							"stuck low or"
-							" shorted @" \
-							" 0x%.8lx:" \
-							" expected 0x%.8lx, "\
-							"actual 0x%.8lx\n",
-							(ulong)&start[offset],
-							pattern,
-							temp);
+						       "stuck low or"
+						       " shorted @" \
+						       " 0x%.8lx:" \
+						       " expected 0x%.8lx, "\
+						       "actual 0x%.8lx\n",
+						       (ulong)&start[offset],
+						       pattern,
+						       temp);
 						errs++;
 					}
 				}
@@ -267,7 +259,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			 * Fill memory with a known pattern.
 			 */
 			for (pattern = 1, offset = 0;
-				offset < num_words; pattern++,
+			     offset < num_words; pattern++,
 				     offset++) {
 				start[offset] = pattern;
 			}
@@ -277,16 +269,16 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			 * for the second pass.
 			 */
 			for (pattern = 1, offset = 0;
-				offset < num_words; pattern++,
+			     offset < num_words; pattern++,
 				     offset++) {
 				temp = start[offset];
 				if (temp != pattern) {
 					printf("\nFAILURE (read/write) " \
-						"@ 0x%.8lx:" \
-						" expected 0x%.8lx," \
-						" actual 0x%.8lx)\n",
-						(ulong)&start[offset],
-						pattern, temp);
+					       "@ 0x%.8lx:" \
+					       " expected 0x%.8lx," \
+					       " actual 0x%.8lx)\n",
+					       (ulong)&start[offset],
+					       pattern, temp);
 					errs++;
 				}
 
@@ -299,18 +291,18 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			 * and zero it.
 			 */
 			for (pattern = 1, offset = 0; offset < num_words;
-				pattern++,
+			     pattern++,
 				     offset++) {
 				anti_pattern = ~pattern;
 				temp = start[offset];
 				if (temp != anti_pattern) {
 					printf("\nFAILURE (read/write):"\
-						" @ 0x%.8lx:"
-						" expected 0x%.8lx, "\
-						"actual 0x%.8lx)\n",\
-						(ulong)&start[offset],
-						anti_pattern,
-						temp);
+					       " @ 0x%.8lx:"
+					       " expected 0x%.8lx, "\
+					       "actual 0x%.8lx)\n",\
+					       (ulong)&start[offset],
+					       anti_pattern,
+					       temp);
 					errs++;
 				}
 				start[offset] = 0;
@@ -407,7 +399,7 @@ reset_cpu_fabric(void)
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   check_memory_ranges
 */
 
@@ -447,7 +439,8 @@ spl_board_init(void)
 	int rc;
 
 	/*
-	  The bootROM code leaves SPI device 0 selected, BZ 45907.  Deselect here.
+	  The bootROM code leaves SPI device 0 selected, BZ 45907.
+	  Deselect here.
 	*/
 
 	writel(0x1f, (unsigned long *)(SSP + SSP_CSR));
@@ -456,15 +449,15 @@ spl_board_init(void)
 	serial_initialize();
 	serial_init();
 	puts("\n"
-	     "   ___             _        __  __    ___            __    _______  __ \n"
-	     "  / _ |__ ____ __ (_)__ _  / / / /___/ _ )___  ___  / /_  / __/ _ \\/ / \n"
+	     "  ___		 _	  __  __    ___		   __	 _______  __\n"
+	     "	/ _ |__ ____ __ (_)__ _	 / / / /___/ _ )___  ___  / /_	/ __/ _ \\/ /\n"
 	     " / __ |\\ \\ /\\ \\ // / _ `/ / /_/ /___/ _  / _ \\/ _ \\/ __/ _\\ \\/ ___/ /__\n"
-	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ /___/_/  /____/\n");
+	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ /___/_/	/____/\n");
 	printf("\nLSI Version: %s\n", get_lsi_version());
 
 	rc = axxia_initialize();
 	if (0 != rc)
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+		acp_failure(__FILE__, __func__, __LINE__);
 
 	axxia_display_clocks();
 
@@ -472,7 +465,7 @@ spl_board_init(void)
 	printf("Running the SPL Memory Test\n");
 
 	if (spl_mtest((unsigned long *)0x40000000,
-		  (unsigned long *)0x7fffffff, 10, all)) {
+		      (unsigned long *)0x7fffffff, 10, all)) {
 		printf("SPL Memory Test FAILED\n");
 	} else {
 		printf("SPL Memory Test SUCCESSFUL\n");
@@ -522,15 +515,16 @@ spl_board_init(void)
 	printf("System initialized\n");
 
 #ifdef CONFIG_MEMORY_RETENTION
-        phyRegs = (unsigned long *)retention;
-        if (*phyRegs == DDR_PHY_REGS_TAG_SAVE) {
+	phyRegs = (unsigned long *)retention;
 
-            printf("Writing DDR PHY registers to parameter space\n");
-            /* write to PROM/FLASH */
-           *phyRegs = DDR_PHY_REGS_TAG_PROM;
+	if (*phyRegs == DDR_PHY_REGS_TAG_SAVE) {
 
-           write_parameters();
-    }
+		printf("Writing DDR PHY registers to parameter space\n");
+		/* write to PROM/FLASH */
+		*phyRegs = DDR_PHY_REGS_TAG_PROM;
+
+		write_parameters();
+	}
 #endif
 
 
@@ -547,7 +541,9 @@ void spl_spi_load_image(void)
 	 */
 
 	flash = spi_flash_probe(CONFIG_SPL_SPI_BUS, CONFIG_SPL_SPI_CS,
-				CONFIG_SF_DEFAULT_SPEED, CONFIG_SF_DEFAULT_MODE);
+				CONFIG_SF_DEFAULT_SPEED,
+				CONFIG_SF_DEFAULT_MODE);
+
 	if (!flash) {
 		puts("SPI probe failed.\n");
 		hang();
@@ -562,15 +558,14 @@ void spl_spi_load_image(void)
 		       spl_image.size, (void *)spl_image.load_addr);
 
 #ifndef CONFIG_AXXIA_EMU
-    if (0 != sbb_verify_image(0x00000000, 0x00000000, 0))
-        acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	if (0 != sbb_verify_image(0x00000000, 0x00000000, 0))
+		acp_failure(__FILE__, __func__, __LINE__);
 #endif
-
 }
 
 void
 jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	reset_cpu_fabric();
-	acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	acp_failure(__FILE__, __func__, __LINE__);
 }
