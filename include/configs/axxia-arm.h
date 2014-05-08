@@ -597,7 +597,7 @@ int serial_early_init(void);
 #define TIMER2 (IO+0x91040)
 #define TIMER3 (IO+0x91060)
 #define TIMER4 (IO+0x91080)
-#define TIMER5 (IO+0x910a0)
+#define TIMER5 (IO+0x910a0)	/* Watchdog */
 #define TIMER6 (IO+0x910c0)
 #define TIMER7 (IO+0x910e0)
 
@@ -988,6 +988,7 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_SPL_FAT_SUPPORT
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
 #define CONFIG_SPL_SERIAL_SUPPORT
+#define CONFIG_SPL_ENV_SUPPORT
 #define CONFIG_SPL_LDSCRIPT "board/lsi/axxia-arm/u-boot-spl.lds"
 
 /*

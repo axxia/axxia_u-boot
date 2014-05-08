@@ -20,6 +20,7 @@
 
 #include <common.h>
 #include <serial.h>
+#include <malloc.h>
 #include <spl.h>
 #include <spi_flash.h>
 #include <asm/io.h>
@@ -527,6 +528,12 @@ spl_board_init(void)
 	}
 #endif
 
+#ifdef CONFIG_SPL_ENV_SUPPORT
+	mem_malloc_init((0x40000000 + CONFIG_SYS_MALLOC_BASE),
+			CONFIG_SYS_MALLOC_SIZE);
+	env_init();
+	env_relocate();
+#endif
 
 #endif
 }

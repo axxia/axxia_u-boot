@@ -40,7 +40,9 @@ DECLARE_GLOBAL_DATA_PTR;
 #include <env_default.h>
 
 struct hsearch_data env_htab = {
+#ifndef CONFIG_SPL_BUILD
 	.change_ok = env_flags_validate,
+#endif
 };
 
 static uchar __env_get_char_spec(int index)
@@ -160,7 +162,7 @@ int set_default_vars(int nvars, char * const vars[])
 				H_NOCLEAR | H_INTERACTIVE, nvars, vars);
 }
 
-#ifndef CONFIG_SPL_BUILD
+#if defined(CONFIG_SPL_ENV_SUPPORT) || !defined(CONFIG_SPL_BUILD)
 /*
  * Check if CRC is valid and (if yes) import the environment.
  * Note that "buf" may or may not be aligned.

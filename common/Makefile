@@ -226,6 +226,14 @@ COBJS-$(CONFIG_SPL_NET_SUPPORT) += env_flags.o
 COBJS-$(CONFIG_SPL_NET_SUPPORT) += env_nowhere.o
 COBJS-$(CONFIG_SPL_NET_SUPPORT) += miiphyutil.o
 endif
+
+ifdef CONFIG_SPL_BUILD
+COBJS-$(CONFIG_SPL_ENV_SUPPORT) += env_sf.o
+COBJS-$(CONFIG_SPL_ENV_SUPPORT) += cmd_nvedit.o
+COBJS-$(CONFIG_SPL_ENV_SUPPORT) += env_attr.o
+COBJS-$(CONFIG_SPL_ENV_SUPPORT) += env_common.o
+endif
+
 COBJS-$(CONFIG_BOUNCE_BUFFER) += bouncebuf.o
 COBJS-y += console.o
 COBJS-y += dlmalloc.o
