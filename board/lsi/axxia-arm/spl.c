@@ -23,6 +23,7 @@
 #include <malloc.h>
 #include <spl.h>
 #include <spi_flash.h>
+#include <watchdog.h>
 #include <asm/io.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -363,6 +364,8 @@ reset_cpu_fabric(void)
 {
 	unsigned long value;
 
+	WATCHDOG_RESET();
+
 	fix_up_vat();
 
 	/*
@@ -526,6 +529,24 @@ spl_board_init(void)
 
 		write_parameters();
 	}
+#endif
+
+#ifdef CONFIG_HW_WATCHDOG
+	{
+		unsigned long reset_control;
+		unsigned long value;
+
+		/* read and clear reset status (write one to clear) */
+		ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x100,
+			   (ncp_uint32_t *)&value);
+		printf("Reset Status = 0x%08lx\n", value);
+		ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x100, value);
+	}
+
+	rc = start_watchdog();
+
+	if (0 != rc)
+		printf("Failed to start watchdog timer!\n");
 #endif
 
 #ifdef CONFIG_SPL_ENV_SUPPORT

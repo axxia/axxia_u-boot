@@ -64,6 +64,10 @@ endif
 COBJS   += failure.o version.o axxia_clocks.o cache.o spi.o debug.o sbb.o
 SOBJS   += lowlevel.o monitor.o
 
+ifdef CONFIG_HW_WATCHDOG
+COBJS += watchdog.o
+endif
+
 ################################################################################
 
 COBJS	:= $(addprefix $(obj),$(COBJS))

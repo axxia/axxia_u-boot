@@ -959,6 +959,28 @@ void dump_packet(const char *, void *, int);
 
 #endif /* __ASSEMBLY__ */
 
+/*
+  Normally, U-Boot is built in ARM mode.  Uncomment the following to
+  build in THUMB mode.
+*/
+
+/*#define CONFIG_SYS_THUMB_BUILD*/
+
+/*#define CONFIG_HW_WATCHDOG*/
+
+#ifndef __ASSEMBLY__
+int start_watchdog(void);
+void stop_watchdog(void);
+#endif
+
+/*
+  ==============================================================================
+  ==============================================================================
+  SPL
+  ==============================================================================
+  ==============================================================================
+*/
+
 /* Defines for SPL */
 #define CONFIG_SPL_FRAMEWORK
 #define CONFIG_SPL_BOARD_INIT

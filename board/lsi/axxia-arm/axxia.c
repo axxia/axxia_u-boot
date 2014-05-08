@@ -415,6 +415,10 @@ board_early_init_f(void)
 
 	gd->ram_size = 0x40000000;
 
+#ifdef CONFIG_HW_WATCHDOG
+	(void)start_watchdog();
+#endif
+
 	return 0;
 }
 
@@ -643,6 +647,10 @@ ft_board_setup(void *blob, bd_t *bd)
 			printf("SRIO1 is enabled\n");
 		}
 	}
+#endif
+
+#ifdef CONFIG_HW_WATCHDOG
+	stop_watchdog();
 #endif
 
 	return;

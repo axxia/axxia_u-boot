@@ -25,6 +25,7 @@
 #include <asm/io.h>
 #include <asm/byteorder.h>
 #include <serial.h>
+#include <watchdog.h>
 
 /*
   ======================================================================
@@ -138,8 +139,11 @@ __serial_start(void)
 	  How should this be done for reception?
 	*/
 
-	while (0 == (readl(UART0_ADDRESS + UART_FR) & FR_TXFE));
-	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_BUSY));
+	while (0 == (readl(UART0_ADDRESS + UART_FR) & FR_TXFE))
+		WATCHDOG_RESET();
+
+	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_BUSY))
+		WATCHDOG_RESET();
 
 	/* Disable the UART. */
 	writel(0, UART0_ADDRESS + UART_CR);
@@ -172,8 +176,11 @@ __serial_stop(void)
 	writel(0, (UART0_ADDRESS + UART_CR));
 
 	/* Make sure all transmissions are finished. */
-	while (0 == (readl(UART0_ADDRESS + UART_FR) & FR_TXFE));
-	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_BUSY));
+	while (0 == (readl(UART0_ADDRESS + UART_FR) & FR_TXFE))
+		WATCHDOG_RESET();
+
+	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_BUSY))
+		WATCHDOG_RESET();
 
 	/* Turn off the timer. */
 #if defined(CONFIG_AXXIA_344X) || \
@@ -215,7 +222,7 @@ __serial_getc(void)
 	int character;
 
 	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_RXFE))
-		;
+		WATCHDOG_RESET();
 
 	character = readl(UART0_ADDRESS + UART_DR);
 
@@ -246,12 +253,12 @@ static void
 __serial_putc( const char c )
 {
 	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_TXFF))
-		;
+		WATCHDOG_RESET();
 
 	if ('\n' == c) {
 		writel('\r', UART0_ADDRESS + UART_DR);
 		while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_TXFF))
-			;
+			WATCHDOG_RESET();
 	}
 
 	writel(c, UART0_ADDRESS + UART_DR);
@@ -262,10 +269,10 @@ __serial_putc( const char c )
 	*/
 
 	while (0 == (readl(UART0_ADDRESS + UART_FR) & FR_TXFE))
-		;
+		WATCHDOG_RESET();
 
 	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_BUSY))
-		;
+		WATCHDOG_RESET();
 
 	return;
 }
@@ -349,7 +356,7 @@ static struct serial_device axxia_serial_device0 = {
 };
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   default_serial_console
 */
 
