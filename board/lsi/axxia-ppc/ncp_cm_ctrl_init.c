@@ -425,7 +425,7 @@ ncp_cm_controller_init(
     /* MR2
      *    a5a4a3 : CWL
      */
-    rttWr = parms->per_sysmem[cmemId].sdram_rtt_wr[0];
+    rttWr = parms->per_mem[cmemId].sdram_rtt_wr[0];
     ddr_cmd.mrs_adr = (rttWr << 9) | (cwl - 5) << 3;
     ddr_cmd.mrs_badr = 2;
     ddr_cmd.mrs_cmd = 0;  
@@ -454,9 +454,9 @@ ncp_cm_controller_init(
 
     /* MR1 */
     value = 0;  /* DLL enabled */
-    rttNom = parms->per_sysmem[cmemId].sdram_rtt_nom[0];
+    rttNom = parms->per_mem[cmemId].sdram_rtt_nom[0];
     value |= NCP_SM_ENCODE_RTT_NOM(rttNom);
-    drvImp = parms->per_sysmem[cmemId].sdram_data_drv_imp[0];
+    drvImp = parms->per_mem[cmemId].sdram_data_drv_imp[0];
     value |= NCP_SM_ENCODE_DRV_IMP(drvImp);
     value |= ( 1 << 3) ;    /* AL = CL-1 */
 

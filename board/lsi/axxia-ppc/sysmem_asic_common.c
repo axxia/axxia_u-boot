@@ -285,7 +285,7 @@ sysmem_size_init(void)
 
 /*#define DISPLAY_PARAMETERS*/
 #ifdef DISPLAY_PARAMETERS
-static void disp_ddr_parms(parameters_sysmem_t *parms)
+static void disp_ddr_parms(parameters_mem_t *parms)
 {
 #ifndef AXM_35xx
 	printf("-- -- Sysmem\n"
@@ -322,6 +322,7 @@ static void disp_ddr_parms(parameters_sysmem_t *parms)
 	       parms->num_interfaces,
 	       parms->num_ranks_per_interface,
 	       parms->primary_bus_width,
+	       parms->min_ctrl_roundtrip_delay,
 	       parms->topology,
 	       parms->phy_rdlat,
 	       parms->added_rank_switch_delay,
@@ -343,39 +344,38 @@ static void disp_ddr_parms(parameters_sysmem_t *parms)
 	       parms->write_ODT_ctl,
 	       parms->read_ODT_ctl,
 	       parms->single_bit_mpr,
-	       parms->high_temp_dram,
-	       parms->min_ctrl_roundtrip_delay);
+	       parms->high_temp_dram);
 	{
 		int i;
-		per_sysmem_parms_t *per_sysmem_parms;
+		per_mem_parms_t *per_mem_parms;
 
 		for (i = 0; i < 2; ++i) {
-			per_sysmem_parms = &(parms->per_sysmem[i]);
+			per_mem_parms = &(parms->per_mem[i]);
 
-			printf("-- -- per sysmem %d\n", i);
+			printf("-- -- per mem %d\n", i);
 			printf("sdram_rtt_nom[] = {%d %d %d %d}\n"
 			       "sdram_rtt_wr[] = {%d %d %d %d}\n"
 			       "sdram_data_drv_imp[] = {%d %d %d %d}\n"
 			       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
-			       per_sysmem_parms->sdram_rtt_nom[3],
-			       per_sysmem_parms->sdram_rtt_nom[2],
-			       per_sysmem_parms->sdram_rtt_nom[1],
-			       per_sysmem_parms->sdram_rtt_nom[0],
-			       per_sysmem_parms->sdram_rtt_wr[3],
-			       per_sysmem_parms->sdram_rtt_wr[2],
-			       per_sysmem_parms->sdram_rtt_wr[1],
-			       per_sysmem_parms->sdram_rtt_wr[0],
-			       per_sysmem_parms->sdram_data_drv_imp[3],
-			       per_sysmem_parms->sdram_data_drv_imp[2],
-			       per_sysmem_parms->sdram_data_drv_imp[1],
-			       per_sysmem_parms->sdram_data_drv_imp[0],
-			       per_sysmem_parms->phy_min_cal_delay,
-			       per_sysmem_parms->phy_adr_phase_select,
-			       per_sysmem_parms->phy_dp_io_vref_set,
-			       per_sysmem_parms->phy_adr_io_vref_set,
-			       per_sysmem_parms->phy_rdlvl_cmp_even,
-			       per_sysmem_parms->phy_rdlvl_cmp_odd,
-			       per_sysmem_parms->phy_write_align_finetune);
+			       per_mem_parms->sdram_rtt_nom[3],
+			       per_mem_parms->sdram_rtt_nom[2],
+			       per_mem_parms->sdram_rtt_nom[1],
+			       per_mem_parms->sdram_rtt_nom[0],
+			       per_mem_parms->sdram_rtt_wr[3],
+			       per_mem_parms->sdram_rtt_wr[2],
+			       per_mem_parms->sdram_rtt_wr[1],
+			       per_mem_parms->sdram_rtt_wr[0],
+			       per_mem_parms->sdram_data_drv_imp[3],
+			       per_mem_parms->sdram_data_drv_imp[2],
+			       per_mem_parms->sdram_data_drv_imp[1],
+			       per_mem_parms->sdram_data_drv_imp[0],
+			       per_mem_parms->phy_min_cal_delay,
+			       per_mem_parms->phy_adr_phase_select,
+			       per_mem_parms->phy_dp_io_vref_set,
+			       per_mem_parms->phy_adr_io_vref_set,
+			       per_mem_parms->phy_rdlvl_cmp_even,
+			       per_mem_parms->phy_rdlvl_cmp_odd,
+			       per_mem_parms->phy_write_align_finetune);
 		}
 	}	       
 #endif
@@ -399,7 +399,7 @@ sysmem_init(void)
 	int i;
 	int rc;
 #ifdef AXM_35xx
-	per_sysmem_parms_t *per_sysmem_parms;
+	per_mem_parms_t *per_mem_parms;
 	unsigned long *temp;
 #endif
 #ifdef CONFIG_SPD
@@ -423,15 +423,15 @@ sysmem_init(void)
 
 #ifdef AXM_35xx
 	for (i = 0; i < 2; ++i) {
-		per_sysmem_parms = &(sysmem->per_sysmem[i]);
+		per_mem_parms = &(sysmem->per_mem[i]);
 		temp = (unsigned long *)
-			(&per_sysmem_parms->sdram_rtt_nom[0]);
+			(&per_mem_parms->sdram_rtt_nom[0]);
 		*temp = swab32(*temp);
 		temp = (unsigned long *)
-			(&per_sysmem_parms->sdram_rtt_wr[0]);
+			(&per_mem_parms->sdram_rtt_wr[0]);
 		*temp = swab32(*temp);
 		temp = (unsigned long *)
-			(&per_sysmem_parms->sdram_data_drv_imp[0]);
+			(&per_mem_parms->sdram_data_drv_imp[0]);
 		*temp = swab32(*temp);
 	}
 #endif
@@ -861,7 +861,7 @@ sysmem_init(void)
     if (ncp_cmem_init)
 	{
 		int i;
-		per_sysmem_parms_t *per_sysmem_parms;
+		per_mem_parms_t *per_mem_parms;
         
         /* TEMP !!!!! 
          * for now we don't have a separate section in the parameter
@@ -893,16 +893,16 @@ sysmem_init(void)
 
         for (i = 0; i < cmem->num_interfaces; ++i) {
 
-            per_sysmem_parms = &(cmem->per_sysmem[i]);
+            per_mem_parms = &(cmem->per_mem[i]);
 
-            per_sysmem_parms->sdram_rtt_nom[0] = NCP_SM_SDRAM_RTT_IMP_120_OHM;
-            per_sysmem_parms->sdram_rtt_wr[0] = NCP_SM_SDRAM_RTT_IMP_DISABLED;
-            per_sysmem_parms->sdram_data_drv_imp[0] = NCP_SM_SDRAM_DRV_IMP_34_OHM;
-            per_sysmem_parms->phy_min_cal_delay = 12;
-            per_sysmem_parms->phy_adr_phase_select = 0;
-            per_sysmem_parms->phy_dp_io_vref_set = 0x3f02a;
-            per_sysmem_parms->phy_adr_io_vref_set = 0xfff;
-            per_sysmem_parms->phy_write_align_finetune = 0;
+            per_mem_parms->sdram_rtt_nom[0] = NCP_SM_SDRAM_RTT_IMP_120_OHM;
+            per_mem_parms->sdram_rtt_wr[0] = NCP_SM_SDRAM_RTT_IMP_DISABLED;
+            per_mem_parms->sdram_data_drv_imp[0] = NCP_SM_SDRAM_DRV_IMP_34_OHM;
+            per_mem_parms->phy_min_cal_delay = 12;
+            per_mem_parms->phy_adr_phase_select = 0;
+            per_mem_parms->phy_dp_io_vref_set = 0x3f02a;
+            per_mem_parms->phy_adr_io_vref_set = 0xfff;
+            per_mem_parms->phy_write_align_finetune = 0;
         }
 
         disp_ddr_parms(cmem);

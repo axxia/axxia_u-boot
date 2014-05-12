@@ -1463,14 +1463,14 @@ ncp_sm_lsiphy_static_init(
     }
 
 #if 0
-    if (parms->per_sysmem[memId].phy_min_cal_delay < rlrank_adj) {
-        parms->per_sysmem[memId].phy_min_cal_delay = rlrank_adj;
+    if (parms->per_mem[memId].phy_min_cal_delay < rlrank_adj) {
+        parms->per_mem[memId].phy_min_cal_delay = rlrank_adj;
     }
 #endif
 
-    /*printf("min_cal_dly=%ld\n", parms->per_sysmem[memId].phy_min_cal_delay);*/
-    phyconfig3.rdlatrank = parms->per_sysmem[memId].phy_min_cal_delay + rlrank_adj;
-    phyconfig3.rdlatgate = parms->per_sysmem[memId].phy_min_cal_delay;
+    /*printf("min_cal_dly=%ld\n", parms->per_mem[memId].phy_min_cal_delay);*/
+    phyconfig3.rdlatrank = parms->per_mem[memId].phy_min_cal_delay + rlrank_adj;
+    phyconfig3.rdlatgate = parms->per_mem[memId].phy_min_cal_delay;
     for (i = 0; i < num_bytelanes; i++) 
     {
         ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG3_BL(i), 
@@ -1599,9 +1599,9 @@ ncp_sm_lsiphy_static_init(
 
     if (parms->single_bit_mpr) {
         ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_RDLVLCMPDATEVN, 
-                parms->per_sysmem[memId].phy_rdlvl_cmp_even);
+                parms->per_mem[memId].phy_rdlvl_cmp_even);
         ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_RDLVLCMPDATODD, 
-                parms->per_sysmem[memId].phy_rdlvl_cmp_odd);
+                parms->per_mem[memId].phy_rdlvl_cmp_odd);
     }
 
     /* 
@@ -1617,7 +1617,7 @@ ncp_sm_lsiphy_static_init(
     value = 0;
     for (i = 0; i < 8; i++) 
     {
-        value |= (parms->per_sysmem[memId].phy_adr_phase_select & 0x3) << (i*2);
+        value |= (parms->per_mem[memId].phy_adr_phase_select & 0x3) << (i*2);
     }
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR_BC_PHASE90SEL0, value);
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR_BC_PHASE90SEL1, value);
@@ -1634,7 +1634,7 @@ ncp_sm_lsiphy_static_init(
     SMAV(ncp_phy_CFG_SYSMEM_PHY_ADRx_ADRIOSET_1ST_r_t, adrslck1, 3);
 
     /* now set the value from the user configuration */
-    value = parms->per_sysmem[memId].phy_adr_io_vref_set;
+    value = parms->per_mem[memId].phy_adr_io_vref_set;
 
     ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR0_ADRIOSET_1ST, mask, value);
     ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR1_ADRIOSET, mask, value);
@@ -1661,7 +1661,7 @@ ncp_sm_lsiphy_static_init(
     SMAV(ncp_phy_CFG_SYSMEM_PHY_DPIOVREFSET_r_t, odtimpdm, 3);
 
     /* now set the value from the user configuration */
-    value = parms->per_sysmem[memId].phy_dp_io_vref_set;
+    value = parms->per_mem[memId].phy_dp_io_vref_set;
 
     ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_DPIOVREFSET, mask, value);
 

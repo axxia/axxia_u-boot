@@ -50,6 +50,162 @@
 
 #define PARAMETERS_MAGIC 0x12af34ec
 
+#ifdef AXM_35xx
+
+#define PARAMETERS_GLOBAL_SET_VOLTAGE     0x00000001
+#define PARAMETERS_GLOBAL_SET_CLOCKS      0x00000002
+#define PARAMETERS_GLOBAL_SET_PEI         0x00000004
+#define PARAMETERS_GLOBAL_SET_SMEM        0x00000008
+#define PARAMETERS_GLOBAL_SET_CMEM        0x00000010
+
+#define PARAMETERS_GLOBAL_DISABLE_RESET   0x10000000
+#define PARAMETERS_GLOBAL_RUN_CMEM_BIST   0x20000000
+#define PARAMETERS_GLOBAL_RUN_SMEM_BIST   0x80000000
+
+#define PARAMETERS_GLOBAL_RUN_SYSMEM_BIST PARAMETERS_GLOBAL_RUN_SMEM_BIST
+
+#define INIT_VOLTAGE(flags) (0 != (flags & PARAMETERS_GLOBAL_SET_VOLTAGE))
+#define INIT_CLOCKS(flags) (0 != (flags & PARAMETERS_GLOBAL_SET_CLOCKS))
+#define INIT_PCIESRIO(flags) (0 != (flags & PARAMETERS_GLOBAL_SET_PEI))
+#define INIT_SYSMEM(flags) (0 != (flags & PARAMETERS_GLOBAL_SET_SMEM))
+#define INIT_CMEM(flags) (0 != (flags & PARAMETERS_GLOBAL_SET_CMEM))
+
+typedef struct {
+	unsigned long magic;
+	unsigned long size;
+	unsigned long checksum;
+	unsigned long version;
+	unsigned long chipType;
+	unsigned long globalOffset;
+	unsigned long globalSize;
+	unsigned long voltageOffset;
+	unsigned long voltageSize;
+	unsigned long clocksOffset;
+	unsigned long clocksSize;
+	unsigned long pciesrioOffset;
+	unsigned long pciesrioSize;
+	unsigned long systemMemoryOffset;
+	unsigned long systemMemorySize;
+	unsigned long classifierMemoryOffset;
+	unsigned long classifierMemorySize;
+	unsigned long systemMemoryRetentionOffset;
+	unsigned long systemMemoryRetentionSize;
+} __attribute__((packed)) parameters_header_t;
+
+#define PARAMETERS_HEADER_ADDRESS (LCM + (127 * 1024))
+static parameters_header_t *header =
+	(parameters_header_t *)PARAMETERS_HEADER_ADDRESS;
+
+typedef struct {
+	unsigned long version;
+	unsigned long flags;
+	unsigned long baud_rate;
+	unsigned long memory_ranges[16];
+	unsigned long sequence;
+	char description[128];
+} __attribute__((packed)) parameters_global_t;
+
+typedef struct {
+	unsigned long version;
+	unsigned long checksum;
+	unsigned long unused_version;
+	unsigned long vofs;
+	unsigned long tvid;
+	unsigned long long twait;
+	unsigned long VIDChecks;
+	unsigned char vidLT[64];
+} __attribute__((packed)) parameters_voltage_t;
+
+typedef struct {
+	unsigned long version;
+	unsigned long flags;
+	unsigned long syspll_prms;
+	unsigned long syspll_ctrl;
+	unsigned long syspll_mcgc;
+	unsigned long syspll_div;
+	unsigned long syspll_psd;
+	unsigned long cpupll_prms;
+	unsigned long cpupll_ctrl;
+	unsigned long cpupll_mcgc;
+	unsigned long cpupll_div;
+	unsigned long cpupll_psd;
+	unsigned long sm0pll_prms;
+	unsigned long sm0pll_ctrl;
+	unsigned long sm0pll_mcgc;
+	unsigned long sm0pll_div;
+	unsigned long sm0pll_psd;
+	unsigned long tm0pll_prms;
+	unsigned long tm0pll_ctrl;
+	unsigned long tm0pll_mcgc;
+	unsigned long tm0pll_div;
+	unsigned long tm0pll_psd;
+	unsigned long per_mcgc;
+	unsigned long per_div;
+	unsigned long axxia_mcgc;
+	unsigned long axxia_div;
+	unsigned long timer_mcgc;
+} __attribute__ ((packed)) parameters_clocks_t;
+
+typedef struct {
+	unsigned long version;
+	unsigned long control;
+} __attribute__((packed)) parameters_pciesrio_t;
+
+typedef struct {
+	unsigned char sdram_rtt_nom[4];
+	unsigned char sdram_rtt_wr[4];
+	unsigned char sdram_data_drv_imp[4];
+	unsigned long phy_min_cal_delay;
+	unsigned long phy_adr_phase_select;
+	unsigned long phy_dp_io_vref_set;
+	unsigned long phy_adr_io_vref_set;
+	unsigned long phy_rdlvl_cmp_even;
+	unsigned long phy_rdlvl_cmp_odd;
+	unsigned long phy_write_align_finetune;
+} __attribute__((packed)) per_mem_parms_t;
+
+typedef struct {
+	unsigned long version;
+	unsigned long ddrClockSpeedMHz;
+	unsigned long auto_detect;
+	unsigned long num_interfaces;
+	unsigned long num_ranks_per_interface;
+	unsigned long primary_bus_width;
+	unsigned long topology;
+	unsigned long min_ctrl_roundtrip_delay;
+	unsigned long phy_rdlat;
+	unsigned long added_rank_switch_delay;
+	unsigned long zqcs_interval;
+	unsigned long enableECC;
+	unsigned long enable_runtime_updates;
+	unsigned long dramPrechargePolicy;
+	unsigned long open_page_size;
+	unsigned long syscacheControl;
+	unsigned long sdram_device_density;
+	unsigned long sdram_device_width;
+	unsigned long CAS_latency;
+	unsigned long CAS_write_latency;
+	unsigned long address_mirroring;
+	unsigned long rdimm;
+	unsigned long rdimm_ctl_0_0;
+	unsigned long rdimm_ctl_0_1;
+	unsigned long rdimm_misc;
+	unsigned long write_ODT_ctl;
+	unsigned long read_ODT_ctl;
+	unsigned long single_bit_mpr;
+	unsigned long high_temp_dram;
+	per_mem_parms_t per_mem[2];
+	/* Not part of the parameters, used internally.	*/
+	unsigned long cmemMR1[2];
+} __attribute__((packed)) parameters_mem_t;
+
+#else
+
+/*
+  ------------------------------------------------------------------------------
+  For all PowerPC chip types EXCEPT 3500
+*/
+
 #define PARAMETERS_GLOBAL_IGNORE_VOLTAGE     0x00000001
 #define PARAMETERS_GLOBAL_IGNORE_CLOCKS      0x00000010
 #define PARAMETERS_GLOBAL_IGNORE_SYSMEM      0x00000100
@@ -62,6 +218,11 @@
 #define PARAMETERS_GLOBAL_DISABLE_RESET      0x10000000
 #define PARAMETERS_GLOBAL_SM_PHY_REG_RESTORE 0x08000000
 #define PARAMETERS_GLOBAL_SM_PHY_REG_DUMP    0x04000000
+
+#define INIT_VOLTAGE(flags) (0 == (flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE))
+#define INIT_CLOCKS(flags) (0 == (flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS))
+#define INIT_PCIESRIO(flags) (0 == (flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
+#define INIT_SMEM(flags) (0 == (flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM))
 
 typedef struct {
 	unsigned long version;
@@ -106,34 +267,6 @@ typedef struct {
 	unsigned long tmpll_psd;
 	unsigned long per_mcgc;
 	unsigned long per_mcgc1;
-#elif defined AXM_35xx
-	unsigned long flags;
-	unsigned long syspll_prms;
-	unsigned long syspll_ctrl;
-	unsigned long syspll_mcgc;
-	unsigned long syspll_div;
-	unsigned long syspll_psd;
-	unsigned long cpupll_prms;
-	unsigned long cpupll_ctrl;
-	unsigned long cpupll_mcgc;
-	unsigned long cpupll_div;
-	unsigned long cpupll_psd;
-	unsigned long sm0pll_prms;
-	unsigned long sm0pll_ctrl;
-	unsigned long sm0pll_mcgc;
-	unsigned long sm0pll_div;
-	unsigned long sm0pll_psd;
-	unsigned long tm0pll_prms;
-	unsigned long tm0pll_ctrl;
-	unsigned long tm0pll_mcgc;
-	unsigned long tm0pll_div;
-	unsigned long tm0pll_psd;
-	unsigned long per_mcgc;
-	unsigned long per_div;
-	unsigned long axxia_mcgc;
-	unsigned long axxia_div;
-	unsigned long timer_mcgc;
-	unsigned long clocks_v8_pad[13];
 #else
 	unsigned long sys_control;
 	unsigned long sys_lftune_upper;
@@ -165,11 +298,9 @@ typedef struct {
     unsigned long phy_rdlvl_cmp_even;
     unsigned long phy_rdlvl_cmp_odd;
     unsigned long phy_write_align_finetune;
-} __attribute__((packed)) per_sysmem_parms_t;
+} __attribute__((packed)) per_mem_parms_t;
 
 typedef struct {
-
-#ifndef AXM_35xx
 	unsigned long version;
 	unsigned long auto_detect;
 	unsigned long num_interfaces;
@@ -202,41 +333,7 @@ typedef struct {
 	unsigned long syscacheDisable;
 	unsigned long half_mem;
 	unsigned long address_mirroring;
-#else
-	unsigned long version;
-	unsigned long ddrClockSpeedMHz;
-	unsigned long auto_detect;
-	unsigned long num_interfaces;
-	unsigned long num_ranks_per_interface;
-	unsigned long primary_bus_width;
-	unsigned long topology;
-	unsigned long phy_rdlat;
-	unsigned long added_rank_switch_delay;
-	unsigned long zqcs_interval;
-	unsigned long enableECC;
-	unsigned long enable_runtime_updates;
-	unsigned long dramPrechargePolicy;
-	unsigned long open_page_size;
-	unsigned long syscacheControl;
-	unsigned long sdram_device_density;
-	unsigned long sdram_device_width;
-	unsigned long CAS_latency;
-	unsigned long CAS_write_latency;
-	unsigned long address_mirroring;
-	unsigned long rdimm;
-	unsigned long rdimm_ctl_0_0;
-	unsigned long rdimm_ctl_0_1;
-	unsigned long rdimm_misc;
-	unsigned long write_ODT_ctl;
-	unsigned long read_ODT_ctl;
-	unsigned long single_bit_mpr;
-	unsigned long high_temp_dram;
-	per_sysmem_parms_t per_sysmem[2];
-    unsigned long min_ctrl_roundtrip_delay;
-    unsigned long cmemMR1[2];
-#endif
-
-} __attribute__((packed)) parameters_sysmem_t;
+} __attribute__((packed)) parameters_mem_t;
 
 typedef struct {
 	unsigned long retentionSize;
@@ -252,29 +349,38 @@ typedef struct {
 	unsigned long globalSize;
 	unsigned long globalOffset;
 	unsigned long version;
-#ifdef AXM_35xx
-	unsigned long flags;
-#endif
 	unsigned long checksum;
 	unsigned long size;
 	unsigned long magic;
 } __attribute__((packed)) parameters_header_t;
 
 #define PARAMETERS_HEADER_ADDRESS \
-(LCM + (128 * 1024) - sizeof(parameters_header_t))
+	(LCM + (128 * 1024) - sizeof(parameters_header_t))
 static parameters_header_t *header =
-(parameters_header_t *)PARAMETERS_HEADER_ADDRESS;
+	(parameters_header_t *)PARAMETERS_HEADER_ADDRESS;
+
+#endif
 
 static parameters_global_t *global = (parameters_global_t *)1;
 static parameters_pciesrio_t *pciesrio = (parameters_pciesrio_t *)1;
 static parameters_voltage_t *voltage = (parameters_voltage_t *)1;
 static parameters_clocks_t *clocks = (parameters_clocks_t *)1;
-static parameters_sysmem_t *sysmem = (parameters_sysmem_t *)1;
-static parameters_sysmem_t *cmem = (parameters_sysmem_t *)1;
+static parameters_mem_t *sysmem = (parameters_mem_t *)1;
+#ifdef AXM_35xx
+static parameters_mem_t *cmem = (parameters_mem_t *)1;
+#endif
 
 #define PARAMETERS_OFFSET (127 * 1024)
 #define PARAMETERS_ADDRESS (LCM + PARAMETERS_OFFSET)
 #define PARAMETERS_SIZE (1024)
+
+#ifdef AXM_35xx
+#define CRC_START (PARAMETERS_ADDRESS + 12)
+#else
+#define CRC_START (PARAMETERS_ADDRESS)
+#endif
+
+#define CRC_SIZE  (PARAMETERS_SIZE - 12)
 
 /*
   ==============================================================================
@@ -1827,7 +1933,6 @@ acp_init( void )
 		/* Copy the last 1K of the SEEPROM to the last 1K of LCM. */
 		returnCode = ssp_read((void *)PARAMETERS_ADDRESS,
 				      PARAMETERS_OFFSET, PARAMETERS_SIZE);
-
 		if (0 != returnCode ||
 		    PARAMETERS_MAGIC != header->magic) {
 			/*
@@ -1844,6 +1949,29 @@ acp_init( void )
 	}
 
 #ifdef DISPLAY_PARAMETERS
+#ifdef AXM_35xx
+	printf("-- -- Header\n"
+	       "0x%08lx 0x%08lx 0x%08lx 0x%08lx\n"
+	       "0x%08lx 0x%08lx\n"
+	       "0x%08lx 0x%08lx\n"
+	       "0x%08lx 0x%08lx\n"
+	       "0x%08lx 0x%08lx\n"
+	       "0x%08lx 0x%08lx\n"
+	       "0x%08lx 0x%08lx\n"
+	       "0x%08lx 0x%08lx\n",
+	       header->magic,
+	       header->size,
+	       header->checksum,
+	       header->version,
+	       header->globalOffset, header->globalSize,
+	       header->voltageOffset, header->voltageSize,
+	       header->clocksOffset, header->clocksSize,
+	       header->pciesrioOffset, header->pciesrioSize,
+	       header->systemMemoryOffset, header->systemMemorySize,
+	       header->classifierMemoryOffset, header->classifierMemorySize,
+	       header->systemMemoryRetentionOffset,
+	       header->systemMemoryRetentionSize);
+#else
 	printf("-- -- Header\n"
 	       "0x%08lx 0x%08lx 0x%08lx 0x%08lx\n"
 	       "0x%08lx 0x%08lx\n"
@@ -1861,6 +1989,7 @@ acp_init( void )
 	       header->clocksOffset, header->clocksSize,
 	       header->sysmemOffset, header->sysmemSize);
 #endif
+#endif
 
 	global = (parameters_global_t *)
 		(PARAMETERS_ADDRESS + header->globalOffset);
@@ -1870,11 +1999,17 @@ acp_init( void )
 		(PARAMETERS_ADDRESS + header->voltageOffset);
 	clocks = (parameters_clocks_t *)
 		(PARAMETERS_ADDRESS + header->clocksOffset);
-	sysmem = (parameters_sysmem_t *)
+#ifdef AXM_35xx
+	sysmem = (parameters_mem_t *)
+		(PARAMETERS_ADDRESS + header->systemMemoryOffset);
+	cmem = (parameters_mem_t *)
+		(PARAMETERS_ADDRESS + header->classifierMemoryOffset);
+#else
+	sysmem = (parameters_mem_t *)
 		(PARAMETERS_ADDRESS + header->sysmemOffset);
+#endif
 
-	if (crc32(0, (void *)PARAMETERS_ADDRESS, (header->size - 12)) !=
-	    header->checksum ) {
+	if (crc32(0, (void *)CRC_START, CRC_SIZE) != header->checksum ) {
 		/*
 		  Set the PCIe/SRIO mode based on the
 		  reset_config value since no parameters are
@@ -1884,8 +2019,7 @@ acp_init( void )
 
 		printf( "Parameter table is corrupt. 0x%08lx!=0x%08x\n",
 			header->checksum,
-			crc32(0, (void *)PARAMETERS_ADDRESS,
-			      (header->size - 12)));
+			crc32(0, (void *)CRC_START, CRC_SIZE));
 		acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 	}
 
@@ -1893,7 +2027,7 @@ acp_init( void )
 	printf("version=%lu flags=0x%lx\n",
 	       global->version, global->flags);
 #else
-	printf("Parameter Table Version %lu\n", global->version);
+	printf("Parameter Table Version %lu\n", header->version);
 #endif
 
 	if (0 != (global->flags & PARAMETERS_GLOBAL_DISABLE_RESET))
@@ -1915,7 +2049,7 @@ acp_init( void )
 
 #ifdef CONFIG_CMEM_INIT
 	ncp_cmem_init = 
-		(global->flags & PARAMETERS_GLOBAL_CMEM_INIT) ? 1 : 0;
+		(global->flags & PARAMETERS_GLOBAL_SET_CMEM) ? 1 : 0;
 #else
 	ncp_cmem_init = 0;
 #endif
@@ -1928,8 +2062,7 @@ acp_init( void )
 	*/
 
 #ifndef ACP_25xx
-	if( 0 ==
-	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE ) ) {
+	if( INIT_VOLTAGE(global->flags) ) {
 		if( 0 != ( returnCode = voltage_init( ) ) ) {
 			/*
 			  Set the PCIe/SRIO mode based on the
@@ -1949,8 +2082,7 @@ acp_init( void )
 	  ======
 	*/
 
-	if( 0 ==
-	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS ) ) {
+	if( INIT_CLOCKS(global->flags) ) {
 		printf("Setting Up PLLs/Clocks\n");
 #ifndef DISPLAY_PARAMETERS
 		serial_exit(); /* Turn off the UART while updating the PLLs. */
@@ -2003,8 +2135,7 @@ acp_init( void )
 	  =========
 	*/
 
-	if( 0 ==
-	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO ) ) {
+	if( INIT_PCIESRIO(global->flags) ) {
 		if( 0 != ( returnCode = pciesrio_init( pciesrio->control ) ) ) {
 			goto acp_init_return;
 		}
@@ -2020,8 +2151,7 @@ acp_init( void )
 
 	ncr_tracer_enable( );
 
-	if( 0 ==
-	    ( global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM ) ) {
+	if( INIT_SYSMEM(global->flags) ) {
 #ifdef AXM_35xx
 		unsigned long ccr0_value;
 
