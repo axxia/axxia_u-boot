@@ -122,9 +122,9 @@ mb(); \
 void
 sm_reg_dump(int id, int rank, char *file, unsigned long line)
 {
-	unsigned long region;
-	unsigned long offset;
-	unsigned long value;
+	unsigned region;
+	unsigned offset;
+	unsigned value;
 	int tmp;
 	int i;
 	int j;
@@ -149,11 +149,11 @@ sm_reg_dump(int id, int rank, char *file, unsigned long line)
 	for (i = 0; i < 9; ++i) {
 		unsigned buffer[4];
 
-		ncr_read(region, offset, 16, buffer);
+		ncr_read(region, 0, offset, 16, buffer);
 		printf("0.%x.1.%010x: %08x %08x %08x %08x\n", node[id], offset,
 		       buffer[0], buffer[1], buffer[2], buffer[3]);
 		offset += 0x40;
-		ncr_read(region, offset, 16, buffer);
+		ncr_read(region, 0, offset, 16, buffer);
 		printf("0.%x.1.%010x: %08x %08x %08x %08x\n", node[id], offset,
 		       buffer[0], buffer[1], buffer[2], buffer[3]);
 		offset += 0x40;
@@ -174,13 +174,13 @@ sm_reg_dump(int id, int rank, char *file, unsigned long line)
 		offset = 0x10000 + (tmp * 0x800);
 
 		for (i = 0; i < 9; ++i) {
-			unsigned long buffer[8];
+			unsigned buffer[8];
 
-			ncr_read(region, offset, 12, buffer);
+			ncr_read(region, 0, offset, 12, buffer);
 			printf("0.%x.1.%010x: %08x %08x %08x\n",
 			       node[id], offset,
 			       buffer[0], buffer[1], buffer[2]);
-			ncr_read(region, (offset + 0x20), 32, buffer);
+			ncr_read(region, 0, (offset + 0x20), 32, buffer);
 			printf("0.%x.1.%010x: %08x %08x %08x %08x\n",
 			       node[id], (offset + 0x20),
 			       buffer[0], buffer[1], buffer[2], buffer[3]);
@@ -283,16 +283,17 @@ sysmem_size_init(void)
 }
 
 
-/*#define DISPLAY_PARAMETERS*/
+/* #define DISPLAY_PARAMETERS */
 #ifdef DISPLAY_PARAMETERS
-static void disp_ddr_parms(parameters_mem_t *parms)
+static void disp_ddr_parms(char * name, parameters_mem_t *parms)
 {
 #ifndef AXM_35xx
-	printf("-- -- Sysmem\n"
+	printf("-- -- %s\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
+           name,
 	       parms->version, parms->auto_detect,
 	       parms->num_interfaces, parms->num_ranks_per_interface,
 	       parms->topology, parms->sdram_device_density,
@@ -311,11 +312,12 @@ static void disp_ddr_parms(parameters_mem_t *parms)
 	       parms->syscacheDisable, parms->half_mem,
 	       parms->address_mirroring);
 #else
-	printf("-- -- Sysmem\n"
+	printf("-- -- %s\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n"
 	       "0x%lx 0x%lx 0x%lx 0x%lx 0x%lx\n",
+           name,
 	       parms->version,
 	       parms->ddrClockSpeedMHz,
 	       parms->auto_detect,
@@ -382,9 +384,32 @@ static void disp_ddr_parms(parameters_mem_t *parms)
 }
 
 #else
-#define disp_ddr_parms(parms)
+#define disp_ddr_parms(name, parms)
 #endif
 
+#ifdef AXM_35xx
+
+static swap_impedance_parms(
+	per_mem_parms_t *per_mem_parms)
+{
+	unsigned long *temp;
+
+		temp = (unsigned long *)
+			&(per_mem_parms->sdram_rtt_nom[0]);
+		*temp = swab32(*temp);
+
+		temp = (unsigned long *)
+			&(per_mem_parms->sdram_rtt_wr[0]);
+		*temp = swab32(*temp);
+
+		temp = (unsigned long *)
+			&(per_mem_parms->sdram_data_drv_imp[0]);
+		*temp = swab32(*temp);
+}
+#else
+
+#define swap_impedance_parms(s) 
+#endif
 
 int
 sysmem_init(void)
@@ -398,10 +423,6 @@ sysmem_init(void)
 	unsigned long num_bls;
 	int i;
 	int rc;
-#ifdef AXM_35xx
-	per_mem_parms_t *per_mem_parms;
-	unsigned long *temp;
-#endif
 #ifdef CONFIG_SPD
 	int count;
 	unsigned char i2c_chip = 0x50;
@@ -421,20 +442,12 @@ sysmem_init(void)
 	  Flip the "per rank" parameters, since this is big endian...
 	*/
 
-#ifdef AXM_35xx
-	for (i = 0; i < 2; ++i) {
-		per_mem_parms = &(sysmem->per_mem[i]);
-		temp = (unsigned long *)
-			(&per_mem_parms->sdram_rtt_nom[0]);
-		*temp = swab32(*temp);
-		temp = (unsigned long *)
-			(&per_mem_parms->sdram_rtt_wr[0]);
-		*temp = swab32(*temp);
-		temp = (unsigned long *)
-			(&per_mem_parms->sdram_data_drv_imp[0]);
-		*temp = swab32(*temp);
-	}
-#endif
+	for (i = 0; i < sysmem->num_interfaces; ++i) {
+		swap_impedance_parms(&(sysmem->per_mem[i])) ;
+    }
+	for (i = 0; i < cmem->num_interfaces; ++i) {
+		swap_impedance_parms(&(cmem->per_mem[i])) ;
+    }
 
 	/*
 	  ======================================================================
@@ -549,7 +562,7 @@ sysmem_init(void)
 	}
 #endif
 
-    disp_ddr_parms(sysmem);
+    disp_ddr_parms("SMEM Parameters", sysmem);
 
 	if (sysmem->primary_bus_width == 2) {
 		num_bls = 4;    
@@ -853,80 +866,6 @@ sysmem_init(void)
 			       "r" (0x00000000),
 			       "r" (0x00030207));
 #endif
-
-
-
-#ifdef CONFIG_CMEM_INIT
-    /* BugZ 48091 - initialize external treemem */
-    if (ncp_cmem_init)
-	{
-		int i;
-		per_mem_parms_t *per_mem_parms;
-        
-        /* TEMP !!!!! 
-         * for now we don't have a separate section in the parameter
-         * file for CMEM. So we will re-use the sysmem parameter space
-         * and fix up the configuration values for CMEM
-         */
-        cmem = sysmem;
-
-
-        cmem->ddrClockSpeedMHz = 667;
-        cmem->num_interfaces = 1;
-        cmem->num_ranks_per_interface = 1;
-        cmem->primary_bus_width = NCP_SM_PRIMARY_BUS_WIDTH_8BITS;
-        cmem->topology = 1;
-        cmem->phy_rdlat = 0;
-        cmem->added_rank_switch_delay = 0;
-        cmem->zqcs_interval = 0;
-        cmem->enableECC = 1;
-        cmem->enable_runtime_updates = 1;
-
-        cmem->sdram_device_density = NCP_SM_SDRAM_DENSITY_4GBIT;
-        cmem->sdram_device_width = NCP_SM_SDRAM_WIDTH_8BITS;
-        cmem->CAS_latency = 9;
-        cmem->CAS_write_latency = 6;
-        cmem->address_mirroring = 0;
-        cmem->single_bit_mpr = 0;
-        cmem->high_temp_dram = 0;
-        cmem->min_ctrl_roundtrip_delay = 1;
-
-        for (i = 0; i < cmem->num_interfaces; ++i) {
-
-            per_mem_parms = &(cmem->per_mem[i]);
-
-            per_mem_parms->sdram_rtt_nom[0] = NCP_SM_SDRAM_RTT_IMP_120_OHM;
-            per_mem_parms->sdram_rtt_wr[0] = NCP_SM_SDRAM_RTT_IMP_DISABLED;
-            per_mem_parms->sdram_data_drv_imp[0] = NCP_SM_SDRAM_DRV_IMP_34_OHM;
-            per_mem_parms->phy_min_cal_delay = 12;
-            per_mem_parms->phy_adr_phase_select = 0;
-            per_mem_parms->phy_dp_io_vref_set = 0x3f02a;
-            per_mem_parms->phy_adr_io_vref_set = 0xfff;
-            per_mem_parms->phy_write_align_finetune = 0;
-        }
-
-        disp_ddr_parms(cmem);
-
-        for (i = 0; i < cmem->num_interfaces; i++) {
-            rc = ncp_sysmem_init_lsiphy(NULL, i + 2, cmem); 
-
-            if (rc != 0) {
-              printf("*** Cmem Init Failed ***\n");
-              acp_failure( __FILE__, __FUNCTION__, __LINE__ );
-            }
-        }
-
-        if (cmem->enableECC)
-        {
-            rc = ncp_cm_dram_init(NULL, (ncp_uint32_t) cmem->num_interfaces);
-            if (rc != 0) {
-              printf("*** Cmem DRAM Init Failed ***\n");
-              acp_failure( __FILE__, __FUNCTION__, __LINE__ );
-            }
-        }
-    }
-#endif
-
 
 	return 0;
 }

@@ -1744,7 +1744,7 @@ acp_sysmem_bist( void )
 	int smid;
 	unsigned long interrupt_status;
 
-	printf("Running the Built In Self Test.\n");
+	printf("Running SYSMEM Built In Self Test...\n");
 	acp_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
 
 	if( 1 < sysmem->num_interfaces )
@@ -1898,6 +1898,171 @@ acp_sysmem_bist( void )
 
 	return;
 }
+
+
+
+#ifdef CONFIG_CMEM_INIT
+
+#define CMEM_BIST_PATTERN_DATA_REGS     0
+#define CMEM_BIST_PATTERN_ADDR          1
+#define CMEM_BIST_PATTERN_WALK_ONES     2
+#define CMEM_BIST_PATTERN_WALK_ZEROS    3
+
+
+static void
+acp_cmem_bist_run(
+    ncp_uint32_t            axiRegion,
+    ncp_uint32_t            ctrlRegion,
+    ncp_uint32_t            test_pattern,
+    ncp_uint32_t            test_data_h,
+    ncp_uint32_t            test_data_l)
+
+{
+
+    unsigned long value, value1;
+
+    ncp_ddr_CFG_NTEMC_DDR_STATUS_r_t   *pDdrStatReg =
+                    (ncp_ddr_CFG_NTEMC_DDR_STATUS_r_t *) &value;
+
+
+    /* clear the h/w test result */
+    value = 0;
+    SV(ncp_ddr_CFG_NTEMC_HW_TEST_CTRL_r_t, clrhwerr, 1);
+    ncr_write32(ctrlRegion, NCP_DDR_CFG_NTEMC_HW_TEST_CTRL, value);
+
+    /* clear interrupt status */
+    ncr_write32(axiRegion, 0x18, 0);
+
+    /* reset previous test modes */
+    value = 0;
+    ncr_write32(ctrlRegion, NCP_DDR_CFG_NTEMC_HW_TEST_CTRL, value);
+
+    /* set the test data pattern if necessary */
+    if (test_pattern == CMEM_BIST_PATTERN_DATA_REGS) {
+        ncr_write32(ctrlRegion,
+                NCP_DDR_CFG_NTEMC_HW_TEST_DATA_UPR, test_data_h);
+        ncr_write32(ctrlRegion,
+                NCP_DDR_CFG_NTEMC_HW_TEST_DATA_LWR, test_data_l);
+    }
+
+    /* set up the test control register */
+    value = 0;
+    SV(ncp_ddr_CFG_NTEMC_HW_TEST_CTRL_r_t, test_patt, test_pattern);
+    if ((test_pattern == CMEM_BIST_PATTERN_DATA_REGS) ||
+            (test_pattern == CMEM_BIST_PATTERN_ADDR)) {
+        /* do all writes, then all reads */
+        SV(ncp_ddr_CFG_NTEMC_HW_TEST_CTRL_r_t, test_mode, 0);
+    } else {
+        /* mix writes and reads */
+        SV(ncp_ddr_CFG_NTEMC_HW_TEST_CTRL_r_t, test_mode, 1);
+    }
+    SV(ncp_ddr_CFG_NTEMC_HW_TEST_CTRL_r_t, fail_mode, 0); /* stop on failure */
+    SV(ncp_ddr_CFG_NTEMC_HW_TEST_CTRL_r_t, num_ops,  32);
+    SV(ncp_ddr_CFG_NTEMC_HW_TEST_CTRL_r_t, test_ena,  1); /* single pass */
+
+/*    printf("Starting test with Test Control Register = 0x%08lx\n", value); */
+
+    /* start the test */
+    ncr_write32(ctrlRegion, NCP_DDR_CFG_NTEMC_HW_TEST_CTRL, value);
+
+
+    /*
+     * poll for completion.
+     * the memtst_stat bit remains set until the test completes
+     */
+    value = 0;
+    SV(ncp_ddr_CFG_NTEMC_DDR_STATUS_r_t, memtst_stat, 1);
+    ncr_poll(ctrlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
+                value, 0, 100000, 10000);
+
+
+    /* check the result  */
+    ncr_read32(ctrlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS, &value);
+    if (pDdrStatReg->memtst_rslt == 0)
+    {
+        /* test completed with failure status, read the status registers */
+        ncr_read32(ctrlRegion, NCP_DDR_CFG_NTEMC_HWTEST_FAILADDR, &value);
+        printf("CMEM BIST failed at 0x%08lx\n", value);
+
+        ncr_read32(ctrlRegion, NCP_DDR_CFG_NTEMC_HWTEST_FAILEXPL, &value);
+        ncr_read32(ctrlRegion, NCP_DDR_CFG_NTEMC_HWTEST_FAILEXPU, &value1);
+        printf("expected : 0x%08lx 0x%08lx\n", value, value1);
+
+        ncr_read32(ctrlRegion, NCP_DDR_CFG_NTEMC_HWTEST_FAILACTL, &value);
+        ncr_read32(ctrlRegion, NCP_DDR_CFG_NTEMC_HWTEST_FAILACTU,  &value1);
+        printf("  actual : 0x%08lx 0x%08lx\n", value, value1);
+
+        return -1;
+    }
+
+
+
+    /* clean up */
+    /* clear the test control register */
+    ncr_write32(ctrlRegion, NCP_DDR_CFG_NTEMC_HW_TEST_CTRL, 0);
+}
+
+
+void
+acp_cmem_bist(
+    ncp_uint32_t             memId)
+{
+
+    ncp_uint32_t        nodeId;
+    ncp_region_id_t     ctrlRegion;
+    ncp_region_id_t     axiRegion;
+
+    unsigned long value;
+
+    nodeId = sm_nodes[memId];
+
+    ctrlRegion = NCP_REGION_ID(nodeId, 9);
+    axiRegion  = NCP_REGION_ID(nodeId, 8);
+
+    printf("Running CMEM Built In Self Test...\n");
+
+    /* put treemem in idle mode and poll for idle */
+    ncr_read32(ctrlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, &value);
+    SV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, idle_mode, 1);
+    ncr_write32(ctrlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, value);
+
+    value = 0;
+    SV(ncp_ddr_CFG_NTEMC_DDR_STATUS_r_t, ddr_stat, 1);
+    ncr_poll(ctrlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
+                value, value, 2, 2);
+
+
+    acp_cmem_bist_run(axiRegion, ctrlRegion,
+                      CMEM_BIST_PATTERN_DATA_REGS,
+                      0x55555555, 0x55555555);
+
+    acp_cmem_bist_run(axiRegion, ctrlRegion,
+                      CMEM_BIST_PATTERN_DATA_REGS,
+                      0xaaaaaaaa, 0xaaaaaaaa);
+
+    acp_cmem_bist_run(axiRegion, ctrlRegion,
+                      CMEM_BIST_PATTERN_ADDR,
+                      0, 0);
+
+    acp_cmem_bist_run(axiRegion, ctrlRegion,
+                      CMEM_BIST_PATTERN_WALK_ZEROS,
+                      0, 0);
+
+    acp_cmem_bist_run(axiRegion, ctrlRegion,
+                      CMEM_BIST_PATTERN_WALK_ONES,
+                      0, 0);
+
+
+
+    /* take treemem out of idle mode */
+    ncr_read32(ctrlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, &value);
+    SV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, idle_mode, 0);
+    ncr_write32(ctrlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, value);
+
+
+}
+
+#endif
 
 #endif
 
@@ -2182,6 +2347,46 @@ acp_init( void )
 		extern void sysmem_size_init(void);
 		sysmem_size_init();
 	}
+
+
+#ifdef CONFIG_CMEM_INIT
+    /* BugZ 48091 - initialize external treemem */
+	if( ncp_cmem_init )
+	{
+		int i;
+        int rc;
+
+        disp_ddr_parms("CMEM parameters", cmem);
+
+        for (i = 0; i < cmem->num_interfaces; i++) {
+            rc = ncp_sysmem_init_lsiphy(NULL, i + 2, cmem);
+
+            if (rc != 0) {
+              printf("*** Cmem Init Failed ***\n");
+              acp_failure( __FILE__, __FUNCTION__, __LINE__ );
+            }
+        }
+
+        if ( 0 != ( global->flags & PARAMETERS_GLOBAL_RUN_CMEM_BIST ) ) {
+            for (i = 0; i < cmem->num_interfaces; i++) {
+                acp_cmem_bist(i + NCP_SYSMEM_NUM_NODES);
+            }
+        }
+
+
+
+        if (cmem->enableECC)
+        {
+            rc = ncp_cm_dram_init(NULL, (ncp_uint32_t) cmem->num_interfaces);
+            if (rc != 0) {
+              printf("*** Cmem DRAM Init Failed ***\n");
+              acp_failure( __FILE__, __FUNCTION__, __LINE__ );
+            }
+        }
+    }
+#endif
+
+
 
  acp_init_return:
 	ncr_tracer_disable( );
