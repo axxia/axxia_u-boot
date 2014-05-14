@@ -456,9 +456,13 @@ sysmem_init(void)
 	*/
 
 #ifdef CONFIG_SPD
+#ifndef AXM_35xx
 	/* Initialize I2C */
 	i2c_init(CONFIG_SYS_I2C_SPEED, 0);
-
+#else
+	/* I2C 1 has the SPD EEPROM */
+	i2c_set_bus_num(1);
+#endif
 	/* i2c chip 0x50-0x57 contain SPD info so check for the first one
 	 * with valid info
 	 */
@@ -480,9 +484,13 @@ sysmem_init(void)
 		if (i2c_read(count, 0x3, 1, &buffer, 1) != -1) {
 			rDimm = buffer;
 			if ((rDimm & 0xf) == 0x1) {
+#ifndef AXM_35xx
 				printf("SPD detected RDIMM which we don't support\n");
 				return 1;
-			}
+#else
+				printf("SPD detected RDIMM \n");
+#endif
+			} 
 		}
 
 		/* Read the number of Ranks per Interface and device width*/
@@ -520,6 +528,11 @@ sysmem_init(void)
 		if (i2c_read(count, 0x3f, 1, &buffer, 1) != -1) {
 			/* byte 63 bit 0 */
 			spd_address_mirroring = (buffer & 0x1);
+#ifdef AXM_35xx
+			if ((rDimm & 0xf) == 0x1) {
+				spd_address_mirroring = 0;
+			}
+#endif
 			sysmem->address_mirroring = spd_address_mirroring;
 		}
 		printf("Values read from SPD:\n spd_num_ranks_per_interface = 0x%x\n spd_topology = 0x%x\n spd_device_width = 0x%x\n spd_device_density = 0x%x\n spd_high_temp_dram = 0x%x\n spd_address_mirroring = 0x%x\n", spd_num_ranks_per_interface, spd_topology, spd_device_width, spd_device_density, spd_high_temp_dram, spd_address_mirroring);
