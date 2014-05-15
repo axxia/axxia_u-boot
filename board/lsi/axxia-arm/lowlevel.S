@@ -567,12 +567,14 @@ jump_to_spin_table:
 #if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
 	@@
 	@ Turn 'wfe' into a nop for v1.0 silicon
+	@ by setting bit 7 in the ACTLR.
 	ldr	r3, =pfuse
 	ldr	r4, [r3]
-	bic	r4, r4, #0x3e
+	and	r4, r4, #0x7e0
 	mov	r4, r4, lsr#5
 	cmp	r4, #0
 	bne	1f
+	@ read the ACTLR, set bit 7, write the ACTLR
 	mrc	p15, 0, r0, c1, c0, 1
 	orr	r0, r0, #(1 << 7)
 	mcr	p15, 0, r0, c1, c0, 1
@@ -645,12 +647,14 @@ turn_on_mmu:
 	str	r4, [r3]
 
 	@@
-	@ Turn 'wfe' into a nop for v1.0 silicon.
+	@ Turn 'wfe' into a nop for v1.0 silicon
+	@ by setting bit 7 in the ACTLR.
 #if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
-	bic	r3, r4, #0x3e
+	and	r3, r4, #0x7e0
 	mov	r3, r3, lsr#5
 	cmp	r3, #0
 	bne	1f
+	@ read the ACTLR, set bit 7, write the ACTLR
 	mrc	p15, 0, r0, c1, c0, 1
 	orr	r0, r0, #(1 << 7)
 	mcr	p15, 0, r0, c1, c0, 1
