@@ -457,6 +457,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 	int divMode0=0, divMode1=0;
 	unsigned long phy0_ctrl, phy1_ctrl;
 	unsigned long pei0_config, pei1_config;	
+	unsigned short value;
 	rx_serdes_value_t rx_serdes_values[] = {
 		{0x00ba, 0x0072},
 		{0x02ba, 0x0072},
@@ -710,6 +711,53 @@ int pciesrio_setcontrol(unsigned long new_control)
 		pei0_config = readl((void *)(PCIE0_CONFIG + 0x1000));
 		pei0_config = pei0_config | 0x00040000;
 		writel(pei0_config, (void *)(PCIE0_CONFIG + 0x1000));
+
+		if ((new_control & 0x00000004) != 0x00000004) {
+			/* only PEI0 is being used */
+			/* only HSS5 is used. Powerdown HSS6 */
+			/* pd_pin_override 0x115.0x4.0xba bit 4 */
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0xba, &value);
+			value = value | (0x1 << 4);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0xba, value);
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x2ba, &value);
+			value = value | (0x1 << 4);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x2ba, value);
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x6ba, &value);
+			value = value | (0x1 << 4);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x6ba, value);
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x8ba, &value);
+			value = value | (0x1 << 4);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x8ba, value);
+
+			/* rxpd_r2a 0x115.0x4.0x1c bit 14 */
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x1c, &value);
+			value = value | (0x1 << 14);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x1c, value);
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x21c, &value);
+			value = value | (0x1 << 14);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x21c, value);
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x61c, &value);
+			value = value | (0x1 << 14);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x61c, value);
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x81c, &value);
+			value = value | (0x1 << 14);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x81c, value);
+
+			/* txpd_r2a 0x115.0x4.0x10 bit 10 */
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x10, &value);
+			value = value | (0x1 << 10);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x10, value);
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x210, &value);
+			value = value | (0x1 << 10);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x210, value);
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x610, &value);
+			value = value | (0x1 << 10);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x610, value);
+			ncr_read16(NCP_REGION_ID(0x115, 4), 0x810, &value);
+			value = value | (0x1 << 10);
+			ncr_write16(NCP_REGION_ID(0x115, 4), 0x810, value);
+
+		}
 	} 
 
 	if (new_control & 0x00000004) {
