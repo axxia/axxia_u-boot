@@ -78,6 +78,7 @@ mon_vectors:
 
 	.globl monitor_init
 monitor_init:
+777:	b	777b
 	ldr	ip, =mon_vectors
 	mcr	p15, 0, ip, c12, c0, 1		@ Monitor vector base address
 	mov	pc, lr
@@ -85,12 +86,14 @@ monitor_init:
 	/* Try to go into NS-SVC: void enter_ns(void); */
 	.globl enter_ns
 enter_ns:
+777:	b	777b
 	smc	#0
 	mov	pc, lr
 
 	/* void enter_hyp(void); */
 	.globl enter_hyp
 enter_hyp:
+777:	b	777b
 	/* Now we're in NS-SVC, make a Hyp call to get into Hyp mode */
 	mov	r0, lr
 	mov	r1, sp

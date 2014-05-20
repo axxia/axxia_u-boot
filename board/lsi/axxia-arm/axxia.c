@@ -29,9 +29,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifndef CONFIG_SPL_BUILD
 unsigned long pfuse;
-#endif
 
 const struct omap_sysinfo sysinfo = {
 	"Board: OMAP5430 EVM\n"

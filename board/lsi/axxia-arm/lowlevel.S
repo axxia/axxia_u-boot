@@ -398,20 +398,13 @@ set_actlr2:
 
 #endif
 
-#ifdef RUN_NONSECURE
-
 	@@
-	@ Non-Secure Mode
+	@ Non-Secure Mode/Secure Mode
+	@
+	@ Set up the page tables, initialize "pfuse", and set the mode
+	@ based on silicon version (v1.0 => secure, v1.1 => non-secure).
 
-#ifdef CONFIG_SPL_BUILD
-
-	@ Set the secure access bit in Dickens
-
-	mov	r0, #0
-	mov	r1, #1
-	str	r1, [r0]
-
-#else	@ CONFIG_SPL_BUILD
+#ifndef CONFIG_SPL_BUILD
 
 	@ Set up the MMU, in secure mode, to enable access to the GIC.
 
@@ -445,6 +438,48 @@ set_actlr2:
 	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
 	mov     r0, #0
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+
+	@ If this is v1.0 silicon, switch to secure mode
+
+#ifdef CONFIG_AXXIA_EMU
+#ifdef AXXIA_5500_EMU_V_1_0
+	mov	r7, #0
+#else
+	mov	r7, #0x29
+#endif
+#else
+	ldr	r3, =SYSCON
+	ldr	r7, [r3, #0x34]
+#endif
+	ldr	r3, =pfuse
+	str	r7, [r3]
+	and	r1, r7, #0x7e0
+	mov	r1, r1, lsr#5
+	cmp	r1, #0
+	bne	continue_nonsecure
+
+	@ Turn it all off...
+
+	ldr	r3, =_secure_page_table_start
+	ldr	r3, [r3]
+	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
+	tst     r11, #0xf               @ VMSA
+	mov     r0, #0
+	mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
+	tst     r11, #0xf               @ VMSA
+	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
+	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
+	bic     r0, r0, #0x1000         @ Disable I-Cache
+	bic     r0, r0, #0x5    	@ Disable D-Cache and MMU
+	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+	mcr     p15, 0, r0, c1, c0, 0   @ write control register
+	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
+	mov     r0, #0
+	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+
+	b	secure_mode
+
+continue_nonsecure:
 
 	@ Set all interrupts to be non-secure
 
@@ -524,8 +559,6 @@ set_actlr2:
 
 1:
 
-#endif	@ CONFIG_SPL_BUILD
-
 	@ Core 0, cluster 0, or SPL
 
 	mov	r8, lr
@@ -535,12 +568,10 @@ set_actlr2:
 	mov	lr, r8
 	b	turn_on_mmu
 
-#else
-
 	@@
 	@ Secure Mode
 
-#ifndef CONFIG_SPL_BUILD
+secure_mode:
 
 	@ Get the core and cluster numbers
 
@@ -555,8 +586,6 @@ set_actlr2:
 #endif
 
 	b	turn_on_mmu
-
-#endif
 
 	@@
 	@ Jump to the spin table
@@ -591,13 +620,23 @@ jump_to_spin_table:
 
 turn_on_mmu:
 
-	ldr	r0, =_page_table_start
-	ldr	r0, [r0]
-#ifdef RUN_NONSECURE
+#ifndef CONFIG_SPL_BUILD
+	ldr	r0, =pfuse
+	str	r7, [r0]
+	ldr	r1, [r0]
+	and	r1, r1, #0x7e0
+	mov	r1, r1, lsr#5
+	cmp	r1, #0
+	beq	1f
 	mov	r1, #1
+	b	2f
+1:	mov	r1, #0
+2:
 #else
 	mov	r1, #0
 #endif
+	ldr	r0, =_page_table_start
+	ldr	r0, [r0]
 	mov	r8, lr
 	bl	setup_page_tables
 	mov	lr, r8
@@ -640,16 +679,11 @@ turn_on_mmu:
 	blt	1b
 
 	@@
-	@ Read, and save, pfuse.
-	ldr	r3, =SYSCON
-	ldr	r4, [r3, #0x34]
-	ldr	r3, =pfuse
-	str	r4, [r3]
-
-	@@
 	@ Turn 'wfe' into a nop for v1.0 silicon
 	@ by setting bit 7 in the ACTLR.
 #if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
+	ldr	r3, =pfuse
+	ldr	r4, [r3]
 	and	r3, r4, #0x7e0
 	mov	r3, r3, lsr#5
 	cmp	r3, #0
