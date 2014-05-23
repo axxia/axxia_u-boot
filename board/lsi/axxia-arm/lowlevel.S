@@ -26,18 +26,28 @@
 
 #include <config.h>
 
+#if defined(AXXIA_FORCE_NORMAL_MODE) && defined(AXXIA_FORCE_SECURE_MODE)
+#error "AXXIA_FORCE_SECURE_MODE And AXXIA_FORCE_SECURE_MODE Are Both Defined!"
+#endif
+
+#if defined(AXXIA_FORCE_NORMAL_MODE)
+#warning "Forcing NORMAL Mode Regardless of Chip Type"
+#endif
+
+#if defined(AXXIA_FORCE_SECURE_MODE)
+#warning "Forcing SECURE Mode Regardless of Chip Type"
+#endif
+
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@ Setup Page Tables
 	@
 	@ r0 - Physical address of page table memory.
-	@ r1 - NS bit
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 setup_page_tables:
 
 	mov	r3, r0
 	add	r2, r3, #0x5000
-	mov	r4, r1
 
 	@ Clear
 
@@ -63,8 +73,6 @@ setup_page_tables:
 #else
         ldr     r0, =0x50c0e		@ Start at 0x00_0000_0000
 #endif
-	cmp	r4, #0
-	orrne	r0, r0, #0x8000		@ Set the NS bit if r4 is not 0
         mov     r1, r3
         add     r2, r3, #0x1000
 1:    	mov     r9, #0
@@ -88,8 +96,6 @@ setup_page_tables:
 #else
         ldr     r0, =0x40c52		@ Start at 0x20_0000_0000
 #endif
-	cmp	r4, #0
-	orrne	r0, r0, #0x80000	@ Set the NS bit if r4 is not 0
         add     r1, r3, #0x1000
         add     r2, r3, #0x2000
 1:    	mov     r9, #0
@@ -108,8 +114,6 @@ setup_page_tables:
 	@     Size: 1G
 
         ldr     r0, =0x40c12		@ Start at 0x00_0000_0000
-	cmp	r4, #0
-	orrne	r0, r0, #0x80000	@ Set the NS bit if r4 is not 0
         add     r1, r3, #0x2000
         add     r2, r3, #0x3000
 1:    	mov     r9, #0
@@ -135,8 +139,6 @@ setup_page_tables:
 #else
 	ldr     r0, =0x10c0e
 #endif
-	cmp	r4, #0
-	orrne	r0, r0, #0x80000	@ Set the NS bit if r4 is not 0
         mov     r1, r3
         add     r2, r1, #0x1000
 
@@ -152,8 +154,6 @@ setup_page_tables:
 	@ Fourth 1M points to a second level table (below).
 
 	ldr	r9, =0x4001
-	cmp	r4, #0
-	orrne	r9, r9, #0x4		@ Set the NS bit if r4 is not 0
 	add	r9, r9, r3
 	str	r9, [r1], #4
 	add	r0, r0, #0x100000
@@ -188,8 +188,6 @@ setup_page_tables:
 	@ Third 1G is IO, not cacheable or bufferable.
 
         ldr     r0,=0x40c52		@ Start at 0x20_0000_0000
-	cmp	r4, #0
-	orrne	r0, r0, #0x80000	@ Set the NS bit if r4 is not 0
         add     r1, r3, #0x2000
         add     r2, r3, #0x3000
 1:      mov     r9, #0
@@ -210,8 +208,6 @@ setup_page_tables:
         @ and  16 MB for MPAGE7 for config access
         @
         ldr     r0,=0x00040c72          @ Start at 0x30_0000_0000
-	cmp	r4, #0
-	orrne	r0, r0, #0x80000	@ Set the NS bit if r4 is not 0
         add     r1, r3, #0x3000
         add     r2, r3, #0x3400
 1:      mov     r9, #0
@@ -224,8 +220,6 @@ setup_page_tables:
         blt     1b
 
         ldr     r0,=0x38040c72          @ Start at 0x30_3800_0000
-	cmp	r4, #0
-	orrne	r0, r0, #0x80000	@ Set the NS bit if r4 is not 0
         add     r1, r3, #0x3400
         add     r2, r3, #0x3440
 1:      mov     r9, #0
@@ -242,8 +236,6 @@ setup_page_tables:
         @ and  16 MB for MPAGE7 for config access
         @
         ldr     r0,=0x80040c72          @ Start at 0x30_8000_0000
-	cmp	r4, #0
-	orrne	r0, r0, #0x80000	@ Set the NS bit if r4 is not 0
         add     r1, r3, #0x3800
         add     r2, r3, #0x3c00
 1:      mov     r9, #0
@@ -256,8 +248,6 @@ setup_page_tables:
         blt     1b
 
         ldr     r0,=0xb8040c72          @ Start at 0x30_B800_0000
-	cmp	r4, #0
-	orrne	r0, r0, #0x80000	@ Set the NS bit if r4 is not 0
         add     r1, r3, #0x3c00
         add     r2, r3, #0x3c40
 1:      mov     r9, #0
@@ -316,12 +306,14 @@ spin_loop_release_offset:
 lowlevel_init:
 
 #ifdef CONFIG_SPL_BUILD
+
+	@@
+	@ Set the secure_access bit in dickens.
 	mov	r0, #0
 	mov	r1, #1
 	str	r1, [r0]
-#endif
 
-#ifndef CONFIG_SPL_BUILD
+#else
 
 	@@
 	@ Get the CPU number.
@@ -337,6 +329,7 @@ lowlevel_init:
 	ands	r11, r11, #0xf
 	bne	set_l2ctlr
 
+	@@
 	@ Copy spin_loop (above) to _spin_table_start_ofs
 
 	adr	r0, spin_loop_start
@@ -348,6 +341,52 @@ lowlevel_init:
 	cmp	r0, r1
 	blt	1b
 	dsb
+
+#endif
+
+	@@
+	@ Set up the MMU
+
+	ldr	r0, =_page_table_start
+	ldr	r0, [r0]
+	mov	r8, lr
+	bl	setup_page_tables
+	mov	lr, r8
+
+	@@
+	@ Turn it all on...
+
+	ldr	r3, =_page_table_start
+	ldr	r3, [r3]
+	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
+	tst     r11, #0xf               @ VMSA
+	mov     r0, #0
+	mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
+	tst     r11, #0xf               @ VMSA
+	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
+	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
+	bic     r0, r0, #1 << 28        @ clear SCTLR.TRE
+	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
+	orr     r0, r0, #0x003c         @ write buffer
+	orrne   r0, r0, #1              @ MMU enabled
+	movne   r1, #0xfd
+	mcrne   p15, 0, r3, c2, c0, 0   @ write page table pointer
+	mcrne   p15, 0, r1, c3, c0, 0   @ write domain access control
+	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+	mcr     p15, 0, r0, c1, c0, 0   @ write control register
+	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
+	mov     r0, #0
+	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+
+#ifndef CONFIG_SPL_BUILD
+
+	@@
+	@ Read pfuse into r7 and save
+
+	ldr	r3, =SYSCON
+	ldr	r7, [r3, #0x34]
+	ldr	r3, =pfuse
+	str	r7, [r3]
 
 #endif
 
@@ -385,6 +424,15 @@ set_actlr2:
 #ifndef CONFIG_SPL_BUILD
 
 	@@
+	@ Set the CNTFRQ
+#ifdef CONFIG_AXXIA_SIM
+	ldr	r0, =100000000
+#else
+	ldr	r0, =256000000
+#endif
+	mcr	p15, 0, r0, c14, c0, 0
+
+	@@
 	@ Allow User Mode Access to the Performance Counter
 	@ and Disable Overflow Interrupts
 
@@ -394,208 +442,23 @@ set_actlr2:
 	mcr	p15, 0, r0, c9, c14, 2
 
 	@@
-	@ Set the CNTFRQ
-#ifdef CONFIG_AXXIA_SIM
-	ldr	r0, =100000000
-#else
-	ldr	r0, =256000000
-#endif
-	mcr	p15, 0, r0, c14, c0, 0
-
-#endif
-
-	@@
-	@ Non-Secure Mode/Secure Mode
-	@
-	@ Set up the page tables, initialize "pfuse", and set the mode
-	@ based on silicon version (v1.0 => secure, v1.1 => non-secure).
-
-#ifndef CONFIG_SPL_BUILD
-
-	@ Set up the MMU, in secure mode, to enable access to the GIC.
-
-	ldr	r0, =_secure_page_table_start
-	ldr	r0, [r0]
-	mov	r1, #0
-	mov	r8, lr
-	bl	setup_page_tables
-	mov	lr, r8
-
-	@ Turn it all on...
-
-	ldr	r3, =_secure_page_table_start
-	ldr	r3, [r3]
-	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
-	tst     r11, #0xf               @ VMSA
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
-	tst     r11, #0xf               @ VMSA
-	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
-	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
-	bic     r0, r0, #1 << 28        @ clear SCTLR.TRE
-	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
-	orr     r0, r0, #0x003c         @ write buffer
-	orrne   r0, r0, #1              @ MMU enabled
-	movne   r1, #0xfd
-	mcrne   p15, 0, r3, c2, c0, 0   @ write page table pointer
-	mcrne   p15, 0, r1, c3, c0, 0   @ write domain access control
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-	mcr     p15, 0, r0, c1, c0, 0   @ write control register
-	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-
-	@ If this is v1.0 silicon, switch to secure mode
-
-#ifdef CONFIG_AXXIA_EMU
-#ifdef AXXIA_5500_EMU_V_1_0
-	mov	r7, #0
-#else
-	mov	r7, #0x29
-#endif
-#else
-	ldr	r3, =SYSCON
-	ldr	r7, [r3, #0x34]
-#endif
-	ldr	r3, =pfuse
-	str	r7, [r3]
-	and	r1, r7, #0x7e0
-	mov	r1, r1, lsr#5
-	cmp	r1, #0
-	bne	continue_nonsecure
-
-	@ Turn it all off...
-
-	ldr	r3, =_secure_page_table_start
-	ldr	r3, [r3]
-	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
-	tst     r11, #0xf               @ VMSA
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
-	tst     r11, #0xf               @ VMSA
-	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
-	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
-	bic     r0, r0, #0x1000         @ Disable I-Cache
-	bic     r0, r0, #0x5    	@ Disable D-Cache and MMU
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-	mcr     p15, 0, r0, c1, c0, 0   @ write control register
-	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-
-	b	secure_mode
-
-continue_nonsecure:
-
-	@ Set all interrupts to be non-secure
-
-	ldr	r3, =GIC_DIST_BASE
-	ldr	r1, [r3, #0x04]
-	and	r1, r1, #0x1f
-	add	r1, r1, #1
-	add	r2, r3, #0x80
-	add	r1, r1, r2
-	mov	r4, #-1
-1:	str	r4, [r2], #4
-	cmp	r2, r1
-	blt	1b
-
-	@ Disable group 0 interrupts and enable group 1 interrupts
-
-	ldr	r4, [r3]
-	ldr	r2, =0xfffffffe
-	and	r4, r4, r2
-	orr	r4, r4, #2
-	str	r4, [r3]
-
-	@ Set GIC priority mask, bit 7
-
-	ldr	r3, =GIC_CPU_BASE
-	ldr	r4, [r3]
-	orr	r4, r4, #2
-	str	r4, [r3]
-
-
-	@ Set NSACR to allow coprocessor access from non-secure
-	mrc	p15, 0, r0, c1, c1, 2
-	ldr	r1, =0x43fff
-	orr	r0, r0, r1
-	mcr	p15, 0, r0, c1, c1, 2
-
-	@ Turn it all off...
-
-	ldr	r3, =_secure_page_table_start
-	ldr	r3, [r3]
-	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
-	tst     r11, #0xf               @ VMSA
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
-	tst     r11, #0xf               @ VMSA
-	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
-	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
-	bic     r0, r0, #0x1000         @ Disable I-Cache
-	bic     r0, r0, #0x5    	@ Disable D-Cache and MMU
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-	mcr     p15, 0, r0, c1, c0, 0   @ write control register
-	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-
-	@ Get the core and cluster numbers
-
-	mrc	p15, 0, r0, c0, c0, 5
-	ands	r10, r0, #3
-	lsr	r11, r0, #8
-	ands	r11, r11, #0xf
-	orr	r9, r10, r11
-
-	@ Initialize the montior if core 0, cluster 0
-	@ Enter Non-Secure mode and Enable Hyp
-
-	cmp	r9, #0
-	beq	1f
-
-	@ Not core 0, cluster 0
-
-	b	jump_to_spin_table
-
-1:
-
-	@ Core 0, cluster 0, or SPL
-	b	turn_on_mmu
-
-	@@
-	@ Secure Mode
-
-secure_mode:
-
-	@ Get the core and cluster numbers
-
+	@ If not core 0, cluster 0, load pfuse into r7
 	mrc	p15, 0, r0, c0, c0, 5
 	ands	r10, r0, #3
 	lsr	r11, r0, #8
 	ands	r11, r11, #0xf
 	orr	r0, r10, r11
 	cmp	r0, #0
-	bne	jump_to_spin_table
-
-#endif
-
-	b	turn_on_mmu
-
-	@@
-	@ Jump to the spin table
-
-#ifndef CONFIG_SPL_BUILD
-jump_to_spin_table:
+	beq	1f
+	ldr	r0, =pfuse
+	ldr	r7, [r0]
+1:
 
 #if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
 	@@
 	@ Turn 'wfe' into a nop for v1.0 silicon
 	@ by setting bit 7 in the ACTLR.
-	ldr	r3, =pfuse
-	ldr	r4, [r3]
-	and	r4, r4, #0x7e0
+	and	r4, r7, #0x7e0
 	mov	r4, r4, lsr#5
 	cmp	r4, #0
 	bne	1f
@@ -606,41 +469,45 @@ jump_to_spin_table:
 1:
 #endif
 
-	ldr	r0, =_spin_table_start_ofs
-	ldr	r0, [r0]
-	mov	pc, r0
+	@@
+	@ The rest is only for core 0 of cluster 0.
+
+	mrc	p15, 0, r0, c0, c0, 5
+	ands	r10, r0, #3
+	lsr	r11, r0, #8
+	ands	r11, r11, #0xf
+	orr	r0, r10, r11
+	cmp	r0, #0
+	bne	secondary_boot
+	b	primary_boot
+
+secondary_boot:
+
+#ifdef AXXIA_FORCE_NORMAL_MODE
+	b	secondary_boot_normal
 #endif
+
+#ifdef AXXIA_FORCE_SECURE_MODE
+	b	secondary_boot_secure
+#endif
+
+	and	r4, r7, #0x7e0
+	mov	r4, r4, lsr#5
+	cmp	r4, #0
+	beq	secondary_boot_secure
+	b	secondary_boot_normal
+
+secondary_boot_secure:
+
+	b	secondary_spin
+
+secondary_boot_normal:
+
+	@ Write page table pointer for other CPUs
+	ldr	r3, =hypmode_pgtable
 
 	@@
-	@ Turn on the MMU
-
-turn_on_mmu:
-
-#ifndef CONFIG_SPL_BUILD
-	ldr	r0, =pfuse
-	str	r7, [r0]
-	ldr	r1, [r0]
-	and	r1, r1, #0x7e0
-	mov	r1, r1, lsr#5
-	cmp	r1, #0
-	beq	1f
-	mov	r1, #1
-	b	2f
-1:	mov	r1, #0
-2:
-#else
-	mov	r1, #0
-#endif
-	ldr	r0, =_page_table_start
-	ldr	r0, [r0]
-	mov	r8, lr
-	bl	setup_page_tables
-	mov	lr, r8
-
 	@ Turn it all on...
-
-	ldr	r3, =_page_table_start
-	ldr	r3, [r3]
 	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
 	tst     r11, #0xf               @ VMSA
 	mov     r0, #0
@@ -649,10 +516,10 @@ turn_on_mmu:
 	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
 	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
 	bic     r0, r0, #1 << 28        @ clear SCTLR.TRE
-	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
+	orr     r0, r0, #0x5000         @ I-cache enable, RR cache repl
 	orr     r0, r0, #0x003c         @ write buffer
 	orrne   r0, r0, #1              @ MMU enabled
-	movne   r1, #0xfd
+	movne   r1, #-1
 	mcrne   p15, 0, r3, c2, c0, 0   @ load page table pointer
 	mcrne   p15, 0, r1, c3, c0, 0   @ load domain access control
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
@@ -660,6 +527,23 @@ turn_on_mmu:
 	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
 	mov     r0, #0
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+
+	bl	arch_timer_init
+	bl	non_secure_init
+	bl	monitor_init
+	bl	enter_ns
+	bl	enter_hyp
+	b	secondary_spin
+
+secondary_spin:
+
+	ldr	r0, =_spin_table_start_ofs
+	ldr	r0, [r0]
+	mov	pc, r0
+
+#endif
+
+primary_boot:
 
 #ifndef CONFIG_SPL_BUILD
 
@@ -674,27 +558,86 @@ turn_on_mmu:
 	cmp	r1, r2
 	blt	1b
 
-	@@
-	@ Turn 'wfe' into a nop for v1.0 silicon
-	@ by setting bit 7 in the ACTLR.
-#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
-	ldr	r3, =pfuse
-	ldr	r4, [r3]
-	and	r3, r4, #0x7e0
-	mov	r3, r3, lsr#5
-	cmp	r3, #0
-	bne	1f
-	@ read the ACTLR, set bit 7, write the ACTLR
-	mrc	p15, 0, r0, c1, c0, 1
-	orr	r0, r0, #(1 << 7)
-	mcr	p15, 0, r0, c1, c0, 1
-1:
+#ifdef AXXIA_FORCE_NORMAL_MODE
+	b	primary_boot_normal
 #endif
+
+#ifdef AXXIA_FORCE_SECURE_MODE
+	b	primary_boot_secure
+#endif
+
+	and	r4, r7, #0x7e0
+	mov	r4, r4, lsr#5
+	cmp	r4, #0
+	beq	primary_boot_secure
+	b	primary_boot_normal
+
+primary_boot_normal:
+
+	bl	arch_timer_init
+	bl	non_secure_init
+	bl	monitor_init
+
+primary_boot_secure:
+
 #endif
 
 	@@
 	@ Return
-	mov	pc, lr
+	bl	_main
+
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	@
+	@ Hyp Mode Page Table for Secondary CPUs
+	@
+	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+#ifndef CONFIG_SPL_BUILD
+
+	.ltorg
+	.balign	0x4000
+	.global	hypmode_pgtable
+	
+hypmode_pgtable:
+	
+	/* 32M of RAM: Virtual: 0x00000000 - 0x3fffffff */
+	.rept	16
+#ifdef RUN_UNCACHED
+	.word	0x00000c12
+#else
+	.word	0x00010c1e
+#endif
+	.endr
+
+	.rept	16
+#ifdef RUN_UNCACHED
+	.word	0x01000c12
+#else
+	.word	0x01010c1e
+#endif
+	.endr
+
+	.fill	0x1000-128, 1, 0
+
+	/* Virtual: 0x40000000 - 0x7fffffff */
+	.fill	0x1000,   1, 0
+
+	/* GIC as non cached: Virtual: 0x80000000 - 0xbfffffff */
+	.rept	16
+	.word	0x00040c52
+	.endr
+	.rept	16
+	.word	0x01040c52
+	.endr
+	.rept	16
+	.word	0x02040c52
+	.endr
+	.rept	16
+	.word	0x03040c52
+	.endr
+	.fill	0x1000-256, 1, 0
+
+#endif
 
 ###
 ### Local Variables:

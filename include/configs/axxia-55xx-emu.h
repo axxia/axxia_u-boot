@@ -23,6 +23,7 @@
 #ifndef __CONFIGS_AXXIA_55XX_EMU_H
 #define __CONFIGS_AXXIA_55XX_EMU_H
 
+/*#define CONFIG_AXXIA_55XX_EMU_V_1_0*/
 #define CONFIG_AXXIA_55XX_EMU
 #define CONFIG_AXXIA_EMU
 
@@ -83,8 +84,6 @@
   ===============================================================================
   ===============================================================================
 */
-
-#define AXXIA_500_EMU_V_1_0
 
 #define V_MIN   795
 #define V_SAFE  940

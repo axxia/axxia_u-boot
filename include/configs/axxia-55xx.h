@@ -82,6 +82,29 @@
   ===============================================================================
 */
 
+/*
+  Switch to normal mode on v1.0 silicon.  Note that v1.0 silicon does
+  not fully support normal mode.  Linux boots, but coherent IO is not
+  possible.
+*/
+
+/*#define AXXIA_FORCE_NORMAL_MODE*/
+
+/*
+  Switch to secure mode on v1.1 silicon.
+*/
+
+/*#define AXXIA_FORCE_SECURE_MODE*/
+
+/*
+  Start the secondary cores in U-Boot.
+
+  This is a work-around required if using Linux releases before
+  8.8.1.21 and 7.8.1.37.  It only applies in NORMAL mode.
+*/
+
+#define AXXIA_START_SECONDARY_CORES
+
 #define V_MIN   795
 #define V_SAFE  940
 #define V_MAX  1050

@@ -178,6 +178,18 @@ static void cache_disable(uint32_t cache_bit)
 		flush_dcache_all();
 #endif
 
+#if defined(CONFIG_AXXIA) && defined(AXXIA_START_SECONDARY_CORES)
+#if defined(AXXIA_FORCE_NORMAL_MODE)
+	smp_kick_secondary();
+#elif !defined(AXXIA_FORCE_SECURE_MODE)
+	extern unsigned long pfuse;
+
+	if (0 != ((pfuse & 0x7e0) >>5)) {
+		smp_kick_secondary();
+	}
+#endif
+#endif
+
 	set_cr(reg & ~cache_bit);
 }
 #endif

@@ -29,7 +29,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-unsigned long pfuse;
+unsigned long pfuse __attribute__ ((section ("data")));
 
 const struct omap_sysinfo sysinfo = {
 	"Board: OMAP5430 EVM\n"
