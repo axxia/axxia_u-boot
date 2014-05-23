@@ -315,6 +315,12 @@ spin_loop_release_offset:
 
 lowlevel_init:
 
+#ifdef CONFIG_SPL_BUILD
+	mov	r0, #0
+	mov	r1, #1
+	str	r1, [r0]
+#endif
+
 #ifndef CONFIG_SPL_BUILD
 
 	@@
@@ -551,21 +557,11 @@ continue_nonsecure:
 
 	@ Not core 0, cluster 0
 
-	mov	r8, lr
-	bl	enter_ns
-	bl	enter_hyp
-	mov	lr, r8
 	b	jump_to_spin_table
 
 1:
 
 	@ Core 0, cluster 0, or SPL
-
-	mov	r8, lr
-	bl	monitor_init
-	bl	enter_ns
-	bl	enter_hyp
-	mov	lr, r8
 	b	turn_on_mmu
 
 	@@

@@ -422,6 +422,7 @@ sysmem_init(void)
 
     ncr_read32(NCP_REGION_ID(34,0xff), 0, &sysmem->version);
     sysmem->version &= 0xff;
+    sysmem->version = 9;
 #endif
 #endif
 
