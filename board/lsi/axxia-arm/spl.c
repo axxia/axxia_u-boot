@@ -519,15 +519,24 @@ spl_board_init(void)
 	printf("System initialized\n");
 
 #ifdef CONFIG_MEMORY_RETENTION
-	phyRegs = (unsigned long *)retention;
+	{
+		int i;
+		int need_write = 0;
+		for (i = 0; i < sysmem->num_interfaces; i++) {
+			phyRegs = retention + (i * DDR_PHY_REGS_SIZE);
 
-	if (*phyRegs == DDR_PHY_REGS_TAG_SAVE) {
+			printf("checking phyRegs[%d] %p = %x\n", i, phyRegs, *phyRegs);
+			if (*phyRegs == DDR_PHY_REGS_TAG_SAVE) {
+				printf("Saved values for smId %d %p\n", i, phyRegs);
+				*phyRegs = DDR_PHY_REGS_TAG_PROM;
+				need_write = 1;
+			}
+		}
 
-		printf("Writing DDR PHY registers to parameter space\n");
-		/* write to PROM/FLASH */
-		*phyRegs = DDR_PHY_REGS_TAG_PROM;
-
-		write_parameters();
+		if ( need_write) {
+			printf("Writing DDR PHY registers to parameter space\n");
+			write_parameters();
+		}
 	}
 #endif
 

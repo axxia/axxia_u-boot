@@ -56,39 +56,20 @@ typedef struct {
 
 
 /* globals */
-ncp_sm_intr_status_fn_t      intrStatFn = NULL;
-ncp_sm_ecc_enb_fn_t          eccEnbFn = NULL;
-ncp_sm_poll_controller_fn_t  pollControllerFn = NULL;
-
+#ifndef UBOOT
+ncp_sm_intr_status_fn_t intrStatFn = NULL;
+ncp_sm_ecc_enb_fn_t eccEnbFn = NULL;
+ncp_sm_poll_controller_fn_t pollControllerFn = NULL;
+ncp_uint32_t num_bytelanes = 0;
+#else
+ncp_sm_intr_status_fn_t intrStatFn __attribute__ ((section ("data"))) = NULL;
+ncp_sm_ecc_enb_fn_t eccEnbFn __attribute__ ((section ("data"))) = NULL;
+ncp_sm_poll_controller_fn_t pollControllerFn __attribute__ ((section ("data"))) = NULL;
+ncp_uint32_t num_bytelanes __attribute__ ((section ("data"))) = 0;
+#endif
 
 /* temp */
 typedef void ncp_sm_phy_stat_t;
-
-#if 0
-static ncp_st_t
-ncp_sm_denali_init(
-    ncp_dev_hdl_t dev,
-    ncp_uint32_t  smId,
-    ncp_sm_parms_t *parms)
-{
-    ncp_st_t ncpStatus;
-    ncp_region_id_t ctlReg;
-
-
-    if (smId >= NCP_SYSMEM_NUM_NODES) {
-        NCP_CALL(NCP_ST_SYSMEM_INVALID_ID);
-    }
-
-    NCP_COMMENT("sysmem %d denali controller init", smId);
-
-
-    NCP_CALL(ncp_sm_denali_2041_init(dev, ctlReg, parms));
-
-NCP_RETURN_LABEL
-    return ncpStatus;
-}
-#endif
-
 
 typedef ncp_st_t
 (*phy_training_run_fn_t) (
@@ -101,8 +82,9 @@ typedef ncp_st_t
         ncp_sm_phy_training_mode_t  mode,
         ncp_sm_parms_t             *parms);
 
-
+#ifndef UBOOT
 #define NCP_SM_PHY_REG_DUMP
+#endif
 #ifdef  NCP_SM_PHY_REG_DUMP 
 
 static ncp_st_t 
@@ -589,14 +571,10 @@ typedef struct {
  */
 short wrdqs_fudge[2] = {36, -8};
 
-ncp_sm_phy_reg_list_t ncp_sm_phy_regs[6] = 
+ncp_sm_phy_reg_list_t ncp_sm_phy_regs[2] = 
 {
-    { NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG3_BL0,     1,  0,  2,  0, NULL},
     { NCP_PHY_CFG_SYSMEM_PHY_WRTLVLUPP_BL0CS0,   2,  4,  1,  1, NULL},
     { NCP_PHY_CFG_SYSMEM_PHY_WRTALIGNDQ0_BL0CS0, 2, 16,  1,  1, wrdqs_fudge},
-    { NCP_PHY_CFG_SYSMEM_PHY_GTUPPCTRL_BL0CS0,   2, 16,  2,  1, NULL},
-    { NCP_PHY_CFG_SYSMEM_PHY_PUPPDQSDLY_BL0CS0,  4,  4,  2,  1, NULL},
-    { NCP_PHY_CFG_SYSMEM_PHY_RDALIGNDQ0_BL0CS0,  8,  4,  1,  1, NULL},
 };
 
 #ifndef UBOOT 
@@ -680,7 +658,7 @@ ncp_sm_lsiphy_reg_save_restore(
     ncp_sm_phy_reg_list_t *pList;
     ncp_uint32_t  value;
 
-    for (idx = 0; idx < 6; idx++) 
+    for (idx = 0; idx < 2; idx++) 
     {
         pList = &ncp_sm_phy_regs[idx];
 
@@ -750,7 +728,7 @@ ncp_sm_lsiphy_reg_save(
         ncp_sm_parms_t *parms)
 
 {
-    ncp_uint32_t *buf = retention + (smId * 512);
+    ncp_uint32_t *buf = retention + (smId * DDR_PHY_REGS_SIZE);
     ncp_region_id_t regionId;
 
     if (smId == 0) {
@@ -759,11 +737,7 @@ ncp_sm_lsiphy_reg_save(
         regionId = NCP_REGION_ID(15,1);
     }
 
-#if 0
-    if ((smId == 0) && (*buf != 0)) {
-        printf("overwriting existing PHY regs?!?!?\n");
-    }
-#endif
+    printf("setting smId %d *buf (%p) to %x\n", smId, buf, DDR_PHY_REGS_TAG_SAVE);
 
     *buf++ = DDR_PHY_REGS_TAG_SAVE;
 
@@ -772,7 +746,7 @@ ncp_sm_lsiphy_reg_save(
                     parms->num_bytelanes, buf, 1);
 
 #ifndef UBOOT
-    buf = retention + (smId * 512);
+    buf = retention + (smId * DDR_PHY_REGS_SIZE);
     *buf = DDR_PHY_REGS_TAG_PROM;
     printf("reg_save2buf @%p = 0x%08x\n", buf, *buf);
 #endif
@@ -789,7 +763,7 @@ ncp_sm_lsiphy_reg_restore(
 
 {
 
-    ncp_uint32_t *buf = retention + (smId * 512);
+    ncp_uint32_t *buf = retention + (smId * DDR_PHY_REGS_SIZE);
     ncp_region_id_t regionId;
 
     if (smId == 0) {
@@ -797,8 +771,10 @@ ncp_sm_lsiphy_reg_restore(
     } else {
         regionId = NCP_REGION_ID(15,1);
     }
+    printf("checking smId %d *buf (%p) : %x\n", smId, buf, *buf);
 
-    if ( (smId == 0) && (*buf != DDR_PHY_REGS_TAG_PROM) ) {
+/*     if ( (smId == 0) && (*buf != DDR_PHY_REGS_TAG_PROM) ) { */
+    if ( (*buf != DDR_PHY_REGS_TAG_PROM) ) {
         printf("SMEM%d DDR restore buffer invalid!\n", smId);
         return -1;
     }
@@ -994,6 +970,99 @@ NCP_RETURN_LABEL
 }
 
 
+static ncp_uint32_t
+ncp_sm_intr_status_35xx(
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_uint32_t    mask)
+{
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+    ncp_uint32_t value;
+    /* read interrupt status */
+    ncr_read32( regionId, NCP_DENALI_CTL_346, &value );
+
+    /* apply mask */
+    value &= mask;
+
+    /* write interrupt acknowledge */
+    ncr_write32( regionId, NCP_DENALI_CTL_347, value );
+
+    NCP_CALL(ncpStatus);
+
+NCP_RETURN_LABEL
+    return value;
+}
+
+static ncp_uint32_t
+ncp_sm_poll_controller_35xx(
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_sm_poll_event_t event)
+{
+    ncp_st_t ncpStatus;
+    ncp_uint32_t value;
+
+    switch (event)
+    {
+        case NCP_SM_MC_INIT_DONE:
+            value = 0x00000100;
+            break;
+
+        case NCP_SM_LP_OP_DONE:
+            value = 0x00000200;
+            break;
+
+        case NCP_SM_BIST_DONE:
+            value = 0x00000400;
+            break;
+
+        case NCP_SM_LVL_OP_DONE:
+            value = 0x00040000;
+            break;
+
+        case NCP_SM_MR_OP_DONE:
+            value = 0x00100000;
+            break;
+
+        default:
+            NCP_CALL(NCP_ST_ERROR);
+    }
+
+    ncpStatus = ncr_poll(regionId, NCP_DENALI_CTL_346, 
+                value, value, 100, 100) ;
+
+    /* return if error */
+    NCP_CALL(ncpStatus); 
+
+    /* acknowledge the interrupts */
+    ncp_sm_intr_status_35xx(dev, regionId, value);
+
+NCP_RETURN_LABEL
+    return ncpStatus;
+}
+
+
+static ncp_uint32_t
+ncp_sm_ecc_enb_35xx(
+    ncp_dev_hdl_t   dev,
+    ncp_region_id_t regionId,
+    ncp_uint32_t    eccEnb)
+{
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+    ncp_uint32_t value=0;
+
+    ncr_read32( regionId, NCP_DENALI_CTL_373, &value );
+    value &= ~(1<<8);
+    value |= (eccEnb << 8);
+    ncr_write32( regionId, NCP_DENALI_CTL_373, value );
+
+    NCP_CALL(ncpStatus);
+
+NCP_RETURN_LABEL
+    return value;
+}
+
+
 static ncp_st_t 
 ncp_sm_dfi_init_start(
     ncp_dev_hdl_t dev,
@@ -1028,7 +1097,6 @@ NCP_RETURN_LABEL
 
 }
 
-#ifndef UBOOT
 static ncp_st_t 
 ncp_cm_dfi_init_start(
     ncp_dev_hdl_t dev,
@@ -1036,6 +1104,7 @@ ncp_cm_dfi_init_start(
     ncp_sm_parms_t *parms)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+#ifndef UBOOT
     ncp_uint32_t value;
 
     /* enable ECC if needed */
@@ -1049,10 +1118,9 @@ ncp_cm_dfi_init_start(
     ncr_write32(region, NCP_DDR_CFG_NTEMC_DDR_CTRL, value);
 
 NCP_RETURN_LABEL
+#endif
     return ncpStatus;
 }
-
-#endif
 
 
 /*
@@ -1213,14 +1281,19 @@ ncp_sm_lsiphy_static_init(
 
         switch (parms->version) 
         {
-            printf("parms->version = %d\n", parms->version);
+            printf("parms->version = %lu\n", parms->version);
             case NCP_CHIP_ACP25xx:
-            case NCP_CHIP_ACP35xx:  /* TEMP - need to review support for 3500 */
                 parms->num_bytelanes = 5;
                 intrStatFn = ncp_sm_intr_status_25xx;
                 eccEnbFn = ncp_sm_ecc_enb_25xx;
                 pollControllerFn = ncp_sm_poll_controller_25xx;
+                break;
 
+            case NCP_CHIP_ACP35xx:
+                parms->num_bytelanes = 9; /* 8 8-bit data + 1 ecc lanes */
+                intrStatFn = ncp_sm_intr_status_35xx;
+                eccEnbFn = ncp_sm_ecc_enb_35xx;
+                pollControllerFn = ncp_sm_poll_controller_35xx;
                 break;
 
             case NCP_CHIP_ACP55xx:
@@ -1231,7 +1304,7 @@ ncp_sm_lsiphy_static_init(
                 break;
 
             default:
-                printf("Unexpected chipType %d\n", parms->version);
+                printf("Unexpected chipType %lu\n", parms->version);
                 NCP_CALL(NCP_ST_ERROR);
         }
 
@@ -1242,20 +1315,18 @@ ncp_sm_lsiphy_static_init(
          * be prior to PHY static init
          */
         ncp_sm_dfi_init_start(dev, ctlRegion, parms);
-    } else {
-#ifndef UBOOT 
+    }
+    else
+    {
         NCP_COMMENT("treemem %d PHY static init", smId - NCP_SYSMEM_NUM_NODES);
-        isSysMem = FALSE;
-        parms->num_bytelanes = 2;
-        /* TODO??? intrStat/eccEnb functions? */
-        ncp_cm_dfi_init_start(dev, ctlRegion, parms);
-        memId = smId - NCP_SYSMEM_NUM_NODES;
         region    = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_PHY);
         ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
-#else
-	printf("Unexpected smId: 0x%x\n", smId);
-	NCP_CALL(NCP_ST_ERROR);
-#endif
+        isSysMem = FALSE;
+        parms->num_bytelanes = 2;
+        memId = smId - NCP_SYSMEM_NUM_NODES;
+        /* TODO??? intrStat/eccEnb functions? */
+
+        ncp_cm_dfi_init_start(dev, ctlRegion, parms);
     }
 
     /* Disable Dynamic ODT */
@@ -1284,7 +1355,7 @@ ncp_sm_lsiphy_static_init(
     *   For sysmem, AL = 0, halfx = 1, and rank_highfreq = 1,
     *   so we have CWL - 3 - 1 - 2, or CWL-6
     *
-    *   TODO: what about treemem?? 
+    * This doesn't matter for CMEM since CMEM is single-rank
     */
     phyconfig1.rdranksw  = 0; /* TODO: Do these need to be set later on?? */
     phyconfig1.wrranksw  = 0;
@@ -1320,10 +1391,17 @@ ncp_sm_lsiphy_static_init(
      * make it 3.
      */
 
-    if (parms->version == NCP_CHIP_ACP25xx) 
+    if ( parms->version == NCP_CHIP_ACP25xx)
     {
         rlrank_adj = -3;
-    } else {
+    }
+    else if (parms->version == NCP_CHIP_ACP35xx)
+    {
+	/* based on waveform readout */
+        rlrank_adj = -2;
+    } 
+    else 
+    {
         rlrank_adj = 1;
     }
 
@@ -1455,6 +1533,12 @@ ncp_sm_lsiphy_static_init(
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_SMCTRL, 
                         *(ncp_uint32_t *) &smctrl);
 
+    /* Poll till feedback SM and qrtr cycle SM are settled */
+    if (0 != ncr_poll(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, 0x600, 0x000, 100, 100) )
+    {
+        NCP_CALL(NCP_ST_ERROR);
+    }
+
     if (parms->single_bit_mpr) {
         ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_RDLVLCMPDATEVN, 
                 parms->per_mem[memId].phy_rdlvl_cmp_even);
@@ -1573,7 +1657,6 @@ ncp_sm_sysmem_phy_training_run(
     SMAV( ncp_denali_DENALI_CTL_21_t, wrlvl_cs, rank );
     ncr_modify32( ctlRegion, NCP_DENALI_CTL_21, mask, value );
 
-
     switch (mode) {
         case NCP_SYSMEM_PHY_WRITE_LEVELING:
             NCP_COMMENT("Sysmem %d PHY write leveling rank %d", smId, rank);
@@ -1656,7 +1739,6 @@ ncp_sm_sysmem_phy_training_run(
         }
 
     }
-
 
 NCP_RETURN_LABEL
     /* reset training enables */
@@ -1961,6 +2043,12 @@ ncp_sm_lsiphy_gate_training(
     ncp_uint32_t            bl_stat;
     int                     i;
     ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG3_BLx_r_t  *phyconfig3 = (ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG3_BLx_r_t *) &value;
+    ncp_uint32_t busAdaptor = 0;
+
+#ifndef UBOOT
+    /* get the driver bus adaptor */
+    NCP_CALL(ncp_dev_read32(dev, NCP_REGION_DRIVER_CFG, NCP_DEV_CFG_BUS_ADAPTOR, &busAdaptor));
+#endif
 
     switch (smId) {
         case 0:
@@ -2086,6 +2174,9 @@ ncp_sm_lsiphy_gate_training(
         /* disable successful bytelanes */
         value = (phyconfig2 & 0xffe00fff) | (dp_en << 12);
         ncr_write32(phyRegion, NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, value);
+
+        if (busAdaptor == NCP_DEV_BUS_FBRS) 
+	    break;
     }
 
 
@@ -2206,9 +2297,7 @@ typedef ncp_st_t
     ncp_uint32_t  node, 
     ncp_uint64_t  address, 
     ncp_uint32_t  pattern, 
-    ncp_uint32_t *bad_bl_bad, 
-    ncp_uint32_t *bad_bl_early, 
-    ncp_uint32_t *bad_bl_late, 
+    ncp_uint32_t *bad_bl, 
     ncp_uint32_t  num_bls);
 
 typedef ncp_st_t
@@ -2229,9 +2318,7 @@ sm_bytelane_test(
     ncp_uint32_t  notUsed, 
     ncp_uint64_t  address, 
     ncp_uint32_t  pattern, 
-    ncp_uint32_t *bad_bl_bad, 
-    ncp_uint32_t *bad_bl_early, 
-    ncp_uint32_t *bad_bl_late, 
+    ncp_uint32_t *bad_bl, 
     ncp_uint32_t  num_bls)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
@@ -2239,7 +2326,9 @@ sm_bytelane_test(
     int j;
     ncp_uint32_t  value32 = 0x01010101UL;
     ncp_uint8_t   compare_value;
+#ifdef SM_BYTELANE_TEST_DEBUG
     ncp_uint32_t  offset = num_bls * 2;
+#endif
     ncp_uint32_t  *pTmp;
 
     ncp_uint32_t  burstSize;
@@ -2367,29 +2456,24 @@ sm_bytelane_test(
 #endif
 
 
-    *bad_bl_bad = 0;
-    *bad_bl_early = 0;
-    *bad_bl_late = 0;
+    *bad_bl = 0;
     j = 0;
 
     if (0 == (pattern & 0x4)) 
     {
+
+        /* TODO!! FIXME!! check multiple bursts!! */
         for (i = 0; i < num_bls; ++i) {
 
 #ifdef SM_BYTELANE_TEST_DEBUG
         printf("i=%d j=%d expect=0x%02x "
-               "p8=0x%08x/0x%02x/0x%02x/0x%02x\n",
+               "p8=0x%p/0x%02x/0x%02x/0x%02x\n",
                i, j, compare_value, p8, *p8, *(p8 - offset),
                *(p8 + offset));
 #endif
 
             if (compare_value != *p8) {
-                if (*(p8 - offset) == compare_value)
-                    *bad_bl_early |= 1 << i;
-                else if (*(p8 + offset) == compare_value)
-                    *bad_bl_late |= 1 << i;
-                else
-                    *bad_bl_bad |= 1 << i;
+                *bad_bl |= 1 << i;
             }
     
             ++p8;
@@ -2398,7 +2482,7 @@ sm_bytelane_test(
     } else {
 #ifndef UBOOT
         if (memcmp(rbuf, wbuf, blockSize)) {
-            *bad_bl_bad = 0x1ff;
+            *bad_bl = 0x1ff;
         }
 #else
     value32 = 0x01010101UL;
@@ -2415,7 +2499,7 @@ sm_bytelane_test(
       if (*p32 != temp) {
         printf("\nCompare Failed! i=%d temp=0x%x *p32=0x%x",
            i, temp, *p32);
-        *bad_bl_bad = 0x1ff;
+        *bad_bl = 0x1ff;
       }
 
       ++p32;
@@ -2424,7 +2508,7 @@ sm_bytelane_test(
         if (*p32 != temp) {
           printf("\nCompare 2 Failed! i=%d temp=0x%x *p32=0x%x",
              i, temp, *p32);
-          *bad_bl_bad = 0x1ff;
+          *bad_bl = 0x1ff;
         }
 
         ++p32;
@@ -2439,8 +2523,7 @@ sm_bytelane_test(
     }
 
 #ifdef SM_BYTELANE_TEST_DEBUG
-    printf("*bad_bl_bad=0x%x *bad_bl_early=0x%x *bad_bl_late=0x%x\n",
-           *bad_bl_bad, *bad_bl_early, *bad_bl_late);
+    printf("*bad_bl=0x%x \n", *bad_bl);
 #endif
 
 NCP_RETURN_LABEL
@@ -2492,14 +2575,9 @@ sm_ecc_bytelane_test(
 
 
     /* copy the ECC test data buffer */        
-    /* TODO!! 
-     * for ACP2500 we only have four data bytelanes, so this is
-     * two bursts of data. Need another 16 words of ecc_test_data
-     * to support chips with eight bytelanes
-     */
     for (i = 0; i < blockSizeWords ; i++) {
 
-        this_value = ecc_test_data[pattern][i];
+        this_value = ecc_test_data_64bit[pattern][i];
         *p32++ = this_value;
         NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%012llx " \
               "0x%02x 0x%02x 0x%02x 0x%02x\n",
@@ -2513,7 +2591,6 @@ sm_ecc_bytelane_test(
 
     /* write it out */
 #ifdef UBOOT 
-
     uppAddr = ( (unsigned) (address >> 32) );
     lowAddr = ( (unsigned) (address & 0xffffffff) );
 
@@ -2523,9 +2600,9 @@ sm_ecc_bytelane_test(
     }
     p32 = (ncp_uint32_t *)(NCA + 0x1000); 
 #else 
-    NCP_CALL(ncp_block_write8(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
-                                wbuf, blockSize, 0));
     p32 = (ncp_uint32_t *)wbuf;
+    NCP_CALL(ncp_block_write32(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
+                                p32, blockSizeWords, 0));
 #endif
 
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG
@@ -2585,7 +2662,6 @@ sm_ecc_bytelane_test(
     rc = ncp_block_read32(dev, NCP_REGION_ID(node, 5), (address >> 2), 
                                 (ncp_uint32_t *)rbuf, blockSizeWords, 0);
 
-    ncp_status_print("block_read", rc);
     p32 = (ncp_uint32_t *)rbuf;
 #endif
 
@@ -2627,7 +2703,7 @@ sm_ecc_bytelane_test(
 
         for (i = 0; i < blockSizeWords ; i++) {
             temp = *((unsigned long *)(NCA + 0x1000 + (i * 4)));
-            if (temp != ecc_test_data[pattern][i]) {
+            if (temp != ecc_test_data_64bit[pattern][i]) {
                 rc = 0x1ff;
             }
         }
@@ -2690,16 +2766,18 @@ sm_bytelane_test_elm(
     ncp_uint32_t  elmNode, 
     ncp_uint64_t  address, 
     ncp_uint32_t  pattern, 
-    ncp_uint32_t *bad_bl_bad, 
-    ncp_uint32_t *bad_bl_early, 
-    ncp_uint32_t *bad_bl_late, 
+    ncp_uint32_t *bad_bl,
     ncp_uint32_t  num_bls)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     int i, j;
 
-#ifndef UBOOT 
 #ifdef SM_BYTELANE_TEST_DEBUG
+#ifdef UBOOT 
+    ncp_uint32_t  *p32 = (NCA + 0x1000); 
+    unsigned uppAddr;
+    unsigned lowAddr;
+#else 
     ncp_uint8_t   rbuf[NCP_SM_BURST_SIZE];
     ncp_uint32_t  *p32 = (ncp_uint32_t *) rbuf;
 #endif
@@ -2733,10 +2811,13 @@ sm_bytelane_test_elm(
      * beat size to get the value for the previous and subsequent
      * beat.
      */
-    if ( (pattern & 0x01) == 0)
+    if ( (pattern & 0x01) == 0) {
         valAdj  = 1;
+    } 
     else
+    {
         valAdj  = -1;
+    }
 
     /* 
      * the ELM sysmem init cache address register specifies
@@ -2779,9 +2860,7 @@ sm_bytelane_test_elm(
     if (0 != (pattern & 0x2))
         return 0;
 
-    *bad_bl_bad = 0;
-    *bad_bl_early = 0;
-    *bad_bl_late = 0;
+    *bad_bl = 0;
 
     for (j = 0; j < NCP_BLTEST_NUM_CHECKS; j++)
     {
@@ -2835,7 +2914,7 @@ sm_bytelane_test_elm(
 #endif
             if (readVal != expVal)
             {
-                    *bad_bl_bad |= 1 << i;
+                    *bad_bl |= 1 << i;
             }
             expVal += valAdj;
         }
@@ -2844,7 +2923,7 @@ sm_bytelane_test_elm(
 
 
 #ifdef SM_BYTELANE_TEST_DEBUG
-    printf("*bad_bl_bad=0x%x \n", *bad_bl_bad);
+    printf("*bad_bl=0x%x \n", *bad_bl);
 
     printf("NCA reading address %012llx\n", address);
 #ifdef UBOOT 
@@ -2865,7 +2944,7 @@ sm_bytelane_test_elm(
         int idx;
 
         for (idx = 0; idx < (blockSize/4); ++idx) {
-            printf("(%03x:0x%08lx)", (idx * 4), p32[idx]);
+            printf("(%03x:0x%08x)", (idx * 4), p32[idx]);
             if ( (idx & 0x3) == 3) printf("\n");
         }
 
@@ -2913,6 +2992,7 @@ static ncp_st_t use_elm(ncp_dev_hdl_t dev, int elm)
     ncr_write32( NCP_REGION_ID(0x1e0, 0x26), 8, elm1_bits);
     ncr_write32( NCP_REGION_ID(0x1e0, 0x27), 8, elm1_bits);
 #else
+#ifndef AXM_35xx
     writel(elm0_bits, (DICKENS + 0x200008));
     writel(elm0_bits, (DICKENS + 0x210008));
     writel(elm0_bits, (DICKENS + 0x220008));
@@ -2921,6 +3001,7 @@ static ncp_st_t use_elm(ncp_dev_hdl_t dev, int elm)
     writel(elm1_bits, (DICKENS + 0x250008));
     writel(elm1_bits, (DICKENS + 0x260008));
     writel(elm1_bits, (DICKENS + 0x270008));
+#endif
 #endif
 
 
@@ -3021,7 +3102,7 @@ sm_ecc_bytelane_test_elm(
     /* copy the ECC test data buffer */        
     for (i = 0; i < blockSizeWords ; i++) {
 
-        this_value = ecc_test_data_55xx[pattern][i];
+        this_value = ecc_test_data_64bit[pattern][i];
         *p32++ = this_value;
         NCR_TRACE("ncpWrite  -w8 0.512.1.0x00%012llx " \
               "0x%02x 0x%02x 0x%02x 0x%02x\n",
@@ -3094,8 +3175,8 @@ sm_ecc_bytelane_test_elm(
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG
     printf("readData = 0x%08x 0x%08x\n", readData[0], readData[1]);
     printf("expData  = 0x%08x 0x%08x\n", 
-                    ecc_test_data_55xx[pattern][expWdOffset], 
-                    ecc_test_data_55xx[pattern][expWdOffset+1] );
+                    ecc_test_data_64bit[pattern][expWdOffset], 
+                    ecc_test_data_64bit[pattern][expWdOffset+1] );
 #endif
 
     /* check for ECC errors */
@@ -3135,15 +3216,15 @@ sm_ecc_bytelane_test_elm(
 
     /* check for correct data */
     if (*bad_bl == 0) {
-        if ((readData[0] != ecc_test_data_55xx[pattern][expWdOffset]) || 
-            (readData[1] != ecc_test_data_55xx[pattern][expWdOffset+1]))
+        if ((readData[0] != ecc_test_data_64bit[pattern][expWdOffset]) || 
+            (readData[1] != ecc_test_data_64bit[pattern][expWdOffset+1]))
             {
 
                 printf("ECC coarse write leveling data miscompare\n");
                 printf("readData = 0x%08x 0x%08x\n", readData[0], readData[1]);
                 printf("expData  = 0x%08x 0x%08x\n", 
-                    ecc_test_data_55xx[pattern][expWdOffset], 
-                    ecc_test_data_55xx[pattern][expWdOffset+1] );
+                    ecc_test_data_64bit[pattern][expWdOffset], 
+                    ecc_test_data_64bit[pattern][expWdOffset+1] );
             }
     }
 
@@ -3170,7 +3251,7 @@ ncp_sm_sm_coarse_write_leveling(
 
     ncp_uint32_t    mask, value;
 
-    ncp_uint32_t    bad_bl[3] = {0};
+    ncp_uint32_t    bad_bl = 0;
 
     ncp_uint32_t     node;   /* either SC (2500) or ELM (5500) */
     ncp_uint32_t    ecc_mask;
@@ -3217,7 +3298,6 @@ ncp_sm_sm_coarse_write_leveling(
     printf("sysmem phy coarse write leveling - rank %d, addr 0x%012llx\n",
             rank, addr);
 #endif
-
 
     switch (parms->version) 
     {
@@ -3318,18 +3398,19 @@ ncp_sm_sm_coarse_write_leveling(
 
     /* first just run the bytelane test to initialize memory */
     NCP_CALL(bl_test_fn(dev, node, addr, 3, 
-                &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls));
+                &bad_bl, num_bls));
 
+    bad_bl = 0;
     /* run the bytelane test using the walking one pattern */
     NCP_CALL(bl_test_fn(dev, node, addr, 0, 
-                &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls));
+                &bad_bl, num_bls));
 
     /*
      * advance one clock for each failing bytelane
      */
     for (bl = 0; bl < num_bls; bl++)
     {
-        if (bad_bl[0] & (1 << bl))
+        if (bad_bl & (1 << bl))
         {
             /* advance forward one clock */
             ncr_read32(region, 
@@ -3357,7 +3438,7 @@ ncp_sm_sm_coarse_write_leveling(
     {
         memset(&bad_bl, 0, sizeof(bad_bl));
         NCP_CALL(bl_test_fn(dev, node, addr, 1, 
-                &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls));
+                &bad_bl, num_bls));
     }
 
 
@@ -3366,7 +3447,7 @@ ncp_sm_sm_coarse_write_leveling(
      */
     for (bl = 0; bl < num_bls; bl++)
     {
-        if (bad_bl[0] & (1 << bl))
+        if (bad_bl & (1 << bl))
         {
             /* advance forward one clock */
             ncr_read32(region, 
@@ -3396,11 +3477,11 @@ ncp_sm_sm_coarse_write_leveling(
     if (busAdaptor != NCP_DEV_BUS_FBRS) 
     {
         NCP_CALL(bl_test_fn(dev, node, addr, 0, 
-                &bad_bl[0], &bad_bl[1], &bad_bl[2], num_bls));
+                &bad_bl, num_bls));
     }
 
     /* if we still have bad bytelanes then leveling has failed */
-    if ((bad_bl[0] | bad_bl[1] | bad_bl[2]) != 0 ) {
+    if ((bad_bl) != 0 ) {
         NCP_CALL(NCP_ST_SYSMEM_PHY_WL_ERR);
     }
 
@@ -3421,15 +3502,15 @@ ncp_sm_sm_coarse_write_leveling(
         eccEnbFn(dev, ctlRegion, 1);
 
         NCP_CALL(ecc_bl_test_fn(dev, ctlRegion, addr, node, 
-                                         1, ecc_mask, num_bls, &bad_bl[0]));
-        bad_bl[0] = 0;
+                                         1, ecc_mask, num_bls, &bad_bl));
+        bad_bl = 0;
         NCP_CALL(ecc_bl_test_fn(dev, ctlRegion, addr, node, 
-                                         0, ecc_mask, num_bls, &bad_bl[0]));
+                                         0, ecc_mask, num_bls, &bad_bl));
 
         /* for now assume ECC is always the last BL */
         bl = num_bls ;
 
-        if (bad_bl[0] != 0) {
+        if (bad_bl != 0) {
             
             /* 
              *  ECC bytelane needs leveling. 
@@ -3469,12 +3550,12 @@ ncp_sm_sm_coarse_write_leveling(
                        ldly + adj);
 
                 NCP_CALL(ecc_bl_test_fn(dev, ctlRegion, addr, node, 
-                                             1, ecc_mask, num_bls, &bad_bl[0]));
-                bad_bl[0] = 0;
+                                             1, ecc_mask, num_bls, &bad_bl));
+                bad_bl = 0;
                 NCP_CALL(ecc_bl_test_fn(dev, ctlRegion, addr, node, 
-                                         0, ecc_mask, num_bls, &bad_bl[0]));
+                                         0, ecc_mask, num_bls, &bad_bl));
 
-                if (bad_bl[0] == 0) {
+                if (bad_bl == 0) {
                     /* it worked - we're done */
                     break;
                 }
@@ -3483,7 +3564,7 @@ ncp_sm_sm_coarse_write_leveling(
 
         }
 
-        if (bad_bl[0] != 0) {
+        if (bad_bl != 0) {
             /* still bad, try advancing clocks */
             adj = 0;
             while (nincs--) 
@@ -3498,12 +3579,12 @@ ncp_sm_sm_coarse_write_leveling(
                        ldly + adj);
 
                 NCP_CALL(ecc_bl_test_fn(dev, ctlRegion, addr, node, 
-                                             1, ecc_mask, num_bls, &bad_bl[0]));
-                bad_bl[0] = 0;
+                                             1, ecc_mask, num_bls, &bad_bl));
+                bad_bl = 0;
                 NCP_CALL(ecc_bl_test_fn(dev, ctlRegion, addr, node, 
-                                         0, ecc_mask, num_bls, &bad_bl[0]));
+                                         0, ecc_mask, num_bls, &bad_bl));
 
-                if (bad_bl[0] == 0) {
+                if (bad_bl == 0) {
                     /* it worked - we're done */
                     break;
                 }
@@ -3511,7 +3592,7 @@ ncp_sm_sm_coarse_write_leveling(
         }
 
         /* if we still have bad bytelanes then leveling has failed */
-        if ( (busAdaptor != NCP_DEV_BUS_FBRS) && (bad_bl[0]) ) {
+        if ( (busAdaptor != NCP_DEV_BUS_FBRS) && (bad_bl) ) {
             NCP_CALL(NCP_ST_SYSMEM_PHY_ECC_WL_ERR);
         }
 
@@ -3670,15 +3751,21 @@ ncp_sm_lsiphy_runtime_adj(
     }
     else 
     {
-#ifndef UBOOT
         NCP_COMMENT("treemem %d PHY runtime adjustment", 
                             smId - NCP_SYSMEM_NUM_NODES);
         region = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_PHY);
         ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
         isSysMem = FALSE;
-#else
-	NCP_CALL(NCP_ST_SYSMEM_INVALID_ID);
-#endif
+    }
+
+    if (parms->version == NCP_CHIP_ACP35xx)
+    {
+	/* turn on tref_enable */
+        /* TODO!! just re-enable it in controller init !! */
+    	ncr_read32(ctlRegion, NCP_DENALI_CTL_14, &value);
+    	value &= ~(1<<16);
+    	value |= (1<<16);
+    	ncr_write32(ctlRegion, NCP_DENALI_CTL_14, value);
     }
 
     /* indicate PHY initial training complete */
@@ -3770,6 +3857,51 @@ NCP_RETURN_LABEL
 #endif
 
 
+#if 0
+static void set_fixed_latency(void)
+{
+        ncp_uint32_t reg32;
+    /* TEMP DEBUG */
+    /* 
+     * enabling fixed latency mode will prevent a missing 
+     * read response from hanging the system. Instead of 
+     * not returning, the read will return garbage. 
+     */
+    printf("enabling fixed latency mode\n");
+
+    /*
+     * set fixed_rl. this value must be calculated using some
+     * TBD formula.
+     */
+    ncr_read32(NCP_REGION_ID(34,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0, &reg32);
+    reg32 |= 0x00040000;
+    ncr_write32(NCP_REGION_ID(34,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0, reg32);
+
+    ncr_read32(NCP_REGION_ID(15,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0, &reg32);
+    reg32 |= 0x00040000;
+    ncr_write32(NCP_REGION_ID(15,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0, reg32);
+
+
+    /* enable fixed latency fifo mode */
+    ncr_read32(NCP_REGION_ID(34,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, &reg32);
+    reg32 |= 0x44000000;
+    ncr_write32(NCP_REGION_ID(34,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, reg32);
+    
+    ncr_read32(NCP_REGION_ID(15,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, &reg32);
+    reg32 |= 0x44000000;
+    ncr_write32(NCP_REGION_ID(15,1), 
+            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, reg32);
+}
+#endif
+
+
 static  ncp_uint64_t
 calc_sdram_size(ncp_sm_parms_t *parms)
 {
@@ -3825,7 +3957,7 @@ ncp_sysmem_init_lsiphy(
         NCP_CALL(NCP_ST_ERROR);
     }
 
-    if (  parms->ddrRetentionEnable && (parms->ddrRecovery == TRUE) )
+    if (  parms->ddrRetentionEnable )
     {
         if (NCP_ST_SUCCESS == ncp_sm_lsiphy_reg_restore(dev, smId, parms ))
         {
@@ -3861,96 +3993,70 @@ ncp_sysmem_init_lsiphy(
      * if the PHY registers have not been restored then we must
      * run the PHY training sequence.
      */
-    if (restore_complete == FALSE)
+
+    /* 
+     * NEW! only write-leveling registers are restored.
+     * always do read calibration on each rank.
+     */
+
+
+#define  NCP_SM_DISP_TRAINING_STEPS
+
+    for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++)
     {
-        /* do read calibration and fine write-leveling on each rank */
-        for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++) 
+        if (topology & (1 << rank)) 
         {
-            if (topology & (1 << rank)) 
+
+            if (do_wr_lvl &&  (restore_complete == FALSE) )
             {
-                if (do_wr_lvl) {
-                    /* fine write leveling */
-                    /* printf("wrlvl smId %d rank %d\n", smId, rank); */
+                /* fine write leveling */
 #ifdef NCP_SM_WRLVL_DUP
-                    if ( (parms->version == NCP_CHIP_ACP25xx) && ( rank > 0 ) )
-                    {
-                        /* printf("wrlvl dup smId %d rank %d\n", smId, rank); */
-                        NCP_CALL(ncp_sm_lsiphy_wrlvl_dup(dev, smId, 0, 1));
-                    } 
-                    else 
+                if ( (parms->version == NCP_CHIP_ACP25xx) && ( rank > 0 ) )
+                {
+#ifdef NCP_SM_DISP_TRAINING_STEPS
+                    printf("wrlvl dup smId %d rank %d\n", smId, rank);
 #endif
-                    {
-                        /* printf("wrlvl smId %d rank %d\n", smId, rank); */
-                        NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 0,
-                             NCP_SYSMEM_PHY_WRITE_LEVELING,
-                             parms));
-                    }
-                }
-
-                if (do_gt_trn) {
-                    /* gate training */
-                    /* printf("gttrn smId %d rank %d\n", smId, rank); */
-                    NCP_CALL(ncp_sm_lsiphy_gate_training(dev, smId, rank, parms));
-                }
-
-                if (do_rd_lvl) {
-                    /* read leveling */
-                    /* printf("rdlvl smId %d rank %d\n", smId, rank); */
+                    NCP_CALL(ncp_sm_lsiphy_wrlvl_dup(dev, smId, 0, 1));
+                } 
+                else 
+#endif
+                {
+#ifdef NCP_SM_DISP_TRAINING_STEPS
+                    printf("wrlvl smId %d rank %d\n", smId, rank);
+#endif
                     NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 0,
-                             NCP_SYSMEM_PHY_READ_LEVELING,
-                             parms));
-
-                    NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 1,
-                             NCP_SYSMEM_PHY_READ_LEVELING,
+                             NCP_SYSMEM_PHY_WRITE_LEVELING,
                              parms));
                 }
             }
-        }
 
-
-#if 0
-    {
-        ncp_uint32_t reg32;
-    /* TEMP DEBUG */
-    /* 
-     * enabling fixed latency mode will prevent a missing 
-     * read response from hanging the system. Instead of 
-     * not returning, the read will return garbage. 
-     */
-    printf("enabling fixed latency mode\n");
-
-    /*
-     * set fixed_rl. this value must be calculated using some
-     * TBD formula.
-     */
-    ncr_read32(NCP_REGION_ID(34,1), 
-            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0, &reg32);
-    reg32 |= 0x00040000;
-    ncr_write32(NCP_REGION_ID(34,1), 
-            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0, reg32);
-
-    ncr_read32(NCP_REGION_ID(15,1), 
-            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0, &reg32);
-    reg32 |= 0x00040000;
-    ncr_write32(NCP_REGION_ID(15,1), 
-            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG0, reg32);
-
-
-    /* enable fixed latency fifo mode */
-    ncr_read32(NCP_REGION_ID(34,1), 
-            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, &reg32);
-    reg32 |= 0x44000000;
-    ncr_write32(NCP_REGION_ID(34,1), 
-            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, reg32);
-    
-    ncr_read32(NCP_REGION_ID(15,1), 
-            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, &reg32);
-    reg32 |= 0x44000000;
-    ncr_write32(NCP_REGION_ID(15,1), 
-            NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, reg32);
-    }
+            if (do_gt_trn) {
+                /* gate training */
+#ifdef NCP_SM_DISP_TRAINING_STEPS
+                printf("gttrn smId %d rank %d\n", smId, rank);
 #endif
+                NCP_CALL(ncp_sm_lsiphy_gate_training(dev, smId, rank, parms));
+            }
 
+            if (do_rd_lvl) {
+                /* read leveling */
+#ifdef NCP_SM_DISP_TRAINING_STEPS
+                printf("rdlvl smId %d rank %d\n", smId, rank);
+#endif
+                NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 0,
+                             NCP_SYSMEM_PHY_READ_LEVELING,
+                             parms));
+
+                NCP_CALL(ncp_sm_lsiphy_training_run(dev, smId, rank, 1,
+                             NCP_SYSMEM_PHY_READ_LEVELING,
+                             parms));
+            }
+        }
+    }
+
+
+    if (restore_complete == FALSE)
+    {
 
         if ((parms->version == NCP_CHIP_ACP55xx) &&
             (smId < 2)) 
@@ -3972,16 +4078,16 @@ ncp_sysmem_init_lsiphy(
             ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x100c, 0x00000000);
 
             /* set NCA TTYPES */
-        	ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x00220026);
-        	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x00000003);
+            ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x00220026);
+            ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x00000003);
 
         }
 
-
-        for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++) 
+        for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++)
         {
-            if (topology & (1 << rank)) 
+            if (topology & (1 << rank))
             {
+
                 switch (rank) {
                     case 0:
                     default:
@@ -3998,12 +4104,17 @@ ncp_sysmem_init_lsiphy(
                         break;
                 }
 
-#if 0
-                printf("coarse wrlvl smId %d rank %d addr 0x%012llx\n", 
+
+#ifdef NCP_SM_DISP_TRAINING_STEPS
+                printf("coarse wrlvl smId %d rank %d addr 0x%012llx\n",
                                 smId, rank, addr);
 #endif
-                use_elm(dev, smId);
-                NCP_CALL(ncp_sm_lsiphy_coarse_write_leveling(dev, 
+                if ((parms->version == NCP_CHIP_ACP55xx) && (smId < 2))
+                {
+                        use_elm(dev, smId);
+                }
+
+                NCP_CALL(ncp_sm_lsiphy_coarse_write_leveling(dev,
                             smId, rank, addr, parms));
             }
         }
@@ -4011,16 +4122,19 @@ ncp_sysmem_init_lsiphy(
         did_training = TRUE;
     }
 
-    if (parms->ddrRetentionEnable && did_training) 
+
+
+    if (parms->ddrRetentionEnable && did_training)
     {
         /* 
-         *  PHY training complete - perform memory test 
+         *  PHY training complete - perform memory test
          */
         /* TODO !! */
 
         /*
          * save these PHY training values for next time
          */
+        printf("saving smId %d PHY registers \n", smId);
         ncpStatus = ncp_sm_lsiphy_reg_save(dev, smId, parms);
     }
 
@@ -4034,12 +4148,12 @@ NCP_RETURN_LABEL
     {
         /* re-enable both elms and restore NCA TTYPEs */
         use_elm(dev, 3);
-       	ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x12221222);
-     	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x0000000b);
+       ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x12221222);
+     ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x0000000b);
     }
 
 #ifdef NCP_SM_PHY_REG_DUMP
-  if ( (NCP_ST_SUCCESS != returnStatus) || ncp_sm_phy_reg_dump ) 
+  if ( (NCP_ST_SUCCESS != returnStatus) || ncp_sm_phy_reg_dump )
   {
     ncp_sm_lsiphy_reg_dump(dev, smId, parms->version);
   }

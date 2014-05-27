@@ -24,7 +24,8 @@
  * MA 02111-1307 USA
  */
 
-/*#define DEBUG*/
+/* #define DEBUG */
+/* #define DISPLAY_PARAMETERS */
 
 #include <config.h>
 #include <common.h>
@@ -220,8 +221,8 @@ read_parameters(void)
 		int watchdog_timeout;
 		int a_valid;
 		int b_valid;
-		int a_sequence;
-		int b_sequence;
+		int a_sequence = 0;
+		int b_sequence = 0;
 
 		ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc,
 			   (ncp_uint32_t *)&watchdog_timeout);
@@ -375,7 +376,7 @@ read_parameters(void)
 	printf("version=%lu flags=0x%lx\n", global->version, global->flags);
 #endif
 
-	printf("Parameter Table Version %u\n", header->version);
+	printf("Parameter Table Version %lu\n", header->version);
 
 	return 0;
 }
@@ -458,13 +459,15 @@ write_parameters(void)
 		       "    voltage = 0x%x\n"
 		       "     clocks = 0x%x\n"
 		       "     sysmem = 0x%x\n"
+		       "       cmem = 0x%x\n"
 		       "  retention = 0x%x\n",
 		       parameters + header->globalOffset,
 		       parameters + header->pciesrioOffset,
 		       parameters + header->voltageOffset,
 		       parameters + header->clocksOffset,
-		       parameters + header->sysmemOffset,
-		       parameters + header->retentionOffset);
+		       parameters + header->systemMemoryOffset,
+		       parameters + header->classifierMemoryOffset,
+		       parameters + header->systemMemoryRetentionOffset);
 
 		for (i = 0; i < (PARAMETERS_SIZE / 4); ++i) {
 
@@ -492,12 +495,12 @@ write_parameters(void)
 #endif
 
 	/* Update the Checksum */
-	debug("%s:%d - header->size=0x%x header->checksum=0x%x\n",
+	debug("%s:%d - header->size=0x%lx header->checksum=0x%lx\n",
 	      __FILE__, __LINE__, header->size, header->checksum);
 	header->checksum =
 		htonl(crc32(0, (parameters + 12),
 			    (ntohl(header->size) - 12)));
-	debug("%s:%d - header->checksum=0x%x\n",
+	debug("%s:%d - header->checksum=0x%lx\n",
 	      __FILE__, __LINE__, header->checksum);
 
 #ifdef CONFIG_REDUNDANT_PARAMETERS

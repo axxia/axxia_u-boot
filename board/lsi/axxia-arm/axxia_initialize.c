@@ -77,9 +77,9 @@ axxia_initialize(void)
 
 #ifndef CONFIG_AXXIA_EMU
 	/* read and clear reset status (write one to clear) */
-	ncr_read32(NCP_REGION_ID(0x156, 0), 0x100, &value);
-	printf("Reset Status = 0x%08x\n", value);
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x100, value);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x100, (ncp_uint32_t *) &value);
+	printf("Reset Status = 0x%08lx\n", value);
+	ncr_write32(NCP_REGION_ID(0x156, 0), 0x100, (ncp_uint32_t) value);
 
 	/*
 	 * if this is a power-up/pin reset then initialize
@@ -99,7 +99,7 @@ axxia_initialize(void)
 	 * timeout; otherwise, clear it.
 	 */
 
-	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc, &pvalue);
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc, (ncp_uint32_t *) &pvalue);
 
 	if (0 != (value & 0xa))
 		pvalue |= 0x4;

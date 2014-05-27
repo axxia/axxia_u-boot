@@ -25,7 +25,7 @@
 
 #define CONFIG_AXXIA_ARM
 
-/*#define NCR_TRACER*/
+/* #define NCR_TRACER */
 
 #ifndef __ASSEMBLY__
 #include <linux/types.h>
@@ -1073,6 +1073,7 @@ extern void *retention;
 extern unsigned *phyRegs;
 #define DDR_PHY_REGS_TAG_SAVE 0x53415645
 #define DDR_PHY_REGS_TAG_PROM 0x50524f4d
+#define DDR_PHY_REGS_SIZE     128
 #endif
 #endif
 

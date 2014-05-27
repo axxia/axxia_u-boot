@@ -206,7 +206,7 @@ ncp_sm_denali_2041_init(
             break;
 #endif
         default:
-            printf( "%d: Unsupported Topology.\n", parms->topology );
+            printf( "%lu: Unsupported Topology.\n", parms->topology );
             acp_failure( __FILE__, __FUNCTION__, __LINE__ );
             break;
     }

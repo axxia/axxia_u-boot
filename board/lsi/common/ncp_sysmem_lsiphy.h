@@ -47,6 +47,7 @@
 #define NCP_SM_PHY_REG_RESTORE 
 #define DDR_PHY_REGS_TAG_SAVE 0x53415645
 #define DDR_PHY_REGS_TAG_PROM 0x50524f4d
+#define DDR_PHY_REGS_SIZE     128
 extern void *retention;
 extern unsigned *phyRegs; 
 

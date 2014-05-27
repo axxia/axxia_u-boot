@@ -426,7 +426,7 @@ sysmem_init(void)
 	sysmem->version = 3;
 #else
 
-    ncr_read32(NCP_REGION_ID(34,0xff), 0, &sysmem->version);
+    ncr_read32(NCP_REGION_ID(34,0xff), 0, (ncp_uint32_t *) &sysmem->version);
     sysmem->version &= 0xff;
     sysmem->version = 0x9;	/* Fix for unexpected pfuse value!!! */
 #endif
@@ -447,13 +447,16 @@ sysmem_init(void)
 #endif
 
 #ifdef CONFIG_MEMORY_RETENTION
-    if (global->flags & 0x00010000) {
+    printf("global->flags = %d\n", global->flags);
+
+    if (global->flags & 0x00000020) {
         printf("DDR Retention enabled in U-Boot Parameter Flags\n");
         sysmem->ddrRetentionEnable = 1;
     }
     else 
     {
         printf("DDR Retention disabled in U-Boot Parameter Flags\n");
+        sysmem->ddrRetentionEnable = 0;
     }
 #endif
 
@@ -483,18 +486,27 @@ sysmem_init(void)
     *  inidicate ddrRetention recovery.
     */
     ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x00dc, &value);
-    sysmem->ddrRecovery = (value & 0x1) ; 
+    sysmem->ddrRecovery = (value & 0x1) ;
     value &= 0xfffffffe;
     ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x00dc, value);
  
-    printf("ddrRetentionEnable = %d\n", sysmem->ddrRetentionEnable);
-    printf("ddrRecovery = %d\n", sysmem->ddrRecovery);
+    printf("ddrRetentionEnable = %lu\n", sysmem->ddrRetentionEnable);
+    printf("ddrRecovery = %lu\n", sysmem->ddrRecovery);
  
-    if (sysmem->ddrRecovery == 1) {
-        ncp_uint32_t *tag = retention;
-        if ( *tag != DDR_PHY_REGS_TAG_PROM) {
-            printf("DDR restore buffer invalid - disabling ddrRecovery\n");
-            sysmem->ddrRecovery = 0;
+    if (sysmem->ddrRetentionEnable && sysmem->ddrRecovery)
+    {
+        /*
+         * if we are attempting DDR recovery first make sure that
+         * we have a valid set of parameters
+         */
+        for (i = 0; i < sysmem->num_interfaces; i++) {
+            ncp_uint32_t *tag = retention + (i * DDR_PHY_REGS_SIZE);
+
+            printf("checking tag[%d] %p = %x\n", i, tag, *tag);
+            if (*tag != DDR_PHY_REGS_TAG_PROM) {
+                printf("DDR restore buffer invalid - disabling ddrRecovery\n");
+                sysmem->ddrRecovery = 0;
+            }
         }
     }
 
