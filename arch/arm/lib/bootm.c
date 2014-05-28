@@ -352,11 +352,9 @@ static void boot_jump_linux(bootm_headers_t *images)
 
 #if defined(CONFIG_AXXIA)
 #if defined(AXXIA_FORCE_NORMAL_MODE)
-	enter_ns();
 	enter_hyp();
 #elif !defined(AXXIA_FORCE_SECURE_MODE)
 	if (0 != ((pfuse & 0x7e0) >>5)) {
-		enter_ns();
 		enter_hyp();
 	}
 #endif

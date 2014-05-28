@@ -361,6 +361,18 @@ set_clusters(void)
 int
 board_init(void)
 {
+#if defined(AXXIA_FORCE_NORMAL_MODE)
+	dcache_disable();
+	enter_ns();
+	setup_page_tables(_page_table_start);
+#elif !defined(AXXIA_FORCE_SECURE_MODE)
+	if (0 != ((pfuse & 0x7e0) >>5)) {
+		dcache_disable();
+		enter_ns();
+		setup_page_tables(_page_table_start);
+	}
+#endif
+
 	return 0;
 }
 

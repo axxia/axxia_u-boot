@@ -44,6 +44,8 @@
 	@ r0 - Physical address of page table memory.
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+	.global	setup_page_tables
+
 setup_page_tables:
 
 	mov	r3, r0
@@ -262,6 +264,31 @@ setup_page_tables:
 #endif
 #endif
 
+	@@
+	@ Turn it all on...
+
+	mrc     p15, 0, r1, c0, c1, 4	@ read ID_MMFR0
+	tst     r1, #0xf		@ VMSA
+	mov     r0, #0
+	mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
+	tst     r1, #0xf		@ VMSA
+	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
+	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
+	bic     r0, r0, #1 << 28        @ clear SCTLR.TRE
+	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
+	orr     r0, r0, #0x003c         @ write buffer
+	orrne   r0, r0, #1              @ MMU enabled
+	movne   r1, #0xfd
+	mcrne   p15, 0, r3, c2, c0, 0   @ write page table pointer
+	mcrne   p15, 0, r1, c3, c0, 0   @ write domain access control
+	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+	mcr     p15, 0, r0, c1, c0, 0   @ write control register
+	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
+	mov     r0, #0
+	mcr     p15, 0, r0, c7, c5, 4   @ ISB
+
+	@@
+	@ Return
 	mov	pc, lr			@ return
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -352,31 +379,6 @@ lowlevel_init:
 	mov	r8, lr
 	bl	setup_page_tables
 	mov	lr, r8
-
-	@@
-	@ Turn it all on...
-
-	ldr	r3, =_page_table_start
-	ldr	r3, [r3]
-	mrc     p15, 0, r11, c0, c1, 4  @ read ID_MMFR0
-	tst     r11, #0xf               @ VMSA
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
-	tst     r11, #0xf               @ VMSA
-	mcrne   p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
-	mrc     p15, 0, r0, c1, c0, 0   @ read control reg
-	bic     r0, r0, #1 << 28        @ clear SCTLR.TRE
-	orr     r0, r0, #0x5000         @ I-cache enaable, RR cache repl
-	orr     r0, r0, #0x003c         @ write buffer
-	orrne   r0, r0, #1              @ MMU enabled
-	movne   r1, #0xfd
-	mcrne   p15, 0, r3, c2, c0, 0   @ write page table pointer
-	mcrne   p15, 0, r1, c3, c0, 0   @ write domain access control
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
-	mcr     p15, 0, r0, c1, c0, 0   @ write control register
-	mrc     p15, 0, r0, c1, c0, 0   @ and read it back
-	mov     r0, #0
-	mcr     p15, 0, r0, c7, c5, 4   @ ISB
 
 #ifndef CONFIG_SPL_BUILD
 
