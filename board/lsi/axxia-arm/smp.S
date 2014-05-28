@@ -23,10 +23,9 @@
  */
 
 #include <config.h>
+#include <linux/linkage.h>
 
-.globl smp_kick_secondary
-
-smp_kick_secondary:
+ENTRY(smp_kick_secondary)
 	/* Bring up the second core */
 	ldr r0, =(APB2_SER3_BASE + 0x1000)
 	mov r1, #0xab
@@ -36,4 +35,5 @@ smp_kick_secondary:
 	ldr r1, =0x0000
 	str r1, [r0]
 	dsb
-	mov	pc, lr
+	bx	lr
+ENDPROC(smp_kick_secondary)

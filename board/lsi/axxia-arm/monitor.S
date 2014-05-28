@@ -23,6 +23,7 @@
  */
 
 #include <config.h>
+#include <linux/linkage.h>
 
 .syntax	unified
 .arch_extension sec
@@ -76,25 +77,25 @@ mon_vectors:
  * This code is called from u-boot into the above handler
  */
 
-	.globl monitor_init
-monitor_init:
+ENTRY(monitor_init)
 	ldr	ip, =mon_vectors
 	mcr	p15, 0, ip, c12, c0, 1		@ Monitor vector base address
-	mov	pc, lr
+	bx	lr
+ENDPROC(monitor_init)
 
 	/* Try to go into NS-SVC: void enter_ns(void); */
-	.globl enter_ns
-enter_ns:
+ENTRY(enter_ns)
 	smc	#0
-	mov	pc, lr
+	bx	lr
+ENDPROC(enter_ns)
 
 	/* void enter_hyp(void); */
-	.globl enter_hyp
-enter_hyp:
+ENTRY(enter_hyp)
 	/* Now we're in NS-SVC, make a Hyp call to get into Hyp mode */
 	mov	r0, lr
 	mov	r1, sp
 	hvc	#0
 	/* We will end up here in NS-Hyp. */
 	mov	sp, r1
-	mov	pc, r0
+	bx	r0
+ENDPROC(enter_hyp)
