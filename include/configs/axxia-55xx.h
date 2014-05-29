@@ -100,13 +100,11 @@
   Start the secondary cores in U-Boot.
 
   This is a work-around required if using Linux releases before
-  8.8.1.21 and 7.8.1.37.  It only applies in NORMAL mode.
+  8.8.1.21 It only applies in NORMAL mode.  It is NOT required for
+  Linux 3.4 (7.8.x.x).
 */
 
-#define AXXIA_START_SECONDARY_CORES
-
-#define CONFIG_HW_WATCHDOG
-#define CONFIG_REDUNDANT_PARAMETERS
+/*#define AXXIA_START_SECONDARY_CORES*/
 
 #define CONFIG_HW_WATCHDOG
 #define CONFIG_REDUNDANT_PARAMETERS
