@@ -43,10 +43,10 @@ DECLARE_GLOBAL_DATA_PTR;
 */
 
 enum spl_mtest_type {
-	data = 0,
-	addr,
-	mtest,
-	all
+	spl_mtest_data = 0,
+	spl_mtest_addr,
+	spl_mtest_mtest,
+	spl_mtest_all
 };
 
 int
@@ -95,7 +95,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 		printf("Iteration: %d\n", iterations);
 		debug("\n");
 
-		if ((type == data) || (type == all)) {
+		if ((type == spl_mtest_data) || (type == spl_mtest_all)) {
 			/*
 			 * Data line test: write a pattern to the first
 			 * location, write the 1's complement to a 'parking'
@@ -142,7 +142,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			}
 		}
 
-		if ((type == addr) || (type == all)) {
+		if ((type == spl_mtest_addr) || (type == spl_mtest_all)) {
 			/*
 			 * Based on code whose Original Author and Copyright
 			 * information follows: Copyright (c) 1998 by Michael
@@ -239,7 +239,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			}
 		}
 
-		if ((type == mtest) || (type == all)) {
+		if ((type == spl_mtest_mtest) || (type == spl_mtest_all)) {
 			/*
 			 * Description: Test the integrity of a physical
 			 *	memory device by performing an
@@ -451,7 +451,7 @@ check_memory_ranges(void)
 				if (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x40000000) {
 					if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
 	     					(unsigned long *)(((test_addr[i]+test_len[i])*256)
-						+ 0x40000000), 1, all)) {
+						+ 0x40000000), 1, spl_mtest_all)) {
 						printf("SPL Memory Test FAILED\n");
 						continue;
 					}
@@ -549,7 +549,7 @@ check_memory_ranges(void)
 				
 				if (spl_mtest((unsigned long *)(start_addr+0xc0000000),
 					(unsigned long *)(end_addr+0xc0000000),
-						 1, all)) {
+						 1, spl_mtest_all)) {
 					printf("SPL Memory Test FAILED\n");
 				}
 			}

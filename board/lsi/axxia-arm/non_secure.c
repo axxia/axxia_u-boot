@@ -36,13 +36,6 @@
 
 #define ARM_GICV2_ICCPMR		0x04
 
-static unsigned long read_mpidr(void)
-{
-	unsigned long val;
-	asm volatile("mrc p15, 0, %0, c0, c0, 5": "=r" (val));
-	return val;
-}
-
 static unsigned long read_nsacr(void)
 {
 	unsigned long val;

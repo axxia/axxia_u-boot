@@ -367,7 +367,7 @@ board_init(void)
 #endif
 	dcache_disable();
 	enter_ns();
-	setup_page_tables(_page_table_start);
+	setup_page_tables((void *)_page_table_start);
 #ifdef CONFIG_HW_WATCHDOG
 	(void)start_watchdog();
 #endif
@@ -378,7 +378,7 @@ board_init(void)
 #endif
 		dcache_disable();
 		enter_ns();
-		setup_page_tables(_page_table_start);
+		setup_page_tables((void *)_page_table_start);
 #ifdef CONFIG_HW_WATCHDOG
 		(void)start_watchdog();
 #endif
