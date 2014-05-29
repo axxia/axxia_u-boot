@@ -28,6 +28,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+
 /*
   ==============================================================================
   ==============================================================================
@@ -40,8 +41,6 @@ DECLARE_GLOBAL_DATA_PTR;
   ----------------------------------------------------------------------
   spl_mtest
 */
-
-#ifdef CONFIG_SPL_MTEST
 
 enum spl_mtest_type {
 	data = 0,
@@ -313,8 +312,6 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 	}
 }
 
-#endif
-
 /*
   ------------------------------------------------------------------------------
   fix_up_vat
@@ -408,14 +405,20 @@ reset_cpu_fabric(void)
 */
 
 #ifndef CONFIG_AXXIA_EMU
-
 static void
 check_memory_ranges(void)
 {
 	unsigned long *ranges = (unsigned long *)&global->memory_ranges;
 	int i;
+	unsigned long *test_addr, *test_len;
+	unsigned long memSize;
 
-	for (i = 0; i < 8; ++i) {
+	test_addr = malloc(8 * sizeof(unsigned long));
+	test_len = malloc(8 * sizeof(unsigned long));
+	memset(test_addr, 0, 8 * sizeof(unsigned long));
+	memset(test_len, 0, 8 * sizeof(unsigned long));
+
+	for (i = 0; i < 8; i++) {
 		unsigned long long offset = (unsigned long long)*ranges++;
 		unsigned long long length = (unsigned long long)*ranges++;
 
@@ -425,7 +428,133 @@ check_memory_ranges(void)
 		if (0ULL != length) {
 			printf("Testing Memory From 0x%llx, 0x%llx bytes\n",
 			       offset, length);
-			axxia_sysmem_bist(offset, length);
+			test_addr[i] = offset/256;
+			test_len[i] = length/256;
+		} else {
+			test_len[i] = 0;
+			break;
+		}
+	}
+	memSize = sysmem->totalSize/256;
+
+	for (i = 0; i < 8; i++) {
+		unsigned long start_addr=0, end_addr=0;
+		unsigned long val=0;
+		if (test_len[i] != 0) {
+			if ((test_addr[i]+test_len[i]) > memSize) {
+				printf("Testing range exceeds System memory size\n");
+			} else if (((unsigned long long)test_len[i]*256) > 0x40000000) {
+				printf("Testing length cannot exceed 1G \n");
+			} else {
+				unsigned long *out;
+				int count, ncount;
+				if (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x40000000) {
+					if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
+	     					(unsigned long *)(((test_addr[i]+test_len[i])*256)
+						+ 0x40000000), 1, all)) {
+						printf("SPL Memory Test FAILED\n");
+						continue;
+					}
+					continue;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x40000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x80000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x40000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x40040c52;	
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x80000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0xc0000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x80000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x80040c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0xc0000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x100000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0xc0000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0xc0040c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x100000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x140000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x100000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x00140c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x140000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x180000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x140000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x40140c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x180000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x1c0000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x180000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x80140c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x1c0000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x200000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x1c0000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0xc0140c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x200000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x240000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x200000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x00240c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x240000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x280000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x240000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x40240c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x280000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x2c0000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x280000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x80240c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x2c0000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x300000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x2c0000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0xc0240c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x300000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x340000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x300000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x00340c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x340000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x380000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x340000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x40340c52;
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x380000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x3c0000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x380000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0x80340c52;	
+				} else if ((((unsigned long long)test_addr[i]*256) >= 0x3c0000000) 
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x400000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x380000000;
+					end_addr = start_addr + (test_len[i] * 256);
+					val= 0xc0340c52;	
+				} else {
+					printf("Unsupported memory range\n");
+					continue;
+				}
+
+				out = (unsigned long *)(_page_table_start + 0x3000);
+
+				for (count=0; count<0x1000; count++) {
+					for(ncount=0;ncount<16;ncount++){
+						*out++ = val;
+						++count;
+					}
+					val += 0x1000000;
+				}
+				mmu_page_table_flush(_page_table_start, _page_table_end);
+				
+				if (spl_mtest((unsigned long *)(start_addr+0xc0000000),
+					(unsigned long *)(end_addr+0xc0000000),
+						 1, all)) {
+					printf("SPL Memory Test FAILED\n");
+				}
+			}
+		} else {
+			break;
 		}
 	}
 }
@@ -467,15 +596,12 @@ spl_board_init(void)
 
 #ifdef CONFIG_SPL_MTEST
 	printf("Running the SPL Memory Test\n");
-
 	if (spl_mtest((unsigned long *)0x40000000,
 		      (unsigned long *)0x7fffffff, 10, all)) {
 		printf("SPL Memory Test FAILED\n");
 	} else {
 		printf("SPL Memory Test SUCCESSFUL\n");
 	}
-
-
 #endif
 
 #ifdef SYSCACHE_ONLY_MODE

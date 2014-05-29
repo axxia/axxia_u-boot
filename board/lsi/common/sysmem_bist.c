@@ -227,10 +227,11 @@ axxia_sysmem_bist_start(unsigned long region, int bits, int test,
 	if (1 == test) {
 		/*
 		  For address checking, the spec says
-		  the register value should be one
-		  less than the calculated value.
+		  the register value should be value
+		  calculated
 		*/
-		ncr_or(region, 0xa4, ((bits - 1) << 24));
+		ncr_and(region, 0xa4, 0xc0ffffff);
+		ncr_or(region, 0xa4, ((bits) << 24));
 	} else {
 		/*
 		  For data checking we just use the
@@ -238,7 +239,8 @@ axxia_sysmem_bist_start(unsigned long region, int bits, int test,
 		  specified memory size. (i.e. 2GB ==
 		  31 bits).
 		*/
-		ncr_or(region, 0xa4, ((bits - 1) << 24));
+		ncr_and(region, 0xa4, 0xc0ffffff);
+		ncr_or(region, 0xa4, ((bits) << 24));
 	}
 
 	/* Erase the interrupt status from the previous run. */
