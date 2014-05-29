@@ -449,11 +449,36 @@ check_memory_ranges(void)
 				unsigned long *out;
 				int count, ncount;
 				if (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x40000000) {
-					if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
-	     					(unsigned long *)(((test_addr[i]+test_len[i])*256)
-						+ 0x40000000), 1, spl_mtest_all)) {
-						printf("SPL Memory Test FAILED\n");
+					if ((global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) &&
+						(global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) &&
+						(global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
+						if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
+	     						(unsigned long *)(((test_addr[i]+test_len[i])*256)
+							+ 0x40000000), 1, spl_mtest_all)) {
+							printf("SPL Memory Test FAILED\n");
+						}
 						continue;
+					}
+					if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
+						if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
+	     						(unsigned long *)(((test_addr[i]+test_len[i])*256)
+							+ 0x40000000), 1, spl_mtest_all)) {
+							printf("SPL Memory MTest FAILED\n");
+						}
+					}
+					if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
+						if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
+	     						(unsigned long *)(((test_addr[i]+test_len[i])*256)
+							+ 0x40000000), 1, spl_mtest_addr)) {
+							printf("SPL Memory ADDR Test FAILED\n");
+						}
+					}
+					if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
+						if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
+	     						(unsigned long *)(((test_addr[i]+test_len[i])*256)
+							+ 0x40000000), 1, spl_mtest_data)) {
+							printf("SPL Memory DATA Test FAILED\n");
+						}
 					}
 					continue;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x40000000) 
@@ -545,12 +570,37 @@ check_memory_ranges(void)
 					}
 					val += 0x1000000;
 				}
-				mmu_page_table_flush(_page_table_start, _page_table_end);
-				
-				if (spl_mtest((unsigned long *)(start_addr+0xc0000000),
-					(unsigned long *)(end_addr+0xc0000000),
+				mmu_page_table_flush(_page_table_start, _page_table_end); 
+				if ((global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) &&
+					(global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) &&
+					(global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
+					if (spl_mtest((unsigned long *)(start_addr+0xc0000000),
+						(unsigned long *)(end_addr+0xc0000000),
 						 1, spl_mtest_all)) {
-					printf("SPL Memory Test FAILED\n");
+						printf("SPL Memory Test FAILED\n");
+					}
+					continue;
+				}
+				if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
+					if (spl_mtest((unsigned long *)(start_addr+0xc0000000),
+						(unsigned long *)(end_addr+0xc0000000),
+						 1, spl_mtest_mtest)) {
+						printf("SPL Memory MTest FAILED\n");
+					}
+				}
+				if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
+					if (spl_mtest((unsigned long *)(start_addr+0xc0000000),
+						(unsigned long *)(end_addr+0xc0000000),
+						 1, spl_mtest_addr)) {
+						printf("SPL Memory ADDR Test FAILED\n");
+					}
+				}
+				if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
+					if (spl_mtest((unsigned long *)(start_addr+0xc0000000),
+						(unsigned long *)(end_addr+0xc0000000),
+						 1, spl_mtest_data)) {
+						printf("SPL Memory DATA Test FAILED\n");
+					}
 				}
 			}
 		} else {
