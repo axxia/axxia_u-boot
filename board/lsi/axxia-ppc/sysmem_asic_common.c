@@ -35,7 +35,7 @@ typedef unsigned char           ncp_bool_t;
 typedef void *                  ncp_dev_hdl_t;
 typedef unsigned long           ncp_st_t;
 typedef unsigned long           ncp_region_id_t;
-typedef parameters_sysmem_t     ncp_sm_parms_t;
+typedef parameters_mem_t        ncp_sm_parms_t;
 
 #define TRUE   (1)
 #define FALSE  (0)
@@ -445,9 +445,11 @@ sysmem_init(void)
 	for (i = 0; i < sysmem->num_interfaces; ++i) {
 		swap_impedance_parms(&(sysmem->per_mem[i])) ;
     }
+#ifdef CONFIG_CMEM_INIT
 	for (i = 0; i < cmem->num_interfaces; ++i) {
 		swap_impedance_parms(&(cmem->per_mem[i])) ;
     }
+#endif
 
 	/*
 	  ======================================================================

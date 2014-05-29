@@ -2068,7 +2068,7 @@ int
 ncp_sysmem_init_ibmphy(
         void *   dev,
         int    smId,
-        parameters_sysmem_t *sysmem)
+        parameters_mem_t *sysmem)
 {
 	unsigned long num_sc_nodes;
 	unsigned long controller;

@@ -222,7 +222,7 @@ typedef struct {
 #define INIT_VOLTAGE(flags) (0 == (flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE))
 #define INIT_CLOCKS(flags) (0 == (flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS))
 #define INIT_PCIESRIO(flags) (0 == (flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
-#define INIT_SMEM(flags) (0 == (flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM))
+#define INIT_SYSMEM(flags) (0 == (flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM))
 
 typedef struct {
 	unsigned long version;
