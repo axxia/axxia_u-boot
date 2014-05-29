@@ -65,12 +65,9 @@ axxia_initialize(void)
 {
 #ifndef CONFIG_AXXIA_EMU
 	int i;
-	unsigned value;
+	unsigned long value;
+	unsigned long pvalue;
 #endif
-
-	if (0 != read_parameters())
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
 
 	/*
 	  ============
@@ -79,22 +76,48 @@ axxia_initialize(void)
 	*/
 
 #ifndef CONFIG_AXXIA_EMU
-    /* read and clear reset status (write one to clear) */
-    ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x100, &value);
-    printf("Reset Status = 0x%08x\n", value);
-    ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x100, value);
+	/* read and clear reset status (write one to clear) */
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x100, &value);
+	printf("Reset Status = 0x%08x\n", value);
+	ncr_write32(NCP_REGION_ID(0x156, 0), 0x100, value);
 
-    /*
-     * if this is a power-up/pin reset then initialize
-     * persistent registers 
-     */
-    if ( (value & 0x00000001) ) {
-        printf("PowerUp/Pin Reset detected - initializing persistent registers\n");
-        for (i = 0; i < 9; i++) {
-            ncr_write32(NCP_REGION_ID(0x156, 0x00), (0xdc + (4 * i)), 0);
-        }
-    }
+	/*
+	 * if this is a power-up/pin reset then initialize
+	 * persistent registers 
+	 */
+
+	if ((value & 0x00000001)) {
+		printf("PowerUp/Pin Reset detected - initializing persistent registers\n");
+
+		for (i = 0; i < 9; i++)
+			ncr_write32(NCP_REGION_ID(0x156, 0x00),
+				    (0xdc + (4 * i)), 0);
+	}
+
+	/*
+	 * Set bit 2 of 0xdc if the last reset was caused by a watchdog
+	 * timeout; otherwise, clear it.
+	 */
+
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc, &pvalue);
+
+	if (0 != (value & 0xa))
+		pvalue |= 0x4;
+	else
+		pvalue &= ~0x4;
+
+	ncr_write32(NCP_REGION_ID(0x156, 0), 0xdc, pvalue);
 #endif
+
+	/*
+	  ===============
+	  Read Parameters
+	  ===============
+	*/
+
+	if (0 != read_parameters())
+		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
 
 	/*
 	  =======
@@ -103,7 +126,7 @@ axxia_initialize(void)
 	*/
 
 #ifndef CONFIG_AXXIA_EMU
-	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_VOLTAGE))
+	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_VOLTAGE))
 		if (0 != voltage_init())
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
@@ -114,7 +137,7 @@ axxia_initialize(void)
 	  ======
 	*/
 #ifndef CONFIG_AXXIA_EMU
-	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_CLOCKS))
+	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_CLOCKS))
 		if (0 != clocks_init())
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
@@ -131,7 +154,7 @@ axxia_initialize(void)
 #ifdef SYSCACHE_ONLY_MODE
 	ncr_l3tags();
 #else
-	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_SYSMEM)) {
+	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) {
 		ncr_tracer_enable();
 
 		if (0 != sysmem_init())
@@ -147,7 +170,7 @@ axxia_initialize(void)
 	*/
 
 #ifndef CONFIG_AXXIA_EMU
-	if (0 == (global->flags & PARAMETERS_GLOBAL_IGNORE_PCIESRIO))
+	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_PEI))
 		if (0 != pciesrio_init(pciesrio->control))
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif

@@ -159,7 +159,7 @@ typedef ncp_uint32_t
 
 
 
-typedef parameters_sysmem_t     ncp_sm_parms_t;
+typedef parameters_mem_t     ncp_sm_parms_t;
 
 #define TRUE   (1)
 #define FALSE  (0)

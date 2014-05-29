@@ -52,24 +52,16 @@ void ncr_sysmem_init_mode_disable(void);
 
 #define PARAMETERS_MAGIC 0x12af34ec
 
-#define PARAMETERS_GLOBAL_IGNORE_VOLTAGE       0x00000001
-#define PARAMETERS_GLOBAL_IGNORE_CLOCKS        0x00000010
-#define PARAMETERS_GLOBAL_IGNORE_SYSMEM        0x00000100
-#define PARAMETERS_GLOBAL_IGNORE_PCIESRIO      0x00001000
-
-#ifdef CONFIG_AXXIA_ARM
-#define PARAMETERS_GLOBAL_DDR_RETENTION        0x00010000
-#define PARAMETERS_GLOBAL_VERBOSE_0            0x08000000
-#define PARAMETERS_GLOBAL_VERBOSE_1            0x10000000
-#define PARAMETERS_GLOBAL_DISABLE_RESET        0x20000000
-#define PARAMETERS_GLOBAL_DDR_RANGE_TEST       0x40000000
-#else
-#define PARAMETERS_GLOBAL_DISABLE_RESET        0x10000000
-#define PARAMETERS_GLOBAL_SET_L2_DISABLE_SL    0x20000000
-#define PARAMETERS_GLOBAL_SET_L2_FTC           0x40000000
-#endif
-
-#define PARAMETERS_GLOBAL_RUN_SYSMEM_BIST      0x80000000
+#define PARAMETERS_GLOBAL_SET_VOLTAGE      0x00000001
+#define PARAMETERS_GLOBAL_SET_CLOCKS       0x00000002
+#define PARAMETERS_GLOBAL_SET_PEI          0x00000004
+#define PARAMETERS_GLOBAL_SET_SMEM         0x00000008
+#define PARAMETERS_GLOBAL_SET_CMEM         0x00000010
+#define PARAMETERS_GLOBAL_ENABLE_RETENTION 0x00000020
+#define PARAMETERS_GLOBAL_DISABLE_RESET    0x10000000
+#define PARAMETERS_GLOBAL_RUN_CMEM_BIST    0x20000000
+#define PARAMETERS_GLOBAL_RUN_SMEM_RANGES  0x40000000
+#define PARAMETERS_GLOBAL_RUN_SMEM_BIST    0x80000000
 
 #ifdef CONFIG_AXXIA_ARM
 
@@ -77,7 +69,9 @@ typedef struct {
 	unsigned version;
 	unsigned flags;
 	unsigned baud_rate;
-	unsigned memory_check_ranges;
+	unsigned memory_ranges[16];
+	unsigned long sequence;
+	char description[128];
 } __attribute__((packed)) parameters_global_t;
 
 #else  /* CONFIG_AXXIA_ARM */
@@ -89,10 +83,12 @@ typedef struct {
 
 #endif	/* CONFIG_AXXIA_ARM */
 
+#ifdef CONFIG_AXXIA_ARM
 typedef struct {
-	unsigned control;
-} __attribute__((packed)) parameters_pciesrio_t;
-
+	unsigned version;
+	unsigned char offsets[128];
+} __attribute__((packed)) parameters_voltage_t;
+#else
 typedef struct {
 	unsigned checksum;
 	unsigned version;
@@ -102,10 +98,11 @@ typedef struct {
 	unsigned VIDChecks;
 	unsigned char vidLT[64];
 } __attribute__((packed)) parameters_voltage_t;
+#endif
 
 #ifdef CONFIG_AXXIA_ARM
-
 typedef struct {
+	unsigned version;
 	unsigned flags;
 	unsigned syspll_prms;
 	unsigned syspll_ctrl;
@@ -146,9 +143,7 @@ typedef struct {
 	unsigned debug_csw;
 	unsigned stop_csw;
 } __attribute__ ((packed)) parameters_clocks_t;
-
 #else  /* CONFIG_AXXIA_ARM */
-
 typedef struct {
 #ifdef CONFIG_AXXIA_25xx
 	unsigned syspll_prms;
@@ -192,9 +187,12 @@ typedef struct {
 	unsigned ddr_locktune;
 #endif
 } __attribute__ ((packed)) parameters_clocks_t;
-
 #endif	/* CONFIG_AXXIA_ARM */
 
+typedef struct {
+	unsigned long version;
+	unsigned long control;
+} __attribute__((packed)) parameters_pciesrio_t;
 
 typedef unsigned ncp_uint32_t;
 typedef void *   ncp_dev_hdl_t;
@@ -204,71 +202,78 @@ typedef struct {
     unsigned char sdram_rtt_nom[4];
     unsigned char sdram_rtt_wr[4];
     unsigned char sdram_data_drv_imp[4];
-    unsigned phy_min_cal_delay;
-    unsigned phy_adr_phase_select;
-    unsigned phy_dp_io_vref_set;
-    unsigned phy_adr_io_vref_set;
-    unsigned phy_rdlvl_cmp_even;
-    unsigned phy_rdlvl_cmp_odd;
-    unsigned phy_write_align_finetune;
-} __attribute__((packed)) per_sysmem_parms_t;
-
+    unsigned long phy_min_cal_delay;
+    unsigned long phy_adr_phase_select;
+    unsigned long phy_dp_io_vref_set;
+    unsigned long phy_adr_io_vref_set;
+    unsigned long phy_rdlvl_cmp_even;
+    unsigned long phy_rdlvl_cmp_odd;
+    unsigned long phy_write_align_finetune;
+} __attribute__((packed)) per_mem_parms_t;
 
 typedef struct {
-	unsigned version;
-	unsigned auto_detect;
-	unsigned num_interfaces;
-	unsigned num_ranks_per_interface;
-	unsigned primary_bus_width;
-	unsigned topology;
-	unsigned phy_rdlat;
-	unsigned added_rank_switch_delay;
-    unsigned zqcs_interval;
-	unsigned enableECC;
-	unsigned enable_runtime_updates;
-    unsigned open_page_size;
-	unsigned sdram_device_density;
-	unsigned sdram_device_width;
-	unsigned CAS_latency;
-	unsigned CAS_write_latency;
-	unsigned address_mirroring;
-	unsigned registeredDIMM;
-	unsigned single_bit_mpr;
-	unsigned high_temp_dram;
+	unsigned long version;
+	unsigned long ddr_clock_speed;
+	unsigned long auto_detect;
+	unsigned long num_interfaces;
+	unsigned long num_ranks_per_interface;
+	unsigned long primary_bus_width;
+	unsigned long topology;
+	unsigned long min_ctrl_roundtrip_delay;
+	unsigned long phy_rdlat;
+	unsigned long added_rank_switch_delay;
+	unsigned long zqcs_interval;
+	unsigned long enableECC;
+	unsigned long enable_runtime_updates;
+	unsigned long dramPrechargePolicy;
+	unsigned long open_page_size;
+	unsigned long syscacheControl;
+	unsigned long sdram_device_density;
+	unsigned long sdram_device_width;
+	unsigned long CAS_latency;
+	unsigned long CAS_write_latency;
+	unsigned long address_mirroring;
+	unsigned long registeredDIMM;
+	unsigned long rdimm_ctl_0_0;
+	unsigned long rdimm_ctl_0_1;
+	unsigned long rdimm_misc;
+	unsigned long write_ODT_ctl;
+	unsigned long read_ODT_ctl;
+	unsigned long single_bit_mpr;
+	unsigned long high_temp_dram;
 
-    per_sysmem_parms_t per_sysmem[2];
+	per_mem_parms_t per_mem[2];
 
-    unsigned ddrRetentionEnable;
-    unsigned ddrRecovery;
-
-	unsigned                  num_bytelanes;
- 	unsigned long long           totalSize;
-} __attribute__((packed)) parameters_sysmem_t;
+	/* Not part of the parameters, used internally.	*/
+	unsigned long ddrRetentionEnable;
+	unsigned long ddrRecovery;
+	unsigned long num_bytelanes;
+ 	unsigned long long totalSize;
+} __attribute__((packed)) parameters_mem_t;
 
 #ifdef CONFIG_AXXIA_ARM
-
 typedef struct {
-	unsigned retentionSize;
-	unsigned retentionOffset;
-	unsigned sysmemSize;
-	unsigned sysmemOffset;
-	unsigned clocksSize;
-	unsigned clocksOffset;
-	unsigned voltageSize;
-	unsigned voltageOffset;
-	unsigned pciesrioSize;
-	unsigned pciesrioOffset;
-	unsigned globalSize;
-	unsigned globalOffset;
-	unsigned version;
-	unsigned flags;
-	unsigned checksum;
-	unsigned size;
-	unsigned magic;
+	unsigned long magic;
+	unsigned long size;
+	unsigned long checksum;
+	unsigned long version;
+	unsigned long chipType;
+	unsigned long globalOffset;
+	unsigned long globalSize;
+	unsigned long voltageOffset;
+	unsigned long voltageSize;
+	unsigned long clocksOffset;
+	unsigned long clocksSize;
+	unsigned long pciesrioOffset;
+	unsigned long pciesrioSize;
+	unsigned long systemMemoryOffset;
+	unsigned long systemMemorySize;
+	unsigned long classifierMemoryOffset;
+	unsigned long classifierMemorySize;
+	unsigned long systemMemoryRetentionOffset;
+	unsigned long systemMemoryRetentionSize;
 } __attribute__((packed)) parameters_header_t;
-
 #else  /* CONFIG_AXXIA_ARM */
-
 typedef struct {
 	unsigned sysmemSize;
 	unsigned sysmemOffset;
@@ -285,16 +290,16 @@ typedef struct {
 	unsigned size;
 	unsigned magic;
 } __attribute__((packed)) parameters_header_t;
-
 #endif	/* CONFIG_AXXIA_ARM */
 
 typedef struct {
 	parameters_header_t *header;
 	parameters_global_t *global;
 	parameters_voltage_t *voltage;
-	parameters_pciesrio_t *pciesrio;
 	parameters_clocks_t *clocks;
-	parameters_sysmem_t *sysmem;
+	parameters_pciesrio_t *pciesrio;
+	parameters_mem_t *sysmem;
+	parameters_mem_t *cmem;
 } parameters_t;
 
 extern parameters_header_t *header;
@@ -302,7 +307,8 @@ extern parameters_global_t *global;
 extern parameters_pciesrio_t *pciesrio;
 extern parameters_voltage_t *voltage;
 extern parameters_clocks_t *clocks;
-extern parameters_sysmem_t *sysmem;
+extern parameters_mem_t *sysmem;
+extern parameters_mem_t *cmem;
 #ifdef CONFIG_AXXIA_ARM
 extern void *retention;
 #endif
@@ -437,6 +443,7 @@ unsigned long long sysmem_size(void);
 /*#define RUN_UNCACHED*/
 /*#define RUN_NONSECURE*/
 /*#define SINGLE_SMEM_MODE*/
+/*#define DISPLAY_PARAMETERS*/
 
 /*
   ==============================================================================

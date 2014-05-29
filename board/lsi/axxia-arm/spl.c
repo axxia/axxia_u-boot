@@ -412,7 +412,7 @@ reset_cpu_fabric(void)
 static void
 check_memory_ranges(void)
 {
-	unsigned long *ranges = (unsigned long *)&global->memory_check_ranges;
+	unsigned long *ranges = (unsigned long *)&global->memory_ranges;
 	int i;
 
 	for (i = 0; i < 8; ++i) {
@@ -507,11 +507,11 @@ spl_board_init(void)
 #else
 
 #ifndef CONFIG_AXXIA_EMU
-	if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SYSMEM_BIST)) {
+	if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_BIST)) {
 		printf("Testing Memory From 0, 0x%llx bytes\n",
 		       sysmem->totalSize);
 		axxia_sysmem_bist(0ULL, sysmem->totalSize);
-	} else if (0 != (global->flags & PARAMETERS_GLOBAL_DDR_RANGE_TEST)) {
+	} else if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_RANGES)) {
 		check_memory_ranges();
 	}
 #endif
@@ -532,21 +532,12 @@ spl_board_init(void)
 #endif
 
 #ifdef CONFIG_HW_WATCHDOG
-	{
-		unsigned long reset_control;
-		unsigned long value;
-
-		/* read and clear reset status (write one to clear) */
-		ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x100,
-			   (ncp_uint32_t *)&value);
-		printf("Reset Status = 0x%08lx\n", value);
-		ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x100, value);
-	}
-
 	rc = start_watchdog();
 
-	if (0 != rc)
-		printf("Failed to start watchdog timer!\n");
+	if (0 == rc)
+		puts("Started Watchdog Timer\n");
+	else
+		puts("Failed to start watchdog timer!\n");
 #endif
 
 #ifdef CONFIG_SPL_ENV_SUPPORT

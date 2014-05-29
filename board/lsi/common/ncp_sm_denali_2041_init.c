@@ -454,19 +454,19 @@ ncp_sm_denali_2041_init(
     /* DENALI_CTL_189 */
     /* DENALI_CTL_190 */
     /* MR1 rank 0 - 1 */
-    value   = NCP_SM_ENCODE_RTT_NOM(parms->per_sysmem[smId].sdram_rtt_nom[0]);
-    value  |= NCP_SM_ENCODE_DRV_IMP(parms->per_sysmem[smId].sdram_data_drv_imp[0]);
-    value2  = NCP_SM_ENCODE_RTT_NOM(parms->per_sysmem[smId].sdram_rtt_nom[1]);
-    value2 |= NCP_SM_ENCODE_DRV_IMP(parms->per_sysmem[smId].sdram_data_drv_imp[1]);
+    value   = NCP_SM_ENCODE_RTT_NOM(parms->per_mem[smId].sdram_rtt_nom[0]);
+    value  |= NCP_SM_ENCODE_DRV_IMP(parms->per_mem[smId].sdram_data_drv_imp[0]);
+    value2  = NCP_SM_ENCODE_RTT_NOM(parms->per_mem[smId].sdram_rtt_nom[1]);
+    value2 |= NCP_SM_ENCODE_DRV_IMP(parms->per_mem[smId].sdram_data_drv_imp[1]);
 
     value |= value2 << 16; 
     ncr_write32(ctlReg,  0x02f4, value);
 
     /* MR1 rank 2 - 3  */
-    value   = NCP_SM_ENCODE_RTT_NOM(parms->per_sysmem[smId].sdram_rtt_nom[2]);
-    value  |= NCP_SM_ENCODE_DRV_IMP(parms->per_sysmem[smId].sdram_data_drv_imp[2]);
-    value2  = NCP_SM_ENCODE_RTT_NOM(parms->per_sysmem[smId].sdram_rtt_nom[3]);
-    value2 |= NCP_SM_ENCODE_DRV_IMP(parms->per_sysmem[smId].sdram_data_drv_imp[3]);
+    value   = NCP_SM_ENCODE_RTT_NOM(parms->per_mem[smId].sdram_rtt_nom[2]);
+    value  |= NCP_SM_ENCODE_DRV_IMP(parms->per_mem[smId].sdram_data_drv_imp[2]);
+    value2  = NCP_SM_ENCODE_RTT_NOM(parms->per_mem[smId].sdram_rtt_nom[3]);
+    value2 |= NCP_SM_ENCODE_DRV_IMP(parms->per_mem[smId].sdram_data_drv_imp[3]);
 
     value |= value2 << 16; 
     ncr_write32(ctlReg,  0x02f8, value);
@@ -475,11 +475,11 @@ ncp_sm_denali_2041_init(
     /* DENALI_CTL_192 */
     /* MR2 : FREQDEP */
     /* rank 0 - 1 */
-    rttWr  = parms->per_sysmem[smId].sdram_rtt_wr[0] ;
+    rttWr  = parms->per_mem[smId].sdram_rtt_wr[0] ;
     value  = ( rttWr << 9) ; 
     value |= ( parms->CAS_write_latency - 5 ) << 3;
 
-    rttWr  = parms->per_sysmem[smId].sdram_rtt_wr[1];
+    rttWr  = parms->per_mem[smId].sdram_rtt_wr[1];
     value2  = ( rttWr << 9) ; 
     value2 |= ( parms->CAS_write_latency - 5 ) << 3;
 
@@ -487,11 +487,11 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x02fc, value);
 
     /* rank 2 - 3 */
-    rttWr  = parms->per_sysmem[smId].sdram_rtt_wr[2];
+    rttWr  = parms->per_mem[smId].sdram_rtt_wr[2];
     value  = ( rttWr << 9) ; 
     value |= ( parms->CAS_write_latency - 5 ) << 3;
 
-    rttWr  = parms->per_sysmem[smId].sdram_rtt_wr[3];
+    rttWr  = parms->per_mem[smId].sdram_rtt_wr[3];
     value2  = ( rttWr << 9) ; 
     value2 |= ( parms->CAS_write_latency - 5 ) << 3;
 
@@ -698,7 +698,7 @@ ncp_sm_denali_2041_init(
         /*
          * if any RTTnom value is non-zero then enable ODT 
          */
-        p32 = (ncp_uint32_t *) parms->per_sysmem[smId].sdram_rtt_nom;
+        p32 = (ncp_uint32_t *) parms->per_mem[smId].sdram_rtt_nom;
         if (p32 != 0) 
         {
             value = 0;

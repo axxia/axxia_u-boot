@@ -40,16 +40,16 @@
   ==============================================================================
 */
 
-static void *parameters __attribute__ ((section ("data"))) = NULL;
-static int copy_in_use __attribute__ ((section ("data"))) = 0;
-static int parameters_read __attribute__ ((section ("data"))) = 0;
+static void *parameters __attribute__ ((section("data")));
+static int copy_in_use __attribute__ ((section("data")));
+static int parameters_read __attribute__ ((section("data")));
 
 #if defined(CONFIG_AXXIA_PPC)
 /*
   For PPC (34xx, 25xx, 35xx), use version 4 of the parameters.
 */
 #ifdef CONFIG_SPL_BUILD
-#define PARAMETERS_HEADER_ADDRESS \
+#define PARAMETERS_HEADER_ADDRESS				\
 	(LCM + (128 * 1024) - sizeof(parameters_header_t))
 #define PARAMETERS_OFFSET ((128 * 1024) - PARAMETERS_SIZE)
 #define PARAMETERS_ADDRESS (LCM + PARAMETERS_OFFSET)
@@ -59,33 +59,33 @@ static int parameters_read __attribute__ ((section ("data"))) = 0;
 #define PARAMETERS_VERSION 4
 #elif defined(CONFIG_AXXIA_ARM)
 /*
-  For ARM (55xx), use version 7 of the parameters.
+  For ARM (55xx), use version 9 of the parameters.
 */
 #ifdef CONFIG_SPL_BUILD
-#define PARAMETERS_HEADER_ADDRESS \
-	(LSM + (256 * 1024) - sizeof(parameters_header_t))
+#define PARAMETERS_HEADER_ADDRESS (LSM + (256 * 1024) - PARAMETERS_SIZE)
 #define PARAMETERS_OFFSET ((256 * 1024) - PARAMETERS_SIZE)
 #define PARAMETERS_ADDRESS (LSM + PARAMETERS_OFFSET)
 #endif
 #define PARAMETERS_SIZE (4096)
 #define PARAMETERS_OFFSET_IN_FLASH 0x40000
-#define PARAMETERS_VERSION 7
+#define PARAMETERS_VERSION 9
 #else
 #error "Unknown Architecture!"
 #endif
 
 #ifdef CONFIG_SPL_BUILD
-parameters_header_t *header __attribute__ ((section ("data"))) = NULL;
+parameters_header_t *header __attribute__ ((section("data"))) = NULL;
 #else
-parameters_header_t *header __attribute__ ((section ("data"))) = NULL;
+parameters_header_t *header __attribute__ ((section("data"))) = NULL;
 #endif
-parameters_global_t *global __attribute__ ((section ("data"))) = NULL;
-parameters_pciesrio_t *pciesrio __attribute__ ((section ("data"))) = NULL;
-parameters_voltage_t *voltage __attribute__ ((section ("data"))) = NULL;
-parameters_clocks_t *clocks __attribute__ ((section ("data"))) = NULL;
-parameters_sysmem_t *sysmem __attribute__ ((section ("data"))) = NULL;
+parameters_global_t *global __attribute__ ((section("data"))) = NULL;
+parameters_pciesrio_t *pciesrio __attribute__ ((section("data"))) = NULL;
+parameters_voltage_t *voltage __attribute__ ((section("data"))) = NULL;
+parameters_clocks_t *clocks __attribute__ ((section("data"))) = NULL;
+parameters_mem_t *sysmem __attribute__ ((section("data"))) = NULL;
+parameters_mem_t *cmem __attribute__ ((section("data"))) = NULL;
 #ifdef CONFIG_AXXIA_ARM
-void *retention __attribute__ ((section ("data"))) = NULL;
+void *retention __attribute__ ((section("data"))) = NULL;
 #endif
 
 /*
@@ -98,10 +98,9 @@ verify_parameters(void *parameters)
 {
 	parameters_header_t *lheader;
 
-	lheader = parameters + PARAMETERS_SIZE - sizeof(parameters_header_t);
+	lheader = parameters;
 
 	/* Check for the magic number. */
-
 	if (PARAMETERS_MAGIC != ntohl(lheader->magic)) {
 		printf("Parameter table has wrong magic number!\n");
 		return -1;
@@ -109,18 +108,19 @@ verify_parameters(void *parameters)
 
 	/* Verify the checksum. */
 
-	if (crc32(0, parameters, (ntohl(lheader->size) - 12)) !=
-	    ntohl(lheader->checksum) ) {
+	if (crc32(0, (parameters + 12), (ntohl(lheader->size) - 12)) !=
+	    ntohl(lheader->checksum)) {
 		printf("Parameter table is corrupt. 0x%08x!=0x%08x\n",
 		       ntohl(lheader->checksum),
-		       crc32(0, parameters, (ntohl(lheader->size) - 12)));
+		       crc32(0, (parameters + 12),
+			     (ntohl(lheader->size) - 12)));
 		return -1;
 	}
 
 	/* Check the version. */
 
 	if (PARAMETERS_VERSION != ntohl(lheader->version)) {
-		printf("Parameter table should be version %d, not %d!\n",
+		printf("Parameter table should be version %d, not %lu!\n",
 		       PARAMETERS_VERSION, lheader->version);
 		return -1;
 	}
@@ -137,7 +137,7 @@ verify_parameters(void *parameters)
 */
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   read_parameters
 */
 
@@ -148,6 +148,8 @@ read_parameters(void)
 	int i;
 	unsigned *buffer;
 #endif
+	int rc;
+	struct spi_flash *flash;
 
 #ifdef CONFIG_SPL_BUILD
 	parameters = (void *)PARAMETERS_ADDRESS;
@@ -156,7 +158,7 @@ read_parameters(void)
 	memset(parameters, 0, PARAMETERS_SIZE);
 #endif
 
-	header = parameters + PARAMETERS_SIZE - sizeof(parameters_header_t);
+	header = parameters;
 
 	/*
 	  Try LSM first, to allow for board repair when the serial
@@ -164,28 +166,158 @@ read_parameters(void)
 	  table.
 	*/
 
+	flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
+				CONFIG_SF_DEFAULT_MODE);
+
+	if (!flash)
+		return -1;
+
 	/* Verify that the paramater table is valid. */
-	if (PARAMETERS_MAGIC != ntohl(header->magic)) {
-		struct spi_flash *flash;
+	if (PARAMETERS_MAGIC == ntohl(header->magic)) {
+		rc = spi_flash_erase(flash,
+				     CONFIG_PARAMETER_OFFSET,
+				     flash->sector_size);
 
-		flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
-					CONFIG_SF_DEFAULT_MODE);
+		if (0 == rc) {
+			rc = spi_flash_write(flash,
+					     CONFIG_PARAMETER_OFFSET,
+					     PARAMETERS_SIZE, parameters);
 
-		if (!flash)
+			if (0 != rc) {	
+				printf("%s:%d - Write Failed!\n",
+				       __FILE__, __LINE__);
+
+				return -1;
+			}
+		} else {
+			printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
+
 			return -1;
+		}
+
+		rc = spi_flash_erase(flash,
+				     CONFIG_PARAMETER_OFFSET_REDUND,
+				     flash->sector_size);
+
+		if (0 == rc) {
+			rc = spi_flash_write(flash,
+					     CONFIG_PARAMETER_OFFSET_REDUND,
+					     PARAMETERS_SIZE, parameters);
+
+			if (0 != rc) {	
+				printf("%s:%d - Write Failed!\n",
+				       __FILE__, __LINE__);
+
+				return -1;
+			}
+		} else {
+			printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
+
+			return -1;
+		}
+	} else {
+#ifdef CONFIG_REDUNDANT_PARAMETERS
+		int watchdog_timeout;
+		int a_valid;
+		int b_valid;
+		int a_sequence;
+		int b_sequence;
+
+		ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc,
+			   (ncp_uint32_t *)&watchdog_timeout);
+		watchdog_timeout = ((watchdog_timeout & 0x4) >> 2);
 
 		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
 			       PARAMETERS_SIZE, parameters);
 
+		if (0 == verify_parameters(parameters)) {
+			a_valid = 1;
+			buffer = parameters;
+
+			for (i = 0; i < (PARAMETERS_SIZE / 4); ++i) {
+				*buffer = ntohl(*buffer);
+				++buffer;
+			}
+
+			global = (parameters_global_t *)
+				(parameters + header->globalOffset);
+
+			a_sequence = global->sequence;
+		} else {
+			a_valid = 0;
+		}
+
+		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
+			       PARAMETERS_SIZE, parameters);
+
+		if (0 == verify_parameters(parameters)) {
+			b_valid = 1;
+			buffer = parameters;
+
+			for (i = 0; i < (PARAMETERS_SIZE / 4); ++i) {
+				*buffer = ntohl(*buffer);
+				++buffer;
+			}
+
+			global = (parameters_global_t *)
+				(parameters + header->globalOffset);
+
+			b_sequence = global->sequence;
+		} else {
+			b_valid = 0;
+		}
+
+		if (0 == a_valid && 0 == b_valid) {
+			acp_failure(__FILE__, __func__, __LINE__);
+		} else if (0 == a_valid && 0 != b_valid) {
+			copy_in_use = 1;
+		} else if (0 != a_valid && 0 == b_valid) {
+			copy_in_use = 0;
+		} else {
+			if (0xffffffff == a_sequence && b_sequence == 0) {
+				copy_in_use = 1;
+			} else if (b_sequence > a_sequence) {
+				copy_in_use = 1;
+			} else {
+				copy_in_use = 0;
+			}
+
+			if (0 != watchdog_timeout)
+				copy_in_use = (0 == copy_in_use) ? 1 : 0;
+		}
+
+		if (1 == a_valid && 1 == b_valid)
+			printf("Watchdog? %d A/B Valid? %d/%d A/B Sequence %d/%d => %s\n",
+			       watchdog_timeout, a_valid, b_valid,
+			       a_sequence, b_sequence,
+			       (0 == copy_in_use) ? "A" : "B");
+		else if (0 == a_valid && 1 == b_valid)
+			puts("Only B is Valid => B\n");
+		else if (1 == a_valid && 0 == b_valid)
+			puts("Only A is Valid => A\n");
+		else
+			puts("Unknown State!\n");
+
+		if (0 == copy_in_use)
+			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
+				       PARAMETERS_SIZE, parameters);
+		else
+			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
+				       PARAMETERS_SIZE, parameters);
+#else  /* CONFIG_REDUNDANT_PARAMETERS */
+		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
+			       PARAMETERS_SIZE, parameters);
+
 		if (0 != verify_parameters(parameters)) {
-			printf("Primary Parameters are Corrupt, using Backup!\n");
+			printf("Primary Parameters Corrupt, using Backup!\n");
 
 			/* Try the redunant copy. */
 			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
 				       PARAMETERS_SIZE, parameters);
 
 			if (0 != verify_parameters(parameters)) {
-				printf("Backup Parameters are Corrupt!\n");
+				printf("Backup Parameters Corrupt!\n");
+
 				return -1;
 			}
 
@@ -193,6 +325,7 @@ read_parameters(void)
 		} else {
 			copy_in_use = 0;
 		}
+#endif	/* CONFIG_REDUNDANT_PARAMETERS */
 	}
 
 	parameters_read = 1;
@@ -208,42 +341,41 @@ read_parameters(void)
 
 #ifdef DISPLAY_PARAMETERS
 	printf("-- -- Header\n"
-	       "0x%08lx 0x%08lx 0x%08lx 0x%08lx\n"
+	       "0x%08lx 0x%08lx 0x%08lx 0x%08lx 0x%08lx\n"
+	       "0x%08lx 0x%08lx\n"
+	       "0x%08lx 0x%08lx\n"
 	       "0x%08lx 0x%08lx\n"
 	       "0x%08lx 0x%08lx\n"
 	       "0x%08lx 0x%08lx\n"
 	       "0x%08lx 0x%08lx\n"
 	       "0x%08lx 0x%08lx\n",
-	       header->magic,
-	       header->size,
-	       header->checksum,
-	       header->version,
-	       header->globalOffset,
-	       header->globalSize,
-	       header->pciesrioOffset,
-	       header->pciesrioSize,
-	       header->voltageOffset,
-	       header->voltageSize,
-	       header->clocksOffset,
-	       header->clocksSize,
-	       header->sysmemOffset,
-	       header->sysmemSize);
+	       header->magic, header->size, header->checksum, header->version,
+	       header->chipType,
+	       header->globalOffset, header->globalSize,
+	       header->voltageOffset, header->voltageSize,
+	       header->clocksOffset, header->clocksSize,
+	       header->pciesrioOffset, header->pciesrioSize,
+	       header->systemMemoryOffset, header->systemMemorySize,
+	       header->classifierMemoryOffset, header->classifierMemorySize,
+	       header->systemMemoryRetentionOffset,
+	       header->systemMemoryRetentionSize);
 #endif
 
 	global = (parameters_global_t *)(parameters + header->globalOffset);
-	pciesrio = (parameters_pciesrio_t *)(parameters + header->pciesrioOffset);
+	pciesrio = (parameters_pciesrio_t *)
+		(parameters + header->pciesrioOffset);
 	voltage = (parameters_voltage_t *)(parameters + header->voltageOffset);
 	clocks = (parameters_clocks_t *)(parameters + header->clocksOffset);
-	sysmem = (parameters_sysmem_t *)(parameters + header->sysmemOffset);
+	sysmem = (parameters_mem_t *)(parameters + header->systemMemoryOffset);
 #ifdef CONFIG_AXXIA_ARM
-	retention = (void *)(parameters + header->retentionOffset);
+	retention = (void *)(parameters + header->systemMemoryRetentionOffset);
 #endif
 
 #ifdef DISPLAY_PARAMETERS
 	printf("version=%lu flags=0x%lx\n", global->version, global->flags);
 #endif
 
-	printf("Parameter Table Version %u\n", global->version);
+	printf("Parameter Table Version %u\n", header->version);
 
 	return 0;
 }
@@ -251,7 +383,7 @@ read_parameters(void)
 #ifdef CONFIG_MEMORY_RETENTION
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   write_parameters
 */
 
@@ -279,7 +411,8 @@ write_parameters(void)
 	}
 
 	flash = spi_flash_probe(0, 0,
-				CONFIG_SF_DEFAULT_SPEED, CONFIG_SF_DEFAULT_MODE);
+				CONFIG_SF_DEFAULT_SPEED,
+				CONFIG_SF_DEFAULT_MODE);
 
 	if (NULL == flash) {
 		printf("%s:%d - SF Probe Failed!\n", __FILE__, __LINE__);
@@ -359,16 +492,35 @@ write_parameters(void)
 #endif
 
 	/* Update the Checksum */
-
 	debug("%s:%d - header->size=0x%x header->checksum=0x%x\n",
 	      __FILE__, __LINE__, header->size, header->checksum);
 	header->checksum =
-		htonl(crc32(0, parameters, (ntohl(header->size) - 12)));
+		htonl(crc32(0, (parameters + 12),
+			    (ntohl(header->size) - 12)));
 	debug("%s:%d - header->checksum=0x%x\n",
 	      __FILE__, __LINE__, header->checksum);
 
-	/* Write to the copy NOT in use first. */
+#ifdef CONFIG_REDUNDANT_PARAMETERS
+	/* Write the DDR Parameters */
+	rc = spi_flash_erase(flash,
+			     (0 == copy_in_use) ?
+			     CONFIG_PARAMETER_OFFSET :
+			     CONFIG_PARAMETER_OFFSET_REDUND,
+			     flash->sector_size);
 
+	if (0 == rc) {
+		debug("Writing...\n");
+		rc = spi_flash_write(flash,
+				     (0 == copy_in_use) ?
+				     CONFIG_PARAMETER_OFFSET :
+				     CONFIG_PARAMETER_OFFSET_REDUND,
+				     PARAMETERS_SIZE, parameters);
+	} else {
+		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
+		return -1;
+	}
+#else  /* CONFIG_REDUNDANT_PARAMETERS */
+	/* Write to the copy NOT in use first. */
 	debug("Erasing...\n");
 	rc = spi_flash_erase(flash,
 			     (0 == copy_in_use) ?
@@ -389,7 +541,6 @@ write_parameters(void)
 	}
 
 	/* Once that's done, update the other copy. */
-
 	debug("Erasing...\n");
 	rc = spi_flash_erase(flash,
 			     (0 == copy_in_use) ?
@@ -401,13 +552,14 @@ write_parameters(void)
 		debug("Writing...\n");
 		rc = spi_flash_write(flash,
 				     (0 == copy_in_use) ?
-				     CONFIG_PARAMETER_OFFSET : 
+				     CONFIG_PARAMETER_OFFSET :
 				     CONFIG_PARAMETER_OFFSET_REDUND,
 				     PARAMETERS_SIZE, parameters);
 	} else {
 		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
 		return -1;
 	}
+#endif	/* CONFIG_REDUNDANT_PARAMETERS */
 
 #ifdef CONFIG_AXXIA_ARM
 	buffer = parameters;

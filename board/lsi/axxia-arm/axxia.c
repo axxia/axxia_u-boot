@@ -485,6 +485,29 @@ ft_board_setup(void *blob, bd_t *bd)
 	if (0 != set_clusters())
 		acp_failure(__FILE__, __func__, __LINE__);
 
+#ifdef CONFIG_HW_WATCHDOG
+	{
+		int i;
+
+		puts("Press any key for to cause a Watchdog Timeout");
+
+		for (i = 0; i < 10; ++i) {
+			puts(".");
+
+			if (tstc()) {
+				puts("\nCausing Watchdog Timeout...\n");
+
+				for (;;)
+					;
+			}
+
+			mdelay(1000);
+		}
+
+		puts("\nContinuting Boot...\n");
+	}
+#endif
+
 	/*
 	  Set the PLL/Clock frequencies.
 	*/
