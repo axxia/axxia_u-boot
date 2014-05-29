@@ -362,14 +362,26 @@ int
 board_init(void)
 {
 #if defined(AXXIA_FORCE_NORMAL_MODE)
+#ifdef CONFIG_HW_WATCHDOG
+	stop_watchdog();
+#endif
 	dcache_disable();
 	enter_ns();
 	setup_page_tables(_page_table_start);
+#ifdef CONFIG_HW_WATCHDOG
+	(void)start_watchdog();
+#endif
 #elif !defined(AXXIA_FORCE_SECURE_MODE)
 	if (0 != ((pfuse & 0x7e0) >>5)) {
+#ifdef CONFIG_HW_WATCHDOG
+		stop_watchdog();
+#endif
 		dcache_disable();
 		enter_ns();
 		setup_page_tables(_page_table_start);
+#ifdef CONFIG_HW_WATCHDOG
+		(void)start_watchdog();
+#endif
 	}
 #endif
 
