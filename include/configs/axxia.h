@@ -260,12 +260,12 @@ typedef struct {
 	unsigned long chipType;
 	unsigned long globalOffset;
 	unsigned long globalSize;
+	unsigned long pciesrioOffset;
+	unsigned long pciesrioSize;
 	unsigned long voltageOffset;
 	unsigned long voltageSize;
 	unsigned long clocksOffset;
 	unsigned long clocksSize;
-	unsigned long pciesrioOffset;
-	unsigned long pciesrioSize;
 	unsigned long systemMemoryOffset;
 	unsigned long systemMemorySize;
 	unsigned long classifierMemoryOffset;
