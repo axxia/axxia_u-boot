@@ -74,11 +74,7 @@ static int parameters_read __attribute__ ((section("data")));
 #error "Unknown Architecture!"
 #endif
 
-#ifdef CONFIG_SPL_BUILD
 parameters_header_t *header __attribute__ ((section("data"))) = NULL;
-#else
-parameters_header_t *header __attribute__ ((section("data"))) = NULL;
-#endif
 parameters_global_t *global __attribute__ ((section("data"))) = NULL;
 parameters_pciesrio_t *pciesrio __attribute__ ((section("data"))) = NULL;
 parameters_voltage_t *voltage __attribute__ ((section("data"))) = NULL;
@@ -102,6 +98,7 @@ verify_parameters(void *parameters)
 	lheader = parameters;
 
 	/* Check for the magic number. */
+
 	if (PARAMETERS_MAGIC != ntohl(lheader->magic)) {
 		printf("Parameter table has wrong magic number!\n");
 		return -1;
@@ -167,14 +164,14 @@ read_parameters(void)
 	  table.
 	*/
 
-	flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
-				CONFIG_SF_DEFAULT_MODE);
-
-	if (!flash)
-		return -1;
-
 	/* Verify that the paramater table is valid. */
-	if (PARAMETERS_MAGIC == ntohl(header->magic)) {
+	if (0 == verify_parameters(parameters)) {
+		flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
+					CONFIG_SF_DEFAULT_MODE);
+
+		if (!flash)
+			return -1;
+
 		rc = spi_flash_erase(flash,
 				     CONFIG_PARAMETER_OFFSET,
 				     flash->sector_size);
@@ -227,6 +224,12 @@ read_parameters(void)
 		ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc,
 			   (ncp_uint32_t *)&watchdog_timeout);
 		watchdog_timeout = ((watchdog_timeout & 0x4) >> 2);
+
+		flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
+					CONFIG_SF_DEFAULT_MODE);
+
+		if (!flash)
+			return -1;
 
 		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
 			       PARAMETERS_SIZE, parameters);
@@ -306,6 +309,12 @@ read_parameters(void)
 			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
 				       PARAMETERS_SIZE, parameters);
 #else  /* CONFIG_REDUNDANT_PARAMETERS */
+		flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
+					CONFIG_SF_DEFAULT_MODE);
+
+		if (!flash)
+			return -1;
+
 		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
 			       PARAMETERS_SIZE, parameters);
 
