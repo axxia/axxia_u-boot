@@ -4146,8 +4146,10 @@ NCP_RETURN_LABEL
     if ((parms->version == NCP_CHIP_ACP55xx) &&
             (smId < 2)) 
     {
-        /* re-enable both elms and restore NCA TTYPEs */
-        use_elm(dev, 3);
+        if (parms->num_interfaces == 2) {
+            /* re-enable both elms and restore NCA TTYPEs */
+            use_elm(dev, 3);
+        } 
        ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x12221222);
      ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x0000000b);
     }

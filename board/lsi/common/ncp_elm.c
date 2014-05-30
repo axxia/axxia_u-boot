@@ -137,15 +137,19 @@ ncp_elm_sysmem_fill(
     ncr_write32(NCP_REGION_ID(0x158, 0), 0x48, 0x0);
 
     /* elm1 */
-    ncr_write32(NCP_REGION_ID(0x159, 0), 0x40, 0x00000000);
-    ncr_write32(NCP_REGION_ID(0x159, 0), 0x44, numCacheLines);
-    ncr_write32(NCP_REGION_ID(0x159, 0), 0x48, 0x0);
+    if (parms->num_interfaces == 2 ) {
+        ncr_write32(NCP_REGION_ID(0x159, 0), 0x40, 0x00000000);
+        ncr_write32(NCP_REGION_ID(0x159, 0), 0x44, numCacheLines);
+        ncr_write32(NCP_REGION_ID(0x159, 0), 0x48, 0x0);
+    }
     
     /* poll elm0 for completion */
     ncr_poll(NCP_REGION_ID(0x158, 0), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
     
     /* poll elm1 for completion */
-    ncr_poll(NCP_REGION_ID(0x159, 0), 0x44, 0x1fffffff, 0x0, 10000, 1000000);    
+    if (parms->num_interfaces == 2 ) {
+        ncr_poll(NCP_REGION_ID(0x159, 0), 0x44, 0x1fffffff, 0x0, 10000, 1000000);    
+    }
 
 	/* If ECC is enabled, clear the status bits. */
 	if ((0 != parms->enableECC) && (intrStatFn != NULL)) {
