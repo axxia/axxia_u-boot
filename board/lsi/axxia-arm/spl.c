@@ -621,6 +621,51 @@ spl_board_init(void)
 {
 	int rc;
 
+#ifndef CONFIG_AXXIA_EMU
+	unsigned long value;
+	unsigned long pvalue;
+	unsigned long pfuse;
+	int i;
+
+	/* read and clear reset status (write one to clear) */
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x100, (ncp_uint32_t *)&value);
+	ncr_write32(NCP_REGION_ID(0x156, 0), 0x100, (ncp_uint32_t)value);
+
+	/*
+	 * if this is a power-up/pin reset then initialize
+	 * persistent registers 
+	 */
+
+	if ((value & 0x00000001)) {
+		for (i = 0; i < 9; i++)
+			ncr_write32(NCP_REGION_ID(0x156, 0x00),
+				    (0xdc + (4 * i)), 0);
+
+		pfuse = readl(SYSCON + 0x34);
+
+		if (0 != ((pfuse & 0x7e0) >>5)) {
+			writel(0x000000ab, (SYSCON + 0x1000));
+			writel(0x00000040, (SYSCON + 0x1004));
+			writel(0x80000000, (SYSCON + 0x180c));
+			writel(0x00080802, (SYSCON + 0x1008));
+		}
+	}
+
+	/*
+	 * Set bit 2 of 0xdc if the last reset was caused by a watchdog
+	 * timeout; otherwise, clear it.
+	 */
+
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc, (ncp_uint32_t *) &pvalue);
+
+	if (0 != (value & 0xa))
+		pvalue |= 0x4;
+	else
+		pvalue &= ~0x4;
+
+	ncr_write32(NCP_REGION_ID(0x156, 0), 0xdc, pvalue);
+#endif
+
 	/*
 	  The bootROM code leaves SPI device 0 selected, BZ 45907.
 	  Deselect here.
@@ -631,6 +676,7 @@ spl_board_init(void)
 	gd->baudrate = CONFIG_BAUDRATE;
 	serial_initialize();
 	serial_init();
+
 	puts("\n"
 	     "   ___             _        __  __    ___            __    _______  __ \n"
 	     "  / _ |__ ____ __ (_)__ _  / / / /___/ _ )___  ___  / /_  / __/ _ \\/ / \n"

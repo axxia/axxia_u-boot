@@ -70,46 +70,6 @@ axxia_initialize(void)
 #endif
 
 	/*
-	  ============
-	  Reset Reason
-	  ============
-	*/
-
-#ifndef CONFIG_AXXIA_EMU
-	/* read and clear reset status (write one to clear) */
-	ncr_read32(NCP_REGION_ID(0x156, 0), 0x100, (ncp_uint32_t *) &value);
-	printf("Reset Status = 0x%08lx\n", value);
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x100, (ncp_uint32_t) value);
-
-	/*
-	 * if this is a power-up/pin reset then initialize
-	 * persistent registers 
-	 */
-
-	if ((value & 0x00000001)) {
-		printf("PowerUp/Pin Reset detected - initializing persistent registers\n");
-
-		for (i = 0; i < 9; i++)
-			ncr_write32(NCP_REGION_ID(0x156, 0x00),
-				    (0xdc + (4 * i)), 0);
-	}
-
-	/*
-	 * Set bit 2 of 0xdc if the last reset was caused by a watchdog
-	 * timeout; otherwise, clear it.
-	 */
-
-	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc, (ncp_uint32_t *) &pvalue);
-
-	if (0 != (value & 0xa))
-		pvalue |= 0x4;
-	else
-		pvalue &= ~0x4;
-
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0xdc, pvalue);
-#endif
-
-	/*
 	  ===============
 	  Read Parameters
 	  ===============
