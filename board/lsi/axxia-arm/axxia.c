@@ -20,6 +20,7 @@
 
 #include <config.h>
 #include <common.h>
+#include <watchdog.h>
 #include <twl6035.h>
 #include <asm/io.h>
 #include <asm/arch/sys_proto.h>
@@ -362,26 +363,16 @@ int
 board_init(void)
 {
 #if defined(AXXIA_FORCE_NORMAL_MODE)
-#ifdef CONFIG_HW_WATCHDOG
-	stop_watchdog();
-#endif
+	WATCHDOG_RESET();
 	dcache_disable();
 	enter_ns();
 	setup_page_tables((void *)_page_table_start);
-#ifdef CONFIG_HW_WATCHDOG
-	(void)start_watchdog();
-#endif
 #elif !defined(AXXIA_FORCE_SECURE_MODE)
 	if (0 != ((pfuse & 0x7e0) >>5)) {
-#ifdef CONFIG_HW_WATCHDOG
-		stop_watchdog();
-#endif
+		WATCHDOG_RESET();
 		dcache_disable();
 		enter_ns();
 		setup_page_tables((void *)_page_table_start);
-#ifdef CONFIG_HW_WATCHDOG
-		(void)start_watchdog();
-#endif
 	}
 #endif
 

@@ -63,12 +63,6 @@ unsigned *phyRegs;
 int
 axxia_initialize(void)
 {
-#ifndef CONFIG_AXXIA_EMU
-	int i;
-	unsigned long value;
-	unsigned long pvalue;
-#endif
-
 	/*
 	  ===============
 	  Read Parameters

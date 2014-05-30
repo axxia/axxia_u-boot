@@ -48,20 +48,32 @@ hw_watchdog_reset(void)
 int
 start_watchdog(void)
 {
-	unsigned long reset_control;
+	unsigned long value;
 
+	/* Unlock syscon. */
 	writel(0xab, (SYSCON + 0x1000));
-	writel(0x40, (SYSCON + 0x1004));
+
+	/* Use reset map. */
+	value = readl(SYSCON + 0x1004);
+	value |= 0x40;
+	writel(value, (SYSCON + 0x1004));
+
+	/* Set reset_read_done (0x156.0x1.0xc). */
 	writel(0x80000000, (SYSCON + 0x180c));
 
-	reset_control = readl(SYSCON + 0x1008);
-	reset_control |= 0x80;
-	writel(reset_control, (SYSCON + 0x1008));
+	/* Enable watchdog resets. */
+	value = readl(SYSCON + 0x1008);
+	value |= 0x80;
+	writel(value, (SYSCON + 0x1008));
 
+	/* Set up the timer. */
 	writel(0, (TIMER5 + TIMER_CONTROL));
 	writel(0xffffffff, (TIMER5 + TIMER_LOAD));
 	writel(0xffffffff, (TIMER5 + TIMER_VALUE));
 	writel(0xe2, (TIMER5 + TIMER_CONTROL));
+
+	/* Lock syscon. */
+	writel(0, (SYSCON + 0x1000));
 
 	return 0;
 }
@@ -76,11 +88,19 @@ stop_watchdog(void)
 {
 	unsigned long reset_control;
 
+	/* Unlock syscon. */
+	writel(0xab, (SYSCON + 0x1000));
+
+	/* Disable watchdog resets. */
 	reset_control = readl(SYSCON + 0x1008);
 	reset_control &= ~0x80;
 	writel(reset_control, (SYSCON + 0x1008));
 
+	/* Turn off the timer. */
 	writel(0, (TIMER5 + TIMER_CONTROL));
+
+	/* Lock syscon. */
+	writel(0, (SYSCON + 0x1000));
 
 	return;
 }

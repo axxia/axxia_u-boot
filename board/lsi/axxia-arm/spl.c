@@ -313,31 +313,6 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 }
 
 /*
-  ------------------------------------------------------------------------------
-  fix_up_vat
-*/
-
-static int
-fix_up_vat(void)
-{
-	unsigned long buffer[4];
-	int rc;
-
-	rc = ncr_read(NCP_REGION_ID(0x16, 0x10), 0, 0x1000, 16, buffer);
-
-	if (0 != rc)
-		return -1;
-
-	buffer[2] = 0;
-	rc = ncr_write(NCP_REGION_ID(0x16, 0x10), 0, 0x1000, 16, buffer);
-
-	if (0 != rc)
-		return -1;
-
-	return 0;
-}
-
-/*
   ==============================================================================
   ==============================================================================
   Global Stuff
@@ -362,8 +337,7 @@ reset_cpu_fabric(void)
 	unsigned long value;
 
 	WATCHDOG_RESET();
-
-	fix_up_vat();
+	set_vat_mission();
 
 	/*
 	  Don't use readl()/writel(), as those contain barriers.  The
@@ -693,7 +667,7 @@ spl_board_init(void)
 #ifdef CONFIG_SPL_MTEST
 	printf("Running the SPL Memory Test\n");
 	if (spl_mtest((unsigned long *)0x40000000,
-		      (unsigned long *)0x7fffffff, 10, all)) {
+		      (unsigned long *)0x7fffffff, 10, spl_mtest_all)) {
 		printf("SPL Memory Test FAILED\n");
 	} else {
 		printf("SPL Memory Test SUCCESSFUL\n");

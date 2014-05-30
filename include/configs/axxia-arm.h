@@ -1061,6 +1061,8 @@ extern unsigned long pfuse;
 void enter_ns(void);
 void enter_hyp(void);
 void setup_page_tables(void *);
+int set_vat_reset(void);
+int set_vat_mission(void);
 #endif
 
 /*
