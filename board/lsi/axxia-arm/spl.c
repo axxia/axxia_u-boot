@@ -423,13 +423,13 @@ check_memory_ranges(void)
 			} else {
 				unsigned long *out;
 				int count, ncount;
-				if (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x40000000) {
+				if (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x40000000) {
 					if ((global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) &&
 						(global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) &&
 						(global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
 						if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
 	     						(unsigned long *)(((test_addr[i]+test_len[i])*256)
-							+ 0x40000000), 1, spl_mtest_all)) {
+							+ 0x40000000-1), 1, spl_mtest_all)) {
 							printf("SPL Memory Test FAILED\n");
 						}
 						continue;
@@ -437,99 +437,99 @@ check_memory_ranges(void)
 					if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
 						if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
 	     						(unsigned long *)(((test_addr[i]+test_len[i])*256)
-							+ 0x40000000), 1, spl_mtest_all)) {
+							+ 0x40000000-1), 1, spl_mtest_all)) {
 							printf("SPL Memory MTest FAILED\n");
 						}
 					}
 					if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
 						if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
 	     						(unsigned long *)(((test_addr[i]+test_len[i])*256)
-							+ 0x40000000), 1, spl_mtest_addr)) {
+							+ 0x40000000-1), 1, spl_mtest_addr)) {
 							printf("SPL Memory ADDR Test FAILED\n");
 						}
 					}
 					if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
 						if (spl_mtest((unsigned long *)((test_addr[i]*256)+0x40000000),
 	     						(unsigned long *)(((test_addr[i]+test_len[i])*256)
-							+ 0x40000000), 1, spl_mtest_data)) {
+							+ 0x40000000-1), 1, spl_mtest_data)) {
 							printf("SPL Memory DATA Test FAILED\n");
 						}
 					}
 					continue;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x40000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x80000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x80000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x40000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x40040c52;	
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x80000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0xc0000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0xc0000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x80000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x80040c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0xc0000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x100000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x100000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0xc0000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0xc0040c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x100000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x140000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x140000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x100000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x00140c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x140000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x180000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x180000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x140000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x40140c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x180000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x1c0000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x1c0000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x180000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x80140c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x1c0000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x200000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x200000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x1c0000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0xc0140c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x200000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x240000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x240000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x200000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x00240c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x240000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x280000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x280000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x240000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x40240c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x280000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x2c0000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x2c0000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x280000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x80240c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x2c0000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x300000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x300000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x2c0000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0xc0240c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x300000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x340000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x340000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x300000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x00340c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x340000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x380000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x380000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x340000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x40340c52;
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x380000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x3c0000000)) {
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x3c0000000)) {
 					start_addr = ((unsigned long long)test_addr[i]*256) - 0x380000000;
-					end_addr = start_addr + (test_len[i] * 256);
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0x80340c52;	
 				} else if ((((unsigned long long)test_addr[i]*256) >= 0x3c0000000) 
-						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) < 0x400000000)) {
-					start_addr = ((unsigned long long)test_addr[i]*256) - 0x380000000;
-					end_addr = start_addr + (test_len[i] * 256);
+						&& (((unsigned long long)(test_addr[i]+test_len[i])*256) <= 0x400000000)) {
+					start_addr = ((unsigned long long)test_addr[i]*256) - 0x3c0000000;
+					end_addr = start_addr + (test_len[i] * 256)-1;
 					val= 0xc0340c52;	
 				} else {
 					printf("Unsupported memory range\n");
