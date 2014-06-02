@@ -598,7 +598,6 @@ spl_board_init(void)
 #ifndef CONFIG_AXXIA_EMU
 	unsigned long value;
 	unsigned long pvalue;
-	unsigned long pfuse;
 	int i;
 
 	/* read and clear reset status (write one to clear) */
@@ -610,20 +609,10 @@ spl_board_init(void)
 	 * persistent registers 
 	 */
 
-	if ((value & 0x00000001)) {
+	if ((value & 0x00000001))
 		for (i = 0; i < 9; i++)
 			ncr_write32(NCP_REGION_ID(0x156, 0x00),
 				    (0xdc + (4 * i)), 0);
-
-		pfuse = readl(SYSCON + 0x34);
-
-		if (0 != ((pfuse & 0x7e0) >>5)) {
-			writel(0x000000ab, (SYSCON + 0x1000));
-			writel(0x00000040, (SYSCON + 0x1004));
-			writel(0x80000000, (SYSCON + 0x180c));
-			writel(0x00080802, (SYSCON + 0x1008));
-		}
-	}
 
 	/*
 	 * Set bit 2 of 0xdc if the last reset was caused by a watchdog
