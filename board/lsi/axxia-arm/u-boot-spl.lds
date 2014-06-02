@@ -53,12 +53,12 @@ SECTIONS
 
 
 	/*
-	 * Provide space for a page table (0x4000 bytes).
+	 * Provide space for a page table (0x5000 bytes).
  	 */
 
 	. = ALIGN(0x4000);
 	__page_table_start = .;
-	. += 0x4000;
+	. += 0x5000;
 	__page_table_end = .;
 
 	.bss :
