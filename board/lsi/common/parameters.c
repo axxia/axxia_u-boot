@@ -296,23 +296,13 @@ read_parameters(void)
 				copy_in_use = (0 == copy_in_use) ? 1 : 0;
 		}
 
-		if (1 == a_valid && 1 == b_valid)
-			printf("Watchdog? %d A/B Valid? %d/%d A/B Sequence %d/%d => %s\n",
-			       watchdog_timeout, a_valid, b_valid,
-			       a_sequence, b_sequence,
-			       (0 == copy_in_use) ? "A" : "B");
-		else if (0 == a_valid && 1 == b_valid)
-			puts("Only B is Valid => B\n");
-		else if (1 == a_valid && 0 == b_valid)
-			puts("Only A is Valid => A\n");
-		else
-			puts("Unknown State!\n");
+		printf("Parameters: Watchdog %d A/B Valid %d/%d A/B Sequence %d/%d => %s\n",
+		       watchdog_timeout, a_valid, b_valid,
+		       a_sequence, b_sequence,
+		       (0 == copy_in_use) ? "A" : "B");
 
 		if (0 == copy_in_use)
 			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
-				       PARAMETERS_SIZE, parameters);
-		else
-			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
 				       PARAMETERS_SIZE, parameters);
 #else  /* CONFIG_REDUNDANT_PARAMETERS */
 		flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,

@@ -749,6 +749,14 @@ void spl_spi_load_image(void)
 {
 	struct spi_flash *flash;
 	struct image_header header;
+#ifdef CONFIG_REDUNDANT_UBOOT	
+	int watchdog_timeout;
+	int a_valid;
+	int b_valid;
+	unsigned long a_sequence;
+	unsigned long b_sequence;
+	int copy_to_use;
+#endif	/* CONFIG_REDUNDANT_UBOOT */
 
 	/*
 	 * Load U-Boot image from SPI flash into RAM
@@ -764,11 +772,113 @@ void spl_spi_load_image(void)
 	}
 
 	/* Load u-boot, mkimage header is 64 bytes. */
-	spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS, 0x40, &header);
+	spi_flash_read(flash, CONFIG_UBOOT_OFFSET, 0x40, &header);
 	spl_parse_image_header(&header);
 
 	/* Note that, in the SPL, SDRAM is virtually mapped to 0x40000000. */
 	spl_image.load_addr = 0x40000000;
+
+#ifdef CONFIG_REDUNDANT_UBOOT
+
+	/* Was the last reset caused by a watchdog timeout? */
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc,
+		   (ncp_uint32_t *)&watchdog_timeout);
+	watchdog_timeout = ((watchdog_timeout & 0x4) >> 2);
+
+	/* Is image A valid? */
+	if (IH_MAGIC != image_get_magic(&header))
+		a_valid = 0;
+	else
+		a_valid = 1;
+
+	if (1 == a_valid) {
+		/* Load a U-Boot Image, Verifying Checksum */
+		spi_flash_read(flash, CONFIG_UBOOT_OFFSET +
+			       sizeof(struct image_header),
+			       spl_image.size, (void *)spl_image.load_addr);
+
+		if (ntohl(header.ih_dcrc) !=
+		    crc32(0, (unsigned char *)0x40000000,
+			  (spl_image.size - sizeof(struct image_header)))) {
+			puts("Bad U-Boot Image A Checksums!\n");
+			a_valid = 0;
+		}
+	}
+
+	if (1 == a_valid) {
+		char *temp;
+
+		temp = getenv("uboot_a_sequence");
+
+		if (NULL != temp)
+			a_sequence = simple_strtoul(temp, NULL, 0);
+		else
+			a_sequence = 0;
+	}
+
+	spi_flash_read(flash, CONFIG_UBOOT_OFFSET_REDUND, 0x40, &header);
+
+	/* Is image B valid? */
+	if (IH_MAGIC != image_get_magic(&header))
+		b_valid = 0;
+	else
+		b_valid = 1;
+
+	if (1 == b_valid) {
+		/* Load a U-Boot Image, Verifying Checksum */
+		spi_flash_read(flash, CONFIG_UBOOT_OFFSET_REDUND +
+			       sizeof(struct image_header),
+			       spl_image.size, (void *)spl_image.load_addr);
+
+		if (ntohl(header.ih_dcrc) !=
+		    crc32(0, (unsigned char *)0x40000000,
+			  (spl_image.size - sizeof(struct image_header)))) {
+			puts("Bad U-Boot Image B Checksums!\n");
+			b_valid = 0;
+		}
+	}
+
+	if (1 == b_valid) {
+		char *temp;
+
+		temp = getenv("uboot_b_sequence");
+
+		if (NULL != temp)
+			b_sequence = simple_strtoul(temp, NULL, 0);
+		else
+			b_sequence = 0;
+	}
+
+	if (0 == a_valid && 0 == b_valid) {
+		acp_failure(__FILE__, __func__, __LINE__);
+	} else if (0 == a_valid && 0 != b_valid) {
+		copy_to_use = 1;
+	} else if (0 != a_valid && 0 == b_valid) {
+		copy_to_use = 0;
+	} else {
+		if (0xffffffff == a_sequence && b_sequence == 0) {
+			copy_to_use = 1;
+		} else if (b_sequence > a_sequence) {
+			copy_to_use = 1;
+		} else {
+			copy_to_use = 0;
+		}
+
+		if (0 != watchdog_timeout)
+			copy_to_use = (0 == copy_to_use) ? 1 : 0;
+	}
+
+	printf("U-Boot: Watchdog %d A/B Valid %d/%d A/B Sequence %d/%d => %s\n",
+	       watchdog_timeout, a_valid, b_valid,
+	       a_sequence, b_sequence,
+	       (0 == copy_to_use) ? "A" : "B");
+
+	if (0 == copy_to_use)
+		spi_flash_read(flash, CONFIG_UBOOT_OFFSET +
+			       sizeof(struct image_header),
+			       spl_image.size, (void *)spl_image.load_addr);
+
+#else  /* CONFIG_REDUNDANT_UBOOT */
 
 	if (IH_MAGIC == image_get_magic(&header)) {
 		/* Load a U-Boot Image, Verifying Checksum */
@@ -787,6 +897,8 @@ void spl_spi_load_image(void)
 		spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
 			       spl_image.size, (void *)spl_image.load_addr);
 	}
+
+#endif	/* CONFIG_REDUNDANT_UBOOT */
 
 #ifndef CONFIG_AXXIA_EMU
 	if (0 != sbb_verify_image(0x00000000, 0x00000000, 0))

@@ -72,7 +72,10 @@
 #define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
 #define CONFIG_ENV_RANGE_REDUND           CONFIG_ENV_RANGE
 
-
+#define CONFIG_UBOOT_OFFSET              (1 * 1024 * 1024)
+#define CONFIG_UBOOT_SIZE                (2 * 1024 * 1024)
+#define CONFIG_UBOOT_OFFSET_REDUND       (3 * 1024 * 1024)
+#define CONFIG_UBOOT_SIZE_REDUND         CONFIG_UBOOT_SIZE
 
 /*
   ==============================================================================
@@ -108,6 +111,7 @@
 
 #define CONFIG_HW_WATCHDOG
 #define CONFIG_REDUNDANT_PARAMETERS
+#define CONFIG_REDUNDANT_UBOOT
 
 #define V_MIN   795
 #define V_SAFE  940
