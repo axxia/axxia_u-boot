@@ -18,6 +18,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307	 USA
  */
 
+#include <config.h>
 #include <common.h>
 #include <serial.h>
 #include <malloc.h>
@@ -765,10 +766,27 @@ void spl_spi_load_image(void)
 	/* Load u-boot, mkimage header is 64 bytes. */
 	spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS, 0x40, &header);
 	spl_parse_image_header(&header);
-	/* Need offset as SDRAM is virtually mapped to 0x40000000 */
+
+	/* Note that, in the SPL, SDRAM is virtually mapped to 0x40000000. */
 	spl_image.load_addr = 0x40000000;
-	spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
-		       spl_image.size, (void *)spl_image.load_addr);
+
+	if (IH_MAGIC == image_get_magic(&header)) {
+		/* Load a U-Boot Image, Verifying Checksum */
+		spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS +
+			       sizeof(struct image_header),
+			       spl_image.size, (void *)spl_image.load_addr);
+
+		if (ntohl(header.ih_dcrc) !=
+		    crc32(0, (unsigned char *)0x40000000,
+			  (spl_image.size - sizeof(struct image_header)))) {
+			puts("Bad U-Boot Image Checksums!\n");
+			acp_failure(__FILE__, __func__, __LINE__);
+		}
+	} else {
+		/* Load a U-Boot Binary */
+		spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
+			       spl_image.size, (void *)spl_image.load_addr);
+	}
 
 #ifndef CONFIG_AXXIA_EMU
 	if (0 != sbb_verify_image(0x00000000, 0x00000000, 0))

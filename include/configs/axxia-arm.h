@@ -1013,6 +1013,7 @@ void stop_watchdog(void);
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
 #define CONFIG_SPL_SERIAL_SUPPORT
 #define CONFIG_SPL_ENV_SUPPORT
+#define CONFIG_SPL_CRC32_SUPPORT
 #define CONFIG_SPL_LDSCRIPT "board/lsi/axxia-arm/u-boot-spl.lds"
 
 /*

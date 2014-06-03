@@ -67,6 +67,7 @@ COBJS-$(CONFIG_SPL_NET_SUPPORT) += hashtable.o
 COBJS-$(CONFIG_SPL_NET_SUPPORT) += net_utils.o
 COBJS-$(CONFIG_SPL_ENV_SUPPORT) += errno.o
 COBJS-$(CONFIG_SPL_ENV_SUPPORT) += hashtable.o
+COBJS-$(CONFIG_SPL_CRC32_SUPPORT) += crc32.o
 endif
 COBJS-y += crc32.o
 COBJS-y += ctype.o
