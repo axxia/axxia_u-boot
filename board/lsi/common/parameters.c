@@ -91,7 +91,7 @@ void *retention __attribute__ ((section("data"))) = NULL;
 */
 
 static int
-verify_parameters(void *parameters)
+verify_parameters(void *parameters, int quiet)
 {
 	parameters_header_t *lheader;
 
@@ -100,7 +100,9 @@ verify_parameters(void *parameters)
 	/* Check for the magic number. */
 
 	if (PARAMETERS_MAGIC != ntohl(lheader->magic)) {
-		printf("Parameter table has wrong magic number!\n");
+		if (0 == quiet)
+			printf("Parameter table has wrong magic number!\n");
+
 		return -1;
 	}
 
@@ -108,18 +110,22 @@ verify_parameters(void *parameters)
 
 	if (crc32(0, (parameters + 12), (ntohl(lheader->size) - 12)) !=
 	    ntohl(lheader->checksum)) {
-		printf("Parameter table is corrupt. 0x%08x!=0x%08x\n",
-		       ntohl(lheader->checksum),
-		       crc32(0, (parameters + 12),
-			     (ntohl(lheader->size) - 12)));
+		if (0 == quiet)
+			printf("Parameter table is corrupt. 0x%08x!=0x%08x\n",
+			       ntohl(lheader->checksum),
+			       crc32(0, (parameters + 12),
+				     (ntohl(lheader->size) - 12)));
+
 		return -1;
 	}
 
 	/* Check the version. */
 
 	if (PARAMETERS_VERSION != ntohl(lheader->version)) {
-		printf("Parameter table should be version %d, not %lu!\n",
-		       PARAMETERS_VERSION, lheader->version);
+		if (0 == quiet)
+			printf("Parameter table should be version %d, not %lu!\n",
+			       PARAMETERS_VERSION, lheader->version);
+
 		return -1;
 	}
 
@@ -165,7 +171,7 @@ read_parameters(void)
 	*/
 
 	/* Verify that the paramater table is valid. */
-	if (0 == verify_parameters(parameters)) {
+	if (0 == verify_parameters(parameters, 1)) {
 		flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
 					CONFIG_SF_DEFAULT_MODE);
 
@@ -234,7 +240,7 @@ read_parameters(void)
 		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
 			       PARAMETERS_SIZE, parameters);
 
-		if (0 == verify_parameters(parameters)) {
+		if (0 == verify_parameters(parameters, 0)) {
 			a_valid = 1;
 			buffer = parameters;
 
@@ -254,7 +260,7 @@ read_parameters(void)
 		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
 			       PARAMETERS_SIZE, parameters);
 
-		if (0 == verify_parameters(parameters)) {
+		if (0 == verify_parameters(parameters, 0)) {
 			b_valid = 1;
 			buffer = parameters;
 
@@ -318,14 +324,14 @@ read_parameters(void)
 		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
 			       PARAMETERS_SIZE, parameters);
 
-		if (0 != verify_parameters(parameters)) {
+		if (0 != verify_parameters(parameters, 0)) {
 			printf("Primary Parameters Corrupt, using Backup!\n");
 
 			/* Try the redunant copy. */
 			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
 				       PARAMETERS_SIZE, parameters);
 
-			if (0 != verify_parameters(parameters)) {
+			if (0 != verify_parameters(parameters, 0)) {
 				printf("Backup Parameters Corrupt!\n");
 
 				return -1;
