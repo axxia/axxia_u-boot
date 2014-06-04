@@ -35,6 +35,10 @@
 #ifndef CONFIG_AXXIA_EMU
 #ifdef CONFIG_SPL_BUILD
 
+unsigned long pfuse __attribute__ ((section ("data")));
+
+#define PARAMETERS_CLOCKS_55XX_1P0_HARDCODE     0x00000001
+
 /*
   ------------------------------------------------------------------------------
   pll_init_5500
@@ -183,6 +187,14 @@ clocks_init( void )
 	*/
 
 	/* fabpll */
+    if ((0 == ((pfuse & 0x7e0) >> 5)) && 
+        (clocks->flags & PARAMETERS_CLOCKS_55XX_1P0_HARDCODE))
+    {
+        clocks->fabpll_prms = 0x20000d1;
+        clocks->fabpll_ctrl = 0x20c100;
+        clocks->fabpll_csw  = 0x10;
+        clocks->fabpll_div  = 0x0;
+	}
 	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 3), &clocks->fabpll_prms))
 		return -1;
 
@@ -198,6 +210,14 @@ clocks_init( void )
 	ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
 
 	/* syspll */
+    if ((0 == ((pfuse & 0x7e0) >> 5)) && 
+        (clocks->flags & PARAMETERS_CLOCKS_55XX_1P0_HARDCODE))
+    {
+        clocks->syspll_prms = 0x2981804;
+        clocks->syspll_ctrl = 0x209100;
+        clocks->syspll_csw  = 0x4;
+        clocks->syspll_div  = 0x0;
+    }
 	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 5), &clocks->syspll_prms))
 		return -1;
 

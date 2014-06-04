@@ -378,8 +378,6 @@ lowlevel_init:
 	bl	setup_page_tables
 	mov	lr, r8
 
-#ifndef CONFIG_SPL_BUILD
-
 	@@
 	@ Read pfuse into r7 and save
 
@@ -387,8 +385,6 @@ lowlevel_init:
 	ldr	r7, [r3, #0x34]
 	ldr	r3, =pfuse
 	str	r7, [r3]
-
-#endif
 
 	@@
 	@ Initialize the L2CTLR register (primary core in each cluster).
