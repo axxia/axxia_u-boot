@@ -663,7 +663,9 @@ ft_board_setup(void *blob, bd_t *bd)
 #endif
 
 #ifdef CONFIG_HW_WATCHDOG
+#ifndef LEAVE_WATCHDOG_ON
 	stop_watchdog();
+#endif
 #endif
 
 	return;
