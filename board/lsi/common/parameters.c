@@ -304,6 +304,9 @@ read_parameters(void)
 		if (0 == copy_in_use)
 			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
 				       PARAMETERS_SIZE, parameters);
+		else
+			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
+				       PARAMETERS_SIZE, parameters);
 #else  /* CONFIG_REDUNDANT_PARAMETERS */
 		flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
 					CONFIG_SF_DEFAULT_MODE);
