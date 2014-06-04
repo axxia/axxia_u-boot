@@ -32,6 +32,7 @@
 #include <spi.h>
 #include <spi_flash.h>
 #include <malloc.h>
+#include <linux/ctype.h>
 
 /*
   ==============================================================================
@@ -151,6 +152,7 @@ read_parameters(void)
 #ifdef CONFIG_AXXIA_ARM
 	int i;
 	unsigned *buffer;
+	unsigned char *description;
 #endif
 	int rc;
 	struct spi_flash *flash;
@@ -384,7 +386,19 @@ read_parameters(void)
 	printf("version=%lu flags=0x%lx\n", global->version, global->flags);
 #endif
 
-	printf("Parameter Table Version %lu\n", header->version);
+	printf("Parameter Table Version: %lu\n", header->version);
+
+	description = &global->description[0];
+
+	if (0 != *description && isprint(*description)) {
+		i = 0;
+		puts("            Description: ");
+
+		while (0 != *description && isprint(*description) && i++ < 128)
+			putc(*description++);
+
+		puts("\n");
+	}
 
 	return 0;
 }
