@@ -71,6 +71,14 @@ ose_add_string( int core, const char * input )
 	case 3:
 		output = ( char * ) ( 0x1c00 );
 		break;
+#ifdef AXM_35xx
+	case 4:
+		output = ( char * ) ( 0x2000 );
+		break;
+	case 5:
+		output = ( char * ) ( 0x2400 );
+		break;
+#endif
 	default:
 		return -1;
 		break;
@@ -101,7 +109,11 @@ ose_add_string( int core, const char * input )
 int
 ose_init( void )
 {
+#ifdef AXM_35xx
+	memset( ( void * ) ( 0x1000 ), 0, OSE_STRINGS_SIZE * 6 );
+#else
 	memset( ( void * ) ( 0x1000 ), 0, OSE_STRINGS_SIZE * 4 );
+#endif
 	return 0;
 }
 
