@@ -1701,6 +1701,7 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 #if defined(ACP_X1V2) || defined(ACP_X2V1)
 		--bits;
 #else
+		ncr_and(region, 0xa4, 0xc0ffffff);	
 		ncr_or(region, 0xa4, (bits << 24));
 #endif
 	} else {
@@ -1710,6 +1711,7 @@ acp_sysmem_bist_start( unsigned long region, int bits, int test )
 		  specified memory size. (i.e. 2GB ==
 		  31 bits).
 		*/
+		ncr_and(region, 0xa4, 0xc0ffffff);	
 		ncr_or(region, 0xa4, (bits  << 24));
 	}
 
