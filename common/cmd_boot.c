@@ -48,6 +48,7 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 		unsigned long ccr2_val;
 		char buffer [ 80 ];
 		unsigned long ppc_clock;
+		unsigned long clk_per;
 
 		envstring = getenv("os_access");
 
@@ -93,6 +94,7 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 			 ( unsigned long )
 			 & ( ( acp_spintable [ 3 ] )->entry_address ) );
 		ose_add_string( 0, buffer );
+#endif
 #if defined(AXM_35xx)
 		sprintf( buffer, "spintable_4=0x%lx",
 			 ( unsigned long )
@@ -103,11 +105,14 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 			 & ( ( acp_spintable [ 5 ] )->entry_address ) );
 		ose_add_string( 0, buffer );
 #endif
-#endif
-		sprintf( buffer, "serclk0=%u", UART_CLOCK_SPEED);
-		ose_add_string( 0, buffer );
-		sprintf( buffer, "serclk1=%u", UART_CLOCK_SPEED);
-		ose_add_string( 0, buffer );
+		if( 0 == acp_clock_get( clock_peripheral, & clk_per ) ) {
+			sprintf( buffer, "serclk0=%lu", ( clk_per * 1000 ) );
+			ose_add_string( 0, buffer );
+			sprintf( buffer, "serclk1=%lu", ( clk_per * 1000 ) );
+			ose_add_string( 0, buffer );
+		} else {
+			printf( "Error Getting Peripheral Clock!\n" );
+		}
 		if( 0 == acp_clock_get( clock_ppc, & ppc_clock ) ) {
 			sprintf( buffer, "coreclk=%lu", ( ppc_clock * 1000 ) );
 			ose_add_string( 0, buffer );
