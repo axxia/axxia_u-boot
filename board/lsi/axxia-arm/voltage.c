@@ -82,8 +82,10 @@ calc_chip_vrun(void)
 		break;
 	}
 
-	if (200 <= voltage)
+	if (200 <= voltage) {
+		puts("** Voltage Returned For Bin Is Out Of Range **\n");
 		acp_failure(__FILE__, __func__, __LINE__);
+	}
 
 	voltage = 800 + voltage + offset;
 
