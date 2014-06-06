@@ -755,7 +755,7 @@ void spl_spi_load_image(void)
 	int b_valid;
 	unsigned long a_sequence = 0;
 	unsigned long b_sequence = 0;
-	int copy_to_use;
+	int copy_to_use = 0;
 #endif	/* CONFIG_REDUNDANT_UBOOT */
 
 	/*
@@ -862,19 +862,16 @@ void spl_spi_load_image(void)
 	} else if (0 != a_valid && 0 == b_valid) {
 		copy_to_use = 0;
 	} else {
-		if (0xffffffff == a_sequence && b_sequence == 0) {
+		if (0xffffffff == a_sequence && b_sequence == 0)
 			copy_to_use = 1;
-		} else if (b_sequence > a_sequence) {
+		else if (b_sequence > a_sequence)
 			copy_to_use = 1;
-		} else {
-			copy_to_use = 0;
-		}
 
 		if (0 != watchdog_timeout)
 			copy_to_use = (0 == copy_to_use) ? 1 : 0;
 	}
 
-	printf("U-Boot: Watchdog %d A/B Valid %d/%d A/B Sequence %d/%d => %s\n",
+	printf("U-Boot: Watchdog %d A/B Valid %d/%d A/B Sequence %lu/%lu => %s\n",
 	       watchdog_timeout, a_valid, b_valid,
 	       a_sequence, b_sequence,
 	       (0 == copy_to_use) ? "A" : "B");

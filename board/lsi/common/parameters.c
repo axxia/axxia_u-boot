@@ -189,7 +189,7 @@ read_parameters(void)
 					     CONFIG_PARAMETER_OFFSET,
 					     PARAMETERS_SIZE, parameters);
 
-			if (0 != rc) {	
+			if (0 != rc) {
 				printf("%s:%d - Write Failed!\n",
 				       __FILE__, __LINE__);
 
@@ -210,7 +210,7 @@ read_parameters(void)
 					     CONFIG_PARAMETER_OFFSET_REDUND,
 					     PARAMETERS_SIZE, parameters);
 
-			if (0 != rc) {	
+			if (0 != rc) {
 				printf("%s:%d - Write Failed!\n",
 				       __FILE__, __LINE__);
 
@@ -286,13 +286,12 @@ read_parameters(void)
 		} else if (0 != a_valid && 0 == b_valid) {
 			copy_in_use = 0;
 		} else {
-			if (0xffffffff == a_sequence && b_sequence == 0) {
+			if (0xffffffff == a_sequence && b_sequence == 0)
 				copy_in_use = 1;
-			} else if (b_sequence > a_sequence) {
+			else if (b_sequence > a_sequence)
 				copy_in_use = 1;
-			} else {
+			else
 				copy_in_use = 0;
-			}
 
 			if (0 != watchdog_timeout)
 				copy_in_use = (0 == copy_in_use) ? 1 : 0;
@@ -388,7 +387,7 @@ read_parameters(void)
 
 	printf("Parameter Table Version: %lu\n", header->version);
 
-	description = &global->description[0];
+	description = (unsigned char *)&global->description[0];
 
 	if (0 != *description && isprint(*description)) {
 		i = 0;
