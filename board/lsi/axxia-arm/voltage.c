@@ -83,7 +83,7 @@ calc_chip_vrun(void)
 	}
 
 	if (200 <= voltage)
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+		acp_failure(__FILE__, __func__, __LINE__);
 
 	voltage = 800 + voltage + offset;
 
