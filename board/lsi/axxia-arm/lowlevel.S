@@ -378,6 +378,36 @@ lowlevel_init:
 	bl	setup_page_tables
 	mov	lr, r8
 
+#ifdef CONFIG_HW_WATCHDOG
+
+	@@
+	@ Re-enable the watchdog.
+
+	ldr	r3, =SYSCON
+	add	r3, r3, #0x1000
+	mov	r0, #0xab
+	str	r0, [r3, #0]
+	ldr	r0, [r3, #0x4]
+	orr	r0, r0, #0x40
+	str	r0, [r3, #0x4]
+	mov	r0, #0x80000000
+	str	r0, [r3, #0x80c]
+	ldr	r0, [r3, #0x8]
+	orr	r0, r0, #0x80
+	str	r0, [r3, #0x8]
+	mov	r0, #0
+	str	r0, [r3, #0]
+	ldr	r3, =TIMER5
+	mov	r0, #0
+	str	r0, [r3, #0x8]
+	ldr	r0, =0xffffffff
+	str	r0, [r3]
+	str	r0, [r3, #0x4]
+	mov	r0, #0xe2
+	str	r0, [r3, #0x8]
+
+#endif
+
 	@@
 	@ Read pfuse into r7 and save
 
