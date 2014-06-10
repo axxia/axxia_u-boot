@@ -300,9 +300,9 @@ typedef struct {
 
 extern acp_spintable_t * acp_spintable [ ACP_NR_CORES ];
 
-int acp_spintable_init(int, int, unsigned long);
-void acp_spintable_spin( void );
-void acp_spintable_jump( unsigned long, unsigned long );
+int acp_spintable_init(void *, int, int, unsigned long);
+void acp_spintable_spin(void);
+void acp_spintable_jump(unsigned long, unsigned long);
 
 typedef enum {
 	ACP_OSG_SPINTABLE_NOTAVAIL,

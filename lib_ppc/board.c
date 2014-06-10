@@ -1830,7 +1830,7 @@ acp_init_r( void )
 					(acp_osg_group_get_res(group,
 							       ACP_OS_BASE) *
 					 1024 * 1024);
-				acp_spintable_init(i, cold_start, os_base);
+				acp_spintable_init(NULL, i, cold_start, os_base);
 
 			}
 		}

@@ -90,7 +90,8 @@ acp_spintable_spin( void )
 */
 
 int
-acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
+acp_spintable_init(void *fdt,
+		   int core, int cold_start, unsigned long os_base_address)
 {
 #if !defined(ACP_CORE1ONLY)
 	int group;
@@ -119,8 +120,12 @@ acp_spintable_init(int core, int cold_start, unsigned long os_base_address)
 #endif
 
 	/* Get a pointer to the device tree. */
-	if (NULL == (dt = (struct fdt_header *)get_acp_fdt(group)))
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	if (NULL == fdt) {
+		if (NULL == (dt = (struct fdt_header *)get_acp_fdt(group)))
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	} else {
+		dt = fdt;
+	}
 
 	/* Map memory if necessary */
 	if (-1 == acp_osg_map(group))

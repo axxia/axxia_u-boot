@@ -770,7 +770,7 @@ acp_osg_dump(int group)
   acp_osg_update_dt
 */
 
-static int
+int
 acp_osg_update_dt(void *input, int group)
 {
 	int rc = -1;
@@ -870,7 +870,6 @@ acp_osg_update_dt(void *input, int group)
 
 		if (0 != rc) {
 			printf("Error Setting Clocks for %s\n", core[i]);
-			return -1;
 		}
 	}
 	

@@ -86,7 +86,6 @@ boot_jump_linux(bootm_headers_t *images)
 	unsigned long ccr2_val;
 	void (*kernel)(bd_t *, ulong, ulong, ulong, ulong);
 	int rc;
-	int dt_specified = 0;
 
 	/* Set up secondary cores. */
 	cores = acp_osg_group_get_res(group, ACP_OS_CORES);
@@ -120,102 +119,110 @@ boot_jump_linux(bootm_headers_t *images)
 		}
 	}
 
-	if (NULL != dt) {
-		dt_specified = 1;	
-		bootargs = getenv("bootargs3");
-	} else {
-		__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
-		group = acp_osg_get_current();
+	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
+	group = acp_osg_get_current();
+
+	if (NULL == dt) {
 		dt = get_acp_fdt(group);
-		os_base =
-			(acp_osg_group_get_res(group, ACP_OS_BASE) * 1024 * 1024);
-		printf("Booting OS Group: core %d, group %d, fdt 0x%08x\n",
-		       core, group, dt);
+	} else {
+		/*
+		  Since "cpu-release-addr" got initialized on the
+		  built-in device tree, but not this one (loaded
+		  later), initialize it now.
+		*/
 
-		/* Update the command line */
-		switch (group) {
-		case 0:
-			bootargs = getenv("osgroup0_bootargs");
-			break;
-		case 1:
-			bootargs = getenv("osgroup1_bootargs");
-			break;
-		case 2:
-			bootargs = getenv("osgroup2_bootargs");
-			break;
-		case 3:
-			bootargs = getenv("osgroup3_bootargs");
-			break;
-		default:
-			goto error;
-			break;
+		for (core = 1; core < ACP_NR_CORES; ++core) {
+			acp_spintable_init((void *)dt, core, 0, 0);
 		}
-
-		if (NULL == bootargs)
-			bootargs = getenv("bootargs3");
-
-		/* Set up the memory definition in the device tree. */
-		printf("Updating /memory reg\n");
-		{
-			unsigned long value[3];
-			unsigned long long mem_value;
-
-			value[0] = 0x00000000;
-			value[1] = os_base;
-			mem_value = (unsigned long long)
-			  (acp_osg_group_get_res(group, ACP_OS_SIZE)
-			   * 1024 * 1024);
-			value[2] = (unsigned long long)mem_value / 2; 
-
-			rc = fdt_find_and_setprop(dt, "/memory@0", "reg",
-						  (void *)value,
-						  sizeof(value), 1);
-
-			if(0 != rc) {
-				printf("Unable to set /memory@0 reg: %d.\n", rc);
-				goto error;
-			}
-
-			value[1] = (unsigned long long)mem_value / 2;
-			rc = fdt_find_and_setprop(dt, "/memory@80000000", "reg",
-						  (void *)value, sizeof(value),
-						  1);
-
-			if(0 != rc) {
-				printf("Unable to set /memory@80000000 reg: "
-				       "%d.\n", rc);
-				printf("Unable to set /memory reg: %d.\n", rc);
-				goto error;
-			}
-		}
-
-		/* Remove unused cores from the device tree. */
-		for (core = 0; core < ACP_NR_CORES; ++core) {
-			int nodeoffset;
-			char buffer[20];
-
-			if ((0 != ((1 << core) & cores)) ||
-			    ((1 << core) ==
-			     acp_osg_group_get_res(group, ACP_OS_BOOT_CORE)))
-				continue;
-
-			sprintf(buffer, "/cpus/cpu@%d", core);
-			nodeoffset = fdt_path_offset(dt, buffer);
-
-			if (0 > nodeoffset) {
-				printf("Error Getting Offset of %s.\n", buffer);
-				goto error;
-			}
-
-			fdt_del_node(dt, nodeoffset);
-		}
-
-		/* Update the CCRn values for the boot core. */
-		mtspr( ccr0, ccr0_val );
-		mtspr( ccr1, ccr1_val );
-		mtspr( ccr2, ccr2_val );
-		isync( );
 	}
+
+	os_base = (acp_osg_group_get_res(group, ACP_OS_BASE) * 1024 * 1024);
+	printf("Booting OS Group: core %d, group %d, fdt 0x%08x\n",
+	       core, group, dt);
+
+	/* Update the command line */
+	switch (group) {
+	case 0:
+		bootargs = getenv("osgroup0_bootargs");
+		break;
+	case 1:
+		bootargs = getenv("osgroup1_bootargs");
+		break;
+	case 2:
+		bootargs = getenv("osgroup2_bootargs");
+		break;
+	case 3:
+		bootargs = getenv("osgroup3_bootargs");
+		break;
+	default:
+		goto error;
+		break;
+	}
+
+	if (NULL == bootargs)
+		bootargs = getenv("bootargs3");
+
+	/* Set up the memory definition in the device tree. */
+	printf("Updating /memory reg\n");
+	{
+		unsigned long value[3];
+		unsigned long long mem_value;
+
+		value[0] = 0x00000000;
+		value[1] = os_base;
+		mem_value = (unsigned long long)
+			(acp_osg_group_get_res(group, ACP_OS_SIZE)
+			 * 1024 * 1024);
+		value[2] = (unsigned long long)mem_value / 2; 
+
+		rc = fdt_find_and_setprop(dt, "/memory@0", "reg",
+					  (void *)value,
+					  sizeof(value), 1);
+
+		if(0 != rc) {
+			printf("Unable to set /memory@0 reg: %d.\n", rc);
+			goto error;
+		}
+
+		value[1] = (unsigned long long)mem_value / 2;
+		rc = fdt_find_and_setprop(dt, "/memory@80000000", "reg",
+					  (void *)value, sizeof(value),
+					  1);
+
+		if(0 != rc) {
+			printf("Unable to set /memory@80000000 reg: "
+			       "%d.\n", rc);
+			printf("Unable to set /memory reg: %d.\n", rc);
+			goto error;
+		}
+	}
+
+	/* Remove unused cores from the device tree. */
+	for (core = 0; core < ACP_NR_CORES; ++core) {
+		int nodeoffset;
+		char buffer[20];
+
+		if ((0 != ((1 << core) & cores)) ||
+		    ((1 << core) ==
+		     acp_osg_group_get_res(group, ACP_OS_BOOT_CORE)))
+			continue;
+
+		sprintf(buffer, "/cpus/cpu@%d", core);
+		nodeoffset = fdt_path_offset(dt, buffer);
+
+		if (0 > nodeoffset) {
+			printf("Error Getting Offset of %s.\n", buffer);
+			goto error;
+		}
+
+		fdt_del_node(dt, nodeoffset);
+	}
+
+	/* Update the CCRn values for the boot core. */
+	mtspr( ccr0, ccr0_val );
+	mtspr( ccr1, ccr1_val );
+	mtspr( ccr2, ccr2_val );
+	isync( );
 
 	new_commandline = calloc(512, 1);
 
@@ -263,15 +270,6 @@ boot_jump_linux(bootm_headers_t *images)
 	}
 
 	kernel = (void (*)(bd_t *, ulong, ulong, ulong, ulong))images->ep;
-
-	if (0 != dt_specified) {
-		/* Release the stage 3 lock. */
-		acp_unlock_stage3();
-
-		fdt_fixup_ethernet((void *)dt);
-
-		(*kernel)((bd_t *)dt, (ulong)kernel, 0, 0, 0);
-	}
 
 	/* If necessary, Copy the device tree. */
 	if (0 != os_base) {
@@ -509,7 +507,7 @@ static int boot_body_linux(bootm_headers_t *images)
 			puts (" - must RESET the board to recover.\n");
 			return -1;
 		}
-#ifdef CONFIG_OF_BOARD_SETUP
+#if defined(CONFIG_OF_BOARD_SETUP)
 		/* Call the board-specific fixup routine */
 		ft_board_setup(*of_flat_tree, gd->bd);
 #endif
@@ -553,6 +551,9 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 	} else {
 		dt = NULL;
 	}
+
+	set_working_fdt_addr((void *)dt);
+	acp_osg_update_dt((void *)dt, 0);
 #endif	/* CONFIG_ACP3 */
 
 	if (flag & BOOTM_STATE_OS_CMDLINE) {
