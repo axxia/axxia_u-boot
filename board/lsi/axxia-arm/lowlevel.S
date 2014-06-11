@@ -25,6 +25,7 @@
 @
 
 #include <config.h>
+#include <linux/linkage.h>
 
 #if defined(AXXIA_FORCE_NORMAL_MODE) && defined(AXXIA_FORCE_SECURE_MODE)
 #error "AXXIA_FORCE_SECURE_MODE And AXXIA_FORCE_SECURE_MODE Are Both Defined!"
@@ -44,12 +45,19 @@
 	@ r0 - Physical address of page table memory.
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-	.global	setup_page_tables
+_setup_page_table_stack:
 
-setup_page_tables:
+	.word	0
+
+_setup_page_tables:
 
 	mov	r3, r0
 	add	r2, r3, #0x5000
+
+	@@
+	@ Save Registers
+	ldr	r0, =_setup_page_table_stack
+	str	r9, [r0]
 
 	@ Clear
 
@@ -72,9 +80,9 @@ setup_page_tables:
 
 	mov	r1, r3
 	add	r1, #0x800
-	ldr	r9, =0x4001
-	add	r9, r9, r3
-	str	r9, [r1], #4
+	ldr	r0, =0x4001
+	add	r0, r0, r3
+	str	r0, [r1], #4
 
 	ldr	r0, =0x2000043e
 	add	r1, r3, #0x4000
@@ -286,8 +294,20 @@ setup_page_tables:
 	mcr     p15, 0, r0, c7, c5, 4   @ ISB
 
 	@@
+	@ Restore Registers
+	ldr	r0, =_setup_page_table_stack
+	ldr	r9, [r0]
+
+	@@
 	@ Return
-	mov	pc, lr			@ return
+	bx	lr
+
+ENTRY(setup_page_tables)
+	mov	r12, lr
+	bl	_setup_page_tables
+	mov	lr, r12
+	bx	lr
+ENDPROC(setup_page_tables)
 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	@ In some cases (memory tests) it makes sense to run uncached.
@@ -375,7 +395,7 @@ lowlevel_init:
 	ldr	r0, =_page_table_start
 	ldr	r0, [r0]
 	mov	r8, lr
-	bl	setup_page_tables
+	bl	_setup_page_tables
 	mov	lr, r8
 
 #ifdef CONFIG_HW_WATCHDOG
