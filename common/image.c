@@ -56,8 +56,12 @@
 #include <u-boot/md5.h>
 #include <sha1.h>
 
+#ifndef USE_HOSTCC
+#ifndef CONFIG_SPL_BUILD
 static int fit_check_ramdisk(const void *fit, int os_noffset,
 		uint8_t arch, int verify);
+#endif
+#endif
 #endif
 
 #ifdef CONFIG_CMD_BDI
@@ -66,8 +70,12 @@ extern int do_bdinfo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifndef CONFIG_SPL_BUILD
+#ifndef USE_HOSTCC
 static const image_header_t *image_get_ramdisk(ulong rd_addr, uint8_t arch,
 						int verify);
+#endif
+#endif
 #else
 #include "mkimage.h"
 #include <u-boot/md5.h>
@@ -3396,6 +3404,7 @@ void fit_conf_print(const void *fit, int noffset, const char *p)
  *     0, on failure
  */
 #ifndef USE_HOSTCC
+#ifndef CONFIG_SPL_BUILD
 static int fit_check_ramdisk(const void *fit, int rd_noffset, uint8_t arch,
 				int verify)
 {
@@ -3424,5 +3433,6 @@ static int fit_check_ramdisk(const void *fit, int rd_noffset, uint8_t arch,
 	bootstage_mark(BOOTSTAGE_ID_FIT_RD_CHECK_ALL_OK);
 	return 1;
 }
+#endif /* CONFGI_SPL_BUILD */
 #endif /* USE_HOSTCC */
 #endif /* CONFIG_FIT */

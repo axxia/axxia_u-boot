@@ -68,6 +68,7 @@ int nulldev_input(void)
  **************************************************************************
  */
 
+#ifndef CONFIG_ACP
 static void drv_system_init (void)
 {
 	struct stdio_dev dev;
@@ -95,6 +96,7 @@ static void drv_system_init (void)
 	stdio_register (&dev);
 #endif
 }
+#endif
 
 /**************************************************************************
  * DEVICES
