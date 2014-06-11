@@ -453,6 +453,7 @@ set_l2actlr:
 
 	mrc	p15, 1, r0, c15, c0, 0
 	orr	r0, r0, #(1 << 3)
+	orr	r0, r0, #(1 << 7)
 	orr	r0, r0, #(1 << 12)
 	orr	r0, r0, #(1 << 13)
 	orr	r0, r0, #(1 << 14)
