@@ -23,6 +23,7 @@
 #ifndef __CONFIGS_AXXIA_55XX_SIM_H
 #define __CONFIGS_AXXIA_55XX_SIM_H
 
+#define CONFIG_AXXIA_55XX_SIM_MMC
 #define CONFIG_AXXIA_55XX_SIM
 #define CONFIG_AXXIA_SIM
 
@@ -69,4 +70,4 @@
 
 #include <configs/axxia-arm.h>
 
-#endif	/* __CONFIGS_AXXIA_55XX_SIM_H */
+#endif	/* __CONFIGS_AXXIA_55XX_SIM_MMC_H */
