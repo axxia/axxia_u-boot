@@ -4000,7 +4000,7 @@ ncp_sysmem_init_lsiphy(
      */
 
 
-#define  NCP_SM_DISP_TRAINING_STEPS
+    /*#define  NCP_SM_DISP_TRAINING_STEPS*/
 
     for (rank = 0; rank < NCP_SM_MAX_RANKS; rank++)
     {
