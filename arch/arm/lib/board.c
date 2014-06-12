@@ -83,6 +83,8 @@ typedef enum {
         PEI_5G = 2
 } peiSpeed_t;
 
+extern unsigned long pfuse;
+
 void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 	unsigned lnkStatus, addr;
 	unsigned width;
@@ -90,6 +92,11 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 	unsigned peiControl;
 	unsigned peiDelay, peiConfig;
 	char * env_value;
+	unsigned short v1_0 = 0;
+
+	if (0 == ((pfuse & 0x7e0) >> 5)) {
+		v1_0 = 1;
+	}
 
 	env_value = getenv("pei_speed_change_delay");
 	if ((char *)0 != env_value) {
@@ -156,115 +163,140 @@ void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
 	} else if (changeSpeed == PEI_5G) {
 		if ((peiCore == 0) && ((peiControl & 0x1c400001)== 0x00400001)) {
 			/* PEI0 RC x4 */
-			peiConfig = readl((void *)(addr + 0x1000));
-			/* clear force gen1 bit 18 */
-			peiConfig = peiConfig & 0xfffbffff;
-			writel(peiConfig, (void *)(addr + 0x1000));
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
 			
 			/* Change PEI speed to Gen 2 */
 			writel(0x2, (void *)(addr + 0x90));
 			writel(0x10000, (void *)(addr + 0x117c));
-			udelay(peiDelay);
+			if (v1_0) {
+				/* Applicable only to v1.0 */
+				udelay(peiDelay);
 
-			/* ncr w 0x115.1.0x08e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x8e, 0x0406 );
+				/* ncr w 0x115.1.0x08e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x8e, 0x0406 );
 
-			/* ncr w 0x115.1.0x28e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x28e, 0x0406 );
+				/* ncr w 0x115.1.0x28e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x28e, 0x0406 );
 
-			/* ncr w 0x115.1.0x68e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
+				/* ncr w 0x115.1.0x68e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
 		
-			/* ncr w 0x115.1.0x88e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+				/* ncr w 0x115.1.0x88e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+			}
 		} else if ((peiCore == 1) && ((peiControl & 0x0c400001)== 0x00400001)) {
 			/* PEI1 RC x4 */
-			peiConfig = readl((void *)(addr + 0x1000));
-			/* clear force gen1 bit 18 */
-			peiConfig = peiConfig & 0xfffbffff;
-			writel(peiConfig, (void *)(addr + 0x1000));
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
 			
 			/* Change PEI speed to Gen 2 */
 			writel(0x2, (void *)(addr + 0x90));
 			writel(0x10000, (void *)(addr + 0x117c));
 			udelay(peiDelay);
 
-			/* ncr w 0x115.4.0x08e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
+			if (v1_0) {
+				/* ncr w 0x115.4.0x08e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
 
-			/* ncr w 0x115.4.0x28e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x28e, 0x0406 );
+				/* ncr w 0x115.4.0x28e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x28e, 0x0406 );
 
-			/* ncr w 0x115.4.0x68e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x68e, 0x0406 );
+				/* ncr w 0x115.4.0x68e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x68e, 0x0406 );
 		
-			/* ncr w 0x115.4.0x88e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x88e, 0x0406 );
+				/* ncr w 0x115.4.0x88e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x88e, 0x0406 );
+			}
 		} else if (((peiCore == 0) &&
 			    (((peiControl & 0x1c400001)== 0x04400001))) ||
 			   ((peiControl & 0x1c400001)== 0x08400001)) {
 			/* PEI0 RC x2 */
-			peiConfig = readl((void *)(addr + 0x1000));
-			/* clear force gen1 bit 18 */
-			peiConfig = peiConfig & 0xfffbffff;
-			writel(peiConfig, (void *)(addr + 0x1000));
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
 			
 			/* Change PEI speed to Gen 2 */
 			writel(0x2, (void *)(addr + 0x90));
 			writel(0x10000, (void *)(addr + 0x117c));
 			udelay(peiDelay);
 
-			/* ncr w 0x115.1.0x68e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
+			if (v1_0) {
+				/* ncr w 0x115.1.0x68e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
 		
-			/* ncr w 0x115.1.0x88e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+				/* ncr w 0x115.1.0x88e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+			}
 		} else if ((peiCore == 1) && ((peiControl & 0x0c400001)== 0x04400001)) {
 			/* PEI1 RC x2 */
-			peiConfig = readl((void *)(addr + 0x1000));
-			/* clear force gen1 bit 18 */
-			peiConfig = peiConfig & 0xfffbffff;
-			writel(peiConfig, (void *)(addr + 0x1000));
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
 			
 			/* Change PEI speed to Gen 2 */
 			writel(0x2, (void *)(addr + 0x90));
 			writel(0x10000, (void *)(addr + 0x117c));
 			udelay(peiDelay);
 
-			/* ncr w 0x115.4.0x08e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
+			if (v1_0) {
+				/* ncr w 0x115.4.0x08e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
 
-			/* ncr w 0x115.4.0x28e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x28e, 0x0406 );
+				/* ncr w 0x115.4.0x28e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x28e, 0x0406 );
+			}
 
 		} else if ((peiCore == 0) && ((peiControl & 0x1c400001)== 0x14400001)) {
 			/* PEI0 RC x1 */
-			peiConfig = readl((void *)(addr + 0x1000));
-			/* clear force gen1 bit 18 */
-			peiConfig = peiConfig & 0xfffbffff;
-			writel(peiConfig, (void *)(addr + 0x1000));
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
 			
 			/* Change PEI speed to Gen 2 */
 			writel(0x2, (void *)(addr + 0x90));
 			writel(0x10000, (void *)(addr + 0x117c));
 			udelay(peiDelay);
-
-			/* ncr w 0x115.1.0x88e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+	
+			if (v1_0) {
+				/* ncr w 0x115.1.0x88e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+			}
 		} else if ((peiCore == 1) && ((peiControl & 0x0c400001)== 0x08400001)) {
 			/* PEI1 RC x1 */
-			peiConfig = readl((void *)(addr + 0x1000));
-			/* clear force gen1 bit 18 */
-			peiConfig = peiConfig & 0xfffbffff;
-			writel(peiConfig, (void *)(addr + 0x1000));
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
 			
 			/* Change PEI speed to Gen 2 */
 			writel(0x2, (void *)(addr + 0x90));
 			writel(0x10000, (void *)(addr + 0x117c));
 			udelay(peiDelay);
 
-			/* ncr w 0x115.4.0x08e 0x0406 */
-			ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
+			if (v1_0) {
+				/* ncr w 0x115.4.0x08e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
+			}
 
 		} else {
 			printf("Unsupported PEI%d config = 0x%x\n", peiCore, peiControl);

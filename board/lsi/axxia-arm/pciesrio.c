@@ -24,6 +24,7 @@
 #include <common.h>
 #include <asm/io.h>
 
+extern unsigned long pfuse;
 int pciesrio_setcontrol(unsigned long new_control);
 
 typedef struct {
@@ -472,6 +473,10 @@ int pciesrio_setcontrol(unsigned long new_control)
 		{0x061e, 0xc001},
 		{0x081e, 0xc001}
 	};
+	unsigned short v1_0 = 0;
+
+	if (0 == ((pfuse & 0x7e0) >> 5))
+		v1_0 = 1;
 
 	phy0_ctrl = new_control & 0x1f700409;
 	phy1_ctrl = new_control & 0x60800004;
@@ -673,16 +678,18 @@ int pciesrio_setcontrol(unsigned long new_control)
 			ncr_write16(NCP_REGION_ID(0x115, 1), 0x81e,0x8001 );
 		}
 
-		if (phy0_ctrl & 0x1) {		
-			/* ncpWrite 0x115.0x0.0x214 0x00F00A0A */
-			ncr_write32(NCP_REGION_ID(0x115, 0), 0x214, 0x00F00A0A);
-
-			for (i = 0;
-	     		i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
-	     		++i) {
-				ncr_write16(NCP_REGION_ID(0x115, 1),
-			    	rx_serdes_values[i].offset,
-			    	rx_serdes_values[i].value);
+		if (phy0_ctrl & 0x1) {	
+			if (v1_0) {	
+				/* Applicable only to v1.0 device */
+				/* ncpWrite 0x115.0x0.0x214 0x00F00A0A */
+				ncr_write32(NCP_REGION_ID(0x115, 0), 0x214, 0x00F00A0A);
+				for (i = 0;
+	     			i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
+	     			++i) {
+					ncr_write16(NCP_REGION_ID(0x115, 1),
+			   		 	rx_serdes_values[i].offset,
+			   		 	rx_serdes_values[i].value);
+				}
 			}
 			if ((phy0_ctrl & 0x1c000000) == 0) {
 				/* PEI0 x4 mode -- PLLA used -- power only PLLA */
@@ -707,10 +714,13 @@ int pciesrio_setcontrol(unsigned long new_control)
 		/* 100 ms delay */
 		udelay(100000);
 
-		/* Force Gen1 speed */
-		pei0_config = readl((void *)(PCIE0_CONFIG + 0x1000));
-		pei0_config = pei0_config | 0x00040000;
-		writel(pei0_config, (void *)(PCIE0_CONFIG + 0x1000));
+		if (v1_0) {
+			/* Applicable only to v1.0 */
+			/* Force Gen1 speed */
+			pei0_config = readl((void *)(PCIE0_CONFIG + 0x1000));
+			pei0_config = pei0_config | 0x00040000;
+			writel(pei0_config, (void *)(PCIE0_CONFIG + 0x1000));
+		}
 
 		if ((new_control & 0x00000004) != 0x00000004) {
 			/* only PEI0 is being used */
@@ -775,12 +785,15 @@ int pciesrio_setcontrol(unsigned long new_control)
 		/* wr pll_a_ctrl  0x230 0x03176403 */
 		ncr_write32(NCP_REGION_ID(0x115, 3), 0x230, 0x03176403);
 
-		for (i = 0;
+		if (v1_0) {
+			/* Applicable only to v1.0 */
+			for (i = 0;
 	     		i < sizeof(rx_serdes_values) / sizeof(rx_serdes_value_t);
 	     		++i) {
-			ncr_write16(NCP_REGION_ID(0x115, 4),
-				rx_serdes_values[i].offset,
-				rx_serdes_values[i].value);
+				ncr_write16(NCP_REGION_ID(0x115, 4),
+					rx_serdes_values[i].offset,
+					rx_serdes_values[i].value);
+			}
 		}
 
 		/* ncpWrite 0x115.0x0.0x228 0x00000000  # power up PLLA */
@@ -793,10 +806,12 @@ int pciesrio_setcontrol(unsigned long new_control)
 		/* PCIE1 */
 		ncr_write32(NCP_REGION_ID(0x115, 3), 0x200, phy1_ctrl);
 
-		/* Force Gen1 speed */
-		pei1_config = readl((void *)(PCIE1_CONFIG + 0x1000));
-		pei1_config = pei1_config | 0x00040000;
-		writel(pei1_config, (void *)(PCIE1_CONFIG + 0x1000));
+		if (v1_0) {
+			/* Force Gen1 speed */
+			pei1_config = readl((void *)(PCIE1_CONFIG + 0x1000));
+			pei1_config = pei1_config | 0x00040000;
+			writel(pei1_config, (void *)(PCIE1_CONFIG + 0x1000));
+		}
 	}
 
 	return 0;
