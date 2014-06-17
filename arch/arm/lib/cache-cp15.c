@@ -182,8 +182,6 @@ static void cache_disable(uint32_t cache_bit)
 #if defined(AXXIA_FORCE_NORMAL_MODE)
 	smp_kick_secondary();
 #elif !defined(AXXIA_FORCE_SECURE_MODE)
-	extern unsigned long pfuse;
-
 	if (0 != ((pfuse & 0x7e0) >> 5)) {
 		smp_kick_secondary();
 	}

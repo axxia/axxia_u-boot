@@ -24,7 +24,6 @@
 #include <common.h>
 #include <asm/io.h>
 
-extern unsigned long pfuse;
 int pciesrio_setcontrol(unsigned long new_control);
 
 typedef struct {

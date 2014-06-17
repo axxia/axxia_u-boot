@@ -100,6 +100,13 @@
 /*#define AXXIA_FORCE_SECURE_MODE*/
 
 /*
+  OR in the fuse force register's pv and cnpv fields when initializing
+  pfuse.
+*/
+
+#define AXXIA_OR_IN_FUSE_FORCE
+
+/*
   Start the secondary cores in U-Boot.
 
   This is a work-around required if using Linux releases before

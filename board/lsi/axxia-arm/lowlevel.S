@@ -431,8 +431,23 @@ lowlevel_init:
 	@@
 	@ Read pfuse into r7 and save
 
+#ifdef CONFIG_AXXIA_EMU
+	mov	r7, #0
+#else
 	ldr	r3, =SYSCON
 	ldr	r7, [r3, #0x34]
+#ifdef AXXIA_OR_IN_FUSE_FORCE
+	add	r3, r3, #0x1000
+	ldr	r8, [r3, #0x64]
+	and	r8, r8, #0x3800
+	lsl	r8, r8, #13
+	orr	r7, r7, r8
+	ldr	r8, [r3, #0x64]
+	and	r8, r8, #0xf0
+	lsl	r8, r8, #16
+	orr	r7, r7, r8
+#endif
+#endif
 	ldr	r3, =pfuse
 	str	r7, [r3]
 

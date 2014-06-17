@@ -30,8 +30,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-unsigned long pfuse __attribute__ ((section ("data")));
-
 const struct omap_sysinfo sysinfo = {
 	"Board: OMAP5430 EVM\n"
 };
@@ -43,6 +41,188 @@ const struct omap_sysinfo sysinfo = {
   ==============================================================================
   ==============================================================================
 */
+
+static int number_of_clusters = -1;
+
+#ifndef CONFIG_AXXIA_SIM
+
+static int bit_by_cluster[4];
+
+/*
+  ------------------------------------------------------------------------------
+  init_clusters_info
+*/
+
+static int
+initialize_cluster_info(void)
+{
+	/* pfuse gets initialized in lowlevel.S */
+	unsigned long product_variant;
+	unsigned long cluster_not_present_vector;
+	unsigned long chip_type;
+	unsigned long chip_version_major;
+
+	if (-1 == number_of_clusters) {
+		product_variant = (pfuse >> 24) & 7;
+		cluster_not_present_vector = (pfuse >> 20) & 0xf;
+		chip_type = pfuse & 0x1f;
+		chip_version_major = (pfuse >> 8) & 7;
+		printf("%s:%d - pfuse=0x%lx product_variant=0x%lx cnpv=0x%lx chip_type=0x%lx chip_version_major=0x%lx\n",
+		       __FILE__, __LINE__,
+		       pfuse, product_variant, cluster_not_present_vector,
+		       chip_type, chip_version_major);
+
+#ifdef CONFIG_AXXIA_EMU
+		number_of_clusters = 2;
+		bit_by_cluster[0] = 19;
+		bit_by_cluster[1] = 9;
+		bit_by_cluster[2] = -1;
+		bit_by_cluster[3] = -1;
+
+		return 0;
+#else
+		number_of_clusters = 4;
+		bit_by_cluster[0] = 1;
+		bit_by_cluster[1] = 9;
+		bit_by_cluster[2] = 11;
+		bit_by_cluster[3] = 19;
+
+		if (0 == chip_type ||
+		    0 == cluster_not_present_vector ||
+		    0 == chip_version_major)
+			return 0;
+
+		switch (product_variant) {
+		case 1:			/* 3 clusters */
+			number_of_clusters = 3;
+			bit_by_cluster[3] = -1;
+
+			switch (cluster_not_present_vector) {
+			case 0x8:
+				bit_by_cluster[0] = 1;
+				bit_by_cluster[1] = 9;
+				bit_by_cluster[2] = 11;
+				break;
+			case 0x4:
+				bit_by_cluster[0] = 1;
+				bit_by_cluster[1] = 9;
+				bit_by_cluster[2] = 19;
+				break;
+			case 0x2:
+				bit_by_cluster[0] = 1;
+				bit_by_cluster[1] = 11;
+				bit_by_cluster[2] = 19;
+				break;
+			case 0x1:
+				bit_by_cluster[0] = 9;
+				bit_by_cluster[1] = 11;
+				bit_by_cluster[2] = 19;
+				break;
+			default:
+				acp_failure(__FILE__, __func__, __LINE__);
+				break;
+			}
+			break;
+		case 3:			/* 2 clusters */
+			number_of_clusters = 2;
+			bit_by_cluster[2] = -1;
+			bit_by_cluster[3] = -1;
+
+			switch (cluster_not_present_vector) {
+			case 0xc:
+				bit_by_cluster[0] = 1;
+				bit_by_cluster[1] = 9;
+				break;
+			case 0xa:
+				bit_by_cluster[0] = 1;
+				bit_by_cluster[1] = 11;
+				break;
+			case 0x9:
+				bit_by_cluster[0] = 9;
+				bit_by_cluster[1] = 11;
+				break;
+			case 0x6:
+				bit_by_cluster[0] = 1;
+				bit_by_cluster[1] = 19;
+				break;
+			case 0x5:
+				bit_by_cluster[0] = 9;
+				bit_by_cluster[1] = 19;
+				break;
+			case 0x3:
+				bit_by_cluster[0] = 11;
+				bit_by_cluster[1] = 19;
+				break;
+			default:
+				acp_failure(__FILE__, __func__, __LINE__);
+				break;
+			}
+			break;
+		case 7:			/* 1 cluster */
+			number_of_clusters = 1;
+			bit_by_cluster[1] = -1;
+			bit_by_cluster[2] = -1;
+			bit_by_cluster[3] = -1;
+
+			switch (cluster_not_present_vector) {
+			case 0xe:
+				bit_by_cluster[0] = 1;
+				break;
+			case 0xd:
+				bit_by_cluster[0] = 9;
+				break;
+			case 0xb:
+				bit_by_cluster[0] = 11;
+				break;
+			case 0x7:
+				bit_by_cluster[0] = 19;
+				break;
+			default:
+				acp_failure(__FILE__, __func__, __LINE__);
+				break;
+			}
+			break;
+		default:
+			break;
+		}
+
+		return 0;
+#endif
+	}
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  get_number_of_clusters
+*/
+
+static unsigned long
+get_number_of_clusters(void)
+{
+	if (0 != initialize_cluster_info())
+		acp_failure(__FILE__, __func__, __LINE__);
+
+	return number_of_clusters;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  get_bit_by_cluster
+*/
+
+static unsigned long
+get_bit_by_cluster(unsigned long cluster)
+{
+	if (0 != initialize_cluster_info() ||
+	    cluster >= number_of_clusters)
+		acp_failure(__FILE__, __func__, __LINE__);
+
+	return bit_by_cluster[cluster];
+}
+
+#endif
 
 /*
   ------------------------------------------------------------------------------
@@ -61,11 +241,6 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 	int retries;
 	ncp_uint32_t mask;
 	ncp_uint32_t value;
-#ifdef CONFIG_AXXIA_EMU
-	int bit_by_cluster[] = {19, 9};
-#else
-	int bit_by_cluster[] = {1, 9, 11, 19};
-#endif
 
 #ifdef CONFIG_AXXIA_EMU
 	if (1 < cluster)
@@ -79,7 +254,7 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 	       state ? "Adding" : "Removing",
 	       cluster,
 	       state ? "to" : "from");
-	mask = (1 << bit_by_cluster[cluster]);
+	mask = (1 << get_bit_by_cluster(cluster));
 
 	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(ncp_uint32_t)); ++i) {
 		int offset;
@@ -265,18 +440,41 @@ static int
 set_clusters(void)
 {
 	char *clusters_env;
-	ncp_uint32_t clusters;
+	ncp_uint32_t clusters = 0;
 
-#ifdef CONFIG_AXXIA_EMU
-	clusters = 0x1;
-#else
+#ifdef CONFIG_AXXIA_SIM
 	clusters = 0xf;
+	number_of_clusters = 4;
+#else
+	switch (get_number_of_clusters()) {
+	case 1:
+		clusters = 0x1;
+		break;
+	case 2:
+		clusters = 0x3;
+		break;
+	case 3:
+		clusters = 0x7;
+		break;
+	case 4:
+		clusters = 0xf;
+		break;
+	default:
+		acp_failure(__FILE__, __func__, __LINE__);
+		break;
+	}
+
+	printf("%s:%d - Based on pfuse (0x%08lx), clusters=0x%lx number_of_clusters=%d\n",
+	       __FILE__, __LINE__, (unsigned long)pfuse, (unsigned long)clusters,
+	       number_of_clusters);
 #endif
 
 	clusters_env = getenv("clusters");
 
-	if (NULL != clusters_env)
+	if (NULL != clusters_env) {
+		printf("Using \"clusters\" from the U-Boot Environment.\n");
 		clusters = simple_strtoul(clusters_env, NULL, 0);
+	}
 
 	if (0 == (clusters & 1)) {
 		printf("Cluster 0 MUST be enabled, enabling.\n");
@@ -287,6 +485,7 @@ set_clusters(void)
 	if (0 != (clusters & 0xc)) {
 		printf("Emulation only supports clusters 0 and 1!\n"
 		       "Change the \"clusters\" variable to 1 or 3.\n");
+
 		return -1;
 	}
 
@@ -304,42 +503,48 @@ set_clusters(void)
 #else
 	puts("Setting up Coherency for Clusters: 0");
 
-	if (0 != (clusters & 0x2))
+	if (0 != (clusters & 0x2) && 2 <= number_of_clusters)
 		puts(",1");
 
-	if (0 != (clusters & 0x4))
+	if (0 != (clusters & 0x4) && 3 <= number_of_clusters)
 		puts(",2");
 
-	if (0 != (clusters & 0x8))
+	if (0 != (clusters & 0x8) && 4 <= number_of_clusters)
 		puts(",3");
 
 	puts("\n");
 
-	if (0 == (clusters & 0x2)) {
-		power_down_cluster(1);
+	if (2 <= number_of_clusters) {
+		if (0 == (clusters & 0x2)) {
+			power_down_cluster(1);
 
-		if (0 != set_cluster_coherency(1, 0))
+			if (0 != set_cluster_coherency(1, 0))
+				acp_failure(__FILE__, __func__, __LINE__);
+		} else if (0 != set_cluster_coherency(1, 1)) {
 			acp_failure(__FILE__, __func__, __LINE__);
-	} else if (0 != set_cluster_coherency(1, 1)) {
-		acp_failure(__FILE__, __func__, __LINE__);
+		}
 	}
 
-	if (0 == (clusters & 0x4)) {
-		power_down_cluster(2);
+	if (3 <= number_of_clusters) {
+		if (0 == (clusters & 0x4)) {
+			power_down_cluster(2);
 
-		if (0 != set_cluster_coherency(2, 0))
+			if (0 != set_cluster_coherency(2, 0))
+				acp_failure(__FILE__, __func__, __LINE__);
+		} else if (0 != set_cluster_coherency(2, 1)) {
 			acp_failure(__FILE__, __func__, __LINE__);
-	} else if (0 != set_cluster_coherency(2, 1)) {
-		acp_failure(__FILE__, __func__, __LINE__);
+		}
 	}
 
-	if (0 == (clusters & 0x8)) {
-		power_down_cluster(3);
+	if (4 <= number_of_clusters) {
+		if (0 == (clusters & 0x8)) {
+			power_down_cluster(3);
 
-		if (0 != set_cluster_coherency(3, 0))
+			if (0 != set_cluster_coherency(3, 0))
+				acp_failure(__FILE__, __func__, __LINE__);
+		} else if (0 != set_cluster_coherency(3, 1)) {
 			acp_failure(__FILE__, __func__, __LINE__);
-	} else if (0 != set_cluster_coherency(3, 1)) {
-		acp_failure(__FILE__, __func__, __LINE__);
+		}
 	}
 #endif
 

@@ -32,10 +32,10 @@
   ===============================================================================
 */
 
+unsigned long pfuse __attribute__ ((section ("data")));
+
 #ifndef CONFIG_AXXIA_EMU
 #ifdef CONFIG_SPL_BUILD
-
-unsigned long pfuse __attribute__ ((section ("data")));
 
 #define PARAMETERS_CLOCKS_55XX_1P0_HARDCODE     0x00000001
 
