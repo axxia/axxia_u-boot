@@ -913,17 +913,17 @@ static int do_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 			"%12s"
 			"\b\b\b\b\b\b\b\b\b\b",
 			pattern, "");
+		WATCHDOG_RESET();
 
 		for (addr=start,val=pattern; addr<end; addr++) {
-			WATCHDOG_RESET();
 			*addr = val;
 			val  += incr;
 		}
 
 		puts ("Reading...\n");
+		WATCHDOG_RESET();
 
 		for (addr=start,val=pattern; addr<end; addr++) {
-			WATCHDOG_RESET();
 			readback = *addr;
 			if (readback != val) {
 				printf ("\nMem error @ 0x%08X: "
