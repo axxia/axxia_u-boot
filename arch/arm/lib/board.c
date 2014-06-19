@@ -994,7 +994,6 @@ extern unsigned _u_boot_list__start; /* SR */
 	misc_init_r();
 #endif
 
-#ifndef CONFIG_AXXIA_ARM
 	 /* set up exceptions */
 	interrupt_init();
 	/* enable exceptions */
@@ -1002,7 +1001,6 @@ extern unsigned _u_boot_list__start; /* SR */
 
 	/* Initialize from environment */
 	load_addr = getenv_ulong("loadaddr", 16, load_addr);
-#endif
 
 #ifdef CONFIG_BOARD_LATE_INIT
 	board_late_init();

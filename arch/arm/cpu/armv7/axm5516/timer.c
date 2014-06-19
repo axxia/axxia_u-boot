@@ -39,6 +39,11 @@ ulong get_timer_masked(void)
 
 ulong get_tbclk(void)
 {
+	ncp_uint32_t frequency;
+
+	if (0 == acp_clock_get(clock_system, &frequency))
+		return (ulong)(frequency * 1000);
+
 	return CONFIG_SYS_HZ;
 }
 
