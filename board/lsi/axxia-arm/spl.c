@@ -538,10 +538,11 @@ check_memory_ranges(void)
 
 				out = (unsigned long *)(_page_table_start + 0x3000);
 
-				for (count=0; count<0x1000; count++) {
-					for(ncount=0;ncount<16;ncount++){
+				for (count = 0; count < 0x1000; ) {
+					for (ncount = 0; ncount < 16;
+						ncount++) {
 						*out++ = val;
-						++count;
+						count = count + 4;
 					}
 					val += 0x1000000;
 				}
