@@ -24,7 +24,9 @@
 #include <asm/processor.h>
 #include <ppc47x.h>
 
-#define WA_BZ42743		/* ACP2500 system reset issue */
+#if defined(CONFIG_ACP3) && (defined(ACP_25xx) || defined(AXM_35xx))
+#define WA_BZ42743
+#endif
 
 /*
   ------------------------------------------------------------------------------
@@ -38,10 +40,16 @@ acp_reset(int argc, char *argv[])
 	unsigned long value;
 #endif
 
-#if defined(CONFIG_ACP3) && defined(ACP_25xx) && defined(WA_BZ42743)
+#if defined(WA_BZ42743)
+#if defined(ACP_25xx)
 	value = dcr_read(0xd00);
 	value |= 0xab;
 	dcr_write(value, 0xd00);
+#else
+	value = dcr_read(0xd0a);
+	value |= 0xab;
+	dcr_write(value, 0xd0a);
+#endif
 #endif
 
 #ifdef CONFIG_ACP2
@@ -85,7 +93,7 @@ acp_reset(int argc, char *argv[])
 			  Chip Reset -- ?
 			*/
 			printf("Chip Reset\n");
-#if defined(ACP_25xx) && defined(WA_BZ42743)
+#if defined(WA_BZ42743)
 			dcr_write(2, DCR_RESET_BASE);
 #else
 			mtspr(dbcr0, 0x20000000);
@@ -95,7 +103,7 @@ acp_reset(int argc, char *argv[])
 
 	/* Default is a System Reset. */
 	printf("System Reset\n");
-#if defined(ACP_25xx) && defined(WA_BZ42743)
+#if defined(WA_BZ42743)
 	dcr_write(1, DCR_RESET_BASE);
 #else
 	mtspr(dbcr0, 0x30000000);
