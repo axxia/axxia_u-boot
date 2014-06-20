@@ -1622,8 +1622,6 @@ acp_init_r( void )
 #endif
 	env_relocate( );
 
-	printf("Updating the Environment...\n");	/* ZZZ */
-
 	/* Update "baudrate" now that the environment is available. */
 	{
 		char *env_baudrate;
@@ -1760,8 +1758,10 @@ acp_init_r( void )
 		dcr_write((temp << 30), 0x103);
 #endif
 
-		if (0 != env_save)
+		if (0 != env_save) {
+		  	printf("Updating the Environment...\n");
 			saveenv();
+		}
 	}
 #endif
 
