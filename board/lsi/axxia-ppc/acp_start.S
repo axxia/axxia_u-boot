@@ -453,7 +453,11 @@ acp_relocate:
 	#; to avoid incomaptibility with older binutils...
 	.long		0x7eb70206
 #endif
+#ifdef AXM_35xx
+	andi.		r21,r21,0x3f
+#else
 	andi.		r21,r21,0x3
+#endif
 	or		r22,r22,r21
 	lis		r23,(DCR_RESET_BASE + 0x6)@h
 	ori		r23,r23,(DCR_RESET_BASE + 0x6)@l
@@ -465,7 +469,11 @@ acp_relocate:
 	#; to avoid incomaptibility with older binutils...
 	.long		0x7eb70206
 #endif
+#ifdef AXM_35xx
+	andi.		r21,r21,0x3f
+#else
 	andi.		r21,r21,0x3
+#endif
 	or		r22,r22,r21
 	cmpwi		r22,0
 	beq		warm_start

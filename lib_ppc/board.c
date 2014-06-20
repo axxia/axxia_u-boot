@@ -701,10 +701,14 @@ acp_init_f( void )
 	*/
 
 	/* Is this a cold reset? */
-#if (defined(ACP_25xx) || defined(AXM_35xx)) && !defined(ACP_EMU)
+#if defined(ACP_25xx) && !defined(ACP_EMU)
 	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
+#elif defined(AXM_35xx) && !defined(ACP_EMU)
+	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3f;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3f;
 #else
 #if defined(AXM_35xx)  /* 3500 emulation hardcode to cold start */
 	cold_start = 0x3f;
@@ -1534,10 +1538,15 @@ acp_init_r( void )
 
 	__asm__ __volatile__ ("mfspr %0,0x11e" : "=r" (core));
 
-#if (defined(ACP_25xx) && !defined(ACP_EMU)) || (defined(AXM_35xx) && !defined(ACP_EMU))
+#if defined(ACP_25xx) && !defined(ACP_EMU)
 	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3;
 	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3;
+	cold_start = (0 != cold_start);
+#elif defined(AXM_35xx) && !defined(ACP_EMU)
+	cold_start = dcr_read(DCR_RESET_BASE + 0xe) & 0xf;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x8) & 0x3f;
+	cold_start |= dcr_read(DCR_RESET_BASE + 0x6) & 0x3f;
 	cold_start = (0 != cold_start);
 #else
 #if defined(AXM_35xx)  /* 3500 emulation hardcode to cold start */
@@ -1775,15 +1784,17 @@ acp_init_r( void )
 
 #ifdef CONFIG_ACP3
 	/* Clear the Reset Status Register. */
-#if defined(ACP_25xx) || defined(AXM_35xx) 
+#if defined(ACP_25xx)
 	dcr_write(0xf, (DCR_RESET_BASE + 0xe));
 	dcr_write(0x3, (DCR_RESET_BASE + 0x8));
 	dcr_write(0x3, (DCR_RESET_BASE + 0x6));
-
+#elif defined(AXM_35xx) 
+	dcr_write(0xf, (DCR_RESET_BASE + 0xe));
+	dcr_write(0x3f, (DCR_RESET_BASE + 0x8));
+	dcr_write(0x3f, (DCR_RESET_BASE + 0x6));
 #else
 	dcr_write(0xffffe000, (DCR_RESET_BASE + 1));
 #endif
-
 
 	/*
 	  If this is the initial boot, bring up the other OS boot cores.
@@ -1791,8 +1802,6 @@ acp_init_r( void )
 	  In all cases, bring up the secondary cores associated with
 	  this OS group.
 	*/
-
-	printf("Bringing Up Other Cores...\n");	/* ZZZ */
 
 	{
 		int i;
@@ -1846,7 +1855,6 @@ acp_init_r( void )
 	}
 
 	/* Update the device trees for all groups. */
-	printf("updating device trees \n");
 	if (0 != acp_osg_initialize())
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
