@@ -63,7 +63,11 @@ ncp_elm_init(
          * number of bits of address per controller and number
          * of chip-selects
          */
-        sdramSize = parms->totalSize / parms->num_interfaces; 
+      if (2 == parms->num_interfaces)
+        sdramSize = parms->totalSize >> 1;
+      else
+        sdramSize = parms->totalSize;
+
         while ( 0 < sdramSize) {
             ++ddrBits;
             sdramSize >>= 1;
@@ -125,11 +129,12 @@ ncp_elm_sysmem_fill(
      * start each ELM before checking completion so they
      * all run in parallel
      */
+    if (2 == parms->num_interfaces)
+      numCacheLines = (ncp_uint32_t)(parms->totalSize >> 7);
+    else
+      numCacheLines = (ncp_uint32_t)(parms->totalSize >> 6);
 
-    numCacheLines = (ncp_uint32_t) ((parms->totalSize / parms->num_interfaces) / 64);
     numCacheLines--;
-
-
 
     /* elm0 */
     ncr_write32(NCP_REGION_ID(0x158, 0), 0x40, 0x00000000);
