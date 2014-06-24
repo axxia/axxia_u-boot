@@ -1261,6 +1261,8 @@ ncr_write(ncp_uint32_t region,
 			break;
 		case 1:
 		case 4:
+			return ncr_write16_0x115(region, address,
+						 *((ncp_uint32_t *)buffer));
 			break;
 		default:
 			return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
