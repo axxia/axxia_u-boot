@@ -242,7 +242,7 @@ set_ecc_mode(lsi_ecc_mode_t new_ecc_mode)
 }
 
 #if defined(AXM_35xx)
-#define LSI_NAND_PECC_BUSY_REGISTER GPREG_LVL_IRQ_STATS
+#define LSI_NAND_PECC_BUSY_REGISTER GPREG_LVL_IRQ_NOMASK
 #else
 #define LSI_NAND_PECC_BUSY_REGISTER GPREG_STATUS
 #endif
@@ -534,8 +534,14 @@ lsi_nand_dev_ready(struct mtd_info *mtd)
 {
 	struct nand_chip *chip = mtd->priv;    
 	int ready = 0;
-
+	int status;
+	
 	DEBUG_PRINT("\n");
+
+	do {
+		status = READL(LSI_NAND_PECC_BUSY_REGISTER);
+	} while(0 != (status & LSI_NAND_PECC_BUSY_MASK));
+
 	ready =	READL(chip->IO_ADDR_R + EP501_NAND_INTR_STATUS_REG) &
 		NAND_STATUS_TRUE_READY;
 	DEBUG_PRINT("ready=%d\n", ready);
@@ -690,10 +696,6 @@ lsi_nand_cmdfunc(struct mtd_info *mtd,
 	if(command == NAND_CMD_READ0) {
 		lsi_nand_cmd_ctrl(mtd, NAND_CMD_RNDOUTSTART, 0);
 
-		do {
-			status = READL(LSI_NAND_PECC_BUSY_REGISTER);
-		} while(0 != (status & LSI_NAND_PECC_BUSY_MASK));
-
 		/* wait until CHIP_BUSY goes low */
 		do {
 			status = lsi_nand_dev_ready(mtd);
@@ -804,10 +806,6 @@ lsi_nand_waitfunc(struct mtd_info *mtd, struct nand_chip *chip)
 	int status;
 
 	DEBUG_PRINT( "\n" );
-
-	do {
-		status = READL(LSI_NAND_PECC_BUSY_REGISTER);
-	} while (0 != (status & LSI_NAND_PECC_BUSY_MASK));
 
 	while (!lsi_nand_dev_ready(mtd))
 		;
