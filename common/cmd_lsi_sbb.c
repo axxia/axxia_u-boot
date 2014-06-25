@@ -70,7 +70,8 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		destination = simple_strtoul(argv[3], NULL, 16);
 
 		if (0 ==
-		    sbb_verify_image((void *)source, (void *)destination, safe))
+		    sbb_verify_image((void *)source, (void *)destination, safe,
+				     1, 1))
 			return 0;
 		else
 			return -1;

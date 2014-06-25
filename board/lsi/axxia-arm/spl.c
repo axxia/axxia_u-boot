@@ -868,6 +868,7 @@ void spl_spi_load_image(void)
 	unsigned long a_sequence = 0;
 	unsigned long b_sequence = 0;
 	int copy_to_use = 0;
+	int sbb_enabled = 0;
 #endif	/* CONFIG_REDUNDANT_UBOOT */
 
 	/*
@@ -891,21 +892,22 @@ void spl_spi_load_image(void)
 
 #ifdef CONFIG_REDUNDANT_UBOOT
 
-	/* Was the last reset caused by a watchdog timeout? */
+	/*
+	  Was the last reset caused by a watchdog timeout?
+	*/
+
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc,
 		   (ncp_uint32_t *)&watchdog_timeout);
 	watchdog_timeout = ((watchdog_timeout & 0x4) >> 2);
 
-	/* Is image A valid? */
-	if (IH_MAGIC != image_get_magic(&header)) {
-		puts("Bad U-Boot Image A Magic!\n");
-		a_valid = 0;
-	} else {
-		a_valid = 1;
-	}
+	/*
+	   Is image A valid?
+	*/
 
-	if (1 == a_valid) {
-		/* Load a U-Boot Image, Verifying Checksum */
+	sbb_enabled = (1 == is_sbb_enabled(0));
+
+	/* If this is a U-Boot img, or secure boot is enabled, load. */
+	if (IH_MAGIC == image_get_magic(&header)) {
 		spi_flash_read(flash, CONFIG_UBOOT_OFFSET +
 			       sizeof(struct image_header),
 			       spl_image.size, (void *)spl_image.load_addr);
@@ -913,9 +915,24 @@ void spl_spi_load_image(void)
 		if (ntohl(header.ih_dcrc) !=
 		    crc32(0, (unsigned char *)0x40000000,
 			  (spl_image.size - sizeof(struct image_header)))) {
-			puts("Bad U-Boot Image A Checksum!\n");
+			puts("Bad U-Boot Image A: Checksum!\n");
 			a_valid = 0;
+		} else {
+			a_valid = 1;
 		}
+	} else if (0 != sbb_enabled) {
+		spi_flash_read(flash, CONFIG_UBOOT_OFFSET,
+			       spl_image.size, (void *)spl_image.load_addr);
+
+		if (0 != sbb_verify_image(0, 0, 0, 0, 0)) {
+			puts("Bad U-Boot Image A: Insecure!\n");
+			a_valid = 0;
+		} else {
+			a_valid = 1;
+		}
+	} else {
+		puts("Bad U-Boot Image A: Invalid Image Type\n");
+		a_valid = 0;
 	}
 
 	if (1 == a_valid) {
@@ -934,16 +951,12 @@ void spl_spi_load_image(void)
 	/* Note that, in the SPL, SDRAM is virtually mapped to 0x40000000. */
 	spl_image.load_addr = 0x40000000;
 
-	/* Is image B valid? */
-	if (IH_MAGIC != image_get_magic(&header)) {
-		puts("Bad U-Boot Image B Magic!\n");
-		b_valid = 0;
-	} else {
-		b_valid = 1;
-	}
+	/*
+	   Is image B valid?
+	*/
 
-	if (1 == b_valid) {
-		/* Load a U-Boot Image, Verifying Checksum */
+	/* If this is a U-Boot img, or secure boot is enabled, load. */
+	if (IH_MAGIC == image_get_magic(&header)) {
 		spi_flash_read(flash, CONFIG_UBOOT_OFFSET_REDUND +
 			       sizeof(struct image_header),
 			       spl_image.size, (void *)spl_image.load_addr);
@@ -951,9 +964,24 @@ void spl_spi_load_image(void)
 		if (ntohl(header.ih_dcrc) !=
 		    crc32(0, (unsigned char *)0x40000000,
 			  (spl_image.size - sizeof(struct image_header)))) {
-			puts("Bad U-Boot Image B Checksums!\n");
+			puts("Bad U-Boot Image B: Checksum!\n");
 			b_valid = 0;
+		} else {
+			b_valid = 1;
 		}
+	} else if (0 != sbb_enabled) {
+		spi_flash_read(flash, CONFIG_UBOOT_OFFSET_REDUND,
+			       spl_image.size, (void *)spl_image.load_addr);
+
+		if (0 != sbb_verify_image(0, 0, 0, 0, 0)) {
+			puts("Bad U-Boot Image B: Insecure!\n");
+			b_valid = 0;
+		} else {
+			b_valid = 1;
+		}
+	} else {
+		puts("Bad U-Boot Image B: Invalid Image Type\n");
+		b_valid = 0;
 	}
 
 	if (1 == b_valid) {
@@ -988,10 +1016,31 @@ void spl_spi_load_image(void)
 	       a_sequence, b_sequence,
 	       (0 == copy_to_use) ? "A" : "B");
 
-	if (0 == copy_to_use)
-		spi_flash_read(flash, CONFIG_UBOOT_OFFSET +
-			       sizeof(struct image_header),
-			       spl_image.size, (void *)spl_image.load_addr);
+	/*
+	  If B was selected, do nothing, as it has already been
+	  loaded, if A, reload.
+	*/
+
+	if (0 == copy_to_use) {
+		spi_flash_read(flash, CONFIG_UBOOT_OFFSET, 0x40, &header);
+		spl_parse_image_header(&header);
+		/* In the SPL, SDRAM is virtually mapped to 0x40000000. */
+		spl_image.load_addr = 0x40000000;
+
+		if (IH_MAGIC == image_get_magic(&header)) {
+			spi_flash_read(flash, CONFIG_UBOOT_OFFSET +
+				       sizeof(struct image_header),
+				       spl_image.size,
+				       (void *)spl_image.load_addr);
+		} else {
+			spi_flash_read(flash, CONFIG_UBOOT_OFFSET,
+				       spl_image.size,
+				       (void *)spl_image.load_addr);
+
+			if (0 != sbb_verify_image(0, 0, 0, 0, 0))
+				acp_failure(__FILE__, __func__, __LINE__);
+		}
+	}
 
 #else  /* CONFIG_REDUNDANT_UBOOT */
 
@@ -1013,12 +1062,13 @@ void spl_spi_load_image(void)
 			       spl_image.size, (void *)spl_image.load_addr);
 	}
 
-#endif	/* CONFIG_REDUNDANT_UBOOT */
 
 #ifndef CONFIG_AXXIA_EMU
-	if (0 != sbb_verify_image(0x00000000, 0x00000000, 0))
+	if (0 != sbb_verify_image(0x00000000, 0x00000000, 0, 1, 1))
 		acp_failure(__FILE__, __func__, __LINE__);
 #endif
+
+#endif	/* CONFIG_REDUNDANT_UBOOT */
 }
 
 void

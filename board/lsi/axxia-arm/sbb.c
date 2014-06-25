@@ -195,43 +195,6 @@ print_sbb_efuse(char *label, int bit_address, int number_of_bits)
 
 /*
   ------------------------------------------------------------------------------
-  verify_sbb_enabled
-*/
-
-static int
-verify_sbb_enabled(void)
-{
-	unsigned long fuses[8];
-    ncp_uint32_t  value;
-
-	/* Check Force Fuse */
-	ncr_read32(NCP_REGION_ID(0x156,0), 0x1064, &value);
-	if (0 != (value & 0x800000)) {
-		printf("Secure Boot Enabled (Force Fuse)\n");
-		return 0;
-	}
-
-	/* Secure Boot Enable Bit. */
-	memset((void *)fuses, 0, sizeof(unsigned long) * 8);
-
-	if (0 != read_ecm(0x18, 0x3, 0, (void *)fuses)) {
-		printf("read_ecm() failed!\n");
-		return -1;
-	}
-
-	if (0 == (fuses[0] & 0x8)) {
-		printf("Secure Boot Disabled\n");
-		return -1;
-	}
-
-	printf("Secure Boot Enabled\n");
-
-
-	return 0;
-}
-
-/*
-  ------------------------------------------------------------------------------
   lock_sbb
 */
 
@@ -260,7 +223,7 @@ unlock_sbb(void)
 }
 
 static int
-report_errors(unsigned long sbb_interrupt_status)
+report_errors(unsigned long sbb_interrupt_status, int verbose)
 {
 	int rc = 0;
 
@@ -269,112 +232,156 @@ report_errors(unsigned long sbb_interrupt_status)
 	*/
 
 	if (0 != (sbb_interrupt_status & 0x4)) {
-		printf("SBB Error: HW Error\n");
+		if (0 != verbose)
+			printf("SBB Error: HW Error\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x8)) {
-		printf("SBB Error: Invalid Key Encryption Key\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Key Encryption Key\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x10)) {
-		printf("SBB Error: Invalid Storage Root Key\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Storage Root Key\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x20)) {
-		printf("SBB Error: Secure Boot is Disabled\n");
+		if (0 != verbose)
+			printf("SBB Error: Secure Boot is Disabled\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x40)) {
-		printf("SBB Error: Invalid Function\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Function\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x80)) {
-		printf("SBB Error: Invalid ID\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid ID\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x100)) {
-		printf("SBB Error: Invalid Length\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Length\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x200)) {
-		printf("SBB Error: Invalid Padding\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Padding\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x400)) {
-		printf("SBB Error: Unaligned Data\n");
+		if (0 != verbose)
+			printf("SBB Error: Unaligned Data\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x800)) {
-		printf("SBB Error: SDO Authentication Fails\n");
+		if (0 != verbose)
+			printf("SBB Error: SDO Authentication Fails\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x1000)) {
-		printf("SBB Error: Invalid Boot Image\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Boot Image\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x2000)) {
-		printf("SBB Error: ECDSA Initialization Failed\n");
+		if (0 != verbose)
+			printf("SBB Error: ECDSA Initialization Failed\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x4000)) {
-		printf("SBB Error: Invalid Version Number\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Version Number\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x8000)) {
-		printf("SBB Error: Unaligned Address\n");
+		if (0 != verbose)
+			printf("SBB Error: Unaligned Address\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x20000)) {
-		printf("SBB Error: Self-Test Failed\n");
+		if (0 != verbose)
+			printf("SBB Error: Self-Test Failed\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x40000)) {
-		printf("SBB Error: Invalid Customer Key #1\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Customer Key #1\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x80000)) {
-		printf("SBB Error: Invalid Customer Key #2\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Customer Key #2\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x100000)) {
-		printf("SBB Error: Invalid Crypto Mode\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Crypto Mode\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x200000)) {
-		printf("SBB Error: Invalid Key\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Key\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x400000)) {
-		printf("SBB Error: Invalid Hash Length\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Hash Length\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x800000)) {
-		printf("SBB Error: Invalid Public Key Authentication Key\n");
+		if (0 != verbose)
+			printf("SBB Error: Invalid Public Key Authentication Key\n");
+
 		rc = -1;
 	}
 
 	if (0 != (sbb_interrupt_status & 0x1000000)) {
-		printf("SBB Error: Signature Generation Timeout\n");
+		if (0 != verbose)
+			printf("SBB Error: Signature Generation Timeout\n");
+
 		rc = -1;
 	}
 
@@ -388,15 +395,19 @@ report_errors(unsigned long sbb_interrupt_status)
 
 static int
 run_sbb_function(int function,
-		 unsigned long *parameters, int number_of_parameters)
+		 unsigned long *parameters, int number_of_parameters,
+		 int verbose)
 {
 	int i;
 	unsigned long value;
+	int sbb_enabled;
 
 	/* Make sure SBB is enabled (check the fuses). */
-	if (0 != verify_sbb_enabled()) {
+
+	sbb_enabled = is_sbb_enabled(verbose);
+
+	if (-1 == sbb_enabled || 0 == sbb_enabled)
 		return -1;
-	}
 
 	/* Get the semaphore. */
 	if (0 != lock_sbb())
@@ -434,7 +445,7 @@ run_sbb_function(int function,
 	unlock_sbb();
 
 	/* Check for errors. */
-	if (0 != report_errors(value))
+	if (0 != report_errors(value, verbose))
 		return -1;
 
 	return 0;
@@ -450,18 +461,68 @@ run_sbb_function(int function,
 
 /*
   ------------------------------------------------------------------------------
+  is_sbb_enabled
+
+  Returns 1 if enabled, 0 if not, -1 if errror.
+*/
+
+int
+is_sbb_enabled(int verbose)
+{
+	unsigned long fuses[8];
+	ncp_uint32_t  value;
+
+	/* Check Force Fuse */
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1064, &value);
+
+	if (0 != (value & 0x800000)) {
+
+		if (0 != verbose)
+			printf("Secure Boot Enabled (Force Fuse)\n");
+
+		return 1;
+	}
+
+	/* Secure Boot Enable Bit. */
+	memset((void *)fuses, 0, sizeof(unsigned long) * 8);
+
+	if (0 != read_ecm(0x18, 0x3, 0, (void *)fuses)) {
+		printf("read_ecm() failed!\n");
+
+		return -1;
+	}
+
+	if (0 == (fuses[0] & 0x8)) {
+		if (0 != verbose)
+			printf("Secure Boot Disabled\n");
+
+		return 0;
+	}
+
+	if (0 != verbose)
+		printf("Secure Boot Enabled\n");
+
+	return 1;
+}
+
+/*
+  ------------------------------------------------------------------------------
   sbb_verify_image
 */
 
 int
-sbb_verify_image(void *source, void *destination, int safe)
+sbb_verify_image(void *source, void *destination,
+		 int safe, int invalidate, int verbose)
 {
 	unsigned long parameters[4];
+	int sbb_enabled;
 
-    /* If SBB is disabled, return success */
-	if (0 != verify_sbb_enabled()) {
-		return 0;
-	}
+	/* If SBB is disabled, return success */
+
+	sbb_enabled = is_sbb_enabled(verbose);
+
+	if (1 != sbb_enabled)
+		return sbb_enabled;
 
 #ifdef PRINT_SBB_EFUSE
 	/* KAKPubQx Copy 0 */
@@ -482,11 +543,16 @@ sbb_verify_image(void *source, void *destination, int safe)
 	parameters[3] = (unsigned long)destination;
 
 	/* Run the function. */
-	if (0 != run_sbb_function((0 == safe) ? 1 : 11, parameters, 4)) {
-		memset((void *)destination, 0, 16);
+	if (0 != run_sbb_function((0 == safe) ? 1 : 11,
+				  parameters, 4, verbose)) {
+		if (0 != invalidate)
+			memset((void *)destination, 0, 16);
+
 		return -1;
 	}
 
-	printf("SBB: Image Verification Successful\n");
+	if (0 != verbose)
+		printf("SBB: Image Verification Successful\n");
+
 	return 0;
 }
