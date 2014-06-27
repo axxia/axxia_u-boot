@@ -389,10 +389,12 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x0164, 0x00000000);
 
     /* DENALI_CTL_93 */
-    ncr_write32(ctlReg,  0x0174, 0x00000008);
+    /* should be 700us - for now just set to 700000 clocks */
+    ncr_write32(ctlReg,  0x0174, 0x000aae60);
 
     /* DENALI_CTL_94 */
-    ncr_write32(ctlReg,  0x0178, 0x00000190);
+    /* should be 500us - for now just set to 500000 clocks */
+    ncr_write32(ctlReg,  0x0178, 0x0007a120);
 
     /* DENALI_CTL_95 */
     ncr_write32(ctlReg,  0x017c, 0x00008000);
