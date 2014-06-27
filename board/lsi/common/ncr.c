@@ -922,6 +922,166 @@ ncr_write32_0x159(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 	return 0;
 }
 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      valid                                     :  1;
+     unsigned      hwrite                                    :  1;
+     unsigned      tshift                                    :  4;
+     unsigned      hsize                                     :  3;
+     unsigned      htrans                                    :  2;
+     unsigned      reserved                                  :  5;
+     unsigned      haddr                                     : 16;
+#else    /* Little Endian */
+     unsigned      haddr                                     : 16;
+     unsigned      reserved                                  :  5;
+     unsigned      htrans                                    :  2;
+     unsigned      hsize                                     :  3;
+     unsigned      tshift                                    :  4;
+     unsigned      hwrite                                    :  1;
+     unsigned      valid                                     :  1;
+#endif
+} ncp_apb2ser_indirect_Command1_reg_t;
+
+static int
+ncr_apb2ser_indirect_setup(
+    ncp_uint32_t        regionId,
+    ncp_uint32_t       *indirectOffset,
+    ncp_uint32_t       *xferWidth)
+{
+    ncp_uint32_t    nodeId     = NCP_NODE_ID(regionId);
+    ncp_uint32_t    tgtId      = NCP_TARGET_ID(regionId);
+    
+    switch (nodeId) {
+        case 0x110:
+        case 0x111:
+        case 0x112:
+        case 0x113:
+        case 0x114:
+            *xferWidth = (tgtId == 1) ? 2 : 4;
+            break;
+
+        default:
+            return -1;
+    }
+
+    *indirectOffset = ((nodeId - 0x110) * 0x60) + (tgtId * 0x10);
+
+    return 0;
+
+}
+
+
+static int
+ncr_apb2ser_indirect_access(
+    ncp_uint32_t        offset,
+    ncp_uint32_t        indirectOffset,
+    ncp_uint32_t       *buffer,
+    int                 isWrite,
+    ncp_uint32_t        xferWidth)
+{
+    ncp_uint32_t reg;
+    ncp_apb2ser_indirect_Command1_reg_t  *pCmd1 = 
+                (ncp_apb2ser_indirect_Command1_reg_t *) &reg;
+    ncp_uint32_t loop_count;
+
+    /* build the command1 register */
+    pCmd1->valid = 1;
+    pCmd1->hwrite = isWrite;
+    pCmd1->tshift = 1;
+    pCmd1->htrans = 2; 
+    pCmd1->hsize  = (xferWidth == 2) ? 1 : 2;
+    pCmd1->haddr  = offset;
+
+    if (isWrite)
+    {
+        /* write the data to be written */
+        writel(*buffer, APB2_SER0_BASE + indirectOffset);
+    }
+
+    /* write command 1 */
+    writel(reg, APB2_SER0_BASE + indirectOffset + NCP_APB2SER_INDIRECT_COMMAND_1);
+    
+    /* poll for completion */
+    loop_count = 400000;   /* TODO!! determine correct value! completely arbitrary for now */
+    do {
+        loop_count--;
+        reg = readl(APB2_SER0_BASE + indirectOffset + NCP_APB2SER_INDIRECT_COMMAND_1);
+    } while (pCmd1->valid && loop_count);
+
+    if (loop_count == 0) {
+        return -1;
+    }
+
+    if (!isWrite) 
+    {
+        *buffer = readl(APB2_SER0_BASE + indirectOffset + NCP_APB2SER_INDIRECT_READ_DATA_0);
+    }
+
+    return 0;
+
+}
+
+/*
+  -------------------------------------------------------------------------------
+  ncr_read32_apb2ser
+*/
+
+static int
+ncr_read32_apb2ser(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
+{
+    ncp_uint32_t indirectOffset = 0;
+    ncp_uint32_t xferWidth = 0;
+
+    if(ncr_apb2ser_indirect_setup(region, &indirectOffset, &xferWidth) == -1)
+    {
+        return -1;
+    }
+
+    if (xferWidth != 4) {
+        return -1;
+    }
+
+    if (offset & (xferWidth - 1))
+    {
+        return -1;
+    }
+
+    return ncr_apb2ser_indirect_access(offset, indirectOffset,
+        value, 0, xferWidth);
+}
+
+/*
+  -------------------------------------------------------------------------------
+  ncr_write32_apb2ser
+*/
+
+static int
+ncr_write32_apb2ser(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
+{
+    ncp_uint32_t indirectOffset = 0;
+    ncp_uint32_t xferWidth = 0;
+
+    if(ncr_apb2ser_indirect_setup(region, &indirectOffset, &xferWidth) == -1)
+    {
+        return -1;
+    }
+
+    if (xferWidth != 4) {
+        return -1;
+    }
+
+    if (offset & (xferWidth - 1))
+    {
+        return -1;
+    }
+
+    return ncr_apb2ser_indirect_access(offset, indirectOffset,
+                &value, 1, xferWidth);
+
+}
+
+
 #endif	/* CONFIG_AXXIA_55XX */
 
 /*
@@ -948,6 +1108,12 @@ ncr_read(ncp_uint32_t region,
 	int wfc_timeout = WFC_TIMEOUT;
 
 	switch (NCP_NODE_ID(region)) {
+    case 0x110:
+    case 0x111:
+    case 0x112:
+    case 0x113:
+    case 0x114:
+        return ncr_read32_apb2ser(region, address, buffer);
 	case 0x115:
 		/* Can be 16 bit (targets 1 & 4) or 32 bit. */
 		switch (NCP_TARGET_ID(region)) {
@@ -1249,6 +1415,12 @@ ncr_write(ncp_uint32_t region,
 	int wfc_timeout = WFC_TIMEOUT;
 
 	switch (NCP_NODE_ID(region)) {
+    case 0x110:
+    case 0x111:
+    case 0x112:
+    case 0x113:
+    case 0x114:
+        return ncr_write32_apb2ser(region, address, *((ncp_uint32_t *)buffer));
 	case 0x115:
 		/* Can be 16 bit (targets 1 & 4) or 32 bit. */
 		switch (NCP_TARGET_ID(region)) {

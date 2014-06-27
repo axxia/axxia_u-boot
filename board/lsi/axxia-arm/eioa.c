@@ -1577,6 +1577,30 @@ initialize_task_io(struct eth_device *dev)
 	return 0;
 }
 
+ 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      tx_rxdetresetn                            :  4;
+     unsigned      tx_rxdetena                               :  4;
+     unsigned      txdata_valid                              :  4;
+     unsigned      txwclk_external                           :  4;
+     unsigned      tx_ratechange_ena                         :  4;
+     unsigned      rx_ratechange_ena                         :  4;
+     unsigned      txpd                                      :  4;
+     unsigned      rxpd                                      :  4;
+#else    /* Little Endian */
+     unsigned      rxpd                                      :  4;
+     unsigned      txpd                                      :  4;
+     unsigned      rx_ratechange_ena                         :  4;
+     unsigned      tx_ratechange_ena                         :  4;
+     unsigned      txwclk_external                           :  4;
+     unsigned      txdata_valid                              :  4;
+     unsigned      tx_rxdetena                               :  4;
+     unsigned      tx_rxdetresetn                            :  4;
+#endif
+} ncp_cfg_phy_ctrl2_r_t;
+
 /*
   -------------------------------------------------------------------------------
   finalize_task_io
@@ -1588,6 +1612,37 @@ finalize_task_io(void)
     int rc = 0;
 	unsigned value;
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+
+    /* power down HSS0-4 lanes */
+    {
+        int hss = 0;
+
+        /* loop through the HSS's and power them down */
+        for(hss = 0; hss <= 4; hss++)
+        {
+            int lane = 0;
+            
+            debug("Powering down HSS%d\n", hss);
+            for(lane = 0; lane < 4; lane++)
+            {
+                ncp_uint32_t val32 = 0;
+                ncp_cfg_phy_ctrl2_r_t *phy_ctrl2_reg = (ncp_cfg_phy_ctrl2_r_t *)&val32;
+
+                /* 
+                 * stagger the tx/rx lane power downs 
+                 */
+                ncr_read32(NCP_REGION_ID((0x110 + hss), 0), 0x8, &val32);                
+                phy_ctrl2_reg->rxpd |= 1 << lane;
+                phy_ctrl2_reg->tx_rxdetresetn |= 1 << lane;
+                ncr_write32(NCP_REGION_ID((0x110 + hss), 0), 0x8, val32);
+
+                ncr_read32(NCP_REGION_ID((0x110 + hss), 0), 0x8, &val32);
+                phy_ctrl2_reg->txpd |= 1 << lane;
+                ncr_write32(NCP_REGION_ID((0x110 + hss), 0), 0x8, val32);
+            }
+        }
+    }
+    
 	/*
 	  Stop the queue.
 	*/
