@@ -554,6 +554,7 @@ int eioa_ethernet_configure(void);
 "osgroup0=0xf1:0x100:0x100\0"
 
 #ifndef __ASSEMBLY__
+extern unsigned long _spintables;
 extern unsigned long _core_copy_beginning;
 extern unsigned long _core_copy_end;
 extern unsigned long _core_copy_core0;

@@ -56,7 +56,7 @@ SECTIONS
   .ose_strings_5_section : { *(.ose_strings_5_section) }
 
   . = 0x2800;
-  PROVIDE (_spintables = .);
+  _spintables = .;
 
   .bootpg 0x00003800 :
   {

@@ -38,7 +38,6 @@
 
 acp_spintable_t *acp_spintable[ACP_NR_CORES];
 static int core_up[] = {0, 0, 0, 0, 0, 0};
-extern unsigned long _spintables;
 
 /*
   ----------------------------------------------------------------------
@@ -131,7 +130,8 @@ acp_spintable_init(void *fdt,
 	if (-1 == acp_osg_map(group))
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
-	spintable = (acp_spintable_t *)(0x2000 + (core * 0x40));
+	/*spintable = (acp_spintable_t *)(0x2000 + (core * 0x40));*/
+	spintable = (acp_spintable_t *)(((unsigned long)(&_spintables)) + (core * 0x40));
 
 	/* Get the "reg" property */
 	if (0 > (nodeoffset = fdt_path_offset(dt, nodes[core]))) {
