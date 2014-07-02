@@ -1860,6 +1860,8 @@ acp_init_r( void )
 #endif
 
 	serial_init();
+	printf("%s:%d - _spintables=%p\n",
+	       __FILE__, __LINE__, (void *)&_spintables); /* ZZZ */
 	acp_splash();
 
 #if (defined(ACP_25xx) || defined(AXM_35xx)) && defined(CONFIG_ACP2) 
