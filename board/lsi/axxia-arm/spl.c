@@ -857,10 +857,92 @@ spl_board_init(void)
 #endif
 }
 
+/*
+  ------------------------------------------------------------------------------
+  verify_image
+*/
+
+#ifdef CONFIG_REDUNDANT_UBOOT
+static int
+verify_image(struct spi_flash *flash,
+	     unsigned long flash_offset,
+	     int secure_boot)
+{
+	struct image_header header;
+	void *membase = (void *)0x40000000UL;
+
+	if (secure_boot) {
+		/*
+		  Size is not available in this case (using a secure
+		  image), so copy 2 Mb.
+		*/
+		spi_flash_read(flash, flash_offset,
+			       CONFIG_SYS_MONITOR_LEN, membase);
+
+		if (0 != sbb_verify_image(0, 0, 0, 0, 0)) {
+			puts("\tInsecure!\n");
+
+			return -1;
+		}
+
+		memcpy((void *)&header, membase, sizeof(struct image_header));
+		spl_parse_image_header(&header);
+	} else {
+		spi_flash_read(flash, flash_offset,
+			       sizeof(struct image_header), &header);
+		spl_parse_image_header(&header);
+		spi_flash_read(flash, flash_offset,
+			       spl_image.size + sizeof(struct image_header),
+			       membase);
+	}
+
+	/*
+	  The base of system memory (0x40000000UL) should now contains
+	  a U-Boot image.
+	*/
+
+	spl_image.load_addr += (unsigned long)membase;
+
+	if (!image_check_magic(&header)) {
+		puts("\tBad Magic!\n");
+
+		return -1;
+	}
+
+	if (!image_check_target_arch(&header)) {
+		puts("\tWrong Architecture!\n");
+
+		return -1;
+	}
+
+	if (ntohl(header.ih_dcrc) !=
+	    crc32(0, (unsigned char *)
+		  (membase + sizeof(struct image_header)),
+		  (spl_image.size - sizeof(struct image_header)))) {
+		puts("\tBad Checksum!\n");
+
+		return -1;
+	}
+
+
+	/*
+	  Remove the header.
+	*/
+
+	memmove(membase, (membase + sizeof(struct image_header)),
+		(spl_image.size - sizeof(struct image_header)));
+
+	return 0;
+}
+#endif
+
+/*
+  ------------------------------------------------------------------------------
+*/
+
 void spl_spi_load_image(void)
 {
 	struct spi_flash *flash;
-	struct image_header header;
 #ifdef CONFIG_REDUNDANT_UBOOT	
 	int watchdog_timeout;
 	int a_valid;
@@ -869,6 +951,8 @@ void spl_spi_load_image(void)
 	unsigned long b_sequence = 0;
 	int copy_to_use = 0;
 	int sbb_enabled = 0;
+#else  /* CONFIG_REDUNDANT_UBOOT */
+	struct image_header header;
 #endif	/* CONFIG_REDUNDANT_UBOOT */
 
 	/*
@@ -884,12 +968,6 @@ void spl_spi_load_image(void)
 		hang();
 	}
 
-	/* Load u-boot, mkimage header is 64 bytes. */
-	spi_flash_read(flash, CONFIG_UBOOT_OFFSET, 0x40, &header);
-	spl_parse_image_header(&header);
-	/* Note that, in the SPL, SDRAM is virtually mapped to 0x40000000. */
-	spl_image.load_addr = 0x40000000;
-
 #ifdef CONFIG_REDUNDANT_UBOOT
 
 	/*
@@ -901,39 +979,21 @@ void spl_spi_load_image(void)
 	watchdog_timeout = ((watchdog_timeout & 0x4) >> 2);
 
 	/*
-	   Is image A valid?
+	  Is this a secure boot?
 	*/
 
 	sbb_enabled = (1 == is_sbb_enabled(0));
 
-	/* If this is a U-Boot img, or secure boot is enabled, load. */
-	if (IH_MAGIC == image_get_magic(&header)) {
-		spi_flash_read(flash, CONFIG_UBOOT_OFFSET +
-			       sizeof(struct image_header),
-			       spl_image.size, (void *)spl_image.load_addr);
+	/*
+	  Is image A valid?
+	*/
 
-		if (ntohl(header.ih_dcrc) !=
-		    crc32(0, (unsigned char *)0x40000000,
-			  (spl_image.size - sizeof(struct image_header)))) {
-			puts("Bad U-Boot Image A: Checksum!\n");
-			a_valid = 0;
-		} else {
-			a_valid = 1;
-		}
-	} else if (0 != sbb_enabled) {
-		spi_flash_read(flash, CONFIG_UBOOT_OFFSET,
-			       spl_image.size, (void *)spl_image.load_addr);
+	puts("Checking U-Boot Image A\n");
 
-		if (0 != sbb_verify_image(0, 0, 0, 0, 0)) {
-			puts("Bad U-Boot Image A: Insecure!\n");
-			a_valid = 0;
-		} else {
-			a_valid = 1;
-		}
-	} else {
-		puts("Bad U-Boot Image A: Invalid Image Type\n");
+	if (0 == verify_image(flash, CONFIG_UBOOT_OFFSET, sbb_enabled))
+		a_valid = 1;
+	else
 		a_valid = 0;
-	}
 
 	if (1 == a_valid) {
 		char *temp;
@@ -946,43 +1006,16 @@ void spl_spi_load_image(void)
 			a_sequence = 0;
 	}
 
-	spi_flash_read(flash, CONFIG_UBOOT_OFFSET_REDUND, 0x40, &header);
-	spl_parse_image_header(&header);
-	/* Note that, in the SPL, SDRAM is virtually mapped to 0x40000000. */
-	spl_image.load_addr = 0x40000000;
-
 	/*
 	   Is image B valid?
 	*/
 
-	/* If this is a U-Boot img, or secure boot is enabled, load. */
-	if (IH_MAGIC == image_get_magic(&header)) {
-		spi_flash_read(flash, CONFIG_UBOOT_OFFSET_REDUND +
-			       sizeof(struct image_header),
-			       spl_image.size, (void *)spl_image.load_addr);
+	puts("Checking U-Boot Image B\n");
 
-		if (ntohl(header.ih_dcrc) !=
-		    crc32(0, (unsigned char *)0x40000000,
-			  (spl_image.size - sizeof(struct image_header)))) {
-			puts("Bad U-Boot Image B: Checksum!\n");
-			b_valid = 0;
-		} else {
-			b_valid = 1;
-		}
-	} else if (0 != sbb_enabled) {
-		spi_flash_read(flash, CONFIG_UBOOT_OFFSET_REDUND,
-			       spl_image.size, (void *)spl_image.load_addr);
-
-		if (0 != sbb_verify_image(0, 0, 0, 0, 0)) {
-			puts("Bad U-Boot Image B: Insecure!\n");
-			b_valid = 0;
-		} else {
-			b_valid = 1;
-		}
-	} else {
-		puts("Bad U-Boot Image B: Invalid Image Type\n");
+	if (0 == verify_image(flash, CONFIG_UBOOT_OFFSET_REDUND, sbb_enabled))
+		b_valid = 1;
+	else
 		b_valid = 0;
-	}
 
 	if (1 == b_valid) {
 		char *temp;
@@ -1021,28 +1054,17 @@ void spl_spi_load_image(void)
 	  loaded, if A, reload.
 	*/
 
-	if (0 == copy_to_use) {
-		spi_flash_read(flash, CONFIG_UBOOT_OFFSET, 0x40, &header);
-		spl_parse_image_header(&header);
-		/* In the SPL, SDRAM is virtually mapped to 0x40000000. */
-		spl_image.load_addr = 0x40000000;
-
-		if (IH_MAGIC == image_get_magic(&header)) {
-			spi_flash_read(flash, CONFIG_UBOOT_OFFSET +
-				       sizeof(struct image_header),
-				       spl_image.size,
-				       (void *)spl_image.load_addr);
-		} else {
-			spi_flash_read(flash, CONFIG_UBOOT_OFFSET,
-				       spl_image.size,
-				       (void *)spl_image.load_addr);
-
-			if (0 != sbb_verify_image(0, 0, 0, 0, 0))
-				acp_failure(__FILE__, __func__, __LINE__);
-		}
-	}
+	if (0 == copy_to_use &&
+	    0 != verify_image(flash, CONFIG_UBOOT_OFFSET, sbb_enabled))
+		acp_failure(__FILE__, __func__, __LINE__);
 
 #else  /* CONFIG_REDUNDANT_UBOOT */
+
+	/* Load u-boot, mkimage header is 64 bytes. */
+	spi_flash_read(flash, CONFIG_UBOOT_OFFSET, 0x40, &header);
+	spl_parse_image_header(&header);
+	/* Note that, in the SPL, SDRAM is virtually mapped to 0x40000000. */
+	spl_image.load_addr = 0x40000000;
 
 	if (IH_MAGIC == image_get_magic(&header)) {
 		/* Load a U-Boot Image, Verifying Checksum */
