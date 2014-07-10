@@ -4146,12 +4146,24 @@ NCP_RETURN_LABEL
     if ((parms->version == NCP_CHIP_ACP55xx) &&
             (smId < 2)) 
     {
+        /*
+         * depending on how DDR retention is configured we may or
+         * may not have configured single/dual ELM mode as part of
+         * coarse write leveling above. Here we always reconfigure
+         * the ELM for single/dual SMEM mode whether it needs it or not.
+         */
         if (parms->num_interfaces == 2) {
-            /* re-enable both elms and restore NCA TTYPEs */
+            /* use both elms */
             use_elm(dev, 3);
         } 
-       ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x12221222);
-     ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x0000000b);
+        else
+        {
+            /* use ELM0 only */
+            use_elm(dev, 0);
+        }
+        /* restore NCA TTYPEs */
+        ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x12221222);
+        ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x0000000b);
     }
 
 #ifdef NCP_SM_PHY_REG_DUMP
