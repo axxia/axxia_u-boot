@@ -479,18 +479,24 @@ ncr_read16(unsigned long region, unsigned long offset, unsigned short *value)
 
 #if defined(ACP_25xx) || defined(AXM_35xx)
 	int wfc_timeout = WFC_TIMEOUT;
+	unsigned long base;
 	/*
 	  Handle the 0x115.1 node
 	*/
-	if (NCP_REGION_ID(0x115, 1) == region) {
-		unsigned long base;
-
 #ifdef ACP_25xx
+	if (NCP_REGION_ID(0x115, 1) == region)
 		base = (IO + 0x3000);
-
-#elif defined (AXM_35xx)
+#elif defined(AXM_35xx)
+	if (NCP_REGION_ID(0x115, 1) == region)
 		base = (IO + 0x6010);
+	else if (NCP_REGION_ID(0x110, 1) == region)
+		base = (IO + 0x6060);
+	else if (NCP_REGION_ID(0x111, 1) == region)
+		base = (IO + 0x60c0);
 #endif
+	if ((NCP_REGION_ID(0x115, 1) == region) ||
+		(NCP_REGION_ID(0x110, 1) == region) ||
+		(NCP_REGION_ID(0x111, 1) == region)) {
 
 		if (0xffff < offset) {
 			printf("Bad Offset!\n");
@@ -564,7 +570,8 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 			break;
 		}
 
-#elif defined (AXM_35xx)
+#elif defined(AXM_35xx)
+
 	/*
 	  Handle the 0x115.0, 0x115.2, 0x115.3 and 0x115.4 nodes on the AXM35xx.
 	*/
@@ -572,12 +579,19 @@ ncr_read32(unsigned long region, unsigned long offset, unsigned long *value)
 	if ((NCP_REGION_ID(0x115, 0) == region) ||
 	    (NCP_REGION_ID(0x115, 2) == region) ||
 	    (NCP_REGION_ID(0x115, 3) == region) ||
-	    (NCP_REGION_ID(0x115, 4) == region)) {
+	    (NCP_REGION_ID(0x115, 4) == region) ||
+	    (NCP_REGION_ID(0x110, 0) == region) ||
+	    (NCP_REGION_ID(0x111, 0) == region)) {
 		unsigned long base = 0;
 
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
-			base = (IO + 0x6000);
+			if (NCP_REGION_ID(0x115, 0) == region)
+				base = (IO + 0x6000);
+			else if (NCP_REGION_ID(0x110, 0) == region)
+				base = (IO + 0x6050);
+			else if (NCP_REGION_ID(0x111, 0) == region)
+				base = (IO + 0x60b0);
 			break;
 		case 2:
 			base = (IO + 0x6020);
@@ -821,24 +835,30 @@ ncr_write8( unsigned long region, unsigned long offset, unsigned char value )
 */
 
 int
-ncr_write16( unsigned long region, unsigned long offset, unsigned short value )
+ncr_write16(unsigned long region, unsigned long offset, unsigned short value)
 {
 	int rc;
 #if defined(ACP_25xx) || defined(AXM_35xx)
 	int wfc_timeout = WFC_TIMEOUT;
+	unsigned long base;
 	/*
 	  Handle the 0x115 nodes 
 	*/
 
-	if (NCP_REGION_ID(0x115, 1) == region) {
-		unsigned long base;
-
 #ifdef ACP_25xx
+	if (NCP_REGION_ID(0x115, 1) == region)
 		base = (IO + 0x3000);
 #elif defined(AXM_35xx)
+	if (NCP_REGION_ID(0x115, 1) == region)
 		base = (IO + 0x6010);
+	else if (NCP_REGION_ID(0x110, 1) == region)
+		base = (IO + 0x6060);
+	else if (NCP_REGION_ID(0x111, 1) == region)
+		base = (IO + 0x60c0);
 #endif
-
+	if ((NCP_REGION_ID(0x115, 1) == region) ||
+		(NCP_REGION_ID(0x110, 1) == region) ||
+		(NCP_REGION_ID(0x111, 1) == region)) {
 		if (0xffff < offset)
 			return -1;
 
@@ -907,7 +927,7 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 			/* Unreachable, due to the if() above. */
 			break;
 		}
-#elif defined (AXM_35xx)
+#elif defined(AXM_35xx)
 	/*
 	  Handle the 0x115.0, 0x115.2, 0x115.3 and 0x115.4 nodes on the AXM35xx.
 	*/
@@ -915,12 +935,19 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 	if ((NCP_REGION_ID(0x115, 0) == region) ||
 	    (NCP_REGION_ID(0x115, 2) == region) ||
 	    (NCP_REGION_ID(0x115, 3) == region) ||
-	    (NCP_REGION_ID(0x115, 4) == region)) {
+	    (NCP_REGION_ID(0x115, 4) == region) ||
+	    (NCP_REGION_ID(0x110, 0) == region) ||
+	    (NCP_REGION_ID(0x111, 0) == region)) {
 		unsigned long base = 0;
 
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
-			base = (IO + 0x6000);
+			if (NCP_REGION_ID(0x115, 0) == region)
+				base = (IO + 0x6000);
+			else if (NCP_REGION_ID(0x110, 0) == region)
+				base = (IO + 0x6050);
+			else if (NCP_REGION_ID(0x111, 0) == region)
+				base = (IO + 0x60b0);
 			break;
 		case 2:
 			base = (IO + 0x6020);
@@ -976,7 +1003,6 @@ ncr_write32(unsigned long region, unsigned long offset, unsigned long value)
 
 	return 0;
 }
-
 /*
   ------------------------------------------------------------------------------
   ncr_and

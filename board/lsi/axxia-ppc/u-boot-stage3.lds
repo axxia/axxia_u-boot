@@ -187,26 +187,6 @@ SECTIONS
   _core_copy_core0 = .;
   . = (. + (_core_copy_end - _core_copy_beginning));
 
-  . = ALIGN(256);
-  _core_copy_core1 = .;
-  . = (. + (_core_copy_end - _core_copy_beginning));
-
-  . = ALIGN(256);
-  _core_copy_core2 = .;
-  . = (. + (_core_copy_end - _core_copy_beginning));
-
-  . = ALIGN(256);
-  _core_copy_core3 = .;
-  . = (. + (_core_copy_end - _core_copy_beginning));
-
-  . = ALIGN(256);
-  _core_copy_core4 = .;
-  . = (. + (_core_copy_end - _core_copy_beginning));
-
-  . = ALIGN(256);
-  _core_copy_core5 = .;
-  . = (. + (_core_copy_end - _core_copy_beginning));
-
   _end = . ;
   PROVIDE (end = .);
 }

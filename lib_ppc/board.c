@@ -741,25 +741,6 @@ acp_init_f( void )
 	/* Only one boot core at a time... */
 	acp_lock_stage3();
 
-	/* Restore this core's copy of the "data" section. */
-	if (SYSTEM_BOOTCORE == core) {
-		void *source[] = {
-			(void *)&_core_copy_core0,
-			(void *)&_core_copy_core1,
-#if !defined(ACP_X2V1) || !defined(ACP_25xx)
-			(void *)&_core_copy_core2,
-			(void *)&_core_copy_core3
-#endif
-		};
-
-		memcpy((void *)&_core_copy_beginning, source[0],
-		       (&_core_copy_end - &_core_copy_beginning) * 4);
-	} else {
-		if (-1 == acp_osg_map(acp_osg_get_group(core)))
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
-		acp_osg_jump_to_os(acp_osg_get_group(core));
-	}
 #endif /* CONFIG_ACP3 */
 
 	/* Initialize the serial port. */

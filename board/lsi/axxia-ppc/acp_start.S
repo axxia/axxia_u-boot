@@ -511,58 +511,6 @@ cold_start:
 	subf		r5,r5,r6
 	bl		memcpy
 
-	lis		r3,_core_copy_core1@h
-	ori		r3,r3,_core_copy_core1@l
-	lis		r4,_core_copy_beginning@h
-	ori		r4,r4,_core_copy_beginning@l
-	mr		r5,r4
-	lis		r6,_core_copy_end@h
-	ori		r6,r6,_core_copy_end@l
-	subf		r5,r5,r6
-	bl		memcpy
-
-	lis		r3,_core_copy_core2@h
-	ori		r3,r3,_core_copy_core2@l
-	lis		r4,_core_copy_beginning@h
-	ori		r4,r4,_core_copy_beginning@l
-	mr		r5,r4
-	lis		r6,_core_copy_end@h
-	ori		r6,r6,_core_copy_end@l
-	subf		r5,r5,r6
-	bl		memcpy
-
-	lis		r3,_core_copy_core3@h
-	ori		r3,r3,_core_copy_core3@l
-	lis		r4,_core_copy_beginning@h
-	ori		r4,r4,_core_copy_beginning@l
-	mr		r5,r4
-	lis		r6,_core_copy_end@h
-	ori		r6,r6,_core_copy_end@l
-	subf		r5,r5,r6
-	bl		memcpy
-
-	lis		r3,_core_copy_core4@h
-	ori		r3,r3,_core_copy_core4@l
-	lis		r4,_core_copy_beginning@h
-	ori		r4,r4,_core_copy_beginning@l
-	mr		r5,r4
-	lis		r6,_core_copy_end@h
-	ori		r6,r6,_core_copy_end@l
-	subf		r5,r5,r6
-	bl		memcpy
-
-	lis		r3,_core_copy_core5@h
-	ori		r3,r3,_core_copy_core5@l
-	lis		r4,_core_copy_beginning@h
-	ori		r4,r4,_core_copy_beginning@l
-	mr		r5,r4
-	lis		r6,_core_copy_end@h
-	ori		r6,r6,_core_copy_end@l
-	subf		r5,r5,r6
-	bl		memcpy
-
-
-
 	b		continue_start
 
 warm_start:

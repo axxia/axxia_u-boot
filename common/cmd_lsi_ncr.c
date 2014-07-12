@@ -107,6 +107,8 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 		    (0x115 == node && 3 == target)
 #ifdef AXM_35xx
 		    || (0x115 == node && 4 == target)
+		    || (0x110 == node && 0 == target)
+		    || (0x111 == node && 0 == target)
 #endif
 		) {
 			for (index = 0; index < length; ++index) {
@@ -118,7 +120,12 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 				       node, target, offset, value);
 				offset += 4;
 			}
-		} else if (0x115 == node && 1 == target) {
+		} else if ((0x115 == node && 1 == target)
+#ifdef AXM_35xx
+		    || (0x110 == node && 1 == target)
+		    || (0x111 == node && 1 == target)
+#endif
+		) {
 			for (index = 0; index < length; ++index) {
 				unsigned short value;
 
@@ -177,7 +184,9 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 		    (0x200 == node && 1 == target) ||
 		    (0x115 == node && 0 == target) ||
 		    (0x115 == node && 2 == target) ||
-		    (0x115 == node && 3 == target)
+		    (0x115 == node && 3 == target) ||
+		    (0x110 == node && 0 == target) ||
+		    (0x111 == node && 0 == target)
 #ifdef AXM_35xx
 		    || (0x115 == node && 4 == target)
 #endif
@@ -193,7 +202,12 @@ do_ncr( cmd_tbl_t * cmdtp, int flag, int argc, char * argv [ ] )
 					    offset, value );
 				offset += 4;
 			}
-		} else if (0x115 == node && 1 == target) {
+		} else if ((0x115 == node && 1 == target)
+#ifdef AXM_35xx
+		    || (0x110 == node && 1 == target)
+		    || (0x111 == node && 1 == target)
+#endif
+		){
 			for( index = 0; index < ( argc - 3 ); ++ index ) {
 				unsigned short value;
 

@@ -48,6 +48,25 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 /*
+  ======================================================================
+Vitesse VSC8574
+  ======================================================================
+*/
+#define VSC8574_PHY_ID_HIGH_ID   0x07
+#define VSC8574_PHY_ID_LOW_ID    0x01
+#define VSC8574_PHY_ID_LOW_MODEL 0xA
+
+/*
+  ======================================================================
+Marvel 88E1111
+  ======================================================================
+*/
+#define MRVL88E1111_PHY_ID_HIGH_ID   0x0141
+#define MRVL88E1111_PHY_ID_LOW_ID    0x3
+#define MRVL88E1111_PHY_ID_LOW_MODEL 0xc
+
+
+/*
   ==============================================================================
   ==============================================================================
   Private Interface
@@ -70,6 +89,8 @@ extern int dumptx;
 static int port_by_index[] = {1, 2, 3, 4, 9, 10, 11, 12};
 #ifdef ACP_25xx
 static int phy_by_index[] = {0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10};
+#elif defined(AXM_35xx)
+static int phy_by_index[] = {0x10, 0x11, 0x19, 0x18, 0x12, 0x13, 0x1b, 0x1a};
 #else
 static int phy_by_index[] = {0x10, 0x11, 0x12, 0x13, 0x18, 0x19, 0x1a, 0x1b};
 #endif
@@ -293,6 +314,31 @@ ncp_dev_reset(void)
 	value = dcr_read(0xd00);
 	value &= ~0xab;
 	dcr_write(value, 0xd00);
+#elif defined(AXM_35xx)
+	/*
+	  Enable protected writes.
+	*/
+
+	value = dcr_read(0xd0a);
+	value |= 0xab;
+	dcr_write(value, 0xd0a);
+
+	/*
+	  asp_rst, nca_rst, eioa_rst, tmgr_eioa1_rst,
+	  eioa_phy1_rst, eioa_phy0_rst, eioa_ser_rst
+	*/
+	dcr_write(0x2001833, DCR_RESET_BASE + 0x3);
+	udelay(10000);
+	dcr_write(0, DCR_RESET_BASE + 0x3);
+	udelay(10000);
+
+	/*
+	  Disable protected writes.
+	*/
+
+	value = dcr_read(0xd0a);
+	value &= ~0xab;
+	dcr_write(value, 0xd0a);
 #endif
 
 	return 0;
@@ -310,13 +356,19 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 		*value = readl(command->offset);
 
 		return 0;
+    }
 #ifdef ACP_25xx
-	} else if(0x1d1 == NCP_NODE_ID(command->region)) {
+	else if (0x1d1 == NCP_NODE_ID(command->region)) {
 		return ncp_1d1_read(command, value);
+    }
 #endif
-	}
 
-	if (0x100 <= NCP_NODE_ID(command->region)) {
+	if (0x100 <= NCP_NODE_ID(command->region)
+#if defined(AXM_35xx)
+	&& 0x110 != NCP_NODE_ID(command->region)
+	&& 0x111 != NCP_NODE_ID(command->region)
+#endif
+	) {
 		static int last_node = -1;
 
 		if (-1 == last_node ||
@@ -330,12 +382,23 @@ ncp_dev_do_read(ncr_command_t *command, unsigned long *value)
 
 		return 0;
 	}
-
-	if (0 != ncr_read32(command->region, command->offset, value)) {
-		ERROR_PRINT("READ ERROR: n=0x%lx t=0x%lx o=0x%lx\n",
+	if ((NCP_REGION_ID(0x110, 1) == command->region)  ||
+		(NCP_REGION_ID(0x111, 1) == command->region)) {
+		if (0 != ncr_read16(command->region, command->offset,
+			value)) {
+			ERROR_PRINT("READ ERROR: n=0x%lx t=0x%lx o=0x%lx\n",
+				    NCP_NODE_ID(command->region),
+				    NCP_TARGET_ID(command->region),
+				    command->offset);
+			return -1;
+		}
+	} else {
+		if (0 != ncr_read32(command->region, command->offset, value)) {
+			ERROR_PRINT("READ ERROR: n=0x%lx t=0x%lx o=0x%lx\n",
 			    NCP_NODE_ID(command->region),
 			    NCP_TARGET_ID(command->region), command->offset);
 		return -1;
+		}
 	}
 
 	DEBUG_PRINT("Read 0x%08lx from n=0x%lx t=0x%lx o=0x%lx\n",
@@ -401,18 +464,45 @@ ncp_dev_do_write(ncr_command_t *command)
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
 		out_be32((volatile unsigned *)command->offset, command->value);
 		flush_cache(command->offset, 4);
+	}
 #ifndef ACP_25xx
-	} else if (NCP_REGION_ID(0x148, 0) == command->region) {
+	else if (NCP_REGION_ID(0x148, 0) == command->region) {
 		out_le32((volatile unsigned *)(APB2RC + command->offset),
 			 command->value);
 		flush_cache((APB2RC + command->offset), 4);
+	}
 #else
-	} else if (0x1d1 == NCP_NODE_ID(command->region)) {
+	else if (0x1d1 == NCP_NODE_ID(command->region))
 		return ncp_1d1_write(command);
 #endif
-	} else if (0x100 > NCP_NODE_ID(command->region)) {
+#if defined(AXM_35xx)
+	else if ((NCP_REGION_ID(0x110, 0) == command->region)  ||
+		(NCP_REGION_ID(0x111, 0) == command->region)) {
+		if (0 != ncr_write32(command->region, command->offset,
+				     command->value)) {
+			ERROR_PRINT("WRITE ERROR: n=0x%lx t=0x%lx o=0x%lx "
+				    "v=0x%lx\n",
+				    NCP_NODE_ID(command->region),
+				    NCP_TARGET_ID(command->region),
+				    command->offset, command->value);
+			return -1;
+		}
+	} else if ((NCP_REGION_ID(0x110, 1) == command->region)  ||
+		(NCP_REGION_ID(0x111, 1) == command->region)) {
+		if (0 != ncr_write16(command->region, command->offset,
+				     command->value)) {
+			ERROR_PRINT("WRITE ERROR: n=0x%lx t=0x%lx o=0x%lx "
+				    "v=0x%lx\n",
+				    NCP_NODE_ID(command->region),
+				    NCP_TARGET_ID(command->region),
+				    command->offset, command->value);
+			return -1;
+		}
+	}
+#endif
+	else if (0x100 > NCP_NODE_ID(command->region)) {
 		if (NCP_REGION_ID(0x17, 0x11) == command->region &&
-		    0x11c == command->offset) {
+			0x11c == command->offset) {
 			return 0;
 		}
 
@@ -708,9 +798,6 @@ tlb_entries(int add)
 		size -= 0x10000000UL;
 	}
 
-
-	
-
 	return;
 }
 
@@ -732,22 +819,41 @@ line_renegotiate(int index)
 	unsigned short ad_value;
 	unsigned short ge_ad_value;
 	unsigned short control;
+#ifdef AXM_35xx
+	unsigned long eioaPortOffset;
+#endif
 
 	/* Set the region and offset. */
 	if (4 > index) {
 		eioaRegion = NCP_REGION_ID(31, 16); /* 0x1f.0x10 */
+#if defined(AXM_35xx)
+		gmacRegion = NCP_REGION_ID(31, 17); /* 0x1f.0x11 */
+		eioaPortOffset = 0x100000 + (index * 0x1000);
+#else
 		gmacRegion = NCP_REGION_ID(31, 18); /* 0x1f.0x12 */
+#endif
 		gmacPortOffset = 0xc0 * index;
 	} else {
+#if defined(AXM_35xx)
+		eioaRegion = NCP_REGION_ID(31, 16); /* 0x1f.0x10 */
+		gmacRegion = NCP_REGION_ID(31, 18); /* 0x1f.0x12 */
+		eioaPortOffset = 0x110000 + ((index - 4) * 0x1000);
+#else
 		eioaRegion = NCP_REGION_ID(23, 16); /* 0x17.0x10 */
 		gmacRegion = NCP_REGION_ID(23, 18); /* 0x17.0x12 */
+#endif
 		gmacPortOffset = 0xc0 * (index - 4);
 	}
 
 	/* Disable stuff. */
 	NCR_CALL(ncr_modify32(gmacRegion, 0x330 + gmacPortOffset, 0x3f, 0));
 	NCR_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x8, 0x0));
+
+#if defined(AXM_35xx)
+	NCR_CALL(ncr_modify32(eioaRegion, eioaPortOffset, 0x00000003, 0x0));
+#else
 	NCR_CALL(ncr_modify32(eioaRegion, 0x70, 0x11000000, 0x0));
+#endif
 	NCR_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x4, 0x0));
 
 	/* Check for "macspeed".  If set, ignore the PHYs... */
@@ -810,24 +916,91 @@ line_setup(int index)
 	unsigned short ad_value;
 	unsigned short ge_ad_value;
 	unsigned short control;
+#if defined(AXM_35xx)
+	phy_id_high_t phy_id_high;
+	phy_id_low_t phy_id_low;
+#endif
 
 	/* Set the region and offset. */
 	if (4 > index) {
 		eioaRegion = NCP_REGION_ID(31, 16); /* 0x1f.0x10 */
-		eioaPortOffset = 8 * index;
+#if defined(AXM_35xx)
+		gmacRegion = NCP_REGION_ID(31, 17); /* 0x1f.0x11 */
+		eioaPortOffset = 0x100000 + (index * 0x1000);
+#else
 		gmacRegion = NCP_REGION_ID(31, 18); /* 0x1f.0x12 */
+		eioaPortOffset = 8 * index;
+#endif
 		gmacPortOffset = 0xc0 * index;
 	} else {
+#if defined(AXM_35xx)
+		eioaRegion = NCP_REGION_ID(31, 16); /* 0x1f.0x10 */
+		gmacRegion = NCP_REGION_ID(31, 18); /* 0x1f.0x12 */
+		eioaPortOffset = 0x110000 + ((index - 4) * 0x1000);
+#else
 		eioaRegion = NCP_REGION_ID(23, 16); /* 0x17.0x10 */
-		eioaPortOffset = 8 * (index - 4);
 		gmacRegion = NCP_REGION_ID(23, 18); /* 0x17.0x12 */
+		eioaPortOffset = 8 * (index - 4);
+#endif
 		gmacPortOffset = 0xc0 * (index - 4);
 	}
+
+    printf("index=%d, gmacPortOffset=0x%x, eioaPortOffset=0x%x, eioaRegion=0x%x\n", index, gmacPortOffset, eioaPortOffset, eioaRegion);
 
 	/* Disable stuff. */
 	NCR_CALL(ncr_modify32(gmacRegion, 0x330 + gmacPortOffset, 0x3f, 0));
 	NCR_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x8, 0x0));
+#if defined(AXM_35xx)
+	NCR_CALL(ncr_modify32(eioaRegion, eioaPortOffset, 0x00000003, 0x0));
+
+	phy_id_high.raw = mdio_read(phy_by_index[index], PHY_ID_HIGH);
+	DEBUG_PRINT("phy_id_high.raw=0x%x phy_id_high.bits.id=0x%x\n",
+		phy_id_high.raw, phy_id_high.bits.id);
+	phy_id_low.raw = mdio_read(phy_by_index[index], PHY_ID_LOW);
+	DEBUG_PRINT("phy_id_low.raw=0x%x phy_id_low.bits.id=0x%x "
+		"phy_id_low.bits.model=0x%x "
+		"phy_id_low.bits.revision=0x%x\n",
+		phy_id_low.raw, phy_id_low.bits.id, phy_id_low.bits.model,
+		phy_id_low.bits.revision);
+
+	switch (phy_id_high.bits.id) {
+	case VSC8574_PHY_ID_HIGH_ID:
+		DEBUG_PRINT("VSC8574_PHY_ID_LOW_ID=0x%x phy_id_low.bits.id=0x%x\n",
+			VSC8574_PHY_ID_LOW_ID, phy_id_low.bits.id);
+		/* Vitesse PHY */
+		if ((VSC8574_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
+			(VSC8574_PHY_ID_LOW_MODEL == phy_id_low.bits.model)) {
+			mdio_write(phy_by_index[index], 0x1f, 0x0);
+			mdio_write(phy_by_index[index], 0x17, 0x0);
+			mdio_write(phy_by_index[index], 0x1f, 0x3);
+			if (phy_by_index[index] == 0x18)
+				mdio_write(phy_by_index[index], 0x10, 0x30c0);
+			else
+				mdio_write(phy_by_index[index], 0x10, 0x3080);
+			mdio_write(phy_by_index[index], 0x1f, 0x0);
+			mdio_write(0x18, 0x1f, 0x0010);
+			mdio_write(0x18, 0x13, 0x000f);
+			mdio_write(0x18, 0x12, 0x80f0);
+			mdio_write(0x18, 0x1f, 0x0000);
+		}
+		break;
+	case MRVL88E1111_PHY_ID_HIGH_ID:
+		DEBUG_PRINT("MRVL88E1111_PHY_ID_LOW_ID=0x%x phy_id_low.bits.id=0x%x\n",
+			MRVL88E1111_PHY_ID_LOW_ID, phy_id_low.bits.id);
+		/* Marvel 88E1111 PHY */
+		if ((MRVL88E1111_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
+			(MRVL88E1111_PHY_ID_LOW_MODEL
+				== phy_id_low.bits.model)) {
+			/* Fill Marvel PHY specific config */
+		}
+		break;
+	default:
+		printf("Unsupported PHY\n");
+		break;
+	}
+#else
 	NCR_CALL(ncr_modify32(eioaRegion, 0x70, 0x11000000, 0x0));
+#endif
 	NCR_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x4, 0x0));
 
 	/* Check for "macspeed".  If set, ignore the PHYs... */
@@ -961,8 +1134,13 @@ line_setup(int index)
 	  (ethernet_address[4] << 8) | (ethernet_address[5]);
 
 	/* - EIOA */
+#if defined(AXM_35xx)
+	NCR_CALL(ncr_write32(eioaRegion, 0x4 + eioaPortOffset, bottom));
+	NCR_CALL(ncr_write32(eioaRegion, 0x8 + eioaPortOffset, top));
+#else
 	NCR_CALL(ncr_write32(eioaRegion, 0xa0 + eioaPortOffset, bottom));
 	NCR_CALL(ncr_write32(eioaRegion, 0xa4 + eioaPortOffset, top));
+#endif
 
 	/* - Source */
 	NCR_CALL(ncr_write32(gmacRegion, 0x304 + gmacPortOffset, bottom));
@@ -978,7 +1156,12 @@ line_setup(int index)
 
 	/* Enable stuff. */
 	NCR_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x8, 0x8));
+#if defined(AXM_35xx)
+	NCR_CALL(ncr_modify32(eioaRegion, eioaPortOffset,
+		0x00000003, 0x00000003));
+#else
 	NCR_CALL(ncr_modify32(eioaRegion, 0x70, 0x11000000, 0x11000000));
+#endif
 	NCR_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x4, 0x4));
 
 	/* Unicast Filtering based on the Ethernet Address set above. */
@@ -1105,7 +1288,6 @@ initialize_task_lite(void)
 		return -1;
 	}
 #endif
-
 	if (0 != ncp_dev_configure(eioa)) {
 		WARN_PRINT("EIOA Configuration Failed\n");
 		return -1;
@@ -1122,7 +1304,6 @@ initialize_task_lite(void)
 	/*
 	  Make sure the network is connected.
 	*/
-
 	if (0 == eioaPort) {
 		int i;
 		/* Use all ports. */
@@ -1142,6 +1323,32 @@ initialize_task_lite(void)
 	return 0;
 }
 
+#if defined(AXM_35xx)
+
+struct ncp_cfg_phy_ctrl2_r_t {
+#ifdef NCP_BIG_ENDIAN
+    unsigned tx_rxdetresetn:4;
+    unsigned tx_rxdetena:4;
+    unsigned txdata_valid:4;
+    unsigned txwclk_external:4;
+    unsigned tx_ratechange_ena:4;
+    unsigned rx_ratechange_ena:4;
+    unsigned txpd:4;
+    unsigned rxpd:4;
+#else /* Little Endian */
+    unsigned rxpd:4;
+    unsigned txpd:4;
+    unsigned rx_ratechange_ena:4;
+    unsigned tx_ratechange_ena:4;
+    unsigned txwclk_external:4;
+    unsigned txdata_valid:4;
+    unsigned tx_rxdetena:4;
+    unsigned tx_rxdetresetn:4;
+#endif
+};
+
+#endif
+
 /*
   -------------------------------------------------------------------------------
   finalize_task_lite
@@ -1159,6 +1366,58 @@ finalize_task_lite(void)
 	  Stop the queue.
 	*/
 
+#if defined(AXM_35xx)
+/* power down HSS0-1 lanes */
+{
+	int hss = 0;
+	/* loop through the HSS's and power them down */
+	for (hss = 0; hss <= 1; hss++) {
+		int lane = 0;
+		for (lane = 0; lane < 4; lane++) {
+			ncp_uint32_t val32 = 0;
+			struct ncp_cfg_phy_ctrl2_r_t *phy_ctrl2_reg =
+				(struct ncp_cfg_phy_ctrl2_r_t *)&val32;
+			/*
+			 * stagger the tx/rx lane power downs
+			 */
+			ncr_read32(NCP_REGION_ID((0x110 + hss), 0),
+				0x8, &val32);
+			phy_ctrl2_reg->rxpd |= 1 << lane;
+			phy_ctrl2_reg->tx_rxdetresetn |= 1 << lane;
+			ncr_write32(NCP_REGION_ID((0x110 + hss), 0),
+				0x8, val32);
+			ncr_read32(NCP_REGION_ID((0x110 + hss), 0),
+				0x8, &val32);
+			phy_ctrl2_reg->txpd |= 1 << lane;
+			ncr_write32(NCP_REGION_ID((0x110 + hss), 0),
+				0x8, val32);
+		}
+	}
+}
+	/* Disable EIOA NEMACs. */
+	ncr_modify32(NCP_REGION_ID(0x1f, 0x11), 0x300, 0x0000000c, 0x0);
+	ncr_modify32(NCP_REGION_ID(0x1f, 0x11), 0x3c0, 0x0000000c, 0x0);
+	ncr_modify32(NCP_REGION_ID(0x1f, 0x11), 0x480, 0x0000000c, 0x0);
+	ncr_modify32(NCP_REGION_ID(0x1f, 0x11), 0x540, 0x0000000c, 0x0);
+	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x300, 0x0000000c, 0x0);
+	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x3c0, 0x0000000c, 0x0);
+	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x480, 0x0000000c, 0x0);
+	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x540, 0x0000000c, 0x0);
+
+	/* Disable the MACs. */
+	ncr_or(NCP_REGION_ID(0x1f, 0x11), 0x20, 0xf);
+	ncr_or(NCP_REGION_ID(0x1f, 0x12), 0x20, 0xf);
+
+	/* Disable EIOA Cores. */
+	for (i = 0; i < 4; i++) {
+		ncr_modify32(NCP_REGION_ID(0x1f, 0x10),
+			0x100000 + (i * 0x1000), 0x00000003, 0x0);
+	}
+	for (i = 4; i < 8; i++) {
+		ncr_modify32(NCP_REGION_ID(0x1f, 0x10),
+			0x110000 + ((i - 4) * 0x1000), 0x00000003, 0x0);
+	}
+#else
 	/* Disable EIOA NEMACs. */
 	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x300, 0x0000000c, 0x0);
 	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x3c0, 0x0000000c, 0x0);
@@ -1176,6 +1435,7 @@ finalize_task_lite(void)
 	/* Disable EIOA Cores. */
 	ncr_modify32(NCP_REGION_ID(0x1f, 0x10), 0x70, 0xff000000, 0x0);
 	ncr_modify32(NCP_REGION_ID(0x17, 0x10), 0x70, 0xff000000, 0x0);
+#endif
 
 	/* Disable PCQ 0 (only queue 0 is used) */
 	value = readl(NCA + 0x800);
@@ -1365,7 +1625,10 @@ acp_eioa_eth_rx(void)
 	if (NCP_ST_SUCCESS != ncpStatus) {
 		NCP_CALL_LITE(ncpStatus);
 	}
-
+#if 0
+	printf("dataSz=%d, taskErr=%d, bufferSizeErr=%d, eioaPort=%d, task->parms[0]=%d\n",
+		task->dataSz, task->taskErr, task->bufferSizeErr, eioaPort, task->parms[0]);
+#endif
 	if (task->taskErr ||
 	    task->bufferSizeErr ||
 	    ((0 != eioaPort) && (task->parms[0] != eioaPort))) {
