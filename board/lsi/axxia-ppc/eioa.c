@@ -62,8 +62,31 @@ Marvel 88E1111
   ======================================================================
 */
 #define MRVL88E1111_PHY_ID_HIGH_ID   0x0141
-#define MRVL88E1111_PHY_ID_LOW_ID    0x3
+#define MRVL88E1111_PHY_ID_LOW_ID    0xc
 #define MRVL88E1111_PHY_ID_LOW_MODEL 0xc
+#define MRVL88E1111_PHY_CTRL 0x0
+#define MRVL88E1111_PHY_CTRL_RESET 0x9140
+#define MRVL88E1111_PHY_CTRL_INIT 0x1140
+#define MRVL88E1111_EXT_PHY_SPEC_STATUS 0x1b
+#define MRVL88E1111_EXT_PHY_SPEC_MODE 0x848f
+
+#define MRVL88E1111_EXT_PHY_CTRL 0x14
+#define MRVL88E1111_DELAY_RGMII 0x0cd2
+#define MRVL88E1111_GBIT_CONTROL	0x9
+#define MRVL88E1111_GBIT_CONTROL_INIT	0xe00
+#define MRVL88E1111_ANAR		0x4
+#define MRVL88E1111_ANAR_INIT		0x1e1
+#define MRVL88E1111_PHY_STATUS 0x11
+/* 88E1111 PHY Status Register */
+#define MRVL88E1111_PHY_STATUS		0x11
+#define MRVL88E1111_PHYSTAT_SPEED	0xc000
+#define MRVL88E1111_PHYSTAT_GBIT	0x8000
+#define MRVL88E1111_PHYSTAT_100	0x4000
+#define MRVL88E1111_PHYSTAT_DUPLEX	0x2000
+#define MRVL88E1111_PHYSTAT_SPDDONE	0x0800
+#define MRVL88E1111_PHYSTAT_LINK	0x040
+
+#define PHY_AUTONEGOTIATE_TIMEOUT	5000 /* in ms */
 
 
 /*
@@ -991,7 +1014,17 @@ line_setup(int index)
 		if ((MRVL88E1111_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
 			(MRVL88E1111_PHY_ID_LOW_MODEL
 				== phy_id_low.bits.model)) {
-			/* Fill Marvel PHY specific config */
+			/* Reset the PHY */
+			mdio_write(phy_by_index[index], MRVL88E1111_PHY_CTRL,
+				MRVL88E1111_PHY_CTRL_RESET);
+			/* set mode */
+			mdio_write(phy_by_index[index],
+				MRVL88E1111_EXT_PHY_SPEC_STATUS,
+				MRVL88E1111_EXT_PHY_SPEC_MODE);
+			/* Delay RGMII TX/RX */
+			mdio_write(phy_by_index[index],
+				MRVL88E1111_EXT_PHY_CTRL,
+				MRVL88E1111_DELAY_RGMII);
 		}
 		break;
 	default:
@@ -1045,7 +1078,10 @@ line_setup(int index)
 		envstring = getenv("ge_ad_value");
 
 		if (NULL == envstring) {
-			ge_ad_value = 0x300;
+			if (phy_id_high.bits.id != MRVL88E1111_PHY_ID_HIGH_ID)
+				ge_ad_value = 0x300;
+			else
+				ge_ad_value = 0xe00;
 		} else {
 			ge_ad_value = simple_strtoul(envstring, NULL, 0);
 		}
@@ -1060,69 +1096,114 @@ line_setup(int index)
 		mdio_write(phy_by_index[index], 0, control);
 
 		DELAY();
-
 		/* Wait for AN complete. */
 		for (;;) {
 			status = mdio_read(phy_by_index[index], 1);
-
 			if (0 != (status & 0x20))
 				break;
 
 			if (0 == retries--) {
 				ERROR_PRINT("GMAC%d: AN Timed Out.\n",
-					    port_by_index[index]);
+					port_by_index[index]);
 				return -1;
 			}
-
 			DELAY();
 		}
 
-		if (0 == (status & 0x4)) {
-			ERROR_PRINT("GMAC%d: LINK is Down.\n",
+		if (phy_id_high.bits.id != MRVL88E1111_PHY_ID_HIGH_ID) {
+			DELAY();
+			if (0 == (status & 0x4)) {
+				ERROR_PRINT("GMAC%d: LINK is Down.\n",
 				    port_by_index[index]);
 
 			if (0 != eioaPort)
 				return -1; /* Don't Error Out in AUTO Mode. */
-		} else {
-			status = mdio_read(phy_by_index[index], 0x1c);
-			printf("GMAC%02d: ", port_by_index[index]);
+			} else {
+				status = mdio_read(phy_by_index[index], 0x1c);
+				printf("GMAC%02d: ", port_by_index[index]);
 
-			switch ((status & 0x18) >> 3) {
-			case 0:
-				puts("10M");
-				break;
-			case 1:
-				puts("100M");
-				break;
-			case 2:
-				puts("1G");
-				break;
-			default:
-				puts("UNKNOWN");
-				break;
+				switch ((status & 0x18) >> 3) {
+				case 0:
+					puts("10M");
+					break;
+				case 1:
+					puts("100M");
+					break;
+				case 2:
+					puts("1G");
+					break;
+				default:
+					puts("UNKNOWN");
+					break;
+				}
+
+				printf(" %s\n",
+				       (0 == (status & 0x20)) ?
+				       "Half Duplex" : "Full Duplex");
+				DELAY();
 			}
-
-			printf(" %s\n",
-			       (0 == (status & 0x20)) ?
-			       "Half Duplex" : "Full Duplex");
+		} else {
 			DELAY();
 
-			/* Make the MAC match. */
-
-			NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
-					    &ncr_status));
-			ncr_status &= ~0x3c;
-			ncr_status |= 0x08;	/* Force Link Up */
-
-			if (0 != (status & 0x20))
-				ncr_status |= 0x04; /* Force Full Duplex */
-
-			/* Set the Speed */
-			ncr_status |= (((status & 0x18) >> 3) << 4);
-
-			NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
-					     ncr_status));
+			/* Wait for AN complete. */
+			/* read link state */
+			status = mdio_read(phy_by_index[index],
+				MRVL88E1111_PHY_STATUS);
+			if ((status & MRVL88E1111_PHYSTAT_LINK) &&
+				!(status & MRVL88E1111_PHYSTAT_SPDDONE)) {
+				int i = 0;
+				printf("Waiting for PHY realtime link\n");
+				while (!(status
+					& MRVL88E1111_PHYSTAT_SPDDONE)) {
+					/* Timeout reached? */
+					if (i > PHY_AUTONEGOTIATE_TIMEOUT) {
+						printf("Timeout !\n");
+						return -1;
+					}
+					if ((i++ % 1000) == 0)
+						printf(".");
+					udelay(1000); /* 1 ms */
+					status = mdio_read(phy_by_index[index],
+						MRVL88E1111_PHY_STATUS);
+				}
+				printf("done\n");
+				/* another 500ms results in faster booting */
+				udelay(500000);
+			} else {
+				if (!(status & MRVL88E1111_PHYSTAT_LINK)) {
+					printf("Realtime PHY Link down\n");
+					return -1;
+				}
+			}
+			switch (status & MRVL88E1111_PHYSTAT_SPEED) {
+			case MRVL88E1111_PHYSTAT_GBIT:
+				puts("1G");
+				break;
+			case MRVL88E1111_PHYSTAT_100:
+				puts("100M");
+				break;
+			default:
+				puts("10M");
+				break;
+			}
+			printf(" %s\n", (0 == (status
+					& MRVL88E1111_PHYSTAT_DUPLEX)) ?
+					"Half Duplex" : "Full Duplex");
 		}
+		/* Make the MAC match. */
+		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
+			&ncr_status));
+		ncr_status &= ~0x3c;
+		ncr_status |= 0x08;	/* Force Link Up */
+
+		if (0 != (status & 0x20))
+			ncr_status |= 0x04; /* Force Full Duplex */
+
+		/* Set the Speed */
+		ncr_status |= (((status & 0x18) >> 3) << 4);
+
+		NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
+			ncr_status));
 	}
 
 	/*
