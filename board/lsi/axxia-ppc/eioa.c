@@ -1078,9 +1078,11 @@ line_setup(int index)
 		envstring = getenv("ge_ad_value");
 
 		if (NULL == envstring) {
+#ifdef AXM_35xx
 			if (phy_id_high.bits.id != MRVL88E1111_PHY_ID_HIGH_ID)
 				ge_ad_value = 0x300;
 			else
+#endif
 				ge_ad_value = 0xe00;
 		} else {
 			ge_ad_value = simple_strtoul(envstring, NULL, 0);
@@ -1110,7 +1112,9 @@ line_setup(int index)
 			DELAY();
 		}
 
+#ifdef AXM_35xx
 		if (phy_id_high.bits.id != MRVL88E1111_PHY_ID_HIGH_ID) {
+#endif
 			DELAY();
 			if (0 == (status & 0x4)) {
 				ERROR_PRINT("GMAC%d: LINK is Down.\n",
@@ -1142,6 +1146,7 @@ line_setup(int index)
 				       "Half Duplex" : "Full Duplex");
 				DELAY();
 			}
+#ifdef AXM_35xx
 		} else {
 			DELAY();
 
@@ -1190,6 +1195,7 @@ line_setup(int index)
 					& MRVL88E1111_PHYSTAT_DUPLEX)) ?
 					"Half Duplex" : "Full Duplex");
 		}
+#endif
 		/* Make the MAC match. */
 		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
 			&ncr_status));
