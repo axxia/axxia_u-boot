@@ -1066,14 +1066,14 @@ line_setup(int index)
     if (5 > index) {
         hwPortIndex = ((index == 0) ? 0 : (index - 1));
 		eioaRegion = NCP_REGION_ID(31, 16); /* 0x1f.0x10 */
-		gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(31, 17) : /* 0x1f.0x11 */ 
-                                           NCP_REGION_ID(31, 18)); /* 0x1f.0x12 */
+		gmacRegion = ((index == 0) ? NCP_REGION_ID(31, 17) : /* 0x1f.0x11 */ 
+                                     NCP_REGION_ID(31, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (10 > index) {
 	    hwPortIndex = ((index == 5) ? 0 : (index - 6));
 		eioaRegion = NCP_REGION_ID(23, 16); /* 0x17.0x10 */
-        gmacRegion = ((hwPortIndex == 0) ? NCP_REGION_ID(23, 17) : /* 0x1f.0x11 */ 
-                                           NCP_REGION_ID(23, 18)); /* 0x1f.0x12 */
+        gmacRegion = ((index == 5) ? NCP_REGION_ID(23, 17) : /* 0x1f.0x11 */ 
+                                     NCP_REGION_ID(23, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else if (12 > index) {
 	    hwPortIndex = 0;
