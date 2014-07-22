@@ -33,6 +33,7 @@
 #include "ncp_task_pvt.h"
 #include "ncp_task_inline_funcs_axm55xx.h"
 
+#include <watchdog.h>
 
 /* ======
  * EXPORTS for native ncav2 APIS.  
@@ -965,6 +966,7 @@ ncp_recv_retry:
         pcq = myRecvQueue->taskQueue;
 #endif
 
+        WATCHDOG_RESET();
 
         if (NCP_ST_SUCCESS == 
             (ncpStatus = NCP_NCA_CHECK_TASK_INPUT_QUEUE(

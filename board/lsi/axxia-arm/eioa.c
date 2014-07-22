@@ -1124,6 +1124,18 @@ line_setup(int index)
                 0x00000003, 0x0));
 	NCR_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x4, 0x0));
 
+    if(phy_media_by_index[index] == EIOA_PHY_MEDIA_COPPER) 
+    {
+        envstring = getenv("phy_address");
+
+		if (envstring)
+        {
+			phy_by_index[index] = simple_strtoul(envstring, NULL, 0);
+		}
+        
+        mdio_initialize();
+    }
+
 	/* Check for "macspeed".  If set, ignore the PHYs... */
 	envstring = getenv("macspeed");
 
@@ -1153,9 +1165,9 @@ line_setup(int index)
 
         /* fiber vs copper */
         if(phy_media_by_index[index] == EIOA_PHY_MEDIA_FIBER) {
-            ncr_status |= 0x200;
+            ncr_status |= 0x400;
         } else {
-            ncr_status &= 0xfffffdff;
+            ncr_status &= 0xfffffbff;
         }
 
 		NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
@@ -1164,33 +1176,36 @@ line_setup(int index)
         /* do phy configuration for copper PHY */
         if(phy_media_by_index[index] == EIOA_PHY_MEDIA_COPPER) {
             control = mdio_read(phy_by_index[index], 0);
+		    ad_value = mdio_read(phy_by_index[index], 4);
+		    ge_ad_value = mdio_read(phy_by_index[index], 9);
+
             control &= 0xdebf; /* clear bit 6, 8 and 13 */
+            ad_value &= 0xfe1f; /* clear bits 5, 6, 7, 8 */
+            ge_ad_value &= 0xcff; /* clear bits 8, 9 */
             
             if (0 == strcmp("10MH", envstring)) {
+                ad_value |= 0x20;       /* set bit 5 */
     		} else if (0 == strcmp("10MF", envstring)) {
+                ad_value |= 0x40;       /* set bit 6 */
                 control |= 0x100; /* set bit 8 */
     		} else if (0 == strcmp("100MH", envstring)) {
+                ad_value |= 0x80;       /* set bit 7 */
     			control |= 0x2000; /* set bit 13 */
     		} else if (0 == strcmp("100MF", envstring)) {
+                ad_value |= 0x100;      /* set bit 8 */
     		    control |= 0x2100; /* set bit 8, 13 */
     		} else if (0 == strcmp("1G", envstring)) {
-    		    /* enable only gb in advt and restart AN. */
-    		    unsigned short ad_value = mdio_read(phy_by_index[index], 4);
-    		    unsigned short ge_ad_value = mdio_read(phy_by_index[index], 9);
-
-                ad_value &= 0xfc1f;
-                mdio_write(phy_by_index[index], 4, ad_value);
-                
-                ge_ad_value |= 0x300;
-    		    mdio_write(phy_by_index[index], 9, ge_ad_value);
-
-                control |= 0x200;
+                ge_ad_value |= 0x300;   /* set bit 8, 9 */
+                control |= 0x40;        /* set bit 6 */
+                control &= 0xdfff;      /* clear bit 13 */
     		} else {
     			printf("macspeed must be set to 10MH, 10MF, 100MH, "
     			       "100MF, or 1G\n");
     			return -1;
     		}
             
+            mdio_write(phy_by_index[index], 4, ad_value);
+		    mdio_write(phy_by_index[index], 9, ge_ad_value);
             mdio_write(phy_by_index[index], 0, control);
         }
 	} else {
@@ -1220,7 +1235,7 @@ line_setup(int index)
 
     		/* Force re-negotiation. */
     		control = mdio_read(phy_by_index[index], 0);
-    		control |= 0x200;
+    		control |= 0x1200;
     		mdio_write(phy_by_index[index], 0, control);
 
     		DELAY();
@@ -1253,7 +1268,7 @@ line_setup(int index)
 #else
     		status = 0x28; /* For FPGA, its 100MF */
 #endif
-    		printf("GMAC%02d: ", port_by_index[index]);
+    		printf("GMAC%d: ", port_by_index[index]);
 
     		switch ((status & 0x18) >> 3) {
     		case 0:
@@ -1270,7 +1285,7 @@ line_setup(int index)
     			break;
     		}
 
-    		printf(" %s\n",
+    		printf(" %s AN\n",
     		       (0 == (status & 0x20)) ?
     		       "Half Duplex" : "Full Duplex");
     		DELAY();
@@ -1282,13 +1297,7 @@ line_setup(int index)
     				    &ncr_status));
     		ncr_status &= ~0x3c;
     		ncr_status |= 0x08;	/* Force Link Up */
-
-            /* fiber vs copper */
-            if(phy_media_by_index[index] == EIOA_PHY_MEDIA_FIBER) {
-                ncr_status |= 0x200;
-            } else {
-                ncr_status &= 0xfffffdff;
-            }
+            ncr_status &= 0xfffffbff; /* clear fiber */
 
     		if (0 != (status & 0x20))
     			ncr_status |= 0x04; /* Force Full Duplex */
@@ -1303,13 +1312,7 @@ line_setup(int index)
     		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
     				    &ncr_status));
     		ncr_status &= ~0x3c;
-
-            /* fiber vs copper */
-            if(phy_media_by_index[index] == EIOA_PHY_MEDIA_FIBER) {
-                ncr_status |= 0x200;
-            } else {
-                ncr_status &= (~0x200);
-            }
+            ncr_status |= 0x400; /* set fiber */
 
             ncr_status |= 0x3;
 

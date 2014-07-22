@@ -49,6 +49,8 @@
   ======================================================================
 */
 
+static int initialize = 1;
+
 /*
   ----------------------------------------------------------------------
   mdio_initialize
@@ -57,25 +59,30 @@
 int
 mdio_initialize(void)
 {
-	char *mdio_clk_offset_value = NULL;
-	unsigned long offset = MDIO_CLK_OFFSET_DEFAULT;
-	char *mdio_clk_period_value = NULL;
-	unsigned long period = MDIO_CLK_PERIOD_DEFAULT;
+    if(initialize)
+    {
+	    char *mdio_clk_offset_value = NULL;
+	    unsigned long offset = MDIO_CLK_OFFSET_DEFAULT;
+	    char *mdio_clk_period_value = NULL;
+	    unsigned long period = MDIO_CLK_PERIOD_DEFAULT;
 
-	mdio_clk_offset_value = getenv("mdio_clk_offset");
+	    mdio_clk_offset_value = getenv("mdio_clk_offset");
 
-	if (NULL != mdio_clk_offset_value)
-		offset = simple_strtoul(mdio_clk_offset_value, NULL, 0);
+	    if (NULL != mdio_clk_offset_value)
+		    offset = simple_strtoul(mdio_clk_offset_value, NULL, 0);
 
-	mdio_clk_period_value = getenv("mdio_clk_period");
+	    mdio_clk_period_value = getenv("mdio_clk_period");
 
-	if (NULL != mdio_clk_period_value)
-		period = simple_strtoul(mdio_clk_period_value, NULL, 0);
+	    if (NULL != mdio_clk_period_value)
+		    period = simple_strtoul(mdio_clk_period_value, NULL, 0);
 
-	printf("MDIO: offset is 0x%lx, period is 0x%lx\n", offset, period);
+	    printf("MDIO: offset is 0x%lx, period is 0x%lx\n", offset, period);
 
-	writel(offset, MDIO_CLK_OFFSET);
-	writel(period, MDIO_CLK_PERIOD);
+	    writel(offset, MDIO_CLK_OFFSET);
+	    writel(period, MDIO_CLK_PERIOD);
+
+        initialize = 0;
+    }
 
 	return 0;
 }
