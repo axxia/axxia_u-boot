@@ -211,6 +211,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 				}
 			}
 			start[test_offset] = pattern;
+			WATCHDOG_RESET();
 
 			/*
 			 * Check for addr bits stuck low or shorted.
@@ -263,6 +264,8 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			     offset < num_words; pattern++,
 				     offset++) {
 				start[offset] = pattern;
+				if ((offset % 1000000) == 0)
+					WATCHDOG_RESET();
 			}
 
 			/*
@@ -272,6 +275,8 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			for (pattern = 1, offset = 0;
 			     offset < num_words; pattern++,
 				     offset++) {
+				if ((offset % 1000000) == 0)
+					WATCHDOG_RESET();
 				temp = start[offset];
 				if (temp != pattern) {
 					printf("\nFAILURE (read/write) " \
@@ -294,6 +299,8 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			for (pattern = 1, offset = 0; offset < num_words;
 			     pattern++,
 				     offset++) {
+				if ((offset % 1000000) == 0)
+					WATCHDOG_RESET();
 				anti_pattern = ~pattern;
 				temp = start[offset];
 				if (temp != anti_pattern) {
