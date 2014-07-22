@@ -22,8 +22,6 @@
 
 #ifdef CONFIG_PCI
 
-#ifdef CONFIG_ACP3
-
 #define ACPX1_PCIE_MPAGE_UPPER(n) (0x1010 + (n * 8))
 #define ACPX1_PCIE_MPAGE_LOWER(n) (0x1014 + (n * 8))
 
@@ -813,7 +811,5 @@ void pci_init_board(void)
 
 }
 
-
-#endif /* CONFIG_ACP3 */
 
 #endif /* CONFIG_PCI */

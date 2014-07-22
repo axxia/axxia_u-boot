@@ -31,16 +31,24 @@ else
 COBJS =
 endif
 
-COBJS += acp_failure.o dcr.o nand.o ssp.o mdio.o io.o splash.o
+COBJS += acp_failure.o dcr.o nand.o ssp.o io.o splash.o
 COBJS += ncr.o version.o reset.o clocks.o pciesrio.o sbb.o
 SOBJS = acp_start.o brs.o util.o ipi.o
+
+ifdef CONFIG_PCI
+COBJS += pcie.o
+else
+ifndef CONFIG_ACP3
+COBJS += mdio.o
+endif
+endif
 
 ifdef CONFIG_SPD
 COBJS  += i2c.o
 endif
 
 ifdef CONFIG_ACP3
-COBJS  += dt.o spintable.o ose.o nvram.o osg.o locks.o pcie.o
+COBJS  += dt.o spintable.o ose.o nvram.o osg.o locks.o mdio.o
 COBJS  += ncp_task_lite.o ncp_task_lite_uboot.o
 SOBJS  += acp_static.o
 ifndef CONFIG_SPD
