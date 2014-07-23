@@ -1039,13 +1039,15 @@ line_setup(int index)
 	int rc;
 #if defined(CONFIG_AXXIA_55XX)
 	int retries = 100000;
+#endif
+#if defined(CONFIG_AXXIA_55XX) || defined(CONFIG_AXXIA_55XX_EMU)
 	unsigned short ad_value;
 	unsigned short ge_ad_value;
 #endif
 	unsigned eioaRegion;
 	unsigned gmacRegion;
 	unsigned gmacPortOffset;
-    unsigned hwPortIndex;
+	unsigned hwPortIndex;
 	unsigned ncr_status;
 	char *envstring;
 	unsigned short status;
