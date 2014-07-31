@@ -56,7 +56,7 @@ COBJS += voltage.o pciesrio.o
 endif
 endif
 
-COBJS   += spl.o axxia_initialize.o
+COBJS   += mbist_range.o spl.o axxia_initialize.o
 
 endif
 

@@ -379,7 +379,6 @@ reset_cpu_fabric(void)
 
 	return;
 }
-
 /* For spl mtest range testing, find the memory ranges (1G page table entries)
 that cover what is being tested */
 void sw_test_page_fit(unsigned long in_addr, unsigned long in_len,
@@ -427,6 +426,8 @@ void run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len)
 	add_sw_len = malloc(3 * sizeof(unsigned long));
 	memset(add_sw_addr, 0, 3 * sizeof(unsigned long));
 	memset(add_sw_len, 0, 3 * sizeof(unsigned long));
+
+	printf("test_addr = 0x%llx, test_len = 0x%llx\n", (unsigned long long)in_addr*256, (unsigned long long)(in_len*256));
 
 	sw_test_page_fit(in_addr, in_len, add_sw_addr, add_sw_len);
 	for (j = 0; j < 3; j++) {
@@ -659,14 +660,37 @@ static void
 check_memory_ranges(void)
 {
 	unsigned long *ranges = (unsigned long *)&global->memory_ranges;
-	int i;
+	int i, j;
+	unsigned long *mbist_addr, *mbist_len;
+	unsigned long *add_mbist_addr, *add_mbist_len;
+	unsigned long *add_sw_addr, *add_sw_len;
 	unsigned long *test_addr, *test_len;
-	unsigned long memSize;
+	unsigned long *prot_addr, *prot_len;
+	unsigned long memSize, dual_ddr, maskbits;
+	unsigned ret;
 
-	test_addr = malloc(8 * sizeof(unsigned long));
-	test_len = malloc(8 * sizeof(unsigned long));
+	mbist_addr = malloc(32 * 3 * sizeof(unsigned long));
+	add_mbist_addr = malloc(32 * sizeof(unsigned long));
+	add_sw_addr = malloc(32 * sizeof(unsigned long));
+	test_addr = malloc(8 * 3 * sizeof(unsigned long));
+	mbist_len = malloc(32 * 3 * sizeof(unsigned long));
+	add_mbist_len = malloc(32 * sizeof(unsigned long));
+	add_sw_len = malloc(32 * sizeof(unsigned long));
+	test_len = malloc(8 * 3 * sizeof(unsigned long));
+	prot_addr = malloc(5 * sizeof(unsigned long));
+	prot_len = malloc(5 * sizeof(unsigned long));
+
+	memset(mbist_addr, 0, 32 * 3 * sizeof(unsigned long));
+	memset(mbist_len, 0, 32 * 3 * sizeof(unsigned long));
+	memset(add_mbist_addr, 0, 32 * sizeof(unsigned long));
+	memset(add_mbist_len, 0, 32 * sizeof(unsigned long));
+	memset(add_sw_addr, 0, 32 * sizeof(unsigned long));
+	memset(add_sw_len, 0, 32 * sizeof(unsigned long));
 	memset(test_addr, 0, 8 * sizeof(unsigned long));
 	memset(test_len, 0, 8 * sizeof(unsigned long));
+	memset(prot_addr, 0, 5 * sizeof(unsigned long));
+	memset(prot_len, 0, 5 * sizeof(unsigned long));
+
 
 	for (i = 0; i < 8; i++) {
 		unsigned long long offset = (unsigned long long)*ranges++;
@@ -678,29 +702,96 @@ check_memory_ranges(void)
 		if (0ULL != length) {
 			printf("Testing Memory From 0x%llx, 0x%llx bytes\n",
 				offset, length);
-			test_addr[i] = offset/256;
-			test_len[i] = length/256;
+			mbist_addr[i] = offset/256;
+			mbist_len[i] = length/256;
 		} else {
+			mbist_len[i] = 0;
 			test_len[i] = 0;
+			prot_len[i] = 0;
 			break;
 		}
 	}
 	memSize = sysmem->totalSize/256;
 
+#ifdef CONFIG_HYBRID_MBIST
+
+	if (sysmem->num_interfaces == 0x2)
+		dual_ddr = 1;
+	else
+		dual_ddr = 0;
+
+	if (sysmem->num_ranks_per_interface == 0x2) {
+		maskbits = 4;
+	} else if (sysmem->num_ranks_per_interface == 0x4) {
+		maskbits = 5;
+	} else {
+		/* sysmem->num_ranks_per_interface is 1 */
+		maskbits = 3;
+	}
+
+	ret = mbist_range(memSize, dual_ddr, maskbits, 1024,
+		mbist_addr, mbist_len,
+		test_addr, test_len, prot_addr, prot_len);
+	if (ret != 0) {
+		printf("mbist_range failed with %d\n", ret);
+	} else {
+		for (i = 0; i < 96; i++) {
+			if (mbist_len[i] != 0) {
+				mbist_power2(mbist_addr[i], mbist_len[i],
+					add_mbist_addr, add_mbist_len);
+				for (j = 0; j < 32; j++) {
+					if (add_mbist_len[j] != 0) {
+						axxia_sysmem_bist(
+						(unsigned long long)
+						add_mbist_addr[j]*256,
+						(unsigned long long)
+						add_mbist_len[j]*256);
+					} else {
+						break;
+					}
+				}
+			} else {
+				break;
+			}
+		}
+		for (i = 0; i < 96; i++) {
+			if (test_len[i] != 0) {
+				if ((test_addr[i]+test_len[i]) > memSize) {
+					printf("Testing range exceeds System memory size\n");
+				} else if (((unsigned long long)test_len[i]*256)
+					> 0x40000000) {
+					printf("Testing length cannot exceed 1G \n");
+				} else {
+					run_spl_mtest_ranges(test_addr[i],
+						test_len[i]);
+				}
+			} else {
+				break;
+			}
+		}
+		for (i = 0; i < 5; i++) {
+			if (prot_len[i] != 0)
+				printf("prot_addr = 0x%lx, prot_len = 0x%lx\n", prot_addr[i], prot_len[i]);
+			else
+				break;
+		}
+	}
+#else
 	for (i = 0; i < 8; i++) {
-		if (test_len[i] != 0) {
-			if ((test_addr[i]+test_len[i]) > memSize) {
-				printf("Testing range exceeds\
-					 System memory size\n");
-			} else if (((unsigned long long)test_len[i]*256)
+		if (mbist_len[i] != 0) {
+			if ((mbist_addr[i]+mbist_len[i]) > memSize) {
+				printf("Testing range exceeds System memory size\n");
+			} else if (((unsigned long long)mbist_len[i]*256)
 				> 0x40000000) {
 				printf("Testing length cannot exceed 1G \n");
 			} else {
-				run_spl_mtest_ranges(test_addr[i], test_len[i]);
+				run_spl_mtest_ranges(mbist_addr[i],
+					mbist_len[i]);
 			}
 		} else
 			break;
 	}
+#endif
 }
 
 #endif	/* CONFIG_AXXIA_EMU */
