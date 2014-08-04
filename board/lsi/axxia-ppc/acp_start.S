@@ -182,18 +182,26 @@ _start_acp:
 	lis		r0,0
 	mtmsr		r0
 
-	#; Clear the MCSR
-
-	mfspr		r0,0x23c
-	mtspr		0x33c,r0
-
 	#; Clear the TCR
 
 	mtspr		0x154,r0
 
 	#; Clear the PID
 
-	mtspr		0x030,r0	
+	mtspr		0x030,r0
+
+	#; Clear the MCSRR1
+
+	mtspr		0x23b,r0
+
+	#; Clear the CSRR1
+
+	mtspr		0x03b,r0
+
+	#; Clear the MCSR
+
+	mfspr		r0,0x23c
+	mtspr		0x33c,r0
 
 	#; Invalidate L1/L2
 
