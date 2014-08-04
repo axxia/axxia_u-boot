@@ -577,6 +577,13 @@ sysmem_init(void)
 	}
 #endif
 
+    /*
+     * DDR retention is not yet supported 
+     */
+    sysmem->ddrRetentionEnable = 0;
+    sysmem->ddrRecovery = 0;
+
+
     disp_ddr_parms("SMEM Parameters", sysmem);
 
 	if (sysmem->primary_bus_width == 2) {
@@ -610,6 +617,7 @@ sysmem_init(void)
 		  printf("0x18d.4.0x0: 0x%08x\n"
 			 "0x18d.4.0x4: 0x%08x\n",
 			 dcr_read(0xd70), dcr_read(0xd71));
+
 		  acp_failure( __FILE__, __FUNCTION__, __LINE__ );
 		}
 #else

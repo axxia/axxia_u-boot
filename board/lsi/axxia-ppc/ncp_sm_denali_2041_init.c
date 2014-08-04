@@ -1,18 +1,20 @@
-/**************************************************************************
- **                                                                       *
- **                           LSI CONFIDENTIAL      *
- **                           PROPRIETARY NOTE                            *
- **                                                                       *
- **    This software contains information confidential and proprietary    *
- **    to LSI Corporation Inc.  It shall not be reproduced in whole or in *
- **    part, or transferred to other documents, or disclosed to third     *
- **    parties, or used for any purpose other than that for which it was  *
- **    obtained, without the prior written consent of LSI Corporation Inc.*
- **    (c) 2008-2014, LSI Corporation Inc.  All rights reserved.          *
- **                                                                       *
- **
- **
- **************************************************************************/
+/*
+ *  Copyright (C) 2014 LSI (john.jacques@lsi.com)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 /********************************************************************
  * ncp_sm_denali_2041_init.c
@@ -109,9 +111,7 @@ ncp_ddr_speedbin_vals_t speedbin_vals[6] = {
 };
 
 
-#ifdef AXM_35xx
 #include "ncp_utils.c"
-#endif
 
 ncp_st_t
 ncp_sm_denali_2041_init(
@@ -126,7 +126,6 @@ ncp_sm_denali_2041_init(
     ncp_uint32_t max_col;
     ncp_uint32_t col_diff;
     ncp_uint32_t row_diff;
-    ncp_uint32_t ctl_32 = 0, ctl_33 = 0, ctl_34 = 0;
     ncp_region_id_t ctlReg = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
     ncp_uint32_t rttWr;
     ncp_uint32_t *p32;
@@ -139,6 +138,10 @@ ncp_sm_denali_2041_init(
     ncp_uint8_t tRASmin;
     ncp_uint16_t tREF;
     ncp_uint16_t tWR;
+
+    int i;
+    ncp_uint8_t rd_ODT[4];
+    ncp_uint8_t wr_ODT[4];
 
 
     NCP_COMMENT("Sysmem %d Denali Controller init", smId);
@@ -155,18 +158,19 @@ ncp_sm_denali_2041_init(
 
     clkMhz = ncp_ddr_clock_speeds[clkIdx];
 
-    /*printf(" parms->ddrClockSpeedMHz = %d, clkIdx=%d, using %d MHz\n", 
-        parms->ddrClockSpeedMHz, clkIdx, clkMhz);*/
+
+    /* printf(" parms->ddrClockSpeedMHz = %d, clkIdx=%d, using %d MHz\n", 
+        parms->ddrClockSpeedMHz, clkIdx, clkMhz); */
 
 
     tRFC = (ncp_uint16_t) ncp_ns_to_clk(clkMhz, 
                  tRFC_vals_ns [ parms->sdram_device_density ] );
-
     
-    /*printf("dens=%d\n", parms->sdram_device_density);*/
-
-    /*printf("tRFCns=%d\n", 
-                 tRFC_vals_ns [ parms->sdram_device_density ] );*/
+    /*
+     printf("dens=%d\n", parms->sdram_device_density);
+     printf("tRFCns=%d\n", 
+                 tRFC_vals_ns [ parms->sdram_device_density ] );
+     */
 
 
     pVals = &speedbin_vals[clkIdx];
@@ -180,16 +184,15 @@ ncp_sm_denali_2041_init(
 		parms->rdimm_ctl_0_0, parms->rdimm_ctl_0_1, parms->rdimm_misc);*/
 
     /* DENALI_CTL_00 */
-    /* TODO: at some point the AP field may be st */
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-	/* turning aref off */
-    	ncr_write32(ctlReg,  0x0000, 0x00010100);
-    }
-    else
-    {
-    	ncr_write32(ctlReg,  0x0000, 0x01010100);
-    }
+    /*
+     * # DRAM precharge policy (reserved, set to zero)
+     * # 0 : closed page policy
+     * # 1 : open page policy
+     */
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_00_t, addr_cmp_en, 1 );
+    SV( ncp_denali_DENALI_CTL_00_t, ap, ((parms->dramPrechargePolicy == 0) ? 1 : 0) );
+    ncr_write32(ctlReg,  0x0000, value);
 
     /* DENALI_CTL_01 */
     ncr_write32(ctlReg,  0x0004, 0x01010100);
@@ -221,102 +224,33 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x0030, 0x01000001);
 
     /* DENALI_CTL_14 */
-
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_14_t, tras_lockout, 1 );
     if (parms->version == NCP_CHIP_ACP35xx)
     {
-        /* bit24 set indicates free-running/limited WRR latency control
-	 * setting to free-running as default
-	 * turn off tref_enable- gets turned back on at runtime_adjust */
-        ncr_write32(ctlReg,  0x0038, 0x01000100);
+        /* obsoleted for 5500 */
+        SV( ncp_denali_DENALI_CTL_14_t, weighted_round_robin_latency_control, 1);
     }
-    else
-    {
-        ncr_write32(ctlReg,  0x0038, 0x00010100);
-    }
-
-    /* DENALI_CTL_16 */
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-        /* bit[1:0] axi0_fifo_type_reg; clock_domain relativity between port-0 and core
-	 * 0: async
-	 * 1: 2:1 port:core pseudo-sync
-	 * 2: 1:2 port:core pseudo-sync
-	 * 3: sync
-	 */
-        ncr_write32(ctlReg,  0x0040, 0x00000000);
-    }
+    ncr_write32(ctlReg,  0x0038, value);
 
     /* DENALI_CTL_17 */
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-        /* bit[1:0] axi1_fifo_type_reg; clock_domain relativity between port-1 and core
-	 * 0: async
-	 * 1: 2:1 port:core pseudo-sync
-	 * 2: 1:2 port:core pseudo-sync
-	 * 3: sync
-   	 *
-    	 * bit[9:8] axi1_port_ordering
-	 */
-        ncr_write32(ctlReg,  0x0044, 0x00000100);
-    }
-    else
-    {
-        ncr_write32(ctlReg,  0x0044, 0x00000100);
-    }
+    ncr_write32(ctlReg,  0x0044, 0x00000100);
 
     /* DENALI_CTL_18 */
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-        /* bit[1:0] axi2_fifo_type_reg; clock_domain relativity between port-2 and core
-	 * 0: async
-	 * 1: 2:1 port:core pseudo-sync
-	 * 2: 1:2 port:core pseudo-sync
-	 * 3: sync
-   	 *
-    	 * bit[9:8] axi2_port_ordering
-	 */
-    	ncr_write32(ctlReg,  0x0048, 0x00000200);
-    }
-    else
-    {
-    	ncr_write32(ctlReg,  0x0048, 0x00000200);
-    }
+    ncr_write32(ctlReg,  0x0048, 0x00000200);
 
     /* DENALI_CTL_19 */
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-        /* bit[1:0] axi3_fifo_type_reg; clock_domain relativity between port-2 and core
-	 * 0: async
-	 * 1: 2:1 port:core pseudo-sync
-	 * 2: 1:2 port:core pseudo-sync
-	 * 3: sync
-   	 *
-    	 * bit[9:8] axi3_port_ordering
-	 */
-    	ncr_write32(ctlReg,  0x004c, 0x00000300);
-    }
-    else
-    {
-    	ncr_write32(ctlReg,  0x004c, 0x00000300);
-    }
-
-    /* DENALI_CTL_20 */
-    /* TODO!! */
-    ncr_write32(ctlReg,  0x0050, 0x00000000);
+    ncr_write32(ctlReg,  0x004c, 0x00000300);
 
     /* DENALI_CTL_21 */
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_21_t, zq_on_sref_exit, 2 );
     if (parms->version == NCP_CHIP_ACP35xx)
     {
-	/* bit[9:8] weighted RR weight sharing
-	 * 8: port 0 & 1
-	 * 9: port 2 & 3
-	 */
-        ncr_write32(ctlReg,  0x0054, 0x02000300);
+        /* obsoleted for 5500 */
+        SV( ncp_denali_DENALI_CTL_21_t, weighted_round_robin_weight_sharing, 3);
     }
-    else
-    {
-        ncr_write32(ctlReg,  0x0054, 0x02000000);
-    }
+    ncr_write32(ctlReg,  0x0054, value);
 
     /* DENALI_CTL_22 */
     ncr_write32(ctlReg,  0x0058, 0x03ff0000);
@@ -325,8 +259,7 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x005c, 0x00ff0000);
 
     /* DENALI_CTL_24 */
-    /* q_fullness [19:16]
-     * bits [31:24] tcke -
+    /* bits [31:24] tcke -
      * should be at least 6 to cover up to 2133 MHz 
      */
     ncr_write32(ctlReg,  0x0060, 0x06000000);
@@ -335,16 +268,7 @@ ncp_sm_denali_2041_init(
      */
     value = 0;
     SV( ncp_denali_DENALI_CTL_25_t, w2r_diffcs_dly, parms->added_rank_switch_delay);
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-	/* use same as twtr here */
-        SV( ncp_denali_DENALI_CTL_25_t, trtp, ncp_ns_to_clk(clkMhz, 8)); /* 7.5 ns */
-    }
-    else
-    {
-	/* TODO: X7 and other chip rev's should follow the same way as X3 tbd */
-        SV( ncp_denali_DENALI_CTL_25_t, trtp, 6);
-    }
+    SV( ncp_denali_DENALI_CTL_25_t, trtp, ncp_ns_to_clk(clkMhz, 8)); /* 7.5 ns */
     SV( ncp_denali_DENALI_CTL_25_t, trrd, 5);
     ncr_write32(ctlReg,  0x0064, value);
 
@@ -355,23 +279,18 @@ ncp_sm_denali_2041_init(
         /* set the controller half-data path mode for 32-bit bus */
         SV( ncp_denali_DENALI_CTL_26_t, address_mirroring, 0xa);
     }
-    /* For 35xx the axi0_priority0/1_relative_priority set to 0x4 - Check */
     ncr_write32(ctlReg,  0x0068, value);
 
     /* DENALI_CTL_27 */
-    /* For 35xx the axi0_priority2/3_relative_priority, axi1_priority0/1_relative_priority set to 0x4/0x3 */
     ncr_write32(ctlReg,  0x006c, 0x03030404);
 
     /* DENALI_CTL_28 */
-    /* For 35xx the axi1_priority2/3_relative_priority, axi2_priority0/1_relative_priority set to 0x3/0x2 */
     ncr_write32(ctlReg,  0x0070, 0x02020303);
 
     /* DENALI_CTL_29 */
-    /* For 35xx the axi2_priority2/3_relative_priority, axi3_priority0/1_relative_priority set to 0x2/0x1 */
     ncr_write32(ctlReg,  0x0074, 0x01010202);
 
     /* DENALI_CTL_30 */
-    /* For 35xx the axi3_priority2/3_relative_priority set to 0x1/0x1 */
     ncr_write32(ctlReg,  0x0078, 0x0c000101);
 
     /* DENALI_CTL_31 */
@@ -381,65 +300,36 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x007c, value);
 
     /* DENALI_CTL_32 */
-    /* DENALI_CTL_33 */
-    /* DENALI_CTL_34 */
-    /* These registers set up ODT based on topology. */
-    /* Currently ACP2500 only supports two ranks */
-    switch( parms->topology ) {
-        case 0x1:
-            ctl_32  = 0x00000000;
-            ctl_33  = 0x00010000;
-            ctl_34  = 0x00000201;
-            break;
-        case 0x3:
-    	    if (parms->version == NCP_CHIP_ACP35xx)
-	    {
-		/* ODT_XX_MAP_CSX support
-		 * same applies to x7 as well */
-#if 0
-                ctl_32  = 0x01020000; /* ddr3 does not allow ODT during read */
-                ctl_33  = 0x03030000; /* dual-rank support WR */
-                ctl_34  = 0x00000000; /* cs2,3 invalid */
-#endif
-		ctl_32 =  ((parms->read_ODT_ctl & 0xf) << 16) |
-			   ((parms->read_ODT_ctl & 0xf0) << 20);
-		ctl_33 =  ((parms->read_ODT_ctl & 0xf00) >> 8) |
-			   ((parms->read_ODT_ctl & 0xf000) >> 4) |
-			   ((parms->write_ODT_ctl & 0xf) << 16) |
-			   ((parms->write_ODT_ctl & 0xf0) << 20);
-		ctl_34 =  ((parms->write_ODT_ctl & 0xf00) >> 8) |
-			   ((parms->write_ODT_ctl & 0xf000) >> 4);
-	    }
-	    else
-	    {
-                ctl_32  = 0x00000000;
-                ctl_33  = 0x02010000;
-                ctl_34  = 0x00000000;
-	    }
-            break;
-#if 0
-        case 0x5:
-            ctl_32  = 0x00040000;
-            ctl_33  = 0x00040001;
-            ctl_34  = 0x00000001;
-            break;
-        case 0xf:
-            ctl_32  = 0x08040000;
-            ctl_33  = 0x08040201;
-            ctl_34  = 0x00000201;
-            break;
-#endif
-        default:
-            printf( "%d: Unsupported Topology.\n", parms->topology );
-            acp_failure( __FILE__, __FUNCTION__, __LINE__ );
-            break;
+    /* unpack the ODT control words into indexed arrays */
+    value  = parms->read_ODT_ctl;
+    value2 = parms->write_ODT_ctl;
+    for (i=0; i<4; i++) {
+
+        rd_ODT[i] = value  & 0xf;
+        wr_ODT[i] = value2 & 0xf;
+
+        value >>= 4;
+        value2 >>= 4;
     }
-    /* DENALI_CTL_32 */
-    ncr_write32(ctlReg,  0x0080, ctl_32);
+
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_32_t, odt_rd_map_cs0, rd_ODT[0]);
+    SV( ncp_denali_DENALI_CTL_32_t, odt_rd_map_cs1, rd_ODT[1]);
+    ncr_write32(ctlReg,  0x0080, value);
+
     /* DENALI_CTL_33 */
-    ncr_write32(ctlReg,  0x0084, ctl_33);
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_33_t, odt_rd_map_cs2, rd_ODT[2]);
+    SV( ncp_denali_DENALI_CTL_33_t, odt_rd_map_cs3, rd_ODT[3]);
+    SV( ncp_denali_DENALI_CTL_33_t, odt_wr_map_cs0, wr_ODT[0]);
+    SV( ncp_denali_DENALI_CTL_33_t, odt_wr_map_cs1, wr_ODT[1]);
+    ncr_write32(ctlReg,  0x0084, value);
+
     /* DENALI_CTL_34 */
-    ncr_write32(ctlReg,  0x0088, ctl_34);
+    value = 0;
+    SV( ncp_denali_DENALI_CTL_34_t, odt_wr_map_cs2, wr_ODT[2]);
+    SV( ncp_denali_DENALI_CTL_34_t, odt_wr_map_cs3, wr_ODT[3]);
+    ncr_write32(ctlReg,  0x0088, value);
 
     /* DENALI_CTL_35 */
     ncr_write32(ctlReg,  0x008c, 0x00000002);
@@ -509,7 +399,7 @@ ncp_sm_denali_2041_init(
        
 
     /* DENALI_CTL_60 */
-    /* ;ODO: tdfi_rdlvl_resplat = CL + AL + 15 */
+    /* TODO: tdfi_rdlvl_resplat = CL + AL + 15 */
     value = 0;
     SV( ncp_denali_DENALI_CTL_60_t, tdfi_rdlvl_resplat, parms->CAS_latency + 15 );
     ncr_write32(ctlReg,  0x00f0, value);
@@ -521,20 +411,17 @@ ncp_sm_denali_2041_init(
     /* trcd_int has been moved to CTL335 for 5500 */
     value = 0;
     SV( ncp_denali_DENALI_CTL_62_t, trcd_int, parms->CAS_latency );
-    SV( ncp_denali_DENALI_CTL_62_t, tras_min, pVals->tRASmin ); 
+    SV( ncp_denali_DENALI_CTL_62_t, tras_min, tRASmin ); 
     SV( ncp_denali_DENALI_CTL_62_t, tmod, 12 );
     ncr_write32(ctlReg,  0x00f8, value);
 
     /* DENALI_CTL_63 */
-    /* For 35xx the axi0_priority_relax set to 0x64 */
     ncr_write32(ctlReg,  0x00fc, 0x00006400);
 
     /* DENALI_CTL_64 */
-    /* For 35xx the axi1/2_priority_relax set to 0x64 */
     ncr_write32(ctlReg,  0x0100, 0x00640064);
 
     /* DENALI_CTL_65 */
-    /* For 35xx the axi3_priority_relax set to 0x64 */
     ncr_write32(ctlReg,  0x0104, 0x00400064);
 
     /* DENALI_CTL_69 */
@@ -571,28 +458,12 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x0164, 0x00000000);
 
     /* DENALI_CTL_93 */
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
 	/* tinit 700usec */
-        ncr_write32(ctlReg,  0x0174, ncp_ns_to_clk(clkMhz, 700000));
-    }
-    else
-    {
-	/* TODO: X7 and other chip rev's should follow the same way as X3 tbd */
-        ncr_write32(ctlReg,  0x0174, 0x00000008);
-    }
+    ncr_write32(ctlReg,  0x0174, ncp_ns_to_clk(clkMhz, 700000));
 
     /* DENALI_CTL_94 */
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
 	/* cke_inactive 500usec */
-        ncr_write32(ctlReg,  0x0178, ncp_ns_to_clk(clkMhz, 500000));
-    }
-    else
-    {
-	/* TODO: X7 and other chip rev's should follow the same way as X3 tbd */
-        ncr_write32(ctlReg,  0x0178, 0x00000190);
-    }
+    ncr_write32(ctlReg,  0x0178, ncp_ns_to_clk(clkMhz, 500000));
 
     /* DENALI_CTL_95 */
     ncr_write32(ctlReg,  0x017c, 0x00008000);
@@ -753,60 +624,32 @@ ncp_sm_denali_2041_init(
 
         /* DENALI_CTL_235 */
         ncr_write32(ctlReg,  0x03ac, parms->rdimm_ctl_0_1);
-    }
-    else
-    {
-	/* is this really needed ? */
-        /* DENALI_CTL_234 */
-        ncr_write32(ctlReg,  0x03a8, 0x24101065);
 
-        /* DENALI_CTL_235 */
-        ncr_write32(ctlReg,  0x03ac, 0x00001370);
-    }
-
-    /* DENALI_CTL_236 */
-    if (parms->rdimm_misc & 0x1)
-    {
- 	/* specify which cs to enable for DIMM0 */
+        /* DENALI_CTL_236 */
+     	/* specify which cs to enable for DIMM0 */
         ncr_write32(ctlReg,  0x03b0, 0x00000003);
-    }
 
-#if 0
-    /* not needed, as currently supporting only 1 rdimm per sysmem intf */
-    /* DENALI_CTL_237 */
-    ncr_write32(ctlReg,  0x03b4, 0x13030154);
 
-    /* DENALI_CTL_238 */
-    ncr_write32(ctlReg,  0x03b8, 0x00001367);
-#endif
+        /* DENALI_CTL_239 */
+        value = 0;
+        /* [3:0] cs_map_dimm_1: currently only supporting 1 rdimm so this can be zero */
+        SV( ncp_denali_DENALI_CTL_239_t, cs_map_dimm_1, 0);
+        /* [23:8]: 1 bit for each ctl-word */
+        SV( ncp_denali_DENALI_CTL_239_t, rdimm_cw_map, ((parms->rdimm_misc & 0xffff0000)>>16));
+        ncr_write32(ctlReg,  0x03bc, value);
 
-    /* DENALI_CTL_239 */
-    value = 0x000fff0c; /* legacy value */
-    /* [3:0] cs_map_dimm_1: currently only supporting 1 rdimm so this can be zero */
-    SV( ncp_denali_DENALI_CTL_239_t, cs_map_dimm_1, 0);
-    /* [23:8]: 1 bit for each ctl-word */
-    SV( ncp_denali_DENALI_CTL_239_t, rdimm_cw_map, ((parms->rdimm_misc & 0xffff0000)>>16));
-    ncr_write32(ctlReg,  0x03bc, value);
+        /* DENALI_CTL_240 */
+        value = 0;
+        SV( ncp_denali_DENALI_CTL_240_t, rdimm_cw_hold_cke_en, (parms->rdimm_misc & 0x1));
+        SV( ncp_denali_DENALI_CTL_240_t, rdimm_tmrd, 8);
+        ncr_write32(ctlReg,  0x03c0, value);
 
-    /* DENALI_CTL_240 */
-    value = 0x00000800;
-    SV( ncp_denali_DENALI_CTL_240_t, rdimm_cw_hold_cke_en, (parms->rdimm_misc & 0x1));
-    SV( ncp_denali_DENALI_CTL_240_t, rdimm_tmrd, 8);
-    ncr_write32(ctlReg,  0x03c0, value);
-
-    /* DENALI_CTL_241 */
-    if (parms->rdimm_misc & 0x1)
-    {
-	/* rdimm_tstab is freq based, unit is cycles: for 933 it is 5usec, for other freq's it is 6 usec */
-	value = ((clkMhz == 933) ? 5 : 6);
-	value *= clkMhz;
+        /* DENALI_CTL_241 */
+    	/* rdimm_tstab is freq based, unit is cycles: for 933 it is 5usec, for other freq's it is 6 usec */
+    	value = ((clkMhz == 933) ? 5 : 6);
+    	value *= clkMhz;
     	SV( ncp_denali_DENALI_CTL_241_t, rdimm_tstab, value);
         ncr_write32(ctlReg,  0x03c4, value);
-    }
-    else
-    {
-     	/* is this really needed ?. */
-        ncr_write32(ctlReg,  0x03c4, 0x000012c0);
     }
 
     /* DENALI_CTL_242 */
@@ -819,145 +662,20 @@ ncp_sm_denali_2041_init(
      * bits [15:8] cksrx 
      * both should be 0xb for 2133 MHz
      */
-  	ncr_write32(ctlReg,  0x03d0, 0x00000b0b);
+    ncr_write32(ctlReg,  0x03d0, 0x00000b0b);
        
 
     /* DENALI_CTL_279 */
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-    	/* For 35xx the axi0_start_addr0 is 28:8 instead of 29:8
-	 * port_addr_protection_en set to 1 */
-    	ncr_write32(ctlReg,  0x045c, 0x00000001);
-    }
-    else
-    {
-    	ncr_write32(ctlReg,  0x045c, 0x00000000);
-    }
+    ncr_write32(ctlReg,  0x045c, 0x00000000);
        
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-    	/* DENALI_CTL_280 */
-	/* axi0_end_addr_0 max'd */
-    	ncr_write32(ctlReg,  0x0460, 0x001fffff);
-
-    	/* DENALI_CTL_281 */
-	/* axi0_range_prot_bits_0
-	 * 0: priviledged & secureonly
-	 * 1: secure (with or without privilege)
-	 * 2: priviledged (with or without secure)
-	 * 3: full access */
-    	ncr_write32(ctlReg,  0x0464, 0x00000003);
-
-    	/* DENALI_CTL_282 */
-	/* axi0_start_addr_1 */
-    	ncr_write32(ctlReg,  0x0468, 0x00000000);
-
-    	/* DENALI_CTL_283 */
-	/* axi0_end_addr_1 */
-    	ncr_write32(ctlReg,  0x046c, 0x001fffff);
-
-    	/* DENALI_CTL_284 */
-	/* axi0_range_prot_bits_1
-	 * 0: priviledged & secureonly
-	 * 1: secure (with or without privilege)
-	 * 2: priviledged (with or without secure)
-	 * 3: full access */
-    	ncr_write32(ctlReg,  0x0470, 0x00000003);
-
-    	/* DENALI_CTL_292 */
-	/* axi1_end_addr_0 */
-    	ncr_write32(ctlReg,  0x0490, 0x001fffff);
-
-    	/* DENALI_CTL_293 */
-	/* axi1_range_prot_bits_0
-	 * 0: priviledged & secureonly
-	 * 1: secure (with or without privilege)
-	 * 2: priviledged (with or without secure)
-	 * 3: full access */
-    	ncr_write32(ctlReg,  0x0494, 0x00000003);
-
-    	/* DENALI_CTL_295 */
-	/* axi1_end_addr_1 */
-    	ncr_write32(ctlReg,  0x049c, 0x001fffff);
-
-    	/* DENALI_CTL_296 */
-	/* axi1_range_prot_bits_1
-	 * 0: priviledged & secureonly
-	 * 1: secure (with or without privilege)
-	 * 2: priviledged (with or without secure)
-	 * 3: full access */
-    	ncr_write32(ctlReg,  0x04a0, 0x00000003);
-
-    	/* DENALI_CTL_304 */
-	/* axi2_end_addr_0 */
-    	ncr_write32(ctlReg,  0x04c0, 0x001fffff);
-
-    	/* DENALI_CTL_305 */
-	/* axi2_range_prot_bits_0
-	 * 0: priviledged & secureonly
-	 * 1: secure (with or without privilege)
-	 * 2: priviledged (with or without secure)
-	 * 3: full access */
-    	ncr_write32(ctlReg,  0x04c4, 0x00000003);
-
-    	/* DENALI_CTL_307 */
-	/* axi2_end_addr_1 */
-    	ncr_write32(ctlReg,  0x04cc, 0x001fffff);
-
-    	/* DENALI_CTL_308 */
-	/* axi2_range_prot_bits_1
-	 * 0: priviledged & secureonly
-	 * 1: secure (with or without privilege)
-	 * 2: priviledged (with or without secure)
-	 * 3: full access */
-    	ncr_write32(ctlReg,  0x04d0, 0x00000003);
-
-    	/* DENALI_CTL_316 */
-	/* axi3_end_addr_0 */
-    	ncr_write32(ctlReg,  0x04f0, 0x001fffff);
-
-    	/* DENALI_CTL_317 */
-	/* axi3_range_prot_bits_0
-	 * 0: priviledged & secureonly
-	 * 1: secure (with or without privilege)
-	 * 2: priviledged (with or without secure)
-	 * 3: full access */
-    	ncr_write32(ctlReg,  0x04f4, 0x00000003);
-
-    	/* DENALI_CTL_319 */
-	/* axi3_end_addr_1 */
-    	ncr_write32(ctlReg,  0x04fc, 0x001fffff);
-
-    	/* DENALI_CTL_320 */
-	/* axi3_range_prot_bits_1
-	 * 0: priviledged & secureonly
-	 * 1: secure (with or without privilege)
-	 * 2: priviledged (with or without secure)
-	 * 3: full access */
-    	ncr_write32(ctlReg,  0x0500, 0x00000003);
-    }
-
-#if 0
     /* DENALI_CTL_327 */
-    ncr_write32(ctlReg,  0x051c, 0x000079ea);
-#endif
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-    	ncr_write32(ctlReg,  0x051c, 0x0000f370);
-    }
+    ncr_write32(ctlReg,  0x051c, ncp_ns_to_clk(clkMhz, (tREF * 10)));
 
     /* DENALI_CTL_328 */
     ncr_write32(ctlReg,  0x0520, 0x01010002);
 
     /* DENALI_CTL_329 */
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-    	ncr_write32(ctlReg,  0x0524, 0x01010100);
-    }
-    else
-    {
-    	ncr_write32(ctlReg,  0x0524, 0x03010100);
-    }
+    ncr_write32(ctlReg,  0x0524, 0x03010100);
 
     /* DENALI_CTL_330 */
     ncr_write32(ctlReg,  0x0528, 0x00000003);
@@ -1029,11 +747,9 @@ ncp_sm_denali_2041_init(
 
     SV(ncp_denali_DENALI_CTL_333_t, row_diff, row_diff);
     SV(ncp_denali_DENALI_CTL_333_t, col_diff,  col_diff);
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-        /* Enable rw_same_page_en page grouping */
-    	SV( ncp_denali_DENALI_CTL_333_t, rw_same_page_en, 1);
-    }
+    /* Enable rw_same_page_en page grouping */
+    /* NOTE: This was previously disabled on 5500!! */
+    SV( ncp_denali_DENALI_CTL_333_t, rw_same_page_en, 1);
     ncr_write32(ctlReg,  0x0534, value);
 
     /* DENALI_CTL_334 */
@@ -1041,7 +757,7 @@ ncp_sm_denali_2041_init(
     SV( ncp_denali_DENALI_CTL_334_t, todtl_2cmd, 8);
     ncr_write32(ctlReg,  NCP_DENALI_CTL_334, value);
 
-    if (parms->version == NCP_CHIP_ACP55xx) 
+    if (parms->version == NCP_CHIP_ACP55xx)
     {
         /* DENALI_CTL_335 */
         value = 0;
@@ -1135,77 +851,7 @@ ncp_sm_denali_2041_init(
         }
         ncr_write32(ctlReg,  NCP_DENALI_CTL_349, value);
 
-        /* DENALI_CTL_351 */
-	/* axi0_r/w_priority */
-        ncr_write32(ctlReg,  0x057c, 0x02020000);
 
-        /* DENALI_CTL_352 */
-	/* axi1_r/w_priority */
-        ncr_write32(ctlReg,  0x0580, 0x02020000);
-
-        /* DENALI_CTL_353 */
-	/* axi2_r/w_priority */
-        ncr_write32(ctlReg,  0x0584, 0x02020000);
-
-        /* DENALI_CTL_354 */
-	/* axi3_r/w_priority */
-        ncr_write32(ctlReg,  0x0588, 0x02020000);
-
-        /* DENALI_CTL_355 */
-	/* allowed read/write ID's for port 0 addr range 0 */
-        ncr_write32(ctlReg,  0x058c, 0xffffffff);
-        /* DENALI_CTL_356 */
-	/* identifies which 4 id's to be used to index into range above */
-        ncr_write32(ctlReg,  0x0590, 0x000f000f);
-
-        /* DENALI_CTL_357 */
-	/* allowed read/write ID's for port 0 addr range 1 */
-        ncr_write32(ctlReg,  0x0594, 0xffffffff);
-        /* DENALI_CTL_358 */
-	/* identifies which 4 id's to be used to index into range above */
-        ncr_write32(ctlReg,  0x0598, 0x000f000f);
-
-        /* DENALI_CTL_359 */
-	/* allowed read/write ID's for port 1 addr range 0 */
-        ncr_write32(ctlReg,  0x059c, 0xffffffff);
-        /* DENALI_CTL_360 */
-	/* identifies which 4 id's to be used to index into range above */
-        ncr_write32(ctlReg,  0x05a0, 0x000f000f);
-
-        /* DENALI_CTL_361 */
-	/* allowed read/write ID's for port 1 addr range 1 */
-        ncr_write32(ctlReg,  0x05a4, 0xffffffff);
-        /* DENALI_CTL_362 */
-	/* identifies which 4 id's to be used to index into range above */
-        ncr_write32(ctlReg,  0x05a8, 0x000f000f);
-
-        /* DENALI_CTL_363 */
-	/* allowed read/write ID's for port 2 addr range 0 */
-        ncr_write32(ctlReg,  0x05ac, 0xffffffff);
-        /* DENALI_CTL_364 */
-	/* identifies which 4 id's to be used to index into range above */
-        ncr_write32(ctlReg,  0x05b0, 0x000f000f);
-
-        /* DENALI_CTL_365 */
-	/* allowed read/write ID's for port 2 addr range 1 */
-        ncr_write32(ctlReg,  0x05b4, 0xffffffff);
-        /* DENALI_CTL_366 */
-	/* identifies which 4 id's to be used to index into range above */
-        ncr_write32(ctlReg,  0x05b8, 0x000f000f);
-
-        /* DENALI_CTL_367 */
-	/* allowed read/write ID's for port 3 addr range 0 */
-        ncr_write32(ctlReg,  0x05bc, 0xffffffff);
-        /* DENALI_CTL_368 */
-	/* identifies which 4 id's to be used to index into range above */
-        ncr_write32(ctlReg,  0x05c0, 0x000f000f);
-
-        /* DENALI_CTL_369 */
-	/* allowed read/write ID's for port 3 addr range 1 */
-        ncr_write32(ctlReg,  0x05c4, 0xffffffff);
-        /* DENALI_CTL_370 */
-	/* identifies which 4 id's to be used to index into range above */
-        ncr_write32(ctlReg,  0x05c8, 0x000f000f);
 
         /* DENALI_CTL_372 */
  	/* chk bit 0 is reserved ? */
@@ -1241,7 +887,6 @@ ncp_sm_denali_enable(
     ncp_uint32_t mask, value;
     ncp_region_id_t ctlReg = NCP_REGION_ID(sm_nodes[smId], NCP_SYSMEM_TGT_DENALI);
 
-#ifndef AXM_35xx
     if (parms->ddrRecovery == TRUE)
     {
         /* exit self-refresh */
@@ -1249,7 +894,6 @@ ncp_sm_denali_enable(
         SMAV(ncp_denali_DENALI_CTL_07_t, pwrup_srefresh_exit, 1);
         ncr_modify32(ctlReg,  NCP_DENALI_CTL_07, mask, value);
     }
-#endif
 
     /* enable the controller ! */
     mask = value = 0;

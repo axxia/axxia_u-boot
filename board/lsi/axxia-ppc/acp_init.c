@@ -197,6 +197,11 @@ typedef struct {
 	per_mem_parms_t per_mem[2];
 	/* Not part of the parameters, used internally.	*/
 	unsigned long cmemMR1[2];
+    unsigned long ddrRetentionEnable;
+    unsigned long ddrRecovery;
+    unsigned long num_bytelanes;
+    unsigned long long totalSize;
+
 } __attribute__((packed)) parameters_mem_t;
 
 #else
