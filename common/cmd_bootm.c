@@ -463,6 +463,7 @@ static int bootm_start_standalone(ulong iflag, int argc, char * const argv[])
 	return 0;
 }
 
+#ifndef NCR_TRACER
 /* we overload the cmd field with our state machine info instead of a
  * function pointer */
 static cmd_tbl_t cmd_bootm_sub[] = {
@@ -479,6 +480,7 @@ static cmd_tbl_t cmd_bootm_sub[] = {
 	U_BOOT_CMD_MKENT(prep, 0, 1, (void *)BOOTM_STATE_OS_PREP, "", ""),
 	U_BOOT_CMD_MKENT(go, 0, 1, (void *)BOOTM_STATE_OS_GO, "", ""),
 };
+#endif
 
 static int do_bootm_subcommand(cmd_tbl_t *cmdtp, int flag, int argc,
 			char * const argv[])

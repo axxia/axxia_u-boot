@@ -64,7 +64,7 @@ ncr_trace_read8(ncp_uint32_t region, ncp_uint32_t offset)
 
 	if (0 == short_read_count) {
 		++short_read_count;
-		printf("ncpRead   -w8 0.%lu.%lu.0x00%08lx",
+		printf("ncpRead   -w8 0.%u.%u.0x00%08x",
 		       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
 	} else {
 		++short_read_count;
@@ -81,7 +81,7 @@ ncr_trace_read8(ncp_uint32_t region, ncp_uint32_t offset)
 void
 ncr_trace_read16(ncp_uint32_t region, ncp_uint32_t offset)
 {
-	printf("ncpRead    0.%lu.%lu.0x00%08lx 1\n",
+	printf("ncpRead    0.%u.%u.0x00%08x 1\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
 
 	return;
@@ -90,7 +90,7 @@ ncr_trace_read16(ncp_uint32_t region, ncp_uint32_t offset)
 void
 ncr_trace_read32(ncp_uint32_t region, ncp_uint32_t offset)
 {
-	printf("ncpRead    0.%lu.%lu.0x00%08lx 1\n",
+	printf("ncpRead    0.%u.%u.0x00%08x 1\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
 
 	return;
@@ -106,12 +106,12 @@ ncr_trace_write8(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 
 	if (0 == short_write_count) {
 		++short_write_count;
-		printf("ncpWrite  -w8 0.%lu.%lu.0x00%08lx 0x%02lx",
+		printf("ncpWrite  -w8 0.%u.%u.0x00%08x 0x%02x",
 		       NCP_NODE_ID(region), NCP_TARGET_ID(region),
 		       offset, value);
 	} else {
 		++ short_write_count;
-		printf(" 0x%02lx", value);
+		printf(" 0x%02x", value);
 
 		if (4 == short_write_count) {
 			printf("\n");
@@ -126,7 +126,7 @@ void
 ncr_trace_write16(ncp_uint32_t region,
 		  ncp_uint32_t offset, ncp_uint32_t value)
 {
-	printf("ncpWrite   0.%lu.%lu.0x00%08lx 0x%04lx\n",
+	printf("ncpWrite   0.%u.%u.0x00%08x 0x%04x\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
 
 	return;
@@ -136,7 +136,7 @@ void
 ncr_trace_write32(ncp_uint32_t region,
 		  ncp_uint32_t offset, ncp_uint32_t value)
 {
-	printf("ncpWrite   0.%lu.%lu.0x00%08lx 0x%08lx\n",
+	printf("ncpWrite   0.%u.%u.0x00%08x 0x%08x\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
 
 	return;
@@ -146,7 +146,7 @@ void
 ncr_trace_modify(ncp_uint32_t region,
 		 ncp_uint32_t offset, ncp_uint32_t mask, ncp_uint32_t value)
 {
-	printf("ncpModify  0.%lu.%lu.0x00%08lx 0x%08lx 0x%08lx\n",
+	printf("ncpModify  0.%u.%u.0x00%08x 0x%08x 0x%08x\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, mask, value);
 
 	return;
@@ -157,8 +157,8 @@ ncr_trace_poll(ncp_uint32_t region,
 	       ncp_uint32_t loops, ncp_uint32_t delay,
 	       ncp_uint32_t offset, ncp_uint32_t mask, ncp_uint32_t value)
 {
-	printf("ncpPoll -l %lu -t %lu  0.%lu.%lu.0x00%08lx " \
-	       "0x%08lx 0x%08lx\n",
+	printf("ncpPoll -l %u -t %u  0.%u.%u.0x00%08x " \
+	       "0x%08x 0x%08x\n",
 	       loops, delay,
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, mask, value);
 
@@ -1819,7 +1819,7 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 	    ( ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 		0x00c00000 ) >> 22 ) ) {
 #ifdef NCR_TRACER
-		printf( "ncr_write( ) failed: 0x%lx\n",
+		printf( "ncr_write( ) failed: 0x%x\n",
 			( ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 			    0x00c00000 ) >> 22 ) );
 #endif
