@@ -35,6 +35,7 @@
 #include <malloc.h>
 
 /*#define TRACE_ALLOCATION*/
+/*#define DEBUG_COUNTERS_SETUP*/
 
 #define NCP_TASKIO_LITE
 #define NCP_TASKIO_UBOOT_ENV
@@ -62,13 +63,13 @@ Marvel 88E1111
   ======================================================================
 */
 #define MRVL88E1111_PHY_ID_HIGH_ID   0x0141
-#define MRVL88E1111_PHY_ID_LOW_ID    0xc
+#define MRVL88E1111_PHY_ID_LOW_ID    0x3
 #define MRVL88E1111_PHY_ID_LOW_MODEL 0xc
 #define MRVL88E1111_PHY_CTRL 0x0
 #define MRVL88E1111_PHY_CTRL_RESET 0x9140
 #define MRVL88E1111_PHY_CTRL_INIT 0x1140
 #define MRVL88E1111_EXT_PHY_SPEC_STATUS 0x1b
-#define MRVL88E1111_EXT_PHY_SPEC_MODE 0x848f
+#define MRVL88E1111_EXT_PHY_SPEC_MODE 0x848c
 
 #define MRVL88E1111_EXT_PHY_CTRL 0x14
 #define MRVL88E1111_DELAY_RGMII 0x0cd2
@@ -113,7 +114,7 @@ static int port_by_index[] = {1, 2, 3, 4, 9, 10, 11, 12};
 #ifdef ACP_25xx
 static int phy_by_index[] = {0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10};
 #elif defined(AXM_35xx)
-static int phy_by_index[] = {0x10, 0x11, 0x19, 0x18, 0x12, 0x13, 0x1b, 0x1a};
+static int phy_by_index[] = {0x3, 0x11, 0x19, 0x18, 0x12, 0x13, 0x1b, 0x1a};
 #else
 static int phy_by_index[] = {0x10, 0x11, 0x12, 0x13, 0x18, 0x19, 0x1a, 0x1b};
 #endif
@@ -846,6 +847,8 @@ line_renegotiate(int index)
 	unsigned long eioaPortOffset;
 #endif
 
+	printf("SR -- in line_renegotiate\n");
+
 	/* Set the region and offset. */
 	if (4 > index) {
 		eioaRegion = NCP_REGION_ID(31, 16); /* 0x1f.0x10 */
@@ -968,8 +971,9 @@ line_setup(int index)
 		gmacPortOffset = 0xc0 * (index - 4);
 	}
 
+#if 0
     printf("index=%d, gmacPortOffset=0x%x, eioaPortOffset=0x%x, eioaRegion=0x%x\n", index, gmacPortOffset, eioaPortOffset, eioaRegion);
-
+#endif
 	/* Disable stuff. */
 	NCR_CALL(ncr_modify32(gmacRegion, 0x330 + gmacPortOffset, 0x3f, 0));
 	NCR_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x8, 0x0));
@@ -986,50 +990,74 @@ line_setup(int index)
 		phy_id_low.raw, phy_id_low.bits.id, phy_id_low.bits.model,
 		phy_id_low.bits.revision);
 
-	switch (phy_id_high.bits.id) {
-	case VSC8574_PHY_ID_HIGH_ID:
-		DEBUG_PRINT("VSC8574_PHY_ID_LOW_ID=0x%x phy_id_low.bits.id=0x%x\n",
-			VSC8574_PHY_ID_LOW_ID, phy_id_low.bits.id);
-		/* Vitesse PHY */
-		if ((VSC8574_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
-			(VSC8574_PHY_ID_LOW_MODEL == phy_id_low.bits.model)) {
-			mdio_write(phy_by_index[index], 0x1f, 0x0);
-			mdio_write(phy_by_index[index], 0x17, 0x0);
-			mdio_write(phy_by_index[index], 0x1f, 0x3);
-			if (phy_by_index[index] == 0x18)
-				mdio_write(phy_by_index[index], 0x10, 0x30c0);
-			else
-				mdio_write(phy_by_index[index], 0x10, 0x3080);
-			mdio_write(phy_by_index[index], 0x1f, 0x0);
-			mdio_write(0x18, 0x1f, 0x0010);
-			mdio_write(0x18, 0x13, 0x000f);
-			mdio_write(0x18, 0x12, 0x80f0);
-			mdio_write(0x18, 0x1f, 0x0000);
+	envstring = getenv("macspeed");
+	if (NULL != envstring) {
+		switch (phy_id_high.bits.id) {
+		case VSC8574_PHY_ID_HIGH_ID:
+			DEBUG_PRINT("VSC8574_PHY_ID_LOW_ID=0x%x phy_id_low.bits.id=0x%x\n",
+				VSC8574_PHY_ID_LOW_ID, phy_id_low.bits.id);
+			/* Vitesse PHY */
+			if ((VSC8574_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
+				(VSC8574_PHY_ID_LOW_MODEL
+					== phy_id_low.bits.model)) {
+				mdio_write(phy_by_index[index], 0x1f, 0x0);
+				mdio_write(phy_by_index[index], 0x17, 0x0);
+				mdio_write(phy_by_index[index], 0x1f, 0x3);
+				if (phy_by_index[index] == 0x18)
+					mdio_write(phy_by_index[index], 0x10,
+						0x30c0);
+				else
+					mdio_write(phy_by_index[index], 0x10,
+						0x3080);
+				mdio_write(phy_by_index[index], 0x1f, 0x0);
+				mdio_write(0x18, 0x1f, 0x0010);
+				mdio_write(0x18, 0x13, 0x000f);
+				mdio_write(0x18, 0x12, 0x80f0);
+				mdio_write(0x18, 0x1f, 0x0000);
+			}
+			break;
+		case MRVL88E1111_PHY_ID_HIGH_ID:
+			DEBUG_PRINT("MRVL88E1111_PHY_ID_LOW_ID=0x%x phy_id_low.bits.id=0x%x\n",
+				MRVL88E1111_PHY_ID_LOW_ID, phy_id_low.bits.id);
+			/* Marvel 88E1111 PHY */
+			if ((MRVL88E1111_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
+				(MRVL88E1111_PHY_ID_LOW_MODEL
+					== phy_id_low.bits.model)) {
+
+				/* Switch to Page 1 by writing to reg 22 */
+				mdio_write(phy_by_index[index], 22,
+					0x1);
+
+				/* Switch autoneg off in reg0 */
+				mdio_write(phy_by_index[index],
+					MRVL88E1111_PHY_CTRL, 0x140);
+
+				/* Switch back to page 0 */
+				mdio_write(phy_by_index[index], 22,
+					0x0);
+
+				/* Combine LED mode is what Cisco is using */
+				mdio_write(phy_by_index[index], 24,
+					0x4109);
+
+				/* Reset the PHY */
+				mdio_write(phy_by_index[index],
+					MRVL88E1111_PHY_CTRL, 0x8140);
+				/* set mode */
+				mdio_write(phy_by_index[index],
+					MRVL88E1111_EXT_PHY_SPEC_STATUS,
+					MRVL88E1111_EXT_PHY_SPEC_MODE);
+
+				/* Delay RGMII TX/RX */
+				mdio_write(phy_by_index[index],
+					MRVL88E1111_EXT_PHY_CTRL,
+					MRVL88E1111_DELAY_RGMII);
+			}
+			break;
+		default:
+			printf("Unsupported PHY\n");
+			break;
 		}
-		break;
-	case MRVL88E1111_PHY_ID_HIGH_ID:
-		DEBUG_PRINT("MRVL88E1111_PHY_ID_LOW_ID=0x%x phy_id_low.bits.id=0x%x\n",
-			MRVL88E1111_PHY_ID_LOW_ID, phy_id_low.bits.id);
-		/* Marvel 88E1111 PHY */
-		if ((MRVL88E1111_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
-			(MRVL88E1111_PHY_ID_LOW_MODEL
-				== phy_id_low.bits.model)) {
-			/* Reset the PHY */
-			mdio_write(phy_by_index[index], MRVL88E1111_PHY_CTRL,
-				MRVL88E1111_PHY_CTRL_RESET);
-			/* set mode */
-			mdio_write(phy_by_index[index],
-				MRVL88E1111_EXT_PHY_SPEC_STATUS,
-				MRVL88E1111_EXT_PHY_SPEC_MODE);
-			/* Delay RGMII TX/RX */
-			mdio_write(phy_by_index[index],
-				MRVL88E1111_EXT_PHY_CTRL,
-				MRVL88E1111_DELAY_RGMII);
-		}
-		break;
-	default:
-		printf("Unsupported PHY\n");
-		break;
 	}
 #else
 	NCR_CALL(ncr_modify32(eioaRegion, 0x70, 0x11000000, 0x0));
@@ -1065,6 +1093,8 @@ line_setup(int index)
 
 		NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
 				     ncr_status));
+		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
+				     &ncr_status));
 	} else {
 		/* Get ad_value and ge_ad_value from the environment. */
 		envstring = getenv("ad_value");
@@ -1087,6 +1117,8 @@ line_setup(int index)
 		} else {
 			ge_ad_value = simple_strtoul(envstring, NULL, 0);
 		}
+
+#ifndef AXM_35xx
 
 		/* Set the AN advertise values. */
 		mdio_write(phy_by_index[index], 4, ad_value);
@@ -1111,14 +1143,9 @@ line_setup(int index)
 			}
 			DELAY();
 		}
-
-#ifdef AXM_35xx
-		if (phy_id_high.bits.id != MRVL88E1111_PHY_ID_HIGH_ID) {
-#endif
-			DELAY();
-			if (0 == (status & 0x4)) {
-				ERROR_PRINT("GMAC%d: LINK is Down.\n",
-				    port_by_index[index]);
+		DELAY();
+		if (0 == (status & 0x4)) {
+			ERROR_PRINT("GMAC%d: LINK is Down.\n", port_by_index[index]);
 
 			if (0 != eioaPort)
 				return -1; /* Don't Error Out in AUTO Mode. */
@@ -1146,55 +1173,6 @@ line_setup(int index)
 				       "Half Duplex" : "Full Duplex");
 				DELAY();
 			}
-#ifdef AXM_35xx
-		} else {
-			DELAY();
-
-			/* Wait for AN complete. */
-			/* read link state */
-			status = mdio_read(phy_by_index[index],
-				MRVL88E1111_PHY_STATUS);
-			if ((status & MRVL88E1111_PHYSTAT_LINK) &&
-				!(status & MRVL88E1111_PHYSTAT_SPDDONE)) {
-				int i = 0;
-				printf("Waiting for PHY realtime link\n");
-				while (!(status
-					& MRVL88E1111_PHYSTAT_SPDDONE)) {
-					/* Timeout reached? */
-					if (i > PHY_AUTONEGOTIATE_TIMEOUT) {
-						printf("Timeout !\n");
-						return -1;
-					}
-					if ((i++ % 1000) == 0)
-						printf(".");
-					udelay(1000); /* 1 ms */
-					status = mdio_read(phy_by_index[index],
-						MRVL88E1111_PHY_STATUS);
-				}
-				printf("done\n");
-				/* another 500ms results in faster booting */
-				udelay(500000);
-			} else {
-				if (!(status & MRVL88E1111_PHYSTAT_LINK)) {
-					printf("Realtime PHY Link down\n");
-					return -1;
-				}
-			}
-			switch (status & MRVL88E1111_PHYSTAT_SPEED) {
-			case MRVL88E1111_PHYSTAT_GBIT:
-				puts("1G");
-				break;
-			case MRVL88E1111_PHYSTAT_100:
-				puts("100M");
-				break;
-			default:
-				puts("10M");
-				break;
-			}
-			printf(" %s\n", (0 == (status
-					& MRVL88E1111_PHYSTAT_DUPLEX)) ?
-					"Half Duplex" : "Full Duplex");
-		}
 #endif
 		/* Make the MAC match. */
 		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
@@ -1205,8 +1183,12 @@ line_setup(int index)
 		if (0 != (status & 0x20))
 			ncr_status |= 0x04; /* Force Full Duplex */
 
+#ifndef AXM_35xx
 		/* Set the Speed */
 		ncr_status |= (((status & 0x18) >> 3) << 4);
+#else
+		ncr_status |= 0x20;	/* Setup for 1G */
+#endif
 
 		NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
 			ncr_status));
@@ -1250,6 +1232,8 @@ line_setup(int index)
 	NCR_CALL(ncr_modify32(eioaRegion, 0x70, 0x11000000, 0x11000000));
 #endif
 	NCR_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x4, 0x4));
+	NCR_CALL(ncr_read32(gmacRegion, 0x300 + gmacPortOffset,
+				    &ncr_status));
 
 	/* Unicast Filtering based on the Ethernet Address set above. */
 	if (0 == rxtest && 0 == loopback)
@@ -1400,11 +1384,38 @@ initialize_task_lite(void)
 			}
 		}
 	} else {
+		int j;
+		unsigned long stat0;
+
 		if (0 != line_setup(index_by_port[eioaPort])) {
 			return -1;
 		}
-	}
 
+	}
+#ifdef DEBUG_COUNTERS_SETUP
+    /*EIOA-TCLd SMON*/
+	ncr_write32(NCP_REGION_ID(0x1f, 0), 0x3000, 0x1);
+	ncr_write32(NCP_REGION_ID(0x1f, 0), 0x3004, 0x401);
+    /*EIOA-TCLs SMON*/
+	ncr_write32(NCP_REGION_ID(0x1f, 6), 0x200, 0x1);
+	ncr_write32(NCP_REGION_ID(0x1f, 6), 0x204, 0x200);
+
+    /*NCA-TCLd SMON*/
+	ncr_write32(NCP_REGION_ID(0x16, 0), 0x3000, 0x1);
+	ncr_write32(NCP_REGION_ID(0x16, 0), 0x3004, 0x401);
+    /*NCA-TCLs SMON*/
+	ncr_write32(NCP_REGION_ID(0x16, 6), 0x200, 0x1);
+	ncr_write32(NCP_REGION_ID(0x16, 6), 0x204, 0x200);
+
+	/* TIL SMON */
+	ncr_write32(NCP_REGION_ID(0x1f, 1), 0x800, 0x1);
+	ncr_write32(NCP_REGION_ID(0x1f, 1), 0x804, 0x6061);
+
+    /*EIOA CORE SMON*/
+	ncr_write32(NCP_REGION_ID(0x1f, 0x10), 0x4028000, 0x1);
+	ncr_write32(NCP_REGION_ID(0x1f, 0x10), 0x4028004, 0xb8b7);
+
+#endif
 	initialized = 1;
 
 	return 0;
@@ -1448,6 +1459,63 @@ finalize_task_lite(void)
 	unsigned long value;
 
 	DEBUG_PRINT("\n");
+
+
+#ifdef DEBUG_COUNTERS_SETUP
+	unsigned long stat0, stat1;
+	int j;
+
+    printf("\n###########################################\n");
+    /*EIOA-NEMAC Snapshot for GMAC1*/
+	ncr_write32(NCP_REGION_ID(0x1f, 0x11), 0xd40, 0x0);
+
+    ncr_read32(NCP_REGION_ID(0x1f, 0x11), 0xe04, &stat0);
+    ncr_read32(NCP_REGION_ID(0x1f, 0x11), 0xe0c, &stat1);
+    printf("EIOA-NEMAC GMAC1: TX Count = %ld %ld \n", stat0, stat1);
+    ncr_read32(NCP_REGION_ID(0x1f, 0x11), 0xf04, &stat0);
+    ncr_read32(NCP_REGION_ID(0x1f, 0x11), 0xf0c, &stat1);
+    printf("EIOA-NEMAC GMAC1: RX Count = %ld %ld \n", stat0, stat1);
+
+    /*EIOA TCLd and TCLs SMON*/
+    ncr_read32(NCP_REGION_ID(0x1f, 0), 0x3010, &stat0);
+    ncr_read32(NCP_REGION_ID(0x1f, 0), 0x3014, &stat1);
+	printf("EIOA-TCLd: taskDropped  = %ld\n", stat0);
+	printf("EIOA-TCLd: taskReceived = %ld\n", stat1);
+    ncr_read32(NCP_REGION_ID(0x1f, 6), 0x210, &stat0);
+    ncr_read32(NCP_REGION_ID(0x1f, 6), 0x214, &stat1);
+	/*printf("EIOA-TCLs: taskReqSent  = %ld\n", stat0);*/
+	printf("EIOA-TCLs: taskSent  = %ld\n", stat1);
+
+    /*NCA TCLd and TCLs SMON*/
+    ncr_read32(NCP_REGION_ID(0x16, 0), 0x3010, &stat0);
+    ncr_read32(NCP_REGION_ID(0x16, 0), 0x3014, &stat1);
+	printf("NCA-TCLd:  taskDropped  = %ld\n", stat0);
+	printf("NCA-TCLd:  taskReceived = %ld\n", stat1);
+    ncr_read32(NCP_REGION_ID(0x16, 6), 0x210, &stat0);
+    ncr_read32(NCP_REGION_ID(0x16, 6), 0x214, &stat1);
+	/*printf("NCA-TCLs:  taskReqSent  = %ld\n", stat0);*/
+	printf("NCA-TCLs:  taskSent     = %ld\n", stat1);
+
+	/* TIL SMON */
+    ncr_read32(NCP_REGION_ID(0x1f, 1), 0x810, &stat0);
+    ncr_read32(NCP_REGION_ID(0x1f, 1), 0x814, &stat1);
+	printf("TIL SMON:  0x1f.1.0x810  = %ld\n", stat0);
+	printf("TIL-SMON:  0x1f.1.0x814 = %ld\n", stat1);
+	/* EIOA CORE SMON */
+    ncr_read32(NCP_REGION_ID(0x1f, 0x10), 0x4028010, &stat0);
+    ncr_read32(NCP_REGION_ID(0x1f, 0x10), 0x4028014, &stat1);
+	printf("EIOA Core SMON:  0x1f.0x10.0x4028010  = %ld\n", stat0);
+	printf("EIOA Core SMON:  0x1f.0x10.0x4028014  = %ld\n", stat1);
+
+    ncr_read32(NCP_REGION_ID(0x1f, 0x10), 0x4012300, &stat1);
+	printf("EIOA Core til_task err  = %ld\n", stat1);
+    ncr_read32(NCP_REGION_ID(0x1f, 0x10), 0x4012400, &stat1);
+	printf("EIOA Core tcri_derr err  = %ld\n", stat1);
+    ncr_read32(NCP_REGION_ID(0x1f, 0x10), 0x4012310, &stat1);
+	printf("EIOA Core tid in use  = %ld\n", stat1);
+
+#endif
+
 
 	/*
 	  Stop the queue.
