@@ -367,7 +367,7 @@ sysmem_init(void)
     	printf("-- -- Sysmem Parameters \n");
 
         printf("version=0x%08x\n", sysmem->version);
-        printf("ddr_clock_speed=0x%08x\n", sysmem->ddr_clock_speed);
+        printf("ddrClockSpeedMHz=0x%08x\n", sysmem->ddrClockSpeedMHz);
         printf("auto_detect=0x%08x\n", sysmem->auto_detect);
         printf("num_interfaces=0x%08x\n", sysmem->num_interfaces);
         printf("num_ranks_per_interface=0x%08x\n", sysmem->num_ranks_per_interface);

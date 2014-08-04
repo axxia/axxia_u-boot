@@ -216,7 +216,7 @@ typedef struct {
 
 typedef struct {
 	unsigned long version;
-	unsigned long ddr_clock_speed;
+	unsigned long ddrClockSpeedMHz;
 	unsigned long auto_detect;
 	unsigned long num_interfaces;
 	unsigned long num_ranks_per_interface;

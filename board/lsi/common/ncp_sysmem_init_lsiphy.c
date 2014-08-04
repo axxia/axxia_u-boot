@@ -2656,7 +2656,7 @@ sm_ecc_bytelane_test(
     if (-1 == rc)
         rc = in_be32(NCA + 0xe4);
 
-    NCR_TRACE( "ncpRead    0.%lu.5.0x%010x 32\n", node, (address >> 2) );
+    NCR_TRACE( "ncpRead    0.%u.5.0x%010llx 32\n", node, (address >> 2) );
     p32 = (ncp_uint32_t *)(NCA + 0x1000); 
 #else
     rc = ncp_block_read32(dev, NCP_REGION_ID(node, 5), (address >> 2), 
@@ -3360,7 +3360,12 @@ ncp_sm_sm_coarse_write_leveling(
     /* disable ECC */
     eccEnbFn(dev, ctlRegion, 0);
 
-    /* enable runtime */
+    /* enable refresh */
+    mask = value = 0;
+    SMAV(ncp_denali_DENALI_CTL_14_t, tref_enable, 1);
+    ncr_modify32(ctlRegion, NCP_DENALI_CTL_14, mask, value);
+
+    /* ??? */
     mask = value = 0;
     SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG1_r_t, bblclobber, 1); 
     SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG1_r_t, wrranksw, 1); 
@@ -3756,16 +3761,6 @@ ncp_sm_lsiphy_runtime_adj(
         region = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_PHY);
         ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
         isSysMem = FALSE;
-    }
-
-    if (parms->version == NCP_CHIP_ACP35xx)
-    {
-	/* turn on tref_enable */
-        /* TODO!! just re-enable it in controller init !! */
-    	ncr_read32(ctlRegion, NCP_DENALI_CTL_14, &value);
-    	value &= ~(1<<16);
-    	value |= (1<<16);
-    	ncr_write32(ctlRegion, NCP_DENALI_CTL_14, value);
     }
 
     /* indicate PHY initial training complete */
