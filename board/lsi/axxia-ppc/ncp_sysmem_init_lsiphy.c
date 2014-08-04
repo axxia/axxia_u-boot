@@ -1179,7 +1179,7 @@ ncp_st_t
 ncp_sm_lsiphy_status_get(
         ncp_dev_hdl_t dev,
         ncp_uint32_t  smId,
-        ncp_sm_lsiphy_stat_t *stat)
+        ncp_sm_lsiphy_stat_t *status)
 {
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
     ncp_region_id_t region;
@@ -1199,32 +1199,32 @@ ncp_sm_lsiphy_status_get(
 
     /* general PHY status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, 
-                        (ncp_uint32_t *) &stat->phyStat);
+                        (ncp_uint32_t *) &status->phyStat);
 
     /* gate-training status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_GTTRAINSTAT0, 
-                        (ncp_uint32_t *) &stat->gttrn.stat0);
+                        (ncp_uint32_t *) &status->gttrn.stat0);
 
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_GTTRAINSTAT1, 
-                        (ncp_uint32_t *) &stat->gttrn.stat1);
+                        (ncp_uint32_t *) &status->gttrn.stat1);
 
 
     /* read-leveling status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_RDLVLSTATNEDGE, 
-                        (ncp_uint32_t *) &stat->rdlvl.nedge);
+                        (ncp_uint32_t *) &status->rdlvl.nedge);
 
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_RDLVLSTATPEDGE, 
-                        (ncp_uint32_t *) &stat->rdlvl.pedge);
+                        (ncp_uint32_t *) &status->rdlvl.pedge);
 
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_RDDSKWSTAT, 
-                        (ncp_uint32_t *) &stat->rdlvl.dskew);
+                        (ncp_uint32_t *) &status->rdlvl.dskew);
 
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_RDDSKWFATALSTAT, 
-                        (ncp_uint32_t *) &stat->rdlvl.dskew_fatal);
+                        (ncp_uint32_t *) &status->rdlvl.dskew_fatal);
 
     /* write-leveling status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_WRLVLSMSTAT, 
-                        (ncp_uint32_t *) &stat->wrlvl.stat);
+                        (ncp_uint32_t *) &status->wrlvl.stat);
 
 
 NCP_RETURN_LABEL
@@ -2669,9 +2669,9 @@ sm_ecc_bytelane_test(
     }
     p32 = (NCA + 0x1000); 
 #else 
-    NCP_CALL(ncp_block_write8(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
-                                wbuf, blockSize, 0));
     p32 = (ncp_uint32_t *)wbuf;
+    NCP_CALL(ncp_block_write32(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
+                                p32, blockSizeWords, 0));
 #endif
 
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG
@@ -2781,7 +2781,6 @@ sm_ecc_bytelane_test(
         if (memcmp(rbuf, wbuf, blockSize)) 
         {
 #if 0
-            int i;
             ncp_uint32_t *pr = (ncp_uint32_t *) rbuf;
             ncp_uint32_t *pw = (ncp_uint32_t *) wbuf;
             printf("memcmp failed!\n");
@@ -3949,10 +3948,10 @@ NCP_RETURN_LABEL
 
 #ifdef UBOOT
 #include "ncp_sm_denali_2041_init.c"
-#endif
 
 #ifdef NCP_CONFIG_CMEM
 #include "ncp_cm_ctrl_init.c"
+#endif
 #endif
 
 
