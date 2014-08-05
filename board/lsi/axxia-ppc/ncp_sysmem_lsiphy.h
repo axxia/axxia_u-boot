@@ -1,27 +1,20 @@
-/**************************************************************************
- **                                                                        *
- **                           LSI CONFIDENTIAL           *
- **                                                                        *
- **                       PROPRIETARY NOTE                                 *
- **                                                                        *
- **    This software contains information confidential and proprietary     *
- **    to LSI Corporation Inc.  It shall not be reproduced in whole or in  *
- **    part, or transferred to other documents, or disclosed to third      *
- **    parties, or used for any purpose other than that for which it was   *
- **    obtained, without the prior written consent of LSI Corporation Inc. *
- **    (c) 2008-2014, LSI Corporation Inc.  All rights reserved.           *
- **                                                                        *
- **
- **  
- **************************************************************************/
-/*! @file      ncp_sysmem.h
- *  @brief     System Memory
- * 
- *  @addtogroup _sysmem_ System Memory
- * 
- *  @{
+/*
+ *  Copyright (C) 2014 LSI (john.jacques@lsi.com)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 
 #ifndef __NCP_SYSMEM_LSIPHY_H__
 #define __NCP_SYSMEM_LSIPHY_H__
@@ -54,8 +47,9 @@
 #define NCP_SM_PHY_REG_RESTORE 
 #define DDR_PHY_REGS_TAG_SAVE 0x53415645
 #define DDR_PHY_REGS_TAG_PROM 0x50524f4d
+#define DDR_PHY_REGS_SIZE     128
 extern void *retention;
-extern unsigned long *phyRegs; 
+extern unsigned *phyRegs; 
 
 #endif
 
@@ -131,20 +125,19 @@ do { \
 #else 
 
 #include <asm/io.h>
-#include "ncp_sysmem_ext.h"
 
 /* bindings for UBOOT built */
 
 typedef long long               ncp_int64_t;
 typedef unsigned long long      ncp_uint64_t;
-typedef unsigned long           ncp_uint32_t;
+typedef unsigned                ncp_uint32_t;
 typedef long                    ncp_int32_t;
 typedef unsigned short          ncp_uint16_t;
 typedef unsigned char           ncp_uint8_t;
 typedef unsigned char           ncp_bool_t;
 typedef void *                  ncp_dev_hdl_t;
-typedef unsigned long           ncp_st_t;
-typedef unsigned long           ncp_region_id_t;
+typedef unsigned                ncp_st_t;
+typedef unsigned                ncp_region_id_t;
 
 typedef ncp_uint32_t 
 (*ncp_sm_intr_status_fn_t) (
@@ -171,12 +164,10 @@ typedef parameters_mem_t     ncp_sm_parms_t;
 
 #define TRUE   (1)
 #define FALSE  (0)
-#define NCP_RETURN_LABEL ncp_return:
+#define NCP_RETURN_LABEL goto ncp_return; ncp_return:
 #define NCP_DEV_BUS_FBRS 0xdead
 
-#if 0
 #include "ncp_sysmem_ext.h"
-#endif
 
 /* TODO : don't need all this checking for u-boot */
 #define NCP_SYSMEM_NUM_NODES 2

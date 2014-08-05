@@ -1534,6 +1534,9 @@ clocks_init( void )
 #if defined(ACP_EMU)
 #include "sysmem_emulation.c"
 #else
+#if defined (ACP_25xx) || defined (AXM_35xx)
+#include "ncp_sysmem_ext.h"
+#endif
 #include "sysmem_asic_common.c"
 #if defined (ACP_X1V2) || defined (ACP_X2V1)
 #include "ncp_sysmem_init_ibmphy.c"

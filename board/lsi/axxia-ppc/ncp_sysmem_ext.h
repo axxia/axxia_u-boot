@@ -1,25 +1,19 @@
-/**************************************************************************
- **                                                                        *
- **                           LSI CONFIDENTIAL           *
- **                                                                        *
- **                       PROPRIETARY NOTE                                 *
- **                                                                        *
- **    This software contains information confidential and proprietary     *
- **    to LSI Corporation Inc.  It shall not be reproduced in whole or in  *
- **    part, or transferred to other documents, or disclosed to third      *
- **    parties, or used for any purpose other than that for which it was   *
- **    obtained, without the prior written consent of LSI Corporation Inc. *
- **    (c) 2008-2014, LSI Corporation Inc.  All rights reserved.           *
- **                                                                        *
- **
- **  
- **************************************************************************/
-/*! @file      ncp_sysmem.h
- *  @brief     System Memory
- * 
- *  @addtogroup _sysmem_ System Memory
- * 
- *  @{
+/*
+ *  Copyright (C) 2014 LSI (john.jacques@lsi.com)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 
@@ -253,8 +247,9 @@ typedef struct {
     /* new for 5500 */
     ncp_uint32_t                zqcs_interval;
     ncp_bool_t                  enable_runtime_updates;
+    ncp_uint8_t                 dramPrechargePolicy;
     ncp_uint32_t                open_page_size;
-    ncp_per_sysmem_parms_t      per_sysmem[2];
+    ncp_per_sysmem_parms_t      per_mem[2];
 
     ncp_uint32_t                flags;
     ncp_bool_t                  half_mem;
@@ -284,6 +279,7 @@ typedef struct {
 typedef struct {
     ncp_sm_parms_t  sm_parms;
     ncp_sm_parms_t  cm_parms;
+    ncp_sem_t lock;
 } ncp_sysmem_t;
 
 
@@ -305,6 +301,9 @@ ncp_sysmem_config(ncp_t *ncp, ncp_map_t *map);
 
 NCP_API ncp_st_t
 ncp_sysmem_destroy(ncp_t *ncp);
+
+ncp_st_t
+ncp_sysmem_warm_restart(ncp_t *ncp);
 
 NCP_API ncp_st_t
 ncp_memory_layout_config(ncp_t *ncp, ncp_map_t *map);

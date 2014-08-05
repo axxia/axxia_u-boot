@@ -1,17 +1,9 @@
 /**************************************************************************
  **                                                                       *
- **                           LSI CONFIDENTIAL                            *
- **                           PROPRIETARY NOTE                            *
+ **    Copyright (c) 2001-2013, LSI Corporation.                     .    *
  **                                                                       *
- **    This software contains information confidential and proprietary    *
- **    to LSI Corporation Inc.  It shall not be reproduced in whole or in *
- **    part, or transferred to other documents, or disclosed to third     *
- **    parties, or used for any purpose other than that for which it was  *
- **    obtained, without the prior written consent of LSI Corporation Inc.*
- **    (c) 2001-2014, LSI Corporation Inc.  All rights reserved.          *
- **                                                                       *
- **                                                                       *
- **  **********************************************************************/
+ **************************************************************************/
+
 
 
 #ifndef _NCP_DDR_REGS_H_
@@ -20,6 +12,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 /*! @struct ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t
  *  @brief CFG_NTEMC_DDR_CTRL
