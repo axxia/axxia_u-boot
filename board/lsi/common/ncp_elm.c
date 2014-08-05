@@ -108,6 +108,7 @@ ncp_elm_init(
         ncr_write32 (NCP_REGION_ID(0x159, 0), 0x1c, mungeValue);
     }
 
+NCP_RETURN_LABEL
     return ncpStatus;
 }
 
@@ -167,6 +168,7 @@ ncp_elm_sysmem_fill(
 		}
 	}
 
+NCP_RETURN_LABEL
     return ncpStatus;
 
 }

@@ -17,13 +17,28 @@
  */
 
 #ifndef UBOOT
+#define NCP_CONFIG_CMEM
 #include <stdio.h>
 
 #include "ncp.h"
 #include "ncp_pvt.h"
 #include "ncp_sysmem_ext.h"
 #include "ncp_sysmem_lsiphy.h"
+
+/* RTE build always includes 5500 ELM support */
+#define NCP_CONFIG_ELM
+
+#else 
+#ifdef CONFIG_CMEM_INIT
+#define NCP_CONFIG_CMEM
 #endif
+
+/* U-boot build only includes ELM support for 5500 */
+#ifdef CONFIG_AXXIA_55XX
+#define NCP_CONFIG_ELM
+#endif
+#endif
+
 
 /* register definitions for ACP25xx */
 #define NCP_SYSMEM_LSIPHY
@@ -32,9 +47,16 @@
 #include "regs/ncp_denali_regs_acp2500.h"
 #include "regs/ncp_denali_reg_defines_acp2500.h"
 
+#ifdef NCP_CONFIG_ELM
 /* register definitions for ACP55xx */
 #include "regs/ncp_elm_regs.h"
 #include "regs/ncp_elm_reg_defines.h"
+#endif
+
+#ifdef NCP_CONFIG_CMEM
+#include "regs/ncp_ddr_regs.h"
+#include "regs/ncp_ddr_reg_defines.h"
+#endif
 
 #define NCP_SM_BURST_SIZE 128
 #define NCP_SM_DATA_BYTELANES 8
@@ -802,7 +824,10 @@ ncp_sm_intr_status_25xx(
     ncp_region_id_t regionId,
     ncp_uint32_t    mask)
 {
+    
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_uint32_t value;
+
     /* read interrupt status */
     ncr_read32( regionId, NCP_DENALI_CTL_260, &value );
 
@@ -811,6 +836,8 @@ ncp_sm_intr_status_25xx(
 
     /* write interrupt acknowledge */
     ncr_write32( regionId, NCP_DENALI_CTL_89, value );
+
+    NCP_CALL(ncpStatus);
 
 NCP_RETURN_LABEL
     return value;
@@ -871,11 +898,14 @@ ncp_sm_ecc_enb_25xx(
     ncp_region_id_t regionId,
     ncp_uint32_t    eccEnb)
 {
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_uint32_t mask, value;
 
     mask = value = 0;
     SMAV( ncp_denali_DENALI_CTL_20_t, ctrl_raw, eccEnb );
     ncr_modify32( regionId, NCP_DENALI_CTL_20, mask, value );
+
+    NCP_CALL(ncpStatus);
 
 NCP_RETURN_LABEL
     return value;
@@ -889,6 +919,7 @@ ncp_sm_intr_status_55xx(
     ncp_region_id_t regionId,
     ncp_uint32_t    mask)
 {
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_uint32_t value;
     /* read interrupt status */
     ncr_read32( regionId, NCP_DENALI_CTL_260, &value );
@@ -898,6 +929,8 @@ ncp_sm_intr_status_55xx(
 
     /* write interrupt acknowledge */
     ncr_write32( regionId, NCP_DENALI_CTL_338, value );
+
+    NCP_CALL(ncpStatus);
 
 NCP_RETURN_LABEL
     return value;
@@ -909,7 +942,7 @@ ncp_sm_poll_controller_55xx(
     ncp_region_id_t regionId,
     ncp_sm_poll_event_t event)
 {
-    ncp_st_t ncpStatus;
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_uint32_t value;
 
     switch (event)
@@ -959,11 +992,14 @@ ncp_sm_ecc_enb_55xx(
     ncp_region_id_t regionId,
     ncp_uint32_t    eccEnb)
 {
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_uint32_t mask, value;
 
     mask = value = 0;
     SMAV( ncp_denali_DENALI_CTL_421_t, ecc_en, eccEnb );
     ncr_modify32( regionId, NCP_DENALI_CTL_421, mask, value );
+
+    NCP_CALL(ncpStatus);
 
 NCP_RETURN_LABEL
     return value;
@@ -999,7 +1035,7 @@ ncp_sm_poll_controller_35xx(
     ncp_region_id_t regionId,
     ncp_sm_poll_event_t event)
 {
-    ncp_st_t ncpStatus;
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_uint32_t value;
 
     switch (event)
@@ -1097,6 +1133,7 @@ NCP_RETURN_LABEL
 
 }
 
+#ifdef NCP_CONFIG_CMEM
 static ncp_st_t 
 ncp_cm_dfi_init_start(
     ncp_dev_hdl_t dev,
@@ -1104,7 +1141,6 @@ ncp_cm_dfi_init_start(
     ncp_sm_parms_t *parms)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
-#ifndef UBOOT
     ncp_uint32_t value;
 
     /* enable ECC if needed */
@@ -1118,9 +1154,10 @@ ncp_cm_dfi_init_start(
     ncr_write32(region, NCP_DDR_CFG_NTEMC_DDR_CTRL, value);
 
 NCP_RETURN_LABEL
-#endif
     return ncpStatus;
 }
+
+#endif
 
 
 /*
@@ -1131,7 +1168,7 @@ ncp_st_t
 ncp_sm_lsiphy_status_get(
         ncp_dev_hdl_t dev,
         ncp_uint32_t  smId,
-        ncp_sm_lsiphy_stat_t *stat)
+        ncp_sm_lsiphy_stat_t *status)
 {
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
     ncp_region_id_t region;
@@ -1151,33 +1188,32 @@ ncp_sm_lsiphy_status_get(
 
     /* general PHY status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, 
-                        (ncp_uint32_t *) &stat->phyStat);
-
+                        (ncp_uint32_t *) &status->phyStat);
 
     /* gate-training status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_GTTRAINSTAT0, 
-                        (ncp_uint32_t *) &stat->gttrn.stat0);
+                        (ncp_uint32_t *) &status->gttrn.stat0);
 
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_GTTRAINSTAT1, 
-                        (ncp_uint32_t *) &stat->gttrn.stat1);
+                        (ncp_uint32_t *) &status->gttrn.stat1);
 
 
     /* read-leveling status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_RDLVLSTATNEDGE, 
-                        (ncp_uint32_t *) &stat->rdlvl.nedge);
+                        (ncp_uint32_t *) &status->rdlvl.nedge);
 
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_RDLVLSTATPEDGE, 
-                        (ncp_uint32_t *) &stat->rdlvl.pedge);
+                        (ncp_uint32_t *) &status->rdlvl.pedge);
 
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_RDDSKWSTAT, 
-                        (ncp_uint32_t *) &stat->rdlvl.dskew);
+                        (ncp_uint32_t *) &status->rdlvl.dskew);
 
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_RDDSKWFATALSTAT, 
-                        (ncp_uint32_t *) &stat->rdlvl.dskew_fatal);
+                        (ncp_uint32_t *) &status->rdlvl.dskew_fatal);
 
     /* write-leveling status */
     ncr_read32(region, NCP_PHY_CFG_SYSMEM_PHY_WRLVLSMSTAT, 
-                        (ncp_uint32_t *) &stat->wrlvl.stat);
+                        (ncp_uint32_t *) &status->wrlvl.stat);
 
 
 NCP_RETURN_LABEL
@@ -1236,7 +1272,6 @@ ncp_sm_lsiphy_status_check(
     NCP_SM_CHECK_STAT_STRUCT(phyStat.rdlvl, NCP_ST_SYSMEM_PHY_RD_LVL_ERR);
     NCP_SM_CHECK_STAT_STRUCT(phyStat.wrlvl, NCP_ST_SYSMEM_PHY_WR_LVL_ERR);
 
-
 NCP_RETURN_LABEL
     return ncpStatus;
 }
@@ -1249,10 +1284,10 @@ ncp_sm_lsiphy_static_init(
 {
 
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
-    ncp_region_id_t region;
+    ncp_region_id_t region = 0;
     ncp_region_id_t ctlRegion;
     ncp_bool_t      isSysMem;
-    ncp_uint32_t    memId;
+    ncp_uint32_t    memId = 0;
     int             i;
     ncp_uint32_t    vtc_cnt;
     ncp_uint32_t    eccBlMask;
@@ -1281,7 +1316,6 @@ ncp_sm_lsiphy_static_init(
 
         switch (parms->version) 
         {
-            printf("parms->version = %lu\n", parms->version);
             case NCP_CHIP_ACP25xx:
                 parms->num_bytelanes = 5;
                 intrStatFn = ncp_sm_intr_status_25xx;
@@ -1304,7 +1338,7 @@ ncp_sm_lsiphy_static_init(
                 break;
 
             default:
-                printf("Unexpected chipType %lu\n", parms->version);
+                printf("Unexpected chipType %d\n", (int) parms->version);
                 NCP_CALL(NCP_ST_ERROR);
         }
 
@@ -1316,6 +1350,7 @@ ncp_sm_lsiphy_static_init(
          */
         ncp_sm_dfi_init_start(dev, ctlRegion, parms);
     }
+#ifdef NCP_CONFIG_CMEM
     else
     {
         NCP_COMMENT("treemem %d PHY static init", smId - NCP_SYSMEM_NUM_NODES);
@@ -1328,6 +1363,8 @@ ncp_sm_lsiphy_static_init(
 
         ncp_cm_dfi_init_start(dev, ctlRegion, parms);
     }
+#endif
+
 
     /* Disable Dynamic ODT */
     mask = value = 0;
@@ -1389,6 +1426,10 @@ ncp_sm_lsiphy_static_init(
      * if the initial RLRANK value (specified by the 
      * min_phy_cal_delay parameter) is less then 3 we
      * make it 3.
+     *
+     * TODO!?! 
+     * If REG_DIMM_ENABLE then add one to RLGATE
+     *
      */
 
     if ( parms->version == NCP_CHIP_ACP25xx)
@@ -1405,9 +1446,11 @@ ncp_sm_lsiphy_static_init(
         rlrank_adj = 1;
     }
 
+#if 0
     if (parms->per_mem[memId].phy_min_cal_delay < rlrank_adj) {
         parms->per_mem[memId].phy_min_cal_delay = rlrank_adj;
     }
+#endif
 
     phyconfig3.rdlatrank = parms->per_mem[memId].phy_min_cal_delay + rlrank_adj;
     phyconfig3.rdlatgate = parms->per_mem[memId].phy_min_cal_delay;
@@ -1442,12 +1485,10 @@ ncp_sm_lsiphy_static_init(
         }
     }
 
-#ifndef UBOOT
     /* only needed for treemem in FBRS mode */
     if (isSysMem == FALSE) {
         phyconfig2.dpen &= 0x003;
     }
-#endif
 
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_PHYCONFIG2, 
                         *(ncp_uint32_t *) &phyconfig2);
@@ -1756,7 +1797,7 @@ NCP_RETURN_LABEL
     return st;
 }
 
-#ifndef UBOOT 
+#ifdef NCP_CONFIG_CMEM
 
 /*
  * The 'general purpose' treemem PHY training init procedure. 
@@ -1777,20 +1818,20 @@ ncp_sm_treemem_phy_training_run(
 {
 
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
+    ncp_uint32_t    mask, value ;
 
     ncp_ddr_CFG_NTEMC_MRS_r_t mrs = {0};
     ncp_ddr_CFG_NTEMC_DDR_STATUS_r_t ddr_status = {0};
     ncp_uint32_t cmemId = smId - NCP_SYSMEM_NUM_NODES;
 
-    NCP_RMW_REG(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t,   ddr_ctrl);
-
     /* clear any previous operation */
-    NCP_RMW_SET_FIELD(ddr_ctrl, rd_gate_lvl, 0);
-    NCP_RMW_SET_FIELD(ddr_ctrl, wrt_lvl,     0);
-    NCP_RMW_SET_FIELD(ddr_ctrl, rd_lvl,      0);
-    NCP_RMW_SET_FIELD(ddr_ctrl, lvl_rsp,     1);
-    NCP_RMW_SET_FIELD(ddr_ctrl, ref_ena,     0);
-    NCP_RMW(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, ddr_ctrl);
+    mask = value = 0;
+    SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, rd_gate_lvl, 0);
+    SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, wrt_lvl,     0);
+    SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, rd_lvl,      0);
+    SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, lvl_rsp,     1);
+    SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, ref_ena,     0);
+    ncr_modify32(ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, mask, value);
 
     switch (mode) {
         case NCP_SYSMEM_PHY_GATE_TRAINING:
@@ -1802,43 +1843,44 @@ ncp_sm_treemem_phy_training_run(
             mrs.mrs_badr = 3;
             mrs.mrs_cmd  = 0;
             mrs.mrs_cke  = 1;
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
-                                  *(ncp_uint32_t *) &mrs));
+            ncr_write32(ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
+                                  *(ncp_uint32_t *) &mrs);
 
             /* issue MRS command */
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1);
 
             /* initiate gate training */
-            NCP_RMW_SET_FIELD(ddr_ctrl, rd_gate_lvl, 1);
-            NCP_RMW_SET_FIELD(ddr_ctrl, lvl_rsp,     0);
-            NCP_RMW_SET_FIELD(ddr_ctrl, odt_mode,    3);
-            NCP_RMW(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, ddr_ctrl);
+            mask = value = 0;
+            SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, rd_gate_lvl, 1);
+            SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, lvl_rsp,     0);
+            SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, odt_mode,    3);
+            ncr_modify32(ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, mask, value);
 
             /* poll for completion */
             ddr_status.rdgtlvldone = 1;
-            NCP_CALL(ncp_poll(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
+            ncr_poll( ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
                                 *(ncp_uint32_t *) &ddr_status,
                                 *(ncp_uint32_t *) &ddr_status,
-                                1, 100));
+                                1, 100);
 
             /* 
              * check rdgtlvlstat to make sure training completed satisfactorily 
              * we use ncp_poll so that this will succeed on FBRS as well 
              */ 
             ddr_status.rdgtlvlstat = 1;
-            NCP_CALL(ncp_poll(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
+            ncr_poll ( ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
                                 *(ncp_uint32_t *) &ddr_status,
                                 *(ncp_uint32_t *) &ddr_status,
-                                1, 2));
+                                1, 2);
 
 
             /* MRS normal operation */
             mrs.mrs_adr  = 0;
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
-                                  *(ncp_uint32_t *) &mrs));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
+                                  *(ncp_uint32_t *) &mrs);
 
             /* issue MRS command */
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1);
 
 
             break;
@@ -1852,43 +1894,44 @@ ncp_sm_treemem_phy_training_run(
             mrs.mrs_badr = 1;
             mrs.mrs_cmd  = 0;
             mrs.mrs_cke  = 1;
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
-                                  *(ncp_uint32_t *) &mrs));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
+                                  *(ncp_uint32_t *) &mrs);
 
             /* issue MRS command */
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1);
 
             /* initiate write leveling */
-            NCP_RMW_SET_FIELD(ddr_ctrl, wrt_lvl,     1);
-            NCP_RMW_SET_FIELD(ddr_ctrl, lvl_rsp,     0);
-            NCP_RMW_SET_FIELD(ddr_ctrl, odt_mode,    1);
-            NCP_RMW(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, ddr_ctrl);
+            mask = value = 0;
+            SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, wrt_lvl,     1);
+            SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, lvl_rsp,     0);
+            SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, odt_mode,    1);
+            ncr_modify32(ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, mask, value);
 
 
             /* poll for completion */
             ddr_status.wrlvldone = 1;
-            NCP_CALL(ncp_poll(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
+            ncr_poll ( ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
                                 *(ncp_uint32_t *) &ddr_status,
                                 *(ncp_uint32_t *) &ddr_status,
-                                1, 100));
+                                1, 100);
 
             /* 
              * check rdgtlvlstat to make sure training completed satisfactorily 
              * we use ncp_poll so that this will succeed on FBRS as well 
              */ 
             ddr_status.wrlvlstat = 1;
-            NCP_CALL(ncp_poll(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
+            ncr_poll( ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
                                 *(ncp_uint32_t *) &ddr_status,
                                 *(ncp_uint32_t *) &ddr_status,
-                                1, 2));
+                                1, 2);
 
             /* disable write leveling */
             mrs.mrs_adr  = parms->cmemMR1[cmemId];
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
-                                  *(ncp_uint32_t *) &mrs));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
+                                  *(ncp_uint32_t *) &mrs);
 
             /* issue MRS command */
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1);
 
 
 
@@ -1905,44 +1948,45 @@ ncp_sm_treemem_phy_training_run(
             mrs.mrs_badr = 3;
             mrs.mrs_cmd  = 0;
             mrs.mrs_cke  = 1;
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
-                                  *(ncp_uint32_t *) &mrs));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
+                                  *(ncp_uint32_t *) &mrs);
 
             /* issue MRS command */
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1);
 
             /* initiate read leveling */
-            NCP_RMW_SET_FIELD(ddr_ctrl, rd_lvl,      1);
-            NCP_RMW_SET_FIELD(ddr_ctrl, lvl_edge,    edge);
-            NCP_RMW_SET_FIELD(ddr_ctrl, lvl_rsp,     0);
-            NCP_RMW_SET_FIELD(ddr_ctrl, odt_mode,    3);
-            NCP_RMW(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, ddr_ctrl);
+            mask = value = 0;
+            SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, rd_lvl,      1);
+            SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, lvl_edge,    edge);
+            SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, lvl_rsp,     0);
+            SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, odt_mode,    3);
+            ncr_modify32(ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, mask, value);
 
 
             /* poll for completion */
             ddr_status.rdlvldone = 1;
-            NCP_CALL(ncp_poll(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
+            ncr_poll( ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
                                 *(ncp_uint32_t *) &ddr_status,
                                 *(ncp_uint32_t *) &ddr_status,
-                                1, 100));
+                                1, 100);
 
             /* 
              * check rdgtlvlstat to make sure training completed satisfactorily 
              * we use ncp_poll so that this will succeed on FBRS as well 
              */ 
             ddr_status.rdlvlstat = 1;
-            NCP_CALL(ncp_poll(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
+            ncr_poll( ctlRegion, NCP_DDR_CFG_NTEMC_DDR_STATUS,
                                 *(ncp_uint32_t *) &ddr_status,
                                 *(ncp_uint32_t *) &ddr_status,
-                                1, 2));
+                                1, 2);
 
             /* disable read leveling */
             mrs.mrs_adr  = 0;
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
-                                  *(ncp_uint32_t *) &mrs));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_MRS, 
+                                  *(ncp_uint32_t *) &mrs);
 
             /* issue MRS command */
-            NCP_CALL(ncp_write32(dev, ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1));
+            ncr_write32( ctlRegion, NCP_DDR_CFG_NTEMC_ISSUE_MRS, 1);
 
 
 
@@ -1964,7 +2008,7 @@ ncp_sm_treemem_phy_training_run(
 NCP_RETURN_LABEL
     return ncpStatus;
 }
-#endif /* not UBOOT */
+#endif /* not NCP_CONFIG_CMEM */
 
 /* 
  * the common PHY training function. 
@@ -1994,7 +2038,7 @@ ncp_sm_lsiphy_training_run(
             trnFn = ncp_sm_sysmem_phy_training_run;
             break;
 
-#ifndef UBOOT
+#ifdef NCP_CONFIG_CMEM
         case 2:
         case 3:
             ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
@@ -2058,7 +2102,7 @@ ncp_sm_lsiphy_gate_training(
             trnFn = ncp_sm_sysmem_phy_training_run;
             break;
 
-#ifndef UBOOT
+#ifdef NCP_CONFIG_CMEM
         case 2:
         case 3:
             ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
@@ -2550,6 +2594,7 @@ sm_ecc_bytelane_test(
         ncp_uint32_t  num_bls,
         ncp_uint32_t *bad_bl)
 {
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_uint32_t value;
     ncp_uint32_t this_value;
     ncp_uint32_t temp;
@@ -2610,7 +2655,7 @@ sm_ecc_bytelane_test(
         int idx;
 
         for (idx = 0; idx < (blockSizeWords); ++idx) {
-            printf("<%03d:0x%08lx>", (idx * 4), p32[idx]);
+            printf("<%03d:0x%08x>", (idx * 4), p32[idx]);
         }
 
         printf("\n");
@@ -2670,7 +2715,7 @@ sm_ecc_bytelane_test(
         int idx;
 
         for (idx = 0; idx < (blockSizeWords); ++idx) {
-            printf("(%03d:0x%08lx)", (idx * 4), p32[idx]);
+            printf("(%03d:0x%08x)", (idx * 4), p32[idx]);
         }
 
         printf("\n");
@@ -2740,12 +2785,13 @@ sm_ecc_bytelane_test(
     }
 
 NCP_RETURN_LABEL
-    return 0;
+    return ncpStatus;
 }
 
 
 #define NCP_BLTEST_NUM_CHECKS 8
 
+#ifdef NCP_CONFIG_ELM
 /*
  *------------------------------------------------------------------------------
  *  sm_bytelane_test_elm
@@ -2774,7 +2820,7 @@ sm_bytelane_test_elm(
 
 #ifdef SM_BYTELANE_TEST_DEBUG
 #ifdef UBOOT 
-    ncp_uint32_t  *p32 = (NCA + 0x1000); 
+    ncp_uint32_t  *p32 = (ncp_uint32_t *) (NCA + 0x1000); 
     unsigned uppAddr;
     unsigned lowAddr;
 #else 
@@ -2934,7 +2980,7 @@ sm_bytelane_test_elm(
       printf("%d : ncr_write() failed!\n", __LINE__);
       return -1;
     }
-    p32 = (NCA + 0x1000); 
+    p32 = (ncp_uint32_t *) (NCA + 0x1000); 
 #else 
     NCP_CALL(ncp_block_read8(dev, NCP_REGION_NCA_NIC_SYSMEM, address, 
                                 rbuf, blockSize, 0));
@@ -3135,7 +3181,7 @@ sm_ecc_bytelane_test_elm(
         int idx;
 
         for (idx = 0; idx < (blockSizeWords); ++idx) {
-            printf("<%03x:0x%08lx>", (idx * 4), p32[idx]);
+            printf("<%03x:0x%08x>", (idx * 4), p32[idx]);
             if ( (idx & 0x3) == 3) printf("\n");
         }
 
@@ -3189,7 +3235,7 @@ sm_ecc_bytelane_test_elm(
 
 #ifdef SM_ECC_BYTELANE_TEST_DEBUG
 	{
-	  unsigned long value;
+	    ncp_uint32_t value;
         printf("eccErrs = 0x%08x\n", eccErrs);
         ncr_read32(ctrlRegion, 0xac, &value);
         printf("syndrome = 0x%08x\n", value);
@@ -3233,6 +3279,8 @@ NCP_RETURN_LABEL
         return ncpStatus;
 
 }
+
+#endif
 
 
 ncp_st_t
@@ -3280,15 +3328,8 @@ ncp_sm_sm_coarse_write_leveling(
         case 0:
         case 1:
             break;
-#ifndef UBOOT
-        case 2:
-        case 3:
-            NCP_RETURN(NCP_ST_SUCCESS);
-            break;
-#endif
         default:
             NCP_CALL(NCP_ST_SYSMEM_INVALID_ID);
-            break;
     }
 
     NCP_COMMENT("sysmem phy coarse write leveling - rank %d, addr 0x%012llx",
@@ -3331,6 +3372,7 @@ ncp_sm_sm_coarse_write_leveling(
 
             break;
 
+#ifdef NCP_CONFIG_ELM
         case NCP_CHIP_ACP55xx:
             bl_test_fn = sm_bytelane_test_elm;
             ecc_bl_test_fn = sm_ecc_bytelane_test_elm;
@@ -3348,6 +3390,7 @@ ncp_sm_sm_coarse_write_leveling(
 #endif
 
             break;
+#endif
 
         default:
             /* unsupported chip */
@@ -3614,7 +3657,7 @@ NCP_RETURN_LABEL
 
 
 
-#ifndef UBOOT
+#ifdef NCP_CONFIG_CMEM
 ncp_st_t
 ncp_sm_cm_coarse_write_leveling(
         ncp_dev_hdl_t   dev,
@@ -3626,8 +3669,7 @@ ncp_sm_cm_coarse_write_leveling(
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
 
     ncp_region_id_t  ctlRegion;
-    NCP_RMW_REG(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t,   ddr_ctrl);
-    NCP_RMW_REG(ncp_ddr_CFG_NTEMC_ECC_CTRL_r_t,   ecc_ctrl);
+    ncp_uint32_t     mask, value;
 
 
     NCP_COMMENT("treemem phy coarse write leveling");
@@ -3647,15 +3689,17 @@ ncp_sm_cm_coarse_write_leveling(
     ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
 
     /* set up for memory access */
-    NCP_RMW_SET_FIELD(ddr_ctrl, wrt_lvl,     0);
-    NCP_RMW_SET_FIELD(ddr_ctrl, ref_ena,     1);
-    NCP_RMW_SET_FIELD(ddr_ctrl, odt_mode,    3);
-    NCP_RMW(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, ddr_ctrl);
+    mask = value = 0;
+    SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, wrt_lvl,     0);
+    SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, ref_ena,     1);
+    SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, odt_mode,    3);
+    ncr_modify32( ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, mask, value);
 
     /* enable ECC */
     if (parms->enableECC) {
-        NCP_RMW_SET_FIELD(ecc_ctrl, ecc_mode,     1);
-        NCP_RMW(dev, ctlRegion, NCP_DDR_CFG_NTEMC_ECC_CTRL, ecc_ctrl);
+        mask = value = 0;
+        SMAV(ncp_ddr_CFG_NTEMC_ECC_CTRL_r_t, ecc_mode,     1);
+        ncr_modify32( ctlRegion, NCP_DDR_CFG_NTEMC_ECC_CTRL, mask, value);
     }
      
     /* 
@@ -3674,13 +3718,14 @@ ncp_sm_cm_coarse_write_leveling(
 
         default:
             if (parms->zqcs_interval != 0) {
-                NCP_RMW_SET_FIELD(ddr_ctrl, auto_zq,     1);
+                SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, auto_zq,     1);
             }
             break;
     }
 
-    NCP_RMW_SET_FIELD(ddr_ctrl, zq_per,      0);
-    NCP_RMW(dev, ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, ddr_ctrl);
+    mask = value = 0;
+    SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, zq_per,      0);
+    ncr_modify32(ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, mask, value);
 
 
 NCP_RETURN_LABEL
@@ -3688,7 +3733,7 @@ NCP_RETURN_LABEL
 }
 #endif
 
-#ifdef UBOOT
+#ifndef NCP_CONFIG_CMEM
 #define ncp_sm_lsiphy_coarse_write_leveling ncp_sm_sm_coarse_write_leveling
 
 #else 
@@ -3736,8 +3781,8 @@ ncp_sm_lsiphy_runtime_adj(
 {
 
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
-    ncp_region_id_t region;
-    ncp_region_id_t ctlRegion;
+    ncp_region_id_t region = 0;
+    ncp_region_id_t ctlRegion = 0;
     ncp_bool_t isSysMem;
     ncp_uint32_t mask;
     ncp_uint32_t value;
@@ -3754,6 +3799,7 @@ ncp_sm_lsiphy_runtime_adj(
         isSysMem = TRUE;
 
     }
+#ifdef NCP_CONFIG_CMEM
     else 
     {
         NCP_COMMENT("treemem %d PHY runtime adjustment", 
@@ -3762,6 +3808,7 @@ ncp_sm_lsiphy_runtime_adj(
         ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
         isSysMem = FALSE;
     }
+#endif
 
     /* indicate PHY initial training complete */
 
@@ -3816,26 +3863,42 @@ ncp_sm_lsiphy_runtime_adj(
         if (parms->enableECC) 
         {
             NCP_COMMENT("enabling ECC");
-            eccEnbFn(dev, ctlRegion, 3);
+       	    if (parms->version == NCP_CHIP_ACP35xx)
+	    {
+            	eccEnbFn(dev, ctlRegion, 1);
+	    }
+	    else
+	    {
+		/* not sure why we need 3 here- but leaving for legacy working */
+            	eccEnbFn(dev, ctlRegion, 3);
+	    }
         }
 
         /* clear controller interrupt status */
         intrStatFn(dev, ctlRegion, 0xffffffff);
     } 
-#ifndef UBOOT 
+#ifdef NCP_CONFIG_CMEM
     else 
     {
         ncp_uint32_t reg;
 
         /* NCP_DDR_CFG_NTEMC_DFI_TIMING2  tctlupd_intv = 4 */
-        NCP_CALL(ncp_read32(dev, ctlRegion, 0x30, &reg));
+        ncr_read32(ctlRegion, 0x30, &reg);
         reg &= 0xffffe000;
         reg |= 0x00000004;
-        NCP_CALL(ncp_write32(dev, ctlRegion, 0x30, reg));
+        ncr_write32(ctlRegion, 0x30, reg);
 
         mask = value = 0;
         SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, ref_ena, 1); 
         ncr_modify32(region, NCP_DDR_CFG_NTEMC_DDR_CTRL, mask, value);
+
+#ifdef UBOOT
+        /*
+         * write CMEM config local node scratch register to indicate
+         * U-boot CMEM init complete
+         */
+        ncr_write32(NCP_REGION_ID(sm_nodes[smId], 0xff), 0x20, 1);
+#endif
     }
 #endif
 
@@ -3849,8 +3912,11 @@ NCP_RETURN_LABEL
 
 #ifdef UBOOT
 #include "ncp_sm_denali_2041_init.c"
-#endif
 
+#ifdef NCP_CONFIG_CMEM
+#include "ncp_cm_ctrl_init.c"
+#endif
+#endif 
 
 #if 0
 static void set_fixed_latency(void)
@@ -3952,7 +4018,8 @@ ncp_sysmem_init_lsiphy(
         NCP_CALL(NCP_ST_ERROR);
     }
 
-    if (  parms->ddrRetentionEnable )
+#ifndef AXM_35xx
+    if (  parms->ddrRetentionEnable && (parms->ddrRecovery == TRUE) )
     {
         if (NCP_ST_SUCCESS == ncp_sm_lsiphy_reg_restore(dev, smId, parms ))
         {
@@ -3963,6 +4030,7 @@ ncp_sysmem_init_lsiphy(
             printf("SMEM%d DDR PHY register restore failed\n", smId); 
         }
     }
+#endif
 
     if (smId < NCP_SYSMEM_NUM_NODES) {
         /* Initialize the system memory controller... */
@@ -3976,10 +4044,10 @@ ncp_sysmem_init_lsiphy(
          */
         NCP_CALL(ncp_sm_denali_enable(dev, smId, parms));
     } 
-#ifndef UBOOT
+#ifdef NCP_CONFIG_CMEM
     else 
     {
-        NCP_CALL(ncp_cm_controller_init(dev, smId, parms)); 
+        NCP_CALL(ncp_cm_controller_init(dev, smId, parms));
     }
 #endif
 
@@ -4082,7 +4150,6 @@ ncp_sysmem_init_lsiphy(
         {
             if (topology & (1 << rank))
             {
-
                 switch (rank) {
                     case 0:
                     default:
@@ -4104,10 +4171,12 @@ ncp_sysmem_init_lsiphy(
                 printf("coarse wrlvl smId %d rank %d addr 0x%012llx\n",
                                 smId, rank, addr);
 #endif
+#ifdef NCP_CONFIG_ELM
                 if ((parms->version == NCP_CHIP_ACP55xx) && (smId < 2))
                 {
                         use_elm(dev, smId);
                 }
+#endif
 
                 NCP_CALL(ncp_sm_lsiphy_coarse_write_leveling(dev,
                             smId, rank, addr, parms));
@@ -4116,8 +4185,6 @@ ncp_sysmem_init_lsiphy(
 
         did_training = TRUE;
     }
-
-
 
     if (parms->ddrRetentionEnable && did_training)
     {
@@ -4129,7 +4196,6 @@ ncp_sysmem_init_lsiphy(
         /*
          * save these PHY training values for next time
          */
-        printf("saving smId %d PHY registers \n", smId);
         ncpStatus = ncp_sm_lsiphy_reg_save(dev, smId, parms);
     }
 
@@ -4138,6 +4204,7 @@ ncp_sysmem_init_lsiphy(
 NCP_RETURN_LABEL
 
     returnStatus = ncpStatus;
+#ifdef NCP_CONFIG_ELM
     if ((parms->version == NCP_CHIP_ACP55xx) &&
             (smId < 2)) 
     {
@@ -4160,6 +4227,7 @@ NCP_RETURN_LABEL
         ncr_write32(NCP_REGION_ID(257,0), 0x10280, 0x12221222);
         ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x280, 0x0000000b);
     }
+#endif
 
 #ifdef NCP_SM_PHY_REG_DUMP
   if ( (NCP_ST_SUCCESS != returnStatus) || ncp_sm_phy_reg_dump )

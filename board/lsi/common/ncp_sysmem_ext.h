@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+
 #ifndef __NCP_SYSMEM_EXT_H__
 #define __NCP_SYSMEM_EXT_H__
 
@@ -137,7 +138,6 @@ typedef enum {
     NCP_SM_PRIMARY_BUS_WIDTH_64BITS = 3
 } ncp_sm_primary_bus_width_t;
 
-
 /*
  * PHY training modes.
  * These are the field definitions for the Denali 'sw_leveling_mode' 
@@ -247,8 +247,9 @@ typedef struct {
     /* new for 5500 */
     ncp_uint32_t                zqcs_interval;
     ncp_bool_t                  enable_runtime_updates;
+    ncp_uint8_t                 dramPrechargePolicy;
     ncp_uint32_t                open_page_size;
-    ncp_per_sysmem_parms_t      per_sysmem[2];
+    ncp_per_sysmem_parms_t      per_mem[2];
 
     ncp_uint32_t                flags;
     ncp_bool_t                  half_mem;
@@ -257,8 +258,18 @@ typedef struct {
     ncp_bool_t                 ddrRetentionEnable;
     ncp_bool_t                 ddrRecovery;
 
+    ncp_uint16_t               ddrClockSpeedMHz;
     ncp_uint8_t                 num_bytelanes;
     ncp_int64_t                 totalSize;
+
+    /* RDIMM support */
+    ncp_uint32_t		rdimm_ctl_0_0;
+    ncp_uint32_t		rdimm_ctl_0_1;
+    ncp_uint32_t		rdimm_misc;
+
+    /* ODT Rd/Wr map support */
+    ncp_uint32_t		read_ODT_ctl;
+    ncp_uint32_t		write_ODT_ctl;
 
 } ncp_sm_parms_t;
 
@@ -268,6 +279,7 @@ typedef struct {
 typedef struct {
     ncp_sm_parms_t  sm_parms;
     ncp_sm_parms_t  cm_parms;
+    ncp_sem_t lock;
 } ncp_sysmem_t;
 
 
@@ -289,6 +301,9 @@ ncp_sysmem_config(ncp_t *ncp, ncp_map_t *map);
 
 NCP_API ncp_st_t
 ncp_sysmem_destroy(ncp_t *ncp);
+
+ncp_st_t
+ncp_sysmem_warm_restart(ncp_t *ncp);
 
 NCP_API ncp_st_t
 ncp_memory_layout_config(ncp_t *ncp, ncp_map_t *map);
