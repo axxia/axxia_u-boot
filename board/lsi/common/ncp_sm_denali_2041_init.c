@@ -225,6 +225,7 @@ ncp_sm_denali_2041_init(
 
     /* DENALI_CTL_14 */
     value = 0;
+    SV( ncp_denali_DENALI_CTL_14_t, tref_enable, 1);
     SV( ncp_denali_DENALI_CTL_14_t, tras_lockout, 1 );
     if (parms->version == NCP_CHIP_ACP35xx)
     {
