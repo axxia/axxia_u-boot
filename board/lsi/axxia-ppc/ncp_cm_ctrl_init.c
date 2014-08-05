@@ -113,7 +113,6 @@ ncp_cm_controller_init(
     ncp_region_id_t  ctlRegion;
     ncp_region_id_t  axiRegion;
     ncp_uint32_t     value;
-    ncp_uint32_t     mask;
 
     ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t  ddr_ctrl = {0};
     ncp_ddr_CFG_NTEMC_DRAM_TYPE_r_t dram_type = {0};

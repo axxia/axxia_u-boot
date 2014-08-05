@@ -3403,11 +3403,6 @@ ncp_sm_sm_coarse_write_leveling(
     /* disable ECC */
     eccEnbFn(dev, ctlRegion, 0);
 
-    /* enable refresh */
-    mask = value = 0;
-    SMAV(ncp_denali_DENALI_CTL_14_t, tref_enable, 1);
-    ncr_modify32(ctlRegion, NCP_DENALI_CTL_14, mask, value);
-
     /* ??? */
     mask = value = 0;
     SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG1_r_t, bblclobber, 1); 
