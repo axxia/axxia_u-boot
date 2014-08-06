@@ -2326,41 +2326,15 @@ acp_init( void )
 
 	ncr_tracer_enable( );
 
-	if( INIT_SYSMEM(global->flags) ) {
-#ifdef AXM_35xx
-		unsigned long ccr0_value;
-
-		ccr0_value = mfspr(SPRN_CCR0);
-		ccr0_value |= 0x80;
-		mtspr(SPRN_CCR0, ccr0_value);
-#endif
-
-		if( 0 != ( returnCode = sysmem_init( ) ) ) {
-			goto acp_init_return;
-		}
-
-#ifdef AXM_35xx
-		ccr0_value &= ~0x80;
-		mtspr(SPRN_CCR0, ccr0_value);
-#endif
-
-#if !defined(ACP_EMU)
-		if( 0 != ( global->flags &
-			   PARAMETERS_GLOBAL_RUN_SYSMEM_BIST ) ) {
-			acp_sysmem_bist( );
-			fill_sysmem(0ULL, (1ULL << sysmem_size),
-				    (sysmem->num_interfaces * 4));
-		}
-#endif
-	} else {
-		printf("Skipping System Memory Setup!\n");
-		extern void sysmem_size_init(void);
-		sysmem_size_init();
-	}
-
-
 #ifdef CONFIG_CMEM_INIT
     /* BugZ 48091 - initialize external treemem */
+    /*
+     * We now do the CMEM init before SMEM. This is due to the 
+     * new 'internal' parameters added to the end of the parameter 
+     * structure. The internal parameters for SMEM overlap the 
+     * real parameters for CMEM. By doing the CMEM init first it
+     * doesn't matter if the SMEM init corrupts the CMEM params. 
+     */
 	if( ncp_cmem_init )
 	{
 		int i;
@@ -2395,6 +2369,39 @@ acp_init( void )
         }
     }
 #endif
+
+
+	if( INIT_SYSMEM(global->flags) ) {
+#ifdef AXM_35xx
+		unsigned long ccr0_value;
+
+		ccr0_value = mfspr(SPRN_CCR0);
+		ccr0_value |= 0x80;
+		mtspr(SPRN_CCR0, ccr0_value);
+#endif
+
+		if( 0 != ( returnCode = sysmem_init( ) ) ) {
+			goto acp_init_return;
+		}
+
+#ifdef AXM_35xx
+		ccr0_value &= ~0x80;
+		mtspr(SPRN_CCR0, ccr0_value);
+#endif
+
+#if !defined(ACP_EMU)
+		if( 0 != ( global->flags &
+			   PARAMETERS_GLOBAL_RUN_SYSMEM_BIST ) ) {
+			acp_sysmem_bist( );
+			fill_sysmem(0ULL, (1ULL << sysmem_size),
+				    (sysmem->num_interfaces * 4));
+		}
+#endif
+	} else {
+		printf("Skipping System Memory Setup!\n");
+		extern void sysmem_size_init(void);
+		sysmem_size_init();
+	}
 
 
 
