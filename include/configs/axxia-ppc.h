@@ -494,6 +494,70 @@ int sbb_desecure_range(int, void *, size_t);
 #endif
 #endif
 
+
+/*************************
+PCI
+****************/
+#if !defined(ACP_EMU)
+#define CONFIG_PCI_PNP 1                          /* do pci plug-and-play*/
+#define CONFIG_CMD_PCI 1
+#define CONFIG_PCI_SCAN_SHOW 1
+
+#define ACP_PEI0 1
+#define ACP_PEI1 1
+
+#ifdef ACP_25xx
+#define CONFIG_SYS_PCIE_NR_PORTS 2
+#else
+#define ACP_PEI2 1
+#define CONFIG_SYS_PCIE_NR_PORTS 3
+#endif
+
+/* Board-specific PCI */
+/* let board init pci target    */
+#define CONFIG_SYS_PCI_TARGET_INIT
+
+#if defined(ACP_PEI0) && defined(ACP_PEI1) && defined(ACP_PEI2)
+#define CONFIG_SYS_PCIE0_MEMBASE 0x90000000
+#define CONFIG_SYS_PCIE1_MEMBASE 0xb0000000
+#define CONFIG_SYS_PCIE2_MEMBASE 0xd0000000
+#define CONFIG_PCIE0_PHY_START 0x80000000
+#define CONFIG_PCIE1_PHY_START 0xa0000000
+#define CONFIG_PCIE2_PHY_START 0xc0000000
+#elif defined(ACP_PEI0) && defined(ACP_PEI1)
+#define CONFIG_SYS_PCIE0_MEMBASE 0x90000000
+#define CONFIG_SYS_PCIE1_MEMBASE 0xb0000000
+#define CONFIG_SYS_PCIE2_MEMBASE 0x0
+#define CONFIG_PCIE0_PHY_START 0x80000000
+#define CONFIG_PCIE1_PHY_START 0xa0000000
+#define CONFIG_PCIE2_PHY_START 0x0
+#elif defined(ACP_PEI0)
+#define CONFIG_SYS_PCIE0_MEMBASE 0x90000000
+#define CONFIG_SYS_PCIE1_MEMBASE 0x0
+#define CONFIG_SYS_PCIE2_MEMBASE 0x0
+#define CONFIG_PCIE0_PHY_START 0x80000000
+#define CONFIG_PCIE1_PHY_START 0x0
+#define CONFIG_PCIE2_PHY_START 0x0
+#endif
+
+#define CONFIG_SYS_PCIE_MEMSIZE 0x100000
+
+#define CONFIG_PCIE0_BUS_START 0xA0000000
+#define CONFIG_PCIE1_BUS_START 0xB0000000
+#define CONFIG_PCIE2_BUS_START 0xC0000000
+
+#define CONFIG_SYS_PCIE0_CFGADDR PCIE0_CONFIG
+#define CONFIG_SYS_PCIE1_CFGADDR PCIE1_CONFIG
+#define CONFIG_SYS_PCIE2_CFGADDR PCIE2_CONFIG
+
+#ifdef ACP_25xx
+#define CONFIG_SYS_PCIE_NR_PORTS 2
+#else
+#define CONFIG_SYS_PCIE_NR_PORTS 3
+#endif
+
+#endif
+
 /*
   ======================================================================
   ======================================================================
@@ -717,7 +781,6 @@ int acp_clock_lock_verify(int, int);
 
 #ifndef ACP2_SYSMEM_TEST
 #define CONFIG_LSI_SSP 1
-#define CONFIG_LSI_MDIO 1
 #define CONFIG_LSI_IO 1
 #endif
 #define CONFIG_LSI_NCR 1

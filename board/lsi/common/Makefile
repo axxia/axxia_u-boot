@@ -31,7 +31,11 @@ endif
 
 LIB	= $(obj)lib$(VENDOR).a
 
+ifdef CONFIG_LSI_NET
 COBJS   := phy.o version.o femac.o
+else
+COBJS   := version.o
+endif
 
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

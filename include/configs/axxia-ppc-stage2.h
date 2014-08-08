@@ -282,19 +282,39 @@ int acp_init( void );
 #undef CONFIG_LSI_NET
 #endif
 
-#if defined(CONFIG_LSI_NET)
-#define CONFIG_CMD_NET
-#define CONFIG_CMD_DHCP
-#define APP3XXNIC_RX_BASE  (IO+0x80000)
-#define APP3XXNIC_TX_BASE  (IO+0x81000)
-#define APP3XXNIC_DMA_BASE (IO+0x82000)
-#endif
-
 /*
   ----------------------------------------------------------------------
   Include the ACP common header.
 */
 
 #include <configs/axxia-ppc.h>
+
+/*************************************************
+* PCI support for 3500
+* Uncomment out CONFIG_PCI define if required
+***************************************************/
+#ifdef AXM_35xx
+/*#define CONFIG_PCI 1*/
+#endif
+
+#ifndef AXM_35xx
+#undef ACP_PEI0
+#undef ACP_PEI1
+#undef ACP_PEI2
+#endif
+
+
+#if defined(CONFIG_PCI)
+#undef CONFIG_LSI_NET
+#endif
+
+#if defined(CONFIG_LSI_NET)
+#define CONFIG_LSI_MDIO
+#define CONFIG_CMD_NET
+#define CONFIG_CMD_DHCP
+#define APP3XXNIC_RX_BASE  (IO+0x80000)
+#define APP3XXNIC_TX_BASE  (IO+0x81000)
+#define APP3XXNIC_DMA_BASE (IO+0x82000)
+#endif
 
 #endif	/* __CONFIGS_ACP2_H */

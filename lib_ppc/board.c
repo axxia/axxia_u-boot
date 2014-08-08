@@ -1580,7 +1580,9 @@ acp_init_r( void )
 	  Initialize MDIO
 	*/
 #ifndef ACP_ISS
+#ifdef CONFIG_LSI_NET
 	mdio_initialize( );
+#endif
 #ifndef CONFIG_ACP2
 #ifndef AXM_35xx
 	i2c_init(CONFIG_SYS_I2C_SPEED, 0);
@@ -1813,6 +1815,7 @@ acp_init_r( void )
 				continue;
 		
 			if (acp_osg_is_boot_core(i) && cold_start) {
+				printf("Bringing up boot core %d\n", i);
 				dcr_write((1 << i), 0xffc00040);
 			} else {
 			
@@ -2096,7 +2099,7 @@ acp_init_r( void )
 			}
 #endif
 #endif
-#if defined(CONFIG_ACP3) && defined(CONFIG_PCI)
+#if defined(CONFIG_PCI)
 				pci_init_board();
 #endif
 		}
