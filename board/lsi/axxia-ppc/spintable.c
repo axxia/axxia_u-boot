@@ -194,14 +194,14 @@ acp_spintable_init(void *fdt,
 
 	/* Send an IPI */
 	if (0 != cold_start) {
-		DEBUG_PRINT("Sending an IPI to core %d.\n", core);
+		printf("Sending an IPI to core %d: ", core);
 		dcr_write((1 << core), 0xffc00040);
 	}
 #endif
 #else
 	/* Send an IPI */
 	if (0 != cold_start) {
-		DEBUG_PRINT("Sending an IPI to core %d.\n", core);
+		printf("Sending an IPI to core %d: ", core);
 		dcr_write((1 << core), 0xffc00040);
 	}
 #endif
@@ -214,10 +214,9 @@ acp_spintable_init(void *fdt,
 	}
 
 	if( 0 == retries ) {
-		printf( "Core %d is hung!\n", core );
+		printf("Hung\n", core);
 	} else {
-		DEBUG_PRINT("Core %d woke up!\n", core);
-		printf("Core %d woke up!\n", core);
+		printf("Up\n", core);
 	}
 
 	acp_osg_set_spintable_state(core, ACP_OSG_SPINTABLE_NOTAVAIL);

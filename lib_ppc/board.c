@@ -1815,6 +1815,7 @@ acp_init_r( void )
 				continue;
 		
 			if (acp_osg_is_boot_core(i) && cold_start) {
+				printf("Bringing up boot core %d\n", i);
 				dcr_write((1 << i), 0xffc00040);
 			} else {
 			
