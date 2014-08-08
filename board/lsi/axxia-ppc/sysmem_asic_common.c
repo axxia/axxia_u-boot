@@ -578,10 +578,13 @@ sysmem_init(void)
 #endif
 
     /*
-     * DDR retention is not yet supported 
+     * DDR retention is not yet supported on 3500,
+     * and not supported at all on 34xx
      */
+#ifdef AXM_35xx
     sysmem->ddrRetentionEnable = 0;
     sysmem->ddrRecovery = 0;
+#endif
 
 
     disp_ddr_parms("SMEM Parameters", sysmem);
