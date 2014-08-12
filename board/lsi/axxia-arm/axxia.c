@@ -589,15 +589,56 @@ board_init(void)
   misc_init_r
 */
 
+#define WA_811981_RETRIES 10000
+
 int
 misc_init_r(void)
 {
+	unsigned long cntpct_low;
+	unsigned long cntpct_high;
+	unsigned long long cntpct0;
+	unsigned long long cntpct1;
+	int retries = WA_811981_RETRIES;
+
+	/*
+	  Workaround for ARM errata 811981.  After a reset, make sure
+	  that cntpct is non-zero and incrementing.
+	*/
+
+	do {
+		asm volatile ("mrrc p15, 0, %0, %1, c14"
+			      : "=r" (cntpct_low), "=r" (cntpct_high));
+		cntpct0 = (unsigned long long)cntpct_low |
+			(unsigned long long)cntpct_high;
+		--retries;
+	} while (0ULL == cntpct0 && 0 < retries);
+
+	if (0 == retries)
+		acp_failure(__FILE__, __func__, __LINE__);
+
+	retries = WA_811981_RETRIES;
+
+	do {
+		asm volatile ("mrrc p15, 0, %0, %1, c14"
+			      : "=r" (cntpct_low), "=r" (cntpct_high));
+		cntpct1 = (unsigned long long)cntpct_low |
+			(unsigned long long)cntpct_high;
+		--retries;
+	} while (cntpct0 == cntpct1 && 0 < retries);
+
+	if (0 == retries)
+		acp_failure(__FILE__, __func__, __LINE__);
+
+	/* Add cluster 0 to the coherency domain. */
+
 	if (0 != set_cluster_coherency(0, 1))
 		acp_failure(__FILE__, __func__, __LINE__);
 
-	/* Enable SW access to cp14 registers and power on the ETB RAM modules
-	 * (via dbg_sw_enable register)
-	 */
+	/*
+	  Enable SW access to cp14 registers and power on the ETB RAM
+	  modules (via dbg_sw_enable register)
+	*/
+
 	writel(0xf, SYSCON + 0xcc);
 
 	/* Enable EVENT (sev/wfe) signals to all cores */

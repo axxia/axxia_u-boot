@@ -475,6 +475,38 @@ set_l2actlr:
 	mcr	p15, 1, r0, c15, c0, 0
 
 	@@
+	@ Workaround for ARM errata 811981, clusters 1, 2, and 3.
+	@ Cluster 0 is handled later to allow console output if there is
+	@ a failure.  Other clusters will fail silently.
+
+	mrc	p15, 0, r0, c0, c0, 5
+	lsr	r0, r0, #8
+	ands	r0, r0, #0xf
+	beq	wa_811981_okay
+
+	@ Make sure cntpct is non-zero.
+
+wa_811981_zero:
+
+	mrrc	p15, 0, r10, r11, c14
+	orr	r0, r10, r11
+	cmp	r0, #0
+	beq	wa_811981_zero
+
+	@ Make sure cntpct is counting.
+
+wa_811981_stuck:
+
+	mrrc	p15, 0, r0, r1, c14
+	cmp	r0, r10
+	bne	wa_811981_okay
+	cmp	r1, r11
+	bne	wa_811981_okay
+	b	wa_811981_stuck
+
+wa_811981_okay:
+
+	@@
 	@ Iniitalize the ACTLR2 register (all cores).
 
 set_actlr2:
