@@ -103,6 +103,13 @@ static const struct spansion_spi_flash_params spansion_spi_flash_table[] = {
 		.nr_sectors = 512,
 		.name = "S25FL256S",
 	},
+	{
+		.idcode1 = 0x4017,
+		.idcode2 = 0x0140,
+		.pages_per_sector = 16,
+		.nr_sectors = 2048,
+		.name = "S25FL164K",
+	},
 };
 
 struct spi_flash *spi_flash_probe_spansion(struct spi_slave *spi, u8 *idcode)

@@ -347,6 +347,54 @@ reset_cpu_fabric(void)
 	set_vat_mission();
 
 	/*
+	  Work around for ARM hardware issue.  No errata yet (issue is
+	  still being investigated).  Avago BZ is 49133.
+
+	  Here's the description from the BZ.
+
+	  Please read the attached errata from ARM.  Based on review
+	  with ARM- here are the ramifications of this defect. There
+	  is no guarantee the error will occur.
+
+	  The following steps suggest how to AVOID creating a
+	  situation where the system_counter will be corrupted.
+	 
+	  1. This error can occur in the X7, but may not be observed at all. 
+	  2. In X7, the error can occur immediately after: reset_system,
+             reset_chip, reset_fabric, or when the non-CPU locic (L2) is
+	     repowered on after being powered off.
+	  3. The error will "self correct". The upper bound on the time for
+             the error to self-correct is the number of ticks on the
+             system_counter when the error event occurs.
+
+	  To avoid the error:
+	
+	  A. MUST not power off the non-CPU logic in a cluster. A cluster's
+	     bit in pwr_PWRUPL2LGCSTG1 @0x156.0x0.0x1420 and
+	     pwr_PWRUPL2LGCSTG2 @0x156.0x0.0x1424 must **NOT** be set to 0 if
+	     there will be a need in the future to bring the cluster back into
+	     the system. The bit may be cleared if the cluster is being powered
+	     off permanently. NOTE: CPU logic, CPU RAMS, and L2 RAMS may be
+	     powered off.
+
+	  B. During the boot sequence, to reduce the magnitude of the system
+	     counter (and thus the magnitude of the possible error): reset the
+	     system counter immediately prior to starting the reset_fabric
+	     process: set Reset Module Register (@0x156.0x0.0x1038) bit 16 to
+	     a 1, then set it back to 0, then start the reset_fabric process.
+	     NOTE: this will blow away any special uboot setup for the
+	     system_counter.
+
+	  The work around implemented here is "B." above.
+	*/
+
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1038, (ncp_uint32_t *)&value);
+	value |= 0x10000;
+	ncr_write32(NCP_REGION_ID(0x156, 0), 0x1038, value);
+	value &= ~0x10000;
+	ncr_write32(NCP_REGION_ID(0x156, 0), 0x1038, value);
+
+	/*
 	  Don't use readl()/writel(), as those contain barriers.  The
 	  barriers below are part of the sequence.
 	*/
