@@ -28,6 +28,10 @@
 #define WA_BZ42743
 #endif
 
+#if defined(AXM_35xx)
+#define WA_BZ49339
+#endif
+
 /*
   ------------------------------------------------------------------------------
   acp_reset
@@ -38,6 +42,10 @@ acp_reset(int argc, char *argv[])
 {
 #ifdef CONFIG_ACP3
 	unsigned long value;
+#endif
+
+#if defined(WA_BZ49339)
+	unsigned long mcgc;
 #endif
 
 #if defined(WA_BZ42743)
@@ -52,10 +60,42 @@ acp_reset(int argc, char *argv[])
 #endif
 #endif
 
-#ifdef CONFIG_ACP2
-	mtspr(dbcr0, 0x30000000);
-#else
+#if defined(WA_BZ49339)
+	if ((2 > argc) ||	/* No type specified => system */
+	    (2 == argc &&
+	     (0 == strncmp("chip", argv[1], strlen("chip")) ||
+	      0 == strncmp("system", argv[1], strlen("system"))))) {
+		/*
+		  Before a chip or system reset on 3500, switch the
+		  PPCs to the reference clock.  No errata number is
+		  available yet, but here is the description from
+		  BZ49339.
 
+		  The reset_system issue is caused since the 6
+		  counters are **NOT** reset by reset_system, but the
+		  PLL and clock switch that controls the counters
+		  **IS**.  Workaround for this: switch clk_ppc to
+		  clk_ref before a reset_system or reset_chip. This
+		  logically should work, BUT no STA work has been done
+		  to validate this. Empirically, this seems to work.
+		*/
+		printf("Switching PPCs to the reference clock.\n");
+		mcgc = dcr_read(0xd0a);
+		mcgc |= 0xab;
+		dcr_write(mcgc, 0xd0a);
+		mcgc = dcr_read(0xd00);
+		mcgc &= ~0xc0000000;
+		dcr_write(mcgc, 0xd00);
+	}
+#endif
+
+#ifdef CONFIG_ACP2
+#if defined(WA_BZ42743)
+	dcr_write(1, DCR_RESET_BASE);
+#else
+	mtspr(dbcr0, 0x30000000);
+#endif
+#else
 	value = dcr_read(DCR_RESET_BASE + 1);
 	dcr_write(value, (DCR_RESET_BASE + 1));
 
