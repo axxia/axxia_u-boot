@@ -47,7 +47,7 @@ read(unsigned long offset)
 
 	ulpi_vp.viewport_addr = CONFIG_USB_ADDR+ 0x170;
 	ulpi_vp.port_num = 0x0;
-	reg = (unsigned short *)&offset;
+	reg = (unsigned short *)offset;
 
 	rc = ulpi_read(&ulpi_vp, (u8 *)reg);
 

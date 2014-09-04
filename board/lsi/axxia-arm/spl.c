@@ -328,6 +328,27 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 */
 
 /*
+ * reset_cpu_fabric_sync
+ *
+ * This code sequence needs to be located in the same cache line.
+ */
+static noinline __aligned(64) void
+reset_cpu_fabric_sync(void)
+{
+	/* dsb */
+	asm volatile ("mcr p15,0,%0,c7,c10,4" : : "r" (0));
+
+	/* isb */
+	asm volatile ("mcr p15,0,%0,c7,c5,4" : : "r" (0));
+
+	/* wfi */
+	asm volatile ("wfi");
+
+	/* isb */
+	asm volatile ("mcr p15,0,%0,c7,c5,4" : : "r" (0));
+}
+
+/*
   ------------------------------------------------------------------------------
   reset_cpu_fabric
 
@@ -395,38 +416,26 @@ reset_cpu_fabric(void)
 	ncr_write32(NCP_REGION_ID(0x156, 0), 0x1038, value);
 
 	/*
-	  Don't use readl()/writel(), as those contain barriers.  The
-	  barriers below are part of the sequence.
-	*/
+	 * Don't use readl()/writel(), as those contain barriers. The barriers
+	 * below are part of the sequence.
+	 */
 
 	/* syscontrol access key */
-	*((unsigned long *)(SYSCON + 0x1000)) = 0xab;
+	__raw_writel(0xab, SYSCON + 0x1000);
 
 	/* set the resetFab bit in reset_ctl */
-	value = *((unsigned long *)(SYSCON + 0x1008));
-	value |= 4;
-	*((unsigned long *)(SYSCON + 0x1008)) = value;
+	value = __raw_readl(SYSCON + 0x1008);
+	__raw_writel(value | 4, SYSCON + 0x1008);
 
 	/* dsb */
 	asm volatile ("mcr p15,0,%0,c7,c10,4" : : "r" (0));
 
 	/* read back reset_ctl */
-	value = *((unsigned long *)(SYSCON + 0x1008));
+	(void) __raw_readl(SYSCON + 0x1008);
 
-	/* dsb */
-	asm volatile ("mcr p15,0,%0,c7,c10,4" : : "r" (0));
-
-	/* isb */
-	asm volatile ("mcr p15,0,%0,c7,c5,4" : : "r" (0));
-
-	/* wfi */
-	asm volatile ("wfi");
-
-	/* isb */
-	asm volatile ("mcr p15,0,%0,c7,c5,4" : : "r" (0));
-
-	return;
+	reset_cpu_fabric_sync();
 }
+
 /* For spl mtest range testing, find the memory ranges (1G page table entries)
 that cover what is being tested */
 void sw_test_page_fit(unsigned long in_addr, unsigned long in_len,
