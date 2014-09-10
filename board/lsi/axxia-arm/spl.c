@@ -717,28 +717,27 @@ static void
 check_memory_ranges(void)
 {
 	unsigned long *ranges = (unsigned long *)&global->memory_ranges;
-	int i, j;
+	int i;
 	unsigned long *mbist_addr, *mbist_len;
+	unsigned long memSize;
+#ifdef CONFIG_HYBRID_MBIST
 	unsigned long *add_mbist_addr, *add_mbist_len;
 	unsigned long *add_sw_addr, *add_sw_len;
 	unsigned long *test_addr, *test_len;
 	unsigned long *prot_addr, *prot_len;
-	unsigned long memSize, dual_ddr, maskbits;
+	unsigned long dual_ddr, maskbits;
+	int j;
 	unsigned ret;
 
-	mbist_addr = malloc(32 * 3 * sizeof(unsigned long));
 	add_mbist_addr = malloc(32 * sizeof(unsigned long));
-	add_sw_addr = malloc(32 * sizeof(unsigned long));
-	test_addr = malloc(8 * 3 * sizeof(unsigned long));
-	mbist_len = malloc(32 * 3 * sizeof(unsigned long));
 	add_mbist_len = malloc(32 * sizeof(unsigned long));
+	add_sw_addr = malloc(32 * sizeof(unsigned long));
 	add_sw_len = malloc(32 * sizeof(unsigned long));
+	test_addr = malloc(8 * 3 * sizeof(unsigned long));
 	test_len = malloc(8 * 3 * sizeof(unsigned long));
 	prot_addr = malloc(5 * sizeof(unsigned long));
 	prot_len = malloc(5 * sizeof(unsigned long));
 
-	memset(mbist_addr, 0, 32 * 3 * sizeof(unsigned long));
-	memset(mbist_len, 0, 32 * 3 * sizeof(unsigned long));
 	memset(add_mbist_addr, 0, 32 * sizeof(unsigned long));
 	memset(add_mbist_len, 0, 32 * sizeof(unsigned long));
 	memset(add_sw_addr, 0, 32 * sizeof(unsigned long));
@@ -747,6 +746,12 @@ check_memory_ranges(void)
 	memset(test_len, 0, 8 * sizeof(unsigned long));
 	memset(prot_addr, 0, 5 * sizeof(unsigned long));
 	memset(prot_len, 0, 5 * sizeof(unsigned long));
+#endif
+	mbist_addr = malloc(32 * 3 * sizeof(unsigned long));
+	mbist_len = malloc(32 * 3 * sizeof(unsigned long));
+	memset(mbist_addr, 0, 32 * 3 * sizeof(unsigned long));
+	memset(mbist_len, 0, 32 * 3 * sizeof(unsigned long));
+
 
 
 	for (i = 0; i < 8; i++) {
@@ -763,8 +768,10 @@ check_memory_ranges(void)
 			mbist_len[i] = length/256;
 		} else {
 			mbist_len[i] = 0;
+#ifdef CONFIG_HYBRID_MBIST
 			test_len[i] = 0;
 			prot_len[i] = 0;
+#endif
 			break;
 		}
 	}
@@ -828,7 +835,9 @@ check_memory_ranges(void)
 		}
 		for (i = 0; i < 5; i++) {
 			if (prot_len[i] != 0)
-				printf("prot_addr = 0x%lx, prot_len = 0x%lx\n", prot_addr[i], prot_len[i]);
+				printf("prot_addr = 0x%llx, prot_len = 0x%llx\n",
+				(unsigned long long)prot_addr[i]*256,
+				(unsigned long long)prot_len[i]*256);
 			else
 				break;
 		}
