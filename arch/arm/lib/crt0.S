@@ -73,8 +73,10 @@ ENTRY(_main)
 	mov	r0, #0
 	bl	board_init_f
 
-#if ! defined(CONFIG_SPL_BUILD)
-
+#if !defined(CONFIG_SPL_BUILD)
+#ifdef CONFIG_AXXIA_ARM
+	ldr	pc, =board_init_r	/* this is auto-relocated! */
+#else
 /*
  * Set up intermediate environment (new sp and gd) and call
  * relocate_code(addr_moni). Trick here is that we'll return
@@ -117,7 +119,7 @@ clbss_l:cmp	r0, r1			/* while not at end of BSS */
 	ldr	pc, =board_init_r	/* this is auto-relocated! */
 
 	/* we should not return here. */
-
+#endif
 #endif
 
 ENDPROC(_main)

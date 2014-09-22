@@ -58,6 +58,267 @@ extern void dataflash_print_info(void);
 #include <i2c.h>
 #endif
 
+
+/*****************************************************************
+ * PCIe AXM55xx workaround
+ *****************************************************************/
+//#if defined(CONFIG_AXXIA_55XX) && defined(CONFIG_SPL_BUILD)
+#ifdef CONFIG_SPL_PCI_SUPPORT
+typedef enum {
+        PEI_2_5G = 1,
+        PEI_5G = 2
+} peiSpeed_t;
+
+extern unsigned long pfuse;
+
+void pci_speed_change(char peiCore, peiSpeed_t changeSpeed) {
+	unsigned lnkStatus, addr;
+	unsigned width;
+	peiSpeed_t speedBefore, speedAfter;
+	unsigned peiControl;
+	unsigned peiDelay, peiConfig;
+	char * env_value;
+	unsigned short v1_0 = 0;
+
+	if (0 == ((pfuse & 0x7e0) >> 5)) {
+		v1_0 = 1;
+	}
+
+	env_value = getenv("pei_speed_change_delay");
+	if ((char *)0 != env_value) {
+		peiDelay = simple_strtoul(env_value, NULL, 0);
+		if (peiDelay <= 0) {
+			peiDelay = 1;
+		}
+	} else {
+		peiDelay = 1;
+	}
+	printf("delay used after PEI speed change = %d usecs\n", peiDelay);
+
+
+	if (peiCore == 0) {
+		addr = PCIE0_CONFIG;
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &peiControl);
+	} else {
+		addr = PCIE1_CONFIG;
+		ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &peiControl);
+	}
+
+
+	lnkStatus = readl((void *)(addr + 0x117c));
+	printf("PEI%d 0x117c LnkStatus = 0x%x\n",  peiCore,lnkStatus);
+	speedBefore = lnkStatus & 0xf;
+	width = (lnkStatus & 0xf0) >> 4;
+	printf("PEI%d width - %d lane \n",peiCore, width);
+
+	if (changeSpeed == speedBefore) {
+		if (changeSpeed == PEI_2_5G)
+			printf("PEI%d speed already set to (2.5 Gb/s)\n", peiCore);
+		else
+			printf("PEI%d speed already set to (5 Gb/s)\n", peiCore);
+	} else if (changeSpeed == PEI_2_5G) {
+		/* Change PEI speed to Gen 1 */
+		writel(0x1, (void *)(addr + 0x90));
+		writel(0x10000, (void *)(addr + 0x117c));
+
+		/* delay for 1000ms */
+		mdelay(1000);
+		lnkStatus = readl((void *)(addr + 0x117c));
+		printf("pei%d lnkStatus 0x117c after speed initiation = 0x%x\n", peiCore, lnkStatus);
+		speedAfter = lnkStatus & 0xf;
+		if ((lnkStatus & 0xc00) == 0xc00) {
+			/* Please note that this is also ensuring that there is no link training error */
+			printf("PEI%d has Link Training error\n", peiCore);
+			if (lnkStatus & 0x10000) {
+				/* clear speed change initiation bit */
+				writel(0x20000, (void *)(addr + 0x117c));
+			}
+			return;
+		}
+		if ((lnkStatus & 0x10000) != 0x10000) {
+			if (speedAfter == changeSpeed) {
+				printf("Successfully changed PEI%d speed from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s)\n", peiCore);
+			} else {
+				printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
+			}
+		} else {
+			/* clear speed change initiation bit */
+			writel(0x20000, (void *)(addr + 0x117c));
+			printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n", peiCore);
+		}
+	} else if (changeSpeed == PEI_5G) {
+		if ((peiCore == 0) && ((peiControl & 0x1c400001)== 0x00400001)) {
+			/* PEI0 RC x4 */
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			if (v1_0) {
+				/* Applicable only to v1.0 */
+				udelay(peiDelay);
+
+				/* ncr w 0x115.1.0x08e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x8e, 0x0406 );
+
+				/* ncr w 0x115.1.0x28e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x28e, 0x0406 );
+
+				/* ncr w 0x115.1.0x68e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
+		
+				/* ncr w 0x115.1.0x88e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+			}
+		} else if ((peiCore == 1) && ((peiControl & 0x0c400001)== 0x00400001)) {
+			/* PEI1 RC x4 */
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
+
+			if (v1_0) {
+				/* ncr w 0x115.4.0x08e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
+
+				/* ncr w 0x115.4.0x28e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x28e, 0x0406 );
+
+				/* ncr w 0x115.4.0x68e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x68e, 0x0406 );
+		
+				/* ncr w 0x115.4.0x88e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x88e, 0x0406 );
+			}
+		} else if (((peiCore == 0) &&
+			    (((peiControl & 0x1c400001)== 0x04400001))) ||
+			   ((peiControl & 0x1c400001)== 0x08400001)) {
+			/* PEI0 RC x2 */
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
+
+			if (v1_0) {
+				/* ncr w 0x115.1.0x68e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x68e, 0x0406 );
+		
+				/* ncr w 0x115.1.0x88e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+			}
+		} else if ((peiCore == 1) && ((peiControl & 0x0c400001)== 0x04400001)) {
+			/* PEI1 RC x2 */
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
+
+			if (v1_0) {
+				/* ncr w 0x115.4.0x08e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
+
+				/* ncr w 0x115.4.0x28e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x28e, 0x0406 );
+			}
+
+		} else if ((peiCore == 0) && ((peiControl & 0x1c400001)== 0x14400001)) {
+			/* PEI0 RC x1 */
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
+	
+			if (v1_0) {
+				/* ncr w 0x115.1.0x88e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x1 ), 0x88e, 0x0406 );
+			}
+		} else if ((peiCore == 1) && ((peiControl & 0x0c400001)== 0x08400001)) {
+			/* PEI1 RC x1 */
+			if (v1_0) {
+				peiConfig = readl((void *)(addr + 0x1000));
+				/* clear force gen1 bit 18 */
+				peiConfig = peiConfig & 0xfffbffff;
+				writel(peiConfig, (void *)(addr + 0x1000));
+			}
+			
+			/* Change PEI speed to Gen 2 */
+			writel(0x2, (void *)(addr + 0x90));
+			writel(0x10000, (void *)(addr + 0x117c));
+			udelay(peiDelay);
+
+			if (v1_0) {
+				/* ncr w 0x115.4.0x08e 0x0406 */
+				ncr_write16( NCP_REGION_ID( 0x115, 0x4 ), 0x8e, 0x0406 );
+			}
+
+		} else {
+			printf("Unsupported PEI%d config = 0x%x\n", peiCore, peiControl);
+			return;
+		}
+		/* delay for 1000 ms */
+		mdelay(1000);
+		lnkStatus = readl((void *)(addr + 0x117c));
+		printf("pei%d lnkStatus 0x117c after speed initiation = 0x%x\n", peiCore, lnkStatus);
+		speedAfter = lnkStatus & 0xf;
+
+		if ((lnkStatus & 0xc00) == 0xc00) {
+			/* Please note that this is also ensuring that there is no link training error */
+			printf("PEI%d has Link Training error\n", peiCore);
+			if (lnkStatus & 0x10000) {
+				/* clear speed change initiation bit */
+				writel(0x20000, (void *)(addr + 0x117c));
+			}
+			return;
+		}
+
+		if ((lnkStatus & 0x10000) != 0x10000) {
+			if (speedAfter == changeSpeed) {
+				printf("Successfully changed PEI%d speed from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s)\n", peiCore);
+			} else {
+				printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
+			}
+		} else {
+			/* clear speed change initiation bit */
+			writel(0x20000, (void *)(addr + 0x117c));
+			printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n", peiCore);
+		}
+	}
+}
+#endif
+
 /************************************************************************
  * Coloured LED functionality
  ************************************************************************
@@ -104,6 +365,14 @@ static int init_baudrate(void)
 
 static int display_banner(void)
 {
+#ifdef CONFIG_AXXIA_ARM
+	puts("\n"
+	     "   ___             _        __  __    ___            __ \n"
+	     "  / _ |__ ____ __ (_)__ _  / / / /___/ _ )___  ___  / /_\n"
+	     " / __ |\\ \\ /\\ \\ // / _ `/ / /_/ /___/ _  / _ \\/ _ \\/ __/\n"
+	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ \n");
+	/*printf("\nLSI Version: %s\n", get_lsi_version());*/
+#endif
 	printf("\n\n%s\n\n", version_string);
 	debug("U-Boot code: %08lX -> %08lX  BSS: -> %08lX\n",
 	       (ulong)&_start,
@@ -165,10 +434,61 @@ static int init_func_i2c(void)
 #endif
 
 #if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
+
 #include <pci.h>
 static int arm_pci_init(void)
 {
+
+#ifdef CONFIG_SPL_PCI_SUPPORT
+	{
+	char *env_value;
+	unsigned pciStatus, linkState;
+	unsigned pei0Control, pei1Control;
+
+	ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &pei0Control);
+	ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &pei1Control);
+
+	if (pei0Control & 0x1) {
+		pciStatus = readl((void *)(PCIE0_CONFIG + 0x1004));
+		printf("PEI0 pciStatus = 0x%x\n", pciStatus);
+		linkState = (pciStatus & 0x3f00) >> 8;
+		if (linkState == 0xb) {
+			printf("PCIE0 link State UP = 0x%x\n", linkState);
+			env_value = getenv("pei0_speed");
+			if ((char *)0 != env_value) {
+				unsigned pei0_speed;
+
+				pei0_speed = simple_strtoul(env_value, NULL, 0);
+				pci_speed_change(0, pei0_speed);
+			}
+		} else {
+			printf("PCIE0 link State DOWN = 0x%x\n", linkState);
+		}
+	}
+
+	if (pei1Control & 0x1) {
+		pciStatus = readl((void *)(PCIE1_CONFIG + 0x1004));
+		printf("PEI1 pciStatus = 0x%x\n", pciStatus);
+		linkState = (pciStatus & 0x3f00) >> 8;
+
+		if (linkState == 0xb) {
+			printf("PCIE1 link State UP = 0x%x\n", linkState);
+			env_value = getenv("pei1_speed");
+			if ((char *)0 != env_value) {
+				unsigned pei1_speed;
+
+				pei1_speed = simple_strtoul(env_value, NULL, 0);
+				pci_speed_change(1, pei1_speed);
+			}
+		} else {
+			printf("PCIE1 link State DOWN = 0x%x\n", linkState);
+		}
+	}
+}
+#endif
+#if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
 	pci_init();
+#endif
 	return 0;
 }
 #endif /* CONFIG_CMD_PCI || CONFIG_PCI */
@@ -237,7 +557,7 @@ init_fnc_t *init_sequence[] = {
 #if defined(CONFIG_BOARD_EARLY_INIT_F)
 	board_early_init_f,
 #endif
-	timer_init,		/* initialize timer */
+	//timer_init,		/* initialize timer */
 #ifdef CONFIG_BOARD_POSTCLK_INIT
 	board_postclk_init,
 #endif
@@ -247,7 +567,9 @@ init_fnc_t *init_sequence[] = {
 	env_init,		/* initialize environment */
 	init_baudrate,		/* initialze baudrate settings */
 	serial_init,		/* serial communications setup */
+#ifndef CONFIG_AXXIA_ARM
 	console_init_f,		/* stage 1 init of console */
+#endif
 	display_banner,		/* say that we are here */
 	print_cpuinfo,		/* display cpu info (and speed) */
 #if defined(CONFIG_DISPLAY_BOARDINFO)
@@ -256,7 +578,9 @@ init_fnc_t *init_sequence[] = {
 #if defined(CONFIG_HARD_I2C) || defined(CONFIG_SYS_I2C)
 	init_func_i2c,
 #endif
+#if 0
 	dram_init,		/* configure available RAM banks */
+#endif
 	NULL,
 };
 
@@ -269,6 +593,7 @@ void board_init_f(ulong bootflag)
 #ifdef CONFIG_PRAM
 	ulong reg;
 #endif
+
 	void *new_fdt = NULL;
 	size_t fdt_size = 0;
 
@@ -340,6 +665,7 @@ void board_init_f(ulong bootflag)
 #endif /* CONFIG_PRAM */
 
 #if !(defined(CONFIG_SYS_ICACHE_OFF) && defined(CONFIG_SYS_DCACHE_OFF))
+#ifndef CONFIG_AXXIA_ARM
 	/* reserve TLB table */
 	gd->arch.tlb_size = PGTABLE_SIZE;
 	addr -= gd->arch.tlb_size;
@@ -349,6 +675,7 @@ void board_init_f(ulong bootflag)
 
 	gd->arch.tlb_addr = addr;
 	debug("TLB table from %08lx to %08lx\n", addr, addr + gd->arch.tlb_size);
+#endif
 #endif
 
 	/* round down to next 4 kB limit */
@@ -449,14 +776,21 @@ void board_init_f(ulong bootflag)
 	dram_init_banksize();
 	display_dram_config();	/* and display it */
 
+#ifdef CONFIG_AXXIA_ARM
+	gd->relocaddr = 0;
+	gd->reloc_off = 0;
+#else
 	gd->relocaddr = addr;
 	gd->start_addr_sp = addr_sp;
 	gd->reloc_off = addr - (ulong)&_start;
 	debug("relocation Offset is: %08lx\n", gd->reloc_off);
+#endif
+
 	if (new_fdt) {
 		memcpy(new_fdt, gd->fdt_blob, fdt_size);
 		gd->fdt_blob = new_fdt;
 	}
+
 	memcpy(id, (void *)gd, sizeof(gd_t));
 }
 
@@ -532,6 +866,7 @@ void board_init_r(gd_t *id, ulong dest_addr)
 #ifdef CONFIG_CLOCKS
 	set_cpu_clk_info(); /* Setup clock information */
 #endif
+
 	serial_initialize();
 
 	debug("Now running in RAM - U-Boot at: %08lx\n", dest_addr);
@@ -543,9 +878,15 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	post_output_backlog();
 #endif
 
+#ifdef CONFIG_AXXIA_ARM
+	/* The Malloc area is immediately below the monitor copy in DRAM */
+	malloc_start = CONFIG_SYS_MALLOC_BASE;
+	mem_malloc_init (malloc_start, TOTAL_MALLOC_LEN);
+#else
 	/* The Malloc area is immediately below the monitor copy in DRAM */
 	malloc_start = dest_addr - TOTAL_MALLOC_LEN;
 	mem_malloc_init (malloc_start, TOTAL_MALLOC_LEN);
+#endif
 
 #ifdef CONFIG_ARCH_EARLY_INIT_R
 	arch_early_init_r();
@@ -588,9 +929,11 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	onenand_init();
 #endif
 
+#if 0
 #ifdef CONFIG_GENERIC_MMC
 	puts("MMC:   ");
 	mmc_initialize(gd->bd);
+#endif
 #endif
 
 #ifdef CONFIG_CMD_SCSI
@@ -613,7 +956,9 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	arm_pci_init();
 #endif
 
+#ifndef CONFIG_AXXIA_ARM
 	stdio_init();	/* get the devices list going. */
+#endif
 
 	jumptable_init();
 
@@ -622,7 +967,9 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	api_init();
 #endif
 
+#ifndef CONFIG_AXXIA_ARM
 	console_init_r();	/* fully init console as a device */
+#endif
 
 #ifdef CONFIG_DISPLAY_BOARDINFO_LATE
 # ifdef CONFIG_OF_CONTROL

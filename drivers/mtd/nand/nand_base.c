@@ -63,6 +63,11 @@
 #define CONFIG_SYS_NAND_RESET_CNT 200000
 #endif
 
+/*
+  The NAND controller used by LSI (for APP3K and ACP), is non-standard
+  in a few particulars...
+*/
+
 /* Define default oob placement schemes for large and small page devices */
 static struct nand_ecclayout nand_oob_8 = {
 	.eccbytes = 3,
@@ -222,11 +227,13 @@ static void nand_select_chip(struct mtd_info *mtd, int chipnr)
  */
 void nand_write_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
 {
+#ifndef CONFIG_ACP
 	int i;
 	struct nand_chip *chip = mtd->priv;
 
 	for (i = 0; i < len; i++)
 		writeb(buf[i], chip->IO_ADDR_W);
+#endif
 }
 
 /**
@@ -239,11 +246,13 @@ void nand_write_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
  */
 void nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 {
+#ifndef CONFIG_ACP
 	int i;
 	struct nand_chip *chip = mtd->priv;
 
 	for (i = 0; i < len; i++)
 		buf[i] = readb(chip->IO_ADDR_R);
+#endif
 }
 
 /**
@@ -256,12 +265,14 @@ void nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
  */
 static int nand_verify_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
 {
+#ifndef CONFIG_ACP
 	int i;
 	struct nand_chip *chip = mtd->priv;
 
 	for (i = 0; i < len; i++)
 		if (buf[i] != readb(chip->IO_ADDR_R))
 			return -EFAULT;
+#endif
 	return 0;
 }
 
@@ -485,7 +496,12 @@ static int nand_check_wp(struct mtd_info *mtd)
 		return 0;
 
 	/* Check the WP bit */
+#ifdef CONFIG_LSI
+	return (readl(chip->IO_ADDR_R + EP501_NAND_STATUS0_REG) &
+		NAND_STATUS_WP) ? 0 : 1;
+#else  /* CONFIG_LSI */
 	chip->cmdfunc(mtd, NAND_CMD_STATUS, -1, -1);
+#endif
 	return (chip->read_byte(mtd) & NAND_STATUS_WP) ? 0 : 1;
 }
 
@@ -546,6 +562,7 @@ void nand_wait_ready(struct mtd_info *mtd)
 static void nand_command(struct mtd_info *mtd, unsigned int command,
 			 int column, int page_addr)
 {
+#ifndef CONFIG_ACP
 	register struct nand_chip *chip = mtd->priv;
 	int ctrl = NAND_CTRL_CLE | NAND_CTRL_CHANGE;
 	uint32_t rst_sts_cnt = CONFIG_SYS_NAND_RESET_CNT;
@@ -634,6 +651,7 @@ static void nand_command(struct mtd_info *mtd, unsigned int command,
 	ndelay(100);
 
 	nand_wait_ready(mtd);
+#endif
 }
 
 /**
@@ -650,6 +668,7 @@ static void nand_command(struct mtd_info *mtd, unsigned int command,
 static void nand_command_lp(struct mtd_info *mtd, unsigned int command,
 			    int column, int page_addr)
 {
+#ifndef CONFIG_ACP
 	register struct nand_chip *chip = mtd->priv;
 	uint32_t rst_sts_cnt = CONFIG_SYS_NAND_RESET_CNT;
 
@@ -758,6 +777,7 @@ static void nand_command_lp(struct mtd_info *mtd, unsigned int command,
 	ndelay(100);
 
 	nand_wait_ready(mtd);
+#endif
 }
 
 /**
@@ -786,6 +806,7 @@ nand_get_device(struct nand_chip *chip, struct mtd_info *mtd, int new_state)
  */
 static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 {
+#ifndef CONFIG_ACP
 	unsigned long	timeo;
 	int state = chip->state;
 	u32 time_start;
@@ -823,6 +844,9 @@ static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 #endif /*  PPCHAMELON_NAND_TIMER_HACK */
 
 	return (int)chip->read_byte(mtd);
+#else
+	return 0;
+#endif
 }
 
 /**
@@ -843,6 +867,8 @@ static int nand_read_page_raw(struct mtd_info *mtd, struct nand_chip *chip,
 		chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
 	return 0;
 }
+
+#ifndef CONFIG_ACP
 
 /**
  * nand_read_page_raw_syndrome - [INTERN] read raw page data without ecc
@@ -1020,6 +1046,8 @@ static int nand_read_subpage(struct mtd_info *mtd, struct nand_chip *chip,
 	return 0;
 }
 
+#endif
+
 /**
  * nand_read_page_hwecc - [REPLACEABLE] hardware ECC based page read function
  * @mtd: mtd info structure
@@ -1033,6 +1061,7 @@ static int nand_read_subpage(struct mtd_info *mtd, struct nand_chip *chip,
 static int nand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
 				uint8_t *buf, int oob_required, int page)
 {
+#ifndef CONFIG_ACP
 	int i, eccsize = chip->ecc.size;
 	int eccbytes = chip->ecc.bytes;
 	int eccsteps = chip->ecc.steps;
@@ -1063,8 +1092,11 @@ static int nand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
 		else
 			mtd->ecc_stats.corrected += stat;
 	}
+#endif
 	return 0;
 }
+
+#ifndef CONFIG_ACP
 
 /**
  * nand_read_page_hwecc_oob_first - [REPLACEABLE] hw ecc, read oob first
@@ -1170,6 +1202,8 @@ static int nand_read_page_syndrome(struct mtd_info *mtd, struct nand_chip *chip,
 
 	return 0;
 }
+
+#endif
 
 /**
  * nand_transfer_oob - [INTERN] Transfer oob to client buffer
@@ -1384,6 +1418,8 @@ static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
 	return ret;
 }
 
+#ifndef CONFIG_ACP
+
 /**
  * nand_read_oob_std - [REPLACEABLE] the most common OOB data read function
  * @mtd: mtd info structure
@@ -1436,6 +1472,8 @@ static int nand_read_oob_syndrome(struct mtd_info *mtd, struct nand_chip *chip,
 	return 0;
 }
 
+#endif
+
 /**
  * nand_write_oob_std - [REPLACEABLE] the most common OOB data write function
  * @mtd: mtd info structure
@@ -1458,6 +1496,8 @@ static int nand_write_oob_std(struct mtd_info *mtd, struct nand_chip *chip,
 
 	return status & NAND_STATUS_FAIL ? -EIO : 0;
 }
+
+#ifndef CONFIG_ACP
 
 /**
  * nand_write_oob_syndrome - [REPLACEABLE] OOB data write function for HW ECC
@@ -1517,6 +1557,8 @@ static int nand_write_oob_syndrome(struct mtd_info *mtd,
 
 	return status & NAND_STATUS_FAIL ? -EIO : 0;
 }
+
+#endif
 
 /**
  * nand_do_read_oob - [INTERN] NAND read out-of-band
@@ -1674,6 +1716,8 @@ static int nand_write_page_raw(struct mtd_info *mtd, struct nand_chip *chip,
 	return 0;
 }
 
+#ifndef CONFIG_ACP
+
 /**
  * nand_write_page_raw_syndrome - [INTERN] raw page write function
  * @mtd: mtd info structure
@@ -1743,6 +1787,8 @@ static int nand_write_page_swecc(struct mtd_info *mtd, struct nand_chip *chip,
 	return chip->ecc.write_page_raw(mtd, chip, buf, 1);
 }
 
+#endif
+
 /**
  * nand_write_page_hwecc - [REPLACEABLE] hardware ECC based page write function
  * @mtd: mtd info structure
@@ -1773,6 +1819,8 @@ static int nand_write_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
 
 	return 0;
 }
+
+#ifndef CONFIG_ACP
 
 /**
  * nand_write_page_syndrome - [REPLACEABLE] hardware ECC syndrome based page write
@@ -1821,6 +1869,8 @@ static int nand_write_page_syndrome(struct mtd_info *mtd,
 
 	return 0;
 }
+
+#endif
 
 /**
  * nand_write_page - [REPLACEABLE] write one page
@@ -2919,8 +2969,13 @@ static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 	chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
 
 	/* Read manufacturer and device IDs */
+#ifdef CONFIG_LSI
+	*maf_id = readb(chip->IO_ADDR_R + EP501_NAND_ID0_REG);
+	*dev_id = readb(chip->IO_ADDR_R + EP501_NAND_ID2_REG);
+#else  /* CONFIG_LSI */
 	*maf_id = chip->read_byte(mtd);
 	*dev_id = chip->read_byte(mtd);
+#endif	/* CONFIG_LSI */
 
 	/*
 	 * Try again to make sure, as some systems the bus-hold or other
@@ -2984,11 +3039,21 @@ static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 		chip->options &= ~NAND_SAMSUNG_LP_OPTIONS;
 ident_done:
 
+#ifdef CONFIG_MTD_NAND_EP501X
+	/* Set the EP501/EP501G1 config register. */
+	lsi_nand_set_config(mtd, chip);
+#endif /* CONFIG_MTD_NAND_EP501X */
+
 	/* Try to identify manufacturer */
 	for (maf_idx = 0; nand_manuf_ids[maf_idx].id != 0x0; maf_idx++) {
 		if (nand_manuf_ids[maf_idx].id == *maf_id)
 			break;
 	}
+
+#ifdef CONFIG_LSI
+	/* Set the EP501/EP501G1 config register. */
+	lsi_nand_set_config(mtd, chip);
+#endif /* CONFIG_LSI */
 
 	/*
 	 * Check, if buswidth is correct. Hardware drivers should set
@@ -3170,6 +3235,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 	 */
 
 	switch (chip->ecc.mode) {
+#ifndef CONFIG_ACP
 	case NAND_ECC_HW_OOB_FIRST:
 		/* Similar to NAND_ECC_HW, but a separate read_page handle */
 		if (!chip->ecc.calculate || !chip->ecc.correct ||
@@ -3180,6 +3246,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 		}
 		if (!chip->ecc.read_page)
 			chip->ecc.read_page = nand_read_page_hwecc_oob_first;
+#endif
 
 	case NAND_ECC_HW:
 		/* Use standard hwecc read page function? */
@@ -3195,7 +3262,11 @@ int nand_scan_tail(struct mtd_info *mtd)
 			chip->ecc.read_oob = nand_read_oob_std;
 		if (!chip->ecc.write_oob)
 			chip->ecc.write_oob = nand_write_oob_std;
+#ifdef CONFIG_ACP
+		break;
+#endif
 
+#ifndef CONFIG_ACP
 	case NAND_ECC_HW_SYNDROME:
 		if ((!chip->ecc.calculate || !chip->ecc.correct ||
 		     !chip->ecc.hwctl) &&
@@ -3295,6 +3366,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 		chip->ecc.size = mtd->writesize;
 		chip->ecc.bytes = 0;
 		break;
+#endif	/* CONFIG_ACP */
 
 	default:
 		pr_warn("Invalid NAND_ECC_MODE %d\n", chip->ecc.mode);

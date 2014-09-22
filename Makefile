@@ -661,7 +661,7 @@ else
 PLATFORM_LIBGCC = -L $(CONFIG_USE_PRIVATE_LIBGCC) -lgcc
 endif
 else
-PLATFORM_LIBGCC := -L $(shell dirname `$(CC) $(c_flags) -print-libgcc-file-name`) -lgcc
+PLATFORM_LIBGCC := -L $(shell dirname `$(CC) --sysroot=$(SYSROOT) $(c_flags) -print-libgcc-file-name`) -lgcc
 endif
 PLATFORM_LIBS += $(PLATFORM_LIBGCC)
 export PLATFORM_LIBS
@@ -1124,6 +1124,7 @@ cmd_cpp_lds = $(CPP) -Wp,-MD,$(depfile) $(cpp_flags) $(LDPPFLAGS) -ansi \
 		-D__ASSEMBLY__ -x assembler-with-cpp -P -o $@ $<
 
 u-boot.lds: $(LDSCRIPT) prepare FORCE
+	@echo "LDSCRIPT is $(LDSCRIPT)"
 	$(call if_changed_dep,cpp_lds)
 
 spl/u-boot-spl.bin: spl/u-boot-spl

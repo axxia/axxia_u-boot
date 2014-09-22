@@ -475,6 +475,7 @@ int input_init(struct input_config *config, int leds)
 
 int input_stdio_register(struct stdio_dev *dev)
 {
+#ifndef CONFIG_ACP
 	int error;
 
 	error = stdio_register(dev);
@@ -486,6 +487,7 @@ int input_stdio_register(struct stdio_dev *dev)
 				console_assign(stdin, dev->name))
 			return -1;
 	}
+#endif	/* CONFIG_ACP */
 
 	return 0;
 }

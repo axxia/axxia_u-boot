@@ -5,7 +5,9 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
+ifndef CONFIG_SPL_BUILD
 obj-y += serial.o
+endif
 
 obj-$(CONFIG_ALTERA_UART) += altera_uart.o
 obj-$(CONFIG_ALTERA_JTAG_UART) += altera_jtag_uart.o
@@ -34,6 +36,7 @@ obj-$(CONFIG_BFIN_SERIAL) += serial_bfin.o
 obj-$(CONFIG_FSL_LPUART) += serial_lpuart.o
 obj-$(CONFIG_MXS_AUART) += mxs_auart.o
 obj-$(CONFIG_ARC_SERIAL) += serial_arc.o
+obj-$(CONFIG_AXXIA_SERIAL) += axxia.o
 
 ifndef CONFIG_SPL_BUILD
 obj-$(CONFIG_USB_TTY) += usbtty.o

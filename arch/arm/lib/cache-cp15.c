@@ -127,6 +127,8 @@ static void cache_enable(uint32_t cache_bit)
 	set_cr(reg | cache_bit);
 }
 
+#define ARM_ERRATA_784420
+
 /* cache_bit must be either CR_I or CR_C */
 static void cache_disable(uint32_t cache_bit)
 {
@@ -139,13 +141,41 @@ static void cache_disable(uint32_t cache_bit)
 		/* if cache isn;t enabled no need to disable */
 		if ((reg & CR_C) != CR_C)
 			return;
+#ifdef ARM_ERRATA_784420
+		/*
+		  if disabling data cache, disable mmu and branch prediction too
+		*/
+		cache_bit = cache_bit | CR_M | CR_Z;
+#else
 		/* if disabling data cache, disable mmu too */
 		cache_bit |= CR_M;
+#endif
 	}
+
 	reg = get_cr();
-	cp_delay();
+ 	cp_delay();
+
+	if (CR_C == (cache_bit & CR_C))
+		set_cr(reg & ~CR_C);
+
+#ifdef ARM_ERRATA_784420
+	if (cache_bit == (CR_C | CR_M | CR_Z))
+		flush_dcache_all();
+#else
 	if (cache_bit == (CR_C | CR_M))
 		flush_dcache_all();
+#endif
+
+#if defined(CONFIG_AXXIA) && defined(AXXIA_START_SECONDARY_CORES)
+#if defined(AXXIA_FORCE_NORMAL_MODE)
+	smp_kick_secondary();
+#elif !defined(AXXIA_FORCE_SECURE_MODE)
+	if (0 != ((pfuse & 0x7e0) >> 5)) {
+		smp_kick_secondary();
+	}
+#endif
+#endif
+
 	set_cr(reg & ~cache_bit);
 }
 #endif

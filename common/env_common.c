@@ -24,7 +24,9 @@ DECLARE_GLOBAL_DATA_PTR;
 #include <env_default.h>
 
 struct hsearch_data env_htab = {
+#ifndef CONFIG_SPL_BUILD
 	.change_ok = env_flags_validate,
+#endif
 };
 
 static uchar __env_get_char_spec(int index)

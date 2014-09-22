@@ -34,6 +34,13 @@
 
 reset:
 	bl	save_boot_params
+
+#if 0
+	setend  be
+	ldr     r0, [r0, #0]
+	setend  le
+#endif
+	
 	/*
 	 * disable interrupts (FIQ and IRQ), also set the cpu to SVC32 mode,
 	 * except if in HYP mode already
@@ -64,7 +71,7 @@ reset:
 
 	/* the mask ROM code should have PLL and others stable */
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
-	bl	cpu_init_cp15
+	@bl	cpu_init_cp15
 	bl	cpu_init_crit
 #endif
 

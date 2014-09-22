@@ -35,11 +35,26 @@
 
 #define USB_CNTL_TIMEOUT 100 /* 100ms timeout */
 
+#if defined(CONFIG_ACP3) || defined(CONFIG_AXXIA_ARM)
+/*
+ * Errors we can report, e.g. return USB_EDEVCRITICAL
+ * Use -ve numbers to fit in with usb_storage
+ * U-Boot needs some unified numbers
+ */
+#define USB_EOK			0	/* ok, no error */
+#define USB_EFAIL		-1	/* general failure(!) */
+#define USB_EDEVCRITICAL	-2	/* must reset device on hub */
+#define USB_ENEXTFREE		-3	/* next free error number */
+#endif
+
 /*
  * This is the timeout to allow for submitting an urb in ms. We allow more
  * time for a BULK device to react - some are slow.
  */
+#if 0
 #define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 5000 : 1000)
+#endif
+#define USB_TIMEOUT_MS(pipe) (usb_pipebulk(pipe) ? 10000 : 5000)
 
 /* device request (setup) */
 struct devrequest {

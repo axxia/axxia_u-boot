@@ -42,8 +42,10 @@ static int on_console(const char *name, const char *value, enum env_op op,
 			return 1;
 #else
 		/* Try assigning specified device */
+#ifndef CONFIG_ACP
 		if (console_assign(console, value) < 0)
 			return 1;
+#endif	/* CONFIG_ACP */
 #endif /* CONFIG_CONSOLE_MUX */
 		return 0;
 
@@ -95,6 +97,8 @@ extern int overwrite_console(void);
 #endif /* CONFIG_SYS_CONSOLE_OVERWRITE_ROUTINE */
 
 #endif /* CONFIG_SYS_CONSOLE_IS_IN_ENV */
+
+#ifndef CONFIG_ACP
 
 static int console_setfile(int file, struct stdio_dev * dev)
 {
@@ -341,6 +345,8 @@ int fprintf(int file, const char *fmt, ...)
 	return i;
 }
 
+#endif	/* !CONFIG_ACP */
+
 /** U-Boot INITIAL CONSOLE-COMPATIBLE FUNCTION *****************************/
 
 int getc(void)
@@ -350,13 +356,15 @@ int getc(void)
 		return 0;
 #endif
 
-	if (!gd->have_console)
-		return 0;
-
+#ifndef CONFIG_ACP
 	if (gd->flags & GD_FLG_DEVINIT) {
 		/* Get from the standard input */
 		return fgetc(stdin);
 	}
+
+	if (!gd->have_console)
+		return 0;
+#endif	/* CONFIG_ACP */
 
 	/* Send directly to the handler */
 	return serial_getc();
@@ -369,13 +377,15 @@ int tstc(void)
 		return 0;
 #endif
 
-	if (!gd->have_console)
-		return 0;
-
+#ifndef CONFIG_ACP
 	if (gd->flags & GD_FLG_DEVINIT) {
 		/* Test the standard input */
 		return ftstc(stdin);
 	}
+
+	if (!gd->have_console)
+		return 0;
+#endif	/* CONFIG_ACP */
 
 	/* Send directly to the handler */
 	return serial_tstc();
@@ -432,6 +442,9 @@ void putc(const char c)
 		return;
 #endif
 
+#ifdef CONFIG_ACP
+	serial_putc(c);
+#else  /* CONFIG_ACP */
 	if (!gd->have_console)
 		return pre_console_putc(c);
 
@@ -442,6 +455,7 @@ void putc(const char c)
 		/* Send directly to the handler */
 		serial_putc(c);
 	}
+#endif	/* CONFIG_ACP */
 }
 
 void puts(const char *s)
@@ -463,6 +477,9 @@ void puts(const char *s)
 		return;
 #endif
 
+#ifdef CONFIG_ACP
+	serial_puts(s);
+#else  /* CONFIG_ACP */
 	if (!gd->have_console)
 		return pre_console_puts(s);
 
@@ -473,6 +490,7 @@ void puts(const char *s)
 		/* Send directly to the handler */
 		serial_puts(s);
 	}
+#endif	/* CONFIG_ACP */
 }
 
 int printf(const char *fmt, ...)
@@ -481,10 +499,12 @@ int printf(const char *fmt, ...)
 	uint i;
 	char printbuffer[CONFIG_SYS_PBSIZE];
 
+#if 0				/* ZZZ */
 #if !defined(CONFIG_SANDBOX) && !defined(CONFIG_PRE_CONSOLE_BUFFER)
 	if (!gd->have_console)
 		return 0;
 #endif
+#endif	/* ZZZ */
 
 	va_start(args, fmt);
 
@@ -505,8 +525,10 @@ int vprintf(const char *fmt, va_list args)
 	char printbuffer[CONFIG_SYS_PBSIZE];
 
 #ifndef CONFIG_PRE_CONSOLE_BUFFER
+#ifndef CONFIG_ACP
 	if (!gd->have_console)
 		return 0;
+#endif
 #endif
 
 	/* For this to work, printbuffer must be larger than
@@ -524,6 +546,17 @@ static int ctrlc_disabled = 0;	/* see disable_ctrl() */
 static int ctrlc_was_pressed = 0;
 int ctrlc(void)
 {
+#ifdef CONFIG_ACP
+	if (tstc()) {
+		switch (getc()) {
+		case 0x03:		/* ^C - Control C */
+			ctrlc_was_pressed = 1;
+			return 1;
+		default:
+			break;
+		}
+	}
+#else  /* CONFIG_ACP */
 	if (!ctrlc_disabled && gd->have_console) {
 		if (tstc()) {
 			switch (getc()) {
@@ -535,6 +568,7 @@ int ctrlc(void)
 			}
 		}
 	}
+#endif	/* CONFIG_ACP */
 	return 0;
 }
 /* Reads user's confirmation.
@@ -623,6 +657,8 @@ inline void dbg(const char *fmt, ...)
 }
 #endif
 
+#ifndef CONFIG_ACP
+
 /** U-Boot INIT FUNCTIONS *************************************************/
 
 struct stdio_dev *search_device(int flags, const char *name)
@@ -668,7 +704,9 @@ int console_assign(int file, const char *devname)
 /* Called before relocation - use serial functions */
 int console_init_f(void)
 {
+#ifndef CONFIG_ACP
 	gd->have_console = 1;
+#endif
 
 #ifdef CONFIG_SILENT_CONSOLE
 	if (getenv("silent") != NULL)
@@ -870,3 +908,4 @@ int console_init_r(void)
 }
 
 #endif /* CONFIG_SYS_CONSOLE_IS_IN_ENV */
+#endif	/* CONFIG_ACP */

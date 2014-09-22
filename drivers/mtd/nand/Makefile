@@ -22,6 +22,10 @@ ifeq ($(CONFIG_SPL_ENV_SUPPORT),y)
 obj-$(CONFIG_ENV_IS_IN_NAND) += nand_util.o
 endif
 
+ifdef CONFIG_AXXIA
+COBJS-y += nand.o nand_ids.o nand_bbt.o nand_util.o
+endif
+
 else # not spl
 
 NORMAL_DRIVERS=y

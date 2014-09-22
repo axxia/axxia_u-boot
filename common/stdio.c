@@ -57,6 +57,7 @@ int nulldev_input(void)
  **************************************************************************
  */
 
+#ifndef CONFIG_ACP
 static void drv_system_init (void)
 {
 	struct stdio_dev dev;
@@ -84,6 +85,7 @@ static void drv_system_init (void)
 	stdio_register (&dev);
 #endif
 }
+#endif
 
 /**************************************************************************
  * DEVICES
@@ -179,6 +181,7 @@ int stdio_deregister(const char *devname)
 }
 #endif	/* CONFIG_SYS_STDIO_DEREGISTER */
 
+#ifndef CONFIG_ACP
 int stdio_init (void)
 {
 #if defined(CONFIG_NEEDS_MANUAL_RELOC)
@@ -231,3 +234,4 @@ int stdio_init (void)
 #endif
 	return (0);
 }
+#endif	/* CONFIG_ACP */

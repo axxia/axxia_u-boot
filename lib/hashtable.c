@@ -376,10 +376,12 @@ int hsearch_r(ENTRY item, ACTION action, ENTRY ** retval,
 
 		++htab->filled;
 
+#ifndef CONFIG_SPL_BUILD
 		/* This is a new entry, so look up a possible callback */
 		env_callback_init(&htab->table[idx].entry);
 		/* Also look for flags */
 		env_flags_init(&htab->table[idx].entry);
+#endif
 
 		/* check for permission */
 		if (htab->change_ok != NULL && htab->change_ok(
