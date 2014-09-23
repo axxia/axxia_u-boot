@@ -262,10 +262,11 @@ axxia_sysmem_bist_start(unsigned long region, int bits, int test,
 */
 
 int
-axxia_sysmem_bist(unsigned long long address, unsigned long long length)
+axxia_sysmem_bist(unsigned long long address, unsigned long long length,
+	enum bistType type)
 {
 	unsigned long bits;
-	int test;
+	int test, testVal, testEnd;
 	unsigned long result;
 	unsigned long interrupt_status;
 	unsigned long long temp;
@@ -294,13 +295,18 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length)
 	if (1 < sysmem->num_interfaces)
 		axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x00f, 0));
 
-#ifndef CONFIG_HYBRID_MBIST
-	for (test = 1; test >= 0; -- test) {
-#else
-	/* Run only Data MBIST for Hybrid spl_mtest/mbist */
-	for (test = 0; test >= 0; --test) {
-#endif
+	if (type == data) {
+		testVal = 0;
+		testEnd = 0;
+	} else if (type == addr) {
+		testVal = 1;
+		testEnd = 1;
+	} else {
+		testVal = 1;
+		testEnd = 0;
+	}
 
+	for (test = testVal; test >= testEnd; --test) {
 		unsigned long smregion0 = NCP_REGION_ID(0x22, 0);
 		unsigned long smregion1 = NCP_REGION_ID(0xf, 0);
 		unsigned long delay_loops;

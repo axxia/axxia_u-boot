@@ -805,11 +805,15 @@ check_memory_ranges(void)
 					add_mbist_addr, add_mbist_len);
 				for (j = 0; j < 32; j++) {
 					if (add_mbist_len[j] != 0) {
+						/* only data H/W MBIST
+						 * can be run for
+						 * Hybrid solution
+						 */
 						axxia_sysmem_bist(
 						(unsigned long long)
 						add_mbist_addr[j]*256,
 						(unsigned long long)
-						add_mbist_len[j]*256);
+						add_mbist_len[j]*256, data);
 					} else {
 						break;
 					}
@@ -981,7 +985,7 @@ spl_board_init(void)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_BIST)) {
 		printf("Testing Memory From 0, 0x%llx bytes\n",
 		       sysmem->totalSize);
-		axxia_sysmem_bist(0ULL, sysmem->totalSize);
+		axxia_sysmem_bist(0ULL, sysmem->totalSize, both);
 	} else if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_RANGES)) {
 		check_memory_ranges();
 	}
