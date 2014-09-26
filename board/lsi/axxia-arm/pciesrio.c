@@ -67,6 +67,14 @@ Public Interface
 #            1 - indicates Host with ID 1,
 #            2 - indicates not a host (agent)
 #            3 - RESERVED
+# Bit 19 : Powerdown HSS6 ch3
+# Bit 18 : Powerdown HSS6 ch2
+# Bit 17 : Powerdown HSS6 ch1
+# Bit 16 : Powerdown HSS6 ch0
+# Bit 15 : Powerdown HSS5 ch3
+# Bit 14 : Powerdown HSS5 ch2
+# Bit 13 : Powerdown HSS5 ch1
+# Bit 12 : Powerdown HSS5 ch0
 # Bit 10 : Enable SRIO1 controller
 # Bits 9:7 : SRIO1 speed selection
 #       0 -  indicates 1.25 Gbps

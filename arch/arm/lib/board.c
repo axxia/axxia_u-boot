@@ -445,6 +445,121 @@ static int init_func_i2c(void)
 
 #if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
 
+
+struct serdes_value_t {
+unsigned short offset;
+unsigned short value;
+};
+
+void pciesrio_serdes_powerdown(unsigned long pcieSrioVal)
+{
+	int i;
+	unsigned short hss5Val, hss6Val, regVal;
+	struct serdes_value_t serdes_values[] = {
+		{0x00ba, 0},
+		{0x001c, 0},
+		{0x0010, 0},
+		{0x02ba, 0},
+		{0x021c, 0},
+		{0x0210, 0},
+		{0x06ba, 0},
+		{0x061c, 0},
+		{0x0610, 0},
+		{0x08ba, 0},
+		{0x081c, 0},
+		{0x0810, 0},
+	};
+
+	hss5Val = (pcieSrioVal >> 12);
+	if (hss5Val & 0x1) {
+		/* Powerdown HSS5 ch0 */
+		serdes_values[0].value = 1;
+	}
+	if (hss5Val & 0x2) {
+		/* Powerdown HSS5 ch1 */
+		serdes_values[3].value = 1;
+	}
+	if (hss5Val & 0x4) {
+		/* Powerdown HSS5 ch2 */
+		serdes_values[6].value = 1;
+	}
+	if (hss5Val & 0x8) {
+		/* Powerdown HSS5 ch3 */
+		serdes_values[9].value = 1;
+	}
+
+	for (i = 0; i < 12; i = i+3) {
+		if (serdes_values[i].value) {
+			/* pd_pin_override 0x115.0x1.0xba bit 4 */
+			ncr_read16(NCP_REGION_ID(0x115, 1),
+				serdes_values[i].offset, &regVal);
+			regVal = regVal | (0x1 << 4);
+			ncr_write16(NCP_REGION_ID(0x115, 1),
+				serdes_values[i].offset, regVal);
+
+			/* rxpd_r2a 0x115.0x1.0x1c bit 14 */
+			ncr_read16(NCP_REGION_ID(0x115, 1),
+				serdes_values[i+1].offset, &regVal);
+			regVal = regVal | (0x1 << 14);
+			ncr_write16(NCP_REGION_ID(0x115, 1),
+				serdes_values[i+1].offset, regVal);
+
+			/* txpd_r2a 0x115.0x1.0x10 bit 10 */
+			ncr_read16(NCP_REGION_ID(0x115, 1),
+				serdes_values[i+2].offset, &regVal);
+			regVal = regVal | (0x1 << 10);
+			ncr_write16(NCP_REGION_ID(0x115, 1),
+				serdes_values[i+2].offset, regVal);
+		}
+	}
+	serdes_values[0].value = 0;
+	serdes_values[3].value = 0;
+	serdes_values[6].value = 0;
+	serdes_values[9].value = 0;
+
+	hss6Val = (pcieSrioVal >> 16);
+	if (hss6Val & 0x1) {
+		/* Powerdown HSS6 ch0 */
+		serdes_values[0].value = 1;
+	}
+	if (hss6Val & 0x2) {
+		/* Powerdown HSS6 ch1 */
+		serdes_values[3].value = 1;
+	}
+	if (hss6Val & 0x4) {
+		/* Powerdown HSS6 ch2 */
+		serdes_values[6].value = 1;
+	}
+	if (hss6Val & 0x8) {
+		/* Powerdown HSS6 ch3 */
+		serdes_values[9].value = 1;
+	}
+	for (i = 0; i < 12; i = i+3) {
+		if (serdes_values[i].value) {
+			/* pd_pin_override 0x115.0x4.0xba bit 4 */
+			ncr_read16(NCP_REGION_ID(0x115, 4),
+				serdes_values[i].offset, &regVal);
+			regVal = regVal | (0x1 << 4);
+			ncr_write16(NCP_REGION_ID(0x115, 4),
+				serdes_values[i].offset, regVal);
+			/* rxpd_r2a 0x115.0x4.0x1c bit 14 */
+			ncr_read16(NCP_REGION_ID(0x115, 4),
+				serdes_values[i+1].offset, &regVal);
+			regVal = regVal | (0x1 << 14);
+			ncr_write16(NCP_REGION_ID(0x115, 4),
+				serdes_values[i+1].offset, regVal);
+
+			/* txpd_r2a 0x115.0x4.0x10 bit 10 */
+			ncr_read16(NCP_REGION_ID(0x115, 4),
+				serdes_values[i+2].offset, &regVal);
+			regVal = regVal | (0x1 << 10);
+			ncr_write16(NCP_REGION_ID(0x115, 4),
+				serdes_values[i+2].offset, regVal);
+		}
+	}
+
+}
+
 #include <pci.h>
 static int arm_pci_init(void)
 {
@@ -497,7 +612,12 @@ static int arm_pci_init(void)
 }
 #endif
 #if defined(CONFIG_CMD_PCI) || defined (CONFIG_PCI)
+{
+	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_PEI))
+		pciesrio_serdes_powerdown(pciesrio->control);
+
 	pci_init();
+}
 #endif
 	return 0;
 }
