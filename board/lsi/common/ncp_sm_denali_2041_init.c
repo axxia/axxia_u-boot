@@ -89,6 +89,7 @@ typedef struct {
     ncp_uint8_t   tRASmin;
     ncp_uint8_t   tFAW_1kb;
     ncp_uint8_t   tFAW_2kb;
+    ncp_uint8_t   t_7_5_ns;
 } ncp_ddr_speedbin_vals_t;
 
 
@@ -102,12 +103,12 @@ typedef struct {
  *     tRCD = tRP
  */
 ncp_ddr_speedbin_vals_t speedbin_vals[6] = {
-    {  5,   { 20, 21,  0,  0 },  16,  16,  20 },        /* 400 MHz */
-    {  6,   { 26, 27, 28,  0 },  20,  20,  27 },        /* 533 MHz */
-    {  7,   { 31, 32, 33, 34 },  24,  20,  30 },        /* 667 MHz */
-    {  8,   { 36, 37, 38, 39 },  28,  24,  32 },        /* 800 MHz */
-    { 10,   { 42, 43, 44, 45 },  32,  26,  33 },        /* 933 MHz */
-    { 11,   { 46, 47, 48, 49 },  36,  38,  38 }         /* 1066 MHz */
+    {  5,   { 20, 21,  0,  0 },  16,  16,  20,  3 },        /* 400 MHz */
+    {  6,   { 26, 27, 28,  0 },  20,  20,  27,  4 },        /* 533 MHz */
+    {  7,   { 31, 32, 33, 34 },  24,  20,  30,  5 },        /* 667 MHz */
+    {  8,   { 36, 37, 38, 39 },  28,  24,  32,  6 },        /* 800 MHz */
+    { 10,   { 42, 43, 44, 45 },  32,  26,  33,  7 },        /* 933 MHz */
+    { 11,   { 46, 47, 48, 49 },  36,  38,  38,  8 }         /* 1066 MHz */
 };
 
 
@@ -269,7 +270,7 @@ ncp_sm_denali_2041_init(
      */
     value = 0;
     SV( ncp_denali_DENALI_CTL_25_t, w2r_diffcs_dly, parms->added_rank_switch_delay);
-    SV( ncp_denali_DENALI_CTL_25_t, trtp, ncp_ns_to_clk(clkMhz, 8)); /* 7.5 ns */
+    SV( ncp_denali_DENALI_CTL_25_t, trtp, pVals->t_7_5_ns);
     SV( ncp_denali_DENALI_CTL_25_t, trrd, 5);
     ncr_write32(ctlReg,  0x0064, value);
 
@@ -337,7 +338,7 @@ ncp_sm_denali_2041_init(
 
     /* DENALI_CTL_36 */
     value = 0;
-    SV( ncp_denali_DENALI_CTL_36_t, twtr, ncp_ns_to_clk(clkMhz, 8) );  /* : 7.5ns */
+    SV( ncp_denali_DENALI_CTL_36_t, twtr, pVals->t_7_5_ns);
     SV( ncp_denali_DENALI_CTL_36_t, trp, parms->CAS_latency );
     ncr_write32(ctlReg,  0x0090, value );
 
@@ -459,8 +460,8 @@ ncp_sm_denali_2041_init(
     ncr_write32(ctlReg,  0x0164, 0x00000000);
 
     /* DENALI_CTL_93 */
-	/* tinit 700usec */
-    ncr_write32(ctlReg,  0x0174, ncp_ns_to_clk(clkMhz, 700000));
+	/* tinit 701usec */
+    ncr_write32(ctlReg,  0x0174, ncp_ns_to_clk(clkMhz, 701000));
 
     /* DENALI_CTL_94 */
 	/* cke_inactive 500usec */
