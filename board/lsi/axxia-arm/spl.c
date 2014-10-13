@@ -190,9 +190,6 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			pattern = (vu_long) 0xaaaaaaaa;
 			anti_pattern = (vu_long) 0x55555555;
 
-			printf("%s:%d: length = 0x%.8lx\n",
-			       __FILE__, __LINE__,
-			       len);
 			/*
 			 * Write the default pattern at each of the
 			 * power-of-two offsets.
@@ -1066,7 +1063,7 @@ spl_board_init(void)
 
 #ifdef CONFIG_SPL_ENV_SUPPORT
 	mem_malloc_init((0x40000000 + CONFIG_SYS_MALLOC_BASE),
-			CONFIG_SYS_MALLOC_SIZE);
+			CONFIG_SYS_MALLOC_LEN);
 	env_init();
 	env_relocate();
 #endif
@@ -1089,12 +1086,37 @@ verify_image(struct spi_flash *flash,
 	void *membase = (void *)0x40000000UL;
 
 	if (secure_boot) {
+		unsigned long sbb_header[3];
+		size_t length;
+
 		/*
-		  Size is not available in this case (using a secure
-		  image), so copy 2 Mb.
+		  The size of the contents of a signed/encrypted image
+		  can be calculated as follows.
+
+		       ImageSectionLength - Pad
+
+		  ImageSectionLength is the second word, and Pad is
+		  the byte after that.
+
+		  The full size of the signed/encrypted image is not
+		  available, but will be less than 259 bytes more than
+		  the contents.
 		*/
-		spi_flash_read(flash, flash_offset,
-			       CONFIG_SYS_MONITOR_LEN, membase);
+		  
+		spi_flash_read(flash, flash_offset, sizeof(unsigned long) * 3,
+			       &sbb_header);
+		length = ntohl(sbb_header[1]) -
+			((ntohl(sbb_header[2]) & 0xff000000) >> 24) +
+			259;
+
+		if (0x53424211 != ntohl(sbb_header[0]) ||
+		    CONFIG_SYS_MONITOR_LEN < length) {
+			puts("\tInvalid Length!\n");
+
+			return -1;
+		}
+
+		spi_flash_read(flash, flash_offset, length, membase);
 
 		if (0 != sbb_verify_image(0, 0, 0, 0, 0)) {
 			puts("\tInsecure!\n");

@@ -113,7 +113,6 @@ int is_asic( void );
 
 #define CONFIG_SYS_UBOOT_START       0
 #define CONFIG_SYS_SPI_U_BOOT_OFFS   SZ_1M
-#define CONFIG_SYS_MONITOR_LEN       SZ_2M
 
 /*
    Flash
@@ -725,12 +724,6 @@ int serial_early_init(void);
 #define CONFIG_SYS_SDRAM_BASE		0x00000000
 
 /*#define CONFIG_SYS_INIT_SP_ADDR         (NON_SECURE_SRAM_END - GENERATED_GBL_DATA_SIZE) */
-#define CONFIG_SYS_INIT_SP_ADDR         0x280000
-#define CONFIG_SYS_MALLOC_BASE		CONFIG_SYS_INIT_SP_ADDR
-#define CONFIG_SYS_MALLOC_SIZE \
-  (0x400000 - CONFIG_SYS_MALLOC_BASE - 0x40000 - CONFIG_ENV_SIZE)
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_SYS_MALLOC_SIZE)
-
 #define CONFIG_SYS_EMIF_PRECALCULATED_TIMING_REGS
 
 /* Defines for SDRAM init */
@@ -738,6 +731,98 @@ int serial_early_init(void);
 #define CONFIG_SYS_AUTOMATIC_SDRAM_DETECTION
 #define CONFIG_SYS_DEFAULT_LPDDR2_TIMINGS
 #endif
+
+/*
+  ==============================================================================
+  ==============================================================================
+  Memory Layout
+
+  U-Boot is expected to reside completely in the first 4 Mb of system
+  memory.  The SPL uses memory in that range as stack and heap.  Since
+  the U-Boot image will be written to system memory at offset 0, 4 Mb
+  minus the size of U-Boot (CONFIG_SYS_MONITOR_LEN) is the amount of
+  memory available for stack and heap.
+
+  So, the defines below should take the following into account.
+
+  == SPL ==
+
+  This is the reset memory map.  System memory is at 0x20_0000_0000, and is uninitialized when the SPL starts.
+
+  -----------------    0x2000_0000 (LSM)
+  - SPL Binary    -
+  -               -
+  -----------------    CONFIG_SYS_SPL_MALLOC_START
+  - Heap          -
+  -               -
+  -----------------    CONFIG_SYS_SPL_MALLOC_START + CONFIG_SYS_SPL_MALLOC_SIZE
+  - Stack         -
+  -               -
+  -----------------    CONFIG_SPL_STACK (8 Kb Below End of LSM)
+  - Parameters A  -
+  -               -
+  -----------------    4 Kb Below End of LSM
+  - Parameters B  -
+  -               -
+  -----------------    End of LSM
+
+
+  -----------------    0x4000_0000
+  - U-Boot Binary -
+  -               -
+  -----------------    CONFIG_SYS_MONITOR_LEN
+  - Stack         -
+  -               -
+  -----------------    CONFIG_SYS_INIT_SP_ADDR
+  - Heap          -
+  -               -
+  -----------------    0x0040_0000
+
+  == U-Boot ==
+
+  This is the mission mode memory map.  System memory is at 0.
+
+  -----------------    0x20_2000_0000 (LSM)
+  - Unused        -
+  -               -
+  -----------------    End of LSM
+
+
+  -----------------    0x0000_0000
+  - U-Boot Binary -
+  -               -
+  -----------------    CONFIG_SYS_MONITOR_LEN
+  - Stack         -
+  -               -
+  -----------------    CONFIG_SYS_INIT_SP_ADDR
+  - Heap          -
+  -               -
+  -----------------    0x0040_0000 - 0x0004_0000
+  - Uncached      -
+  - 256 Kb        -
+  -----------------    0x0040_0000
+
+  A few notes.
+
+  1 - The SPL uses part of LSM as heap and stack while system memory
+      is being initialized.  Once system memory has been initialized,
+      the SPL heap and stack will be placed in system memory.
+  2 - The FEMAC (debug network interface) requires memory for DMA that
+      is not cached.  That's the purpose of the last 256 Kb above.
+
+  ==============================================================================
+  ==============================================================================
+*/
+
+#define CONFIG_SYS_SPL_MALLOC_START	(LSM + SZ_256K - SZ_8K - SZ_4K - SZ_16K)
+#define CONFIG_SYS_SPL_MALLOC_SIZE	SZ_16K
+#define CONFIG_SPL_STACK		(LSM + (256 * 1024) - (8 * 1024))
+
+#define CONFIG_SYS_MONITOR_LEN          0x200000
+#define CONFIG_SYS_INIT_SP_ADDR         (CONFIG_SYS_MONITOR_LEN + 0x80000)
+#define CONFIG_SYS_MALLOC_BASE		CONFIG_SYS_INIT_SP_ADDR
+#define CONFIG_SYS_MALLOC_LEN \
+  (0x400000 - CONFIG_SYS_MALLOC_BASE - 0x40000 - CONFIG_ENV_SIZE)
 
 /*
   ==============================================================================
@@ -1013,7 +1098,6 @@ void stop_watchdog(void);
 #define CONFIG_SPL_BOARD_INIT
 #define CONFIG_SPL_TEXT_BASE		0x20000000
 #define CONFIG_SPL_MAX_SIZE		0x19000	/* 100K */
-#define CONFIG_SPL_STACK		(LSM + (256 * 1024) - (8 * 1024))
 #define CONFIG_SPL_DISPLAY_PRINT
 
 #define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	0x300 /* address 0x60000 */
@@ -1052,16 +1136,6 @@ void stop_watchdog(void);
 #else
 #define CONFIG_SYS_TEXT_BASE		0x00000000
 #endif
-
-
-/*
- * BSS and malloc area 64MB into memory to allow enough
- * space for the kernel at the beginning of memory
- */
-#define CONFIG_SPL_BSS_START_ADDR	0x84000000
-#define CONFIG_SPL_BSS_MAX_SIZE		0x100000	/* 1 MB */
-#define CONFIG_SYS_SPL_MALLOC_START	(LSM + SZ_256K - SZ_8K - SZ_4K - SZ_16K)
-#define CONFIG_SYS_SPL_MALLOC_SIZE	SZ_16K
 
 #define CONFIG_AXXIA_SERIAL_FLASH_ENV
 #define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
