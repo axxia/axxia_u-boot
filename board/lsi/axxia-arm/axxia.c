@@ -67,10 +67,6 @@ initialize_cluster_info(void)
 		cluster_not_present_vector = (pfuse >> 20) & 0xf;
 		chip_type = pfuse & 0x1f;
 		chip_version_major = (pfuse >> 8) & 7;
-		printf("%s:%d - pfuse=0x%lx product_variant=0x%lx cnpv=0x%lx chip_type=0x%lx chip_version_major=0x%lx\n",
-		       __FILE__, __LINE__,
-		       pfuse, product_variant, cluster_not_present_vector,
-		       chip_type, chip_version_major);
 
 #ifdef CONFIG_AXXIA_EMU
 		number_of_clusters = 2;
