@@ -1,0 +1,56 @@
+if TARGET_AXM55XX
+
+config SYS_CPU
+	default "armv7"
+
+config SYS_BOARD
+	default "axm55xx"
+
+config SYS_VENDOR
+	default "lsi"
+
+config SYS_SOC
+	default "axm55xx"
+
+config SYS_CONFIG_NAME
+	default "axm55xx"
+
+endif
+
+if TARGET_AXM55XX_EMU
+
+config SYS_CPU
+	default "armv7"
+
+config SYS_BOARD
+	default "axm55xx"
+
+config SYS_VENDOR
+	default "lsi"
+
+config SYS_SOC
+	default "axm55xx"
+
+config SYS_CONFIG_NAME
+	default "axm55xx_emu"
+
+endif
+
+if TARGET_AXM55XX_SIM
+
+config SYS_CPU
+	default "armv7"
+
+config SYS_BOARD
+	default "axm55xx"
+
+config SYS_VENDOR
+	default "lsi"
+
+config SYS_SOC
+	default "axm55xx"
+
+config SYS_CONFIG_NAME
+	default "axm55xx_sim"
+
+endif

@@ -31,6 +31,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 static struct tag *params;
 
+#ifndef CONFIG_AXXIA
 static ulong get_sp(void)
 {
 	ulong ret;
@@ -38,9 +39,15 @@ static ulong get_sp(void)
 	asm("mov %0, sp" : "=r"(ret) : );
 	return ret;
 }
+#endif	/* CONFIG_AXXIA */
 
 void arch_lmb_reserve(struct lmb *lmb)
 {
+#ifdef CONFIG_AXXIA
+	lmb_reserve(lmb,
+		    (phys_addr_t)(gd->bd->bi_dram[0].start + 0x400000),
+		    (phys_size_t)0x10000000);
+#else  /* CONFIG_AXXIA */
 	ulong sp;
 
 	/*
@@ -59,6 +66,7 @@ void arch_lmb_reserve(struct lmb *lmb)
 	sp -= 4096;
 	lmb_reserve(lmb, sp,
 		    gd->bd->bi_dram[0].start + gd->bd->bi_dram[0].size - sp);
+#endif	/* CONFIG_AXXIA */
 }
 
 /**

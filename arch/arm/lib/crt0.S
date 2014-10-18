@@ -87,6 +87,9 @@ clr_gd:
 
 #if ! defined(CONFIG_SPL_BUILD)
 
+#ifdef CONFIG_AXXIA_ARM
+	ldr	pc, =board_init_r	/* this is auto-relocated! */
+#else /* CONFIG_AXXIA_ARM */
 /*
  * Set up intermediate environment (new sp and gd) and call
  * relocate_code(addr_moni). Trick here is that we'll return
@@ -129,6 +132,7 @@ clbss_l:cmp	r0, r1			/* while not at end of BSS */
 	ldr	pc, =board_init_r	/* this is auto-relocated! */
 
 	/* we should not return here. */
+#endif /* CONFIG_AXXIA_ARM */
 
 #endif
 

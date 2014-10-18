@@ -257,6 +257,9 @@ static int initr_barrier(void)
 
 static int initr_malloc(void)
 {
+#ifdef CONFIG_AXXIA_ARM
+	mem_malloc_init(CONFIG_SYS_MALLOC_BASE,	CONFIG_SYS_MALLOC_LEN);
+#else  /* CONFIG_AXXIA_ARM */
 	ulong malloc_start;
 
 #ifdef CONFIG_SYS_MALLOC_F_LEN
@@ -267,6 +270,7 @@ static int initr_malloc(void)
 	malloc_start = gd->relocaddr - TOTAL_MALLOC_LEN;
 	mem_malloc_init((ulong)map_sysmem(malloc_start, TOTAL_MALLOC_LEN),
 			TOTAL_MALLOC_LEN);
+#endif	/* CONFIG_AXXIA_ARM */
 	return 0;
 }
 
@@ -531,6 +535,7 @@ static int initr_enable_interrupts(void)
 #ifdef CONFIG_CMD_NET
 static int initr_ethaddr(void)
 {
+#ifndef CONFIG_AXXIA_ARM
 	bd_t *bd = gd->bd;
 
 	/* kept around for legacy kernels only ... ignore the next section */
@@ -550,6 +555,7 @@ static int initr_ethaddr(void)
 #ifdef CONFIG_HAS_ETH5
 	eth_getenv_enetaddr("eth5addr", bd->bi_enet5addr);
 #endif
+#endif	/* CONFIG_AXXIA_ARM */
 	return 0;
 }
 #endif /* CONFIG_CMD_NET */
@@ -722,7 +728,9 @@ init_fnc_t init_sequence_r[] = {
 #endif
 	initr_barrier,
 	initr_malloc,
+#ifndef CONFIG_AXXIA_ARM
 	bootstage_relocate,
+#endif	/* CONFIG_AXXIA_ARM */
 #ifdef CONFIG_DM
 	initr_dm,
 #endif

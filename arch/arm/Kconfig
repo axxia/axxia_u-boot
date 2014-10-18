@@ -150,6 +150,15 @@ config TARGET_JADECPU
 config TARGET_MX25PDK
 	bool "Support mx25pdk"
 
+config TARGET_AXM55XX
+	bool "Support AXM55XX"
+
+config TARGET_AXM55XX_EMU
+	bool "Support AXM55XX Emulation"
+
+config TARGET_AXM55XX_SIM
+	bool "Support AXM55XX Simulation"
+
 config TARGET_TX25
 	bool "Support tx25"
 
@@ -646,6 +655,7 @@ source "board/imx31_phycore/Kconfig"
 source "board/isee/igep0033/Kconfig"
 source "board/jornada/Kconfig"
 source "board/karo/tx25/Kconfig"
+source "board/lsi/axm55xx/Kconfig"
 source "board/logicpd/imx27lite/Kconfig"
 source "board/logicpd/imx31_litekit/Kconfig"
 source "board/mpl/vcma9/Kconfig"
