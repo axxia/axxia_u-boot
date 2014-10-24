@@ -975,15 +975,6 @@ spl_board_init(void)
 	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ /___/_/  /____/\n");
 	printf("\nLSI Version: %s\n", get_lsi_version());
 
-#ifdef CONFIG_HW_WATCHDOG
-	rc = start_watchdog();
-
-	if (0 == rc)
-		puts("Started Watchdog Timer\n");
-	else
-		puts("Failed to start watchdog timer!\n");
-#endif
-
 	rc = axxia_initialize();
 	if (0 != rc)
 		acp_failure(__FILE__, __func__, __LINE__);
