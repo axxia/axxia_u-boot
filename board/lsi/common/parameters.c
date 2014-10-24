@@ -382,7 +382,7 @@ read_parameters(void)
 #endif
 
 #ifdef DISPLAY_PARAMETERS
-	printf("version=%lu flags=0x%lx\n", global->version, global->flags);
+	printf("version=%u flags=0x%x\n", global->version, global->flags);
 #endif
 
 	printf("Parameter Table Version: %lu\n", header->version);

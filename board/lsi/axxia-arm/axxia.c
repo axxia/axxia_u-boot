@@ -57,16 +57,20 @@ static int
 initialize_cluster_info(void)
 {
 	/* pfuse gets initialized in lowlevel.S */
+#ifndef CONFIG_AXXIA_EMU
 	unsigned long product_variant;
 	unsigned long cluster_not_present_vector;
 	unsigned long chip_type;
 	unsigned long chip_version_major;
+#endif
 
 	if (-1 == number_of_clusters) {
+#ifndef CONFIG_AXXIA_EMU
 		product_variant = (pfuse >> 24) & 7;
 		cluster_not_present_vector = (pfuse >> 20) & 0xf;
 		chip_type = pfuse & 0x1f;
 		chip_version_major = (pfuse >> 8) & 7;
+#endif
 
 #ifdef CONFIG_AXXIA_EMU
 		number_of_clusters = 2;

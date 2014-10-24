@@ -58,7 +58,6 @@ void ncr_l3tags(void);
 
 /****** BIST *************/
 #ifndef __ASSEMBLY__
-#ifndef CONFIG_AXXIA_EMU
 enum bistType {
 	data = 0,
 	addr = 1,
@@ -78,8 +77,6 @@ unsigned int mbist_range(
 
 void mbist_power2(unsigned long in_addr, unsigned long in_len,
 	unsigned long mbist_addr[], unsigned long mbist_len[]);
-
-#endif  /* CONFIG_AXXIA_EMU */
 #endif
 
 /*
