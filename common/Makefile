@@ -185,6 +185,7 @@ endif
 ifdef CONFIG_CMD_USB
 obj-y += cmd_usb.o
 obj-y += usb.o usb_hub.o
+obj-$(CONFIG_CMD_LSI_ULPI) += cmd_lsi_ulpi.o
 obj-$(CONFIG_USB_STORAGE) += usb_storage.o
 endif
 obj-$(CONFIG_CMD_FASTBOOT) += cmd_fastboot.o
@@ -213,6 +214,14 @@ obj-$(CONFIG_UPDATE_TFTP) += update.o
 obj-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
 obj-$(CONFIG_CMD_DFU) += cmd_dfu.o
 obj-$(CONFIG_CMD_GPT) += cmd_gpt.o
+obj-$(CONFIG_AXXIA_NET) += cmd_lsi_net.o
+obj-$(CONFIG_LSI_NCR) += cmd_lsi_ncr.o
+obj-$(CONFIG_LSI_MDIO) += cmd_lsi_mdio.o
+obj-$(CONFIG_LSI_TEST) += cmd_lsi_test.o
+obj-$(CONFIG_LSI_SBB) += cmd_lsi_sbb.o
+obj-$(CONFIG_LSI_CLOCKS) += cmd_lsi_clocks.o
+obj-$(CONFIG_LSI_SBB) += cmd_lsi_sbb.o
+
 endif
 
 ifdef CONFIG_SPL_BUILD
