@@ -41,13 +41,19 @@ DECLARE_GLOBAL_DATA_PTR;
 /*
   ----------------------------------------------------------------------
   spl_mtest
+  Return codes:
+	1 -- Data spl_mtest failed
+	2 -- Address spl_mtest failed
+	4 -- Memory spl_mtest failed
+  Please note that the above return codes are ORed if user decides to
+  run spl_mtest_all
 */
 
 enum spl_mtest_type {
-	spl_mtest_data = 0,
-	spl_mtest_addr,
-	spl_mtest_mtest,
-	spl_mtest_all
+	spl_mtest_data = 1,
+	spl_mtest_addr = 2,
+	spl_mtest_mtest = 4,
+	spl_mtest_all = 7
 };
 
 int
@@ -68,6 +74,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 	vu_long	num_words;
 	vu_long *dummy;
 	int	j;
+	int ret = 0;
 
 	static const ulong bitpattern[] = {
 		0x00000001,	/* single bit */
@@ -89,7 +96,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 		if (iterations >= total_iterations) {
 			printf("Tested %d iteration(s) with %lu errors.\n",
 			       iterations, errs);
-			return errs != 0;
+			return ret;
 		}
 
 		iterations++;
@@ -138,6 +145,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 						       "Is %08lx, should be %08lx\n",
 						       readback, ~val);
 						errs++;
+						ret |= 1;
 					}
 				}
 			}
@@ -183,9 +191,6 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 			pattern = (vu_long) 0xaaaaaaaa;
 			anti_pattern = (vu_long) 0x55555555;
 
-			printf("%s:%d: length = 0x%.8lx\n",
-			       __FILE__, __LINE__,
-			       len);
 			/*
 			 * Write the default pattern at each of the
 			 * power-of-two offsets.
@@ -209,6 +214,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 					       (ulong)&start[offset],
 					       pattern, temp);
 					errs++;
+					ret |= 2;
 				}
 			}
 			start[test_offset] = pattern;
@@ -235,6 +241,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 						       pattern,
 						       temp);
 						errs++;
+						ret |= 2;
 					}
 				}
 				start[test_offset] = pattern;
@@ -287,6 +294,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 					       (ulong)&start[offset],
 					       pattern, temp);
 					errs++;
+					ret |= 4;
 				}
 
 				anti_pattern = ~pattern;
@@ -313,6 +321,7 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 					       anti_pattern,
 					       temp);
 					errs++;
+					ret |= 4;
 				}
 				start[offset] = 0;
 			}
@@ -475,10 +484,12 @@ void sw_test_page_fit(unsigned long in_addr, unsigned long in_len,
 
 /* Create Page table entries and run spl_mtest on ranges provided
 in U-boot parameter file */
-void run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len)
+int run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len,
+	enum spl_mtest_type type)
 {
 	unsigned long *add_sw_addr, *add_sw_len;
 	int j;
+	int ret = 0;
 
 	add_sw_addr = malloc(3 * sizeof(unsigned long));
 	add_sw_len = malloc(3 * sizeof(unsigned long));
@@ -496,50 +507,34 @@ void run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len)
 			int count, ncount;
 			if (((unsigned long long)(add_sw_addr[j]
 				+ add_sw_len[j])*256) <= 0x40000000) {
-				if ((global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST)
-				&& (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST)
-				&& (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
-					if (spl_mtest((unsigned long *)
+				if (type & spl_mtest_all) {
+					ret |= spl_mtest((unsigned long *)
 					((add_sw_addr[j]*256) + 0x40000000),
 					(unsigned long *)(((add_sw_addr[j]
 					+ add_sw_len[j])*256) + 0x40000000-1),
-					1, spl_mtest_all)) {
-						printf("SPL Memory Test FAILED\n");
-					}
-				continue;
+					1, spl_mtest_all);
+					continue;
 				}
-				if (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
-					if (spl_mtest((unsigned long *)
+				if (type & spl_mtest_mtest) {
+					ret |= spl_mtest((unsigned long *)
 					((add_sw_addr[j]*256) + 0x40000000),
 					(unsigned long *)(((add_sw_addr[j]
 					+ add_sw_len[j])*256) + 0x40000000-1),
-					1, spl_mtest_all)) {
-						printf("SPL Memory MTest FAILED\n");
-					}
+					1, spl_mtest_mtest);
 				}
-				if (global->flags &
-				PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
-					if (spl_mtest((unsigned long *)
+				if (type & spl_mtest_addr) {
+					ret |= spl_mtest((unsigned long *)
 					((add_sw_addr[j]*256) + 0x40000000),
 					(unsigned long *)(((add_sw_addr[j]
 					+ add_sw_len[j])*256) + 0x40000000-1),
-					1, spl_mtest_addr)) {
-						printf("SPL Memory ADDR Test FAILED\n");
-					}
+					1, spl_mtest_addr);
 				}
-				if (global->flags &
-				PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
-					if (spl_mtest((unsigned long *)
+				if (type & spl_mtest_data) {
+					ret |= spl_mtest((unsigned long *)
 					((add_sw_addr[j]*256) + 0x40000000),
 					(unsigned long *)(((add_sw_addr[j]
 					+ add_sw_addr[j])*256) + 0x40000000-1),
-					1, spl_mtest_data)) {
-						printf("SPL Memory DATA Test FAILED\n");
-					}
+					1, spl_mtest_data);
 				}
 				continue;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
@@ -652,8 +647,7 @@ void run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len)
 				continue;
 			}
 			end_addr = start_addr + (add_sw_len[j] * 256)-1;
-			out = (unsigned long *)
-				(secure_page_table + 0x3000);
+			out = (unsigned long *)(secure_page_table + 0x3000);
 			for (count = 0; count < 0x1000; ) {
 				for (ncount = 0; ncount < 16; ncount++) {
 					*out++ = val;
@@ -662,86 +656,75 @@ void run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len)
 				val += 0x1000000;
 			}
 			mmu_page_table_flush((unsigned long)secure_page_table,
-					     (unsigned long)secure_page_table +
-					     PAGE_TABLE_SIZE);
-			if ((global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST)
-				&& (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST)
-				&& (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
-				if (spl_mtest(
+				(unsigned long)secure_page_table +
+				PAGE_TABLE_SIZE);
+
+			if (type & spl_mtest_all) {
+				ret |= spl_mtest(
 				(unsigned long *)(start_addr+0xc0000000),
 				(unsigned long *)(end_addr+0xc0000000),
-				1, spl_mtest_all)) {
-					printf("SPL Memory Test FAILED\n");
-				}
+				1, spl_mtest_all);
 				continue;
 			}
-			if (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
-				if (spl_mtest(
+			if (type & spl_mtest_mtest) {
+				ret |= spl_mtest(
 				(unsigned long *)(start_addr+0xc0000000),
 				(unsigned long *)(end_addr+0xc0000000),
-				1, spl_mtest_mtest)) {
-					printf("SPL Memory MTest FAILED\n");
-				}
+				1, spl_mtest_mtest);
 			}
-			if (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
-				if (spl_mtest(
+			if (type & spl_mtest_addr) {
+				ret |= spl_mtest(
 				(unsigned long *)(start_addr+0xc0000000),
 				(unsigned long *)(end_addr+0xc0000000),
-				1, spl_mtest_addr)) {
-					printf("SPL Memory ADDR Test FAILED\n");
-				}
+				1, spl_mtest_addr);
 			}
-			if (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
-				if (spl_mtest(
+			if (type & spl_mtest_data) {
+				ret |= spl_mtest(
 				(unsigned long *)(start_addr+0xc0000000),
 				(unsigned long *)(end_addr+0xc0000000),
-				1, spl_mtest_data)) {
-					printf("SPL Memory DATA Test FAILED\n");
-				}
+				1, spl_mtest_data);
 			}
 		} else
 			break;
 	}
+	return ret;
 }
 
-/*
-  ------------------------------------------------------------------------------
-  check_memory_ranges
-*/
-
-#ifndef CONFIG_AXXIA_EMU
-static void
-check_memory_ranges(void)
+/*********************************************
+ * axxia_hybrid_mbist()
+ * Return codes:
+ * 1 -- Data spl_mtest failed
+ * 2 -- Address spl_mtest failed
+ * 4 -- Memory spl_mtest failed
+  Please note that the above return codes are ORed if
+  user decides to run spl_mtest_all
+*********************************************/
+int
+axxia_hybrid_mbist(
+	unsigned long long addr[],
+	unsigned long long len[],
+	enum spl_mtest_type type)
 {
-	unsigned long *ranges = (unsigned long *)&global->memory_ranges;
-	int i, j;
+	int i;
+	unsigned long mem_size;
 	unsigned long *mbist_addr, *mbist_len;
 	unsigned long *add_mbist_addr, *add_mbist_len;
 	unsigned long *add_sw_addr, *add_sw_len;
 	unsigned long *test_addr, *test_len;
 	unsigned long *prot_addr, *prot_len;
-	unsigned long memSize, dual_ddr, maskbits;
-	unsigned ret;
+	unsigned long dual_ddr, maskbits;
+	int j;
+	unsigned ret = 0;
 
-	mbist_addr = malloc(32 * 3 * sizeof(unsigned long));
 	add_mbist_addr = malloc(32 * sizeof(unsigned long));
-	add_sw_addr = malloc(32 * sizeof(unsigned long));
-	test_addr = malloc(8 * 3 * sizeof(unsigned long));
-	mbist_len = malloc(32 * 3 * sizeof(unsigned long));
 	add_mbist_len = malloc(32 * sizeof(unsigned long));
+	add_sw_addr = malloc(32 * sizeof(unsigned long));
 	add_sw_len = malloc(32 * sizeof(unsigned long));
+	test_addr = malloc(8 * 3 * sizeof(unsigned long));
 	test_len = malloc(8 * 3 * sizeof(unsigned long));
 	prot_addr = malloc(5 * sizeof(unsigned long));
 	prot_len = malloc(5 * sizeof(unsigned long));
 
-	memset(mbist_addr, 0, 32 * 3 * sizeof(unsigned long));
-	memset(mbist_len, 0, 32 * 3 * sizeof(unsigned long));
 	memset(add_mbist_addr, 0, 32 * sizeof(unsigned long));
 	memset(add_mbist_len, 0, 32 * sizeof(unsigned long));
 	memset(add_sw_addr, 0, 32 * sizeof(unsigned long));
@@ -751,29 +734,22 @@ check_memory_ranges(void)
 	memset(prot_addr, 0, 5 * sizeof(unsigned long));
 	memset(prot_len, 0, 5 * sizeof(unsigned long));
 
+	mbist_addr = malloc(32 * 3 * sizeof(unsigned long));
+	mbist_len = malloc(32 * 3 * sizeof(unsigned long));
+	memset(mbist_addr, 0, 32 * 3 * sizeof(unsigned long));
+	memset(mbist_len, 0, 32 * 3 * sizeof(unsigned long));
 
 	for (i = 0; i < 8; i++) {
-		unsigned long long offset = (unsigned long long)*ranges++;
-		unsigned long long length = (unsigned long long)*ranges++;
-
-		offset <<= 20;
-		length <<= 20;
-
-		if (0ULL != length) {
-			printf("Testing Memory From 0x%llx, 0x%llx bytes\n",
-				offset, length);
-			mbist_addr[i] = offset/256;
-			mbist_len[i] = length/256;
+		if (len[i] != 0) {
+			mbist_addr[i] = addr[i]/256;
+			mbist_len[i] = len[i]/256;
 		} else {
 			mbist_len[i] = 0;
-			test_len[i] = 0;
-			prot_len[i] = 0;
 			break;
 		}
 	}
-	memSize = sysmem->totalSize/256;
 
-#ifdef CONFIG_HYBRID_MBIST
+	mem_size = sysmem->totalSize/256;
 
 	if (sysmem->num_interfaces == 0x2)
 		dual_ddr = 1;
@@ -789,7 +765,7 @@ check_memory_ranges(void)
 		maskbits = 3;
 	}
 
-	ret = mbist_range(memSize, dual_ddr, maskbits, 1024,
+	ret = mbist_range(mem_size, dual_ddr, maskbits, 1024,
 		mbist_addr, mbist_len,
 		test_addr, test_len, prot_addr, prot_len);
 	if (ret != 0) {
@@ -801,11 +777,15 @@ check_memory_ranges(void)
 					add_mbist_addr, add_mbist_len);
 				for (j = 0; j < 32; j++) {
 					if (add_mbist_len[j] != 0) {
+						/* only data H/W MBIST
+						 * can be run for
+						 * Hybrid solution
+						 */
 						axxia_sysmem_bist(
 						(unsigned long long)
 						add_mbist_addr[j]*256,
 						(unsigned long long)
-						add_mbist_len[j]*256);
+						add_mbist_len[j]*256, data);
 					} else {
 						break;
 					}
@@ -816,14 +796,14 @@ check_memory_ranges(void)
 		}
 		for (i = 0; i < 96; i++) {
 			if (test_len[i] != 0) {
-				if ((test_addr[i]+test_len[i]) > memSize) {
+				if ((test_addr[i]+test_len[i]) > mem_size) {
 					printf("Testing range exceeds System memory size\n");
 				} else if (((unsigned long long)test_len[i]*256)
 					> 0x40000000) {
-					printf("Testing length cannot exceed 1G \n");
+					printf("Testing length cannot exceed 1G\n");
 				} else {
-					run_spl_mtest_ranges(test_addr[i],
-						test_len[i]);
+					ret = run_spl_mtest_ranges(test_addr[i],
+						test_len[i], type);
 				}
 			} else {
 				break;
@@ -831,28 +811,107 @@ check_memory_ranges(void)
 		}
 		for (i = 0; i < 5; i++) {
 			if (prot_len[i] != 0)
-				printf("prot_addr = 0x%lx, prot_len = 0x%lx\n", prot_addr[i], prot_len[i]);
+				printf("prot_addr = 0x%llx, prot_len = 0x%llx\n",
+				       (unsigned long long)prot_addr[i]*256,
+				       (unsigned long long)prot_len[i]*256);
 			else
 				break;
 		}
 	}
+	return ret;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  check_memory_ranges
+*/
+
+#ifndef CONFIG_AXXIA_EMU
+static void
+check_memory_ranges(void)
+{
+	unsigned long *ranges = (unsigned long *)&global->memory_ranges;
+	int i;
+	enum spl_mtest_type type;
+#ifdef CONFIG_HYBRID_MBIST
+	unsigned long long *mbist_addr, *mbist_len;
+	mbist_addr = malloc(8 * sizeof(unsigned long long));
+	mbist_len = malloc(8 * sizeof(unsigned long long));
+	memset(mbist_addr, 0, 8 * sizeof(unsigned long long));
+	memset(mbist_len, 0, 8 * sizeof(unsigned long long));
 #else
+	unsigned long mem_size;
+	unsigned long *mbist_addr, *mbist_len;
+	mbist_addr = malloc(8 * sizeof(unsigned long));
+	mbist_len = malloc(8 * sizeof(unsigned long));
+	memset(mbist_addr, 0, 8 * sizeof(unsigned long));
+	memset(mbist_len, 0, 8 * sizeof(unsigned long));
+#endif
+
+	for (i = 0; i < 8; i++) {
+		unsigned long long offset = (unsigned long long)*ranges++;
+		unsigned long long length = (unsigned long long)*ranges++;
+
+		offset <<= 20;
+		length <<= 20;
+
+		if (0ULL != length) {
+			printf("Testing Memory From 0x%llx, 0x%llx bytes\n",
+			       offset, length);
+#ifdef CONFIG_HYBRID_MBIST
+			mbist_addr[i] = offset;
+			mbist_len[i] = length;
+#else
+			mbist_addr[i] = offset/256;
+			mbist_len[i] = length/256;
+#endif
+		} else {
+			mbist_len[i] = 0;
+			break;
+		}
+	}
+
+	if ((global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) &&
+	    (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) &&
+	    (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
+		type = spl_mtest_all;
+	} else {
+		if (global->flags &
+			PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
+			type = spl_mtest_mtest;
+		}
+		if (global->flags &
+			PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
+			type |= spl_mtest_addr;
+		}
+		if (global->flags &
+			PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
+			type |= spl_mtest_data;
+		}
+	}
+
+#ifdef CONFIG_HYBRID_MBIST
+	if (axxia_hybrid_mbist(mbist_addr, mbist_len, type) != 0)
+		printf("axxia_hybrid_mbist failed\n");
+#else
+	mem_size = sysmem->totalSize/256;
 	for (i = 0; i < 8; i++) {
 		if (mbist_len[i] != 0) {
-			if ((mbist_addr[i]+mbist_len[i]) > memSize) {
+			if ((mbist_addr[i]+mbist_len[i]) > mem_size) {
 				printf("Testing range exceeds System memory size\n");
 			} else if (((unsigned long long)mbist_len[i]*256)
 				> 0x40000000) {
-				printf("Testing length cannot exceed 1G \n");
+				printf("Testing length cannot exceed 1G\n");
 			} else {
 				run_spl_mtest_ranges(mbist_addr[i],
-					mbist_len[i]);
+					mbist_len[i], type);
 			}
 		} else
 			break;
 	}
 #endif
 }
+
 
 #endif	/* CONFIG_AXXIA_EMU */
 
@@ -1246,7 +1305,7 @@ board_init_f(ulong dummy)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_BIST)) {
 		printf("Testing Memory From 0, 0x%llx bytes\n",
 		       sysmem->totalSize);
-		axxia_sysmem_bist(0ULL, sysmem->totalSize);
+		axxia_sysmem_bist(0ULL, sysmem->totalSize, both);
 	} else if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_RANGES)) {
 		check_memory_ranges();
 	}
