@@ -330,6 +330,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define GIC_DIST_BASE (DICKENS + 0x1001000)
 #define GIC_CPU_BASE  (DICKENS + 0x1002000)
 
+#define SRIO_GPREG (IO+0x10000000+0x147000)
+
 #define APB2_SER0_BASE (IO)
 #define APB2_SER3_BASE (IO + 0x30000)
 #define NCP_APB2SER_INDIRECT_COMMAND_0      (0x00000000)
