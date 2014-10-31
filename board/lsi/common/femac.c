@@ -1870,11 +1870,13 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	writeio( 0x1, APP3XXNIC_RX_MODE );
 	writeio( 0x0, APP3XXNIC_TX_SOFT_RESET );
 	writeio( 0x1, APP3XXNIC_TX_MODE );
-	if( is_asic( ) ) {
-		writeio( 0x300a, APP3XXNIC_TX_WATERMARK );
-	} else {
-		writeio( 0xc00096, APP3XXNIC_TX_WATERMARK );
-	}
+
+#if !defined(ACP_ISS) && !defined(ACP_EMU)
+	writeio( 0x300a, APP3XXNIC_TX_WATERMARK );
+#else
+	writeio( 0xc00096, APP3XXNIC_TX_WATERMARK );
+#endif
+
 	writeio( 0x1, APP3XXNIC_TX_HALF_DUPLEX_CONF );
 	writeio( 0xffff, APP3XXNIC_TX_TIME_VALUE_CONF );
 	writeio( 0x1, APP3XXNIC_TX_INTERRUPT_CONTROL );

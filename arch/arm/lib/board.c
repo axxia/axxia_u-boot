@@ -385,7 +385,6 @@ static int display_banner(void)
 	     "  / _ |__ ____ __ (_)__ _  / / / /___/ _ )___  ___  / /_\n"
 	     " / __ |\\ \\ /\\ \\ // / _ `/ / /_/ /___/ _  / _ \\/ _ \\/ __/\n"
 	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ \n");
-	printf("\nLSI Version: %s\n", get_lsi_version());
 #endif
 	printf("\n\n%s\n\n", version_string);
 	debug("U-Boot code: %08lX -> %08lX  BSS: -> %08lX\n",

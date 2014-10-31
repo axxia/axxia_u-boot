@@ -687,6 +687,12 @@ board_early_init_f(void)
 int
 arch_early_init_r(void)
 {
+#if defined(AXXIA_VERSION)
+	printf("Axxia Version: %s\n", AXXIA_VERSION);
+#else
+	printf("Axxia Version: UNKNOWN\n");
+#endif
+
 	/*
 	  System Memory Size
 	*/

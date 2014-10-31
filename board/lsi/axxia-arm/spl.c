@@ -972,8 +972,13 @@ spl_board_init(void)
 	     "   ___             _        __  __    ___            __    _______  __ \n"
 	     "  / _ |__ ____ __ (_)__ _  / / / /___/ _ )___  ___  / /_  / __/ _ \\/ / \n"
 	     " / __ |\\ \\ /\\ \\ // / _ `/ / /_/ /___/ _  / _ \\/ _ \\/ __/ _\\ \\/ ___/ /__\n"
-	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ /___/_/  /____/\n");
-	printf("\nLSI Version: %s\n", get_lsi_version());
+	     "/_/ |_/_\\_\\/_\\_\\/_/\\_,_/  \\____/   /____/\\___/\\___/\\__/ /___/_/  /____/\n\n");
+
+#ifdef AXXIA_VERSION
+	printf("Axxia Version: %s\n", AXXIA_VERSION);
+#else
+	printf("Axxia Version: UNKNOWN\n");
+#endif
 
 	rc = axxia_initialize();
 	if (0 != rc)
