@@ -4283,7 +4283,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 #else
 	memory = (void *)((4 * 1024 * 1024) - (256 * 1024));
 #endif
-	printf("FEMAC: Used 0x%x of 0x%x at 0x%p\n",
+	printf("FEMAC: Used %zu of 0x%x at 0x%p\n",
 	       memory_needed, (256 * 1024), memory);
 #endif
 
@@ -4418,8 +4418,11 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	writel(((unsigned int )rx_descriptors_ - 0x80000000),
 	       APP3XXNIC_DMA_RX_QUEUE_BASE_ADDRESS );
 #else
+#if 0
+	/* TODO: SORT THIS OUT!!! */
 	writel( ( unsigned int ) rx_descriptors_,
 		 APP3XXNIC_DMA_RX_QUEUE_BASE_ADDRESS );
+#endif
 #endif
 	writel( ( unsigned int )
 		 ( ( rx_number_of_descriptors *
@@ -4443,8 +4446,11 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	writel(((unsigned int)tx_descriptors_ - 0x80000000),
 	       APP3XXNIC_DMA_TX_QUEUE_BASE_ADDRESS);
 #else
+#if 0
+	/* TODO: SORT THIS OUT!!! */
 	writel((unsigned int)tx_descriptors_,
 	       APP3XXNIC_DMA_TX_QUEUE_BASE_ADDRESS);
+#endif
 #endif
 	writel( ( unsigned int )
 		 ( TX_NUMBER_OF_DESCRIPTORS *
@@ -4742,7 +4748,8 @@ lsi_femac_eth_send(struct eth_device *device,  void *packet, int length)
 		descriptor_.byte_swapping_on = 0;
 		writedescriptor( ( ( unsigned long ) tx_descriptors_ +
 				   tx_head_.bits.offset ), & descriptor_ );
-		asm volatile ("mcr p15,0,%0,c7,c10,4" : : "r" (0));
+		/* TODO: SORT THIS OUT!!!! */
+		/*asm volatile ("mcr p15,0,%0,c7,c10,4" : : "r" (0));*/
 		queue_increment_( & tx_head_, TX_NUMBER_OF_DESCRIPTORS );
 		writel( tx_head_.raw, APP3XXNIC_DMA_TX_HEAD_POINTER );
 

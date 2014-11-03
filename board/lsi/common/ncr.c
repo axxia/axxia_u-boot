@@ -28,6 +28,12 @@
 
 #define LOCK_DOMAIN 0
 
+#ifdef ARM64
+#define POINTER(address) ((unsigned long *)((unsigned long long)(address)))
+#else
+#define POINTER(address) ((unsigned long *)((unsigned long)(address)))
+#endif
+
 static int ncr_sysmem_mode_disabled = 1;
 static int ncr_tracer_disabled = 1;
 void ncr_tracer_enable( void ) { ncr_tracer_disabled = 0; }
@@ -36,8 +42,8 @@ int ncr_tracer_is_enabled( void ) { return 0 == ncr_tracer_disabled ? 1 : 0; }
 void ncr_sysmem_init_mode_enable(void) { ncr_sysmem_mode_disabled = 0; }
 void ncr_sysmem_init_mode_disable(void) { ncr_sysmem_mode_disabled = 1; }
 
-static __inline__ ncp_uint32_t ncr_register_read(unsigned *);
-static __inline__ void ncr_register_write(const unsigned, unsigned *);
+static __inline__ ncp_uint32_t ncr_register_read(unsigned long *);
+static __inline__ void ncr_register_write(const unsigned, unsigned long *);
 
 static int
 ncr_fail(const char *file, const char *function, const int line)
@@ -46,8 +52,8 @@ ncr_fail(const char *file, const char *function, const int line)
 		return -1;
 	
 	printf("Config Ring Access Failed: 0x%08lx 0x%08lx\n",
-	       (unsigned long)ncr_register_read((u32 *)(NCA + NCP_NCA_CFG_RING_ERROR_STAT_R0)),
-	       (unsigned long)ncr_register_read((u32 *)(NCA + NCP_NCA_CFG_RING_ERROR_STAT_R1)));
+	       (unsigned long)ncr_register_read(POINTER(NCA + NCP_NCA_CFG_RING_ERROR_STAT_R0)),
+	       (unsigned long)ncr_register_read(POINTER(NCA + NCP_NCA_CFG_RING_ERROR_STAT_R1)));
 	acp_failure(file, function, line);
 
 	return -1;
@@ -266,7 +272,7 @@ typedef union {
 */
 
 static __inline__ ncp_uint32_t
-ncr_register_read(unsigned *address)
+ncr_register_read(unsigned long *address)
 {
 	return in_be32(address);
 }
@@ -277,7 +283,7 @@ ncr_register_read(unsigned *address)
 */
 
 static __inline__ void
-ncr_register_write(const unsigned value, unsigned *address)
+ncr_register_write(const unsigned value, unsigned long *address)
 {
 	out_be32(address, value);
 }
@@ -299,7 +305,7 @@ ncr_lock(int domain)
 
 	do {
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-		value = readl((unsigned *)(NCA + offset));
+		value = readl(POINTER(NCA + offset));
 #else
 		value = in_be32((unsigned *)(NCA + offset));
 #endif
@@ -324,7 +330,7 @@ ncr_unlock(int domain)
 
 	offset=(0xff80 + (domain * 4));
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-	writel(0, (unsigned *)(NCA + offset));
+	writel(0, POINTER(NCA + offset));
 #else
 	out_be32((unsigned *)(NCA + offset), 0);
 #endif
@@ -357,7 +363,7 @@ ncr_read16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		if (0xffff < offset)
 			return -1;
 
-		writel((0x84c00000 + offset), (base + 4));
+		writel((0x84c00000 + offset), POINTER(base + 4));
 
 		do {
 			--wfc_timeout;
@@ -399,8 +405,8 @@ ncr_write16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		if (0xffff < offset)
 			return -1;
 
-		writel(value, base);
-		writel((0xc4c00000 + offset), (base + 4));
+		writel(value, POINTER(base));
+		writel((0xc4c00000 + offset), POINTER(base + 4));
 
 		do {
 			--wfc_timeout;
@@ -455,7 +461,7 @@ ncr_read32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		if (0xffff < offset)
 			return -1;
 
-		writel((0x85400000 + offset), (base + 4));
+		writel((0x85400000 + offset), POINTER(base + 4));
 
 		do {
 			--wfc_timeout;
@@ -512,8 +518,8 @@ ncr_write32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		if (0xffff < offset)
 			return -1;
 
-		writel(value, base);
-		writel((0xc5400000 + offset), (base + 4));
+		writel(value, POINTER(base));
+		writel((0xc5400000 + offset), POINTER(base + 4));
 
 		do {
 			--wfc_timeout;
@@ -532,7 +538,7 @@ ncr_write32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 
 #endif	/* ACP_25xx */
 
-#if defined(CONFIG_AXXIA_55XX) || defined(CONFIG_AXXIA_55XX_EMU) || defined(CONFIG_AXXIA_SIM)
+#if defined(CONFIG_AXXIA_55XX) || defined(CONFIG_AXXIA_55XX_EMU) || defined(CONFIG_AXXIA_SIM) || defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_EMU) || defined(CONFIG_AXXIA_56XX_SIM)
 
 /*
   -------------------------------------------------------------------------------
@@ -562,18 +568,18 @@ ncr_read16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		if (0xffff < offset)
 			return -1;
 
-		writel((0x84c00000 + offset), (base + 4));
+		writel((0x84c00000 + offset), POINTER(base + 4));
 
 		do {
 			--wfc_timeout;
-			temp = readl(base + 4);
+			temp = readl(POINTER(base + 4));
 		} while (0 != (temp & 0x80000000) &&
 			 0 < wfc_timeout);
 
 		if (0 == wfc_timeout)
 			return -1;
 
-		*value = readl(base + 8);
+		*value = readl(POINTER(base + 8));
 
 		return 0;
 	}
@@ -609,12 +615,12 @@ ncr_write16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		if (0xffff < offset)
 			return -1;
 
-		writel(value, base);
-		writel((0xc4c00000 + offset), (base + 4));
+		writel(value, POINTER(base));
+		writel((0xc4c00000 + offset), POINTER(base + 4));
 
 		do {
 			--wfc_timeout;
-			temp = readl(base + 4);
+			temp = readl(POINTER(base + 4));
 		} while (0 != (temp & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -677,18 +683,18 @@ ncr_read32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		if (0xffff < offset)
 			return -1;
 
-		writel((0x85400000 + offset), (base + 4));
+		writel((0x85400000 + offset), POINTER(base + 4));
 
 		do {
 			--wfc_timeout;
-			*value = readl(base + 4);
+			*value = readl(POINTER(base + 4));
 		} while (0 != (*value & 0x80000000) &&
 			 0 < wfc_timeout);
 
 		if (0 == wfc_timeout)
 			return -1;
 
-		*value = readl(base + 8);
+		*value = readl(POINTER(base + 8));
 
 		return 0;
 	}
@@ -745,12 +751,12 @@ ncr_write32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		if (0xffff < offset)
 			return -1;
 
-		writel(value, base);
-		writel((0xc5400000 + offset), (base + 4));
+		writel(value, POINTER(base));
+		writel((0xc5400000 + offset), POINTER(base + 4));
 
 		do {
 			--wfc_timeout;
-			value = readl(base + 4);
+			value = readl(POINTER(base + 4));
 		} while (0 != (value & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -774,7 +780,7 @@ ncr_read32_0x153(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 	ncp_uint32_t address;
 
 	address = IO + 0x0 + (NCP_TARGET_ID(region) * 0x10) + offset;
-	*value = readl(address);
+	*value = readl(POINTER(address));
 
 	return 0;
 }
@@ -790,7 +796,7 @@ ncr_write32_0x153(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 	ncp_uint32_t address;
 
 	address = IO + 0x0 + (NCP_TARGET_ID(region) * 0x10) + offset;
-	writel(value, address);
+	writel(value, POINTER(address));
 
 	return 0;
 }
@@ -806,7 +812,7 @@ ncr_read32_0x155(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 	ncp_uint32_t address;
 
 	address = IO + 0x20000 + (NCP_TARGET_ID(region) * 0x800) + offset;
-	*value = readl(address);
+	*value = readl(POINTER(address));
 
 	return 0;
 }
@@ -822,7 +828,7 @@ ncr_write32_0x155(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 	ncp_uint32_t address;
 
 	address = IO + 0x20000 + (NCP_TARGET_ID(region) * 0x800) + offset;
-	writel(value, address);
+	writel(value, POINTER(address));
 
 	return 0;
 }
@@ -838,7 +844,7 @@ ncr_read32_0x156(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 	ncp_uint32_t address;
 
 	address = IO + 0x30000 + (NCP_TARGET_ID(region) * 0x1800) + offset;
-	*value = readl(address);
+	*value = readl(POINTER(address));
 
 	return 0;
 }
@@ -854,7 +860,7 @@ ncr_write32_0x156(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 	ncp_uint32_t address;
 
 	address = IO + 0x30000 + (NCP_TARGET_ID(region) * 0x1800) + offset;
-	writel(value, address);
+	writel(value, POINTER(address));
 
 	return 0;
 }
@@ -869,7 +875,7 @@ ncr_read32_0x158(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 	ncp_uint32_t address;
 
 	address = IO + 0x60000 + offset;
-	*value = readl(address);
+	*value = readl(POINTER(address));
 
 	return 0;
 }
@@ -885,7 +891,7 @@ ncr_write32_0x158(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 	ncp_uint32_t address;
 
 	address = IO + 0x60000 + offset;
-	writel(value, address);
+	writel(value, POINTER(address));
 
 	return 0;
 }
@@ -901,7 +907,7 @@ ncr_read32_0x159(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 	ncp_uint32_t address;
 
 	address = IO + 0x70000 + offset;
-	*value = readl(address);
+	*value = readl(POINTER(address));
 
 	return 0;
 }
@@ -917,7 +923,7 @@ ncr_write32_0x159(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 	ncp_uint32_t address;
 
 	address = IO + 0x70000 + offset;
-	writel(value, address);
+	writel(value, POINTER(address));
 
 	return 0;
 }
@@ -996,17 +1002,17 @@ ncr_apb2ser_indirect_access(
     if (isWrite)
     {
         /* write the data to be written */
-        writel(*buffer, APB2_SER0_BASE + indirectOffset);
+	    writel(*buffer, POINTER(APB2_SER0_BASE + indirectOffset));
     }
 
     /* write command 1 */
-    writel(reg, APB2_SER0_BASE + indirectOffset + NCP_APB2SER_INDIRECT_COMMAND_1);
+    writel(reg, POINTER(APB2_SER0_BASE + indirectOffset + NCP_APB2SER_INDIRECT_COMMAND_1));
     
     /* poll for completion */
     loop_count = 400000;   /* TODO!! determine correct value! completely arbitrary for now */
     do {
         loop_count--;
-        reg = readl(APB2_SER0_BASE + indirectOffset + NCP_APB2SER_INDIRECT_COMMAND_1);
+        reg = readl(POINTER(APB2_SER0_BASE + indirectOffset + NCP_APB2SER_INDIRECT_COMMAND_1));
     } while (pCmd1->valid && loop_count);
 
     if (loop_count == 0) {
@@ -1015,7 +1021,7 @@ ncr_apb2ser_indirect_access(
 
     if (!isWrite) 
     {
-        *buffer = readl(APB2_SER0_BASE + indirectOffset + NCP_APB2SER_INDIRECT_READ_DATA_0);
+	    *buffer = readl(POINTER(APB2_SER0_BASE + indirectOffset + NCP_APB2SER_INDIRECT_READ_DATA_0));
     }
 
     return 0;
@@ -1173,7 +1179,7 @@ ncr_read(ncp_uint32_t region,
 
 			while (4 <= number) {
 				*((ncp_uint32_t *)buffer) =
-					ncr_register_read((unsigned *)offset);
+					ncr_register_read(POINTER(offset));
 				offset += 4;
 				buffer += 4;
 				number -= 4;
@@ -1182,7 +1188,7 @@ ncr_read(ncp_uint32_t region,
 			if (0 < number) {
 				ncp_uint32_t temp;
 
-				temp = ncr_register_read((unsigned *)offset);
+				temp = ncr_register_read(POINTER(offset));
 				memcpy(buffer, (void *)&temp, number);
 			}
 		}
@@ -1219,7 +1225,7 @@ ncr_read(ncp_uint32_t region,
 		cdr2.bits.target_id_address_upper = address_upper;
 	}
 
-	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR2 ) );
+	ncr_register_write( cdr2.raw, POINTER ( NCA + NCP_NCA_CFG_PIO_CDR2 ) );
 
 	cdr1.raw = 0;
 
@@ -1229,7 +1235,7 @@ ncr_read(ncp_uint32_t region,
 		cdr1.bits.target_address = ( address >> 2 );
 	}
 
-	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR1 ) );
+	ncr_register_write( cdr1.raw, POINTER( NCA + NCP_NCA_CFG_PIO_CDR1 ) );
 
 	cdr0.raw = 0;
 	cdr0.bits.start_done = 1;
@@ -1247,7 +1253,7 @@ ncr_read(ncp_uint32_t region,
 
 	/* TODO: Verify number... */
 	cdr0.bits.dbs = ( number - 1 );
-	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) );
+	ncr_register_write( cdr0.raw, POINTER ( NCA + NCP_NCA_CFG_PIO_CDR0 ) );
 
 	/*
 	  Wait for completion.
@@ -1256,7 +1262,7 @@ ncr_read(ncp_uint32_t region,
 	do {
 		--wfc_timeout;
 	} while( (0x80000000 ==
-		  ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
+		  ( ncr_register_read( POINTER( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 		    0x80000000 ) ) &&
 		 0 < wfc_timeout);
 
@@ -1270,8 +1276,9 @@ ncr_read(ncp_uint32_t region,
 	  Check status.
 	*/
 
-	if( 0x3 != ( ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
-		       0x00c00000 ) >> 22 ) ) {
+	if (0x3 !=
+	    (ncr_register_read(POINTER(NCA + NCP_NCA_CFG_PIO_CDR0)) &
+	     0x00c00000) >> 22) {
 		ncr_unlock(LOCK_DOMAIN);
 		return -1;
 	}
@@ -1287,7 +1294,7 @@ ncr_read(ncp_uint32_t region,
 
 		while (4 <= number) {
 			*((ncp_uint32_t *)buffer) =
-				ncr_register_read((unsigned *)address);
+				ncr_register_read(POINTER(address));
 			address += 4;
 			number -= 4;
 			buffer += 4;
@@ -1296,7 +1303,7 @@ ncr_read(ncp_uint32_t region,
 		if (0 < number) {
 			ncp_uint32_t temp;
 
-			temp = ncr_register_read((unsigned *)address);
+			temp = ncr_register_read(POINTER(address));
 			memcpy(buffer, (void *)&temp, number);
 		}
 	}
@@ -1489,7 +1496,7 @@ ncr_write(ncp_uint32_t region,
 
 			while (4 <= number) {
 				ncr_register_write(*((ncp_uint32_t *)buffer),
-						   (unsigned *)offset);
+						   POINTER(offset));
 				offset += 4;
 				buffer += 4;
 				number -= 4;
@@ -1499,7 +1506,7 @@ ncr_write(ncp_uint32_t region,
 				ncp_uint32_t temp;
 
 				memcpy((void *)&temp, buffer, number);
-				ncr_register_write(temp, (unsigned *)offset);
+				ncr_register_write(temp, POINTER(offset));
 			}
 		}
 		return 0;
@@ -1535,7 +1542,7 @@ ncr_write(ncp_uint32_t region,
 		cdr2.bits.target_id_address_upper = address_upper;
 	}
 
-	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR2 ) );
+	ncr_register_write( cdr2.raw, POINTER( NCA + NCP_NCA_CFG_PIO_CDR2 ) );
 
 	cdr1.raw = 0;
 
@@ -1545,7 +1552,7 @@ ncr_write(ncp_uint32_t region,
 		cdr1.bits.target_address = ( address >> 2 );
 	}
 
-	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR1 ) );
+	ncr_register_write( cdr1.raw, POINTER(NCA + NCP_NCA_CFG_PIO_CDR1));
 
 	/*
 	  Copy data from the buffer.
@@ -1556,7 +1563,7 @@ ncr_write(ncp_uint32_t region,
 
 		while (4 <= number) {
 			ncr_register_write(*((ncp_uint32_t *)buffer),
-					   (unsigned *)offset);
+					   POINTER(offset));
 			offset += 4;
 			buffer += 4;
 			number -= 4;
@@ -1566,7 +1573,7 @@ ncr_write(ncp_uint32_t region,
 			ncp_uint32_t temp;
 
 			memcpy((void *)&temp, buffer, number);
-			ncr_register_write(temp, (unsigned *)offset);
+			ncr_register_write(temp, POINTER(offset));
 		}
 	}
 
@@ -1590,7 +1597,7 @@ ncr_write(ncp_uint32_t region,
 
 	/* TODO: Verify number... */
 	cdr0.bits.dbs = dbs;
-	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) );
+	ncr_register_write(cdr0.raw, POINTER(NCA + NCP_NCA_CFG_PIO_CDR0));
 
 	/*
 	  Wait for completion.
@@ -1599,7 +1606,7 @@ ncr_write(ncp_uint32_t region,
 	do {
 		--wfc_timeout;
 	} while( (0x80000000 ==
-		  ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
+		  ( ncr_register_read(POINTER( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 		    0x80000000 ) ) &&
 		 0 < wfc_timeout);
 
@@ -1614,14 +1621,14 @@ ncr_write(ncp_uint32_t region,
 	*/
 
 	if(0x3 !=
-	   ((ncr_register_read((unsigned *)(NCA + NCP_NCA_CFG_PIO_CDR0)) & 0x00c00000) >> 22)) {
+	   ((ncr_register_read(POINTER(NCA + NCP_NCA_CFG_PIO_CDR0)) & 0x00c00000) >> 22)) {
 		printf("ncr_write( ) failed: 0x%lx, status1=0x%lx, status2=0x%lx\n",
-		       (unsigned long)((ncr_register_read((unsigned *)(NCA +
+		       (unsigned long)((ncr_register_read(POINTER(NCA +
 								       NCP_NCA_CFG_PIO_CDR0)) &
 					0x00c00000) >> 22),
-		       (unsigned long)ncr_register_read((unsigned *)(NCA +
+		       (unsigned long)ncr_register_read(POINTER(NCA +
 								     NCP_NCA_CFG_RING_ERROR_STAT_R0)),
-		       (unsigned long)ncr_register_read((unsigned *)(NCA +
+		       (unsigned long)ncr_register_read(POINTER(NCA +
 								     NCP_NCA_CFG_RING_ERROR_STAT_R1)));
 		ncr_unlock(LOCK_DOMAIN);
 
@@ -1764,7 +1771,7 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 		cdr2.bits.target_id_address_upper = NCP_TARGET_ID( region );
 	}
 
-	ncr_register_write( cdr2.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR2 ) );
+	ncr_register_write( cdr2.raw, POINTER( NCA + NCP_NCA_CFG_PIO_CDR2 ) );
 
 	cdr1.raw = 0;
 
@@ -1774,22 +1781,22 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 		cdr1.bits.target_address = ( address >> 2 );
 	}
 
-	ncr_register_write( cdr1.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR1 ) );
+	ncr_register_write( cdr1.raw, POINTER( NCA + NCP_NCA_CFG_PIO_CDR1 ) );
 
 	/*
 	  Copy from buffer to the data words.
 	*/
 
 	data_word_base = ( NCA + NCP_NCA_CDAR_MEMORY_BASE );
-	ncr_register_write( count, ( unsigned * ) data_word_base );
+	ncr_register_write( count, POINTER(data_word_base ));
 	data_word_base += 4;
 
 	while( 0 < count ) {
 		ncr_register_write( * ( ( ncp_uint32_t * ) masks ),
-				    ( unsigned * ) data_word_base );
+				    POINTER(data_word_base ));
 		data_word_base += 4;
 		ncr_register_write( * ( ( ncp_uint32_t * ) values ),
-				    ( unsigned * ) data_word_base );
+				    POINTER(data_word_base ));
 		data_word_base += 4;
 		masks += 4;
 		values += 4;
@@ -1805,7 +1812,7 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 
 	cdr0.bits.cmd_type = 0x8;
 
-	ncr_register_write( cdr0.raw, ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) );
+	ncr_register_write(cdr0.raw, POINTER(NCA + NCP_NCA_CFG_PIO_CDR0));
 
 	/*
 	  Wait for completion.
@@ -1814,7 +1821,7 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 	do {
 		--wfc_timeout;
 	} while( (0x80000000 ==
-		  ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
+		  ( ncr_register_read(POINTER( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 		    0x80000000 ) ) &&
 		 0 < wfc_timeout);
 
@@ -1829,11 +1836,11 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 	*/
 
 	if( 0x3 !=
-	    ( ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
+	    ( ( ncr_register_read(POINTER( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 		0x00c00000 ) >> 22 ) ) {
 #ifdef NCR_TRACER
 		printf( "ncr_write( ) failed: 0x%x\n",
-			( ( ncr_register_read( ( unsigned * ) ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
+			( ( ncr_register_read(POINTER ( NCA + NCP_NCA_CFG_PIO_CDR0 ) ) &
 			    0x00c00000 ) >> 22 ) );
 #endif
 		ncr_unlock(LOCK_DOMAIN);
@@ -1893,7 +1900,7 @@ ncr_l3tags(void)
 	*/
 
 	for (i = 0; i < 64; ++i)
-		writel(0, (NCA + NCP_NCA_CDAR_MEMORY_BASE + (i * 4)));
+		writel(0, POINTER(NCA + NCP_NCA_CDAR_MEMORY_BASE + (i * 4)));
 
 	/*
 	  Write it

@@ -159,6 +159,18 @@ config TARGET_AXM55XX_EMU
 config TARGET_AXM55XX_SIM
 	bool "Support AXM55XX Simulation"
 
+config TARGET_AXM56XX
+	bool "Support AXM56XX"
+	select ARM64
+
+config TARGET_AXM56XX_EMU
+	bool "Support AXM56XX Emulation"
+	select ARM64
+
+config TARGET_AXM56XX_SIM
+       bool "Support AXM56XX Simulation"
+	select ARM64
+
 config TARGET_TX25
 	bool "Support tx25"
 
@@ -656,6 +668,7 @@ source "board/isee/igep0033/Kconfig"
 source "board/jornada/Kconfig"
 source "board/karo/tx25/Kconfig"
 source "board/lsi/axm55xx/Kconfig"
+source "board/lsi/axm56xx/Kconfig"
 source "board/logicpd/imx27lite/Kconfig"
 source "board/logicpd/imx31_litekit/Kconfig"
 source "board/mpl/vcma9/Kconfig"

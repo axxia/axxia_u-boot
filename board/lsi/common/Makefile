@@ -51,48 +51,4 @@ ifdef CONFIG_AXXIA_55XX
 obj-y += sysmem_bist.o
 endif
 
-ifndef CONFIG_AXXIA_SIM
 obj-y += parameters.o
-endif
-
-################################################################################
-
-#SRCS	:= $(COBJS:.o=.c)
-#OBJS	:= $(addprefix $(obj),$(COBJS))
-#
-#$(LIB):	$(obj).depend $(OBJS)
-#	$(call cmd_link_o_target, $(OBJS) $(SOBJS))
-#
-#clean:
-#	rm -f $(OBJS)
-#
-#distclean:	clean
-#	rm -f $(LIB) core *.bak $(obj).depend
-
-#version.c: version
-#
-#$(obj)version.o: version.c
-#	$(CC) $(CFLAGS) -c -o $@ $<
-#ifdef CONFIG_SPL_BUILD
-#	rm -f $<
-#endif
-#
-#version: version.c.in
-#	@git --version >/dev/null 2>&1 ; \
-#	if [ 0 -ne $$? ] ; then \
-#		echo "ERROR: git is not available, version UNKNOWN" ; \
-#		VERSION_STRING="UNKNOWN" ; \
-#	else \
-#		VERSION_STRING=`git describe --dirty 2>/dev/null` ; \
-#		if [ 0 -ne $$? ] ; then \
-#			echo "ERROR: not in a repository, version UNKNOWN" ; \
-#			VERSION_STRING="UNKNOWN" ; \
-#		fi ; \
-#	fi ; \
-#	sed -e s/GIT_VERSION_STRING/$$VERSION_STRING/ version.c.in >version.c
-
-#obj-y += version.o
-
-# defines $(obj).depend target
-#include $(SRCTREE)/rules.mk
-#sinclude $(obj).depend

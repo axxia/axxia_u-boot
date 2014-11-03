@@ -257,6 +257,7 @@ void env_relocate(void)
 	env_reloc();
 	env_htab.change_ok += gd->reloc_off;
 #endif
+
 	if (gd->env_valid == 0) {
 #if defined(CONFIG_ENV_IS_NOWHERE) || defined(CONFIG_SPL_BUILD)
 		/* Environment not changable */

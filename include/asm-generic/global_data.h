@@ -74,7 +74,7 @@ typedef struct global_data {
 	void *new_fdt;		/* Relocated FDT */
 	unsigned long fdt_size;	/* Space reserved for relocated FDT */
 	void **jt;		/* jump table */
-	char env_buf[32];	/* buffer for getenv() before reloc. */
+	char env_buf[256];	/* buffer for getenv() before reloc. */
 #ifdef CONFIG_TRACE
 	void		*trace_buff;	/* The trace buffer */
 #endif

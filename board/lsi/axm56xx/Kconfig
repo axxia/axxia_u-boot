@@ -1,0 +1,56 @@
+if TARGET_AXM56XX
+
+config SYS_CPU
+	default "armv8"
+
+config SYS_BOARD
+	default "axm56xx"
+
+config SYS_VENDOR
+	default "lsi"
+
+config SYS_SOC
+	default "axm56xx"
+
+config SYS_CONFIG_NAME
+	default "axm56xx"
+
+endif
+
+if TARGET_AXM56XX_EMU
+
+config SYS_CPU
+	default "armv8"
+
+config SYS_BOARD
+	default "axm56xx"
+
+config SYS_VENDOR
+	default "lsi"
+
+config SYS_SOC
+	default "axm56xx"
+
+config SYS_CONFIG_NAME
+	default "axm56xx_emu"
+
+endif
+
+if TARGET_AXM56XX_SIM
+
+config SYS_CPU
+	default "armv8"
+
+config SYS_BOARD
+	default "axm56xx"
+
+config SYS_VENDOR
+	default "lsi"
+
+config SYS_SOC
+	default "axm56xx"
+
+config SYS_CONFIG_NAME
+	default "axm56xx_sim"
+
+endif
