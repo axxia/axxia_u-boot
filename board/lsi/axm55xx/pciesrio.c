@@ -455,6 +455,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 	int i;
 	int pci_srio_mode, srio0_speed=0, srio1_speed=0;
 	int divMode0=0, divMode1=0;
+	ncp_uint32_t reg_val;
 	unsigned long phy0_ctrl, phy1_ctrl;
 	unsigned long pei0_config, pei1_config;	
 	unsigned short value;
@@ -479,6 +480,22 @@ int pciesrio_setcontrol(unsigned long new_control)
 
 	phy0_ctrl = new_control & 0x1f700409;
 	phy1_ctrl = new_control & 0x60800004;
+
+	/* Enable 16 bit Transport ID for SRIO0/SRIO1 */
+	if ((new_control & 0x800) && ((new_control & 0x8) ||
+				      (new_control & 0x400))) {
+		if (v1_0) {
+			ncr_read32(NCP_REGION_ID(0x149, 0), 0x60, &reg_val);
+			/* bit 8 */
+			reg_val = reg_val | 0x100;
+			ncr_write32(NCP_REGION_ID(0x149, 0), 0x60, reg_val);
+		} else {
+			ncr_read32(NCP_REGION_ID(0x14f, 0), 0x0, &reg_val);
+			/* bit 4 */
+			reg_val = reg_val | 0x10;
+			ncr_write32(NCP_REGION_ID(0x14f, 0), 0x0, reg_val);
+		}
+	}
 
 	if ((phy0_ctrl & 0x8) || (phy0_ctrl & 0x400) || (phy0_ctrl & 0x1)) {
 

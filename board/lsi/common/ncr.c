@@ -1150,7 +1150,9 @@ ncr_read(ncp_uint32_t region,
 		break;
 	case 0x101:
 	case 0x109:
-    case 0x1d0:
+	case 0x1d0:
+	case 0x149:
+	case 0x14f:
 		/* if reading from within NCA/MME_POKE/SCB, just do the plain and simple read */
 		if (NULL != buffer) {
 			ncp_uint32_t offset = 0;
@@ -1161,7 +1163,12 @@ ncr_read(ncp_uint32_t region,
 				offset = (MME_POKE + address);
 			} else if(NCP_NODE_ID(region) == 0x1d0) {
 				offset = (SCB + address);
+			} else if (NCP_NODE_ID(region) == 0x149) {
+				offset = (GPREG + address);
+			} else if (NCP_NODE_ID(region) == 0x14f) {
+				offset = (SRIO_GPREG + address);
 			}
+
             
 
 			while (4 <= number) {
@@ -1463,6 +1470,8 @@ ncr_write(ncp_uint32_t region,
 	case 0x101:
 	case 0x109:
     case 0x1d0:
+	case 0x149:
+	case 0x14f:
 		if (NULL != buffer) {
 			ncp_uint32_t offset = 0;
 
@@ -1472,6 +1481,10 @@ ncr_write(ncp_uint32_t region,
 				offset = (MME_POKE + address);
 			} else if(NCP_NODE_ID(region) == 0x1d0) {
 				offset = (SCB + address);
+			} else if (NCP_NODE_ID(region) == 0x149) {
+				offset = (GPREG + address);
+			} else if (NCP_NODE_ID(region) == 0x14f) {
+				offset = (SRIO_GPREG + address);
 			}
 
 			while (4 <= number) {
