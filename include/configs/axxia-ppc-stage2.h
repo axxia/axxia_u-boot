@@ -193,6 +193,22 @@ printf( "# " format "\n", ##args ); \
   ======================================================================
 */
 
+#ifdef NOFLASH
+#define CONFIG_EXTRA_ENV_SETTINGS \
+"baudrate=9600\0" \
+"bootdelay=2\0" \
+"bootcmd2=bootm c00000\0" \
+"memory=8192\0"
+#else
+#define CONFIG_EXTRA_ENV_SETTINGS \
+"bootcmd2=bootm c00000\0" \
+"memory=8192\0" \
+"osmemory=0x100\0" \
+"osgroup0=0x30000df1:0:0x100\0" \
+"osgroup0_bootargs=console=ttyS0 ip=dhcp root=/dev/nfs rw\0" \
+"bootdelay=2\0"
+#endif
+
 #ifndef __ASSEMBLY__
 extern unsigned long sysmem_size;
 extern unsigned long reset_enabled;

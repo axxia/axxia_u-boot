@@ -3940,6 +3940,20 @@ AXM35xx_stage3_config: unconfig
 		ln -s config-AXM35xx_stage3.mk config.mk ; \
 	popd >/dev/null
 
+AXM35xx_noflash_stage2_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage2 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM35xx_noflash_stage2.mk config.mk ; \
+	popd >/dev/null
+
+AXM35xx_noflash_stage3_config: unconfig
+	@@$(MKCONFIG) axxia-ppc-stage3 ppc ppc4xx axxia-ppc lsi
+	@pushd board/lsi/axxia-ppc >/dev/null ; \
+		rm -f config.mk ; \
+		ln -s config-AXM35xx_noflash_stage3.mk config.mk ; \
+	popd >/dev/null
+
 AXM55xx_emu_stage2_config: unconfig
 	@@$(MKCONFIG) axxia-arm-stage2 arm arm_cortexa15 axxia-arm lsi
 	@pushd board/lsi/axxia-ppc >/dev/null ; \

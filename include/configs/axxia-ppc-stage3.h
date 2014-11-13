@@ -490,10 +490,20 @@ int eioa_ethernet_configure(void);
 #define CONFIG_CMD_LOADB
 #define CONFIG_SYS_BOOTM_LEN 0x4000000
 
+#ifdef NOFLASH
+#define CONFIG_EXTRA_ENV_SETTINGS \
+"initrd_high=8000000\0" \
+"fdt_high=0xffffffff\0" \
+"bootcmd3=bootm 4010000 5000000 4000000 ; osg boot\0" \
+"osmemory=0x100\0" \
+"osgroup0=0x300001f1:0:0x100\0" \
+"osgroup0_bootargs=console=ttyS0 ip=off root=/dev/ram rw\0"
+#else
 #define CONFIG_EXTRA_ENV_SETTINGS \
 "bootargs3=root=/dev/issblk3 rw lpj=15990784\0" \
 "bootcmd3=bootm c00000\0" \
 "osgroup0=0xf1:0x100:0x100\0"
+#endif
 
 #ifndef __ASSEMBLY__
 extern unsigned long _spintables;

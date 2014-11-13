@@ -2094,6 +2094,23 @@ acp_init( void )
 {
 	int returnCode = 0;
 
+#ifdef NOFLASH
+	/* set A2P */
+	dcr_write( 0x120d, 0x1101 );
+
+	/* 
+	 * Workaround for bug 34037 
+	 * Set the external AXIS MPIC1 GCF register, and do a
+	 * sacrifical DCR read to some other non-MPIC address
+	 */
+	{
+		int tmp;
+
+		dcr_write(0x2000000e, 0xefc01020);
+		tmp = dcr_read(0x1101);
+	}
+#else
+
 	/*
 	  Try LCM first, to allow for board repair when the serial
 	  EEPROM contains a valid but incorrect (unusable) parameter
@@ -2472,6 +2489,7 @@ acp_init( void )
 #ifdef SM_REG_DUMP
 	/*check_for_failure(0, __FILE__, __LINE__);*/
 #endif /* SM_REG_DUMP */
+#endif /* NOFLASH */
 
 	return returnCode;
 }

@@ -79,11 +79,23 @@ utlb_table:
 	#; Size - 16K
 	.long		0xe0000000,0xf0a20810,0x00000010,0x00030507
 #else
+#ifdef AXM_35xx
+	#; -- -- Local CPU memory -- --
+	#; Physical Address - 0x0010_0002_0000
+	#; Virtual Address - 0xf0a0_0000
+	#; Size - 64K
+	.long		0xe0000000,0xf0a00830,0x00000010,0x00030507
+	#; Physical Address - 0x0010_0003_0000
+	#; Virtual Address - 0xf0a1_0000
+	#; Size - 64K
+	.long		0xe0000000,0xf0a10830,0x00010010,0x00030507
+#else
 	#; -- -- Local CPU memory -- --
 	#; Physical Address - 0x0010_0000_0000
 	#; Virtual Address - 0xf0a0_0000
 	#; Size - 1M
 	.long		0x80000000,0xf0a00870,0x00000010,0x00030507
+#endif
 #endif
 	
 	#; -- -- ROM -- --
@@ -94,7 +106,11 @@ utlb_table:
 	#; ROM is writable on ISS.
 	.long		0x80000000,0xf0b00870,0xc000002f,0x00030507
 #else
+#ifdef AXM_35xx
+	.long		0x80000000,0xf0b00810,0xffffc02f,0x00030505
+#else
 	.long		0x80000000,0xf0b00870,0xc000002f,0x00030507
+#endif
 #endif
 
 utlb_table_end:
@@ -112,6 +128,10 @@ utlb_table_end:
 	#; ------------------------------------------------------------
 
 brs:
+
+	li		r0,0
+	mtspr		tbu,r0
+	mtspr		tbl,r0
 
 	#; ------------------------------------------------------------
 	#; From the PPC476FP User's Guide
@@ -150,22 +170,40 @@ brs:
 
 	#; 7. Initialize the Core Configuration Register 0 (CCR0).
 
+#ifdef AXM_35xx
+	lis		r0,(0x00200000)@h
+	ori		r0,r0,(0x00200000)@l
+	mtspr		ccr0,r0
+#else
 	lis		r0,(0x30004050)@h
 	ori		r0,r0,(0x30004050)@l
 	mtspr		ccr0,r0
+#endif
 
 	#; 8. Initialize the Core Configuration Register 1 (CCR1) register.
 
+#ifdef AXM_35xx
+	lis		r23,(0x00000000)@h
+	ori		r23,r23,(0x00000000)@l
+	mtspr		ccr1,r23
+#else
 	lis		r23,(0x00000400)@h
 	ori		r23,r23,(0x00000400)@l
 	mtspr		ccr1,r23
+#endif
 	
 	#; CCR2
-#if 0	
+
+#ifdef AXM_35xx
+	lis		r23,(0x00000000)@h
+	ori		r23,r23,(0x00000000)@l
+	mtspr		ccr2,r23
+#else
 	lis		r23,(0x04000000)@h
 	ori		r23,r23,(0x04000000)@l
 	mtspr		ccr2,r23
 #endif
+
 #endif
 	
 	#; 9. Configure the instruction and data cache regions.
@@ -385,17 +423,29 @@ init_core_relocate:
 	li		r11,0x104
 	li		r12,0x20
 	isync
-	mtdcrx		r11,r12
+	#; mtdcrx		r11,r12
+	#; Use 0x7c000306 | (0xb << 21) | (0xc << 16)
+	#; to avoid incomaptibility with older binutils...
+	.long		0x7d8b0306
 	li		r11,0x105
 	isync
-	mtdcrx		r11,r12
+	#; mtdcrx		r11,r12
+	#; Use 0x7c000306 | (0xb << 21) | (0xc << 16)
+	#; to avoid incomaptibility with older binutils...
+	.long		0x7d8b0306
 	li		r11,0x106
 	isync
-	mtdcrx		r11,r12
+	#; mtdcrx		r11,r12
+	#; Use 0x7c000306 | (0xb << 21) | (0xc << 16)
+	#; to avoid incomaptibility with older binutils...
+	.long		0x7d8b0306
 	li		r11,0x100
 	lis		r12,0x80000000@h
 	isync
-	mtdcrx		r11,r12
+	#; mtdcrx		r11,r12
+	#; Use 0x7c000306 | (0xb << 21) | (0xc << 16)
+	#; to avoid incomaptibility with older binutils...
+	.long		0x7d8b0306
 
 	#; core 0 jumps to the base of LCM
 
@@ -435,12 +485,12 @@ cold_reset_pen:
 
 	lis		r11,(0xffc00080)@h
 	ori		r11,r11,(0xffc00080)@l
-	li		r12,0
+	lis		r12,0
 	isync
 	#; mtdcrx		r11,r12
 	#; Use 0x7c000306 | (0xb << 21) | (0xc << 16)
 	#; to avoid incomaptibility with older binutils...
-	.long		0x7d6c0306
+	.long		0x7d8b0306
 
 	#; Disable 8259 Bypass Mode
 
@@ -454,7 +504,7 @@ cold_reset_pen:
 	#; mtdcrx		r11,r12
 	#; Use 0x7c000306 | (0xb << 21) | (0xc << 16)
 	#; to avoid incomaptibility with older binutils...
-	.long		0x7d6c0306
+	.long		0x7d8b0306
 
 	#; Set the "IPI Vector/Priority" register for this core.
 
@@ -478,10 +528,10 @@ cold_reset_pen:
 	#; mtdcrx		r11,r3
 	#; Use 0x7c000306 | (0xb << 21) | (0x3 << 16)
 	#; to avoid incomaptibility with older binutils...
-	.long		0x7d630306
+	.long		0x7c6b0306
 
 	#; Enable IPIs (set the MSR EE bit).
-#if ! defined(ACP_CORE1ONLY) || defined(ACP_ISS)
+#if !defined(ACP_CORE1ONLY) || defined(ACP_ISS)
 	mfmsr		r3
 	lis		r4,(0x00008000)@h
 	ori		r4,r4,(0x00008000)@l
