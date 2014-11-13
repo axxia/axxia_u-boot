@@ -213,11 +213,8 @@ acp_spintable_init(void *fdt,
 		udelay( 1000 );
 	}
 
-	if( 0 == retries ) {
-		printf("Hung\n", core);
-	} else {
-		printf("Up\n", core);
-	}
+	if( 0 == retries )
+		printf("Core %d is Hung\n", core);
 
 	acp_osg_set_spintable_state(core, ACP_OSG_SPINTABLE_NOTAVAIL);
 
