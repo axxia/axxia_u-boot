@@ -609,7 +609,7 @@ misc_init_r(void)
 		asm volatile ("mrrc p15, 0, %0, %1, c14"
 			      : "=r" (cntpct_low), "=r" (cntpct_high));
 		cntpct0 = (unsigned long long)cntpct_low |
-			(unsigned long long)cntpct_high;
+			(unsigned long long)cntpct_high << 32;
 		--retries;
 	} while (0ULL == cntpct0 && 0 < retries);
 
@@ -622,7 +622,7 @@ misc_init_r(void)
 		asm volatile ("mrrc p15, 0, %0, %1, c14"
 			      : "=r" (cntpct_low), "=r" (cntpct_high));
 		cntpct1 = (unsigned long long)cntpct_low |
-			(unsigned long long)cntpct_high;
+			(unsigned long long)cntpct_high << 32;
 		--retries;
 	} while (cntpct0 == cntpct1 && 0 < retries);
 
