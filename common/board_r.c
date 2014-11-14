@@ -258,7 +258,7 @@ static int initr_barrier(void)
 static int initr_malloc(void)
 {
 #ifdef CONFIG_AXXIA_ARM
-	mem_malloc_init(CONFIG_SYS_MALLOC_BASE,	CONFIG_SYS_MALLOC_LEN);
+	mem_malloc_init((void *)CONFIG_SYS_MALLOC_BASE,	CONFIG_SYS_MALLOC_LEN);
 #else  /* CONFIG_AXXIA_ARM */
 	ulong malloc_start;
 
