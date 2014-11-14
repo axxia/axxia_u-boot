@@ -1159,7 +1159,13 @@ ncr_read(ncp_uint32_t region,
 	case 0x1d0:
 	case 0x149:
 	case 0x14f:
-		/* if reading from within NCA/MME_POKE/SCB, just do the plain and simple read */
+#if !defined(CONFIG_AXXIA_56XX) && \
+  !defined(CONFIG_AXXIA_56XX_EMU) && \
+  !defined(CONFIG_AXXIA_SIM)
+		/*
+		  If reading from within NCA/MME_POKE/SCB,
+		  just do the plain and simple read
+		*/
 		if (NULL != buffer) {
 			ncp_uint32_t offset = 0;
 
@@ -1192,6 +1198,7 @@ ncr_read(ncp_uint32_t region,
 				memcpy(buffer, (void *)&temp, number);
 			}
 		}
+#endif	/* Not 5600 */
 		return 0;
 		break;
 	case 0x200:
@@ -1476,9 +1483,12 @@ ncr_write(ncp_uint32_t region,
 		break;
 	case 0x101:
 	case 0x109:
-    case 0x1d0:
+	case 0x1d0:
 	case 0x149:
 	case 0x14f:
+#if !defined(CONFIG_AXXIA_56XX) && \
+  !defined(CONFIG_AXXIA_56XX_EMU) && \
+  !defined(CONFIG_AXXIA_SIM)
 		if (NULL != buffer) {
 			ncp_uint32_t offset = 0;
 
@@ -1509,6 +1519,7 @@ ncr_write(ncp_uint32_t region,
 				ncr_register_write(temp, POINTER(offset));
 			}
 		}
+#endif	/* Not 5600 */
 		return 0;
 		break;
 	case 0x200:
