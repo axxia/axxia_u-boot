@@ -1155,8 +1155,8 @@ etags:
 		etags -a -o etags `$(FIND) $(FINDFLAGS) $(TAG_SUBDIRS) \
 						-name '*.[chS]' -print`
 cscope:
-		$(FIND) $(FINDFLAGS) $(TAG_SUBDIRS) -name '*.[chS]' -print > \
-						cscope.files
+		$(FIND) $(FINDFLAGS) $(TAG_SUBDIRS) -name '*.[chS]' -print | \
+			sort | uniq > cscope.files
 		cscope -b -q -k
 
 SYSTEM_MAP = \
