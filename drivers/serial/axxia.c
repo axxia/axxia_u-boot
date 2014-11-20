@@ -55,7 +55,7 @@ static unsigned int baudrate = CONFIG_BAUDRATE;
 #define FR_TXFE 0x80
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   __serial_start
 */
 
@@ -65,7 +65,7 @@ __serial_start(void)
 	unsigned long lcr_h;
 	unsigned long ibrd;
 	unsigned long fbrd;
-	unsigned long per_clock; 
+	ncp_uint32_t per_clock; 
 
 	do {
 		for (;;) {

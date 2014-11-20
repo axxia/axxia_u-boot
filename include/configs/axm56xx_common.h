@@ -301,10 +301,10 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define SCB (IO + 0x96000)
 
 #define MME_POKE (IO + 0x10040000)
-#define NCA (IO + 0x10100000)
+#define NCA 0x8031080000
 
-#define ELM0 (IO + 0x60000)
-#define ELM1 (IO + 0x70000)
+#define ELM0 0x8003c00000
+#define ELM1 0x8003c10000
 
 #define SYSCON  (IO + 0x30000)
 
@@ -434,10 +434,7 @@ printf( "# " format "\n", ##args ); \
 #endif
 #endif
 
-
-#ifdef CONFIG_SPL_BUILD
 #define LSM     0x8031000000
-#endif
 
 #define CONFIG_NET_RETRY_COUNT 20
 #define CONFIG_FIT
@@ -716,7 +713,7 @@ int serial_early_init(void);
 #define CONFIG_SYS_INIT_SP_ADDR         0x280000
 #define CONFIG_SYS_MALLOC_BASE		CONFIG_SYS_INIT_SP_ADDR
 #define CONFIG_SYS_MALLOC_SIZE \
-  (0x400000 - CONFIG_SYS_MALLOC_BASE - 0x40000 - CONFIG_ENV_SIZE)
+	(0x400000 - CONFIG_SYS_MALLOC_BASE - CONFIG_ENV_SIZE)
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_SYS_MALLOC_SIZE)
 
 #define CONFIG_SYS_EMIF_PRECALCULATED_TIMING_REGS
@@ -1046,8 +1043,6 @@ void stop_watchdog(void);
  * space for the kernel at the beginning of memory
  */
 #define CONFIG_SPL_BSS_START_ADDR	0x84000000
-#define CONFIG_SYS_SPL_MALLOC_START	(LSM + SZ_256K - SZ_8K - SZ_4K - SZ_16K)
-#define CONFIG_SYS_SPL_MALLOC_SIZE	SZ_16K
 
 #define CONFIG_AXXIA_SERIAL_FLASH_ENV
 #define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
@@ -1056,10 +1051,34 @@ void stop_watchdog(void);
 /*
   ==============================================================================
   ==============================================================================
+  Locations and Offsets
+  ==============================================================================
+  ==============================================================================
+*/
+
+/*
+  For SPL,
+
+  stack starts at 0xc000 - <spl heap size> from the end of LSM and
+  grows downward.  <spl heap size> is 16k.  The last 3Kb of LSM are
+  for parameter headers and the parameters.
+ */
+
+#define CONFIG_SYS_SPL_MALLOC_START	(LSM + SZ_256K - 0xc00 - SZ_16K)
+#define CONFIG_SYS_SPL_MALLOC_SIZE	SZ_16K
+
+/*
+  ==============================================================================
+  ==============================================================================
   Errata
   ==============================================================================
   ==============================================================================
 */
+
+#ifndef __ASSEMBLY__
+extern volatile unsigned long *crumbs;
+extern volatile unsigned long long *scratch;
+#endif
 
 #define COUNTER_FREQUENCY 256000000
 #define CPU_RELEASE_ADDR 0x400000

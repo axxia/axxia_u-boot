@@ -94,6 +94,7 @@ axxia_initialize(void)
 	  Clocks
 	  ======
 	*/
+
 #if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_CLOCKS))
 		if (0 != clocks_init())

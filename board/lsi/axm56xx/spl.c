@@ -1172,7 +1172,7 @@ board_init_f(ulong dummy)
 	int i;
 #endif	/* CONFIG_MEMORY_RETENTION */
 
-	/* Clear bss. */
+ 	/* Clear bss. */
 	memset(__bss_start, 0, __bss_end - __bss_start);
 
 	/* Set global data pointer. */
@@ -1217,12 +1217,12 @@ board_init_f(ulong dummy)
 	serial_initialize();
 	serial_init();
 	gd->have_console = 1;
+
 	puts("_______              _____            _____________________ \n"
 	     "___    |___  _____  ____(_)_____ _    __  ___/__  __ \\__  / \n"
 	     "__  /| |_  |/_/_  |/_/_  /_  __ `/    _____ \\__  /_/ /_  /  \n"
 	     "_  ___ |_>  < __>  < _  / / /_/ /     ____/ /_  ____/_  /___\n"
 	     "/_/  |_/_/|_| /_/|_| /_/  \\__,_/      /____/ /_/     /_____/\n\n");
-                                                                      
 
 #ifdef AXXIA_VERSION
 	printf("Axxia Version: %s\n\n", AXXIA_VERSION);
@@ -1243,7 +1243,10 @@ board_init_f(ulong dummy)
 	if (0 != rc)
 		acp_failure(__FILE__, __func__, __LINE__);
 
+#ifndef CONFIG_AXXIA_EMU
+	puts("");
 	axxia_display_clocks();
+#endif
 
 #ifdef CONFIG_SPL_MTEST
 	printf("Running the SPL Memory Test\n");
@@ -1256,7 +1259,6 @@ board_init_f(ulong dummy)
 #endif	/* CONFIG_SPL_MTEST */
 
 #ifdef SYSCACHE_ONLY_MODE
-
 	printf("Syscache Only Mode!\n");
 
 	{
@@ -1279,7 +1281,6 @@ board_init_f(ulong dummy)
 				address = (unsigned long *)0x40000000;
 		}
 	}
-
 #else  /* SYSCACHE_ONLY_MODE */
 
 #if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
@@ -1292,7 +1293,7 @@ board_init_f(ulong dummy)
 	}
 #endif	/* CONFIG_AXXIA_EMU */
 
-	printf("System initialized\n");
+	printf("\nSystem Initialized\n\n");
 
 #ifdef CONFIG_MEMORY_RETENTION
 	need_write = 0;
@@ -1317,9 +1318,11 @@ board_init_f(ulong dummy)
 
 #endif	/* SYSCACHE_ONLY_MODE */
 
+	/* Move the stack to ram. */
+	asm volatile ("mov sp, %0" : : "r" (CONFIG_SYS_INIT_SP_ADDR));
+
 #ifdef CONFIG_SPL_ENV_SUPPORT
-	mem_malloc_init((void *)(0x40000000 + CONFIG_SYS_MALLOC_BASE),
-			CONFIG_SYS_MALLOC_SIZE);
+	mem_malloc_init((void *)CONFIG_SYS_MALLOC_BASE,	CONFIG_SYS_MALLOC_SIZE);
 	env_init();
 	env_relocate();
 #endif	/* CONFIG_SPL_ENV_SUPPORT */

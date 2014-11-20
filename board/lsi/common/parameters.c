@@ -124,7 +124,7 @@ verify_parameters(void *parameters, int quiet)
 
 	if (PARAMETERS_VERSION != ntohl(lheader->version)) {
 		if (0 == quiet)
-			printf("Parameter table should be version %d, not %lu!\n",
+			printf("Parameter table should be version %d, not %u!\n",
 			       PARAMETERS_VERSION, lheader->version);
 
 		return -1;
@@ -385,7 +385,7 @@ read_parameters(void)
 	printf("version=%lu flags=0x%lx\n", global->version, global->flags);
 #endif
 
-	printf("Parameter Table Version: %lu\n", header->version);
+	printf("Parameter Table Version: %u\n", header->version);
 
 	description = (unsigned char *)&global->description[0];
 
@@ -516,12 +516,12 @@ write_parameters(void)
 #endif
 
 	/* Update the Checksum */
-	debug("%s:%d - header->size=0x%lx header->checksum=0x%lx\n",
+	debug("%s:%d - header->size=0x%x header->checksum=0x%x\n",
 	      __FILE__, __LINE__, header->size, header->checksum);
 	header->checksum =
 		htonl(crc32(0, (parameters + 12),
 			    (ntohl(header->size) - 12)));
-	debug("%s:%d - header->checksum=0x%lx\n",
+	debug("%s:%d - header->checksum=0x%x\n",
 	      __FILE__, __LINE__, header->checksum);
 
 #ifdef CONFIG_REDUNDANT_PARAMETERS

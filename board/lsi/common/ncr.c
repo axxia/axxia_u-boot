@@ -28,6 +28,8 @@
 
 #define LOCK_DOMAIN 0
 
+#define ARM64
+
 #ifdef ARM64
 #define POINTER(address) ((unsigned long *)((unsigned long long)(address)))
 #else
@@ -1295,9 +1297,9 @@ ncr_read(ncp_uint32_t region,
 	*/
 
 	if (NULL != buffer) {
-		ncp_uint32_t address;
+		void *address;
 
-		address = (NCA + NCP_NCA_CDAR_MEMORY_BASE);
+		address = (void *)(NCA + NCP_NCA_CDAR_MEMORY_BASE);
 
 		while (4 <= number) {
 			*((ncp_uint32_t *)buffer) =
@@ -1570,7 +1572,9 @@ ncr_write(ncp_uint32_t region,
 	*/
 
 	if (NULL != buffer) {
-		ncp_uint32_t offset = (NCA + NCP_NCA_CDAR_MEMORY_BASE);
+		void *offset;
+
+		offset = (void *)(NCA + NCP_NCA_CDAR_MEMORY_BASE);
 
 		while (4 <= number) {
 			ncr_register_write(*((ncp_uint32_t *)buffer),
@@ -1765,7 +1769,7 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 	command_data_register_0_t cdr0;
 	command_data_register_1_t cdr1;
 	command_data_register_2_t cdr2;
-	ncp_uint32_t data_word_base;
+	void *data_word_base;
 	int wfc_timeout = WFC_TIMEOUT;
 
 	if (0 != ncr_lock(LOCK_DOMAIN))
@@ -1798,7 +1802,7 @@ ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 	  Copy from buffer to the data words.
 	*/
 
-	data_word_base = ( NCA + NCP_NCA_CDAR_MEMORY_BASE );
+	data_word_base = (void *)(NCA + NCP_NCA_CDAR_MEMORY_BASE);
 	ncr_register_write( count, POINTER(data_word_base ));
 	data_word_base += 4;
 

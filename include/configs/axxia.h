@@ -256,25 +256,25 @@ typedef struct {
 
 #ifdef CONFIG_AXXIA_ARM
 typedef struct {
-	unsigned long magic;
-	unsigned long size;
-	unsigned long checksum;
-	unsigned long version;
-	unsigned long chipType;
-	unsigned long globalOffset;
-	unsigned long globalSize;
-	unsigned long pciesrioOffset;
-	unsigned long pciesrioSize;
-	unsigned long voltageOffset;
-	unsigned long voltageSize;
-	unsigned long clocksOffset;
-	unsigned long clocksSize;
-	unsigned long systemMemoryOffset;
-	unsigned long systemMemorySize;
-	unsigned long classifierMemoryOffset;
-	unsigned long classifierMemorySize;
-	unsigned long systemMemoryRetentionOffset;
-	unsigned long systemMemoryRetentionSize;
+	unsigned magic;
+	unsigned size;
+	unsigned checksum;
+	unsigned version;
+	unsigned chipType;
+	unsigned globalOffset;
+	unsigned globalSize;
+	unsigned pciesrioOffset;
+	unsigned pciesrioSize;
+	unsigned voltageOffset;
+	unsigned voltageSize;
+	unsigned clocksOffset;
+	unsigned clocksSize;
+	unsigned systemMemoryOffset;
+	unsigned systemMemorySize;
+	unsigned classifierMemoryOffset;
+	unsigned classifierMemorySize;
+	unsigned systemMemoryRetentionOffset;
+	unsigned systemMemoryRetentionSize;
 } __attribute__((packed)) parameters_header_t;
 #else  /* CONFIG_AXXIA_ARM */
 typedef struct {

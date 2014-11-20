@@ -394,7 +394,6 @@ initialize_elm(void)
 		value &= 0xfffffdff;
 		writel(value, (ELM0 + 0x4));
 		value = readl(ELM0 + 0x4);
-		printf("%s:%d - 0x%08x\n", __FILE__, __LINE__, value); /* ZZZ */
 #endif
 
 

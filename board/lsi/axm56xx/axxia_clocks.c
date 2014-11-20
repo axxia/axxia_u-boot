@@ -378,6 +378,7 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 		return -1;
 		break;
 	}
+
 	return 0;
 
 #else
