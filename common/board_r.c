@@ -257,9 +257,6 @@ static int initr_barrier(void)
 
 static int initr_malloc(void)
 {
-#ifdef CONFIG_AXXIA_ARM
-	mem_malloc_init((void *)CONFIG_SYS_MALLOC_BASE,	CONFIG_SYS_MALLOC_LEN);
-#else  /* CONFIG_AXXIA_ARM */
 	ulong malloc_start;
 
 #ifdef CONFIG_SYS_MALLOC_F_LEN
@@ -268,9 +265,8 @@ static int initr_malloc(void)
 #endif
 	/* The malloc area is immediately below the monitor copy in DRAM */
 	malloc_start = gd->relocaddr - TOTAL_MALLOC_LEN;
-	mem_malloc_init((ulong)map_sysmem(malloc_start, TOTAL_MALLOC_LEN),
+	mem_malloc_init(map_sysmem(malloc_start, TOTAL_MALLOC_LEN),
 			TOTAL_MALLOC_LEN);
-#endif	/* CONFIG_AXXIA_ARM */
 	return 0;
 }
 
@@ -728,9 +724,7 @@ init_fnc_t init_sequence_r[] = {
 #endif
 	initr_barrier,
 	initr_malloc,
-#ifndef CONFIG_AXXIA_ARM
 	bootstage_relocate,
-#endif	/* CONFIG_AXXIA_ARM */
 #ifdef CONFIG_DM
 	initr_dm,
 #endif

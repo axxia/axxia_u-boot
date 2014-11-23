@@ -331,117 +331,6 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
   ==============================================================================
 */
 
-/*
- * reset_cpu_fabric_sync
- *
- * This code sequence needs to be located in the same cache line.
- */
-static noinline __aligned(64) void
-reset_cpu_fabric_sync(void)
-{
-#if 0
-	/* dsb */
-	asm volatile ("mcr p15,0,%0,c7,c10,4" : : "r" (0));
-
-	/* isb */
-	asm volatile ("mcr p15,0,%0,c7,c5,4" : : "r" (0));
-
-	/* wfi */
-	asm volatile ("wfi");
-
-	/* isb */
-	asm volatile ("mcr p15,0,%0,c7,c5,4" : : "r" (0));
-#endif
-}
-
-/*
-  ------------------------------------------------------------------------------
-  reset_cpu_fabric
-
-  This sequence switches the memory map from reset to mission, and
-  resets some hardware elements, including the core.  After the 'wfi'
-  instruction, execution will start at offset 0 in system memory.
-
-  Does not return!
-*/
-
-void
-reset_cpu_fabric(void)
-{
-	unsigned long value;
-
-	WATCHDOG_RESET();
-	set_vat_mission();
-
-	/*
-	  Work around for ARM hardware issue.  No errata yet (issue is
-	  still being investigated).  Avago BZ is 49133.
-
-	  Here's the description from the BZ.
-
-	  Please read the attached errata from ARM.  Based on review
-	  with ARM- here are the ramifications of this defect. There
-	  is no guarantee the error will occur.
-
-	  The following steps suggest how to AVOID creating a
-	  situation where the system_counter will be corrupted.
-	 
-	  1. This error can occur in the X7, but may not be observed at all. 
-	  2. In X7, the error can occur immediately after: reset_system,
-	     reset_chip, reset_fabric, or when the non-CPU locic (L2) is
-	     repowered on after being powered off.
-	  3. The error will "self correct". The upper bound on the time for
-	     the error to self-correct is the number of ticks on the
-	     system_counter when the error event occurs.
-
-	  To avoid the error:
-	
-	  A. MUST not power off the non-CPU logic in a cluster. A cluster's
-	     bit in pwr_PWRUPL2LGCSTG1 @0x156.0x0.0x1420 and
-	     pwr_PWRUPL2LGCSTG2 @0x156.0x0.0x1424 must **NOT** be set to 0 if
-	     there will be a need in the future to bring the cluster back into
-	     the system. The bit may be cleared if the cluster is being powered
-	     off permanently. NOTE: CPU logic, CPU RAMS, and L2 RAMS may be
-	     powered off.
-
-	  B. During the boot sequence, to reduce the magnitude of the system
-	     counter (and thus the magnitude of the possible error): reset the
-	     system counter immediately prior to starting the reset_fabric
-	     process: set Reset Module Register (@0x156.0x0.0x1038) bit 16 to
-	     a 1, then set it back to 0, then start the reset_fabric process.
-	     NOTE: this will blow away any special uboot setup for the
-	     system_counter.
-
-	  The work around implemented here is "B." above.
-	*/
-
-	ncr_read32(NCP_REGION_ID(0x156, 0), 0x1038, (ncp_uint32_t *)&value);
-	value |= 0x10000;
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x1038, value);
-	value &= ~0x10000;
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x1038, value);
-
-	/*
-	 * Don't use readl()/writel(), as those contain barriers. The barriers
-	 * below are part of the sequence.
-	 */
-
-	/* syscontrol access key */
-	__raw_writel(0xab, SYSCON + 0x1000);
-
-	/* set the resetFab bit in reset_ctl */
-	value = __raw_readl(SYSCON + 0x1008);
-	__raw_writel(value | 4, SYSCON + 0x1008);
-
-	/* dsb */
-	/*asm volatile ("mcr p15,0,%0,c7,c10,4" : : "r" (0));*/
-
-	/* read back reset_ctl */
-	(void) __raw_readl(SYSCON + 0x1008);
-
-	reset_cpu_fabric_sync();
-}
-
 /* For spl mtest range testing, find the memory ranges (1G page table entries)
 that cover what is being tested */
 void sw_test_page_fit(unsigned long in_addr, unsigned long in_len,
@@ -966,7 +855,6 @@ jump_to(void *address)
 
 	for (;;)
 		;
-
 	return;
 }
 
@@ -1115,17 +1003,20 @@ load_image(void)
 	/* Load u-boot, mkimage header is 64 bytes. */
 	spi_flash_read(flash, CONFIG_UBOOT_OFFSET, 0x40, &header);
 	spl_parse_image_header(&header);
-	/* Note that, in the SPL, SDRAM is virtually mapped to 0x40000000. */
-	spl_image.load_addr = 0x40000000;
+	spl_image.load_addr = 0;
+	printf("%s:%d - spl_image.size is %lu\n",
+	       __FILE__, __LINE__, (unsigned long)spl_image.size); /* ZZZ */
 
 	if (IH_MAGIC == image_get_magic(&header)) {
 		/* Load a U-Boot Image, Verifying Checksum */
 		spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS +
 			       sizeof(struct image_header),
-			       spl_image.size, (void *)((u64)spl_image.load_addr));
+			       spl_image.size,
+			       (void *)0x4000000);
+		memmove((void *)0, (void *)0x4000000, spl_image.size);
 
 		if (ntohl(header.ih_dcrc) !=
-		    crc32(0, (unsigned char *)0x40000000,
+		    crc32(0, (unsigned char *)0,
 			  (spl_image.size - sizeof(struct image_header)))) {
 			puts("Bad U-Boot Image Checksums!\n");
 			acp_failure(__FILE__, __func__, __LINE__);
@@ -1133,9 +1024,10 @@ load_image(void)
 	} else {
 		/* Load a U-Boot Binary */
 		spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
-			       spl_image.size, (void *)((u64)spl_image.load_addr));
+			       spl_image.size,
+			       (void *)0x4000000);
+		memmove((void *)0, (void *)0x4000000, spl_image.size);
 	}
-
 
 #if !defined(CONFIG_AXXIA_EMU)
 	if (0 != sbb_verify_image(0x00000000, 0x00000000, 0, 1, 1))
@@ -1144,8 +1036,8 @@ load_image(void)
 
 #endif	/* CONFIG_REDUNDANT_UBOOT */
 
-	reset_cpu_fabric();
-	acp_failure(__FILE__, __func__, __LINE__);
+	asm volatile ("mov x10, 0\n"
+		      "ret x10");
 }
 
 #endif

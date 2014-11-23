@@ -73,9 +73,6 @@ ENTRY(_main)
 	mov	x0, #0
 	bl	board_init_f
 
-#ifdef CONFIG_AXXIA_ARM
-	b	board_init_r
-#else
 /*
  * Set up intermediate environment (new sp and gd) and call
  * relocate_code(addr_moni). Trick here is that we'll return
@@ -115,7 +112,6 @@ clear_loop:
 	mov	x0, x18				/* gd_t */
 	ldr	x1, [x18, #GD_RELOCADDR]	/* dest_addr */
 	b	board_init_r			/* PC relative jump */
-#endif  /* CONFIG_AXXIA_ARM */
 #endif  /* CONFIG_AXXIA_ARM && CONFIG_SPL_BUILD */
 	/* NOTREACHED - board_init_r() does not return */
 

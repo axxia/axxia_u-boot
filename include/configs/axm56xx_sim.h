@@ -26,6 +26,7 @@
 /*#define CONFIG_AXXIA_56XX_SIM_V_1_0*/
 #define CONFIG_AXXIA_56XX_SIM
 #define CONFIG_AXXIA_SIM
+#define ARM64
 
 /*
   ==============================================================================
@@ -90,6 +91,24 @@
   ==============================================================================
 */
 
+#define CONFIG_EXTRA_ENV_SETTINGS		\
+	"loadaddr=0x80100000\0"			\
+	"kernel_addr=0x100000\0"		\
+	"ramdisk_addr=0x800000\0"		\
+	"ramdisk_size=0x2000000\0"		\
+	"fdt_high=0xffffffffffffffff\0"		\
+	"initrd_high=0xffffffffffffffff\0"	\
+	"kernel_start=0x581200000\0"		\
+	"kernel_load=0x806f0000\0"		\
+	"kernel_size=0x1000000\0"		\
+	"console=ttyAMA0,115200n8\0"
+
+#define CONFIG_BOOTARGS		"root=/dev/vda1 console=ttyAMA0,115200 " \
+				"earlycon=pl011,0x8080000000 " \
+				"mem=2G"
+#define CONFIG_BOOTCOMMAND	"bootm 4010000 - 4000000"
+#define CONFIG_BOOTDELAY	3
+
 #define V_MIN   795
 #define V_SAFE  940
 #define V_MAX  1050
@@ -100,10 +119,6 @@
 
 /*#define CONFIG_AXXIA_FEMAC*/
 /*#define CONFIG_AXXIA_EIOA*/
-
-#define CONFIG_BOOTDELAY 0
-#define CONFIG_BOOTCOMMAND \
-  "setenv fdt_high 0xffffffff ; setenv bootargs console=ttyAMA root=/dev/vda rootwait mem=1024M ; bootm 4010000 - 4000000\0"
 
 #include <configs/axm56xx_common.h>
 

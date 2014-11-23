@@ -1075,6 +1075,8 @@ void stop_watchdog(void);
   ==============================================================================
 */
 
+#define OSMEMORY_DEFAULT SZ_2G
+
 #ifndef __ASSEMBLY__
 extern volatile unsigned long *crumbs;
 extern volatile unsigned long long *scratch;

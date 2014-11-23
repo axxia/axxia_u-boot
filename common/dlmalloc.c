@@ -2015,10 +2015,20 @@ static void malloc_extend_top(nb) INTERNAL_SIZE_T nb;
 
   brk = (char*)(MORECORE (sbrk_size));
 
+#if 0
   /* Fail if sbrk failed or if a foreign sbrk call killed our space */
   if (brk == (char*)(MORECORE_FAILURE) ||
       (brk < old_end && old_top != initial_top))
     return;
+#else
+  /*
+    The above makes it impossible to move the heap downward.
+
+    TODO: Understand what is going on.
+  */
+  if (brk == (char*)(MORECORE_FAILURE))
+    return;
+#endif
 
   sbrked_mem += sbrk_size;
 

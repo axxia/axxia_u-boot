@@ -26,6 +26,7 @@
 /*#define CONFIG_AXXIA_56XX_EMU_V_1_0*/
 #define CONFIG_AXXIA_56XX_EMU
 #define CONFIG_AXXIA_EMU
+#define ARM64
 
 /*
   ===============================================================================

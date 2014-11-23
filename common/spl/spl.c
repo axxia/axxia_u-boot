@@ -105,8 +105,13 @@ __weak void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 {
 	typedef void __noreturn (*image_entry_noargs_t)(void);
 
+#ifdef ARM64
 	image_entry_noargs_t image_entry =
 	  (image_entry_noargs_t) ((u64)spl_image->entry_point);
+#else
+	image_entry_noargs_t image_entry =
+	  (image_entry_noargs_t) (spl_image->entry_point);
+#endif
 
 	debug("image entry point: 0x%X\n", spl_image->entry_point);
 	image_entry();

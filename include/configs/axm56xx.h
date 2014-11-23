@@ -24,6 +24,7 @@
 #define __CONFIGS_AXXIA_56XX_H
 
 #define CONFIG_AXXIA_56XX
+#define ARM64
 
 /*
   ==============================================================================

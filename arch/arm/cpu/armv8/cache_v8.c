@@ -31,7 +31,7 @@ static void mmu_setup(void)
 
 	/* Setup an identity-mapping for all spaces */
 	for (i = 0; i < (PGTABLE_SIZE >> 3); i++) {
-		set_pgtable_section(page_table, i, i << SECTION_SHIFT,
+		set_pgtable_section(page_table, i, (u64)i << SECTION_SHIFT,
 				    MT_DEVICE_NGNRNE);
 	}
 

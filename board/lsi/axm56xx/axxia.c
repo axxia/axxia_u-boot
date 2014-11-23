@@ -34,14 +34,17 @@ DECLARE_GLOBAL_DATA_PTR;
   ==============================================================================
 */
 
+#ifndef CONFIG_AXXIA_SIM
 static int number_of_clusters = -1;
 static int bit_by_cluster[4];
+#endif
 
 /*
   ------------------------------------------------------------------------------
   init_clusters_info
 */
 
+#ifndef CONFIG_AXXIA_SIM
 static int
 initialize_cluster_info(void)
 {
@@ -184,6 +187,7 @@ initialize_cluster_info(void)
 
 	return 0;
 }
+#endif
 
 /*
   ------------------------------------------------------------------------------
@@ -208,6 +212,7 @@ get_number_of_clusters(void)
   get_bit_by_cluster
 */
 
+#ifndef CONFIG_AXXIA_SIM
 static unsigned long
 get_bit_by_cluster(unsigned long cluster)
 {
@@ -217,12 +222,14 @@ get_bit_by_cluster(unsigned long cluster)
 
 	return bit_by_cluster[cluster];
 }
+#endif
 
 /*
   ------------------------------------------------------------------------------
   set_cluster_coherency
 */
 
+#ifndef CONFIG_AXXIA_SIM
 static int
 set_cluster_coherency(unsigned cluster, unsigned state)
 {
@@ -282,13 +289,14 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 
 	return 0;
 }
+#endif
 
 /*
   ------------------------------------------------------------------------------
   power_down_cluster
 */
 
-#ifndef CONFIG_AXXIA_EMU
+#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
 
 static int
 power_down_cluster(int cluster)
@@ -436,6 +444,7 @@ power_down_cluster(int cluster)
 static int
 set_clusters(void)
 {
+#ifndef CONFIG_AXXIA_SIM
 	char *clusters_env;
 	ncp_uint32_t clusters = 0;
 
@@ -543,6 +552,7 @@ set_clusters(void)
 			acp_failure(__FILE__, __func__, __LINE__);
 		}
 	}
+#endif
 #endif
 
 	return 0;
@@ -680,6 +690,29 @@ void set_muxconf_regs_non_essential(void)
 
 /*
   ------------------------------------------------------------------------------
+  board_get_usable_ram_top
+*/
+
+ulong
+board_get_usable_ram_top(ulong total_size)
+{
+	char *osmemory_string;
+	unsigned long osmemory_value;
+
+	osmemory_string = getenv("osmemory");
+
+	if (NULL != osmemory_string) {
+		osmemory_value = simple_strtoul(osmemory_string, NULL, 0);
+		osmemory_value *= (1024 * 1024);
+	} else {
+		osmemory_value = OSMEMORY_DEFAULT;
+	}
+
+	return osmemory_value;
+}
+
+/*
+  ------------------------------------------------------------------------------
   board_early_init_f
 */
 
@@ -693,7 +726,7 @@ board_early_init_f(void)
 
 	writel(0x1f, (ncp_uint32_t *)(SSP + SSP_CSR));
 
-	gd->ram_size = 0x40000000;
+	gd->ram_size = 0x80000000;
 
 	serial_init();
 	gd->have_console = 1;

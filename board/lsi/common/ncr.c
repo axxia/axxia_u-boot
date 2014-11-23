@@ -28,8 +28,6 @@
 
 #define LOCK_DOMAIN 0
 
-#define ARM64
-
 #ifdef ARM64
 #define POINTER(address) ((unsigned long *)((unsigned long long)(address)))
 #else
