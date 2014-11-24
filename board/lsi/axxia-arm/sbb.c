@@ -26,6 +26,8 @@
 
 #include <config.h>
 #include <common.h>
+#include <watchdog.h>
+
 #include <asm/io.h>
 
 /*
@@ -394,18 +396,36 @@ report_errors(unsigned long sbb_interrupt_status, int verbose)
 */
 
 static int
-run_sbb_function(int function,
+run_sbb_function(int function, size_t image_length,
 		 unsigned long *parameters, int number_of_parameters,
 		 int verbose)
 {
 	int i;
 	unsigned long value;
 	int sbb_enabled;
+	ncp_uint32_t cycles_per_ms;
+	unsigned long long cycles;
+	int retries;
+
+	if (-1 == acp_clock_get(clock_system, &cycles_per_ms)) {
+		printf("Unable to get the system frequency!\n");
+
+		return -1;
+	}
+
+	/*
+	  Max cycles required by the SBB.
+
+	  2 * 10^6 + (image_size_in_bits / 128 * 25) + C clock cycles.
+
+	  Where C is less than 10^6.
+	*/
+
+	cycles = 3000000ULL + ((image_length / 16)  * 25);
+	retries = cycles / cycles_per_ms; /* Estimated time. */
 
 	/* Make sure SBB is enabled (check the fuses). */
-
 	sbb_enabled = is_sbb_enabled(verbose);
-
 	if (-1 == sbb_enabled || 0 == sbb_enabled)
 		return -1;
 
@@ -433,9 +453,10 @@ run_sbb_function(int function,
 	while (0 == (value & 1)) {
 		udelay(1000);
 
-		if (ctrlc()) {
-			unlock_sbb();
-			return -1;
+		if (0 < retries--) {
+			WATCHDOG_RESET();
+		} else {
+			acp_failure(__FILE__, __func__, __LINE__);
 		}
 
 		value = readl(SBB_BASE + 0xc04);
@@ -507,18 +528,54 @@ is_sbb_enabled(int verbose)
 
 /*
   ------------------------------------------------------------------------------
+  sbb_image_max_length
+*/
+
+int
+sbb_image_max_length(void *image, size_t *length)
+{
+	unsigned long *sbb_header;
+
+	/*
+	  The size of the contents of a signed/encrypted image
+	  can be calculated as follows.
+
+	  ImageSectionLength - Pad
+
+	  ImageSectionLength is the second word, and Pad is
+	  the byte after that.
+
+	  The full size of the signed/encrypted image is not
+	  available, but will be less than 259 bytes more than
+	  the contents.
+	*/
+
+	sbb_header = (unsigned long *)image;
+	*length = 0;
+
+	if (0x53424211 != ntohl(sbb_header[0]))
+		return -1;
+
+	*length = ntohl(sbb_header[1]) -
+		((ntohl(sbb_header[2]) & 0xff000000) >> 24) +
+		259;
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
   sbb_verify_image
 */
 
 int
-sbb_verify_image(void *source, void *destination,
+sbb_verify_image(void *source, void *destination, size_t max_length,
 		 int safe, int invalidate, int verbose)
 {
 	unsigned long parameters[4];
 	int sbb_enabled;
 
 	/* If SBB is disabled, return success */
-
 	sbb_enabled = is_sbb_enabled(verbose);
 
 	if (1 != sbb_enabled)
@@ -543,7 +600,7 @@ sbb_verify_image(void *source, void *destination,
 	parameters[3] = (unsigned long)destination;
 
 	/* Run the function. */
-	if (0 != run_sbb_function((0 == safe) ? 1 : 11,
+	if (0 != run_sbb_function((0 == safe) ? 1 : 11, max_length,
 				  parameters, 4, verbose)) {
 		if (0 != invalidate)
 			memset((void *)destination, 0, 16);

@@ -1101,12 +1101,8 @@ verify_image(struct spi_flash *flash,
 		  
 		spi_flash_read(flash, flash_offset, sizeof(unsigned long) * 3,
 			       &sbb_header);
-		length = ntohl(sbb_header[1]) -
-			((ntohl(sbb_header[2]) & 0xff000000) >> 24) +
-			259;
 
-		if (0x53424211 != ntohl(sbb_header[0]) ||
-		    CONFIG_SYS_MONITOR_LEN < length) {
+		if (0 != sbb_image_max_length((void *)sbb_header, &length)) {
 			puts("\tInvalid Length!\n");
 
 			return -1;
@@ -1114,7 +1110,7 @@ verify_image(struct spi_flash *flash,
 
 		spi_flash_read(flash, flash_offset, length, membase);
 
-		if (0 != sbb_verify_image(0, 0, 0, 0, 0)) {
+		if (0 != sbb_verify_image(0, 0, length, 0, 0, 0)) {
 			puts("\tInsecure!\n");
 
 			return -1;
@@ -1178,7 +1174,7 @@ verify_image(struct spi_flash *flash,
 void spl_spi_load_image(void)
 {
 	struct spi_flash *flash;
-#ifdef CONFIG_REDUNDANT_UBOOT	
+#ifdef CONFIG_REDUNDANT_UBOOT
 	int watchdog_timeout;
 	int a_valid;
 	int b_valid;
@@ -1188,6 +1184,7 @@ void spl_spi_load_image(void)
 	int sbb_enabled = 0;
 #else  /* CONFIG_REDUNDANT_UBOOT */
 	struct image_header header;
+	size_t length;
 #endif	/* CONFIG_REDUNDANT_UBOOT */
 
 	/*
@@ -1321,7 +1318,8 @@ void spl_spi_load_image(void)
 
 
 #ifndef CONFIG_AXXIA_EMU
-	if (0 != sbb_verify_image(0x00000000, 0x00000000, 0, 1, 1))
+	if (0 != sbb_image_max_length((void *)0x40000000, &length) ||
+	    0 != sbb_verify_image(0, 0, length, 0, 1, 1))
 		acp_failure(__FILE__, __func__, __LINE__);
 #endif
 

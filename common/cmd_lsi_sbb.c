@@ -62,6 +62,7 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	if (0 == strncmp(argv[1], "v", strlen("v"))) {
 		int safe = 0;
+		size_t length;
 
 		if ((5 == argc) && (0 == strncmp(argv[4], "s", strlen("s"))))
 			safe = 1;
@@ -69,9 +70,9 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		source = simple_strtoul(argv[2], NULL, 16);
 		destination = simple_strtoul(argv[3], NULL, 16);
 
-		if (0 ==
-		    sbb_verify_image((void *)source, (void *)destination, safe,
-				     1, 1))
+		if (0 == sbb_image_max_length((void *)source, &length) &&
+		    0 == sbb_verify_image((void *)source, (void *)destination,
+					  length, safe, 1, 1))
 			return 0;
 		else
 			return -1;
