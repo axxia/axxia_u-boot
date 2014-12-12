@@ -1146,6 +1146,8 @@ void stop_watchdog(void);
   ==============================================================================
 */
 
+#define SBBLOCKUP_TEST
+
 #ifndef __ASSEMBLY__
 void axxia_display_clocks(void);
 int clocks_init(void);

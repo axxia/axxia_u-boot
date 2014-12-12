@@ -456,7 +456,9 @@ run_sbb_function(int function, size_t image_length,
 		if (0 < retries--) {
 			WATCHDOG_RESET();
 		} else {
-			acp_failure(__FILE__, __func__, __LINE__);
+			printf("Timed out waiting for SBB Done Bit\n");
+
+			return -1;
 		}
 
 		value = readl(SBB_BASE + 0xc04);
@@ -592,6 +594,13 @@ sbb_verify_image(void *source, void *destination, size_t max_length,
 	print_sbb_efuse("Secret Secure Boot Key SHA2 (Copy 0)",
 			0x6b8, 0x7f);
 #endif	/* PRINT_SBB_EFUSE */
+
+	/* ZZZ */
+#if 0
+	printf("%s:%d - Flushing the data cache.\n", __FILE__, __LINE__);
+	flush_dcache_all();
+#endif
+	/* ZZZ */
 
 	/* Set up the parameters. */
 	parameters[0] = 0;
