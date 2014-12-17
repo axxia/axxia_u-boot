@@ -395,6 +395,8 @@ report_errors(unsigned long sbb_interrupt_status, int verbose)
   run_sbb_function
 */
 
+#define SBB_LOCKUP_WA
+
 static int
 run_sbb_function(int function, size_t image_length,
 		 unsigned long *parameters, int number_of_parameters,
@@ -406,6 +408,9 @@ run_sbb_function(int function, size_t image_length,
 	ncp_uint32_t cycles_per_ms;
 	unsigned long long cycles;
 	int retries;
+#ifdef SBB_LOCKUP_WA
+	unsigned long aux_ctl;
+#endif
 
 	if (-1 == acp_clock_get(clock_system, &cycles_per_ms)) {
 		printf("Unable to get the system frequency!\n");
@@ -441,6 +446,11 @@ run_sbb_function(int function, size_t image_length,
 	/* Clear the interrupt status registers. */
 	writel(0xffffffff, (SBB_BASE + 0xc04));
 
+#ifdef SBB_LOCKUP_WA
+	aux_ctl = readl(DICKENS + (0x86 << 16) + 0x500);
+	writel(0x9, (DICKENS + (0x86 << 16) + 0x500));
+#endif
+
 	/* Write the function. */
 	writel(function, (SBB_BASE + 0x804));
 
@@ -456,13 +466,19 @@ run_sbb_function(int function, size_t image_length,
 		if (0 < retries--) {
 			WATCHDOG_RESET();
 		} else {
+#ifdef SBB_LOCKUP_WA
+			writel(aux_ctl, (DICKENS + (0x86 << 16) + 0x500));
+#endif
 			printf("Timed out waiting for SBB Done Bit\n");
-
-			return -1;
+			acp_failure(__FILE__, __func__, __LINE__);
 		}
 
 		value = readl(SBB_BASE + 0xc04);
 	}
+
+#ifdef SBB_LOCKUP_WA
+	writel(aux_ctl, (DICKENS + (0x86 << 16) + 0x500));
+#endif
 
 	/* Release the semaphore. */
 	unlock_sbb();
@@ -594,13 +610,6 @@ sbb_verify_image(void *source, void *destination, size_t max_length,
 	print_sbb_efuse("Secret Secure Boot Key SHA2 (Copy 0)",
 			0x6b8, 0x7f);
 #endif	/* PRINT_SBB_EFUSE */
-
-	/* ZZZ */
-#if 0
-	printf("%s:%d - Flushing the data cache.\n", __FILE__, __LINE__);
-	flush_dcache_all();
-#endif
-	/* ZZZ */
 
 	/* Set up the parameters. */
 	parameters[0] = 0;
