@@ -1004,8 +1004,6 @@ load_image(void)
 	spi_flash_read(flash, CONFIG_UBOOT_OFFSET, 0x40, &header);
 	spl_parse_image_header(&header);
 	spl_image.load_addr = 0;
-	printf("%s:%d - spl_image.size is %lu\n",
-	       __FILE__, __LINE__, (unsigned long)spl_image.size); /* ZZZ */
 
 	if (IH_MAGIC == image_get_magic(&header)) {
 		/* Load a U-Boot Image, Verifying Checksum */
