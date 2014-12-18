@@ -583,7 +583,9 @@ static int arm_pci_init(void)
 				unsigned pei0_speed;
 
 				pei0_speed = simple_strtoul(env_value, NULL, 0);
-				pci_speed_change(0, pei0_speed);
+				/* speed change applies only to PEI RC mode */
+				if (pei0Control & 0x400000)
+					pci_speed_change(0, pei0_speed);
 			}
 		} else {
 			printf("PCIE0 link State DOWN = 0x%x\n", linkState);
@@ -602,7 +604,9 @@ static int arm_pci_init(void)
 				unsigned pei1_speed;
 
 				pei1_speed = simple_strtoul(env_value, NULL, 0);
-				pci_speed_change(1, pei1_speed);
+				/* speed change applies only to PEI RC mode */
+				if (pei1Control & 0x400000)
+					pci_speed_change(1, pei1_speed);
 			}
 		} else {
 			printf("PCIE1 link State DOWN = 0x%x\n", linkState);
