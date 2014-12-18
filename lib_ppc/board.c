@@ -1951,7 +1951,9 @@ acp_init_r( void )
 			       "Skipping PCI setup.\n");
 			control = 0;
 		}
-		if (0 != (control & 0x00400000))
+		/* PEI0/PEI1 or PEI2 is RC mode */
+		if ((0 != (control & 0x00400000))
+			|| (0 != (control & 0x6)))
 			pci_rc = 1;
 
 		boot_mode = 0;
@@ -2026,7 +2028,8 @@ acp_init_r( void )
 				/* delay in ms */
 				mdelay(pei_link_delay);
 #ifdef AXM_35xx
-				if (peiControl & 0x1) {
+				/* PEI0 RC and enabled */
+				if ((peiControl & 0x400001) == 0x400001) {
 #endif
 				
 				pciStatus = acpreadio((void *)(PCIE0_CONFIG + 0x1004));

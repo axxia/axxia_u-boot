@@ -415,7 +415,8 @@ int pci_476_init (struct pci_controller *hose, int port)
 	pci_config = in_le32(mbase + 0x1000);
 	pci_status = in_le32(mbase + 0x1004);
 	link_state = (pci_status & 0x3f00) >> 8;
-	printf("PCIE status = 0x%08x : PCI link state = 0x%x\n", pci_status, link_state);
+	printf("PCIE%d status = 0x%08x : PCI link state = 0x%x\n",
+		port, pci_status, link_state);
 
 	/* make sure the link is up */
 	if (link_state != 0xb) {
@@ -536,31 +537,19 @@ void pci_init_board(void)
 
 #if defined(ACP_PEI0) && defined(ACP_PEI1) && defined(ACP_PEI2)
 #ifdef AXM_35xx
-	if (peiControl & 0x1) {
+	/* PEI0 RC and enabled */
+	if ((peiControl & 0x400001) == (0x400001)) {
 #endif
 
-	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0
-	 * and MPAGE7 1 MB config space
-	 * 0x0020_4000_0000 to 0x0020_7FFF_FFFF */
+		/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0
+		 * and MPAGE7 1 MB config space
+		 * 0x0020_4000_0000 to 0x0020_7FFF_FFFF */
 
-	word0 = CONFIG_PCIE0_PHY_START | 0x9f0;
-	word1 = 0x40000020;
-	word2 = 0x00030507;
+		word0 = CONFIG_PCIE0_PHY_START | 0x9f0;
+		word1 = 0x40000020;
+		word2 = 0x00030507;
 
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \ 
-			"tlbwe %2,%0,1\n"               \ 
-			"tlbwe %3,%0,2\n"               \
-			"isync\n" : :
-			"r" (0x80000000),
-			"r" (word0),
-			"r" (word1),
-			"r" (word2) :
-			"memory" );
-
-	word0 = CONFIG_SYS_PCIE0_MEMBASE | 0x8f0;
-	word1 = 0x78000020;
-	word2 = 0x00030507;
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
 			"tlbwe %2,%0,1\n"               \
 			"tlbwe %3,%0,2\n"               \
 			"isync\n" : :
@@ -568,50 +557,46 @@ void pci_init_board(void)
 			"r" (word0),
 			"r" (word1),
 			"r" (word2) :
-			"memory" );
-	busno = pci_476_init (&ppc476_hose[0], 0);
+			"memory");
+
+		word0 = CONFIG_SYS_PCIE0_MEMBASE | 0x8f0;
+		word1 = 0x78000020;
+		word2 = 0x00030507;
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
+			"tlbwe %2,%0,1\n"               \
+			"tlbwe %3,%0,2\n"               \
+			"isync\n" : :
+			"r" (0x80000000),
+			"r" (word0),
+			"r" (word1),
+			"r" (word2) :
+			"memory");
+		busno = pci_476_init(&ppc476_hose[0], 0);
 
 #ifdef AXM_35xx
 	}
 	if (peiControl & 0x2) {
 #endif
 
-	word0 = CONFIG_PCIE1_PHY_START | 0x9f0;
-	word2 = 0x00030507;
+		word0 = CONFIG_PCIE1_PHY_START | 0x9f0;
+		word2 = 0x00030507;
 
 #ifdef AXM_35xx
 
-	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
-	 * and MPAGE7 1 MB config space
-	 * 0x0020_8000_0000 to 0x0020_BFFF_FFFF */
+		/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
+		 * and MPAGE7 1 MB config space
+		 * 0x0020_8000_0000 to 0x0020_BFFF_FFFF */
 
-	word1 = 0x80000020;
+		word1 = 0x80000020;
 #else
-	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
-	 * and MPAGE7 1 MB config space
-	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
+		/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
+		 * and MPAGE7 1 MB config space
+		 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
 
-	word1 = 0xc0000020;
+		word1 = 0xc0000020;
 #endif
 
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \ 
-			"tlbwe %2,%0,1\n"               \ 
-			"tlbwe %3,%0,2\n"               \
-			"isync\n" : :
-			"r" (0x80000000),
-			"r" (word0),
-			"r" (word1),
-			"r" (word2) :
-			"memory" );
-	word0 = CONFIG_SYS_PCIE1_MEMBASE | 0x8f0;
-	word2 = 0x00030507;
-
-#ifdef AXM_35xx
-	word1 = 0xb8000020;
-#else
-	word1 = 0xf8000020;
-#endif
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
 			"tlbwe %2,%0,1\n"               \
 			"tlbwe %3,%0,2\n"               \
 			"isync\n" : :
@@ -619,51 +604,50 @@ void pci_init_board(void)
 			"r" (word0),
 			"r" (word1),
 			"r" (word2) :
-			"memory" );
+			"memory");
+		word0 = CONFIG_SYS_PCIE1_MEMBASE | 0x8f0;
+		word2 = 0x00030507;
+
+#ifdef AXM_35xx
+		word1 = 0xb8000020;
+#else
+		word1 = 0xf8000020;
+#endif
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
+			"tlbwe %2,%0,1\n"               \
+			"tlbwe %3,%0,2\n"               \
+			"isync\n" : :
+			"r" (0x80000000),
+			"r" (word0),
+			"r" (word1),
+			"r" (word2) :
+			"memory");
 #ifndef ACP_EMU
-	busno = pci_476_init (&ppc476_hose[1], 1);
+		busno = pci_476_init(&ppc476_hose[1], 1);
 #endif
 #ifdef AXM_35xx
 	}
 	if (peiControl & 0x4) {
 #endif
 
-	word0 = CONFIG_PCIE2_PHY_START | 0x9f0;
-	word2 = 0x00030507;
+		word0 = CONFIG_PCIE2_PHY_START | 0x9f0;
+		word2 = 0x00030507;
 
 #ifdef AXM_35xx
-	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 2
-	 * and MPAGE7 1 MB config space
-	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
+		/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 2
+		 * and MPAGE7 1 MB config space
+		 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
 
-	word1 = 0xc0000020;
+		word1 = 0xc0000020;
 #else
-	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 2
-	 * and MPAGE7 1 MB config space
-	 * 0x0021_0000_0000 to 0x0021_3FFF_FFFF */
+		/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 2
+		 * and MPAGE7 1 MB config space
+		 * 0x0021_0000_0000 to 0x0021_3FFF_FFFF */
 
-	word1 = 0x00000021;
+		word1 = 0x00000021;
 #endif
 
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \ 
-			"tlbwe %2,%0,1\n"               \ 
-			"tlbwe %3,%0,2\n"               \
-			"isync\n" : :
-			"r" (0x80000000),
-			"r" (word0),
-			"r" (word1),
-			"r" (word2) :
-			"memory" );
-
-	word0 = CONFIG_SYS_PCIE2_MEMBASE | 0x8f0;
-	word2 = 0x00030507;
-
-#ifdef AXM_35xx
-	word1 = 0xf8000020;
-#else
-	word1 = 0x38000021;
-#endif
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
 			"tlbwe %2,%0,1\n"               \
 			"tlbwe %3,%0,2\n"               \
 			"isync\n" : :
@@ -671,9 +655,27 @@ void pci_init_board(void)
 			"r" (word0),
 			"r" (word1),
 			"r" (word2) :
-			"memory" );
+			"memory");
+
+		word0 = CONFIG_SYS_PCIE2_MEMBASE | 0x8f0;
+		word2 = 0x00030507;
+
+#ifdef AXM_35xx
+		word1 = 0xf8000020;
+#else
+		word1 = 0x38000021;
+#endif
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
+			"tlbwe %2,%0,1\n"               \
+			"tlbwe %3,%0,2\n"               \
+			"isync\n" : :
+			"r" (0x80000000),
+			"r" (word0),
+			"r" (word1),
+			"r" (word2) :
+			"memory");
 #ifndef ACP_EMU
-	busno = pci_476_init (&ppc476_hose[2], 2);
+		busno = pci_476_init(&ppc476_hose[2], 2);
 #endif
 #ifdef AXM_35xx
 	}
@@ -682,31 +684,18 @@ void pci_init_board(void)
 #elif defined(ACP_PEI0) && defined(ACP_PEI1)
 
 #ifdef AXM_35xx
-	if (peiControl & 0x1) {
+	if ((peiControl & 0x400001) == (0x400001)) {
 #endif
 
-	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0
-	 * and MPAGE7 1 MB config space
-	 * 0x0020_4000_0000 to 0x0020_7FFF_FFFF */
+		/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0
+		 * and MPAGE7 1 MB config space
+		 * 0x0020_4000_0000 to 0x0020_7FFF_FFFF */
 
-	word0 = CONFIG_PCIE0_PHY_START | 0x9f0;
-	word1 = 0x40000020;
-	word2 = 0x00030507;
+		word0 = CONFIG_PCIE0_PHY_START | 0x9f0;
+		word1 = 0x40000020;
+		word2 = 0x00030507;
 
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \ 
-			"tlbwe %2,%0,1\n"               \ 
-			"tlbwe %3,%0,2\n"               \
-			"isync\n" : :
-			"r" (0x80000000),
-			"r" (word0),
-			"r" (word1),
-			"r" (word2) :
-			"memory" );
-
-	word0 = CONFIG_SYS_PCIE0_MEMBASE | 0x8f0;
-	word1 = 0x78000020;
-	word2 = 0x00030507;
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
 			"tlbwe %2,%0,1\n"               \
 			"tlbwe %3,%0,2\n"               \
 			"isync\n" : :
@@ -714,45 +703,41 @@ void pci_init_board(void)
 			"r" (word0),
 			"r" (word1),
 			"r" (word2) :
-			"memory" );
+			"memory");
+
+		word0 = CONFIG_SYS_PCIE0_MEMBASE | 0x8f0;
+		word1 = 0x78000020;
+		word2 = 0x00030507;
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
+			"tlbwe %2,%0,1\n"               \
+			"tlbwe %3,%0,2\n"               \
+			"isync\n" : :
+			"r" (0x80000000),
+			"r" (word0),
+			"r" (word1),
+			"r" (word2) :
+			"memory");
 	
-	busno = pci_476_init (&ppc476_hose[0], 0);
+		busno = pci_476_init(&ppc476_hose[0], 0);
 
 #ifdef AXM_35xx
 	} 
 	if (peiControl & 0x2) {
 #endif
 
-	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
-	 * and MPAGE7 1 MB config space
-	 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
+		/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 1
+		 * and MPAGE7 1 MB config space
+		 * 0x0020_c000_0000 to 0x0020_FFFF_FFFF */
 
-	word0 = CONFIG_PCIE1_PHY_START | 0x9f0;
+		word0 = CONFIG_PCIE1_PHY_START | 0x9f0;
 #if defined (ACP_25xx) || defined (AXM_35xx)
-	word1 = 0x80000020;
+		word1 = 0x80000020;
 #else
-	word1 = 0xc0000020;
+		word1 = 0xc0000020;
 #endif
-	word2 = 0x00030507;
+		word2 = 0x00030507;
 
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \ 
-			"tlbwe %2,%0,1\n"               \ 
-			"tlbwe %3,%0,2\n"               \
-			"isync\n" : :
-			"r" (0x80000000),
-			"r" (word0),
-			"r" (word1),
-			"r" (word2) :
-			"memory" );
-
-	word0 = CONFIG_SYS_PCIE1_MEMBASE | 0x8f0;
-#if defined (ACP_25xx) || defined (AXM_35xx)
-	word1 = 0xb8000020;
-#else
-	word1 = 0xf8000020;
-#endif
-	word2 = 0x00030507;
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
 			"tlbwe %2,%0,1\n"               \
 			"tlbwe %3,%0,2\n"               \
 			"isync\n" : :
@@ -760,39 +745,43 @@ void pci_init_board(void)
 			"r" (word0),
 			"r" (word1),
 			"r" (word2) :
-			"memory" );
-	busno = pci_476_init (&ppc476_hose[1], 1);
+			"memory");
+
+		word0 = CONFIG_SYS_PCIE1_MEMBASE | 0x8f0;
+#if defined (ACP_25xx) || defined (AXM_35xx)
+		word1 = 0xb8000020;
+#else
+		word1 = 0xf8000020;
+#endif
+		word2 = 0x00030507;
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
+			"tlbwe %2,%0,1\n"               \
+			"tlbwe %3,%0,2\n"               \
+			"isync\n" : :
+			"r" (0x80000000),
+			"r" (word0),
+			"r" (word1),
+			"r" (word2) :
+			"memory");
+		busno = pci_476_init(&ppc476_hose[1], 1);
 #ifdef AXM_35xx
 	}
 #endif
 
 #elif defined(ACP_PEI0)
 #ifdef AXM_35xx
-	if (peiControl & 0x1) {
+	if ((peiControl & 0x400001) == (0x400001)) {
 #endif
 
-	/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port 0
-	 * and MPAGE7 1 MB config space
-	 * 0x0020_4000_0000 to 0x0020_7FFF_FFFF */
+		/* create tlb entry for 256MB  PCIe space for 2 MPAGEs of port
+		 * 0 and MPAGE7 1 MB config space
+		 * 0x0020_4000_0000 to 0x0020_7FFF_FFFF */
 
-	word0 = CONFIG_PCIE0_PHY_START | 0xbf0;
-	word1 = 0x40000020;
-	word2 = 0x00030507;
+		word0 = CONFIG_PCIE0_PHY_START | 0xbf0;
+		word1 = 0x40000020;
+		word2 = 0x00030507;
 
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \ 
-			"tlbwe %2,%0,1\n"               \ 
-			"tlbwe %3,%0,2\n"               \
-			"isync\n" : :
-			"r" (0x80000000),
-			"r" (word0),
-			"r" (word1),
-			"r" (word2) :
-			"memory" );
-
-	word0 = CONFIG_SYS_PCIE0_MEMBASE | 0x8f0;
-	word1 = 0x78000020;
-	word2 = 0x00030507;
-	__asm__ __volatile__ ( "tlbwe %1,%0,0\n"               \
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
 			"tlbwe %2,%0,1\n"               \
 			"tlbwe %3,%0,2\n"               \
 			"isync\n" : :
@@ -800,8 +789,21 @@ void pci_init_board(void)
 			"r" (word0),
 			"r" (word1),
 			"r" (word2) :
-			"memory" );
-	busno = pci_476_init (&ppc476_hose[0], 0);
+			"memory");
+
+		word0 = CONFIG_SYS_PCIE0_MEMBASE | 0x8f0;
+		word1 = 0x78000020;
+		word2 = 0x00030507;
+		__asm__ __volatile__("tlbwe %1,%0,0\n"               \
+			"tlbwe %2,%0,1\n"               \
+			"tlbwe %3,%0,2\n"               \
+			"isync\n" : :
+			"r" (0x80000000),
+			"r" (word0),
+			"r" (word1),
+			"r" (word2) :
+			"memory");
+		busno = pci_476_init(&ppc476_hose[0], 0);
 #ifdef AXM_35xx
 	}
 #endif
