@@ -243,8 +243,12 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 	ncp_uint32_t value;
 
 #ifdef CONFIG_AXXIA_EMU
+#if 1
+	return 0;
+#else
 	if (1 < cluster)
 		return -1;
+#endif
 #else
 	if (3 < cluster)
 		return -1;
@@ -726,7 +730,7 @@ board_early_init_f(void)
 
 	writel(0x1f, (ncp_uint32_t *)(SSP + SSP_CSR));
 
-	gd->ram_size = 0x80000000;
+	gd->ram_size = 0x40000000;
 
 	serial_init();
 	gd->have_console = 1;
