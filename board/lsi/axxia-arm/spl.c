@@ -1174,7 +1174,9 @@ verify_image(struct spi_flash *flash,
 void spl_spi_load_image(void)
 {
 	struct spi_flash *flash;
+#ifndef CONFIG_AXXIA_EMU
 	int sbb_enabled = 0;
+#endif
 #ifdef CONFIG_REDUNDANT_UBOOT
 	int watchdog_timeout;
 	int a_valid;
@@ -1184,7 +1186,9 @@ void spl_spi_load_image(void)
 	int copy_to_use = 0;
 #else  /* CONFIG_REDUNDANT_UBOOT */
 	struct image_header header;
+#ifndef CONFIG_AXXIA_EMU
 	size_t length;
+#endif
 #endif	/* CONFIG_REDUNDANT_UBOOT */
 
 	/*
@@ -1204,7 +1208,9 @@ void spl_spi_load_image(void)
 	  Is this a secure boot?
 	*/
 
+#ifndef CONFIG_AXXIA_EMU
 	sbb_enabled = (1 == is_sbb_enabled(0));
+#endif
 
 #ifdef CONFIG_REDUNDANT_UBOOT
 
