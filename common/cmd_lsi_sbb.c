@@ -62,52 +62,27 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	if (0 == strncmp(argv[1], "v", strlen("v"))) {
 		int safe = 0;
-		int test = 0;	/* ZZZ */
-		int rc;		/* ZZZ */
-		int i;		/* ZZZ */
 		size_t length;
+
+		/*
+		  If secure boot is disabled, return success.
+		*/
+
+		if (0 == is_sbb_enabled(0))
+			return 0;
 
 		if ((5 == argc) && (0 == strncmp(argv[4], "s", strlen("s"))))
 			safe = 1;
 
-		if ((5 == argc) && (0 == strncmp(argv[4], "t", strlen("t"))))
-			test = 1;
-
 		source = simple_strtoul(argv[2], NULL, 16);
 		destination = simple_strtoul(argv[3], NULL, 16);
 
-		if (0 != test) {
-			printf("Starting the SBB Lockup Test, Ctrl-C to Exit!\n");
-
-			if (0 !=
-			    sbb_image_max_length((void *)source, &length)) 
-				return -1;
-
-			i = 0;
-
-			do {
-				++i;
-				printf("Iteration %d\n", i);
-				rc = sbb_verify_image((void *)source,
-						      (void *)destination,
-						      length, 0, 1, 1);
-				if (ctrlc()) {
-					printf("%s:%d i = %d\n",
-					       __FILE__, __LINE__, i);
-					return 0;
-				}
-			} while(0 == rc);
-		} else {
-			if (0 ==
-			    sbb_image_max_length((void *)source, &length) &&
-			    0 ==
-			    sbb_verify_image((void *)source,
-					     (void *)destination,
-					     length, safe, 1, 1))
-				return 0;
-			else
-				return -1;
-		}
+		if (0 == sbb_image_max_length((void *)source, &length) &&
+		    0 == sbb_verify_image((void *)source, (void *)destination,
+					  length, safe, 1, 1))
+			return 0;
+		else
+			return -1;
 	}
 
 	printf("%s", cmdtp->usage);

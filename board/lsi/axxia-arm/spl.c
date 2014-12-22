@@ -1174,6 +1174,7 @@ verify_image(struct spi_flash *flash,
 void spl_spi_load_image(void)
 {
 	struct spi_flash *flash;
+	int sbb_enabled = 0;
 #ifdef CONFIG_REDUNDANT_UBOOT
 	int watchdog_timeout;
 	int a_valid;
@@ -1181,7 +1182,6 @@ void spl_spi_load_image(void)
 	unsigned long a_sequence = 0;
 	unsigned long b_sequence = 0;
 	int copy_to_use = 0;
-	int sbb_enabled = 0;
 #else  /* CONFIG_REDUNDANT_UBOOT */
 	struct image_header header;
 	size_t length;
@@ -1200,6 +1200,12 @@ void spl_spi_load_image(void)
 		hang();
 	}
 
+	/*
+	  Is this a secure boot?
+	*/
+
+	sbb_enabled = (1 == is_sbb_enabled(0));
+
 #ifdef CONFIG_REDUNDANT_UBOOT
 
 	/*
@@ -1209,12 +1215,6 @@ void spl_spi_load_image(void)
 	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc,
 		   (ncp_uint32_t *)&watchdog_timeout);
 	watchdog_timeout = ((watchdog_timeout & 0x4) >> 2);
-
-	/*
-	  Is this a secure boot?
-	*/
-
-	sbb_enabled = (1 == is_sbb_enabled(0));
 
 	/*
 	  Is image A valid?
@@ -1318,9 +1318,10 @@ void spl_spi_load_image(void)
 
 
 #ifndef CONFIG_AXXIA_EMU
-	if (0 != sbb_image_max_length((void *)0x40000000, &length) ||
-	    0 != sbb_verify_image(0, 0, length, 0, 1, 1))
-		acp_failure(__FILE__, __func__, __LINE__);
+	if (sbb_enabled)
+		if (0 != sbb_image_max_length((void *)0x40000000, &length) ||
+		    0 != sbb_verify_image(0, 0, length, 0, 1, 1))
+			acp_failure(__FILE__, __func__, __LINE__);
 #endif
 
 #endif	/* CONFIG_REDUNDANT_UBOOT */
