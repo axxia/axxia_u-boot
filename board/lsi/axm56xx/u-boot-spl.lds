@@ -14,9 +14,17 @@ SECTIONS
  }
  . = ALIGN(4);
  .rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
+
+ /*
+  Include the secure monitor.
+  */
+
  . = ALIGN(4);
  .data : {
-  *(.data*)
+       _bl31_start = .;
+       KEEP(bl31.o (.monitor*))
+       _bl31_end = .;
+       *(.data*)
  }
  . = ALIGN(4);
  . = .;
