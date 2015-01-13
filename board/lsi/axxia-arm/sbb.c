@@ -428,6 +428,7 @@ run_sbb_function(int function, size_t image_length,
 
 	cycles = 3000000ULL + ((image_length / 16)  * 25);
 	retries = cycles / cycles_per_ms; /* Estimated time. */
+	retries *= 2;
 
 	/* Make sure SBB is enabled (check the fuses). */
 	sbb_enabled = is_sbb_enabled(verbose);
@@ -622,6 +623,9 @@ sbb_verify_image(void *source, void *destination, size_t max_length,
 				  parameters, 4, verbose)) {
 		if (0 != invalidate)
 			memset((void *)destination, 0, 16);
+
+		if (0 != verbose)
+			printf("SBB: Image Verification Failed\n");
 
 		return -1;
 	}
