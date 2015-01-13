@@ -10,22 +10,25 @@ SECTIONS
   __image_copy_start = .;
   *(.vectors)
   arch/arm/cpu/armv8/start.o (.text*)
+
+  /*
+      Include the secure monitor.
+  */
+  . = ALIGN(4096);
+  _bl31_start = .;
+  KEEP(bl31.o (.monitor*))
+  _bl31_end = .;
+
   *(.text*)
  }
  . = ALIGN(4);
  .rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
 
- /*
-  Include the secure monitor.
-  */
-
  . = ALIGN(4);
  .data : {
-       _bl31_start = .;
-       KEEP(bl31.o (.monitor*))
-       _bl31_end = .;
        *(.data*)
  }
+
  . = ALIGN(4);
  . = .;
  __image_copy_end = .;

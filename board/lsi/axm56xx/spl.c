@@ -1034,7 +1034,7 @@ load_image(void)
 
 #endif	/* CONFIG_REDUNDANT_UBOOT */
 
-	asm volatile ("mov x10, 0\n"
+	asm volatile ("ldr x10, =0x8031001000\n"
 		      "ret x10");
 }
 
