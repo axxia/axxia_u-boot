@@ -77,12 +77,20 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		source = simple_strtoul(argv[2], NULL, 16);
 		destination = simple_strtoul(argv[3], NULL, 16);
 
-		if (0 == sbb_image_max_length((void *)source, &length) &&
-		    0 == sbb_verify_image((void *)source, (void *)destination,
-					  length, safe, 1, 1))
+		if (0 != sbb_image_max_length((void *)source, &length)) {
+			printf("cmd_lsi_sbb: Not a Signed/Encrypted Image\n");
+			memset((void *)destination, 0, 16);
+
 			return 0;
+		}
+
+		if (0 == sbb_verify_image((void *)source, (void *)destination,
+					  length, safe, 1, 0))
+			printf("cmd_lsi_sbb: Image is Valid\n");
 		else
-			return -1;
+			printf("cmd_lsi_sbb: Image is Not Valid\n");
+
+		return 0;
 	}
 
 	printf("%s", cmdtp->usage);
