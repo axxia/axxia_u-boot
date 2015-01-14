@@ -57,7 +57,8 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	if (0 == strncmp(argv[1], "h", strlen("h"))) {
 		printf("%s", cmdtp->usage);
-		return 0;
+
+		return CMD_RET_SUCCESS;
 	}
 
 	if (0 == strncmp(argv[1], "v", strlen("v"))) {
@@ -69,7 +70,7 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		*/
 
 		if (0 == is_sbb_enabled(0))
-			return 0;
+			return CMD_RET_SUCCESS;
 
 		if ((5 == argc) && (0 == strncmp(argv[4], "s", strlen("s"))))
 			safe = 1;
@@ -81,21 +82,24 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("cmd_lsi_sbb: Not a Signed/Encrypted Image\n");
 			memset((void *)destination, 0, 16);
 
-			return 0;
+			return CMD_RET_FAILURE;
 		}
 
-		if (0 == sbb_verify_image((void *)source, (void *)destination,
-					  length, safe, 1, 0))
-			printf("cmd_lsi_sbb: Image is Valid\n");
-		else
+		if (0 != sbb_verify_image((void *)source, (void *)destination,
+					  length, safe, 1, 0)) {
 			printf("cmd_lsi_sbb: Image is Not Valid\n");
 
-		return 0;
+			return CMD_RET_FAILURE;
+		}
+
+		printf("cmd_lsi_sbb: Image is Valid\n");
+
+		return CMD_RET_SUCCESS;
 	}
 
 	printf("%s", cmdtp->usage);
 
-	return -1;
+	return CMD_RET_USAGE;
 }
 
 /*
@@ -105,8 +109,8 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 */
 
 U_BOOT_CMD(sbb, 5, 0, do_sbb,
-	   "sbb command source destination [size (encrrypt only)] [safe]\n",
+	   "sbb command source destination [size (encrypt only)] [safe]",
 	   "     command must be validate|encrypt|decrypt\n" \
-	   "     v,alidate -- Validate Image (safe for double read)\n");
+	   "     v,alidate -- Validate Image (safe for double read)");
 
 #endif /* CONFIG_ACP */
