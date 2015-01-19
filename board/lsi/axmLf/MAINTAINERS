@@ -1,0 +1,6 @@
+AXM56XX BOARD
+M:	John Jacques <john.jacques@avagotech.com>
+S:	Maintained
+F:	board/lsi/axm55xx/
+F:	include/configs/axm55xx.h
+F:	configs/axm55xx_defconfig

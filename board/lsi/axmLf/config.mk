@@ -1,0 +1,9 @@
+PLATFORM_RELFLAGS += -fno-strict-aliasing -Werror
+
+ifdef CROSS_LIBS
+PLATFORM_LDFLAGS += -L $(CROSS_LIBS)
+endif
+
+ifdef AXXIA_VERSION
+KBUILD_CFLAGS += -DAXXIA_VERSION='"$(AXXIA_VERSION)"'
+endif

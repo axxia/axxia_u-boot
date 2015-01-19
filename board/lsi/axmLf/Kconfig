@@ -1,0 +1,56 @@
+if TARGET_AXMLF
+
+config SYS_CPU
+	default "armv8"
+
+config SYS_BOARD
+	default "axmLf"
+
+config SYS_VENDOR
+	default "lsi"
+
+config SYS_SOC
+	default "axmLf"
+
+config SYS_CONFIG_NAME
+	default "axmLf"
+
+endif
+
+if TARGET_AXMLF_EMU
+
+config SYS_CPU
+	default "armv8"
+
+config SYS_BOARD
+	default "axmLf"
+
+config SYS_VENDOR
+	default "lsi"
+
+config SYS_SOC
+	default "axmLf"
+
+config SYS_CONFIG_NAME
+	default "axmLf_emu"
+
+endif
+
+if TARGET_AXMLF_SIM
+
+config SYS_CPU
+	default "armv8"
+
+config SYS_BOARD
+	default "axmLf"
+
+config SYS_VENDOR
+	default "lsi"
+
+config SYS_SOC
+	default "axmLf"
+
+config SYS_CONFIG_NAME
+	default "axmLf_sim"
+
+endif

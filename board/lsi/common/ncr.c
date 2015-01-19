@@ -538,7 +538,7 @@ ncr_write32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 
 #endif	/* ACP_25xx */
 
-#if defined(CONFIG_AXXIA_55XX) || defined(CONFIG_AXXIA_55XX_EMU) || defined(CONFIG_AXXIA_SIM) || defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_EMU) || defined(CONFIG_AXXIA_56XX_SIM)
+#if defined(CONFIG_AXXIA_55XX) || defined(CONFIG_AXXIA_55XX_EMU) || defined(CONFIG_AXXIA_SIM) || defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_EMU) || defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF) || defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF_SIM)
 
 /*
   -------------------------------------------------------------------------------
@@ -1161,6 +1161,8 @@ ncr_read(ncp_uint32_t region,
 	case 0x14f:
 #if !defined(CONFIG_AXXIA_56XX) && \
   !defined(CONFIG_AXXIA_56XX_EMU) && \
+  !defined(CONFIG_AXXIA_XLF) && \
+  !defined(CONFIG_AXXIA_XLF_EMU) && \
   !defined(CONFIG_AXXIA_SIM)
 		/*
 		  If reading from within NCA/MME_POKE/SCB,
@@ -1488,6 +1490,8 @@ ncr_write(ncp_uint32_t region,
 	case 0x14f:
 #if !defined(CONFIG_AXXIA_56XX) && \
   !defined(CONFIG_AXXIA_56XX_EMU) && \
+  !defined(CONFIG_AXXIA_XLF) && \
+  !defined(CONFIG_AXXIA_XLF_EMU) && \
   !defined(CONFIG_AXXIA_SIM)
 		if (NULL != buffer) {
 			ncp_uint32_t offset = 0;
