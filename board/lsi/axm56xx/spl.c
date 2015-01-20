@@ -865,7 +865,7 @@ jump_to(void *address)
 static void
 load_image(void)
 {
-	jump_to((void *)0);
+	jump_to((void *)0x8031001000);
 
 	for (;;)
 		;
