@@ -145,13 +145,11 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 */
 
 #ifndef __ASSEMBLY__
-#if 0
 #define CONFIG_CMD_I2C
-#define CONFIG_AXXIA_AXM_I2C
 #define CONFIG_CMD_SDRAM
 #define CONFIG_AXXIA_I2C
 #define CONFIG_I2C_MULTI_BUS
-#define CONFIG_SYS_MAX_I2C_BUS 4
+#define CONFIG_SYS_MAX_I2C_BUS 12
 #define CONFIG_SYS_I2C_SPEED 100000
 
 
@@ -278,8 +276,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 */
 
 
-
-#endif
 #endif	/* __ASSEMBLY__ */
 
 /*
@@ -308,15 +304,33 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 #define SYSCON  (IO + 0x30000)
 
-#define I2C0_ADDRESS (IO + 0x84000)
-#define I2C1_ADDRESS (IO + 0x85000)
-#define I2C2_ADDRESS (IO + 0x86000)
-#define I2C3_ADDRESS (IO + 0x87000)
+#define I2C0_ADDRESS 0x8080600000
+#define I2C1_ADDRESS 0x8080610000
+#define I2C2_ADDRESS 0x8080620000
+#define I2C3_ADDRESS 0x8080630000
+#define I2C4_ADDRESS 0x8080640000
+#define I2C5_ADDRESS 0x8080650000
+#define I2C6_ADDRESS 0x8080660000
+#define I2C7_ADDRESS 0x8080670000
+#define I2C8_ADDRESS 0x8080680000
+#define I2C9_ADDRESS 0x8080690000
+#define I2C10_ADDRESS 0x80806A0000
+#define I2C11_ADDRESS 0x80806B0000
+#define I2C12_ADDRESS 0x80806C0000
 
-#define I2C0	I2C0_ADDRESS
-#define I2C1	I2C1_ADDRESS
-#define I2C2	I2C2_ADDRESS
-#define I2C3	I2C3_ADDRESS
+#define I2C0    I2C0_ADDRESS
+#define I2C1    I2C1_ADDRESS
+#define I2C2    I2C2_ADDRESS
+#define I2C3    I2C3_ADDRESS
+#define I2C4    I2C4_ADDRESS
+#define I2C5    I2C5_ADDRESS
+#define I2C6    I2C6_ADDRESS
+#define I2C7    I2C7_ADDRESS
+#define I2C8    I2C8_ADDRESS
+#define I2C9    I2C9_ADDRESS
+#define I2C10   I2C10_ADDRESS
+#define I2C11   I2C11_ADDRESS
+#define I2C12   I2C12_ADDRESS
 
 #define GPIO0_ADDRESS (IO + 0x92000)
 #define GPIO1_ADDRESS (IO + 0x93000)

@@ -59,7 +59,7 @@ ns_to_clk(unsigned long long ns, unsigned long clk_mhz)
 static unsigned long
 i2c_base_addr(void)
 {
-#ifdef CONFIG_AXXIA_56XX_SIM
+#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_LF_SIM)
 	unsigned long long i2c_addr = I2C0;
 #else
 	unsigned long i2c_addr = I2C0;
@@ -79,6 +79,32 @@ i2c_base_addr(void)
 		break;
 	case 3:
 		i2c_addr = I2C3;
+		break;
+#endif
+#ifdef CONFIG_AXXIA_LF_SIM
+	case 4:
+		i2c_addr = I2C4;
+		break;
+	case 5:
+		i2c_addr = I2C5;
+		break;
+	case 6:
+		i2c_addr = I2C6;
+		break;
+	case 7:
+		i2c_addr = I2C7;
+		break;
+	case 8:
+		i2c_addr = I2C8;
+		break;
+	case 9:
+		i2c_addr = I2C9;
+		break;
+	case 10:
+		i2c_addr = I2C10;
+		break;
+	case 11:
+		i2c_addr = I2C11;
 		break;
 #endif
 	default:
@@ -135,7 +161,7 @@ i2c_addr_to_buf(uint addr, int alen, uchar *abuf)
  *
  * <START> <chip_addr R/nW=0> <addr[0]> ... <addr[len-1]> <data[0]> <data[1]> ... <data[len-1]>
  */
-#ifdef CONFIG_AXXIA_56XX_SIM
+#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_LF_SIM)
 int
 i2c_write_bytes(unsigned long long i2c_addr, uchar chip,
 		const uchar *addr, int alen,
@@ -206,7 +232,7 @@ i2c_write_bytes(unsigned long i2c_addr, uchar chip,
  *
  * <START> <chip_addr R/nW=1> <buffer[0]> <buffer[1]> ... <buffer[len-1]>
  */
-#ifdef CONFIG_AXXIA_56XX_SIM
+#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_LF_SIM)
 int
 i2c_read_bytes(unsigned long long i2c_addr, uchar chip, uchar *buffer, int len)
 #else
@@ -264,7 +290,7 @@ i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len)
 /*
  * i2c_stop - Generate STOP on the I2C bus to terminate a transaction.
  */
-#ifdef CONFIG_AXXIA_56XX_SIM
+#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_LF_SIM)
 int
 i2c_stop(unsigned long long i2c_addr)
 #else
@@ -303,7 +329,7 @@ i2c_stop(unsigned long i2c_addr)
 int
 i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 {
-#ifdef CONFIG_AXXIA_56XX_SIM
+#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_LF_SIM)
 	unsigned long long i2c_addr = i2c_base_addr();
 #else
 	unsigned long i2c_addr = i2c_base_addr();
@@ -348,7 +374,7 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 int
 i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 {
-#ifdef CONFIG_AXXIA_56XX_SIM
+#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_LF_SIM)
 	unsigned long long i2c_addr = i2c_base_addr();
 #else
 	unsigned long i2c_addr = i2c_base_addr();
@@ -387,7 +413,7 @@ i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 int
 i2c_probe(uchar chip)
 {
-#ifdef CONFIG_AXXIA_56XX_SIM
+#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_LF_SIM)
 	unsigned long long i2c_addr = i2c_base_addr();
 #else
 	unsigned long i2c_addr = i2c_base_addr();
@@ -411,7 +437,7 @@ i2c_probe(uchar chip)
 void
 i2c_init(int speed, int slave)
 {
-#ifdef CONFIG_AXXIA_56XX_SIM
+#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_LF_SIM)
 	unsigned long long i2c_addr = i2c_base_addr();
 #else
 	unsigned long i2c_addr = i2c_base_addr();
@@ -433,7 +459,7 @@ i2c_init(int speed, int slave)
 int
 i2c_set_bus_speed(unsigned int speed)
 {
-#ifdef CONFIG_AXXIA_56XX_SIM
+#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_LF_SIM)
 	unsigned long long i2c_addr = i2c_base_addr();
 #else
 	unsigned i2c_addr = i2c_base_addr();
