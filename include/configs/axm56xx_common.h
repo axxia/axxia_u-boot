@@ -145,9 +145,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 */
 
 #ifndef __ASSEMBLY__
-#if 0
 #define CONFIG_CMD_I2C
-#define CONFIG_AXXIA_AXM_I2C
 #define CONFIG_CMD_SDRAM
 #define CONFIG_AXXIA_I2C
 #define CONFIG_I2C_MULTI_BUS
@@ -279,7 +277,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 
 
-#endif
 #endif	/* __ASSEMBLY__ */
 
 /*
@@ -308,10 +305,10 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 #define SYSCON  (IO + 0x30000)
 
-#define I2C0_ADDRESS (IO + 0x84000)
-#define I2C1_ADDRESS (IO + 0x85000)
-#define I2C2_ADDRESS (IO + 0x86000)
-#define I2C3_ADDRESS (IO + 0x87000)
+#define I2C0_ADDRESS 0x8080080000
+#define I2C1_ADDRESS 0x8080090000
+#define I2C2_ADDRESS 0x80800A0000
+#define I2C3_ADDRESS 0x80800B0000
 
 #define I2C0	I2C0_ADDRESS
 #define I2C1	I2C1_ADDRESS
