@@ -207,29 +207,6 @@ _setup_page_tables:
         cmp     r1, r2
         blt     1b
 
-#ifdef SBBLOCKUP_TEST
-
-	@
-	@ Map in some memory for SBB validation that is not cacheable
-	@ or bufferable.
-	@
-	@ 1G starting at physical 0xc000_0000 virtual 0xc000_0000
-
-	ldr	r0,=0xc0040c16		@ s=0 tex=0 c=0 b=1
-	@ldr	r0,=0xc0050c1e		@ s=1 tex=0 c=1 b=1
-        add     r1, r3, #0x3000
-        add     r2, r3, #0x4000
-1:      mov     r9, #0
-2:      str     r0, [r1], #4            @ Each supersection is repeated
-        add     r9, r9, #1              @ 16 times.
-        cmp     r9, #16
-        blt     2b
-        add     r0, r0, #0x1000000      @ 16M
-        cmp     r1, r2
-        blt     1b
-
-#else
-
         @
         @ Fourth 1G is used by PCIe, not cacheable or bufferable.
         @
@@ -289,7 +266,6 @@ _setup_page_tables:
         cmp     r1, r2
         blt     1b
 
-#endif /*SBBLOCKUP_TEST */
 #endif
 #endif
 
