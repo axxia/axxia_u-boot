@@ -38,6 +38,8 @@ DECLARE_GLOBAL_DATA_PTR;
   ==============================================================================
 */
 
+#define COPY_MONITOR_TO_RAM
+
 /*
   ----------------------------------------------------------------------
   spl_mtest
@@ -1034,8 +1036,14 @@ load_image(void)
 
 #endif	/* CONFIG_REDUNDANT_UBOOT */
 
+#ifdef COPY_MONITOR_TO_RAM
+	memcpy((void *)0x0040000000, (void *)0x8031001000, 0x10000);
+	asm volatile ("ldr x10, =0x0040000000\n"
+		      "ret x10");
+#else
 	asm volatile ("ldr x10, =0x8031001000\n"
 		      "ret x10");
+#endif
 }
 
 #endif

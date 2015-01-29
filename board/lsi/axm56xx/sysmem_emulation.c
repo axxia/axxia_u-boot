@@ -377,8 +377,6 @@ initialize_memory_node(int node)
 {
 	int ncpStatus = 0;
 
-	printf("%s:%d - %d\n", __FILE__, __LINE__, ncr_tracer_is_enabled());
-
 	/* smcN init */
 	NCP_CALL(ncr_write32(NCP_REGION_ID(node, 0),0x00,       0x00000600));
 	NCP_CALL(ncr_write32(NCP_REGION_ID(node, 0),0x04,       0x00000000));
@@ -845,8 +843,6 @@ initialize_elm(void)
 {
 	unsigned long value;
 
-	printf("%s:%d - %d\n", __FILE__, __LINE__, ncr_tracer_is_enabled());
-
 	/*
 	 * TEMP HACK: we re-use the cacheDisable config attribute
 	 * to disable initializing the ELM munge registers 
@@ -902,8 +898,6 @@ initialize_elm(void)
 #endif
 	}
 
-	printf("%s:%d - %d\n", __FILE__, __LINE__, ncr_tracer_is_enabled());
-
 	return 0;
 }
 
@@ -957,7 +951,6 @@ sysmem_init(void)
 
 #endif
 
-	printf("%s:%d - %d\n", __FILE__, __LINE__, ncr_tracer_is_enabled());
 	rc = initialize_memory_node(0x22);
 
 	if (0 != rc)
