@@ -735,10 +735,10 @@ int serial_early_init(void);
   ==============================================================================
 */
 
-#define MDIO_CONTROL_RD_DATA (IO+0x90000)
-#define MDIO_STATUS_RD_DATA  (IO+0x90004)
-#define MDIO_CLK_OFFSET      (IO+0x90008)
-#define MDIO_CLK_PERIOD      (IO+0x9000c)
+#define MDIO_CONTROL_RD_DATA (0x8080200000)
+#define MDIO_STATUS_RD_DATA  (0x8080200004)
+#define MDIO_CLK_OFFSET      (0x8080200008)
+#define MDIO_CLK_PERIOD      (0x808020000c)
 
 #ifndef __ASSEMBLY__
 int mdio_initialize( void );
@@ -765,9 +765,9 @@ void mdio_write( int phy, int reg, unsigned short value );
 extern unsigned char ethernet_address[6];
 #endif
 
-#define APP3XXNIC_RX_BASE  (IO+0x120000)
-#define APP3XXNIC_TX_BASE  (IO+0x121000)
-#define APP3XXNIC_DMA_BASE (IO+0x122000)
+#define APP3XXNIC_RX_BASE  (0x8080600000)
+#define APP3XXNIC_TX_BASE  (0x8080601000)
+#define APP3XXNIC_DMA_BASE (0x8080602000)
 
 /*
   ==============================================================================
