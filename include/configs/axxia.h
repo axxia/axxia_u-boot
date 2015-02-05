@@ -345,7 +345,8 @@ int write_parameters(void);
 
 #ifndef MDIO_CLK_OFFSET_DEFAULT
 #ifdef CONFIG_AXXIA_EMU
-#define MDIO_CLK_OFFSET_DEFAULT 0x10
+/*#define MDIO_CLK_OFFSET_DEFAULT 0x10*/
+#define MDIO_CLK_OFFSET_DEFAULT 0x5
 #else
 #define MDIO_CLK_OFFSET_DEFAULT 0x1c
 #endif
@@ -353,7 +354,8 @@ int write_parameters(void);
 
 #ifndef MDIO_CLK_PERIOD_DEFAULT
 #ifdef CONFIG_AXXIA_EMU
-#define MDIO_CLK_PERIOD_DEFAULT 0x2c
+/*#define MDIO_CLK_PERIOD_DEFAULT 0x2c*/
+#define MDIO_CLK_PERIOD_DEFAULT 0xc
 #else
 #define MDIO_CLK_PERIOD_DEFAULT 0xf0
 #endif
