@@ -1683,10 +1683,13 @@ phy_enable_(int phy)
 {
 	char *macspeed = (char *)0;
 	int link_retries;
+#if 0
 	unsigned long value;
+#endif
 
 	phy_address_ = phy;
 
+#if 0
 	/* Access Shadow reg 0x1d */
 	value = mdio_read( phy_address_, PHY_BCM_TEST_REG );
 	value |= 0x80;
@@ -1698,6 +1701,7 @@ phy_enable_(int phy)
 	/* Back to regular register access. */
 	value &= ~0x80;
 	mdio_write( phy_address_, PHY_BCM_TEST_REG, value);
+#endif
 
 	macspeed = getenv( "macspeed" );
 
