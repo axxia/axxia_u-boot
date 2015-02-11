@@ -287,7 +287,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
   ==============================================================================
 */
 
-#define DICKENS (0x80000000)
+#define DICKENS (0x8000000000)
 #define IO      (0x90000000)
 
 #define UART0_ADDRESS (0x8080000000)
@@ -1078,7 +1078,9 @@ void stop_watchdog(void);
   ==============================================================================
 */
 
-#define OSMEMORY_DEFAULT SZ_2G
+#define OSMEMORY_DEFAULT SZ_1G
+
+#define CONFIG_LSI_TEST
 
 #ifndef __ASSEMBLY__
 extern volatile unsigned long *crumbs;
