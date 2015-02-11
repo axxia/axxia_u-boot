@@ -65,6 +65,7 @@ static inline void set_sctlr(unsigned int val)
 	asm volatile("isb");
 }
 
+void __asm_clean_dcache_all(void);
 void __asm_flush_dcache_all(void);
 void __asm_invalidate_dcache_all(void);
 void __asm_flush_dcache_range(u64 start, u64 end);

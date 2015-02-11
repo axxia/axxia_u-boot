@@ -33,6 +33,8 @@ static void mmu_setup(void)
 	for (i = 0; i < (PGTABLE_SIZE >> 3); i++) {
 		set_pgtable_section(page_table, i, (u64)i << SECTION_SHIFT,
 				    MT_DEVICE_NGNRNE);
+		/* Set UXN/XN */
+		page_table[i] |= PMD_SECT_UXN;
 	}
 
 	/* Setup an identity-mapping for all RAM space */
@@ -43,6 +45,8 @@ static void mmu_setup(void)
 		     j < end >> SECTION_SHIFT; j++) {
 			set_pgtable_section(page_table, j, j << SECTION_SHIFT,
 					    MT_NORMAL);
+			/* Clear UXN/XN */
+			page_table[j] &= ~PMD_SECT_UXN;
 		}
 	}
 
@@ -87,6 +91,14 @@ void flush_dcache_all(void)
 }
 
 /*
+ * Performs a clean of the entire data cache at all levels
+ */
+void clean_dcache_all(void)
+{
+	__asm_clean_dcache_all();
+}
+
+/*
  * Invalidates range in all levels of D-cache/unified cache
  */
 void invalidate_dcache_range(unsigned long start, unsigned long stop)
@@ -112,6 +124,23 @@ void dcache_enable(void)
 	}
 
 	set_sctlr(get_sctlr() | CR_C);
+	__asm__ __volatile__ ("7: b 7b");
+	clean_dcache_all();
+	/*flush_dcache_all();*/
+	{
+	    unsigned long value = 0x01234567fedcba98;
+	    int i;
+	    unsigned long *address = (unsigned long *)0x3ffaa800;
+	    int length = 0x800;
+
+	    length /= sizeof(unsigned long);
+
+	    for (i = 0; i < length; ++i) {
+		    address[i] = value;
+		    value = ~value;
+		}
+	}
+	__asm__ __volatile__ ("7: b 7b");
 }
 
 void dcache_disable(void)
