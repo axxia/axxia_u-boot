@@ -91,6 +91,10 @@
   ==============================================================================
 */
 
+/*#define CONFIG_SYS_DCACHE_OFF*/
+
+#define CONFIG_SYS_CNTR_FREQ 4000000
+
 #define V_MIN   795
 #define V_SAFE  940
 #define V_MAX  1050
