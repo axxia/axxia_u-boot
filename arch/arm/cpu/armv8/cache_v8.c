@@ -43,8 +43,10 @@ static void mmu_setup(void)
 		ulong end = bd->bi_dram[i].start + bd->bi_dram[i].size;
 		for (j = start >> SECTION_SHIFT;
 		     j < end >> SECTION_SHIFT; j++) {
+#if 0
 			set_pgtable_section(page_table, j, j << SECTION_SHIFT,
 					    MT_NORMAL);
+#endif
 			/* Clear UXN/XN */
 			page_table[j] &= ~PMD_SECT_UXN;
 		}
@@ -123,24 +125,7 @@ void dcache_enable(void)
 		mmu_setup();
 	}
 
-	set_sctlr(get_sctlr() | CR_C);
-	__asm__ __volatile__ ("7: b 7b");
-	clean_dcache_all();
-	/*flush_dcache_all();*/
-	{
-	    unsigned long value = 0x01234567fedcba98;
-	    int i;
-	    unsigned long *address = (unsigned long *)0x3ffaa800;
-	    int length = 0x800;
-
-	    length /= sizeof(unsigned long);
-
-	    for (i = 0; i < length; ++i) {
-		    address[i] = value;
-		    value = ~value;
-		}
-	}
-	__asm__ __volatile__ ("7: b 7b");
+	/*set_sctlr(get_sctlr() | CR_C);*/
 }
 
 void dcache_disable(void)
