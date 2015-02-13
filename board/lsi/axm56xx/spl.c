@@ -1128,6 +1128,12 @@ board_init_f(ulong dummy)
 	printf("Axxia Version: UNKNOWN\n\n");
 #endif
 
+#ifdef AXXIA_ATF_VERSION
+	printf("Axxia ATF Version: %s\n\n", AXXIA_ATF_VERSION);
+#else
+	printf("Axxia ATF Version: UNKNOWN\n\n");
+#endif
+
 #ifdef CONFIG_HW_WATCHDOG
 	rc = start_watchdog();
 
