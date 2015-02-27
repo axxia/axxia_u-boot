@@ -119,6 +119,12 @@ v7_outer_cache_flush_all(void)
 	return;
 }
 
+void
+flush_l3_cache(void)
+{
+	v7_outer_cache_flush_all();
+}
+
 /*
   ------------------------------------------------------------------------------
   v7_outer_cache_inval_all

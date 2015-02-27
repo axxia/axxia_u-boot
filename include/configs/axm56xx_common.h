@@ -144,8 +144,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
   ==============================================================================
 */
 
-#define DICKENS (0x8000000000)
-#define IO      (0x90000000)
+#define DICKENS (0x8000000000ULL)
+#define IO      (0x8080000000ULL)
 
 #define UART0_ADDRESS (0x8080000000)
 #define UART1_ADDRESS (0x8080010000)
@@ -160,7 +160,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define ELM0 0x8003c00000
 #define ELM1 0x8003c10000
 
-#define SYSCON  (IO + 0x30000)
+#define SYSCON 0x8002c00000
 
 #define I2C0_ADDRESS 0x8080080000
 #define I2C1_ADDRESS 0x8080090000
@@ -181,8 +181,14 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define GPREG_USB    (GPREG + 0x08)
 #define GPREG_STATUS (GPREG + 0x0c)
 
-#define GIC_DIST_BASE (DICKENS + 0x1001000)
-#define GIC_CPU_BASE  (DICKENS + 0x1002000)
+#define CONFIG_GICV3
+#if 1
+#define GICD_BASE (0x8010000000)
+#define GICR_BASE (0x8010200000)
+#else
+#define GICD_BASE (0x8010010000)
+#define GICR_BASE (0x8010100000)
+#endif
 
 #define APB2_SER0_BASE (IO)
 #define APB2_SER3_BASE (IO + 0x30000)

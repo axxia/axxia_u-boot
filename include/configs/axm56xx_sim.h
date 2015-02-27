@@ -234,6 +234,8 @@
   ==============================================================================
 */
 
+#define CONFIG_SYS_CNTR_FREQ 62500000
+
 #define CONFIG_EXTRA_ENV_SETTINGS		\
 	"loadaddr=0x80100000\0"			\
 	"kernel_addr=0x100000\0"		\

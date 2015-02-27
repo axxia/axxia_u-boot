@@ -94,7 +94,7 @@ dump_packet_(header, data, length);
 */
 
 #undef DEBUG
-/* #define DEBUG */
+#define DEBUG
 #ifdef DEBUG
 #define DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -589,7 +589,7 @@ static app3xxnic_dma_descriptor_t * rx_descriptors_;
 static void * rx_buffer_;
 static int rx_enabled_ = 0;
 static app3xxnic_queue_pointer_t rx_tail_copy_;
-static  app3xxnic_queue_pointer_t * rx_tail_;
+static app3xxnic_queue_pointer_t * rx_tail_;
 static app3xxnic_queue_pointer_t rx_head_;
 
 #define TX_NUMBER_OF_DESCRIPTORS 64 /* We only use one, but 64 is the minimum. */
@@ -599,7 +599,7 @@ static app3xxnic_dma_descriptor_t * tx_descriptors_;
 static void * tx_buffer_;
 static int tx_enabled_ = 0;
 static app3xxnic_queue_pointer_t tx_tail_copy_;
-static  app3xxnic_queue_pointer_t * tx_tail_;
+static app3xxnic_queue_pointer_t * tx_tail_;
 static app3xxnic_queue_pointer_t tx_head_;
 
 /*
@@ -1885,7 +1885,8 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	writel(0x2020, (GPREG + 0x4));
 	memory = (void *)(0xa0000000);
 #else
-	memory = (void *)((4 * 1024 * 1024) - (256 * 1024));
+	/*memory = (void *)((4 * 1024 * 1024) - (256 * 1024));*/
+	memory =(void *)0x40000000ULL;
 #endif
 	printf("FEMAC: Used %zu of 0x%x at 0x%p\n",
 	       memory_needed, (256 * 1024), memory);
@@ -2022,11 +2023,13 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	writel(((unsigned int )rx_descriptors_ - 0x80000000),
 	       APP3XXNIC_DMA_RX_QUEUE_BASE_ADDRESS );
 #else
-#if 0
-	/* TODO: SORT THIS OUT!!! */
-	writel( ( unsigned int ) rx_descriptors_,
-		 APP3XXNIC_DMA_RX_QUEUE_BASE_ADDRESS );
-#endif
+	{
+	  unsigned long offset;
+
+	  offset = (unsigned long)
+	    ((unsigned long long)rx_descriptors_ & 0xffffffffULL);
+	  writel(offset, APP3XXNIC_DMA_RX_QUEUE_BASE_ADDRESS );
+	}
 #endif
 	writel( ( unsigned int )
 		 ( ( rx_number_of_descriptors *
@@ -2050,11 +2053,13 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	writel(((unsigned int)tx_descriptors_ - 0x80000000),
 	       APP3XXNIC_DMA_TX_QUEUE_BASE_ADDRESS);
 #else
-#if 0
-	/* TODO: SORT THIS OUT!!! */
-	writel((unsigned int)tx_descriptors_,
-	       APP3XXNIC_DMA_TX_QUEUE_BASE_ADDRESS);
-#endif
+	{
+	  unsigned long offset;
+
+	  offset = (unsigned long)
+	    ((unsigned long long)rx_descriptors_ & 0xffffffffULL);
+	  writel(offset, APP3XXNIC_DMA_TX_QUEUE_BASE_ADDRESS);
+	}
 #endif
 	writel( ( unsigned int )
 		 ( TX_NUMBER_OF_DESCRIPTORS *
@@ -2078,8 +2083,8 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	queue_decrement_( & rx_head_, rx_number_of_descriptors );
 	rx_head_.bits.generation_bit =
 		( 0 == rx_head_.bits.generation_bit ) ? 1 : 0;
-	DEBUG_PRINT( "rx_head_.raw=0x%p rx_tail_->raw=0x%p "
-		     "rx_tail_copy_.raw=0x%p\n",
+	DEBUG_PRINT( "rx_head_.raw=0x%lx rx_tail_->raw=0x%lx "
+		     "rx_tail_copy_.raw=0x%lx\n",
 		     rx_head_.raw, rx_tail_->raw, rx_tail_copy_.raw );
 	writel( rx_head_.raw, APP3XXNIC_DMA_RX_HEAD_POINTER );
 

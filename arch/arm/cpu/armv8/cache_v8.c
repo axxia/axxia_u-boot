@@ -43,10 +43,8 @@ static void mmu_setup(void)
 		ulong end = bd->bi_dram[i].start + bd->bi_dram[i].size;
 		for (j = start >> SECTION_SHIFT;
 		     j < end >> SECTION_SHIFT; j++) {
-#if 0
 			set_pgtable_section(page_table, j, j << SECTION_SHIFT,
 					    MT_NORMAL);
-#endif
 			/* Clear UXN/XN */
 			page_table[j] &= ~PMD_SECT_UXN;
 		}
@@ -125,7 +123,7 @@ void dcache_enable(void)
 		mmu_setup();
 	}
 
-	/*set_sctlr(get_sctlr() | CR_C);*/
+	set_sctlr(get_sctlr() | CR_C);
 }
 
 void dcache_disable(void)
@@ -140,7 +138,16 @@ void dcache_disable(void)
 
 	set_sctlr(sctlr & ~(CR_C|CR_M));
 
-	flush_dcache_all();
+	/*
+	 * At this point, the previous contents of the stack are cached.
+	 * If anything gets written to the stack before the caches are
+	 * cleaned and invalidated, it will be written to memory.  Then,
+	 * when the cache is cleaned, it will get overwritten.
+	 */
+
+	__asm_flush_dcache_all();
+	/*flush_l3_cache();*/
+
 	__asm_invalidate_tlb_all();
 }
 

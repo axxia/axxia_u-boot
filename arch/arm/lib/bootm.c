@@ -31,7 +31,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 static struct tag *params;
 
-#ifndef CONFIG_AXXIA
+#ifndef CONFIG_AXXIA_NO_RELOC
 static ulong get_sp(void)
 {
 	ulong ret;
@@ -43,11 +43,11 @@ static ulong get_sp(void)
 
 void arch_lmb_reserve(struct lmb *lmb)
 {
-#ifdef CONFIG_AXXIA
+#ifdef CONFIG_AXXIA_NO_RELOC
 	lmb_reserve(lmb,
 		    (phys_addr_t)(gd->bd->bi_dram[0].start + 0x400000),
 		    (phys_size_t)0x10000000);
-#else  /* CONFIG_AXXIA */
+#else  /* CONFIG_AXXIA_NO_RELOC */
 	ulong sp;
 
 	/*

@@ -358,7 +358,7 @@ ncr_read16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 	if (NCP_REGION_ID(0x115, 1) == region) {
 		ncp_uint32_t base;
 
-		base = (IO + 0x3000);
+		base = (IO + (unsigned long)0x3000);
 
 		if (0xffff < offset)
 			return -1;
@@ -400,7 +400,7 @@ ncr_write16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 	if (NCP_REGION_ID(0x115, 1) == region) {
 		ncp_uint32_t base;
 
-		base = (IO + 0x3000);
+		base = (IO + (unsigned long)0x3000);
 
 		if (0xffff < offset)
 			return -1;
@@ -445,13 +445,13 @@ ncr_read32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
-			base = (IO + 0x3030);
+			base = (IO + (unsigned long)0x3030);
 			break;
 		case 2:
-			base = (IO + 0x3010);
+			base = (IO + (unsigned long)0x3010);
 			break;
 		case 3:
-			base = (IO + 0x3020);
+			base = (IO + (unsigned long)0x3020);
 			break;
 		default:
 			/* Unreachable, due to the if() above. */
@@ -558,28 +558,28 @@ ncr_read16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 
 	if ((NCP_REGION_ID(0x115, 1) == region) ||
 	    (NCP_REGION_ID(0x115, 4) == region)) {
-		ncp_uint32_t base;
+		unsigned long *base;
 
 		if (NCP_REGION_ID(0x115, 1) == region)
-			base = (IO + 0x1f0);
+			base = (unsigned long *)(IO + 0x1f0);
 		else
-			base = (IO + 0x220);
+			base = (unsigned long *)(IO + 0x220);
 
 		if (0xffff < offset)
 			return -1;
 
-		writel((0x84c00000 + offset), POINTER(base + 4));
+		writel((0x84c00000 + offset), base + 1);
 
 		do {
 			--wfc_timeout;
-			temp = readl(POINTER(base + 4));
+			temp = readl(base + 1);
 		} while (0 != (temp & 0x80000000) &&
 			 0 < wfc_timeout);
 
 		if (0 == wfc_timeout)
 			return -1;
 
-		*value = readl(POINTER(base + 8));
+		*value = readl(base + 2);
 
 		return 0;
 	}
@@ -605,22 +605,22 @@ ncr_write16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 
 	if ((NCP_REGION_ID(0x115, 1) == region) ||
 	    (NCP_REGION_ID(0x115, 4) == region)) {
-		ncp_uint32_t base;
+		unsigned long *base;
 
 		if (NCP_REGION_ID(0x115, 1) == region)
-			base = (IO + 0x1f0);
+			base = (unsigned long *)(IO + 0x1f0);
 		else
-			base = (IO + 0x220);
+			base = (unsigned long *)(IO + 0x220);
 
 		if (0xffff < offset)
 			return -1;
 
-		writel(value, POINTER(base));
-		writel((0xc4c00000 + offset), POINTER(base + 4));
+		writel(value, base);
+		writel((0xc4c00000 + offset), base + 1);
 
 		do {
 			--wfc_timeout;
-			temp = readl(POINTER(base + 4));
+			temp = readl(base + 1);
 		} while (0 != (temp & 0x80000000) &&
 			 0 < wfc_timeout);
 
@@ -654,26 +654,26 @@ ncr_read32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 	    (NCP_REGION_ID(0x115, 3) == region) ||
 	    (NCP_REGION_ID(0x115, 4) == region) ||
 	    (NCP_REGION_ID(0x115, 5) == region)) {
-		ncp_uint32_t base = 0;
+		unsigned long *base = 0;
 
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
-			base = (IO + 0x1e0);
+			base = (unsigned long *)(IO + 0x1e0);
 			break;
 		case 1:
-			base = (IO + 0x1f0);
+			base = (unsigned long *)(IO + 0x1f0);
 			break;
 		case 2:
-			base = (IO + 0x200);
+			base = (unsigned long *)(IO + 0x200);
 			break;
 		case 3:
-			base = (IO + 0x210);
+			base = (unsigned long *)(IO + 0x210);
 			break;
 		case 4:
-			base = (IO + 0x220);
+			base = (unsigned long *)(IO + 0x220);
 			break;
 		case 5:
-			base = (IO + 0x230);
+			base = (unsigned long *)(IO + 0x230);
 			break;
 		default:
 			/* Unreachable, due to the if() above. */
@@ -683,18 +683,18 @@ ncr_read32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		if (0xffff < offset)
 			return -1;
 
-		writel((0x85400000 + offset), POINTER(base + 4));
+		writel((0x85400000 + offset), base + 1);
 
 		do {
 			--wfc_timeout;
-			*value = readl(POINTER(base + 4));
+			*value = readl(base + 1);
 		} while (0 != (*value & 0x80000000) &&
 			 0 < wfc_timeout);
 
 		if (0 == wfc_timeout)
 			return -1;
 
-		*value = readl(POINTER(base + 8));
+		*value = readl(base + 2);
 
 		return 0;
 	}
@@ -723,25 +723,26 @@ ncr_write32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 	    (NCP_REGION_ID(0x115, 3) == region) ||
 	    (NCP_REGION_ID(0x115, 4) == region) ||
 	    (NCP_REGION_ID(0x115, 5) == region)) {
-		ncp_uint32_t base = 0;
+		unsigned long *base = 0;
+
 		switch (NCP_TARGET_ID(region)) {
 		case 0:
-			base = (IO + 0x1e0);
+			base = (unsigned long *)(IO + 0x1e0);
 			break;
 		case 1:
-			base = (IO + 0x1f0);
+			base = (unsigned long *)(IO + 0x1f0);
 			break;
 		case 2:
-			base = (IO + 0x200);
+			base = (unsigned long *)(IO + 0x200);
 			break;
 		case 3:
-			base = (IO + 0x210);
+			base = (unsigned long *)(IO + 0x210);
 			break;
 		case 4:
-			base = (IO + 0x220);
+			base = (unsigned long *)(IO + 0x220);
 			break;
 		case 5:
-			base = (IO + 0x230);
+			base = (unsigned long *)(IO + 0x230);
 			break;
 		default:
 			/* Unreachable, due to the if() above. */
@@ -751,12 +752,12 @@ ncr_write32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
 		if (0xffff < offset)
 			return -1;
 
-		writel(value, POINTER(base));
-		writel((0xc5400000 + offset), POINTER(base + 4));
+		writel(value, base);
+		writel((0xc5400000 + offset), base + 1);
 
 		do {
 			--wfc_timeout;
-			value = readl(POINTER(base + 4));
+			value = readl(base + 1);
 		} while (0 != (value & 0x80000000) &&
 			 0 < wfc_timeout);
 

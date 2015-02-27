@@ -39,6 +39,8 @@ static int number_of_clusters = -1;
 static int bit_by_cluster[4];
 #endif
 
+#define DONT_SET_CLUSTERS
+
 /*
   ------------------------------------------------------------------------------
   init_clusters_info
@@ -195,6 +197,7 @@ initialize_cluster_info(void)
 */
 
 #ifndef CONFIG_AXXIA_SIM
+#ifndef DONT_SET_CLUSTERS
 
 static unsigned long
 get_number_of_clusters(void)
@@ -205,6 +208,7 @@ get_number_of_clusters(void)
 	return number_of_clusters;
 }
 
+#endif	/* DONT_SET_CLUSTERS */
 #endif
 
 /*
@@ -445,6 +449,8 @@ power_down_cluster(int cluster)
   set_clusters
 */
 
+#ifndef DONT_SET_CLUSTERS
+
 static int
 set_clusters(void)
 {
@@ -561,6 +567,8 @@ set_clusters(void)
 
 	return 0;
 }
+
+#endif	/* DONT_SET_CLUSTERS */
 
 /*
   ==============================================================================
@@ -780,7 +788,7 @@ ft_board_setup(void *blob, bd_t *bd)
 	/*char cpu_string[40];*/
 	int node;
 	int rc;
-#ifndef CONFIG_AXXIA_SIM
+#if !defined(CONFIG_AXXIA_SIM) && !defined(CONFIG_AXXIA_EMU)
 	int i;
 	acp_clock_t clocks[] = {
 		clock_core, clock_peripheral, clock_emmc
@@ -799,14 +807,16 @@ ft_board_setup(void *blob, bd_t *bd)
 	  late in order to use the latest environment.
 	*/
 
+#ifndef DONT_SET_CLUSTERS
 	if (0 != set_clusters())
 		acp_failure(__FILE__, __func__, __LINE__);
+#endif
 
 	/*
 	  Set the PLL/Clock frequencies.
 	*/
 
-#ifndef CONFIG_AXXIA_SIM
+#if !defined(CONFIG_AXXIA_SIM) && !defined(CONFIG_AXXIA_EMU)
 	for (i = 0; i < (sizeof(clocks) / sizeof(acp_clock_t)); ++i) {
 		node = fdt_path_offset(blob, clock_names[i]);
 
@@ -904,7 +914,7 @@ ft_board_setup(void *blob, bd_t *bd)
 	  Enable PEI0/PEI1 controllers
 	*/
 
-#ifndef CONFIG_AXXIA_SIM
+#if !defined(CONFIG_AXXIA_SIM) && !defined(CONFIG_AXXIA_EMU)
 	node = fdt_path_offset(blob, "/pciex@0x3000000000");
 
 	if (0 <= node) {
