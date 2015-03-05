@@ -175,20 +175,15 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define GPIO0_ADDRESS (IO + 0x92000)
 #define GPIO1_ADDRESS (IO + 0x93000)
 
-#define GPREG        (IO + 0x94000)
+#define GPREG        (0x8032900000)
 #define GPREG_GPDMA  (GPREG + 0x00)
 #define GPREG_MAC    (GPREG + 0x04)
 #define GPREG_USB    (GPREG + 0x08)
 #define GPREG_STATUS (GPREG + 0x0c)
 
 #define CONFIG_GICV3
-#if 1
 #define GICD_BASE (0x8010000000)
 #define GICR_BASE (0x8010200000)
-#else
-#define GICD_BASE (0x8010010000)
-#define GICR_BASE (0x8010100000)
-#endif
 
 #define APB2_SER0_BASE (IO)
 #define APB2_SER3_BASE (IO + 0x30000)
