@@ -754,6 +754,18 @@ board_early_init_f(void)
 	printf("\n\nAxxia Version: UNKNOWN");
 #endif
 
+	printf("\n%s:%d - GICC_IIDR=0x%x\n", __FILE__, __LINE__,
+	       readl(0x8001000000 + 0xfc));
+	printf("%s:%d - GICD_IIDR=0x%x (0x%x)\n", __FILE__, __LINE__,
+	       readl(GICD_BASE + 0x8), readl(GICD_BASE + 0xffe0));
+	printf("%s:%d - GICR_IIDR=0x%x (0x%x)\n", __FILE__, __LINE__,
+	       readl(GICR_BASE + 0x4), readl(GICR_BASE + 0xffe0));
+
+	printf("%s:%d - pfuse=0x%x\n", __FILE__, __LINE__,
+	       readl(SYSCON + 0x34));
+	printf("%s:%d - nca+0xe0 is 0x%x\n", __FILE__, __LINE__,
+	       readl(NCA + 0xe0));
+
 	return 0;
 }
 

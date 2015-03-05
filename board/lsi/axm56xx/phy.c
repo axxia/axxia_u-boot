@@ -37,7 +37,7 @@
 
 /* Debugging */
 #undef DEBUG
-//#define DEBUG 1
+/*#define DEBUG 1*/
 #ifdef DEBUG
 #define DEBUG_PRINT( format, args... ) do { \
 printf( "phy:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -464,7 +464,7 @@ phy_duplex( int phy )
 		ops = phy_ops [ phy ];
 	}
 
-	DEBUG_PRINT( "ops=0x%x ops->duplex=0x%x\n", ops, ops->duplex );
+	DEBUG_PRINT( "ops=0x%p ops->duplex=0x%p\n", ops, ops->duplex );
 
 	return ops->duplex( phy );
 }
@@ -637,7 +637,7 @@ phy_speed( int phy )
 		ops = phy_ops [ phy ];
 	}
 
-	DEBUG_PRINT( "ops=0x%x ops->speed=0x%x\n", ops, ops->speed );
+	DEBUG_PRINT( "ops=0x%p ops->speed=0x%p\n", ops, ops->speed );
 
 	return ops->speed( phy );
 }

@@ -105,7 +105,7 @@ printf( format, ##args ); \
 #endif /* DEBUG */
 
 #undef TX_DEBUG
-/* #define TX_DEBUG */
+#define TX_DEBUG
 #ifdef TX_DEBUG
 #define TX_DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - TX_DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -184,19 +184,12 @@ static int phy_enable_( int );
 #define BUFFER_GRANULARITY 64
 
 #undef ALIGN
-#define ALIGN( address, bytes ) \
-( ( ( unsigned long ) ( address ) + ( ( unsigned long ) ( bytes ) - 1UL ) ) & \
-~ ( ( unsigned long ) ( bytes ) - 1UL ) )
+#define ALIGN(address, bytes) \
+  (((unsigned long long)(address) + \
+    (unsigned long long)(bytes - 1)) & ~((unsigned long long)(bytes - 1)))
 
-#define ALIGN_OFFSET( address, bytes ) \
-( ALIGN( ( address ), ( bytes ) ) - ( unsigned long ) ( address ) )
-
-#define ALIGN64B( address ) \
-( ( ( ( unsigned long ) ( address ) + \
-( 64UL - 1UL ) ) & ~ ( 64UL - 1UL ) ) )
-
-#define ALIGN64B_OFFSET( address ) \
-( ALIGN64B( address ) - ( unsigned long ) ( address ) )
+#define ALIGN64B(address) \
+  (((unsigned long long)(address) + (64 - 1)) & ~(64 - 1))
 
 /* SMII Status ------------------------------------------------------ */
 
@@ -1101,6 +1094,8 @@ static inline void
 writedescriptor(unsigned long address,
                  const app3xxnic_dma_descriptor_t *descriptor)
 {
+	DEBUG_PRINT("address=0x%lx descriptor=0x%p size=%lu\n",
+		    address, descriptor, sizeof(app3xxnic_dma_descriptor_t));
         memcpy((void *) address, descriptor, sizeof(app3xxnic_dma_descriptor_t));
         return;
 }
@@ -1824,8 +1819,10 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	}
 
 	/* Set the FEMAC to uncached. */
+#if 0
 	writel( 0, (GPREG + 0x78));
 	printf("HPROT: 0x%x\n", readl(GPREG + 0x78));
+#endif
 
 	/* Reset the MAC */
 	writel( 0x80000000, APP3XXNIC_DMA_PCI_CONTROL );
@@ -1882,6 +1879,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	}
 #else
 #ifdef USE_LSM
+#error "GOT HERE!"
 	writel(0x2020, (GPREG + 0x4));
 	memory = (void *)(0xa0000000);
 #else
@@ -1926,6 +1924,8 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 
 	temp = memory;
 
+	DEBUG_PRINT("temp=0x%p ALIGN64B(temp)=0x%llx\n",
+		    temp, ALIGN64B(temp));
 	rx_descriptors_ = ( app3xxnic_dma_descriptor_t * ) ALIGN64B( temp );
 	temp = ( void * )
 		( ( unsigned long ) rx_descriptors_ + 
@@ -1934,6 +1934,8 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		     temp, rx_descriptors_ );
 	/*printf( "rx_descriptors_=0x%08x\n", rx_descriptors_ );*/
 
+	DEBUG_PRINT("temp=0x%p ALIGN64B(temp)=0x%llx\n",
+		    temp, ALIGN64B(temp));
 	tx_descriptors_ = ( app3xxnic_dma_descriptor_t * ) ALIGN64B( temp );
 	temp = ( void * )
 		( ( unsigned long ) tx_descriptors_ + 
@@ -1941,21 +1943,31 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	DEBUG_PRINT( "temp=0x%p tx_descriptors_=0x%p\n", temp, tx_descriptors_ );
 	/*printf( "tx_descriptors_=0x%08x\n", tx_descriptors_ );*/
 
+	DEBUG_PRINT("temp=0x%p ALIGN64B(temp)=0x%llx\n",
+		    temp, ALIGN64B(temp));
 	rx_buffer_ = ( void * ) ALIGN64B( temp );
 	temp = ( void * ) ( ( unsigned long ) rx_buffer_ + rx_buffer_size );
 	DEBUG_PRINT( "rx_buffer_=0x%p\n", rx_buffer_ );
 	/*printf( "rx_buffer_=0x%x\n", rx_buffer_ );*/
 
+	DEBUG_PRINT("temp=0x%p ALIGN64B(temp)=0x%llx\n",
+		    temp, ALIGN64B(temp));
 	tx_buffer_ = ( void * ) ALIGN64B( temp );
 	temp = ( void * ) ( ( unsigned long ) tx_buffer_ + TX_BUFFER_SIZE );
 	DEBUG_PRINT( "tx_buffer_=0x%p\n", tx_buffer_ );
 	/*printf( "tx_buffer_=0x%x\n", tx_buffer_ );*/
 
+	DEBUG_PRINT("temp=0x%p ALIGN(temp, %lu)=0x%llx\n",
+		    temp, sizeof(app3xxnic_queue_pointer_t),
+		    ALIGN(temp, sizeof(app3xxnic_queue_pointer_t)));
 	rx_tail_ = ( void * ) ALIGN( temp, sizeof( app3xxnic_queue_pointer_t ) );
 	temp = ( void * ) ( rx_tail_ + sizeof( app3xxnic_queue_pointer_t ) );
 	DEBUG_PRINT( "rx_tail_=0x%p\n", rx_tail_ );
 	/*printf( "rx_tail_=0x%x\n", rx_tail_ );*/
 
+	DEBUG_PRINT("temp=0x%p ALIGN(temp, %lu)=0x%llx\n",
+		    temp, sizeof(app3xxnic_queue_pointer_t),
+		    ALIGN(temp, sizeof(app3xxnic_queue_pointer_t)));
 	tx_tail_ = ( void * ) ALIGN( temp, sizeof( app3xxnic_queue_pointer_t ) );
 	temp = ( void * ) ( tx_tail_ + sizeof( app3xxnic_queue_pointer_t ) );
 	DEBUG_PRINT( "tx_tail_=0x%p\n", tx_tail_ );
@@ -1969,6 +1981,8 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		int index_;
 
 		buffer_ = rx_buffer_;
+		DEBUG_PRINT("buffer_=0x%p rx_buffer_=0x%p\n",
+			    buffer_, rx_buffer_);
 
 		for( index_ = 0; index_ < rx_number_of_descriptors; ++ index_ ) {
 			memset( ( void * ) & descriptor_, 0,
@@ -2028,6 +2042,8 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 
 	  offset = (unsigned long)
 	    ((unsigned long long)rx_descriptors_ & 0xffffffffULL);
+	  DEBUG_PRINT("offset=0x%lx rx_descriptors_=0x%p\n",
+		      offset, rx_descriptors_);
 	  writel(offset, APP3XXNIC_DMA_RX_QUEUE_BASE_ADDRESS );
 	}
 #endif
@@ -2057,7 +2073,9 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	  unsigned long offset;
 
 	  offset = (unsigned long)
-	    ((unsigned long long)rx_descriptors_ & 0xffffffffULL);
+	    ((unsigned long long)tx_descriptors_ & 0xffffffffULL);
+	  DEBUG_PRINT("offset=0x%lx tx_descriptors_=0x%p\n",
+		      offset, tx_descriptors_);
 	  writel(offset, APP3XXNIC_DMA_TX_QUEUE_BASE_ADDRESS);
 	}
 #endif
@@ -2343,10 +2361,14 @@ lsi_femac_eth_send(struct eth_device *device,  void *packet, int length)
 				tx_head_.bits.generation_bit, 
 				tx_tail_->bits.offset,
 				tx_tail_->bits.generation_bit );
+		DEBUG_PRINT("tx_buffer_=0x%p packet=0x%p length=%d\n",
+			    tx_buffer_, packet, length);
 		memcpy( tx_buffer_, ( void * ) packet, length );
 		readdescriptor( ( ( unsigned long ) tx_descriptors_ +
 				  tx_head_.bits.offset ),
 				& descriptor_ );
+		DEBUG_PRINT("host_data_memory_pointer=0x%lx\n",
+			    descriptor_.host_data_memory_pointer);
 		descriptor_.host_data_memory_pointer =
 			( unsigned long ) tx_buffer_;
 		descriptor_.pdu_length = length;
