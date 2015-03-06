@@ -113,8 +113,10 @@ v7_outer_cache_flush_all(void)
 	if (0 != set_outer_cache_state(0x1))
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
+#ifndef LEAVE_L3_OFF
 	if (0 != set_outer_cache_state(0x3))
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+#endif
 #endif
 
 	return;
