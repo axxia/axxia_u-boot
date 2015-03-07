@@ -2028,26 +2028,33 @@ acp_init_r( void )
 				/* delay in ms */
 				mdelay(pei_link_delay);
 #ifdef AXM_35xx
-				/* PEI0 RC and enabled */
-				if ((peiControl & 0x400001) == 0x400001) {
+				/* PEI0 enabled */
+				if ((peiControl & 0x1) == 0x1) {
 #endif
-				
 				pciStatus = acpreadio((void *)(PCIE0_CONFIG + 0x1004));
 				printf("PEI0 pciStatus = 0x%x\n", pciStatus);
 				linkState = (pciStatus & 0x3f00) >> 8;
 				if (linkState == 0xb) {
-					printf("PCIE0 link State UP = 0x%x\n", linkState);
-					env_value = getenv("pei0_speed");
+					printf("PCIE0 link State UP = 0x%x\n",
+						linkState);
+				} else {
+					printf("PCIE0 link State DOWN = 0x%x\n",
+						linkState);
+				}
+				/* PEI0 RC and enabled */
+				if ((linkState == 0xb) &&
+					(peiControl & 0x400001) == 0x400001) {
+					env_value =
+						getenv("pei0_speed");
 					if ((char *)0 != env_value) {
 						unsigned long pei0_speed;
-
-						pei0_speed = simple_strtoul(env_value, NULL, 0);
+						pei0_speed =
+						simple_strtoul(env_value,
+							NULL, 0);
 						pci_speed_change(0, pei0_speed);
 					} else {
 						pci_speed_change(0, 0x2);
 					}
-				} else {
-					printf("PCIE0 link State DOWN = 0x%x\n", linkState);
 				}
 #ifdef AXM_35xx
 }
@@ -2086,7 +2093,7 @@ acp_init_r( void )
 	
 				if (linkState == 0xb) {
 					printf("PCIE2 link State UP = 0x%x\n", linkState);
-					env_value = getenv("pei1_speed");
+					env_value = getenv("pei2_speed");
 					if ((char *)0 != env_value) {
 						unsigned long pei2_speed; 
 					

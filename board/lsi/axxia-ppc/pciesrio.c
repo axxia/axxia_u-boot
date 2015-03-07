@@ -805,7 +805,10 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 
 	} else if (((new_control & 0x1c00000f) == 0x18000007)
 		|| ((new_control & 0x1c00000f) == 0x18000008)
+		|| ((new_control & 0x1c00000f) == 0x18000006)
+		|| ((new_control & 0x1c00000f) == 0x18000005)
 		|| ((new_control & 0x1c00000f) == 0x18000004)
+		|| ((new_control & 0x1c00000f) == 0x18000003)
 		|| ((new_control & 0x1c00000f) == 0x18000002)
 		|| ((new_control & 0x1c00000f) == 0x18000001)
 		|| ((new_control & 0x1c00000f) == 0x1800000f)) {
@@ -822,6 +825,15 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 		if ((new_control & 0x1c00000f) == 0x18000001) {
 			/* only PEI0 is enabled */
 			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18000061);
+		} else if ((new_control & 0x1c00000f) == 0x18000003) {
+			/* PEI2 and PEI0 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18000065);
+		} else if ((new_control & 0x1c00000f) == 0x18000005) {
+			/* PEI0 and PEI1 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18000063);
+		} else if ((new_control & 0x1c00000f) == 0x18000006) {
+			/* PEI2 and PEI1 is enabled */
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18000066);
 		} else if ((new_control & 0x1c00000f) == 0x18000004) {
 			/* only PEI1 is enabled */
 			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200, 0x18000062);
@@ -868,6 +880,18 @@ pciesrio_setcontrol_axm35xx(unsigned long new_control)
 		case 0x18000007:
 			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,
 				(new_control & 0x1c40000f) | 0x40);
+			break;
+		case 0x18000003:
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,
+				(new_control & 0x1c400000) | 0x45);
+			break;
+		case 0x18000005:
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,
+				(new_control & 0x1c400000) | 0x43);
+			break;
+		case 0x18000006:
+			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,
+				(new_control & 0x1c400000) | 0x46);
 			break;
 		case 0x18000002:
 			ncr_write32(NCP_REGION_ID(0x115, 0), 0x200,
