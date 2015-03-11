@@ -94,7 +94,7 @@ dump_packet_(header, data, length);
 */
 
 #undef DEBUG
-#define DEBUG
+/*#define DEBUG*/
 #ifdef DEBUG
 #define DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -105,7 +105,7 @@ printf( format, ##args ); \
 #endif /* DEBUG */
 
 #undef TX_DEBUG
-#define TX_DEBUG
+/*#define TX_DEBUG*/
 #ifdef TX_DEBUG
 #define TX_DEBUG_PRINT( format, args... ) do { \
 printf( "app3_nic:%s:%d - TX_DEBUG - ", __FUNCTION__, __LINE__ ); \
@@ -480,25 +480,25 @@ typedef struct {
 
 	/* Word 0 */
 	/* 00=Fill|01=Block|10=Scatter */
-	unsigned long transfer_type           : 2;
-	unsigned long write                   : 1;
-	unsigned long start_of_packet         : 1;
-	unsigned long end_of_packet           : 1;
-	unsigned long interrupt_on_completion : 1;
-	unsigned long                         : 1;
+	unsigned int transfer_type           : 2;
+	unsigned int write                   : 1;
+	unsigned int start_of_packet         : 1;
+	unsigned int end_of_packet           : 1;
+	unsigned int interrupt_on_completion : 1;
+	unsigned int                         : 1;
 	/* big endian to little endian */
-	unsigned long byte_swapping_on        : 1;
-	unsigned long                         : 24;
+	unsigned int byte_swapping_on        : 1;
+	unsigned int                         : 24;
 
 	/* Word 1 */
-	unsigned long data_transfer_length : 16;
-	unsigned long pdu_length           : 16;
+	unsigned int data_transfer_length : 16;
+	unsigned int pdu_length           : 16;
 
 	/* Word 2 */
-	unsigned long target_memory_address;
+	unsigned int target_memory_address;
 
 	/* Word 3 */
-	unsigned long host_data_memory_pointer;
+	unsigned int host_data_memory_pointer;
 
 #endif /* CONFIG_AXXIA_PPC */
 
@@ -513,9 +513,9 @@ typedef union {
 		unsigned long generation_bit : 1;
 		unsigned long offset         : 20;
 #else  /* CONFIG_AXXIA_PPC */
-		unsigned long offset         : 20;
-		unsigned long generation_bit : 1;
-		unsigned long                : 11;
+		unsigned int offset         : 20;
+		unsigned int generation_bit : 1;
+		unsigned int                : 11;
 #endif /* CONFIG_AXXIA_PPC */
 	} __attribute__ ( ( packed ) ) bits;
 } __attribute__ ( ( packed ) ) app3xxnic_queue_pointer_t;
@@ -1884,7 +1884,22 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	memory = (void *)(0xa0000000);
 #else
 	/*memory = (void *)((4 * 1024 * 1024) - (256 * 1024));*/
+#if 1
 	memory =(void *)0x40000000ULL;
+#else
+	/*
+	  This was a test -- Use LSM instead of system memory for DMA.
+	*/
+
+	{
+	  unsigned long value;
+
+	  memory =(void *)LSM;
+	  value = readl(0x8080230018);
+	  value |= 0x800000;
+	  writel(value, 0x8080230018);
+	}
+#endif
 #endif
 	printf("FEMAC: Used %zu of 0x%x at 0x%p\n",
 	       memory_needed, (256 * 1024), memory);
@@ -1981,8 +1996,8 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 		int index_;
 
 		buffer_ = rx_buffer_;
-		DEBUG_PRINT("buffer_=0x%p rx_buffer_=0x%p\n",
-			    buffer_, rx_buffer_);
+		DEBUG_PRINT("buffer_=0x%p rx_buffer_=0x%p rx_buffer_per_descriptor=0x%x\n",
+			    buffer_, rx_buffer_, rx_buffer_per_descriptor);
 
 		for( index_ = 0; index_ < rx_number_of_descriptors; ++ index_ ) {
 			memset( ( void * ) & descriptor_, 0,
@@ -2256,7 +2271,7 @@ lsi_femac_eth_rx(struct eth_device *dev)
 
 	while (0 < queue_initialized_(swab_queue_pointer(rx_tail_),
 				      rx_tail_copy_, rx_number_of_descriptors)) {
-		memcpy(destination_, (void *)descriptor_.host_data_memory_pointer,
+		memcpy(destination_, (void *)((unsigned long long)descriptor_.host_data_memory_pointer),
 		       descriptor_.pdu_length);
 		destination_ += descriptor_.pdu_length;
 		bytes_received_ += descriptor_.pdu_length;
@@ -2367,7 +2382,7 @@ lsi_femac_eth_send(struct eth_device *device,  void *packet, int length)
 		readdescriptor( ( ( unsigned long ) tx_descriptors_ +
 				  tx_head_.bits.offset ),
 				& descriptor_ );
-		DEBUG_PRINT("host_data_memory_pointer=0x%lx\n",
+		DEBUG_PRINT("host_data_memory_pointer=0x%x\n",
 			    descriptor_.host_data_memory_pointer);
 		descriptor_.host_data_memory_pointer =
 			( unsigned long ) tx_buffer_;
