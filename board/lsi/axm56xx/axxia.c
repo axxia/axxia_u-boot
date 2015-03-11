@@ -61,7 +61,7 @@ initialize_cluster_info(void)
 		cluster_not_present_vector = (pfuse >> 20) & 0xf;
 		chip_type = pfuse & 0x1f;
 		chip_version_major = (pfuse >> 8) & 7;
-		printf("pfuse : 0x%lx\n"
+		printf("pfuse : 0x%x\n"
 		       "\t   product_variant : 0x%lx\n"
 		       "\t              cnpv : 0x%lx\n"
 		       "\t         chip_type : 0x%lx\n"
@@ -237,22 +237,18 @@ get_bit_by_cluster(unsigned long cluster)
 static int
 set_cluster_coherency(unsigned cluster, unsigned state)
 {
-	ncp_uint32_t sdcr_offsets[] = {
+	unsigned int sdcr_offsets[] = {
 		0x00,		/* This is the DVM */
 		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
 	};
 	int i;
 	int retries;
-	ncp_uint32_t mask;
-	ncp_uint32_t value;
+	unsigned int mask;
+	unsigned int value;
 
 #ifdef CONFIG_AXXIA_EMU
-#if 1
-	return 0;
-#else
 	if (1 < cluster)
 		return -1;
-#endif
 #else
 	if (3 < cluster)
 		return -1;
@@ -262,19 +258,18 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 	       state ? "Adding" : "Removing",
 	       cluster,
 	       state ? "to" : "from");
+	return 0;
 	mask = (1 << get_bit_by_cluster(cluster));
 
-	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(ncp_uint32_t)); ++i) {
-		unsigned long offset;
+	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(unsigned int)); ++i) {
+		void *offset;
 
-		offset = DICKENS | (sdcr_offsets[i] << 16);
+		offset = (void *)(DICKENS | (sdcr_offsets[i] << 16));
 
 		if (0 == state)
-			writel((unsigned int)mask,
-			       (unsigned int *)(offset + 0x220));
+			writel((unsigned int)mask, (offset + 0x220));
 		else
-			writel((unsigned int)mask,
-			       (unsigned int *)(offset + 0x210));
+			writel((unsigned int)mask, (offset + 0x210));
 
 		retries = 1000;
 
@@ -290,6 +285,10 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 					break;
 			}
 		} while (0 < retries);
+
+		printf("%s:%d - i=%d retries=%d\n",
+		       __FILE__, __LINE__,
+		       i, retries); /* ZZZ */
 
 		if (0 == retries)
 			return -1;

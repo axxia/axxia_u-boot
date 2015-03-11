@@ -17,4 +17,13 @@ lowlevel_init:
 1:
 #endif
 
+	/*
+	 * Initialize the pfuse global variable.
+	 */
+
+	ldr	x0, =SYSCON
+	ldr	w0, [x0, 0x34]
+	ldr	x1, =pfuse
+	str	w0, [x1]
+
 	ret

@@ -957,7 +957,7 @@ int voltage_init(void);
 int pciesrio_init(unsigned long);
 int is_sbb_enabled(int);
 int sbb_verify_image(void *, void *, int, int, int);
-extern unsigned long pfuse;
+extern unsigned int pfuse;
 void enter_ns(void);
 void enter_hyp(void);
 void setup_page_tables(void *);
