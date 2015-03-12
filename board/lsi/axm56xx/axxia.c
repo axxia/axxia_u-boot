@@ -34,12 +34,14 @@ DECLARE_GLOBAL_DATA_PTR;
   ==============================================================================
 */
 
+#define DONT_SET_CLUSTERS
+
 #ifndef CONFIG_AXXIA_SIM
+#ifndef DONT_SET_CLUSTERS
 static int number_of_clusters = -1;
 static int bit_by_cluster[4];
 #endif
-
-#define DONT_SET_CLUSTERS
+#endif
 
 /*
   ------------------------------------------------------------------------------
@@ -47,6 +49,7 @@ static int bit_by_cluster[4];
 */
 
 #ifndef CONFIG_AXXIA_SIM
+#ifndef DONT_SET_CLUSTERS
 static int
 initialize_cluster_info(void)
 {
@@ -190,6 +193,7 @@ initialize_cluster_info(void)
 	return 0;
 }
 #endif
+#endif
 
 /*
   ------------------------------------------------------------------------------
@@ -217,6 +221,7 @@ get_number_of_clusters(void)
 */
 
 #ifndef CONFIG_AXXIA_SIM
+#ifndef DONT_SET_CLUSTERS
 static unsigned long
 get_bit_by_cluster(unsigned long cluster)
 {
@@ -227,6 +232,7 @@ get_bit_by_cluster(unsigned long cluster)
 	return bit_by_cluster[cluster];
 }
 #endif
+#endif
 
 /*
   ------------------------------------------------------------------------------
@@ -234,6 +240,7 @@ get_bit_by_cluster(unsigned long cluster)
 */
 
 #ifndef CONFIG_AXXIA_SIM
+#ifndef DONT_SET_CLUSTERS
 static int
 set_cluster_coherency(unsigned cluster, unsigned state)
 {
@@ -296,6 +303,7 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 
 	return 0;
 }
+#endif
 #endif
 
 /*
@@ -671,15 +679,17 @@ misc_init_r(void)
 
 	/* Add cluster 0 to the coherency domain. */
 
+#ifndef DONT_SET_CLUSTERS
 	if (0 != set_cluster_coherency(0, 1))
 		acp_failure(__FILE__, __func__, __LINE__);
+#endif
 
 	/*
 	  Enable SW access to cp14 registers and power on the ETB RAM
 	  modules (via dbg_sw_enable register)
 	*/
 
-	writel(0xf, SYSCON + 0xcc);
+	/*writel(0xf, SYSCON + 0xcc);*/
 
 	/* Enable EVENT (sev/wfe) signals to all cores */
 	writel(0xffff, SYSCON + 0x14);
