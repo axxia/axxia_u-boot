@@ -81,7 +81,7 @@ static int eh_stats_initialized = 0;
 /*static void dump_descriptor_( unsigned long, void *);*/
 
 #undef DUMP_PACKETS
-/* #define DUMP_PACKETS */
+#define DUMP_PACKETS
 #ifdef DUMP_PACKETS
 #define DUMP_PACKET(header, data, length) \
 dump_packet_(header, data, length);
@@ -595,6 +595,8 @@ static app3xxnic_queue_pointer_t tx_tail_copy_;
 static app3xxnic_queue_pointer_t * tx_tail_;
 static app3xxnic_queue_pointer_t tx_head_;
 
+DEFINE_ALIGN_BUFFER(unsigned char, rx_pkt_buf, 4096, 64);
+
 /*
   ======================================================================
   ======================================================================
@@ -815,7 +817,7 @@ dump_everything(void)
 static void
 mac_loopback_test(struct eth_device *device)
 {
-	void *input = (void *)(NetRxPackets[0]);
+	void *input = (void *)rx_pkt_buf;
 	int size;
 	int looped = 0;
 
@@ -850,7 +852,7 @@ static void
 phy_loopback_test(struct eth_device *device)
 {
 	void *out = NULL;
-	void *in = (void *)(NetRxPackets[0]);
+	void *in = (void *)rx_pkt_buf;
 	int iteration = 0;
 	int size;
 	int i;
@@ -1417,7 +1419,6 @@ void tx_disable_( void ) {
   N.B. If you combine the printf statements, bad things will happen:>
 */
 
-#if 0
 #ifdef DUMP_DESCRIPTOR
 
 static void
@@ -1426,7 +1427,9 @@ dump_descriptor_( unsigned long line, void * address )
 	app3xxnic_dma_descriptor_t descriptor;
 	int rx = 0;
 
-	if( 0 == dump_descriptors ) { return; }
+	if (0 == dump_descriptors)
+		return;
+
 	readdescriptor( ( unsigned long ) address, & descriptor );
 
 	if( ( void * ) rx_descriptors_ <= address &&
@@ -1441,7 +1444,7 @@ dump_descriptor_( unsigned long line, void * address )
 	printf( "<%lu:%s:0x%x:bs=%d,ioc=%d,eop=%d,sop=%d,w=%d,tt=0x%x,pdul=0x%x,"
 		"dtl=0x%x,tma=0x%x,hdmp=0x%x>\n",
 		line, ( 1 == rx ) ? "RX" : "TX",
-		( address - ( void * ) rx_descriptors_ ),
+		( unsigned int )( address - ( void * ) rx_descriptors_ ),
 		( unsigned int ) ( descriptor.byte_swapping_on ),
 		( unsigned int ) ( descriptor.interrupt_on_completion ),
 		( unsigned int ) ( descriptor.end_of_packet ),
@@ -1487,6 +1490,8 @@ dump_descriptor_( unsigned long line, void * address )
   dump_packet_
 */
 
+#ifdef DUMP_PACKETS
+
 static void dump_packet_(const char *header, void *packet, int length)
 {
 	char buffer[256];
@@ -1494,6 +1499,9 @@ static void dump_packet_(const char *header, void *packet, int length)
 	unsigned long offset = 0;
 	int i;
 	unsigned char *data = packet;
+
+	if (0 == dump_packets)
+		return;
 
 	printf("---- %s (%d bytes)\n", header, length);
 
@@ -1516,7 +1524,7 @@ static void dump_packet_(const char *header, void *packet, int length)
 	printf("\n");
 }
 
-#endif
+#endif	/* DUMP_PACKETS */
 
 /*
   ======================================================================
@@ -2251,6 +2259,7 @@ lsi_femac_eth_rx(struct eth_device *dev)
 				      queue_, rx_number_of_descriptors)) {
 		readdescriptor(((unsigned long)rx_descriptors_ +
 				queue_.bits.offset), &descriptor_);
+		DUMP_DESCRIPTOR_(&descriptor_);
 
 		if (0 != descriptor_.end_of_packet) {
 			packet_available_ = 1;
@@ -2264,10 +2273,11 @@ lsi_femac_eth_rx(struct eth_device *dev)
 		return 0;
 
 	/* Get the packet. */
-	destination_ = (void *)(NetRxPackets[0]);
+	destination_ = (void *)rx_pkt_buf;
 
 	readdescriptor(((unsigned long)rx_descriptors_ +
 			rx_tail_copy_.bits.offset), &descriptor_);
+	DUMP_DESCRIPTOR_(&descriptor_);
 
 	while (0 < queue_initialized_(swab_queue_pointer(rx_tail_),
 				      rx_tail_copy_, rx_number_of_descriptors)) {
@@ -2302,15 +2312,23 @@ lsi_femac_eth_rx(struct eth_device *dev)
 		unsigned char broadcast_[] = {
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 		};
-		destination_ = (unsigned char *)NetRxPackets[0];
+
+		destination_ = (unsigned char *)rx_pkt_buf;
 
 		if (0 != rx_allow_all ||
-		    0 == memcmp((const void *)&(((unsigned char *)destination_)[0]),
+		    0 == memcmp((const void *)
+				&(((unsigned char *)destination_)[0]),
 				(const void *)&(dev->enetaddr[0]), 6) ||
-		    0 == memcmp((const void *)&(((unsigned char *)destination_)[0]),
+		    0 == memcmp((const void *)
+				&(((unsigned char *)destination_)[0]),
 				(const void *)&(broadcast_[0]), 6)) {
-			if (0 == rx_debug)
-				NetReceive(NetRxPackets[0], bytes_received_);
+			if (0 == rx_debug) {
+				/*dump_packets = 1;*/
+				DUMP_PACKET("Sending to Stack",
+					    rx_pkt_buf, bytes_received_);
+				dump_packets = 0;
+				NetReceive(rx_pkt_buf, bytes_received_);
+			}
 		}
 	}
 
