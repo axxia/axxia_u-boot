@@ -1231,6 +1231,33 @@ board_init_f(ulong dummy)
 	env_relocate();
 #endif	/* CONFIG_SPL_ENV_SUPPORT */
 
+	/*
+	  For now, allow access from anywhere, to anywhere.
+	*/
+
+	/* MMAP-GPREG is 0x8032900000 (0x170.0.0) */
+	/* MMAP-SCB is 0x8032000000 (0x170.1.0) */
+	/* PERIPH-GPREG is 0x8080230000 (0x171.0.0) */
+	/* PERIPH-SCB is 0x8080400000 (0x171.1.0) */
+	/* TZC is 0x8004140000 (0x1d2.0.0) */
+
+	/* 0x171.1.0xc = 0xffff */
+	writel(0xffff, 0x808040000c);
+	/* 0x171.1.0x10 = 0xffff */
+	writel(0xffff, 0x8080400010);
+	/* 0x170.1.0x54 = 0xffff */
+	writel(0xffff, 0x8032000054);
+	/* 0x170.1.0x43800 0x2 */
+	writel(0x2, 0x8032043800);
+	/* 0x1d2.0.0x114 = 0xffffffff */
+	writel(0xffffffff, 0x8004140114);
+	/* 0x170.1.0x48 = 1 */
+	writel(0x1, 0x8032000048);
+
+	/*
+	  Jump to the monitor.
+	*/
+
 	load_image();
 
 	return;
