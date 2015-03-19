@@ -588,6 +588,15 @@ static inline ulong NetReadLong(ulong *from)
 	return l;
 }
 
+/* return uint *in network byteorder* */
+static inline uint NetReadInt(uint *from)
+{
+	uint l;
+
+	memcpy((void *)&l, (void *)from, sizeof(l));
+	return l;
+}
+
 /* write IP *in network byteorder* */
 static inline void NetWriteIP(void *to, IPaddr_t ip)
 {
@@ -604,6 +613,12 @@ static inline void NetCopyIP(void *to, void *from)
 static inline void NetCopyLong(ulong *to, ulong *from)
 {
 	memcpy((void *)to, (void *)from, sizeof(ulong));
+}
+
+/* copy uint */
+static inline void NetCopyInt(uint *to, uint *from)
+{
+	memcpy((void *)to, (void *)from, sizeof(uint));
 }
 
 /**
