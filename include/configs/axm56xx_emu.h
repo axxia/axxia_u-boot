@@ -91,6 +91,8 @@
   ==============================================================================
 */
 
+#define CONFIG_BOOTP_ID_CACHE_SIZE 32
+
 /*#define CONFIG_SYS_DCACHE_OFF*/
 
 #define CONFIG_SYS_CNTR_FREQ 4000000
