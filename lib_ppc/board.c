@@ -1722,7 +1722,11 @@ acp_init_r( void )
 		env_value = getenv("plb6_hpc");
 
 		if ((char *)0 == env_value) {
+#ifdef AXM_35xx
+			temp = 0x3ffffff;
+#else
 			temp = 0x1000;
+#endif
 			sprintf(buffer, "0x%lx", temp);
 			setenv("plb6_hpc", buffer);
 			env_save = 1;
