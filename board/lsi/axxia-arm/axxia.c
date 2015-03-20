@@ -601,6 +601,8 @@ misc_init_r(void)
 	int retries = WA_811981_RETRIES;
 	unsigned long ccn_qos_rni6_s0_value;
 	char *ccn_qos_rni6_s0_env;
+	unsigned long *address;
+	unsigned long value;
 
 	/*
 	  Workaround for ARM errata 811981.  After a reset, make sure
@@ -649,14 +651,16 @@ misc_init_r(void)
 	/* Update AXI QoS */
 	ccn_qos_rni6_s0_env = getenv("ccn_qos_rni6_s0");
 
-	if (NULL != ccn_qos_rni6_s0_env) {
-		unsigned long *address;
-		unsigned long value;
-
+	if (NULL == ccn_qos_rni6_s0_env)
+		ccn_qos_rni6_s0_value = CCN_QOS_RNI6_SO_DEFAULT;
+	else
 		ccn_qos_rni6_s0_value =
 			simple_strtoul(ccn_qos_rni6_s0_env, NULL, 0);
-		address = (unsigned long *)(DICKENS | 0x86 << 16 | 0x10);
-		value = *address;
+
+	address = (unsigned long *)(DICKENS | 0x86 << 16 | 0x10);
+	value = *address;
+
+	if (value != ccn_qos_rni6_s0_value) {
 		printf("Updating s0_qos_control: 0x%08lx => 0x%08lx\n",
 		       value, ccn_qos_rni6_s0_value);
 		*address = ccn_qos_rni6_s0_value;
