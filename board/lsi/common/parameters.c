@@ -475,20 +475,20 @@ write_parameters(void)
 		       compare, parameters);
 
 		printf("-- Offset --\n"
-		       "     global = 0x%x\n"
-		       "   pciesrio = 0x%x\n"
-		       "    voltage = 0x%x\n"
-		       "     clocks = 0x%x\n"
-		       "     sysmem = 0x%x\n"
-		       "       cmem = 0x%x\n"
-		       "  retention = 0x%x\n",
-		       parameters + header->globalOffset,
-		       parameters + header->pciesrioOffset,
-		       parameters + header->voltageOffset,
-		       parameters + header->clocksOffset,
-		       parameters + header->systemMemoryOffset,
-		       parameters + header->classifierMemoryOffset,
-		       parameters + header->systemMemoryRetentionOffset);
+		       "     global = 0x%lx\n"
+		       "   pciesrio = 0x%lx\n"
+		       "    voltage = 0x%lx\n"
+		       "     clocks = 0x%lx\n"
+		       "     sysmem = 0x%lx\n"
+		       "       cmem = 0x%lx\n"
+		       "  retention = 0x%lx\n",
+		       header->globalOffset,
+		       header->pciesrioOffset,
+		       header->voltageOffset,
+		       header->clocksOffset,
+		       header->systemMemoryOffset,
+		       header->classifierMemoryOffset,
+		       header->systemMemoryRetentionOffset);
 
 		for (i = 0; i < (PARAMETERS_SIZE / 4); ++i) {
 
