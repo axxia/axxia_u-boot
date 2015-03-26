@@ -847,8 +847,6 @@ line_renegotiate(int index)
 	unsigned long eioaPortOffset;
 #endif
 
-	printf("SR -- in line_renegotiate\n");
-
 	/* Set the region and offset. */
 	if (4 > index) {
 		eioaRegion = NCP_REGION_ID(31, 16); /* 0x1f.0x10 */
@@ -990,35 +988,35 @@ line_setup(int index)
 		phy_id_low.raw, phy_id_low.bits.id, phy_id_low.bits.model,
 		phy_id_low.bits.revision);
 
-	envstring = getenv("macspeed");
-	if (NULL != envstring) {
-		switch (phy_id_high.bits.id) {
-		case VSC8574_PHY_ID_HIGH_ID:
-			DEBUG_PRINT("VSC8574_PHY_ID_LOW_ID=0x%x phy_id_low.bits.id=0x%x\n",
-				VSC8574_PHY_ID_LOW_ID, phy_id_low.bits.id);
-			/* Vitesse PHY */
-			if ((VSC8574_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
-				(VSC8574_PHY_ID_LOW_MODEL
-					== phy_id_low.bits.model)) {
-				mdio_write(phy_by_index[index], 0x1f, 0x0);
-				mdio_write(phy_by_index[index], 0x17, 0x0);
-				mdio_write(phy_by_index[index], 0x1f, 0x3);
-				if (phy_by_index[index] == 0x18)
-					mdio_write(phy_by_index[index], 0x10,
-						0x30c0);
-				else
-					mdio_write(phy_by_index[index], 0x10,
-						0x3080);
-				mdio_write(phy_by_index[index], 0x1f, 0x0);
-				mdio_write(0x18, 0x1f, 0x0010);
-				mdio_write(0x18, 0x13, 0x000f);
-				mdio_write(0x18, 0x12, 0x80f0);
-				mdio_write(0x18, 0x1f, 0x0000);
-			}
-			break;
-		case MRVL88E1111_PHY_ID_HIGH_ID:
+	switch (phy_id_high.bits.id) {
+	case VSC8574_PHY_ID_HIGH_ID:
+		DEBUG_PRINT("VSC8574_PHY_ID_LOW_ID=0x%x phy_id_low.bits.id=0x%x\n",
+			VSC8574_PHY_ID_LOW_ID, phy_id_low.bits.id);
+		/* Vitesse PHY */
+		if ((VSC8574_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
+			(VSC8574_PHY_ID_LOW_MODEL
+				== phy_id_low.bits.model)) {
+			mdio_write(phy_by_index[index], 0x1f, 0x0);
+			mdio_write(phy_by_index[index], 0x17, 0x0);
+			mdio_write(phy_by_index[index], 0x1f, 0x3);
+			if (phy_by_index[index] == 0x18)
+				mdio_write(phy_by_index[index], 0x10,
+					0x30c0);
+			else
+				mdio_write(phy_by_index[index], 0x10,
+					0x3080);
+			mdio_write(phy_by_index[index], 0x1f, 0x0);
+			mdio_write(0x18, 0x1f, 0x0010);
+			mdio_write(0x18, 0x13, 0x000f);
+			mdio_write(0x18, 0x12, 0x80f0);
+			mdio_write(0x18, 0x1f, 0x0000);
+		}
+	break;
+	case MRVL88E1111_PHY_ID_HIGH_ID:
 			DEBUG_PRINT("MRVL88E1111_PHY_ID_LOW_ID=0x%x phy_id_low.bits.id=0x%x\n",
 				MRVL88E1111_PHY_ID_LOW_ID, phy_id_low.bits.id);
+#if 0
+		/* Use default config no need for any setup */
 			/* Marvel 88E1111 PHY */
 			if ((MRVL88E1111_PHY_ID_LOW_ID == phy_id_low.bits.id) &&
 				(MRVL88E1111_PHY_ID_LOW_MODEL
@@ -1053,11 +1051,12 @@ line_setup(int index)
 					MRVL88E1111_EXT_PHY_CTRL,
 					MRVL88E1111_DELAY_RGMII);
 			}
-			break;
-		default:
-			printf("Unsupported PHY\n");
-			break;
-		}
+
+#endif
+	break;
+	default:
+		printf("Unsupported PHY\n");
+	break;
 	}
 #else
 	NCR_CALL(ncr_modify32(eioaRegion, 0x70, 0x11000000, 0x0));
@@ -1118,78 +1117,87 @@ line_setup(int index)
 			ge_ad_value = simple_strtoul(envstring, NULL, 0);
 		}
 
-#ifndef AXM_35xx
+		if (phy_id_high.bits.id == VSC8574_PHY_ID_HIGH_ID) {
+			/* Set the AN advertise values. */
+			mdio_write(phy_by_index[index], 4, ad_value);
+			mdio_write(phy_by_index[index], 9, ge_ad_value);
 
-		/* Set the AN advertise values. */
-		mdio_write(phy_by_index[index], 4, ad_value);
-		mdio_write(phy_by_index[index], 9, ge_ad_value);
+			/* Force re-negotiation. */
+			control = mdio_read(phy_by_index[index], 0);
+			control |= 0x200;
+			mdio_write(phy_by_index[index], 0, control);
 
-		/* Force re-negotiation. */
-		control = mdio_read(phy_by_index[index], 0);
-		control |= 0x200;
-		mdio_write(phy_by_index[index], 0, control);
-
-		DELAY();
-		/* Wait for AN complete. */
-		for (;;) {
-			status = mdio_read(phy_by_index[index], 1);
-			if (0 != (status & 0x20))
-				break;
-
-			if (0 == retries--) {
-				ERROR_PRINT("GMAC%d: AN Timed Out.\n",
-					port_by_index[index]);
-				return -1;
-			}
 			DELAY();
-		}
-		DELAY();
-		if (0 == (status & 0x4)) {
-			ERROR_PRINT("GMAC%d: LINK is Down.\n", port_by_index[index]);
+			/* Wait for AN complete. */
+			for (;;) {
+				status = mdio_read(phy_by_index[index], 1);
+				if (0 != (status & 0x20))
+					break;
 
-			if (0 != eioaPort)
-				return -1; /* Don't Error Out in AUTO Mode. */
-			} else {
-				status = mdio_read(phy_by_index[index], 0x1c);
-				printf("GMAC%02d: ", port_by_index[index]);
-
-				switch ((status & 0x18) >> 3) {
-				case 0:
-					puts("10M");
-					break;
-				case 1:
-					puts("100M");
-					break;
-				case 2:
-					puts("1G");
-					break;
-				default:
-					puts("UNKNOWN");
-					break;
+				if (0 == retries--) {
+					ERROR_PRINT("GMAC%d: AN Timed Out.\n",
+						port_by_index[index]);
+					return -1;
 				}
-
-				printf(" %s\n",
-				       (0 == (status & 0x20)) ?
-				       "Half Duplex" : "Full Duplex");
 				DELAY();
 			}
-#endif
+			DELAY();
+			if (0 == (status & 0x4)) {
+				ERROR_PRINT("GMAC%d: LINK is Down.\n",
+					port_by_index[index]);
+
+				/* Don't Error Out in AUTO Mode. */
+				if (0 != eioaPort)
+					return -1;
+				} else {
+					status = mdio_read(phy_by_index[index],
+						0x1c);
+					printf("GMAC%02d: ",
+						port_by_index[index]);
+
+					switch ((status & 0x18) >> 3) {
+					case 0:
+						puts("10M");
+						break;
+					case 1:
+						puts("100M");
+						break;
+					case 2:
+						puts("1G");
+						break;
+					default:
+						puts("UNKNOWN");
+					break;
+					}
+
+					printf(" %s\n",
+				       (0 == (status & 0x20)) ?
+				       "Half Duplex" : "Full Duplex");
+					DELAY();
+				}
+
+		} else if (phy_id_high.bits.id == MRVL88E1111_PHY_ID_HIGH_ID) {
+			status = mdio_read(phy_by_index[index], 17);
+			printf("mdio Reg 17 status = 0x%x\n", status);
+		}
+
 		/* Make the MAC match. */
 		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
 			&ncr_status));
 		ncr_status &= ~0x3c;
 		ncr_status |= 0x08;	/* Force Link Up */
 
-		if (0 != (status & 0x20))
-			ncr_status |= 0x04; /* Force Full Duplex */
-
-#ifndef AXM_35xx
-		/* Set the Speed */
-		ncr_status |= (((status & 0x18) >> 3) << 4);
-#else
-		ncr_status |= 0x20;	/* Setup for 1G */
-#endif
-
+		if (phy_id_high.bits.id == VSC8574_PHY_ID_HIGH_ID) {
+			if (0 != (status & 0x20))
+				ncr_status |= 0x04; /* Force Full Duplex */
+				/* Set the Speed */
+				ncr_status |= (((status & 0x18) >> 3) << 4);
+		} else if (phy_id_high.bits.id == MRVL88E1111_PHY_ID_HIGH_ID) {
+			if (0 != (status & 0x2000))
+				ncr_status |= 0x04; /* Force Full Duplex */
+				/* Set the Speed */
+				ncr_status |= (((status & 0xc000) >> 14) << 4);
+		}
 		NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
 			ncr_status));
 	}
