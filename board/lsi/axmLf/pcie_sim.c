@@ -293,6 +293,22 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		bus_start = CONFIG_PCIE0_BUS_START;
 		phys_start = CONFIG_PCIE0_PHY_START;
 		break;
+	case 1:
+		printf("PEI1 Root Complex.\n");
+		/* PEI1 RC Mode */
+		mbase = (u64 *)CONFIG_SYS_PCIE1_CFGADDR;
+		hose->cfg_data = (u8 *)CONFIG_SYS_PCIE1_MEMBASE;
+		bus_start = CONFIG_PCIE1_BUS_START;
+		phys_start = CONFIG_PCIE1_PHY_START;
+		break;
+	case 2:
+		printf("PEI2 Root Complex.\n");
+		/* PEI2 RC Mode */
+		mbase = (u64 *)CONFIG_SYS_PCIE2_CFGADDR;
+		hose->cfg_data = (u8 *)CONFIG_SYS_PCIE2_MEMBASE;
+		bus_start = CONFIG_PCIE2_BUS_START;
+		phys_start = CONFIG_PCIE2_PHY_START;
+		break;
 	}
 
 	/* We only get here if we are RC mode for either PEI0 or PEI1 */
@@ -434,6 +450,10 @@ pci_init_board(void)
 {
 	/* PEI0 is enabled, enumerate it */
 	(void)pci_axxia_init(&hose[0], 0);
+	/* PEI1 is enabled, enumerate it */
+	(void)pci_axxia_init(&hose[1], 1);
+	/* PEI2 is enabled, enumerate it */
+	(void)pci_axxia_init(&hose[2], 2);
 }
 
 #endif /* CONFIG_PCI */

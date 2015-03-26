@@ -32,7 +32,7 @@
   ===============================================================================
 */
 
-unsigned long pfuse __attribute__ ((section ("data")));
+unsigned int pfuse __attribute__ ((section ("data")));
 
 #ifndef CONFIG_AXXIA_EMU
 #ifdef CONFIG_SPL_BUILD

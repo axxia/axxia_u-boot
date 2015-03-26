@@ -91,6 +91,10 @@
   ==============================================================================
 */
 
+#define CONFIG_GICV3
+#define GICD_BASE (0x8010000000)
+#define GICR_BASE (0x8010200000)
+
 #define CONFIG_BOOTP_ID_CACHE_SIZE 32
 
 /*#define CONFIG_SYS_DCACHE_OFF*/

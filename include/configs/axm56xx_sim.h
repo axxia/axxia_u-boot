@@ -234,6 +234,10 @@
   ==============================================================================
 */
 
+#define CONFIG_GICV3
+#define GICD_BASE (0x8010010000)
+#define GICR_BASE (0x8010100000)
+
 #define CONFIG_SYS_CNTR_FREQ 62500000
 
 #define CONFIG_EXTRA_ENV_SETTINGS		\

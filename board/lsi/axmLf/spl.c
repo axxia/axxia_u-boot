@@ -38,6 +38,8 @@ DECLARE_GLOBAL_DATA_PTR;
   ==============================================================================
 */
 
+/*#define COPY_MONITOR_TO_RAM*/
+
 /*
   ----------------------------------------------------------------------
   spl_mtest
@@ -1034,8 +1036,14 @@ load_image(void)
 
 #endif	/* CONFIG_REDUNDANT_UBOOT */
 
+#ifdef COPY_MONITOR_TO_RAM
+	memcpy((void *)0x7ffc1000, (void *)0x8031001000, 0x10000);
+	asm volatile ("ldr x10, =0x7ffc1000\n"
+		      "ret x10");
+#else
 	asm volatile ("ldr x10, =0x8031001000\n"
 		      "ret x10");
+#endif
 }
 
 #endif
@@ -1118,6 +1126,12 @@ board_init_f(ulong dummy)
 	printf("Axxia Version: %s\n\n", AXXIA_VERSION);
 #else
 	printf("Axxia Version: UNKNOWN\n\n");
+#endif
+
+#ifdef AXXIA_ATF_VERSION
+	printf("Axxia ATF Version: %s\n\n", AXXIA_ATF_VERSION);
+#else
+	printf("Axxia ATF Version: UNKNOWN\n\n");
 #endif
 
 #ifdef CONFIG_HW_WATCHDOG
@@ -1216,6 +1230,35 @@ board_init_f(ulong dummy)
 	env_init();
 	env_relocate();
 #endif	/* CONFIG_SPL_ENV_SUPPORT */
+
+	/*
+	  For now, allow access from anywhere, to anywhere.
+	*/
+
+	/* MMAP-GPREG is 0x8032900000 (0x170.0.0) */
+	/* MMAP-SCB is 0x8032000000 (0x170.1.0) */
+	/* PERIPH-GPREG is 0x8080230000 (0x171.0.0) */
+	/* PERIPH-SCB is 0x8080400000 (0x171.1.0) */
+	/* TZC is 0x8004140000 (0x1d2.0.0) */
+
+#if 0
+	/* 0x171.1.0xc = 0xffff */
+	writel(0xffff, 0x808040000c);
+	/* 0x171.1.0x10 = 0xffff */
+	writel(0xffff, 0x8080400010);
+	/* 0x170.1.0x54 = 0xffff */
+	writel(0xffff, 0x8032000054);
+	/* 0x170.1.0x43800 0x2 */
+	writel(0x2, 0x8032043800);
+	/* 0x1d2.0.0x114 = 0xffffffff */
+	writel(0xffffffff, 0x8004140114);
+	/* 0x170.1.0x48 = 1 */
+	writel(0x1, 0x8032000048);
+#endif
+
+	/*
+	  Jump to the monitor.
+	*/
 
 	load_image();
 

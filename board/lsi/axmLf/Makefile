@@ -30,7 +30,7 @@ ifndef CONFIG_SPL_BUILD
 obj-y += axxia.o mdio.o phy.o non_secure.o timer_init.o
 
 ifdef CONFIG_AXXIA_PCI
-ifndef CONFIG_AXXIA_LF_SIM
+ifndef CONFIG_TARGET_AXMLF_SIM
 obj-y += pcie.o
 else
 obj-y += pcie_sim.o

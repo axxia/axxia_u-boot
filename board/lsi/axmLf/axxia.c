@@ -34,9 +34,13 @@ DECLARE_GLOBAL_DATA_PTR;
   ==============================================================================
 */
 
+#define DONT_SET_CLUSTERS
+
 #ifndef CONFIG_AXXIA_SIM
+#ifndef DONT_SET_CLUSTERS
 static int number_of_clusters = -1;
 static int bit_by_cluster[4];
+#endif
 #endif
 
 /*
@@ -45,6 +49,7 @@ static int bit_by_cluster[4];
 */
 
 #ifndef CONFIG_AXXIA_SIM
+#ifndef DONT_SET_CLUSTERS
 static int
 initialize_cluster_info(void)
 {
@@ -59,7 +64,7 @@ initialize_cluster_info(void)
 		cluster_not_present_vector = (pfuse >> 20) & 0xf;
 		chip_type = pfuse & 0x1f;
 		chip_version_major = (pfuse >> 8) & 7;
-		printf("pfuse : 0x%lx\n"
+		printf("pfuse : 0x%x\n"
 		       "\t   product_variant : 0x%lx\n"
 		       "\t              cnpv : 0x%lx\n"
 		       "\t         chip_type : 0x%lx\n"
@@ -188,6 +193,7 @@ initialize_cluster_info(void)
 	return 0;
 }
 #endif
+#endif
 
 /*
   ------------------------------------------------------------------------------
@@ -195,6 +201,7 @@ initialize_cluster_info(void)
 */
 
 #ifndef CONFIG_AXXIA_SIM
+#ifndef DONT_SET_CLUSTERS
 
 static unsigned long
 get_number_of_clusters(void)
@@ -205,6 +212,7 @@ get_number_of_clusters(void)
 	return number_of_clusters;
 }
 
+#endif	/* DONT_SET_CLUSTERS */
 #endif
 
 /*
@@ -213,6 +221,7 @@ get_number_of_clusters(void)
 */
 
 #ifndef CONFIG_AXXIA_SIM
+#ifndef DONT_SET_CLUSTERS
 static unsigned long
 get_bit_by_cluster(unsigned long cluster)
 {
@@ -223,6 +232,7 @@ get_bit_by_cluster(unsigned long cluster)
 	return bit_by_cluster[cluster];
 }
 #endif
+#endif
 
 /*
   ------------------------------------------------------------------------------
@@ -230,25 +240,22 @@ get_bit_by_cluster(unsigned long cluster)
 */
 
 #ifndef CONFIG_AXXIA_SIM
+#ifndef DONT_SET_CLUSTERS
 static int
 set_cluster_coherency(unsigned cluster, unsigned state)
 {
-	ncp_uint32_t sdcr_offsets[] = {
+	unsigned int sdcr_offsets[] = {
 		0x00,		/* This is the DVM */
 		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
 	};
 	int i;
 	int retries;
-	ncp_uint32_t mask;
-	ncp_uint32_t value;
+	unsigned int mask;
+	unsigned int value;
 
 #ifdef CONFIG_AXXIA_EMU
-#if 1
-	return 0;
-#else
 	if (1 < cluster)
 		return -1;
-#endif
 #else
 	if (3 < cluster)
 		return -1;
@@ -258,19 +265,18 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 	       state ? "Adding" : "Removing",
 	       cluster,
 	       state ? "to" : "from");
+	return 0;
 	mask = (1 << get_bit_by_cluster(cluster));
 
-	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(ncp_uint32_t)); ++i) {
-		unsigned long offset;
+	for (i = 0; i < (sizeof(sdcr_offsets) / sizeof(unsigned int)); ++i) {
+		void *offset;
 
-		offset = DICKENS | (sdcr_offsets[i] << 16);
+		offset = (void *)(DICKENS | (sdcr_offsets[i] << 16));
 
 		if (0 == state)
-			writel((unsigned int)mask,
-			       (unsigned int *)(offset + 0x220));
+			writel((unsigned int)mask, (offset + 0x220));
 		else
-			writel((unsigned int)mask,
-			       (unsigned int *)(offset + 0x210));
+			writel((unsigned int)mask, (offset + 0x210));
 
 		retries = 1000;
 
@@ -287,12 +293,17 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 			}
 		} while (0 < retries);
 
+		printf("%s:%d - i=%d retries=%d\n",
+		       __FILE__, __LINE__,
+		       i, retries); /* ZZZ */
+
 		if (0 == retries)
 			return -1;
 	}
 
 	return 0;
 }
+#endif
 #endif
 
 /*
@@ -445,6 +456,8 @@ power_down_cluster(int cluster)
   set_clusters
 */
 
+#ifndef DONT_SET_CLUSTERS
+
 static int
 set_clusters(void)
 {
@@ -562,6 +575,8 @@ set_clusters(void)
 	return 0;
 }
 
+#endif	/* DONT_SET_CLUSTERS */
+
 /*
   ==============================================================================
   ==============================================================================
@@ -664,15 +679,17 @@ misc_init_r(void)
 
 	/* Add cluster 0 to the coherency domain. */
 
+#ifndef DONT_SET_CLUSTERS
 	if (0 != set_cluster_coherency(0, 1))
 		acp_failure(__FILE__, __func__, __LINE__);
+#endif
 
 	/*
 	  Enable SW access to cp14 registers and power on the ETB RAM
 	  modules (via dbg_sw_enable register)
 	*/
 
-	writel(0xf, SYSCON + 0xcc);
+	/*writel(0xf, SYSCON + 0xcc);*/
 
 	/* Enable EVENT (sev/wfe) signals to all cores */
 	writel(0xffff, SYSCON + 0x14);
@@ -746,6 +763,18 @@ board_early_init_f(void)
 	printf("\n\nAxxia Version: UNKNOWN");
 #endif
 
+	printf("\n%s:%d - GICC_IIDR=0x%x\n", __FILE__, __LINE__,
+	       readl(0x8001000000 + 0xfc));
+	printf("%s:%d - GICD_IIDR=0x%x (0x%x)\n", __FILE__, __LINE__,
+	       readl(GICD_BASE + 0x8), readl(GICD_BASE + 0xffe0));
+	printf("%s:%d - GICR_IIDR=0x%x (0x%x)\n", __FILE__, __LINE__,
+	       readl(GICR_BASE + 0x4), readl(GICR_BASE + 0xffe0));
+
+	printf("%s:%d - pfuse=0x%x\n", __FILE__, __LINE__,
+	       readl(SYSCON + 0x34));
+	printf("%s:%d - nca+0xe0 is 0x%x\n", __FILE__, __LINE__,
+	       readl(NCA + 0xe0));
+
 	return 0;
 }
 
@@ -780,7 +809,7 @@ ft_board_setup(void *blob, bd_t *bd)
 	/*char cpu_string[40];*/
 	int node;
 	int rc;
-#ifndef CONFIG_AXXIA_SIM
+#if !defined(CONFIG_AXXIA_SIM) && !defined(CONFIG_AXXIA_EMU)
 	int i;
 	acp_clock_t clocks[] = {
 		clock_core, clock_peripheral, clock_emmc
@@ -799,14 +828,16 @@ ft_board_setup(void *blob, bd_t *bd)
 	  late in order to use the latest environment.
 	*/
 
+#ifndef DONT_SET_CLUSTERS
 	if (0 != set_clusters())
 		acp_failure(__FILE__, __func__, __LINE__);
+#endif
 
 	/*
 	  Set the PLL/Clock frequencies.
 	*/
 
-#ifndef CONFIG_AXXIA_SIM
+#if !defined(CONFIG_AXXIA_SIM) && !defined(CONFIG_AXXIA_EMU)
 	for (i = 0; i < (sizeof(clocks) / sizeof(acp_clock_t)); ++i) {
 		node = fdt_path_offset(blob, clock_names[i]);
 
@@ -904,7 +935,7 @@ ft_board_setup(void *blob, bd_t *bd)
 	  Enable PEI0/PEI1 controllers
 	*/
 
-#ifndef CONFIG_AXXIA_SIM
+#if !defined(CONFIG_AXXIA_SIM) && !defined(CONFIG_AXXIA_EMU)
 	node = fdt_path_offset(blob, "/pciex@0x3000000000");
 
 	if (0 <= node) {

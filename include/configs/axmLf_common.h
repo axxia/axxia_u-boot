@@ -139,155 +139,13 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 /*
   ==============================================================================
   ==============================================================================
-  I2C
-  ==============================================================================
-  ==============================================================================
-*/
-
-#ifndef __ASSEMBLY__
-#define CONFIG_CMD_I2C
-#define CONFIG_CMD_SDRAM
-#define CONFIG_AXXIA_I2C
-#define CONFIG_I2C_MULTI_BUS
-#define CONFIG_SYS_MAX_I2C_BUS 12
-#define CONFIG_SYS_I2C_SPEED 100000
-
-
-#define AI2C_REG_I2C_X7_GLOBAL_CONTROL     (0x0000)   /*!< Offset to reg
-                                                        Global Control */
-#define AI2C_REG_I2C_X7_INTERRUPT_STATUS   (0x0004)   /*!< Offset to reg
-                                                        Interrupt Status */
-#define AI2C_REG_I2C_X7_INTERRUPT_ENABLE   (0x0008)   /*!< Offset to reg
-                                                        Interrupt Enable */
-#define AI2C_REG_I2C_X7_WAIT_TIMER_CONTROL (0x000C)   /*!< Offset to reg
-                                                        Wait Timer Control */
-#define AI2C_REG_I2C_X7_IBML_TIMEOUT       (0x0010)   /*!< Offset to reg
-                                                        IBML Timeout */
-#define AI2C_REG_I2C_X7_IBML_LOW_MEXT      (0x0014)   /*!< Offset to reg
-                                                        IBML Low MEXT */
-#define AI2C_REG_I2C_X7_IBML_LOW_SEXT      (0x0018)   /*!< Offset to reg
-                                                        IBML Low SEXT */
-#define AI2C_REG_I2C_X7_TIMER_CLOCK_DIV    (0x001C)   /*!< Offset to reg
-                                                        Timer Clock Division */
-#define AI2C_REG_I2C_X7_I2C_BUS_MONITOR    (0x0020)   /*!< Offset to reg I2C
-                                                        Bus Monitor */
-#define AI2C_REG_I2C_X7_SOFT_RESET         (0x0024)   /*!< Offset to reg Soft
-                                                        Reset */
-#define AI2C_REG_I2C_X7_MST_COMMAND        (0x0028)   /*!< Offset to reg
-                                                        Master Command */
-#define AI2C_REG_I2C_X7_MST_RX_XFER        (0x002C)   /*!< Offset to reg
-                                                        Master Receive
-                                                        Transfer */
-#define AI2C_REG_I2C_X7_MST_TX_XFER        (0x0030)   /*!< Offset to reg
-                                                        Master Transmit
-                                                        Transfer */
-#define AI2C_REG_I2C_X7_MST_ADDR_1         (0x0034)   /*!< Offset to reg
-                                                        Master Address 1 */
-#define AI2C_REG_I2C_X7_MST_ADDR_2         (0x0038)   /*!< Offset to reg
-                                                        Master Address 2 */
-#define AI2C_REG_I2C_X7_MST_DATA           (0x003C)   /*!< Offset to reg
-                                                        Master Data */
-#define AI2C_REG_I2C_X7_MST_TX_FIFO        (0x0040)   /*!< Offset to reg
-                                                        Master Transmit FIFO */
-#define AI2C_REG_I2C_X7_MST_RX_FIFO        (0x0044)   /*!< Offset to reg
-                                                        Master Receive FIFO */
-#define AI2C_REG_I2C_X7_MST_INT_ENABLE     (0x0048)   /*!< Offset to reg
-                                                        Master Interrupt
-                                                        Enable */
-#define AI2C_REG_I2C_X7_MST_INT_STATUS     (0x004C)   /*!< Offset to reg
-                                                        Master Interrupt
-                                                        Status */
-#define AI2C_REG_I2C_X7_MST_TX_BYTES_XFRD  (0x0050)   /*!< Offset to reg
-                                                        Master TX Bytes
-                                                        Transferred */
-#define AI2C_REG_I2C_X7_MST_RX_BYTES_XFRD  (0x0054)   /*!< Offset to reg
-                                                        Master RX Bytes
-                                                        Transferred */
-#define AI2C_REG_I2C_X7_SLV_ADDR_DEC_CTL   (0x0058)   /*!< Offset to reg
-                                                        Slave Address
-                                                        Decrement Ctl */
-#define AI2C_REG_I2C_X7_SLV_ADDR_1         (0x005C)   /*!< Offset to reg
-                                                        Slave Address 1 */
-#define AI2C_REG_I2C_X7_SLV_ADDR_2         (0x0060)   /*!< Offset to reg
-                                                        Slave Address 2 */
-#define AI2C_REG_I2C_X7_SLV_RX_CTL         (0x0064)   /*!< Offset to reg
-                                                        Slave Receive Control */
-#define AI2C_REG_I2C_X7_SLV_DATA           (0x0068)   /*!< Offset to reg
-                                                        Slave Data */
-#define AI2C_REG_I2C_X7_SLV_RX_FIFO        (0x006C)   /*!< Offset to reg
-                                                        Slave Receive FIFO */
-#define AI2C_REG_I2C_X7_SLV_INT_ENABLE     (0x0070)   /*!< Offset to reg
-                                                        Slave Interrupt
-                                                        Enable */
-#define AI2C_REG_I2C_X7_SLV_INT_STATUS     (0x0074)   /*!< Offset to reg
-                                                        Slave Interrupt
-                                                        Status */
-#define AI2C_REG_I2C_X7_SLV_READ_DUMMY     (0x0078)   /*!< Offset to reg
-                                                        Slave Read Dummy */
-#define AI2C_REG_I2C_X7_SCL_HIGH_PERIOD    (0x0080)   /*!< Offset to reg
-                                                        SCL High Period */
-#define AI2C_REG_I2C_X7_SCL_LOW_PERIOD     (0x0084)   /*!< Offset to reg
-                                                        SCL Low Period */
-#define AI2C_REG_I2C_X7_SPIKE_FLTR_LEN     (0x0088)   /*!< Offset to reg
-                                                        Spike Filter Length */
-#define AI2C_REG_I2C_X7_SDA_SETUP_TIME     (0x008C)   /*!< Offset to reg
-                                                        SDA Setup Time */
-#define AI2C_REG_I2C_X7_SDA_HOLD_TIME      (0x0090)   /*!< Offset to reg
-                                                        SDA Hold Time */
-#define AI2C_REG_I2C_X7_SMB_ALERT          (0x0094)   /*!< Offset to reg
-                                                        SMB Alert */
-#define AI2C_REG_I2C_X7_UDID_W7            (0x0098)   /*!< Offset to reg
-                                                        UDID W7 */
-#define AI2C_REG_I2C_X7_UDID_W7_DEFAULT    (0x00000008) /*!< Def value reg
-                                                        UDID W7 */
-#define AI2C_REG_I2C_X7_UDID_W6            (0x009C)   /*!< Offset to reg
-                                                        UDID W6 */
-#define AI2C_REG_I2C_X7_UDID_W5            (0x00A0)   /*!< Offset to reg
-                                                        UDID W5 */
-#define AI2C_REG_I2C_X7_UDID_W4            (0x00A4)   /*!< Offset to reg
-                                                        UDID W4 */
-#define AI2C_REG_I2C_X7_UDID_W4_DEFAULT    (0x00000004) /*!< Def value reg
-                                                        UDID W4 */
-#define AI2C_REG_I2C_X7_UDID_W3            (0x00A8)   /*!< Offset to reg
-                                                        UDID W3 */
-#define AI2C_REG_I2C_X7_UDID_W2            (0x00AC)   /*!< Offset to reg
-                                                        UDID W2 */
-#define AI2C_REG_I2C_X7_UDID_W1            (0x00B0)   /*!< Offset to reg
-                                                        UDID W1 */
-#define AI2C_REG_I2C_X7_UDID_W0            (0x00B4)   /*!< Offset to reg
-                                                        UDID W0 */
-#define AI2C_REG_I2C_X7_ARPPEC_CFG_STAT    (0x00B8)   /*!< Offset to reg
-                                                        ARPPEC Cfg Status */
-#define AI2C_REG_I2C_X7_SLV_ARP_INT_ENABLE (0x00BC)   /*!< Offset to reg
-                                                        Slave ARP Interrupt
-                                                        Enable */
-#define AI2C_REG_I2C_X7_SLV_ARP_INT_STATUS (0x00C0)   /*!< Offset to reg
-                                                        Slave ARP Interrupt
-                                                        Slave ARP Interrupt
-                                                        Status */
-#define AI2C_REG_I2C_X7_MST_ARP_INT_ENABLE (0x00C4)   /*!< Offset to reg
-                                                        Master ARP Interrupt
-                                                        Enable */
-#define AI2C_REG_I2C_X7_MST_ARP_INT_STATUS (0x00C8)   /*!< Offset to reg
-                                                        Master ARP Interrupt
-                                                        Status */
-/*
-** Unused                                  0x00CC - 0x00FC
-*/
-
-
-#endif	/* __ASSEMBLY__ */
-
-/*
-  ==============================================================================
-  ==============================================================================
   IO (Peripheral Mapping)
   ==============================================================================
   ==============================================================================
 */
 
-#define DICKENS (0x80000000)
-#define IO      (0x90000000)
+#define DICKENS (0x4000000000ULL)
+#define IO      (0x8080000000ULL)
 
 #define UART0_ADDRESS (0x8080000000)
 #define UART1_ADDRESS (0x8080010000)
@@ -297,12 +155,12 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define SCB (IO + 0x96000)
 
 #define MME_POKE (IO + 0x10040000)
-#define NCA 0x8031080000
+#define NCA 0x8020000000
 
 #define ELM0 0x8003c00000
 #define ELM1 0x8003c10000
 
-#define SYSCON  (IO + 0x30000)
+#define SYSCON 0x8002c00000
 
 #define I2C0_ADDRESS 0x8080600000
 #define I2C1_ADDRESS 0x8080610000
@@ -318,10 +176,10 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define I2C11_ADDRESS 0x80806B0000
 #define I2C12_ADDRESS 0x80806C0000
 
-#define I2C0    I2C0_ADDRESS
-#define I2C1    I2C1_ADDRESS
-#define I2C2    I2C2_ADDRESS
-#define I2C3    I2C3_ADDRESS
+#define I2C0	I2C0_ADDRESS
+#define I2C1	I2C1_ADDRESS
+#define I2C2	I2C2_ADDRESS
+#define I2C3	I2C3_ADDRESS
 #define I2C4    I2C4_ADDRESS
 #define I2C5    I2C5_ADDRESS
 #define I2C6    I2C6_ADDRESS
@@ -335,14 +193,11 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define GPIO0_ADDRESS (IO + 0x92000)
 #define GPIO1_ADDRESS (IO + 0x93000)
 
-#define GPREG        (IO + 0x94000)
+#define GPREG        (0x8032900000)
 #define GPREG_GPDMA  (GPREG + 0x00)
 #define GPREG_MAC    (GPREG + 0x04)
 #define GPREG_USB    (GPREG + 0x08)
 #define GPREG_STATUS (GPREG + 0x0c)
-
-#define GIC_DIST_BASE (DICKENS + 0x1001000)
-#define GIC_CPU_BASE  (DICKENS + 0x1002000)
 
 #define APB2_SER0_BASE (IO)
 #define APB2_SER3_BASE (IO + 0x30000)
@@ -366,19 +221,31 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_PCI_SCAN_SHOW 1
 
 #define ACP_PEI0 1
+#define ACP_PEI1 1
+#define ACP_PEI2 1
 
-#define CONFIG_SYS_PCIE_NR_PORTS 1
+#define CONFIG_SYS_PCIE_NR_PORTS 3
 
 #define PCIE0_CONFIG 0xA002000000
+#define PCIE1_CONFIG 0xA004000000
+#define PCIE2_CONFIG 0xA006000000
 
 #define CONFIG_SYS_PCIE0_MEMBASE 0xc038000000
-#define CONFIG_PCIE0_PHY_START   0xc0000000
+#define CONFIG_SYS_PCIE1_MEMBASE 0xc838000000
+#define CONFIG_SYS_PCIE2_MEMBASE 0xd038000000
+#define CONFIG_PCIE0_PHY_START   0xc000000000
+#define CONFIG_PCIE1_PHY_START   0xc800000000
+#define CONFIG_PCIE2_PHY_START   0xd000000000
 
-#define CONFIG_SYS_PCIE_MEMSIZE 0xf0000000
+#define CONFIG_SYS_PCIE_MEMSIZE 0x100000
 
 #define CONFIG_PCIE0_BUS_START 0x80000000
+#define CONFIG_PCIE1_BUS_START 0xc0000000
+#define CONFIG_PCIE2_BUS_START 0xf0000000
 
 #define CONFIG_SYS_PCIE0_CFGADDR PCIE0_CONFIG
+#define CONFIG_SYS_PCIE1_CFGADDR PCIE1_CONFIG
+#define CONFIG_SYS_PCIE2_CFGADDR PCIE2_CONFIG
 #endif
 
 /*
@@ -740,10 +607,10 @@ int serial_early_init(void);
   ==============================================================================
 */
 
-#define MDIO_CONTROL_RD_DATA (IO+0x90000)
-#define MDIO_STATUS_RD_DATA  (IO+0x90004)
-#define MDIO_CLK_OFFSET      (IO+0x90008)
-#define MDIO_CLK_PERIOD      (IO+0x9000c)
+#define MDIO_CONTROL_RD_DATA (0x8080200000)
+#define MDIO_STATUS_RD_DATA  (0x8080200004)
+#define MDIO_CLK_OFFSET      (0x8080200008)
+#define MDIO_CLK_PERIOD      (0x808020000c)
 
 #ifndef __ASSEMBLY__
 int mdio_initialize( void );
@@ -770,9 +637,9 @@ void mdio_write( int phy, int reg, unsigned short value );
 extern unsigned char ethernet_address[6];
 #endif
 
-#define APP3XXNIC_RX_BASE  (IO+0x120000)
-#define APP3XXNIC_TX_BASE  (IO+0x121000)
-#define APP3XXNIC_DMA_BASE (IO+0x122000)
+#define APP3XXNIC_RX_BASE  (0x8080600000)
+#define APP3XXNIC_TX_BASE  (0x8080601000)
+#define APP3XXNIC_DMA_BASE (0x8080602000)
 
 /*
   ==============================================================================
@@ -1083,7 +950,9 @@ void stop_watchdog(void);
   ==============================================================================
 */
 
-#define OSMEMORY_DEFAULT SZ_2G
+#define OSMEMORY_DEFAULT SZ_1G
+
+#define CONFIG_LSI_TEST
 
 #ifndef __ASSEMBLY__
 extern volatile unsigned long *crumbs;
@@ -1102,7 +971,7 @@ int voltage_init(void);
 int pciesrio_init(unsigned long);
 int is_sbb_enabled(int);
 int sbb_verify_image(void *, void *, int, int, int);
-extern unsigned long pfuse;
+extern unsigned int pfuse;
 void enter_ns(void);
 void enter_hyp(void);
 void setup_page_tables(void *);

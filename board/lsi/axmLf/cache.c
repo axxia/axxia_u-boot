@@ -38,25 +38,24 @@
   0b11 - FULL
 */
 
-int
-set_outer_cache_state(unsigned long state)
+static int
+set_outer_cache_state(unsigned int state)
 {
 #ifndef CONFIG_AXXIA_SIM
 	int i;
-        unsigned long status;
+        unsigned int status;
 	int retries;
-	unsigned long hnf_offsets[] = {
+	unsigned int hnf_offsets[] = {
 		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
 	};
 
 	if (0 != (state & ~0x3))
 		return -1;
 
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		writel(state, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
-	}
+	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned int)); ++i)
+		writel(state, (DICKENS + (0x10000 * hnf_offsets[i]) + 0x10));
 
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
+	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned int)); ++i) {
 		retries = 10000;
 
 		do {
@@ -118,6 +117,12 @@ v7_outer_cache_flush_all(void)
 #endif
 
 	return;
+}
+
+void
+flush_l3_cache(void)
+{
+	v7_outer_cache_flush_all();
 }
 
 /*
