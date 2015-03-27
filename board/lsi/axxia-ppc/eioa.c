@@ -1117,6 +1117,7 @@ line_setup(int index)
 			ge_ad_value = simple_strtoul(envstring, NULL, 0);
 		}
 
+#ifdef AXM_35xx
 		if (phy_id_high.bits.id == VSC8574_PHY_ID_HIGH_ID) {
 			/* Set the AN advertise values. */
 			mdio_write(phy_by_index[index], 4, ad_value);
@@ -1181,12 +1182,15 @@ line_setup(int index)
 			printf("mdio Reg 17 status = 0x%x\n", status);
 		}
 
+#endif
+
 		/* Make the MAC match. */
 		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
 			&ncr_status));
 		ncr_status &= ~0x3c;
 		ncr_status |= 0x08;	/* Force Link Up */
 
+#ifdef AXM_35xx
 		if (phy_id_high.bits.id == VSC8574_PHY_ID_HIGH_ID) {
 			if (0 != (status & 0x20))
 				ncr_status |= 0x04; /* Force Full Duplex */
@@ -1198,6 +1202,7 @@ line_setup(int index)
 				/* Set the Speed */
 				ncr_status |= (((status & 0xc000) >> 14) << 4);
 		}
+#endif
 		NCR_CALL(ncr_write32(gmacRegion, 0x324 + gmacPortOffset,
 			ncr_status));
 	}
