@@ -351,14 +351,14 @@ read_parameters(void)
 
 #ifdef DISPLAY_PARAMETERS
 	printf("-- -- Header\n"
-	       "0x%08lx 0x%08lx 0x%08lx 0x%08lx 0x%08lx\n"
-	       "0x%08lx 0x%08lx\n"
-	       "0x%08lx 0x%08lx\n"
-	       "0x%08lx 0x%08lx\n"
-	       "0x%08lx 0x%08lx\n"
-	       "0x%08lx 0x%08lx\n"
-	       "0x%08lx 0x%08lx\n"
-	       "0x%08lx 0x%08lx\n",
+	       "0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n"
+	       "0x%08x 0x%08x\n"
+	       "0x%08x 0x%08x\n"
+	       "0x%08x 0x%08x\n"
+	       "0x%08x 0x%08x\n"
+	       "0x%08x 0x%08x\n"
+	       "0x%08x 0x%08x\n"
+	       "0x%08x 0x%08x\n",
 	       header->magic, header->size, header->checksum, header->version,
 	       header->chipType,
 	       header->globalOffset, header->globalSize,
@@ -382,11 +382,10 @@ read_parameters(void)
 #endif
 
 #ifdef DISPLAY_PARAMETERS
-	printf("version=%lu flags=0x%lx\n", global->version, global->flags);
+	printf("version=%u flags=0x%x\n", global->version, global->flags);
 #endif
 
 	printf("Parameter Table Version: %u\n", header->version);
-
 	description = (unsigned char *)&global->description[0];
 
 	if (0 != *description && isprint(*description)) {

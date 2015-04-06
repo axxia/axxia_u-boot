@@ -73,7 +73,7 @@ typedef struct {
 	unsigned flags;
 	unsigned baud_rate;
 	unsigned memory_ranges[16];
-	unsigned long sequence;
+	unsigned sequence;
 	char description[128];
 } __attribute__((packed)) parameters_global_t;
 
@@ -190,11 +190,12 @@ typedef struct {
 	unsigned ddr_locktune;
 #endif
 } __attribute__ ((packed)) parameters_clocks_t;
+
 #endif	/* CONFIG_AXXIA_ARM */
 
 typedef struct {
-	unsigned long version;
-	unsigned long control;
+	unsigned version;
+	unsigned control;
 } __attribute__((packed)) parameters_pciesrio_t;
 
 typedef unsigned ncp_uint32_t;
@@ -205,52 +206,52 @@ typedef struct {
     unsigned char sdram_rtt_nom[4];
     unsigned char sdram_rtt_wr[4];
     unsigned char sdram_data_drv_imp[4];
-    unsigned long phy_min_cal_delay;
-    unsigned long phy_adr_phase_select;
-    unsigned long phy_dp_io_vref_set;
-    unsigned long phy_adr_io_vref_set;
-    unsigned long phy_rdlvl_cmp_even;
-    unsigned long phy_rdlvl_cmp_odd;
-    unsigned long phy_write_align_finetune;
+    unsigned phy_min_cal_delay;
+    unsigned phy_adr_phase_select;
+    unsigned phy_dp_io_vref_set;
+    unsigned phy_adr_io_vref_set;
+    unsigned phy_rdlvl_cmp_even;
+    unsigned phy_rdlvl_cmp_odd;
+    unsigned phy_write_align_finetune;
 } __attribute__((packed)) per_mem_parms_t;
 
 typedef struct {
-	unsigned long version;
-	unsigned long ddrClockSpeedMHz;
-	unsigned long auto_detect;
-	unsigned long num_interfaces;
-	unsigned long num_ranks_per_interface;
-	unsigned long primary_bus_width;
-	unsigned long topology;
-	unsigned long min_ctrl_roundtrip_delay;
-	unsigned long phy_rdlat;
-	unsigned long added_rank_switch_delay;
-	unsigned long zqcs_interval;
-	unsigned long enableECC;
-	unsigned long enable_runtime_updates;
-	unsigned long dramPrechargePolicy;
-	unsigned long open_page_size;
-	unsigned long syscacheControl;
-	unsigned long sdram_device_density;
-	unsigned long sdram_device_width;
-	unsigned long CAS_latency;
-	unsigned long CAS_write_latency;
-	unsigned long address_mirroring;
-	unsigned long registeredDIMM;
-	unsigned long rdimm_ctl_0_0;
-	unsigned long rdimm_ctl_0_1;
-	unsigned long rdimm_misc;
-	unsigned long write_ODT_ctl;
-	unsigned long read_ODT_ctl;
-	unsigned long single_bit_mpr;
-	unsigned long high_temp_dram;
+	unsigned version;
+	unsigned ddrClockSpeedMHz;
+	unsigned auto_detect;
+	unsigned num_interfaces;
+	unsigned num_ranks_per_interface;
+	unsigned primary_bus_width;
+	unsigned topology;
+	unsigned min_ctrl_roundtrip_delay;
+	unsigned phy_rdlat;
+	unsigned added_rank_switch_delay;
+	unsigned zqcs_interval;
+	unsigned enableECC;
+	unsigned enable_runtime_updates;
+	unsigned dramPrechargePolicy;
+	unsigned open_page_size;
+	unsigned syscacheControl;
+	unsigned sdram_device_density;
+	unsigned sdram_device_width;
+	unsigned CAS_latency;
+	unsigned CAS_write_latency;
+	unsigned address_mirroring;
+	unsigned registeredDIMM;
+	unsigned rdimm_ctl_0_0;
+	unsigned rdimm_ctl_0_1;
+	unsigned rdimm_misc;
+	unsigned write_ODT_ctl;
+	unsigned read_ODT_ctl;
+	unsigned single_bit_mpr;
+	unsigned high_temp_dram;
 
 	per_mem_parms_t per_mem[2];
 
 	/* Not part of the parameters, used internally.	*/
-	unsigned long ddrRetentionEnable;
-	unsigned long ddrRecovery;
-	unsigned long num_bytelanes;
+	unsigned ddrRetentionEnable;
+	unsigned ddrRecovery;
+	unsigned num_bytelanes;
  	unsigned long long totalSize;
 } __attribute__((packed)) parameters_mem_t;
 
