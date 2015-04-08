@@ -599,10 +599,12 @@ misc_init_r(void)
 	unsigned long long cntpct0;
 	unsigned long long cntpct1;
 	int retries = WA_811981_RETRIES;
+#ifndef CONFIG_AXXIA_SIM
 	unsigned long ccn_qos_rni6_s0_value;
 	char *ccn_qos_rni6_s0_env;
 	unsigned long *address;
 	unsigned long value;
+#endif
 
 	/*
 	  Workaround for ARM errata 811981.  After a reset, make sure
@@ -649,6 +651,7 @@ misc_init_r(void)
 	writel(0xffff, SYSCON + 0x14);
 
 	/* Update AXI QoS */
+#ifndef CONFIG_AXXIA_SIM
 	ccn_qos_rni6_s0_env = getenv("ccn_qos_rni6_s0");
 
 	if (NULL == ccn_qos_rni6_s0_env)
@@ -665,6 +668,7 @@ misc_init_r(void)
 		       value, ccn_qos_rni6_s0_value);
 		*address = ccn_qos_rni6_s0_value;
 	}
+#endif
 
 	return 0;
 }
