@@ -461,14 +461,14 @@ int serial_early_init(void);
 #define CONFIG_LSI_SSP 1
 #define CONFIG_SYS_MAX_FLASH_SECT    1024
 
-#define TIMER0 (IO+0x91000)
-#define TIMER1 (IO+0x91020)
-#define TIMER2 (IO+0x91040)
-#define TIMER3 (IO+0x91060)
-#define TIMER4 (IO+0x91080)
-#define TIMER5 (IO+0x910a0)	/* Watchdog */
-#define TIMER6 (IO+0x910c0)
-#define TIMER7 (IO+0x910e0)
+#define TIMER0 (IO+0x220000)
+#define TIMER1 (IO+0x220020)
+#define TIMER2 (IO+0x220040)
+#define TIMER3 (IO+0x220060)
+#define TIMER4 (IO+0x220080)
+#define TIMER5 (IO+0x2200a0)	/* Watchdog 0 */
+#define TIMER6 (IO+0x2200c0)	/* Watchdog 1 */
+#define TIMER7 (IO+0x2200e0)
 
 /*
   ==============================================================================
@@ -838,7 +838,7 @@ void dump_packet(const char *, void *, int);
 /*#define CONFIG_HW_WATCHDOG*/
 
 #ifndef __ASSEMBLY__
-int start_watchdog(void);
+int start_watchdog(unsigned int);
 void stop_watchdog(void);
 #endif
 

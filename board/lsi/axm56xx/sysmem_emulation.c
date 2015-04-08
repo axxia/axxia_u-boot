@@ -21,6 +21,7 @@
  */
 
 #include <common.h>
+#include <watchdog.h>
 #include <asm/io.h>
 
 /*
@@ -886,6 +887,8 @@ initialize_elm(void)
 		/* poll elm0 for completion */
 		do {
 			value = readl(ELM0 + 0x44);
+			udelay(100);
+			WATCHDOG_RESET();
 		} while (0 != (value & 0x1fffffff));
 
 #ifndef SINGLE_SMEM_MODE
@@ -893,6 +896,8 @@ initialize_elm(void)
 		/* poll elm1 for completion */
 		do {
 			value = readl(ELM1 + 0x44);
+			udelay(100);
+			WATCHDOG_RESET();
 		} while (0 != (value & 0x1fffffff));
 
 #endif

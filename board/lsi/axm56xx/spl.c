@@ -1123,19 +1123,19 @@ board_init_f(ulong dummy)
 	     "/_/  |_/_/|_| /_/|_| /_/  \\__,_/      /____/ /_/     /_____/\n\n");
 
 #ifdef AXXIA_VERSION
-	printf("Axxia Version: %s\n\n", AXXIA_VERSION);
+	printf("Axxia Version: %s\n", AXXIA_VERSION);
 #else
-	printf("Axxia Version: UNKNOWN\n\n");
+	printf("Axxia Version: UNKNOWN\n");
 #endif
 
 #ifdef AXXIA_ATF_VERSION
-	printf("Axxia ATF Version: %s\n\n", AXXIA_ATF_VERSION);
+	printf("Axxia ATF Version: %s\n", AXXIA_ATF_VERSION);
 #else
-	printf("Axxia ATF Version: UNKNOWN\n\n");
+	printf("Axxia ATF Version: UNKNOWN\n");
 #endif
 
 #ifdef CONFIG_HW_WATCHDOG
-	rc = start_watchdog();
+	rc = start_watchdog(WATCHDOG_TIMEOUT_SECS);
 
 	if (0 == rc)
 		puts("Started Watchdog Timer\n");

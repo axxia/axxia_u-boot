@@ -91,6 +91,10 @@
   ==============================================================================
 */
 
+#define CONFIG_HW_WATCHDOG
+/*#define LEAVE_WATCHDOG_ON*/
+#define WATCHDOG_TIMEOUT_SECS 240
+
 #define CONFIG_GICV3
 #define GICD_BASE (0x8010000000)
 #define GICR_BASE (0x8010200000)

@@ -18,8 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <config.h>
+#include <common.h>
 #include <asm/io.h>
+
+static unsigned int count = 0xffffffff;
 
 /*
   ==============================================================================
@@ -37,7 +39,7 @@
 void
 hw_watchdog_reset(void)
 {
-	writel(0xffffffff, (TIMER5 + TIMER_LOAD));
+	writel(count, (TIMER5 + TIMER_LOAD));
 }
 
 /*
@@ -46,34 +48,42 @@ hw_watchdog_reset(void)
 */
 
 int
-start_watchdog(void)
+start_watchdog(unsigned int timeout)
 {
-	unsigned long value;
+	unsigned int value;
+	unsigned int per_clock_hz;
+	unsigned long long new_count;
+
+	/* Set 'count'. */
+	if (0 != acp_clock_get(clock_peripheral, &per_clock_hz))
+		return -1;
+
+	new_count = timeout * per_clock_hz * 1000;
+
+	if (0xffffffffULL < new_count)
+		return -2;
+
+	count = (unsigned int)new_count;
+	printf("%s:%d - count is 0x%x\n", __FILE__, __LINE__, count);
 
 	/* Unlock syscon. */
-	writel(0xab, (SYSCON + 0x1000));
+	writel(0xab, (SYSCON + 0x2000));
 
-	/* Use reset map. */
-	value = readl(SYSCON + 0x1004);
-	value |= 0x40;
-	writel(value, (SYSCON + 0x1004));
-
-	/* Set reset_read_done (0x156.0x1.0xc). */
-	writel(0x80000000, (SYSCON + 0x180c));
-
-	/* Enable watchdog resets. */
-	value = readl(SYSCON + 0x1008);
-	value |= 0x80;
-	writel(value, (SYSCON + 0x1008));
-
-	/* Set up the timer. */
+	/* Disable the timer. */
 	writel(0, (TIMER5 + TIMER_CONTROL));
-	writel(0xffffffff, (TIMER5 + TIMER_LOAD));
-	writel(0xffffffff, (TIMER5 + TIMER_VALUE));
+
+	/* Enable watchdog 0, system reset. */
+	value = readl(SYSCON + 0x2008);
+	value |= 0x140;
+	writel(value, (SYSCON + 0x2008));
+
+	/* Set up and enable the timer. */
+	writel(count, (TIMER5 + TIMER_LOAD));
+	writel(count, (TIMER5 + TIMER_VALUE));
 	writel(0xe2, (TIMER5 + TIMER_CONTROL));
 
 	/* Lock syscon. */
-	writel(0, (SYSCON + 0x1000));
+	writel(0, (SYSCON + 0x2000));
 
 	return 0;
 }
@@ -89,18 +99,18 @@ stop_watchdog(void)
 	unsigned long reset_control;
 
 	/* Unlock syscon. */
-	writel(0xab, (SYSCON + 0x1000));
-
-	/* Disable watchdog resets. */
-	reset_control = readl(SYSCON + 0x1008);
-	reset_control &= ~0x80;
-	writel(reset_control, (SYSCON + 0x1008));
+	writel(0xab, (SYSCON + 0x2000));
 
 	/* Turn off the timer. */
 	writel(0, (TIMER5 + TIMER_CONTROL));
 
+	/* Disable watchdog resets. */
+	reset_control = readl(SYSCON + 0x2008);
+	reset_control &= ~0x140;
+	writel(reset_control, (SYSCON + 0x2008));
+
 	/* Lock syscon. */
-	writel(0, (SYSCON + 0x1000));
+	writel(0, (SYSCON + 0x2000));
 
 	return;
 }
