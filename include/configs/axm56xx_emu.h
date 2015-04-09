@@ -91,7 +91,7 @@
   ==============================================================================
 */
 
-#define CONFIG_HW_WATCHDOG
+/*#define CONFIG_HW_WATCHDOG*/
 /*#define LEAVE_WATCHDOG_ON*/
 #define WATCHDOG_TIMEOUT_SECS 240
 
