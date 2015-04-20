@@ -81,41 +81,33 @@ vectors:
 
 
 _do_bad_sync:
-	b	_do_bad_sync
 	exception_entry
 	bl	do_bad_sync
 
 _do_bad_irq:
-	b	_do_bad_irq
 	exception_entry
 	bl	do_bad_irq
 
 _do_bad_fiq:
-	b	_do_bad_fiq
 	exception_entry
 	bl	do_bad_fiq
 
 _do_bad_error:
-	b	_do_bad_error
 	exception_entry
 	bl	do_bad_error
 
 _do_sync:
-	b	_do_bad_sync
 	exception_entry
 	bl	do_sync
 
 _do_irq:
-	b	_do_irq
 	exception_entry
 	bl	do_irq
 
 _do_fiq:
-	b	_do_fiq
 	exception_entry
 	bl	do_fiq
 
 _do_error:
-	b	_do_error
 	exception_entry
 	bl	do_error
