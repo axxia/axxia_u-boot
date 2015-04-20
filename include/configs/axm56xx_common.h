@@ -594,6 +594,8 @@ int serial_early_init(void);
   ==============================================================================
 */
 
+#define CONFIG_AXXIA_MDIO_BASE 0x8080200000
+
 #define MDIO_CONTROL_RD_DATA (0x8080200000)
 #define MDIO_STATUS_RD_DATA  (0x8080200004)
 #define MDIO_CLK_OFFSET      (0x8080200008)
@@ -627,6 +629,9 @@ extern unsigned char ethernet_address[6];
 #define APP3XXNIC_RX_BASE  (0x8080600000)
 #define APP3XXNIC_TX_BASE  (0x8080601000)
 #define APP3XXNIC_DMA_BASE (0x8080602000)
+
+#define NEMAC_BASE         (0x8080240000)
+#define CONFIG_SYS_RX_ETH_BUFFER 64 /* Must be multiple of 64 */
 
 /*
   ==============================================================================

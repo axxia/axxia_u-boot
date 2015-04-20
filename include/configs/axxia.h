@@ -336,12 +336,19 @@ int write_parameters(void);
 
 #ifndef CONFIG_SPL_BUILD
 
-#if defined(CONFIG_AXXIA_FEMAC) || defined(CONFIG_AXXIA_EIOA)
+#if defined(CONFIG_AXXIA_FEMAC) || defined(CONFIG_AXXIA_EIOA) || defined(CONFIG_AXXIA_NEMAC)
 #define CONFIG_AXXIA_NET
+#define CONFIG_AXXIA_MDIO
 #define CONFIG_CMD_NET
 #define CONFIG_CMD_DHCP
 #define CONFIG_CMD_PING
-#define CONFIG_LSI_MDIO
+#define CONFIG_CMD_MII
+#define CONFIG_PHYLIB
+#define CONFIG_MII
+#define CONFIG_PHY_BROADCOM
+#define CONFIG_PHY_DAVICOM
+#define CONFIG_PHY_MICREL
+#define CONFIG_PHY_VITESSE
 #endif
 
 #ifndef MDIO_CLK_OFFSET_DEFAULT

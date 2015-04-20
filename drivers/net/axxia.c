@@ -28,6 +28,9 @@ unsigned char ethernet_address[6];
 int dumprx = 0;
 int dumptx = 0;
 
+int axxia_mdio_init(void);
+int nemac_initialize(bd_t *);
+
 /*
   ===============================================================================
   ===============================================================================
@@ -118,8 +121,13 @@ axxia_dump_packet_tx(const char *header, void *packet, int length)
 int
 board_eth_init(bd_t *bd)
 {
-	int rc;
-	struct eth_device *device;
+	axxia_mdio_init();
+
+#if defined(CONFIG_AXXIA_NEMAC)
+	if (nemac_initialize(bd) != 0) {
+		puts("Failed to add NEMAC device.\n");
+	}
+#endif
 
 #if defined(CONFIG_AXXIA_FEMAC)
 
@@ -129,9 +137,9 @@ board_eth_init(bd_t *bd)
 	  Get the Ethernet address from the environment.
 	*/
 
-	rc = eth_getenv_enetaddr("ethaddr", ethernet_address);
+	if (eth_getenv_enetaddr("ethaddr", ethernet_address)) {
+		struct eth_device *device;
 
-	if (rc) {		/* returns is_valid... 1=true, 0=false */
 		/*
 		  Allocate a device structure and clear it.
 		*/
@@ -171,9 +179,9 @@ board_eth_init(bd_t *bd)
 	/*
 	  Get the Ethernet address from the environment.
 	*/
-	rc = eth_getenv_enetaddr("ethaddr", ethernet_address);
+	if (eth_getenv_enetaddr("ethaddr", ethernet_address)) {
+		struct eth_device *device;
 
-	if (rc) {		/* returns is_valid... 1=true, 0=false */
 		/*
 		  Allocate a device structure and clear it.
 		*/
@@ -207,7 +215,7 @@ board_eth_init(bd_t *bd)
 
 #endif
 
-#if !defined(CONFIG_AXXIA_EIOA) && !defined(CONFIG_AXXIA_FEMAC)
+#if !defined(CONFIG_AXXIA_EIOA) && !defined(CONFIG_AXXIA_FEMAC) && !defined(CONFIG_AXXIA_NEMAC)
 #error "Axxia networking is defined, but no interface has been!"
 #endif
 
