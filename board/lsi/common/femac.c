@@ -1818,6 +1818,7 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 {
 	size_t memory_needed;
 	void *temp;
+	unsigned int value;
 
 	TRACE_BEGINNING( "\n" );
 
@@ -1831,6 +1832,11 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 	writel( 0, (GPREG + 0x78));
 	printf("HPROT: 0x%x\n", readl(GPREG + 0x78));
 #endif
+
+	/* switch to the femac */
+	value = readl(PERIPH_GPREG + 0x18);
+	value &= ~(1 << 24);
+	writel(value, PERIPH_GPREG + 0x18);
 
 	/* Reset the MAC */
 	writel( 0x80000000, APP3XXNIC_DMA_PCI_CONTROL );
@@ -2199,6 +2205,8 @@ lsi_femac_eth_init(struct eth_device *dev, bd_t *board_info)
 
 void lsi_femac_eth_halt(struct eth_device *device) {
 
+	unsigned int value;
+
 	TRACE_BEGINNING( "\n" );
 
 	/* only once... */
@@ -2229,6 +2237,11 @@ void lsi_femac_eth_halt(struct eth_device *device) {
 
 	/* set the "initialized" flag */
 	initialized_ = 0;
+
+	/* switch back to the nemac */
+	value = readl(PERIPH_GPREG + 0x18);
+	value |= 1 << 24;
+	writel(value, PERIPH_GPREG + 0x18);
 
 	/* that's all */
 	TRACE_ENDING( "\n" );
