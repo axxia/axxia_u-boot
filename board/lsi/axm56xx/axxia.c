@@ -73,11 +73,10 @@ initialize_cluster_info(void)
 		       chip_type, chip_version_major);
 
 #if defined(CONFIG_AXXIA_EMU) || defined(CONFIG_AXXIA_SIM)
-		number_of_clusters = 2;
+		number_of_clusters = 3;
 		bit_by_cluster[0] = 19;
 		bit_by_cluster[1] = 9;
-		bit_by_cluster[2] = -1;
-		bit_by_cluster[3] = -1;
+		bit_by_cluster[2] = 1;
 
 		return 0;
 #else
@@ -254,7 +253,7 @@ set_cluster_coherency(unsigned cluster, unsigned state)
 	unsigned int value;
 
 #ifdef CONFIG_AXXIA_EMU
-	if (1 < cluster)
+	if (2 < cluster)
 		return -1;
 #else
 	if (3 < cluster)
@@ -505,24 +504,13 @@ set_clusters(void)
 	}
 
 #ifdef CONFIG_AXXIA_EMU
-	if (0 != (clusters & 0xc)) {
-		printf("Emulation only supports clusters 0 and 1!\n"
-		       "Change the \"clusters\" variable to 1 or 3.\n");
+	puts("Setting up Coherency for Clusters: 0,1,2\n");
 
-		return -1;
-	}
-
-	puts("Setting up Coherency for Clusters: 0");
-
-	if (0 != (clusters & 0x2))
-		puts(",1");
-
-	puts("\n");
-
-	if (0 != (clusters & 0x2)) {
-		if (0 != set_cluster_coherency(1, 1))
+	if (0 != set_cluster_coherency(1, 1))
 			acp_failure(__FILE__, __func__, __LINE__);
-	}
+
+	if (0 != set_cluster_coherency(2, 1))
+			acp_failure(__FILE__, __func__, __LINE__);
 #else
 	puts("Setting up Coherency for Clusters: 0");
 
