@@ -175,6 +175,11 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define GPIO0_ADDRESS (IO + 0x92000)
 #define GPIO1_ADDRESS (IO + 0x93000)
 
+#define MMAP_GPREG   (0x8032900000)
+#define MMAP_SCB     (0x8032000000)
+#define PERIPH_GPREG (0x8080230000)
+#define PERIPH_SCB   (0x8080400000)
+
 #define GPREG        (0x8032900000)
 #define GPREG_GPDMA  (GPREG + 0x00)
 #define GPREG_MAC    (GPREG + 0x04)
