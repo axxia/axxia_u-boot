@@ -576,6 +576,13 @@ ncp_sm_denali_2041_init(
     value2 |= ( parms->CAS_write_latency - 5 ) << 3;
 
     value |= ( value2 << 16 );
+
+    if (parms->high_temp_dram == TRUE)
+    {
+        /* if high temp DRAM then enable SRT (MRS:a7) */
+        value |= 0x00800080;
+    }
+
     ncr_write32(ctlReg,  0x02fc, value);
 
     /* rank 2 - 3 */
@@ -588,6 +595,12 @@ ncp_sm_denali_2041_init(
     value2 |= ( parms->CAS_write_latency - 5 ) << 3;
 
     value |= ( value2 << 16 );
+    if (parms->high_temp_dram == TRUE)
+    {
+        /* if high temp DRAM then enable SRT (MRS:a7) */
+        value |= 0x00800080;
+    }
+
     ncr_write32(ctlReg,  0x0300, value);
        
     /* DENALI_CTL_223 - tdfi_rdlvl_max */

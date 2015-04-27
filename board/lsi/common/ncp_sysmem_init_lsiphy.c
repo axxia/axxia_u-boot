@@ -1376,14 +1376,6 @@ ncp_sm_lsiphy_static_init(
     }
 
     /* initial PHY configuration */
-    dpconfig2.clrgate = 1;
-    dpconfig2.enardpath = 0;
-    for (i = 0; i < parms->num_bytelanes; i++) 
-    {
-        ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG2_BL(i), 
-                        *(ncp_uint32_t *) &dpconfig2);
-    }
-
    /*
     * the setting of WLRANK is determined by the formula 
     *
@@ -1578,6 +1570,22 @@ ncp_sm_lsiphy_static_init(
     if (0 != ncr_poll(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, 0x600, 0x000, 100, 100) )
     {
         NCP_CALL(NCP_ST_ERROR);
+    }
+
+    /*
+     * BZ52010
+     *
+     * the PHY will enable read path as part of the above training.
+     * On some systems having the read path enabled during write leveling
+     * causes problems (so far this has only been observed for CMEM). 
+     * We can avoid these issues by disabling the read path here, it will
+     * be enabled later 
+     */
+    dpconfig2.enardpath = 0;
+    for (i = 0; i < parms->num_bytelanes; i++) 
+    {
+        ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG2_BL(i), 
+                        *(ncp_uint32_t *) &dpconfig2);
     }
 
     if (parms->single_bit_mpr) {
