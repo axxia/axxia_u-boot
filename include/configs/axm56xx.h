@@ -86,39 +86,22 @@
   ==============================================================================
 */
 
-/*
-  Switch to normal mode on v1.0 silicon.  Note that v1.0 silicon does
-  not fully support normal mode.  Linux boots, but coherent IO is not
-  possible.
-*/
-
-/*#define AXXIA_FORCE_NORMAL_MODE*/
-
-/*
-  Switch to secure mode on v1.1 silicon.
-*/
-
-/*#define AXXIA_FORCE_SECURE_MODE*/
-
-/*
-  OR in the fuse force register's pv and cnpv fields when initializing
-  pfuse.
-*/
-
 #define AXXIA_OR_IN_FUSE_FORCE
-
-/*
-  Start the secondary cores in U-Boot.
-
-  This is a work-around required if using Linux releases before
-  8.8.1.21 It only applies in NORMAL mode.  It is NOT required for
-  Linux 3.4 (7.8.x.x).
-*/
-
-/*#define AXXIA_START_SECONDARY_CORES*/
 
 /*#define CONFIG_HW_WATCHDOG*/
 /*#define LEAVE_WATCHDOG_ON*/
+#define WATCHDOG_TIMEOUT_SECS 240
+
+#define CONFIG_GICV3
+#define GICD_BASE (0x8010000000)
+#define GICR_BASE (0x8010200000)
+
+#define CONFIG_BOOTP_ID_CACHE_SIZE 32
+
+/*#define CONFIG_SYS_DCACHE_OFF*/
+
+#define CONFIG_SYS_CNTR_FREQ 4000000
+
 #define CONFIG_REDUNDANT_PARAMETERS
 #define CONFIG_REDUNDANT_UBOOT
 
