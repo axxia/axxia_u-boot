@@ -59,7 +59,7 @@
 #define CONFIG_AXXIA_SERIAL_FLASH /* Include support for SPI flash. */
 
 #define CONFIG_AXXIA_SERIAL_FLASH_ENV
-#define CONFIG_ENV_IS_NOWHERE
+#define CONFIG_ENV_IS_IN_SPI_FLASH
 
 #define CONFIG_PARAMETER_OFFSET          (256 * 1024)
 #define CONFIG_PARAMETER_SIZE            (64 * 1024)
