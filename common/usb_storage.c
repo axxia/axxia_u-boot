@@ -334,9 +334,6 @@ static int us_one_transfer(struct us_data *us, int pipe, char *buf, int length)
 
 		/* set up the transfer loop */
 		do {
-			/* transfer the data */
-			debug("Bulk xfer 0x%x(%d) try #%d\n",
-			      (unsigned int)buf, this_xfer, 11 - maxtry);
 			result = usb_bulk_msg(us->pusb_dev, pipe, buf,
 					      this_xfer, &partial,
 					      USB_CNTL_TIMEOUT * 5);
@@ -602,7 +599,7 @@ static int usb_stor_CBI_get_status(ccb *srb, struct us_data *us)
 			(void *) &us->ip_data, us->irqmaxp, us->irqinterval);
 	timeout = 1000;
 	while (timeout--) {
-		if ((volatile int *) us->ip_wanted == NULL)
+		if (us->ip_wanted == 0)
 			break;
 		mdelay(10);
 	}
@@ -1390,12 +1387,8 @@ int usb_stor_get_info(struct usb_device *dev, struct us_data *ss,
 	}
 	ss->flags &= ~USB_READY;
 	debug("Read Capacity returns: 0x%lx, 0x%lx\n", cap[0], cap[1]);
-#if 0
-	if (cap[0] > (0x200000 * 10)) /* greater than 10 GByte */
-		cap[0] >>= 16;
-#endif
-	cap[0] = cpu_to_be32(cap[0]);
-	cap[1] = cpu_to_be32(cap[1]);
+	cap[1] = cpu_to_be32(cap[0]>>32);
+	cap[0] = cpu_to_be32(cap[0] & 0xFFFFFFFF);
 
 	/* this assumes bigendian! */
 	cap[0] += 1;
