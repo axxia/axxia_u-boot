@@ -199,6 +199,12 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define GPREG_USB    (GPREG + 0x08)
 #define GPREG_STATUS (GPREG + 0x0c)
 
+#define GPREG        (0x8032900000)
+#define GPREG_GPDMA  (GPREG + 0x00)
+#define GPREG_MAC    (GPREG + 0x04)
+#define GPREG_USB    (GPREG + 0x08)
+#define GPREG_STATUS (GPREG + 0x0c)
+
 #define APB2_SER0_BASE (IO)
 #define APB2_SER3_BASE (IO + 0x30000)
 #define NCP_APB2SER_INDIRECT_COMMAND_0      (0x00000000)
@@ -607,6 +613,8 @@ int serial_early_init(void);
   ==============================================================================
 */
 
+#define CONFIG_AXXIA_MDIO_BASE 0x8080200000
+
 #define MDIO_CONTROL_RD_DATA (0x8080200000)
 #define MDIO_STATUS_RD_DATA  (0x8080200004)
 #define MDIO_CLK_OFFSET      (0x8080200008)
@@ -640,6 +648,9 @@ extern unsigned char ethernet_address[6];
 #define APP3XXNIC_RX_BASE  (0x8080600000)
 #define APP3XXNIC_TX_BASE  (0x8080601000)
 #define APP3XXNIC_DMA_BASE (0x8080602000)
+
+#define NEMAC_BASE         (0x8080240000)
+#define CONFIG_SYS_RX_ETH_BUFFER 64 /* Must be multiple of 64 */
 
 /*
   ==============================================================================
