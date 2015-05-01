@@ -120,35 +120,18 @@
 #define CONFIG_BOOTDELAY 3
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"loadaddr=0x82000000\0" \
-	"console=ttyO2,115200n8\0" \
-	"usbtty=cdc_acm\0" \
-	"vram=16M\0" \
-	"mmcdev=0\0" \
-	"mmcroot=/dev/mmcblk0p2 rw\0" \
-	"mmcrootfstype=ext3 rootwait\0" \
-	"mmcargs=setenv bootargs console=${console} " \
-		"vram=${vram} " \
-		"root=${mmcroot} " \
-		"rootfstype=${mmcrootfstype}\0" \
-	"loadbootscript=fatload mmc ${mmcdev} ${loadaddr} boot.scr\0" \
-	"bootscript=echo Running bootscript from mmc${mmcdev} ...; " \
-		"source ${loadaddr}\0" \
-	"loaduimage=fatload mmc ${mmcdev} ${loadaddr} uImage\0" \
-	"mmcboot=echo Booting from mmc${mmcdev} ...; " \
-		"run mmcargs; " \
-		"bootm ${loadaddr}\0" \
+	"baudrate=9600\0" \
+	"bootargs=console=ttyAMA0 mem=1024M ip=dhcp root=/dev/nfs rw\0" \
+	"bootdelay=5\0" \
+	"ethact=NEMAC\0" \
+	"fdt_high=0x20000000\0" \
+	"initrd_high=0x20000000\0" \
+	"loadaddr=4000000\0" \
+	"stderr=serial\0" \
+	"stdin=serial\0" \
+	"stdout=serial\0"
 
-#define CONFIG_BOOTCOMMAND \
-	"mmc dev ${mmcdev}; if mmc rescan; then " \
-		"if run loadbootscript; then " \
-			"run bootscript; " \
-		"else " \
-			"if run loaduimage; then " \
-				"run mmcboot; " \
-			"fi; " \
-		"fi; " \
-	"fi"
+#define CONFIG_BOOTCOMMAND "setenv autoload ; dhcp ; bootm"
 
 #include <configs/axm56xx_common.h>
 
