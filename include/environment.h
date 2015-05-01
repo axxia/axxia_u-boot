@@ -156,7 +156,7 @@ extern char *env_name_spec;
 typedef struct environment_s {
 	uint32_t	crc;		/* CRC32 over data bytes	*/
 #ifdef CONFIG_SYS_REDUNDAND_ENVIRONMENT
-	unsigned long	flags;		/* active/obsolete flags	*/
+	unsigned int	flags;		/* active/obsolete flags	*/
 #endif
 	unsigned char	data[ENV_SIZE]; /* Environment data		*/
 } env_t
