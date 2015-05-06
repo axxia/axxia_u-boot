@@ -1123,19 +1123,19 @@ board_init_f(ulong dummy)
 	     "/_/  |_/_/|_| /_/|_| /_/  \\__,_/      /____/ /_/     /_____/\n\n");
 
 #ifdef AXXIA_VERSION
-	printf("Axxia Version: %s\n\n", AXXIA_VERSION);
+	printf("Axxia Version: %s\n", AXXIA_VERSION);
 #else
-	printf("Axxia Version: UNKNOWN\n\n");
+	printf("Axxia Version: UNKNOWN\n");
 #endif
 
 #ifdef AXXIA_ATF_VERSION
-	printf("Axxia ATF Version: %s\n\n", AXXIA_ATF_VERSION);
+	printf("Axxia ATF Version: %s\n", AXXIA_ATF_VERSION);
 #else
-	printf("Axxia ATF Version: UNKNOWN\n\n");
+	printf("Axxia ATF Version: UNKNOWN\n");
 #endif
 
 #ifdef CONFIG_HW_WATCHDOG
-	rc = start_watchdog();
+	rc = start_watchdog(WATCHDOG_TIMEOUT_SECS);
 
 	if (0 == rc)
 		puts("Started Watchdog Timer\n");
@@ -1241,7 +1241,6 @@ board_init_f(ulong dummy)
 	/* PERIPH-SCB is 0x8080400000 (0x171.1.0) */
 	/* TZC is 0x8004140000 (0x1d2.0.0) */
 
-#if 0
 	/* 0x171.1.0xc = 0xffff */
 	writel(0xffff, 0x808040000c);
 	/* 0x171.1.0x10 = 0xffff */
@@ -1254,7 +1253,6 @@ board_init_f(ulong dummy)
 	writel(0xffffffff, 0x8004140114);
 	/* 0x170.1.0x48 = 1 */
 	writel(0x1, 0x8032000048);
-#endif
 
 	/*
 	  Jump to the monitor.

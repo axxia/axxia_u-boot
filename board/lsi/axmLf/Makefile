@@ -63,7 +63,7 @@ endif
 ## All Builds
 
 #obj-y   += failure.o version.o axxia_clocks.o cache.o spi.o sbb.o vat.o
-obj-y   += failure.o version.o axxia_clocks.o cache.o spi.o vat.o
+obj-y   += failure.o version.o axxia_clocks.o cache.o outer_cache.o spi.o vat.o
 #obj-y   += lowlevel.o monitor.o tables.o
 obj-y   += lowlevel.o
 
