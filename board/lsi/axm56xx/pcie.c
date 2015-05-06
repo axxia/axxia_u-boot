@@ -2,11 +2,62 @@
 #include <command.h>
 #include <asm/processor.h>
 #include <asm/io.h>
+#include <asm/types.h>
 #include <pci.h>
 #include <config.h>
 
+#define PEI_GENERAL_CORE_CTL_REG 0x38
+#define PEI_SII_PWR_MGMT_REG 0xD4
+#define PEI_SII_DBG_0_MON_REG 0xEC
+
+#define PEI_SMLH_LINK_UP (0x1 << 12)
+#define PEI_SMLH_LINK_STATE (0x3f << 4)
+#define PEI_RDLH_LINK_UP (0x1 << 0)
+
+/* Synopsis specific PCIE configuration registers */
+#define PCIE_PORT_LINK_CONTROL          0x710
+#define PORT_LINK_MODE_MASK             (0x3f << 16)
+#define PORT_LINK_MODE_1_LANES          (0x1 << 16)
+#define PORT_LINK_MODE_2_LANES          (0x3 << 16)
+#define PORT_LINK_MODE_4_LANES          (0x7 << 16)
+
+#define PCIE_LINK_WIDTH_SPEED_CONTROL   0x80C
+#define PORT_LOGIC_SPEED_CHANGE         (0x1 << 17)
+#define PORT_LOGIC_LINK_WIDTH_MASK      (0x1ff << 8)
+#define PORT_LOGIC_LINK_WIDTH_1_LANES   (0x1 << 8)
+#define PORT_LOGIC_LINK_WIDTH_2_LANES   (0x2 << 8)
+#define PORT_LOGIC_LINK_WIDTH_4_LANES   (0x4 << 8)
+
+#define PCIE_MSI_ADDR_LO                0x820
+#define PCIE_MSI_ADDR_HI                0x824
+#define PCIE_MSI_INTR0_ENABLE           0x828
+#define PCIE_MSI_INTR0_MASK             0x82C
+#define PCIE_MSI_INTR0_STATUS           0x830
+
+#define PCIE_ATU_VIEWPORT               0x900
+#define PCIE_ATU_REGION_INBOUND         (0x1 << 31)
+#define PCIE_ATU_REGION_OUTBOUND        (0x0 << 31)
+#define PCIE_ATU_REGION_INDEX1          (0x1 << 0)
+#define PCIE_ATU_REGION_INDEX0          (0x0 << 0)
+#define PCIE_ATU_CR1                    0x904
+#define PCIE_ATU_TYPE_MEM               (0x0 << 0)
+#define PCIE_ATU_TYPE_IO                (0x2 << 0)
+#define PCIE_ATU_TYPE_CFG0              (0x4 << 0)
+#define PCIE_ATU_TYPE_CFG1              (0x5 << 0)
+#define PCIE_ATU_CR2                    0x908
+#define PCIE_ATU_ENABLE                 (0x1 << 31)
+#define PCIE_ATU_BAR_MODE_ENABLE        (0x1 << 30)
+#define PCIE_ATU_LOWER_BASE             0x90C
+#define PCIE_ATU_UPPER_BASE             0x910
+#define PCIE_ATU_LIMIT                  0x914
+#define PCIE_ATU_LOWER_TARGET           0x918
+#define PCIE_ATU_BUS(x)                 (((x) & 0xff) << 24)
+#define PCIE_ATU_DEV(x)                 (((x) & 0x1f) << 19)
+#define PCIE_ATU_FUNC(x)                (((x) & 0x7) << 16)
+#define PCIE_ATU_UPPER_TARGET           0x91C
+
+
 #undef DEBUG_PCIE
-//#define DEBUG_PCIE
 
 #ifdef CONFIG_PCI
 
@@ -16,136 +67,292 @@
 #define U64_TO_U32_LOW(val)     ((u32)((val) & 0x00000000ffffffffULL))
 #define U64_TO_U32_HIGH(val)    ((u32)((val) >> 32))
 
+#define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
+
+struct pci_hose_data {
+	u64 dbi_base;
+	u64 cc_gpreg_base;
+	u64 axi_gpreg_base;
+	u64 cfg0_base;
+	u64 cfg1_base;
+	u64 cfg0_size;
+	u64 cfg1_size;
+	u64 mem_mod_base;
+	u64 mem_size;
+	u64 mem_bus_addr;
+	u64 io_mod_base;
+	u64 io_size;
+	u64 io_bus_addr;
+	int lanes;
+};
+
 static struct pci_controller hose[CONFIG_SYS_PCIE_NR_PORTS];
+static struct pci_hose_data hose_data[CONFIG_SYS_PCIE_NR_PORTS];
 
-/* get the base address of the configuration space */
-static u8* pcie_get_base(struct pci_controller *hose, unsigned int devfn)
+static inline void axxia_pcie_readl_rc(struct pci_controller *hose,
+	u32 reg, u32 *val)
 {
-	u8 *base = (u8*)hose->cfg_data;
-	int dev,fn;
-	int cfg_type=0;
-	u32 addr;
-	unsigned mpage;
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+	*val = readl(data->dbi_base + reg);
+}
 
-	if (PCI_BUS(devfn) == 0) {
-		return((u8 *)hose->cfg_addr);
+static inline void axxia_pcie_writel_rc(struct pci_controller *hose,
+	u32 val, u32 reg)
+{
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+	writel(val, data->dbi_base + reg);
+}
+
+static inline void axxia_cc_gpreg_writel(struct pci_controller *hose,
+	u32 val, u32 reg)
+{
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+	writel(val, data->cc_gpreg_base + reg);
+}
+
+static inline void axxia_cc_gpreg_readl(struct pci_controller *hose,
+	u32 reg, u32 *val)
+{
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+	*val = readl(data->cc_gpreg_base + reg);
+}
+static inline void axxia_axi_gpreg_writel(struct pci_controller *hose,
+	u32 val, u32 reg)
+{
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+	writel(val, data->axi_gpreg_base + reg);
+}
+
+static inline void axxia_axi_gpreg_readl(struct pci_controller *hose,
+	u32 reg, u32 *val)
+{
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+	*val = readl(data->axi_gpreg_base + reg);
+}
+
+int axxia_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val)
+{
+	*val = readl(addr);
+
+	if (size == 1)
+		*val = (*val >> (8 * (where & 3))) & 0xff;
+	else if (size == 2)
+		*val = (*val >> (8 * (where & 3))) & 0xffff;
+	else if (size != 4)
+		return 1;
+
+	return 0;
+}
+
+int axxia_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val)
+{
+	if (size == 4)
+		writel(val, addr);
+	else if (size == 2)
+		writew(val, addr + (where & 2));
+	else if (size == 1)
+		writeb(val, addr + (where & 3));
+	else
+		return 1;
+	return 0;
+}
+static void axxia_pcie_prog_viewport_cfg0(struct pci_controller *hose,
+	u32 busdev)
+{
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+
+	/* Program viewport 0 : OUTBOUND : CFG0 */
+	axxia_pcie_writel_rc(hose,
+			     PCIE_ATU_REGION_OUTBOUND
+			     | PCIE_ATU_REGION_INDEX0, PCIE_ATU_VIEWPORT);
+	axxia_pcie_writel_rc(hose, data->cfg0_base, PCIE_ATU_LOWER_BASE);
+	axxia_pcie_writel_rc(hose, (data->cfg0_base >> 32),
+			     PCIE_ATU_UPPER_BASE);
+	axxia_pcie_writel_rc(hose, data->cfg0_base + data->cfg0_size - 1,
+			     PCIE_ATU_LIMIT);
+	axxia_pcie_writel_rc(hose, busdev, PCIE_ATU_LOWER_TARGET);
+	axxia_pcie_writel_rc(hose, 0, PCIE_ATU_UPPER_TARGET);
+	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_CFG0, PCIE_ATU_CR1);
+	axxia_pcie_writel_rc(hose, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+}
+
+static void axxia_pcie_prog_viewport_cfg1(struct pci_controller *hose,
+	u32 busdev)
+{
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+
+	/* Program viewport 1 : OUTBOUND : CFG1 */
+	axxia_pcie_writel_rc(hose,
+			     PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
+			     PCIE_ATU_VIEWPORT);
+	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
+	axxia_pcie_writel_rc(hose, data->cfg1_base, PCIE_ATU_LOWER_BASE);
+	axxia_pcie_writel_rc(hose, (data->cfg1_base >> 32),
+			     PCIE_ATU_UPPER_BASE);
+	axxia_pcie_writel_rc(hose, data->cfg1_base + data->cfg1_size - 1,
+			     PCIE_ATU_LIMIT);
+	axxia_pcie_writel_rc(hose, busdev, PCIE_ATU_LOWER_TARGET);
+	axxia_pcie_writel_rc(hose, 0, PCIE_ATU_UPPER_TARGET);
+	axxia_pcie_writel_rc(hose, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+}
+
+static void axxia_pcie_prog_viewport_mem_outbound(struct pci_controller *hose)
+{
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+
+	/* Program viewport 0 : OUTBOUND : MEM */
+	axxia_pcie_writel_rc(hose,
+			     PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0,
+			     PCIE_ATU_VIEWPORT);
+	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
+	axxia_pcie_writel_rc(hose, data->mem_mod_base, PCIE_ATU_LOWER_BASE);
+	axxia_pcie_writel_rc(hose, (data->mem_mod_base >> 32),
+			     PCIE_ATU_UPPER_BASE);
+	axxia_pcie_writel_rc(hose, data->mem_mod_base + data->mem_size - 1,
+			     PCIE_ATU_LIMIT);
+	axxia_pcie_writel_rc(hose, data->mem_bus_addr, PCIE_ATU_LOWER_TARGET);
+	axxia_pcie_writel_rc(hose, upper_32_bits(data->mem_bus_addr),
+			     PCIE_ATU_UPPER_TARGET);
+	axxia_pcie_writel_rc(hose, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+}
+
+static void axxia_pcie_prog_viewport_io_outbound(struct pci_controller *hose)
+{
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+
+	/* Program viewport 1 : OUTBOUND : IO */
+	axxia_pcie_writel_rc(hose,
+			     PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
+			     PCIE_ATU_VIEWPORT);
+	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_IO, PCIE_ATU_CR1);
+	axxia_pcie_writel_rc(hose, data->io_mod_base, PCIE_ATU_LOWER_BASE);
+	axxia_pcie_writel_rc(hose, (data->io_mod_base >> 32),
+			     PCIE_ATU_UPPER_BASE);
+	axxia_pcie_writel_rc(hose, data->io_mod_base + data->io_size - 1,
+			     PCIE_ATU_LIMIT);
+	axxia_pcie_writel_rc(hose, data->io_bus_addr, PCIE_ATU_LOWER_TARGET);
+	axxia_pcie_writel_rc(hose, upper_32_bits(data->io_bus_addr),
+			     PCIE_ATU_UPPER_TARGET);
+	axxia_pcie_writel_rc(hose, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+}
+
+
+static int axxia_pcie_rd_other_conf(struct pci_controller *hose,
+	u32 devfn, int where, int size, u32 *val)
+{
+	u32 address, busdev;
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+	int ret = 0;
+
+	busdev = PCIE_ATU_BUS(PCI_BUS(devfn)) | PCIE_ATU_DEV(PCI_DEV(devfn))
+		| PCIE_ATU_FUNC(PCI_FUNC(devfn));
+	address = where & ~0x3;
+
+	/* Primary bus */
+	if (PCI_BUS(devfn) == 1) {
+		axxia_pcie_prog_viewport_cfg0(hose, busdev);
+		ret = axxia_pcie_cfg_read((void __iomem *)data->cfg0_base
+			+ address, where, size, val);
+		axxia_pcie_prog_viewport_mem_outbound(hose);
 	} else {
-		dev = PCI_DEV(devfn);
-		fn = PCI_FUNC(devfn);
-
-		if (dev > 31) 
-			return NULL;
-
-		/* Primary bus */
-		if (PCI_BUS(devfn) == 1) {
-			cfg_type = 0;
-		} else {
-			cfg_type = 1;
-		}
-#ifdef DEBUG_PCIE
-		printf("pcie_get_base: bus = %d -- cfg type = %d\n", PCI_BUS(devfn), cfg_type);
-#endif
-
-		/* build the mpage register */
-		mpage = (PCI_BUS(devfn) << 11) |
-		(dev << 6) |
-		(cfg_type << 5);
-
-		mpage |= 0x10;	/* enable MPAGE for configuration access */
-		mpage |= (fn << 19);
-
-		addr = ((u32)hose->cfg_addr) + ACPX1_PCIE_MPAGE_UPPER(7);
-		writel(0x0, (u32 *) addr);
-		addr = ((u32)hose->cfg_addr) + ACPX1_PCIE_MPAGE_LOWER(7);
-#ifdef DEBUG_PCIE
-		printf("pcie_get_base: %02x:%02x:%02x setting mpage = 0x%08x in addr = 0x%08x\n", PCI_BUS(devfn), dev, fn, mpage, addr); 	
-#endif
-		writel(mpage, (u32 *) addr);
+		axxia_pcie_prog_viewport_cfg1(hose, busdev);
+		ret = axxia_pcie_cfg_read((void __iomem *)data->cfg1_base
+			+ address, where, size, val);
+		axxia_pcie_prog_viewport_io_outbound(hose);
 	}
-		
-	return base;
+	return ret;
+}
+
+static int axxia_pcie_wr_other_conf(struct pci_controller *hose,
+	u32 devfn, int where, int size, u32 val)
+{
+	u32 address, busdev;
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+	int ret;
+
+	busdev = PCIE_ATU_BUS(PCI_BUS(devfn)) | PCIE_ATU_DEV(PCI_DEV(devfn))
+		| PCIE_ATU_FUNC(PCI_FUNC(devfn));
+	address = where & ~0x3;
+
+	/* Primary bus */
+	if (PCI_BUS(devfn) == 1) {
+		axxia_pcie_prog_viewport_cfg0(hose, busdev);
+		ret = axxia_pcie_cfg_write((void __iomem *)data->cfg0_base
+			+ address, where, size, val);
+		axxia_pcie_prog_viewport_mem_outbound(hose);
+	} else {
+		axxia_pcie_prog_viewport_cfg1(hose, busdev);
+		ret = axxia_pcie_cfg_write((void __iomem *)data->cfg1_base
+			+ address, where, size, val);
+		axxia_pcie_prog_viewport_io_outbound(hose);
+	}
+	return ret;
+}
+
+static int axxia_pcie_rd_own_conf(struct pci_controller *hose, int where,
+	int size, u32 *val)
+{
+	int ret;
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+
+	ret = axxia_pcie_cfg_read((void __iomem *)data->dbi_base
+		+ (where & ~0x3), where, size, val);
+	return ret;
+}
+
+static int axxia_pcie_wr_own_conf(struct pci_controller *hose, int where,
+	int size, u32 val)
+{
+	int ret;
+	struct pci_hose_data *data;
+	data = (struct pci_hose_data *)hose->priv_data;
+
+	ret = axxia_pcie_cfg_write((void __iomem *)data->dbi_base
+		+ (where & ~0x3), where, size, val);
+	return ret;
 }
 
 /* Read the configuration space */
-static int pcie_read_config(struct pci_controller *hose, unsigned int devfn, 
+static int pcie_read_config(struct pci_controller *hose, unsigned int devfn,
 	int offset, int len, u32 *val) {
-
-	u8 *address;
 	*val = 0;
-	u32 bus_addr, val32;
-	int bo = offset & 0x3;
-	int wo;
+	int ret;
 
 	/*
 	 * Only single device/single function is supported for the primary and
 	 * secondary buses
 	 */
 	if (((!((PCI_FUNC(devfn) == 0) && (PCI_DEV(devfn) == 0))) &&
-		(PCI_BUS(devfn) == 0)) || (!(PCI_DEV(devfn) == 0) &&
-                (PCI_BUS(devfn) == 1))) {
+	     (PCI_BUS(devfn) == 0)) ||
+	    (!(PCI_DEV(devfn) == 0) && (PCI_BUS(devfn) == 1))) {
 		return 0;
 	}
 
-	address = pcie_get_base(hose, devfn);
-	if (address == NULL)
-		return 0;
-#ifdef DEBUG_PCIE
-	printf("pcie_read_config:  cfg space base_address  = 0x%x, cfg_data = 0x%x\n", address, hose->cfg_data);
-#endif
+	if (PCI_BUS(devfn) == 0)
+		ret = axxia_pcie_rd_own_conf(hose, offset, len, val);
+	else
+		ret = axxia_pcie_rd_other_conf(hose, devfn, offset, len, val);
 
-	if (PCI_BUS(devfn) == 0) {
-		wo = offset & 0xfffffffc;
-		bus_addr = (u32)address+wo;
-	} else {
-		/* 
-		 * mapped config space only supports 32-bit access 
-		 *  AXI address [3:0] is not used at all.  
-		 *  AXI address[9:4] becomes register number.  
-		 *  AXI address[13:10] becomes Ext. register number 
-		 *  AXI address[17:14] becomes 1st DWBE for configuration read only.  
-		 *  AXI address[29:27] is used to select one of 8 Mpage registers.  
-		 */
-		bus_addr = (u32) address + (offset << 2);
-
-		switch (len) {
-			case 1:
-				bus_addr |=  ((1 << bo) ) << 14;
-				break;
-			case 2:
-				bus_addr |=  ((3 << bo) ) << 14;
-				break;
-			default:
-				bus_addr |=  ( 0xf ) << 14;
-				break;
-		}
-	}
-
-	val32 = readl((u32 *)bus_addr);
-	switch (len) { 
-		case 1: 
-			*val = (val32 >> (bo * 8)) & 0xff;
-			break;
-		case 2:
-			*val = (val32 >> (bo * 8)) & 0xffff;
-			break;
-		default:
-			*val = val32;
-			break;
-	}
-#ifdef DEBUG_PCIE
-		printf("pcie_read_config:  %s: cfg_data=%08x offset=%08x, bus_addr = 0x%08x, val = 0x%08x\n", __func__, hose->cfg_data, offset, bus_addr, *val);
-#endif
-
-
-	return 0;
+	return ret;
 }
 
 /* Write the configuration space */
 static int pcie_write_config(struct pci_controller *hose, unsigned int devfn,
 	int offset, int len, u32 val) {
-
-	u8 *address;
-	u32 bus_addr, val32;
+	int ret;
 
 	/*
 	 * Same constraints as in pcie_read_config().
@@ -154,63 +361,26 @@ static int pcie_write_config(struct pci_controller *hose, unsigned int devfn,
 		return 0;
 
 	if (((!((PCI_FUNC(devfn) == 0) && (PCI_DEV(devfn) == 0))) &&
-		(PCI_BUS(devfn) == 0)) || (!(PCI_DEV(devfn) == 0) &&
-                (PCI_BUS(devfn) == 1))) {
+	     (PCI_BUS(devfn) == 0)) ||
+	    (!(PCI_DEV(devfn) == 0) && (PCI_BUS(devfn) == 1))) {
 		return 0;
 	}
 
-	address = pcie_get_base(hose, devfn);
-	if (address == NULL)
-		return 0;
-#ifdef DEBUG_PCIE
-	printf("pcie_write_config:  cfg space base_address  = 0x%x, cfg_data = 0x%x\n", address, hose->cfg_data);
-#endif
+	/*
+	 * addressing is different for local config access vs.
+	 * access through the mapped config space. We need to
+	 * translate the offset for mapped config access
+	 */
+	if (PCI_BUS(devfn) == 0)
+		ret = axxia_pcie_wr_own_conf(hose, offset, len, val);
+	else
+		ret = axxia_pcie_wr_other_conf(hose, devfn, offset, len, val);
 
-    /*
-     * addressing is different for local config access vs.
-     * access through the mapped config space. We need to
-     * translate the offset for mapped config access
-     */
-
-	if (PCI_BUS(devfn) == 0) { 
-		/* the local ACP RC only supports 32-bit dword config access,
-         * so if this is a byte or 16-bit word access we need to
-         * perform a read-modify write
-         */
-		if (len == 4) {
-			bus_addr = (u32) address + offset;
-		} else {
-			int bs = ((offset & 0x3) * 8);
-			bus_addr = (u32) address + (offset & 0xfffffffc);
-			val32 = readl((u32 *)bus_addr);
-
-			if (len == 2) {
-				val32 = (val32 & ~(0xffff << bs) ) | ((val & 0xffff) << bs);
-			} else {
-				val32 = (val32 & ~(0xff << bs) ) | ((val & 0xff) << bs);
-			}
-			val = val32;
-			len = 4;
-		}
-	} else {
-		bus_addr = (u32) address + (offset << 2) + (offset & 0x3);
-	}
-	switch (len) {
-		case 1:
-			writeb(val, (u8 *)(bus_addr));
-			break;
-		case 2:
-			writew(val, (u16 *)(bus_addr));
-			break;
-		default:
-			writel(val, (u32 *)(bus_addr));
-			break;
-	}
-
-	return 0;
+	return ret;
 }
 
-int pcie_read_config_byte(struct pci_controller *hose,pci_dev_t dev,int offset,u8 *val)
+int pcie_read_config_byte(struct pci_controller *hose, pci_dev_t dev,
+	int offset, u8 *val)
 {
 	u32 v;
 	int rv;
@@ -219,7 +389,8 @@ int pcie_read_config_byte(struct pci_controller *hose,pci_dev_t dev,int offset,u
 	return rv;
 }
 
-int pcie_read_config_word(struct pci_controller *hose,pci_dev_t dev,int offset,u16 *val)
+int pcie_read_config_word(struct pci_controller *hose, pci_dev_t dev,
+	int offset, u16 *val)
 {
 	u32 v;
 	int rv;
@@ -228,7 +399,8 @@ int pcie_read_config_word(struct pci_controller *hose,pci_dev_t dev,int offset,u
 	return rv;
 }
 
-int pcie_read_config_dword(struct pci_controller *hose,pci_dev_t dev,int offset,u32 *val)
+int pcie_read_config_dword(struct pci_controller *hose, pci_dev_t dev,
+	int offset, u32 *val)
 {
 	u32 v;
 	int rv;
@@ -237,697 +409,217 @@ int pcie_read_config_dword(struct pci_controller *hose,pci_dev_t dev,int offset,
 	return rv;
 }
 
-int pcie_write_config_byte(struct pci_controller *hose,pci_dev_t dev,int offset,u8 val)
+int pcie_write_config_byte(struct pci_controller *hose, pci_dev_t dev,
+	int offset, u8 val)
 {
-	return pcie_write_config(hose,(u32)dev,offset,1,val);
+	return pcie_write_config(hose, (u32)dev, offset, 1, val);
 }
 
-int pcie_write_config_word(struct pci_controller *hose,pci_dev_t dev,int offset,u16 val)
+int pcie_write_config_word(struct pci_controller *hose, pci_dev_t dev,
+	int offset, u16 val)
 {
-	return pcie_write_config(hose,(u32)dev,offset,2,(u32 )val);
+	return pcie_write_config(hose, (u32)dev, offset, 2, (u32)val);
 }
 
-int pcie_write_config_dword(struct pci_controller *hose,pci_dev_t dev,int offset,u32 val)
+int pcie_write_config_dword(struct pci_controller *hose, pci_dev_t dev,
+	int offset, u32 val)
 {
-	return pcie_write_config(hose,(u32)dev,offset,4,(u32 )val);
+	return pcie_write_config(hose, (u32)dev, offset, 4, (u32)val);
 }
 
-int pci_axxia_init (struct pci_controller *hose, int port)
+int axxia_pcie_link_up(struct pci_controller *hose)
 {
-	void *mbase = NULL;
-	u32 pci_config, pci_status, link_state;
-	int i, num_pages;
-	u32 mpage_lower, pciah, pcial;
-	u64 pci_addr, size;
-	void __iomem *tpage_base;
-	pci_addr_t bus_start = 0;   /* Start on the bus */
-	phys_addr_t phys_start = 0;
-	unsigned registers, pci_link;
+	u32 rdlh_lnk, smlh_lnk, smlh_state;
 
-	pci_set_ops(hose, 
-		pcie_read_config_byte, 
-		pcie_read_config_word, 
-		pcie_read_config_dword, 
-		pcie_write_config_byte, 
-		pcie_write_config_word, 
-		pcie_write_config_dword); 
+	axxia_cc_gpreg_readl(hose, PEI_SII_PWR_MGMT_REG, &smlh_lnk);
+	axxia_cc_gpreg_readl(hose, PEI_SII_DBG_0_MON_REG, &rdlh_lnk);
+
+	axxia_cc_gpreg_readl(hose, PEI_SII_PWR_MGMT_REG, &smlh_state);
+	smlh_state = (smlh_state & PEI_SMLH_LINK_STATE) >> 4;
+	if (smlh_state != 0xb) {
+		printf("smlh_state = 0x%x\n", smlh_state);
+		printf("PCIe LINK IS NOT UP\n");
+		return 0;
+	}
+	return 1;
+}
+
+void axxia_pcie_setup_rc(struct pci_controller *hose)
+{
+	u32 val;
+	u32 membase;
+	u32 memlimit;
+	struct pci_hose_data *data;
+
+	data = (struct pci_hose_data *)hose->priv_data;
+
+	/* set the number of lanes */
+	axxia_pcie_readl_rc(hose, PCIE_PORT_LINK_CONTROL, &val);
+	val &= ~PORT_LINK_MODE_MASK;
+	switch (data->lanes) {
+	case 1:
+		val |= PORT_LINK_MODE_1_LANES;
+	break;
+	case 2:
+		val |= PORT_LINK_MODE_2_LANES;
+	break;
+	case 4:
+		val |= PORT_LINK_MODE_4_LANES;
+	break;
+	}
+	axxia_pcie_writel_rc(hose, val, PCIE_PORT_LINK_CONTROL);
+
+	/* set link width speed control register */
+	axxia_pcie_readl_rc(hose, PCIE_LINK_WIDTH_SPEED_CONTROL, &val);
+	val &= ~PORT_LOGIC_LINK_WIDTH_MASK;
+	switch (data->lanes) {
+	case 1:
+		val |= PORT_LOGIC_LINK_WIDTH_1_LANES;
+	break;
+	case 2:
+		val |= PORT_LOGIC_LINK_WIDTH_2_LANES;
+	break;
+	case 4:
+		val |= PORT_LOGIC_LINK_WIDTH_4_LANES;
+	break;
+	}
+
+	axxia_pcie_writel_rc(hose, val, PCIE_LINK_WIDTH_SPEED_CONTROL);
+
+	/* setup bus numbers */
+	axxia_pcie_readl_rc(hose, PCI_PRIMARY_BUS, &val);
+	val &= 0xff000000;
+	val |= 0x00010100;
+	axxia_pcie_writel_rc(hose, val, PCI_PRIMARY_BUS);
+	/* setup memory base, memory limit */
+	membase = ((u32)data->mem_mod_base & 0xfff00000) >> 16;
+	memlimit = (data->mem_size + (u32)data->mem_mod_base) & 0xfff00000;
+	val = memlimit | membase;
+	axxia_pcie_writel_rc(hose, val, PCI_MEMORY_BASE);
+
+	/* setup command register */
+	axxia_pcie_readl_rc(hose, PCI_COMMAND, &val);
+	val &= 0xffff0000;
+	val |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY |
+		PCI_COMMAND_MASTER | PCI_COMMAND_SERR;
+	axxia_pcie_writel_rc(hose, val, PCI_COMMAND);
+
+	/* LTSSM enable */
+	axxia_cc_gpreg_readl(hose, PEI_GENERAL_CORE_CTL_REG, &val);
+	val |= 0x1;
+	axxia_cc_gpreg_writel(hose, 0x1, PEI_GENERAL_CORE_CTL_REG);
+}
+
+static int axxia_pcie_establish_link(struct pci_controller *hose)
+{
+
+	if (axxia_pcie_link_up(hose)) {
+		printf("Link already up\n");
+		return 0;
+	}
+
+	/* setup root complex */
+	axxia_pcie_setup_rc(hose);
+
+	if (axxia_pcie_link_up(hose))
+		printf("Link up\n");
+
+	return 0;
+}
+
+int pci_axxia_init(struct pci_controller *hose, int port)
+{
+	u32 val;
+
+	pci_set_ops(hose,
+		    pcie_read_config_byte,
+		    pcie_read_config_word,
+		    pcie_read_config_dword,
+		    pcie_write_config_byte,
+		    pcie_write_config_word,
+		    pcie_write_config_dword);
 
 	switch (port) {
-		case 0:
-			ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &registers);
-			printf("PEI0: Configuration: ");
-			if (registers & 0x1)
-			{
-				printf("Enabled");
-			} else {
-				printf("Disabled.\n");
-				return 0;
-			}
-			if ((registers & 0x400001) == 0x400001) {
-				printf(", Root Complex.\n");
-				/* PEI0 RC mode */
-				mbase = (u32 *)CONFIG_SYS_PCIE0_CFGADDR;
-				hose->cfg_data = (u8 *)CONFIG_SYS_PCIE0_MEMBASE;
-				bus_start = CONFIG_PCIE0_BUS_START;
-				phys_start = CONFIG_PCIE0_PHY_START;
-				break;
-			} else {
-				printf(", End Point.\n");
-				return 0;
-			}
-        case 1:
-			ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &registers);
-			printf("PEI1: Configuration: "); 
-			if (registers & 0x1)
-			{
-				printf("Enabled");
-			} else {
-				printf("Disabled.\n");
-				return 0;
-			}
-			if ((registers & 0x400001) == 0x400001) {
-				printf(", Root Complex.\n");
-				/* PEI1 RC Mode */
-				mbase = (u32 *)CONFIG_SYS_PCIE1_CFGADDR;
-				hose->cfg_data = (u8 *)CONFIG_SYS_PCIE1_MEMBASE;
-				bus_start = CONFIG_PCIE1_BUS_START;
-				phys_start = CONFIG_PCIE1_PHY_START;
-				break;
-			} else {
-				printf(", End Point.\n");
-				return 0;
-			}
+	case 0:
+		printf("PEI0 Root Complex.\n");
+		/* PEI0 RC mode */
+		hose_data[port].dbi_base = PCIE0_DBI_BASE;
+		hose_data[port].axi_gpreg_base = PCIE0_AXI_GPREG_BASE;
+		hose_data[port].cc_gpreg_base = PCIE0_CC_GPREG_BASE;
+		hose_data[port].cfg0_base = CONFIG_SYS_PCIE0_CFG0BASE;
+		hose_data[port].cfg1_base = CONFIG_SYS_PCIE0_CFG1BASE;
+		hose_data[port].cfg0_size = CONFIG_SYS_PCIE0_CFG0SIZE;
+		hose_data[port].cfg1_size = CONFIG_SYS_PCIE0_CFG1SIZE;
+		hose_data[port].mem_mod_base = CONFIG_SYS_PCIE0_MEMBASE;
+		hose_data[port].mem_size = CONFIG_SYS_PCIE0_MEMSIZE;
+		hose_data[port].mem_bus_addr = CONFIG_PCIE0_BUS_START;
+		break;
+	case 1:
+		printf("PEI1 Root Complex.\n");
+		/* PEI1 RC mode */
+		hose_data[port].dbi_base = PCIE1_DBI_BASE;
+		hose_data[port].axi_gpreg_base = PCIE1_AXI_GPREG_BASE;
+		hose_data[port].cc_gpreg_base = PCIE1_CC_GPREG_BASE;
+		hose_data[port].cfg0_base = CONFIG_SYS_PCIE1_CFG0BASE;
+		hose_data[port].cfg1_base = CONFIG_SYS_PCIE1_CFG1BASE;
+		hose_data[port].cfg0_size = CONFIG_SYS_PCIE1_CFG0SIZE;
+		hose_data[port].cfg1_size = CONFIG_SYS_PCIE1_CFG1SIZE;
+		hose_data[port].mem_mod_base = CONFIG_SYS_PCIE1_MEMBASE;
+		hose_data[port].mem_size = CONFIG_SYS_PCIE1_MEMSIZE;
+		hose_data[port].mem_bus_addr = CONFIG_PCIE1_BUS_START;
+		break;
+	case 2:
+		printf("PEI2 Root Complex.\n");
+		/* PEI2 RC mode */
+		hose_data[port].dbi_base = PCIE2_DBI_BASE;
+		hose_data[port].axi_gpreg_base = PCIE2_AXI_GPREG_BASE;
+		hose_data[port].cc_gpreg_base = PCIE2_CC_GPREG_BASE;
+		hose_data[port].cfg0_base = CONFIG_SYS_PCIE2_CFG0BASE;
+		hose_data[port].cfg1_base = CONFIG_SYS_PCIE2_CFG1BASE;
+		hose_data[port].cfg0_size = CONFIG_SYS_PCIE2_CFG0SIZE;
+		hose_data[port].cfg1_size = CONFIG_SYS_PCIE2_CFG1SIZE;
+		hose_data[port].mem_mod_base = CONFIG_SYS_PCIE2_MEMBASE;
+		hose_data[port].mem_size = CONFIG_SYS_PCIE2_MEMSIZE;
+		hose_data[port].mem_bus_addr = CONFIG_PCIE2_BUS_START;
+		break;
 	}
+	hose->priv_data = (void *)&hose_data[port];
 
-	/* We only get here if we are RC mode for either PEI0 or PEI1 */
-
-	hose->cfg_addr = mbase;
-#ifdef DEBUG_PCIE
-	printf("port = %d, hose = 0x%x, hose->cfg_addr = 0x%x\n", port, hose,mbase);
-#endif
-	tpage_base = mbase + 0x1050;
-	pci_addr = bus_start;
-	pciah = U64_TO_U32_HIGH(pci_addr);
-	pcial = U64_TO_U32_LOW(pci_addr);
-
-	hose->first_busno = 0x0;
-	hose->current_busno = 0x0;
-	hose->last_busno = 0xff;
-	
+	/* PCI memory space */
 	pci_set_region(hose->regions + 0,
-		0x0,
-		0x0,
-		(1024*1024),
-		PCI_REGION_MEM);
-        hose->region_count = 1;
-		
-	/* Check if setup as root complex */
-	pci_config = readl(mbase + 0x1000);
-	pci_status = readl(mbase + 0x1004);
-	printf("PEI%d pci_status = 0x%x \n", port, pci_status);
-	if ((pci_status & 0x10) != 0x10) {
-		printf("PEI%d is set up as EP \n", port);
-		return 0;
-	
-	}
-	
-	link_state = (pci_status & 0x3f00) >> 8;
-	printf("PCIE status = 0x%08x : PCI link state = 0x%x\n", pci_status, link_state);
-
-	/* make sure the link is up */
-	if (link_state != 0xb) {
-		/* reset */
-		printf("PCI link in bad state - resetting\n");
-		pci_config |= 1;
-		writel(pci_config, mbase + 0x1000);
-		udelay(1000000); 
-
-		pci_status = readl(mbase + 0x1004);
-		link_state = (pci_status & 0x3f00) >> 8;
-	}
-	printf("PCI link state now = 0x%x\n", link_state); 
-	if (link_state != 0xb) {
-		/* return since link state is not okay */
-		return 0;
-	}
-
-	/* Read the "PEI Link Speed Change Command and Link Status" register */
-	pci_link = readl(mbase + 0x117c);
-
-	printf("PEI%d: x%d @ ", port, ((pci_link & 0x3f0) >> 4));	
-	switch (pci_link & 0xF)
-	{
-		case 1: printf("2.5Gbps\n"); break;
-		case 2: printf("5Gbps\n"); break;
-	}
-
-        /* setup ACP for 4GB 1=Prefetchable, 10=Locate anywhere in
-         * 64 bit address space */
-        /* configures the RC Memory Space Configuration Register */
-        writel(0x40000000, mbase + 0x11f4);
-
-        /* Verify BAR0 size */
-        {
-                u32 bar0_size;
-                /* write all 1s to BAR0 register */
-                writel(~0, mbase + 0x10);
-                bar0_size = readl(mbase + 0x10);
-                if ((bar0_size & ~0xf) != 0x40000000)
-                        printf("PCIE%d: Config BAR0 failed\n", port);
-        }
-
-	/* set the BASE0 address to start of PCIe base 0x0 */
-	writel(0x0, mbase + 0x10);
-
-	/* setup TPAGE registers for inbound mapping */
-	/* We set the MSB of each TPAGE to select 128-bit AXI access.
-	 * For the address field we simply program an incrementing value
-	 * to map consecutive pages
-	 */
-	tpage_base = mbase + 0x1050;
-	for (i = 0; i < 8; i++) {
-        writel((0x80000000 + i), tpage_base);
-        tpage_base += 4;
-	}
-
-	/* ACP X1 setup MPAGE registers */ 
-	/*
-	 * MPAGE7 is dedicated to config access, so we only 
-	 *  have 7 128MB pages available for memory i/o. 
-	 *  Calculate how many pages we need
-	 */
-	size = 7 * 1024*128*1024;
-	num_pages = ( (size - 1) >> 27) + 1;
-	for (i = 0; i < num_pages; i++) {
-		mpage_lower = (pcial & 0xf8000000); 
-		writel( pciah, mbase + ACPX1_PCIE_MPAGE_UPPER(i));
-		writel( mpage_lower, mbase + ACPX1_PCIE_MPAGE_LOWER(i));
-		pcial += 0x08000000;
-	} 
-
-	hose->last_busno = pci_hose_scan(hose);
-
-	printf("PCIE%d: successfully set as root-complex\n", port);
-	pci_set_region(hose->regions + 0,
-		bus_start,
-		phys_start,
-		(1024*1024*1024),
-		PCI_REGION_MEM);
-
-	hose->region_count = 1;
+		       hose_data[port].mem_mod_base,
+		       hose_data[port].mem_mod_base,
+		       hose_data[port].mem_size,
+		       PCI_REGION_MEM);
+	hose->region_count++;
 	pci_register_hose(hose);
-#ifdef DEBUG_PCIE
-	printf("pci_axxia_init: Returned bus no after = %d\n", hose->last_busno);
-#endif
+
+	axxia_pcie_establish_link(hose);
+	/* program correct class for RC */
+	axxia_pcie_wr_own_conf(hose, PCI_CLASS_DEVICE, 2, PCI_CLASS_BRIDGE_PCI);
+
+	axxia_pcie_rd_own_conf(hose, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, &val);
+	val |= PORT_LOGIC_SPEED_CHANGE;
+	axxia_pcie_wr_own_conf(hose, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, val);
+
 	hose->first_busno = 0;
 	hose->current_busno = hose->last_busno+1;
 	hose->last_busno = 0xff;
 	hose->last_busno = pci_hose_scan(hose);
 
 	return hose->last_busno;
-}
-
-/*****************************************************************
- * PCIe AXM55xx workaround
- *****************************************************************/
-#ifdef CONFIG_SPL_PCI_SUPPORT
-enum pei_speed {
-	PEI_2_5G = 1,
-	PEI_5G = 2
-};
-
-extern unsigned long pfuse;
-
-void pci_speed_change(char pei_core, enum pei_speed change_speed)
-{
-	unsigned lnk_status, addr;
-	unsigned width;
-	enum pei_speed speed_before, speed_after;
-	unsigned pei_control;
-	unsigned pei_delay, pei_config;
-	char *env_value;
-	unsigned short v1_0 = 0;
-
-	if (0 == ((pfuse & 0x7e0) >> 5))
-		v1_0 = 1;
-
-	env_value = getenv("pei_speed_change_delay");
-	if ((char *)0 != env_value) {
-		pei_delay = simple_strtoul(env_value, NULL, 0);
-		if (pei_delay <= 0)
-			pei_delay = 1;
-	} else {
-		pei_delay = 1;
-	}
-	printf("delay used after PEI speed change = %d usecs\n", pei_delay);
-
-
-	if (pei_core == 0) {
-		addr = PCIE0_CONFIG;
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &pei_control);
-	} else {
-		addr = PCIE1_CONFIG;
-		ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &pei_control);
-	}
-
-
-	lnk_status = readl((void *)(addr + 0x117c));
-	printf("PEI%d 0x117c LnkStatus = 0x%x\n",  pei_core, lnk_status);
-	speed_before = lnk_status & 0xf;
-	width = (lnk_status & 0xf0) >> 4;
-	printf("PEI%d width - %d lane\n", pei_core, width);
-
-	if (change_speed == speed_before) {
-		if (change_speed == PEI_2_5G)
-			printf("PEI%d speed already set to (2.5 Gb/s)\n",
-				pei_core);
-		else
-			printf("PEI%d speed already set to (5 Gb/s)\n",
-				pei_core);
-	} else if (change_speed == PEI_2_5G) {
-		/* Change PEI speed to Gen 1 */
-		writel(0x1, (void *)(addr + 0x90));
-		writel(0x10000, (void *)(addr + 0x117c));
-
-		/* delay for 1000ms */
-		mdelay(1000);
-		lnk_status = readl((void *)(addr + 0x117c));
-		printf("pei%d linkStatus 0x117c after speed initiation = 0x%x\n",
-			pei_core, lnk_status);
-		speed_after = lnk_status & 0xf;
-		if ((lnk_status & 0xc00) == 0xc00) {
-			/* Please note that this is also ensuring that there is
-			 * no link training error */
-			printf("PEI%d has Link Training error\n", pei_core);
-			if (lnk_status & 0x10000) {
-				/* clear speed change initiation bit */
-				writel(0x20000, (void *)(addr + 0x117c));
-			}
-			return;
-		}
-		if ((lnk_status & 0x10000) != 0x10000) {
-			if (speed_after == change_speed) {
-				printf("Successfully changed PEI%d speed from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s)\n",
-					pei_core);
-			} else {
-				printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n",
-					pei_core);
-			}
-		} else {
-			/* clear speed change initiation bit */
-			writel(0x20000, (void *)(addr + 0x117c));
-			printf("Speed Initiation for PEI%d from Gen2 (5 Gb/s) to Gen 1 (2.5 Gb/s) failed\n",
-				pei_core);
-		}
-	} else if (change_speed == PEI_5G) {
-		if ((pei_core == 0)
-			&& ((pei_control & 0x1c400001) == 0x00400001)) {
-			/* PEI0 RC x4 */
-			if (v1_0) {
-				pei_config = readl((void *)(addr + 0x1000));
-				/* clear force gen1 bit 18 */
-				pei_config = pei_config & 0xfffbffff;
-				writel(pei_config, (void *)(addr + 0x1000));
-			}
-
-			/* Change PEI speed to Gen 2 */
-			writel(0x2, (void *)(addr + 0x90));
-			writel(0x10000, (void *)(addr + 0x117c));
-			if (v1_0) {
-				/* Applicable only to v1.0 */
-				udelay(pei_delay);
-
-				/* ncr w 0x115.1.0x08e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x1),
-					0x8e, 0x0406);
-
-				/* ncr w 0x115.1.0x28e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x1),
-					0x28e, 0x0406);
-
-				/* ncr w 0x115.1.0x68e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x1),
-					0x68e, 0x0406);
-
-				/* ncr w 0x115.1.0x88e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x1),
-					0x88e, 0x0406);
-			}
-		} else if ((pei_core == 1)
-			&& ((pei_control & 0x0c400001) == 0x00400001)) {
-			/* PEI1 RC x4 */
-			if (v1_0) {
-				pei_config = readl((void *)(addr + 0x1000));
-				/* clear force gen1 bit 18 */
-				pei_config = pei_config & 0xfffbffff;
-				writel(pei_config, (void *)(addr + 0x1000));
-			}
-
-			/* Change PEI speed to Gen 2 */
-			writel(0x2, (void *)(addr + 0x90));
-			writel(0x10000, (void *)(addr + 0x117c));
-			udelay(pei_delay);
-
-			if (v1_0) {
-				/* ncr w 0x115.4.0x08e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x4),
-					0x8e, 0x0406);
-
-				/* ncr w 0x115.4.0x28e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x4),
-					0x28e, 0x0406);
-
-				/* ncr w 0x115.4.0x68e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x4),
-					0x68e, 0x0406);
-
-				/* ncr w 0x115.4.0x88e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x4),
-					0x88e, 0x0406);
-			}
-		} else if (((pei_core == 0) &&
-			    (((pei_control & 0x1c400001) == 0x04400001))) ||
-			   ((pei_control & 0x1c400001) == 0x08400001)) {
-			/* PEI0 RC x2 */
-			if (v1_0) {
-				pei_config = readl((void *)(addr + 0x1000));
-				/* clear force gen1 bit 18 */
-				pei_config = pei_config & 0xfffbffff;
-				writel(pei_config, (void *)(addr + 0x1000));
-			}
-
-			/* Change PEI speed to Gen 2 */
-			writel(0x2, (void *)(addr + 0x90));
-			writel(0x10000, (void *)(addr + 0x117c));
-			udelay(pei_delay);
-
-			if (v1_0) {
-				/* ncr w 0x115.1.0x68e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x1),
-					0x68e, 0x0406);
-
-				/* ncr w 0x115.1.0x88e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x1),
-					0x88e, 0x0406);
-			}
-		} else if ((pei_core == 1)
-			&& ((pei_control & 0x0c400001) == 0x04400001)) {
-			/* PEI1 RC x2 */
-			if (v1_0) {
-				pei_config = readl((void *)(addr + 0x1000));
-				/* clear force gen1 bit 18 */
-				pei_config = pei_config & 0xfffbffff;
-				writel(pei_config, (void *)(addr + 0x1000));
-			}
-
-			/* Change PEI speed to Gen 2 */
-			writel(0x2, (void *)(addr + 0x90));
-			writel(0x10000, (void *)(addr + 0x117c));
-			udelay(pei_delay);
-
-			if (v1_0) {
-				/* ncr w 0x115.4.0x08e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x4),
-					0x8e, 0x0406);
-
-				/* ncr w 0x115.4.0x28e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x4),
-					0x28e, 0x0406);
-			}
-
-		} else if ((pei_core == 0)
-			&& ((pei_control & 0x1c400001) == 0x14400001)) {
-			/* PEI0 RC x1 */
-			if (v1_0) {
-				pei_config = readl((void *)(addr + 0x1000));
-				/* clear force gen1 bit 18 */
-				pei_config = pei_config & 0xfffbffff;
-				writel(pei_config, (void *)(addr + 0x1000));
-			}
-
-			/* Change PEI speed to Gen 2 */
-			writel(0x2, (void *)(addr + 0x90));
-			writel(0x10000, (void *)(addr + 0x117c));
-			udelay(pei_delay);
-
-			if (v1_0) {
-				/* ncr w 0x115.1.0x88e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x1),
-					0x88e, 0x0406);
-			}
-		} else if ((pei_core == 1)
-			&& ((pei_control & 0x0c400001) == 0x08400001)) {
-			/* PEI1 RC x1 */
-			if (v1_0) {
-				pei_config = readl((void *)(addr + 0x1000));
-				/* clear force gen1 bit 18 */
-				pei_config = pei_config & 0xfffbffff;
-				writel(pei_config, (void *)(addr + 0x1000));
-			}
-
-			/* Change PEI speed to Gen 2 */
-			writel(0x2, (void *)(addr + 0x90));
-			writel(0x10000, (void *)(addr + 0x117c));
-			udelay(pei_delay);
-
-			if (v1_0) {
-				/* ncr w 0x115.4.0x08e 0x0406 */
-				ncr_write16(NCP_REGION_ID(0x115, 0x4),
-					0x8e, 0x0406);
-			}
-
-		} else {
-			printf("Unsupported PEI%d config = 0x%x\n",
-				pei_core, pei_control);
-			return;
-		}
-		/* delay for 1000 ms */
-		mdelay(1000);
-		lnk_status = readl((void *)(addr + 0x117c));
-		printf("pei%d linkStatus 0x117c after speed initiation = 0x%x\n",
-			pei_core, lnk_status);
-		speed_after = lnk_status & 0xf;
-
-		if ((lnk_status & 0xc00) == 0xc00) {
-			/* Please note that this is also ensuring that there
-			 * is no link training error */
-			printf("PEI%d has Link Training error\n", pei_core);
-			if (lnk_status & 0x10000) {
-				/* clear speed change initiation bit */
-				writel(0x20000, (void *)(addr + 0x117c));
-			}
-			return;
-		}
-
-		if ((lnk_status & 0x10000) != 0x10000) {
-			if (speed_after == change_speed) {
-				printf("Successfully changed PEI%d speed from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s)\n",
-				pei_core);
-			} else {
-				printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n",
-				pei_core);
-			}
-		} else {
-			/* clear speed change initiation bit */
-			writel(0x20000, (void *)(addr + 0x117c));
-			printf("Speed Initiation for PEI%d from Gen1 (2.5 Gb/s) to Gen 2 (5 Gb/s) failed\n",
-			pei_core);
-		}
-	}
-}
-#endif
-
-static int arm_pci_init(void)
-{
-
-#ifdef CONFIG_SPL_PCI_SUPPORT
-	{
-	char *env_value;
-	unsigned pci_status, link_state;
-	unsigned pei0Control, pei1Control;
-
-	ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &pei0Control);
-	ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &pei1Control);
-
-	if (pei0Control & 0x1) {
-		pci_status = readl((void *)(PCIE0_CONFIG + 0x1004));
-		printf("PEI0 pciStatus = 0x%x\n", pci_status);
-		link_state = (pci_status & 0x3f00) >> 8;
-		if (link_state == 0xb) {
-			printf("PCIE0 link State UP = 0x%x\n", link_state);
-			env_value = getenv("pei0_speed");
-			if ((char *)0 != env_value) {
-				unsigned pei0_speed;
-
-				pei0_speed = simple_strtoul(env_value, NULL, 0);
-				pci_speed_change(0, pei0_speed);
-			}
-		} else {
-			printf("PCIE0 link State DOWN = 0x%x\n", link_state);
-		}
-	}
-
-	if (pei1Control & 0x1) {
-		pci_status = readl((void *)(PCIE1_CONFIG + 0x1004));
-		printf("PEI1 pciStatus = 0x%x\n", pci_status);
-		link_state = (pci_status & 0x3f00) >> 8;
-
-		if (link_state == 0xb) {
-			printf("PCIE1 link State UP = 0x%x\n", link_state);
-			env_value = getenv("pei1_speed");
-			if ((char *)0 != env_value) {
-				unsigned pei1_speed;
-
-				pei1_speed = simple_strtoul(env_value, NULL, 0);
-				pci_speed_change(1, pei1_speed);
-			}
-		} else {
-			printf("PCIE1 link State DOWN = 0x%x\n", link_state);
-		}
-	}
-}
-#endif
-	return 0;
-}
-
-
-struct serdes_value_t {
-unsigned short offset;
-unsigned short value;
-};
-
-void pciesrio_serdes_powerdown(unsigned long pcie_srio_val)
-{
-	int i;
-	unsigned short hss5Val, hss6Val, reg_val;
-	struct serdes_value_t serdes_values[] = {
-		{0x00ba, 0},
-		{0x001c, 0},
-		{0x0010, 0},
-		{0x02ba, 0},
-		{0x021c, 0},
-		{0x0210, 0},
-		{0x06ba, 0},
-		{0x061c, 0},
-		{0x0610, 0},
-		{0x08ba, 0},
-		{0x081c, 0},
-		{0x0810, 0},
-	};
-
-	hss5Val = (pcie_srio_val >> 12);
-	if (hss5Val & 0x1) {
-		/* Powerdown HSS5 ch0 */
-		serdes_values[0].value = 1;
-	}
-	if (hss5Val & 0x2) {
-		/* Powerdown HSS5 ch1 */
-		serdes_values[3].value = 1;
-	}
-	if (hss5Val & 0x4) {
-		/* Powerdown HSS5 ch2 */
-		serdes_values[6].value = 1;
-	}
-	if (hss5Val & 0x8) {
-		/* Powerdown HSS5 ch3 */
-		serdes_values[9].value = 1;
-	}
-
-	for (i = 0; i < 12; i = i+3) {
-		if (serdes_values[i].value) {
-			/* pd_pin_override 0x115.0x1.0xba bit 4 */
-			ncr_read16(NCP_REGION_ID(0x115, 1),
-				serdes_values[i].offset, &reg_val);
-			reg_val = reg_val | (0x1 << 4);
-			ncr_write16(NCP_REGION_ID(0x115, 1),
-				serdes_values[i].offset, reg_val);
-
-			/* rxpd_r2a 0x115.0x1.0x1c bit 14 */
-			ncr_read16(NCP_REGION_ID(0x115, 1),
-				serdes_values[i+1].offset, &reg_val);
-			reg_val = reg_val | (0x1 << 14);
-			ncr_write16(NCP_REGION_ID(0x115, 1),
-				serdes_values[i+1].offset, reg_val);
-
-			/* txpd_r2a 0x115.0x1.0x10 bit 10 */
-			ncr_read16(NCP_REGION_ID(0x115, 1),
-				serdes_values[i+2].offset, &reg_val);
-			reg_val = reg_val | (0x1 << 10);
-			ncr_write16(NCP_REGION_ID(0x115, 1),
-				serdes_values[i+2].offset, reg_val);
-		}
-	}
-	serdes_values[0].value = 0;
-	serdes_values[3].value = 0;
-	serdes_values[6].value = 0;
-	serdes_values[9].value = 0;
-
-	hss6Val = (pcie_srio_val >> 16);
-	if (hss6Val & 0x1) {
-		/* Powerdown HSS6 ch0 */
-		serdes_values[0].value = 1;
-	}
-	if (hss6Val & 0x2) {
-		/* Powerdown HSS6 ch1 */
-		serdes_values[3].value = 1;
-	}
-	if (hss6Val & 0x4) {
-		/* Powerdown HSS6 ch2 */
-		serdes_values[6].value = 1;
-	}
-	if (hss6Val & 0x8) {
-		/* Powerdown HSS6 ch3 */
-		serdes_values[9].value = 1;
-	}
-	for (i = 0; i < 12; i = i+3) {
-		if (serdes_values[i].value) {
-			/* pd_pin_override 0x115.0x4.0xba bit 4 */
-			ncr_read16(NCP_REGION_ID(0x115, 4),
-				serdes_values[i].offset, &reg_val);
-			reg_val = reg_val | (0x1 << 4);
-			ncr_write16(NCP_REGION_ID(0x115, 4),
-				serdes_values[i].offset, reg_val);
-			/* rxpd_r2a 0x115.0x4.0x1c bit 14 */
-			ncr_read16(NCP_REGION_ID(0x115, 4),
-				serdes_values[i+1].offset, &reg_val);
-			reg_val = reg_val | (0x1 << 14);
-			ncr_write16(NCP_REGION_ID(0x115, 4),
-				serdes_values[i+1].offset, reg_val);
-
-			/* txpd_r2a 0x115.0x4.0x10 bit 10 */
-			ncr_read16(NCP_REGION_ID(0x115, 4),
-				serdes_values[i+2].offset, &reg_val);
-			reg_val = reg_val | (0x1 << 10);
-			ncr_write16(NCP_REGION_ID(0x115, 4),
-				serdes_values[i+2].offset, reg_val);
-		}
-	}
 
 }
 
 void
 pci_init_board(void)
 {
-	unsigned pei0Control, pei1Control;
-
-#ifdef CONFIG_SPL_PCI_SUPPORT
-	arm_pci_init();
-#endif
-
-	ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &pei0Control);
-	ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &pei1Control);
-
-	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_PEI))
-		pciesrio_serdes_powerdown(pciesrio->control);
-
-	if (pei0Control & 0x1) {
-		/* PEI0 is enabled, enumerate it */
-		(void)pci_axxia_init(&hose[0], 0);
-	}
-	if (pei1Control & 0x1) {
-		/* PEI1 is enabled, enumerate it */
-		(void)pci_axxia_init(&hose[1], 1);
-	}
+	/* PEI0 is enabled, enumerate it */
+	(void)pci_axxia_init(&hose[0], 0);
+	/* PEI1 is enabled, enumerate it */
+	(void)pci_axxia_init(&hose[1], 1);
+	/* PEI2 is enabled, enumerate it */
+	(void)pci_axxia_init(&hose[2], 2);
 }
 
 #endif /* CONFIG_PCI */
