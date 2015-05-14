@@ -117,7 +117,7 @@ dump_regs(ncp_dev_hdl_t dev, ncp_uint32_t region, ncp_uint32_t offset, ncp_uint3
     ncp_uint32_t reg;
     for (i = 0; i < num;  i++) 
     {
-        if ( (i & 0x3) == 0) printf("  %u.%u.0x%08ux  ", NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
+        if ( (i & 0x3) == 0) printf("  %u.%u.0x%08x  ", NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
 
         ncr_read32(region, offset, &reg);
         printf(" %08x", reg);
