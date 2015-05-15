@@ -34,6 +34,7 @@
 
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define NCP_BIG_ENDIAN
+#define NCP_NCA_BIG_ENDIAN
 #endif
 
 #ifndef __ASSEMBLY__
