@@ -26,4 +26,11 @@ lowlevel_init:
 	ldr	x1, =pfuse
 	str	w0, [x1]
 
+	/*
+	 * Initialize the OS lock.
+	 */
+
+	mov	x0, #0
+	msr	OSLAR_EL1, x0
+
 	ret
