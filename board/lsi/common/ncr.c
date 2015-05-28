@@ -219,7 +219,7 @@ ncr_trace_poll(ncp_uint32_t region,
 typedef union {
 	ncp_uint32_t raw;
 	struct {
-#ifndef NCP_NCA_BIG_ENDIAN
+#ifndef NCP_BIG_ENDIAN
 		ncp_uint32_t dbs                 : 16;
 		ncp_uint32_t cmd_type            : 4;
 		ncp_uint32_t cfg_cmpl_int_enable : 1;
@@ -253,7 +253,7 @@ typedef union {
 typedef union {
 	ncp_uint32_t raw;
 	struct {
-#ifndef NCP_NCA_BIG_ENDIAN
+#ifndef NCP_BIG_ENDIAN
 		ncp_uint32_t target_id_address_upper : 8;
 		ncp_uint32_t target_node_id          : 8;
 		ncp_uint32_t                         : 16;

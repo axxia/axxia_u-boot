@@ -36,6 +36,8 @@
 #define NCP_BIG_ENDIAN
 #endif
 
+#define NCP_NCA_BIG_ENDIAN
+
 #ifndef __ASSEMBLY__
 void acp_failure(const char *, const char *, const int);
 int axxia_initialize(void);
