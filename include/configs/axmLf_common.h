@@ -25,7 +25,7 @@
 
 #define CONFIG_AXXIA_ARM
 
-/* #define NCR_TRACER */
+/*#define NCR_TRACER*/
 
 #ifndef __ASSEMBLY__
 #include <linux/types.h>
@@ -159,6 +159,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 #define ELM0 0x8003c00000
 #define ELM1 0x8003c10000
+#define ELM2 0x8003c20000
+#define ELM3 0x8003c30000
 
 #define SYSCON 0x8002c00000
 

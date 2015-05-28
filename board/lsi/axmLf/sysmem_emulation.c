@@ -519,16 +519,11 @@ initialize_elm(void)
 {
 	unsigned long value;
 
-	/*
-	 * TEMP HACK: we re-use the cacheDisable config attribute
-	 * to disable initializing the ELM munge registers 
-	 */
-
-	/*if (0 == sysmem->syscach) {*/
-		/* set ELM munge regsiter */
-		writel(0x0380ffff, (ELM0 + 0x1c));
-		writel(0x0380ffff, (ELM1 + 0x1c));
-		/*}*/
+	/* set ELM munge regsiter */
+	writel(0x01c0ffff, (ELM0 + 0x1c));
+	writel(0x01c0ffff, (ELM1 + 0x1c));
+	writel(0x01c0ffff, (ELM2 + 0x1c));
+	writel(0x01c0ffff, (ELM3 + 0x1c));
 
 	if (sysmem->enableECC) {
 		/* 
@@ -547,6 +542,16 @@ initialize_elm(void)
 		writel(0x01ffffff, (ELM1 + 0x44));
 		writel(0x00000000, (ELM1 + 0x48));
 
+		/* elm2 */
+		writel(0x00000000, (ELM2 + 0x40));
+		writel(0x01ffffff, (ELM2 + 0x44));
+		writel(0x00000000, (ELM2 + 0x48));
+
+		/* elm3 */
+		writel(0x00000000, (ELM3 + 0x40));
+		writel(0x01ffffff, (ELM3 + 0x44));
+		writel(0x00000000, (ELM3 + 0x48));
+
 		/* poll elm0 for completion */
 		do {
 			value = readl(ELM0 + 0x44);
@@ -557,6 +562,20 @@ initialize_elm(void)
 		/* poll elm1 for completion */
 		do {
 			value = readl(ELM1 + 0x44);
+			udelay(100);
+			WATCHDOG_RESET();
+		} while (0 != (value & 0x1fffffff));
+
+		/* poll elm2 for completion */
+		do {
+			value = readl(ELM2 + 0x44);
+			udelay(100);
+			WATCHDOG_RESET();
+		} while (0 != (value & 0x1fffffff));
+
+		/* poll elm3 for completion */
+		do {
+			value = readl(ELM3 + 0x44);
 			udelay(100);
 			WATCHDOG_RESET();
 		} while (0 != (value & 0x1fffffff));
