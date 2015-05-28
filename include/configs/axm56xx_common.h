@@ -205,6 +205,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 */
 
 #ifdef CONFIG_AXXIA_PCI
+#define CONFIG_PCI_DW 1
 #define CONFIG_PCI 1
 #define CONFIG_PCI_PNP 1
 #define CONFIG_CMD_PCI 1

@@ -29,10 +29,6 @@ ifndef CONFIG_SPL_BUILD
 #obj-y += axxia.o mdio.o phy.o usb_phy.o non_secure.o timer_init.o
 obj-y += axxia.o mdio.o phy.o non_secure.o timer_init.o
 
-ifdef CONFIG_AXXIA_PCI
-obj-y += pcie.o
-endif
-
 ifdef CONFIG_AXXIA_EIOA
 obj-y += eioa.o ncp_task_config_axm55xx.o ncp_task_axm55xx.o 
 obj-y += ncp_task_api_entry.o ncp_task_uboot_config_axm55xx.o

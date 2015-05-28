@@ -436,7 +436,7 @@ int axxia_pcie_link_up(struct pci_controller *hose)
 
 	axxia_cc_gpreg_readl(hose, PEI_SII_PWR_MGMT_REG, &smlh_state);
 	smlh_state = (smlh_state & PEI_SMLH_LINK_STATE) >> 4;
-	if (smlh_state != 0xb) {
+	if (smlh_state != 0x11) {
 		printf("smlh_state = 0x%x\n", smlh_state);
 		printf("PCIe LINK IS NOT UP\n");
 		return 0;
@@ -512,7 +512,6 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 
 static int axxia_pcie_establish_link(struct pci_controller *hose)
 {
-
 	if (axxia_pcie_link_up(hose)) {
 		printf("Link already up\n");
 		return 0;
@@ -523,6 +522,8 @@ static int axxia_pcie_establish_link(struct pci_controller *hose)
 
 	if (axxia_pcie_link_up(hose))
 		printf("Link up\n");
+	else
+		return 1;
 
 	return 0;
 }
@@ -594,7 +595,10 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 	hose->region_count++;
 	pci_register_hose(hose);
 
-	axxia_pcie_establish_link(hose);
+	if (axxia_pcie_establish_link(hose)) {
+		printf("Failed to establish PCIe link\n");
+		return 1;
+	}
 	/* program correct class for RC */
 	axxia_pcie_wr_own_conf(hose, PCI_CLASS_DEVICE, 2, PCI_CLASS_BRIDGE_PCI);
 
@@ -608,18 +612,23 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 	hose->last_busno = pci_hose_scan(hose);
 
 	return hose->last_busno;
-
 }
 
 void
 pci_init_board(void)
 {
+#ifdef ACP_PEI0
 	/* PEI0 is enabled, enumerate it */
 	(void)pci_axxia_init(&hose[0], 0);
+#endif
+#ifdef ACP_PEI1
 	/* PEI1 is enabled, enumerate it */
 	(void)pci_axxia_init(&hose[1], 1);
+#endif
+#ifdef ACP_PEI2
 	/* PEI2 is enabled, enumerate it */
 	(void)pci_axxia_init(&hose[2], 2);
+#endif
 }
 
 #endif /* CONFIG_PCI */
