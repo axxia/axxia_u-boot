@@ -613,12 +613,12 @@ int serial_early_init(void);
   ==============================================================================
 */
 
-#define CONFIG_AXXIA_MDIO_BASE 0x8080200000
+#define CONFIG_AXXIA_MDIO_BASE 0x8080260000
 
-#define MDIO_CONTROL_RD_DATA (0x8080200000)
-#define MDIO_STATUS_RD_DATA  (0x8080200004)
-#define MDIO_CLK_OFFSET      (0x8080200008)
-#define MDIO_CLK_PERIOD      (0x808020000c)
+#define MDIO_CONTROL_RD_DATA (CONFIG_AXXIA_MDIO_BASE)
+#define MDIO_STATUS_RD_DATA  (CONFIG_AXXIA_MDIO_BASE + 0x4)
+#define MDIO_CLK_OFFSET      (CONFIG_AXXIA_MDIO_BASE + 0x8)
+#define MDIO_CLK_PERIOD      (CONFIG_AXXIA_MDIO_BASE + 0xc)
 
 #ifndef __ASSEMBLY__
 int mdio_initialize( void );
