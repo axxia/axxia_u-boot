@@ -146,8 +146,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
   ==============================================================================
 */
 
-#define DICKENS (0x8000000000ULL)
-#define IO      (0x8080000000ULL)
+#define DICKENS (0x8000000000)
+#define IO      (0x8080000000)
 
 #define UART0_ADDRESS (0x8080000000)
 #define UART1_ADDRESS (0x8080010000)

@@ -27,7 +27,7 @@ set_outer_cache_state:
 	mov	x10, 0x20
 1:	mov	x11, 0x10000
 	mul	x11, x10, x11
-	ldr	x12, =0x8000000010
+	ldr	x12, =(DICKENS + 0x10)
 	add	x11, x11, x12
 	str	w0, [x11]
 	add	w10, w10, 1
@@ -38,7 +38,7 @@ set_outer_cache_state:
 	mov	x10, 0x20
 1:	mov	x11, 0x10000
 	mul	x11, x10, x11
-	ldr	x12, =0x8000000018
+	ldr	x12, =(DICKENS + 0x18)
 	add	x11, x11, x12
 2:	ldr	w13, [x11]
 	and 	w13, w13, 0xf
