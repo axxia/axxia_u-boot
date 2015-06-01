@@ -1,4 +1,4 @@
-MEMORY { .lsm : ORIGIN = 0x20000000, LENGTH = 0x3c000 }
+MEMORY { .lsm : ORIGIN = 0x20000000, LENGTH = 0x39000 }
 
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 
@@ -56,10 +56,13 @@ SECTIONS
 	 * Provide space for a page table (0x5000 bytes).
  	 */
 
-	. = ALIGN(0x4000);
-	__page_table_start = .;
-	. += 0x5000;
-	__page_table_end = .;
+	.pagetable :
+	{
+		. = ALIGN(0x4000);
+		__page_table_start = .;
+		. += 0x5000;
+		__page_table_end = .;
+	} >.lsm
 
 	.bss :
 	{
