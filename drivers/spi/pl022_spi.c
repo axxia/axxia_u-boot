@@ -284,11 +284,14 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	if (flags & SPI_XFER_BEGIN)
 		spi_cs_activate(slave);
 
-	while (len_tx < len) {
-		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_TNF) {
-			value = (txp != NULL) ? *txp++ : 0;
-			writel(value, &pl022->ssp_dr);
-			len_tx++;
+	for (len_tx = 0, len_rx = 0; len_rx < len; ) {
+		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RFF) {
+			/* RX fifo full. */
+			ret = -1;
+
+			/* Errors always terminate an ongoing transfer */
+			flags |= SPI_XFER_END;
+			goto out;
 		}
 
 		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RNE) {
@@ -296,6 +299,13 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 			if (rxp)
 				*rxp++ = value;
 			len_rx++;
+		}
+
+		if (len_tx < len &&
+		    (readl(&pl022->ssp_sr) & SSP_SR_MASK_TNF)) {
+			value = (txp != NULL) ? *txp++ : 0;
+			writel(value, &pl022->ssp_dr);
+			len_tx++;
 		}
 	}
 
