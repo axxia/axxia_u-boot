@@ -567,6 +567,28 @@ set_clusters(void)
 int
 board_init(void)
 {
+	int i;
+
+	/*
+	 * Execution from LSM with caches enabled cause an error signal to be
+	 * asserted from the HN-I node in CCN-504. This sequence clears the
+	 * error indication (and the pending interrupt) to avoid confusing
+	 * alerts from the kernel driver for this bus later on.
+	 */
+
+	/* Clear via (HN-I) Error Syndrome Clear Register (64-bits) */
+	__raw_writel(0xffffffff, DICKENS_HNI_ERR_SYN_CLEAR + 0);
+	__raw_writel(0xffffffff, DICKENS_HNI_ERR_SYN_CLEAR + 4);
+
+	/* Read all (MN) ERR_SIG_VAL registers to clear (64-bits) */
+	for (i = 0; i < 3; i++) {
+		__raw_readl(DICKENS_MN_ERR_SIG_VAL(i) + 0);
+		__raw_readl(DICKENS_MN_ERR_SIG_VAL(i) + 4);
+	}
+
+	/* Clear intreq from CCN-504 MN */
+	__raw_writel(0x11, DICKENS_MN_ERR_INT_STATUS);
+
 #if defined(AXXIA_FORCE_NORMAL_MODE)
 	WATCHDOG_RESET();
 	dcache_disable();

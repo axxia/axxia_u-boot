@@ -293,6 +293,12 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define DICKENS (0x80000000)
 #define IO      (0x90000000)
 
+#define DICKENS_MN			(DICKENS + 0x00000)
+#define DICKENS_MN_ERR_INT_STATUS	(DICKENS_MN + 0x8)
+#define DICKENS_MN_ERR_SIG_VAL(i)	(DICKENS_MN + 0x300 + (i)*8)
+#define DICKENS_HNI			(DICKENS + 0x80000)
+#define DICKENS_HNI_ERR_SYN_CLEAR	(DICKENS_HNI + 0x480)
+
 #define UART0_ADDRESS (IO + 0x80000)
 #define UART1_ADDRESS (IO + 0x81000)
 #define UART2_ADDRESS (IO + 0x82000)
