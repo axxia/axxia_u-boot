@@ -84,7 +84,7 @@ _setup_page_tables:
 	add	r0, r0, r3
 	str	r0, [r1], #4
 
-	ldr	r0, =0x20000432
+	ldr	r0, =0x2000043e
 	add	r1, r3, #0x4000
 	add	r2, r1, #0x100
 1:	str	r0, [r1], #4
