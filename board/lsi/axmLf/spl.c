@@ -1254,7 +1254,7 @@ board_init_f(ulong dummy)
 	/* 0x1d2.0.0x114 = 0xffffffff */
 	writel(0xffffffff, 0x8005040114);
 	/* 0x170.1.0x8 = 1 */
-	writel(0x1, 0x8032000048);
+	writel(0x1, 0x8032000008);
 
 	/*
 	  Jump to the monitor.
