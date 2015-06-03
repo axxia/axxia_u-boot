@@ -581,6 +581,10 @@ nemac_eth_send(struct eth_device *dev, void *packet, int length)
 	struct dma_desc *desc;
 	int tmo;
 
+	debug("Sending a Packet: Head 0x%x Tail 0x%x(register)/0x%x(memory)\n",
+	      readl(priv->reg + NEM_DMA_TXHEAD_PTR),
+	      readl(priv->reg + NEM_DMA_TXTAIL_PTR), priv->txq.tail);
+
 	desc = queue_get_head(&priv->txq);
 	if (!desc) {
 		puts("No TX descriptor!\n");
@@ -601,6 +605,7 @@ nemac_eth_send(struct eth_device *dev, void *packet, int length)
 	for (tmo = 0; queue_get_tail(&priv->txq) == NULL; ++tmo) {
 		if (tmo >= 100000) {
 			puts("TX timeout\n");
+			check_dma_error(priv);
 			return 0;
 		}
 		if (check_dma_error(priv))
@@ -671,7 +676,7 @@ nemac_initialize(bd_t *bdi)
 
 	eth_register(dev);
 
-#if defined(CONFIG_AXXIA_56XX_EMU)
+#if defined(CONFIG_AXXIA_56XX_EMU) || defined(CONFIG_AXXIA_XLF_EMU)
 	/* Set bit[24] to mux RMII pins to NEMAC on emulation system */
 	{
 		void __iomem *ctrl = (void __iomem *)0x8080230018;
@@ -688,7 +693,7 @@ nemac_initialize(bd_t *bdi)
 	}
 	priv->bus = bus;
 
-#if defined(CONFIG_AXXIA_56XX_EMU)
+#if defined(CONFIG_AXXIA_56XX_EMU) || defined(CONFIG_AXXIA_XLF_EMU)
 	/* Fixed setting for the emulation platform */
 	priv->phy_dev->autoneg = AUTONEG_DISABLE;
 	priv->phy_dev->speed = 10;
