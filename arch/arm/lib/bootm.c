@@ -196,9 +196,7 @@ __weak void setup_board_tags(struct tag **in_params) {}
 #ifdef CONFIG_ARM64
 static void do_nonsec_virt_switch(void)
 {
-#ifndef CONFIG_AXXIA_XLF_EMU
 	smp_kick_all_cpus();
-#endif
 	flush_dcache_all();	/* flush cache before swtiching to EL2 */
 	armv8_switch_to_el2();
 #ifdef CONFIG_ARMV8_SWITCH_TO_EL1
