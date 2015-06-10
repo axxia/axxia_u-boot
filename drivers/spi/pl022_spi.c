@@ -309,15 +309,6 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 		}
 	}
 
-	while (len_rx < len_tx) {
-		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RNE) {
-			value = readl(&pl022->ssp_dr);
-			if (rxp)
-				*rxp++ = value;
-			len_rx++;
-		}
-	}
-
 out:
 	if (flags & SPI_XFER_END)
 		spi_cs_deactivate(slave);
