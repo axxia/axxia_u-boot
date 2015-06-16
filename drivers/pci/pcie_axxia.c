@@ -37,6 +37,8 @@
 #define PCIE_ATU_VIEWPORT               0x900
 #define PCIE_ATU_REGION_INBOUND         (0x1 << 31)
 #define PCIE_ATU_REGION_OUTBOUND        (0x0 << 31)
+#define PCIE_ATU_REGION_INDEX3          (0x3 << 0)
+#define PCIE_ATU_REGION_INDEX2          (0x2 << 0)
 #define PCIE_ATU_REGION_INDEX1          (0x1 << 0)
 #define PCIE_ATU_REGION_INDEX0          (0x0 << 0)
 #define PCIE_ATU_CR1                    0x904
@@ -173,8 +175,6 @@ static void axxia_pcie_prog_viewport_cfg0(struct pci_controller *hose,
 			     PCIE_ATU_REGION_OUTBOUND
 			     | PCIE_ATU_REGION_INDEX0, PCIE_ATU_VIEWPORT);
 	axxia_pcie_writel_rc(hose, data->cfg0_base, PCIE_ATU_LOWER_BASE);
-	axxia_pcie_writel_rc(hose, (data->cfg0_base >> 32),
-			     PCIE_ATU_UPPER_BASE);
 	axxia_pcie_writel_rc(hose, data->cfg0_base + data->cfg0_size - 1,
 			     PCIE_ATU_LIMIT);
 	axxia_pcie_writel_rc(hose, busdev, PCIE_ATU_LOWER_TARGET);
@@ -195,8 +195,6 @@ static void axxia_pcie_prog_viewport_cfg1(struct pci_controller *hose,
 			     PCIE_ATU_VIEWPORT);
 	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
 	axxia_pcie_writel_rc(hose, data->cfg1_base, PCIE_ATU_LOWER_BASE);
-	axxia_pcie_writel_rc(hose, (data->cfg1_base >> 32),
-			     PCIE_ATU_UPPER_BASE);
 	axxia_pcie_writel_rc(hose, data->cfg1_base + data->cfg1_size - 1,
 			     PCIE_ATU_LIMIT);
 	axxia_pcie_writel_rc(hose, busdev, PCIE_ATU_LOWER_TARGET);
@@ -211,12 +209,10 @@ static void axxia_pcie_prog_viewport_mem_outbound(struct pci_controller *hose)
 
 	/* Program viewport 0 : OUTBOUND : MEM */
 	axxia_pcie_writel_rc(hose,
-			     PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0,
+			     PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX2,
 			     PCIE_ATU_VIEWPORT);
 	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
 	axxia_pcie_writel_rc(hose, data->mem_mod_base, PCIE_ATU_LOWER_BASE);
-	axxia_pcie_writel_rc(hose, (data->mem_mod_base >> 32),
-			     PCIE_ATU_UPPER_BASE);
 	axxia_pcie_writel_rc(hose, data->mem_mod_base + data->mem_size - 1,
 			     PCIE_ATU_LIMIT);
 	axxia_pcie_writel_rc(hose, data->mem_bus_addr, PCIE_ATU_LOWER_TARGET);
@@ -232,12 +228,10 @@ static void axxia_pcie_prog_viewport_io_outbound(struct pci_controller *hose)
 
 	/* Program viewport 1 : OUTBOUND : IO */
 	axxia_pcie_writel_rc(hose,
-			     PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
+			     PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX3,
 			     PCIE_ATU_VIEWPORT);
 	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_IO, PCIE_ATU_CR1);
 	axxia_pcie_writel_rc(hose, data->io_mod_base, PCIE_ATU_LOWER_BASE);
-	axxia_pcie_writel_rc(hose, (data->io_mod_base >> 32),
-			     PCIE_ATU_UPPER_BASE);
 	axxia_pcie_writel_rc(hose, data->io_mod_base + data->io_size - 1,
 			     PCIE_ATU_LIMIT);
 	axxia_pcie_writel_rc(hose, data->io_bus_addr, PCIE_ATU_LOWER_TARGET);
@@ -512,11 +506,6 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 
 static int axxia_pcie_establish_link(struct pci_controller *hose)
 {
-	if (axxia_pcie_link_up(hose)) {
-		printf("Link already up\n");
-		return 0;
-	}
-
 	/* setup root complex */
 	axxia_pcie_setup_rc(hose);
 
