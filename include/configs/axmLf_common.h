@@ -964,6 +964,9 @@ void stop_watchdog(void);
 
 #define OSMEMORY_DEFAULT SZ_1G
 
+#define CONFIG_CMD_MEMORY
+#define CONFIG_CMD_MEMTEST
+
 #define CONFIG_LSI_TEST
 
 #ifndef __ASSEMBLY__
