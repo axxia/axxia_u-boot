@@ -226,11 +226,24 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	void		*os_hdr;
 	int		ret;
+#ifdef CONFIG_ACP3
+	unsigned long core;
+	char *env_value;
+	unsigned long temp;
+#endif
+
 
 	memset ((void *)&images, 0, sizeof (images));
 	images.verify = getenv_yesno ("verify");
 
 	bootm_start_lmb();
+
+#ifdef CONFIG_ACP3
+	/* PLB6 workaround. Write back original env variable value */
+	env_value = getenv("plb6_hpc");
+	temp = simple_strtoul(env_value, NULL, 0);
+	dcr_write(temp, 0x10d);
+#endif
 
 #if 0
 	/*#ifdef CONFIG_ACP3*/
@@ -282,6 +295,7 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 #ifndef CONFIG_ACP3
 		images.os.load = image_get_load (os_hdr);
 #else
+		printf("SR -- here\n");
 		images.os.load =
 		       (acp_osg_group_get_res(acp_osg_get_current(),
 					      ACP_OS_BASE) * 1024 * 1024) +

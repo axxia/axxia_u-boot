@@ -34,8 +34,13 @@ int ehci_hcd_init(void)
 	u32 vct_hccr;
 	u32 vct_hcor;
 	int ret;
+	unsigned long core;
        int USB_TXFIFOTHRES, VUSB_HS_TX_BURST;
 	int hwtxbuf, txfulltuning;
+
+	/* USB workaround */
+	/* Set plb6_hpc count to 0x400 */
+	dcr_write(0x400, 0x10d);
 
       /* Setup GPREG for USB to enable the 6-bit address line */
         writel(0x0, GPREG_USB);
