@@ -1,16 +1,20 @@
-/**************************************************************************
- **                                                                       *
- **                           LSI CONFIDENTIAL                            *
- **                           PROPRIETARY NOTE                            *
- **                                                                       *
- **    This software contains information confidential and proprietary    *
- **    to LSI Corporation Inc.  It shall not be reproduced in whole or in *
- **    part, or transferred to other documents, or disclosed to third     *
- **    parties, or used for any purpose other than that for which it was  *
- **    obtained, without the prior written consent of LSI Corporation Inc.*
- **    (c) 2008-2014, LSI Corporation Inc.  All rights reserved.          *
- **                                                                       *
- **************************************************************************/
+/*
+ *  Copyright (C) 2015 Intel Corporation
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 #ifndef UBOOT
 #include <stdio.h>
@@ -136,6 +140,7 @@ ncp_cm_controller_init(
     ncp_uint32_t cl, al, cwl, wl;
     ncp_uint8_t    *tRFC_vals;
     ncp_bool_t   is667 = FALSE;
+    ncp_bool_t   need_added_cycle_workaround;
 
 
     if (smId < NCP_SYSMEM_NUM_NODES) {
@@ -146,11 +151,21 @@ ncp_cm_controller_init(
     NCP_COMMENT( "treemem %d ddr controller init", cmemId);
 
 
-    if (parms->version < NCP_CHIP_ACP25xx)  {
+    if ((parms->version == NCP_CHIP_ACP34xx) ||
+        (parms->version == NCP_CHIP_ACP32xx))  {
+        is667 = FALSE;
         tRFC_vals = tRFC_vals_533;
+        /*
+         * X1/X2 controller did not support adding extra cycles 
+         * between read/write commands. When this flag is true 
+         * we implement a workaround to achieve the same result.
+         */
+        need_added_cycle_workaround = TRUE;
+
     } else {
         tRFC_vals = tRFC_vals_667;
         is667 = TRUE;
+        need_added_cycle_workaround = FALSE;
     }
 
 
@@ -160,7 +175,8 @@ ncp_cm_controller_init(
     /*
      * Main control for Tree Engine DDR controller
      */
-    if (parms->version >= NCP_CHIP_ACP25xx)  {
+    if (need_added_cycle_workaround == FALSE)  {
+        /* this controller supports added cycles, just set the value ! */
         ddr_ctrl.add_r2w = parms->min_ctrl_roundtrip_delay ;
     }
     ddr_ctrl.idle_mode = 1; 
@@ -197,7 +213,7 @@ ncp_cm_controller_init(
     dram_type.type_cl = cl;
     dram_type.type_al = al;
     dram_type.type_cwl = cwl;
-    if (parms->version < NCP_CHIP_ACP25xx)  {
+    if (need_added_cycle_workaround)  {
         dram_type.type_cwl -= parms->min_ctrl_roundtrip_delay;
     }
 
@@ -258,7 +274,7 @@ ncp_cm_controller_init(
      */
     if (is667) {
         cfg_spec2.twr = 10 ;
-        if (parms->version < NCP_CHIP_ACP25xx)  {
+        if (need_added_cycle_workaround)  {
             cfg_spec2.twr +=  parms->min_ctrl_roundtrip_delay;
         }
         cfg_spec2.twtr = cfg_spec2.trtp = 5;
@@ -272,7 +288,7 @@ ncp_cm_controller_init(
         cfg_spec2.tras = 0x19 ;
     } else {
         cfg_spec2.twr = 8;
-        if (parms->version < NCP_CHIP_ACP25xx)  {
+        if (need_added_cycle_workaround)  {
             cfg_spec2.twr +=  parms->min_ctrl_roundtrip_delay;
         }
         cfg_spec2.twtr = cfg_spec2.trtp = 4;

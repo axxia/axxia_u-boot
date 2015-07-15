@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014 LSI (john.jacques@lsi.com)
+ *  Copyright (C) 2015 Intel Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -117,7 +117,7 @@ dump_regs(ncp_dev_hdl_t dev, ncp_uint32_t region, ncp_uint32_t offset, ncp_uint3
     ncp_uint32_t reg;
     for (i = 0; i < num;  i++) 
     {
-        if ( (i & 0x3) == 0) printf("  %u.%u.0x%08ux  ", NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
+        if ( (i & 0x3) == 0) printf("  %u.%u.0x%08x  ", NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
 
         ncr_read32(region, offset, &reg);
         printf(" %08x", reg);
@@ -818,100 +818,6 @@ ncp_sm_lsiphy_reg_restore(
 #endif /* UBOOT */
 
 
-static ncp_uint32_t
-ncp_sm_intr_status_25xx(
-    ncp_dev_hdl_t   dev,
-    ncp_region_id_t regionId,
-    ncp_uint32_t    mask)
-{
-    
-    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
-    ncp_uint32_t value;
-
-    /* read interrupt status */
-    ncr_read32( regionId, NCP_DENALI_CTL_260, &value );
-
-    /* apply mask */
-    value &= mask;
-
-    /* write interrupt acknowledge */
-    ncr_write32( regionId, NCP_DENALI_CTL_89, value );
-
-    NCP_CALL(ncpStatus);
-
-NCP_RETURN_LABEL
-    return value;
-}
-
-ncp_uint32_t
-ncp_sm_poll_controller_25xx(
-    ncp_dev_hdl_t   dev,
-    ncp_region_id_t regionId,
-    ncp_sm_poll_event_t event)
-{
-    ncp_uint32_t value;
-    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
-
-    switch (event)
-    {
-        case NCP_SM_MC_INIT_DONE:
-            value = 0x00000200;
-            break;
-
-        case NCP_SM_LP_OP_DONE:
-            value = 0x00000400;
-            break;
-
-        case NCP_SM_BIST_DONE:
-            value = 0x00000800;
-            break;
-
-        case NCP_SM_LVL_OP_DONE:
-            value = 0x00020000;
-            break;
-
-        case NCP_SM_MR_OP_DONE:
-            value = 0x00080000;
-            break;
-
-        default:
-            NCP_CALL(NCP_ST_ERROR);
-            break;
-    }
-
-    ncpStatus = ncr_poll(regionId, NCP_DENALI_CTL_260, 
-                value, value, 100, 100) ;
-
-    /* return if error */
-    NCP_CALL(ncpStatus); 
-
-    /* acknowledge the interrupts */
-    ncp_sm_intr_status_25xx(dev, regionId, value);
-
-NCP_RETURN_LABEL
-    return ncpStatus;
-}
-
-static ncp_uint32_t
-ncp_sm_ecc_enb_25xx(
-    ncp_dev_hdl_t   dev,
-    ncp_region_id_t regionId,
-    ncp_uint32_t    eccEnb)
-{
-    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
-    ncp_uint32_t mask, value;
-
-    mask = value = 0;
-    SMAV( ncp_denali_DENALI_CTL_20_t, ctrl_raw, eccEnb );
-    ncr_modify32( regionId, NCP_DENALI_CTL_20, mask, value );
-
-    NCP_CALL(ncpStatus);
-
-NCP_RETURN_LABEL
-    return value;
-}
-
-
 
 static ncp_uint32_t
 ncp_sm_intr_status_55xx(
@@ -969,7 +875,6 @@ ncp_sm_poll_controller_55xx(
 
         default:
             NCP_CALL(NCP_ST_ERROR);
-            break;
     }
 
     ncpStatus = ncr_poll(regionId, NCP_DENALI_CTL_260, 
@@ -1257,13 +1162,6 @@ ncp_sm_lsiphy_status_check(
     NCP_CALL(ncp_sm_lsiphy_status_get(dev, smId, &phyStat));
 
 
-    /* on ACP2500 mask out errors on non-existant ECC */
-    if (parms->version == NCP_CHIP_ACP25xx) {
-        phyStat.rdlvl.nedge.dp4rdndqs1ovf = 0;
-        phyStat.rdlvl.pedge.dp4rdpdqs1ovf = 0;
-        phyStat.wrlvl.stat.dp4wrdqs0ovf   = 0;
-    }
-
     /*
      * with the LSI PHY status registers if any bit is set it 
      * indicates an error
@@ -1298,7 +1196,9 @@ ncp_sm_lsiphy_static_init(
     ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG2_r_t      phyconfig2 = {0};
     ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG3_BLx_r_t  phyconfig3 = {0};
     ncp_phy_CFG_SYSMEM_PHY_SMCTRL_r_t          smctrl     = {0};
+#if 0
     ncp_phy_CFG_SYSMEM_PHY_ADRx_AD12_ADRIOLPRCTRL_r_t lpctrl = {0}; 
+#endif
     ncp_uint32_t mask, value;
 
     if (smId >= NCP_EXTMEM_NUM_NODES) {
@@ -1316,13 +1216,6 @@ ncp_sm_lsiphy_static_init(
 
         switch (parms->version) 
         {
-            case NCP_CHIP_ACP25xx:
-                parms->num_bytelanes = 5;
-                intrStatFn = ncp_sm_intr_status_25xx;
-                eccEnbFn = ncp_sm_ecc_enb_25xx;
-                pollControllerFn = ncp_sm_poll_controller_25xx;
-                break;
-
             case NCP_CHIP_ACP35xx:
                 parms->num_bytelanes = 9; /* 8 8-bit data + 1 ecc lanes */
                 intrStatFn = ncp_sm_intr_status_35xx;
@@ -1376,14 +1269,6 @@ ncp_sm_lsiphy_static_init(
     }
 
     /* initial PHY configuration */
-    dpconfig2.clrgate = 1;
-    dpconfig2.enardpath = 0;
-    for (i = 0; i < parms->num_bytelanes; i++) 
-    {
-        ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG2_BL(i), 
-                        *(ncp_uint32_t *) &dpconfig2);
-    }
-
    /*
     * the setting of WLRANK is determined by the formula 
     *
@@ -1432,11 +1317,7 @@ ncp_sm_lsiphy_static_init(
      *
      */
 
-    if ( parms->version == NCP_CHIP_ACP25xx)
-    {
-        rlrank_adj = -3;
-    }
-    else if (parms->version == NCP_CHIP_ACP35xx)
+    if (parms->version == NCP_CHIP_ACP35xx)
     {
 	/* based on waveform readout */
         rlrank_adj = -2;
@@ -1466,16 +1347,9 @@ ncp_sm_lsiphy_static_init(
      * being initialized above.
      */
     phyconfig2.clrfifo         = 0;
-    if (parms->version == NCP_CHIP_ACP25xx)
-    {
-        /* mask bytelanes 5-8 */
-        phyconfig2.dpen &= 0x001f;
-        eccBlMask = 0x010;  /* BL4 for ECC */
-    }
-    else 
-    {
-        eccBlMask = 0x100;  /* BL8 for ECC */
-    }
+
+    eccBlMask = 0x100;  /* BL8 for ECC */
+
     if (parms->enableECC == FALSE) {
         if (isSysMem) 
         {
@@ -1497,36 +1371,23 @@ ncp_sm_lsiphy_static_init(
     mask = value = 0;
     if (isSysMem) {
         /* enable internal VREF */
-        if (parms->version == NCP_CHIP_ACP25xx)
-        {
-            /* feedback loop */
-            lpctrl.enivref10 = 1;
-            ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR0_AD12_ADRIOLPRCTRL, 
-                        *(ncp_uint32_t *) &lpctrl);
-
-            SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fbadrsel, 0 );
-            SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fblpsel,  2 );
-        } 
-        else 
-        {
 #if 0
-            /* TODO: for register DIMM support !! */
-            /* parity error input */
-            lpctrl.enivref4 = 1;
-            ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR0_AD12_ADRIOLPRCTRL, 
-                        *(ncp_uint32_t *) &lpctrl);
-            lpctrl.enivref4 = 0;
+        /* TODO: for register DIMM support !! */
+        /* parity error input */
+        lpctrl.enivref4 = 1;
+        ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR0_AD12_ADRIOLPRCTRL, 
+                    *(ncp_uint32_t *) &lpctrl);
+        lpctrl.enivref4 = 0;
 #endif
 
-            /* feedback loop */
-            mask = value = 0;
-            SMAV(ncp_phy_CFG_SYSMEM_PHY_ADRx_AD12_ADRIOLPRCTRL_r_t , lpr4, 0 );
-            ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR1_AD12_ADRIOLPRCTRL, 
-                        mask, value);
+        /* feedback loop */
+        mask = value = 0;
+        SMAV(ncp_phy_CFG_SYSMEM_PHY_ADRx_AD12_ADRIOLPRCTRL_r_t , lpr4, 0 );
+        ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR1_AD12_ADRIOLPRCTRL, 
+                    mask, value);
 
-            SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fbadrsel, 1 );
-            SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fblpsel,  0 );
-        }
+        SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fbadrsel, 1 );
+        SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fblpsel,  0 );
 
         /* initialize VTC count */
         /* TODO : make this configuration parameter?? */
@@ -1541,26 +1402,14 @@ ncp_sm_lsiphy_static_init(
         /* FREQDEP: for now 7.8 us at 667MHz */
         vtc_cnt = 0x1450;
 
-        if (parms->version == NCP_CHIP_ACP25xx)
-        {
-            /* enable internal VREF */
-            lpctrl.enivref6 = 1;
-            ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR2_AD12_ADRIOLPRCTRL, 
-                        *(ncp_uint32_t *) &lpctrl);
-            SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fbadrsel, 2 );
-            SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fblpsel,  1 );
-        }
-        else 
-        {
-            /* feedback loop */
-            mask = value = 0;
-            SMAV(ncp_phy_CFG_SYSMEM_PHY_ADRx_AD12_ADRIOLPRCTRL_r_t , lpr10, 0 );
-            ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR2_AD12_ADRIOLPRCTRL, 
-                        mask, value);
+        /* feedback loop */
+        mask = value = 0;
+        SMAV(ncp_phy_CFG_SYSMEM_PHY_ADRx_AD12_ADRIOLPRCTRL_r_t , lpr10, 0 );
+        ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR2_AD12_ADRIOLPRCTRL, 
+                    mask, value);
 
-            SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fbadrsel, 2 );
-            SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fblpsel,  2 );
-        }
+        SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fbadrsel, 2 );
+        SMAV(ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t , fblpsel,  2 );
     }
     ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_VTCCOUNT, vtc_cnt);
 
@@ -1578,6 +1427,22 @@ ncp_sm_lsiphy_static_init(
     if (0 != ncr_poll(region, NCP_PHY_CFG_SYSMEM_PHY_STAT, 0x600, 0x000, 100, 100) )
     {
         NCP_CALL(NCP_ST_ERROR);
+    }
+
+    /*
+     * BZ52010
+     *
+     * the PHY will enable read path as part of the above training.
+     * On some systems having the read path enabled during write leveling
+     * causes problems (so far this has only been observed for CMEM). 
+     * We can avoid these issues by disabling the read path here, it will
+     * be enabled later 
+     */
+    dpconfig2.enardpath = 0;
+    for (i = 0; i < parms->num_bytelanes; i++) 
+    {
+        ncr_write32(region, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG2_BL(i), 
+                        *(ncp_uint32_t *) &dpconfig2);
     }
 
     if (parms->single_bit_mpr) {
@@ -1622,10 +1487,6 @@ ncp_sm_lsiphy_static_init(
     ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR0_ADRIOSET_1ST, mask, value);
     ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR1_ADRIOSET, mask, value);
     ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR2_ADRIOSET, mask, value);
-    if (parms->version != NCP_CHIP_ACP25xx) 
-    {
-        ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_ADR3_ADRIOSET, mask, value);
-    }
 
 
     /* DP_IO_VREF_SETTING */
@@ -3342,7 +3203,6 @@ ncp_sm_sm_coarse_write_leveling(
 
     switch (parms->version) 
     {
-        case NCP_CHIP_ACP25xx:
         case NCP_CHIP_ACP35xx:  /* TEMP - need to review support for 3500 */
             bl_test_fn = sm_bytelane_test;
             ecc_bl_test_fn = sm_ecc_bytelane_test;
@@ -3653,6 +3513,85 @@ NCP_RETURN_LABEL
 
 
 #ifdef NCP_CONFIG_CMEM
+#define NCP_CMEM_SANITY_TEST_BUF_SIZE 16
+
+/* 
+ * a simple write/read/compare memory test used to ensure
+ * that CMEM is functional.
+ * if 'pattern' is zero or one we use the ECC test data patterns,
+ * otherwise we use a simple incrementing integer. 
+ */
+
+ncp_st_t ncp_sm_cmem_sanity_test(
+    ncp_dev_hdl_t *dev,
+    ncp_uint32_t   node,
+    ncp_uint32_t   pattern)
+{
+    ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+    ncp_uint32_t val;
+    ncp_uint32_t i;
+#ifdef UBOOT
+    ncp_uint32_t  *pBuf = (unsigned *)(NCA + 0x1000);
+#else
+    ncp_uint32_t  pBuf[NCP_CMEM_SANITY_TEST_BUF_SIZE];
+#endif
+    NCP_COMMENT("cmem sanity test node %d pattern %d\n", node, pattern);
+
+    /* initialize write buffer */
+    for ( i = 0; i < NCP_CMEM_SANITY_TEST_BUF_SIZE; i++) {
+        if (pattern <= 1) {
+            pBuf[i] = ecc_test_data_64bit[pattern][i];
+        }
+        else {
+            pBuf [i] = i;
+        }
+    }
+
+    /* write to target 4 */
+#ifdef UBOOT
+    ncr_write(NCP_REGION_ID( node, 4 ), 0, 0,
+            NCP_CMEM_SANITY_TEST_BUF_SIZE*4, 0);
+#else
+    NCP_CALL(ncp_block_write32(dev, NCP_REGION_ID( node, 4 ), 0, pBuf,
+            NCP_CMEM_SANITY_TEST_BUF_SIZE, 0));
+#endif
+
+    /* clear buffer */
+    for ( i = 0; i < NCP_CMEM_SANITY_TEST_BUF_SIZE; i++) {
+        pBuf [i] = 0;
+    }
+
+    /* read from target 1 */
+#ifdef UBOOT
+    ncr_read(NCP_REGION_ID( node, 1 ), 0, 0,
+            NCP_CMEM_SANITY_TEST_BUF_SIZE*4, 0);
+#else
+    NCP_CALL(ncp_block_read32(dev, NCP_REGION_ID( node, 1 ), 0, pBuf,
+            NCP_CMEM_SANITY_TEST_BUF_SIZE, 0));
+#endif
+
+    /* validate buffer contents */
+    for ( i = 0; i < NCP_CMEM_SANITY_TEST_BUF_SIZE; i++) {
+        if (pattern <= 1) {
+            val = ecc_test_data_64bit[pattern][i];
+        }
+        else {
+            val = i;
+        }
+                
+        if (pBuf [i] != val) 
+        {
+            /* fail out if miscompare */
+            NCP_CALL(NCP_ST_TREEMEM_DDR_INIT_ERR);
+        }
+    }
+
+NCP_RETURN_LABEL
+    return ncpStatus;
+
+}
+
+
 ncp_st_t
 ncp_sm_cm_coarse_write_leveling(
         ncp_dev_hdl_t   dev,
@@ -3665,6 +3604,7 @@ ncp_sm_cm_coarse_write_leveling(
 
     ncp_region_id_t  ctlRegion;
     ncp_uint32_t     mask, value;
+    ncp_uint32_t     node;
 
 
     NCP_COMMENT("treemem phy coarse write leveling");
@@ -3681,7 +3621,8 @@ ncp_sm_cm_coarse_write_leveling(
      *
      */
 
-    ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
+    node = sm_nodes[smId];
+    ctlRegion = NCP_REGION_ID(node, NCP_TREEMEM_TGT_DDR);
 
     /* set up for memory access */
     mask = value = 0;
@@ -3708,9 +3649,6 @@ ncp_sm_cm_coarse_write_leveling(
      * and an interval of zero indicates that auto-zq is disabled.
      */
     switch (parms->version) {
-        case NCP_CHIP_ACP25xx:
-            break;
-
         default:
             if (parms->zqcs_interval != 0) {
                 SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, auto_zq,     1);
@@ -3721,6 +3659,19 @@ ncp_sm_cm_coarse_write_leveling(
     mask = value = 0;
     SMAV(ncp_ddr_CFG_NTEMC_DDR_CTRL_r_t, zq_per,      0);
     ncr_modify32(ctlRegion, NCP_DDR_CFG_NTEMC_DDR_CTRL, mask, value);
+
+
+    /*
+     * perform a sanity test to make sure basic CMEM write/read is working.
+     * if it's not return an error 
+     *
+     * first run the test with a simple incrementing pattern, then try
+     * the ECC test data patterns
+     */
+
+    NCP_CALL(ncp_sm_cmem_sanity_test(dev, node, 3));
+    NCP_CALL(ncp_sm_cmem_sanity_test(dev, node, 0));
+    NCP_CALL(ncp_sm_cmem_sanity_test(dev, node, 1));
 
 
 NCP_RETURN_LABEL

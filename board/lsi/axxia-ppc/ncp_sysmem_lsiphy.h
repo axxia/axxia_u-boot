@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014 LSI (john.jacques@lsi.com)
+ *  Copyright (C) 2015 Intel Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -110,7 +110,7 @@ do { \
         rmw_pair.rmw_data = _value; \
         rmw_pair.rmw_mask = _mask; \
         rmw_buf.count = 1; \
-        rmw_buf.rmw_buffer = &rmw_pair; \
+        rmw_buf.NCP_POINTER(rmw_buffer) = &rmw_pair; \
         NCP_CALL(ncp_read_modify_write(dev, _region, _offset, &rmw_buf, 0)); \
     } while (0);
 
@@ -192,7 +192,8 @@ enum {
     NCP_ST_SYSMEM_PHY_WR_LVL_ERR,
     NCP_ST_SYSMEM_PHY_RD_LVL_ERR,
     NCP_ST_SYSMEM_PHY_GT_TRN_ERR,
-    NCP_ST_SYSMEM_PHY_CMD_DLY_ERR
+    NCP_ST_SYSMEM_PHY_CMD_DLY_ERR,
+        NCP_ST_TREEMEM_DDR_INIT_ERR
 };
 
 #define NCP_CALL(s) \
@@ -382,6 +383,7 @@ ncp_sm_denali_2041_init(
 NCP_API ncp_st_t
 ncp_sm_dimm_spd_query(
         ncp_dev_hdl_t       dev,
+	ncp_uint32_t	intf,
         ncp_sm_parms_t     *parms);
 
 

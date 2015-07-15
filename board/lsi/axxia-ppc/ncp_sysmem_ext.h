@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014 LSI (john.jacques@lsi.com)
+ *  Copyright (C) 2015 Intel Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -178,8 +178,8 @@ typedef struct __attribute__((packed)) {
 
 
 #ifdef UBOOT
-#define NCP_CHIP_ACP25xx             6
-#define NCP_CHIP_ACP25xx_V2          7
+#define NCP_CHIP_ACP34xx             1
+#define NCP_CHIP_ACP32xx             2
 #define NCP_CHIP_ACP55xx             9       /* AXM55xx, aka X7     */
 #define NCP_CHIP_ACP55xxV2_FPGA     10       /* X7v2, FPGA only  */
 #define NCP_CHIP_ACP35xx            16       /* AXM35xx, aka X3     */
@@ -283,6 +283,9 @@ typedef struct {
 } ncp_sysmem_t;
 
 
+ 
+/* maximum number of DIMMS */
+#define NCP_SM_MAX_NUM_DIMMS 2
 
 #define NCP_SYSMEM_PHY_TRAIN_DELAY_LOOPS 100
 #define NCP_SYSMEM_PHY_TRAIN_DELAY_USEC  10
@@ -313,6 +316,9 @@ ncp_sysmem_init_fpga (ncp_dev_hdl_t dev, ncp_uint32_t smId, ncp_sm_parms_t *parm
 
 NCP_API ncp_st_t
 ncp_treemem_init_fpga (ncp_dev_hdl_t dev, ncp_uint32_t treememId, ncp_sm_parms_t *parms);
+
+NCP_API ncp_st_t
+ncp_treemem_init_fpga_x9 (ncp_dev_hdl_t dev, ncp_uint32_t treememId, ncp_sm_parms_t *parms);
 
 NCP_API ncp_st_t
 ncp_sysmem_init_ibmphy (ncp_dev_hdl_t dev, 
