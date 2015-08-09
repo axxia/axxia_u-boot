@@ -69,9 +69,11 @@ ENDPROC(v7_outer_cache_inval_all)
 ENTRY(flush_l3_cache)
 	mov	x9, x30
 	mov	x0, 1
-	bl	set_outer_cache_state	
+	bl	set_outer_cache_state
+#ifndef LEAVE_L3_IN_SFONLY
 	mov	x0, 3
 	bl	set_outer_cache_state
+#endif
 	mov	x30, x9
 	ret
 ENDPROC(flush_l3_cache)
