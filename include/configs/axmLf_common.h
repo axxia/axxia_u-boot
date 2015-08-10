@@ -963,7 +963,7 @@ void stop_watchdog(void);
 */
 
 /* If defined, leave the L3 in "Snoop Filter Only" mode. */
-#define LEAVE_L3_IN_SFONLY
+/*#define LEAVE_L3_IN_SFONLY*/
 
 #define OSMEMORY_DEFAULT SZ_1G
 
