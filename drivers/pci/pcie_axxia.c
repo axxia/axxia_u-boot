@@ -175,6 +175,10 @@ static void axxia_pcie_prog_viewport_cfg0(struct pci_controller *hose,
 			     PCIE_ATU_REGION_OUTBOUND
 			     | PCIE_ATU_REGION_INDEX0, PCIE_ATU_VIEWPORT);
 	axxia_pcie_writel_rc(hose, data->cfg0_base, PCIE_ATU_LOWER_BASE);
+#if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF_SIM)
+	axxia_pcie_writel_rc(hose, (data->cfg0_base >> 32),
+			     PCIE_ATU_UPPER_BASE);
+#endif
 	axxia_pcie_writel_rc(hose, data->cfg0_base + data->cfg0_size - 1,
 			     PCIE_ATU_LIMIT);
 	axxia_pcie_writel_rc(hose, busdev, PCIE_ATU_LOWER_TARGET);
@@ -195,6 +199,10 @@ static void axxia_pcie_prog_viewport_cfg1(struct pci_controller *hose,
 			     PCIE_ATU_VIEWPORT);
 	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
 	axxia_pcie_writel_rc(hose, data->cfg1_base, PCIE_ATU_LOWER_BASE);
+#if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF_SIM)
+	axxia_pcie_writel_rc(hose, (data->cfg1_base >> 32),
+			     PCIE_ATU_UPPER_BASE);
+#endif
 	axxia_pcie_writel_rc(hose, data->cfg1_base + data->cfg1_size - 1,
 			     PCIE_ATU_LIMIT);
 	axxia_pcie_writel_rc(hose, busdev, PCIE_ATU_LOWER_TARGET);
@@ -213,6 +221,10 @@ static void axxia_pcie_prog_viewport_mem_outbound(struct pci_controller *hose)
 			     PCIE_ATU_VIEWPORT);
 	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
 	axxia_pcie_writel_rc(hose, data->mem_mod_base, PCIE_ATU_LOWER_BASE);
+#if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF_SIM)
+	axxia_pcie_writel_rc(hose, (data->mem_mod_base >> 32),
+			     PCIE_ATU_UPPER_BASE);
+#endif
 	axxia_pcie_writel_rc(hose, data->mem_mod_base + data->mem_size - 1,
 			     PCIE_ATU_LIMIT);
 	axxia_pcie_writel_rc(hose, data->mem_bus_addr, PCIE_ATU_LOWER_TARGET);
@@ -544,6 +556,7 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		hose_data[port].mem_size = CONFIG_SYS_PCIE0_MEMSIZE;
 		hose_data[port].mem_bus_addr = CONFIG_PCIE0_BUS_START;
 		break;
+#ifdef ACP_PEI1
 	case 1:
 		printf("PEI1 Root Complex.\n");
 		/* PEI1 RC mode */
@@ -558,6 +571,8 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		hose_data[port].mem_size = CONFIG_SYS_PCIE1_MEMSIZE;
 		hose_data[port].mem_bus_addr = CONFIG_PCIE1_BUS_START;
 		break;
+#endif
+#ifdef ACP_PEI2
 	case 2:
 		printf("PEI2 Root Complex.\n");
 		/* PEI2 RC mode */
@@ -572,6 +587,7 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		hose_data[port].mem_size = CONFIG_SYS_PCIE2_MEMSIZE;
 		hose_data[port].mem_bus_addr = CONFIG_PCIE2_BUS_START;
 		break;
+#endif
 	}
 	hose->priv_data = (void *)&hose_data[port];
 
