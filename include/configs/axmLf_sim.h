@@ -252,7 +252,7 @@
 	"kernel_size=0x1000000\0"		\
 	"console=ttyAMA0,115200n8\0"
 
-#define CONFIG_BOOTARGS		"root=/dev/vda1 console=ttyAMA0,115200 " \
+#define CONFIG_BOOTARGS		"root=/dev/vda console=ttyAMA0,115200 " \
 				"earlycon=pl011,0x8080000000 " \
 				"mem=2G"
 #define CONFIG_BOOTCOMMAND	"bootm 4010000 - 4000000"
