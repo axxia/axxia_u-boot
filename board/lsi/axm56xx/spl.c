@@ -1029,10 +1029,8 @@ load_image(void)
 		memmove((void *)0, (void *)0x4000000, spl_image.size);
 	}
 
-#if !defined(CONFIG_AXXIA_EMU)
 	if (0 != sbb_verify_image(0x00000000, 0x00000000, 0, 1, 1))
 		acp_failure(__FILE__, __func__, __LINE__);
-#endif
 
 #endif	/* CONFIG_REDUNDANT_UBOOT */
 
