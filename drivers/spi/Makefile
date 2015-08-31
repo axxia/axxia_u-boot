@@ -43,3 +43,4 @@ obj-$(CONFIG_XILINX_SPI) += xilinx_spi.o
 obj-$(CONFIG_ZYNQ_SPI) += zynq_spi.o
 obj-$(CONFIG_FSL_QSPI) += fsl_qspi.o
 obj-$(CONFIG_PL022_SPI) += pl022_spi.o
+obj-$(CONFIG_AXXIA_PL022_SPI) += axxia_pl022_spi.o

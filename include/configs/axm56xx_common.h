@@ -181,6 +181,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define MMAP_SCB     (0x8032000000)
 #define PERIPH_GPREG (0x8080230000)
 #define PERIPH_SCB   (0x8080400000)
+#define TZC          (0x8004140000)
 
 #define GPREG        (0x8032900000)
 #define GPREG_GPDMA  (GPREG + 0x00)
@@ -194,7 +195,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define NCP_APB2SER_INDIRECT_COMMAND_1      (0x00000004)
 #define NCP_APB2SER_INDIRECT_READ_DATA_0    (0x00000008)
 #define NCP_APB2SER_INDIRECT_READ_DATA_1    (0x0000000c)
-
 
 /*
   ==============================================================================
@@ -643,7 +643,7 @@ void mdio_write( int phy, int reg, unsigned short value );
 /*
   SPI
 */
-#define CONFIG_PL022_SPI
+#define CONFIG_AXXIA_PL022_SPI
 #define CONFIG_SYS_SPI_CLK  spi_get_per_clk()
 #define CONFIG_SYS_SPI_BASE (SSP)
 

@@ -1225,12 +1225,6 @@ board_init_f(ulong dummy)
 	/* Move the stack to ram. */
 	asm volatile ("mov sp, %0" : : "r" (CONFIG_SYS_INIT_SP_ADDR));
 
-#ifdef CONFIG_SPL_ENV_SUPPORT
-	mem_malloc_init((void *)CONFIG_SYS_MALLOC_BASE,	CONFIG_SYS_MALLOC_SIZE);
-	env_init();
-	env_relocate();
-#endif	/* CONFIG_SPL_ENV_SUPPORT */
-
 	/*
 	  For now, allow access from anywhere, to anywhere.
 	*/
@@ -1242,19 +1236,25 @@ board_init_f(ulong dummy)
 	/* TZC is 0x8004140000 (0x1d2.0.0) */
 
 	/* 0x171.1.0x10 = 0xffff */
-	writel(0xffff, 0x8080400010);
+	writel(0xffff, (PERIPH_SCB + 0x10));
 	/* 0x171.1.0x18 = 0xffff */
-	writel(0xffff, 0x8080400018);
+	writel(0xffff, (PERIPH_SCB + 0x18));
 	/* 0x171.1.0x20 = 0xffff */
-	writel(0xffff, 0x8080400020);
+	writel(0xffff, (PERIPH_SCB + 0x20));
 	/* 0x170.1.0x10 = 0xffff */
-	writel(0xffff, 0x8032000010);
+	writel(0xffff, (MMAP_SCB + 0x10));
 	/* 0x170.1.0x43800 0x2 */
-	writel(0x2, 0x8032043800);
+	writel(0x2, (MMAP_SCB + 0x43800));
 	/* 0x1d2.0.0x114 = 0xffffffff */
-	writel(0xffffffff, 0x8005040114);
+	writel(0xffffffff, (TZC + 0x114));
 	/* 0x170.1.0x8 = 1 */
-	writel(0x1, 0x8032000008);
+	writel(0x1, (MMAP_SCB + 0x8));
+
+#ifdef CONFIG_SPL_ENV_SUPPORT
+	mem_malloc_init((void *)CONFIG_SYS_MALLOC_BASE,	CONFIG_SYS_MALLOC_SIZE);
+	env_init();
+	env_relocate();
+#endif	/* CONFIG_SPL_ENV_SUPPORT */
 
 	/*
 	  Jump to the monitor.
