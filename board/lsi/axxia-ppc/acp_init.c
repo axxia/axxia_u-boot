@@ -2357,6 +2357,9 @@ acp_init( void )
 		int i;
         int rc;
 
+#ifdef AXM_35xx
+	    cmem->version = NCP_CHIP_ACP35xx;
+#endif
         disp_ddr_parms("CMEM parameters", cmem);
 
         for (i = 0; i < cmem->num_interfaces; i++) {
