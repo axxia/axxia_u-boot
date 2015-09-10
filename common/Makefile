@@ -218,9 +218,8 @@ obj-$(CONFIG_AXXIA_NET) += cmd_lsi_net.o
 obj-$(CONFIG_LSI_NCR) += cmd_lsi_ncr.o
 obj-$(CONFIG_LSI_MDIO) += cmd_lsi_mdio.o
 obj-$(CONFIG_LSI_TEST) += cmd_lsi_test.o
-#obj-$(CONFIG_LSI_SBB) += cmd_lsi_sbb.o
+obj-$(CONFIG_LSI_SBB) += cmd_lsi_sbb.o
 obj-$(CONFIG_LSI_CLOCKS) += cmd_lsi_clocks.o
-#obj-$(CONFIG_LSI_SBB) += cmd_lsi_sbb.o
 
 endif
 

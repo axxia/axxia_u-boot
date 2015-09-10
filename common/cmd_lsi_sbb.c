@@ -24,9 +24,6 @@
  */
 
 #include <config.h>
-
-#ifdef CONFIG_ACP
-
 #include <common.h>
 #include <command.h>
 #include <malloc.h>
@@ -92,5 +89,3 @@ U_BOOT_CMD(sbb, 5, 0, do_sbb,
 	   "sbb command source destination [size (encrrypt only)] [safe]\n",
 	   "     command must be validate|encrypt|decrypt\n" \
 	   "     v,alidate -- Validate Image (safe for double read)\n");
-
-#endif /* CONFIG_ACP */

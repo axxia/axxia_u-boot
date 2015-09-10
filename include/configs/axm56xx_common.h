@@ -982,6 +982,8 @@ void stop_watchdog(void);
 
 #define CONFIG_LSI_TEST
 
+#define CONFIG_LSI_SBB
+
 #ifndef __ASSEMBLY__
 extern volatile unsigned long *crumbs;
 extern volatile unsigned long long *scratch;
