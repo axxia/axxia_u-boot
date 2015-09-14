@@ -272,8 +272,6 @@ run_sbb_function(int function,
 int
 is_sbb_enabled(int verbose)
 {
-	pfuse = readl(SYSCON + 0x34);
-
 	if (0 == (pfuse & (1 << 13))) {
 		if (0 != verbose)
 			printf("Secure Boot Disabled\n");

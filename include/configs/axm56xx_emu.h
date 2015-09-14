@@ -91,6 +91,9 @@
   ==============================================================================
 */
 
+#define CONFIG_REDUNDANT_UBOOT
+#define CONFIG_REDUNDANT_UBOOT_AUTO
+
 /*#define CONFIG_HW_WATCHDOG*/
 /*#define LEAVE_WATCHDOG_ON*/
 #define WATCHDOG_TIMEOUT_SECS 240

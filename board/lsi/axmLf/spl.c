@@ -41,6 +41,28 @@ DECLARE_GLOBAL_DATA_PTR;
 /*#define COPY_MONITOR_TO_RAM*/
 
 /*
+  ------------------------------------------------------------------------------
+  is_redundant_enabled
+*/
+
+static int
+is_redundant_enabled(void)
+{
+#if !defined(CONFIG_REDUNDANT_UBOOT)
+	return 0;
+#endif
+
+#if defined(CONFIG_REDUNDANT_UBOOT_AUTO)
+	if (0 != (pfuse & (1 << 12)))
+		return 1;
+
+	return 0;
+#else
+	return 1;
+#endif
+}
+
+/*
   ----------------------------------------------------------------------
   spl_mtest
 */
@@ -101,22 +123,22 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 
 		if ((type == spl_mtest_data) || (type == spl_mtest_all)) {
 			/*
-			 * Data line test: write a pattern to the first
-			 * location, write the 1's complement to a 'parking'
+				* Data line test: write a pattern to the first
+				* location, write the 1's complement to a 'parking'
 			 * address (changes the state of the data bus so a
 			 * floating bus doen't give a false OK), and then
-			 * read the value back. Note that we read it back
-			 * into a variable because the next time we read it,
-			 * it might be right (been there, tough to explain to
-			 * the quality guys why it prints a failure when the
-			 * "is" and "should be" are obviously the same in the
-			 * error message).
-			 *
-			 * Rather than exhaustively testing, we test some
-			 * patterns by shifting '1' bits through a field of
-			 * '0's and '0' bits through a field of '1's (i.e.
-			 * pattern and ~pattern).
-			 */
+									 * read the value back. Note that we read it back
+									 * into a variable because the next time we read it,
+									 * it might be right (been there, tough to explain to
+				* the quality guys why it prints a failure when the
+				* "is" and "should be" are obviously the same in the
+				* error message).
+									 *
+									 * Rather than exhaustively testing, we test some
+									 * patterns by shifting '1' bits through a field of
+									 * '0's and '0' bits through a field of '1's (i.e.
+				* pattern and ~pattern).
+									 */
 			addr = start;
 			dummy = start + 1;
 			for (j = 0;
@@ -334,10 +356,10 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 */
 
 /* For spl mtest range testing, find the memory ranges (1G page table entries)
-that cover what is being tested */
+   that cover what is being tested */
 void sw_test_page_fit(unsigned long in_addr, unsigned long in_len,
-	unsigned long mbist_addr[],
-	unsigned long mbist_len[])
+		      unsigned long mbist_addr[],
+		      unsigned long mbist_len[])
 {
 	unsigned int i = 0, j = 0;
 	unsigned long start_addr = 0;
@@ -370,7 +392,7 @@ void sw_test_page_fit(unsigned long in_addr, unsigned long in_len,
 }
 
 /* Create Page table entries and run spl_mtest on ranges provided
-in U-boot parameter file */
+   in U-boot parameter file */
 void run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len)
 {
 #if 0
@@ -392,157 +414,157 @@ void run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len)
 			unsigned long *out;
 			int count, ncount;
 			if (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x40000000) {
+						  + add_sw_len[j])*256) <= 0x40000000) {
 				if ((global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST)
-				&& (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST)
-				&& (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
+				     & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST)
+				    && (global->flags
+					& PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST)
+				    && (global->flags
+					& PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
 					if (spl_mtest((unsigned long *)
-					((add_sw_addr[j]*256) + 0x40000000),
-					(unsigned long *)(((add_sw_addr[j]
-					+ add_sw_len[j])*256) + 0x40000000-1),
-					1, spl_mtest_all)) {
+						      ((add_sw_addr[j]*256) + 0x40000000),
+						      (unsigned long *)(((add_sw_addr[j]
+									  + add_sw_len[j])*256) + 0x40000000-1),
+						      1, spl_mtest_all)) {
 						printf("SPL Memory Test FAILED\n");
 					}
-				continue;
+					continue;
 				}
 				if (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
+				    & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
 					if (spl_mtest((unsigned long *)
-					((add_sw_addr[j]*256) + 0x40000000),
-					(unsigned long *)(((add_sw_addr[j]
-					+ add_sw_len[j])*256) + 0x40000000-1),
-					1, spl_mtest_all)) {
+						      ((add_sw_addr[j]*256) + 0x40000000),
+						      (unsigned long *)(((add_sw_addr[j]
+									  + add_sw_len[j])*256) + 0x40000000-1),
+						      1, spl_mtest_all)) {
 						printf("SPL Memory MTest FAILED\n");
 					}
 				}
 				if (global->flags &
-				PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
+				    PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
 					if (spl_mtest((unsigned long *)
-					((add_sw_addr[j]*256) + 0x40000000),
-					(unsigned long *)(((add_sw_addr[j]
-					+ add_sw_len[j])*256) + 0x40000000-1),
-					1, spl_mtest_addr)) {
+						      ((add_sw_addr[j]*256) + 0x40000000),
+						      (unsigned long *)(((add_sw_addr[j]
+									  + add_sw_len[j])*256) + 0x40000000-1),
+						      1, spl_mtest_addr)) {
 						printf("SPL Memory ADDR Test FAILED\n");
 					}
 				}
 				if (global->flags &
-				PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
+				    PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
 					if (spl_mtest((unsigned long *)
-					((add_sw_addr[j]*256) + 0x40000000),
-					(unsigned long *)(((add_sw_addr[j]
-					+ add_sw_addr[j])*256) + 0x40000000-1),
-					1, spl_mtest_data)) {
+						      ((add_sw_addr[j]*256) + 0x40000000),
+						      (unsigned long *)(((add_sw_addr[j]
+									  + add_sw_addr[j])*256) + 0x40000000-1),
+						      1, spl_mtest_data)) {
 						printf("SPL Memory DATA Test FAILED\n");
 					}
 				}
 				continue;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x40000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x80000000)) {
+				    >= 0x40000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x80000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x40000000;
+					      add_sw_addr[j]*256) - 0x40000000;
 				val = 0x40040c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x80000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0xc0000000)) {
+				    >= 0x80000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0xc0000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x80000000;
+					      add_sw_addr[j]*256) - 0x80000000;
 				val = 0x80040c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0xc0000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x100000000)) {
+				    >= 0xc0000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x100000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0xc0000000;
+					      add_sw_addr[j]*256) - 0xc0000000;
 				val = 0xc0040c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x100000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x140000000)) {
+				    >= 0x100000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x140000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x100000000;
+					      add_sw_addr[j]*256) - 0x100000000;
 				val = 0x00140c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x140000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x180000000)) {
+				    >= 0x140000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x180000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x140000000;
+					      add_sw_addr[j]*256) - 0x140000000;
 				val = 0x40140c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x180000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x1c0000000)) {
+				    >= 0x180000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x1c0000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x180000000;
+					      add_sw_addr[j]*256) - 0x180000000;
 				val = 0x80140c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x1c0000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x200000000)) {
+				    >= 0x1c0000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x200000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x1c0000000;
+					      add_sw_addr[j]*256) - 0x1c0000000;
 				val = 0xc0140c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x200000000)
-				&& (((unsigned long long) (add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x240000000)) {
+				    >= 0x200000000)
+				   && (((unsigned long long) (add_sw_addr[j]
+							      + add_sw_len[j])*256) <= 0x240000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x200000000;
+					      add_sw_addr[j]*256) - 0x200000000;
 				val = 0x00240c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x240000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x280000000)) {
+				    >= 0x240000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x280000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x240000000;
+					      add_sw_addr[j]*256) - 0x240000000;
 				val = 0x40240c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x280000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x2c0000000)) {
+				    >= 0x280000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x2c0000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x280000000;
+					      add_sw_addr[j]*256) - 0x280000000;
 				val = 0x80240c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x2c0000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x300000000)) {
+				    >= 0x2c0000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x300000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x2c0000000;
+					      add_sw_addr[j]*256) - 0x2c0000000;
 				val = 0xc0240c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x300000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x340000000)) {
+				    >= 0x300000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x340000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x300000000;
+					      add_sw_addr[j]*256) - 0x300000000;
 				val = 0x00340c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x340000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x380000000)) {
+				    >= 0x340000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x380000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x340000000;
+					      add_sw_addr[j]*256) - 0x340000000;
 				val = 0x40340c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x380000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x3c0000000)) {
+				    >= 0x380000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x3c0000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x380000000;
+					      add_sw_addr[j]*256) - 0x380000000;
 				val = 0x80340c52;
 			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				>= 0x3c0000000)
-				&& (((unsigned long long)(add_sw_addr[j]
-				+ add_sw_len[j])*256) <= 0x400000000)) {
+				    >= 0x3c0000000)
+				   && (((unsigned long long)(add_sw_addr[j]
+							     + add_sw_len[j])*256) <= 0x400000000)) {
 				start_addr = ((unsigned long long)
-				add_sw_addr[j]*256) - 0x3c0000000;
+					      add_sw_addr[j]*256) - 0x3c0000000;
 				val = 0xc0340c52;
 			} else {
 				printf("Unsupported memory range\n");
@@ -562,43 +584,43 @@ void run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len)
 					     (unsigned long)secure_page_table +
 					     PAGE_TABLE_SIZE);
 			if ((global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST)
-				&& (global->flags
+			     & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST)
+			    && (global->flags
 				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST)
-				&& (global->flags
+			    && (global->flags
 				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
 				if (spl_mtest(
-				(unsigned long *)(start_addr+0xc0000000),
-				(unsigned long *)(end_addr+0xc0000000),
-				1, spl_mtest_all)) {
+					    (unsigned long *)(start_addr+0xc0000000),
+					    (unsigned long *)(end_addr+0xc0000000),
+					    1, spl_mtest_all)) {
 					printf("SPL Memory Test FAILED\n");
 				}
 				continue;
 			}
 			if (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
+			    & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
 				if (spl_mtest(
-				(unsigned long *)(start_addr+0xc0000000),
-				(unsigned long *)(end_addr+0xc0000000),
-				1, spl_mtest_mtest)) {
+					    (unsigned long *)(start_addr+0xc0000000),
+					    (unsigned long *)(end_addr+0xc0000000),
+					    1, spl_mtest_mtest)) {
 					printf("SPL Memory MTest FAILED\n");
 				}
 			}
 			if (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
+			    & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
 				if (spl_mtest(
-				(unsigned long *)(start_addr+0xc0000000),
-				(unsigned long *)(end_addr+0xc0000000),
-				1, spl_mtest_addr)) {
+					    (unsigned long *)(start_addr+0xc0000000),
+					    (unsigned long *)(end_addr+0xc0000000),
+					    1, spl_mtest_addr)) {
 					printf("SPL Memory ADDR Test FAILED\n");
 				}
 			}
 			if (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
+			    & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
 				if (spl_mtest(
-				(unsigned long *)(start_addr+0xc0000000),
-				(unsigned long *)(end_addr+0xc0000000),
-				1, spl_mtest_data)) {
+					    (unsigned long *)(start_addr+0xc0000000),
+					    (unsigned long *)(end_addr+0xc0000000),
+					    1, spl_mtest_data)) {
 					printf("SPL Memory DATA Test FAILED\n");
 				}
 			}
@@ -659,7 +681,7 @@ check_memory_ranges(void)
 
 		if (0ULL != length) {
 			printf("Testing Memory From 0x%llx, 0x%llx bytes\n",
-				offset, length);
+			       offset, length);
 			mbist_addr[i] = offset/256;
 			mbist_len[i] = length/256;
 		} else {
@@ -688,22 +710,22 @@ check_memory_ranges(void)
 	}
 
 	ret = mbist_range(memSize, dual_ddr, maskbits, 1024,
-		mbist_addr, mbist_len,
-		test_addr, test_len, prot_addr, prot_len);
+			  mbist_addr, mbist_len,
+			  test_addr, test_len, prot_addr, prot_len);
 	if (ret != 0) {
 		printf("mbist_range failed with %d\n", ret);
 	} else {
 		for (i = 0; i < 96; i++) {
 			if (mbist_len[i] != 0) {
 				mbist_power2(mbist_addr[i], mbist_len[i],
-					add_mbist_addr, add_mbist_len);
+					     add_mbist_addr, add_mbist_len);
 				for (j = 0; j < 32; j++) {
 					if (add_mbist_len[j] != 0) {
 						axxia_sysmem_bist(
-						(unsigned long long)
-						add_mbist_addr[j]*256,
-						(unsigned long long)
-						add_mbist_len[j]*256);
+							(unsigned long long)
+							add_mbist_addr[j]*256,
+							(unsigned long long)
+							add_mbist_len[j]*256);
 					} else {
 						break;
 					}
@@ -717,11 +739,11 @@ check_memory_ranges(void)
 				if ((test_addr[i]+test_len[i]) > memSize) {
 					printf("Testing range exceeds System memory size\n");
 				} else if (((unsigned long long)test_len[i]*256)
-					> 0x40000000) {
+					   > 0x40000000) {
 					printf("Testing length cannot exceed 1G \n");
 				} else {
 					run_spl_mtest_ranges(test_addr[i],
-						test_len[i]);
+							     test_len[i]);
 				}
 			} else {
 				break;
@@ -740,11 +762,11 @@ check_memory_ranges(void)
 			if ((mbist_addr[i]+mbist_len[i]) > memSize) {
 				printf("Testing range exceeds System memory size\n");
 			} else if (((unsigned long long)mbist_len[i]*256)
-				> 0x40000000) {
+				   > 0x40000000) {
 				printf("Testing length cannot exceed 1G \n");
 			} else {
 				run_spl_mtest_ranges(mbist_addr[i],
-					mbist_len[i]);
+						     mbist_len[i]);
 			}
 		} else
 			break;
@@ -765,45 +787,35 @@ u32 spl_boot_device(void)
   verify_image
 */
 
-#ifdef CONFIG_REDUNDANT_UBOOT
 static int
 verify_image(struct spi_flash *flash,
 	     unsigned long flash_offset,
 	     int secure_boot)
 {
 	struct image_header header;
-	void *membase = (void *)0x40000000UL;
-
-	if (secure_boot) {
-		/*
-		  Size is not available in this case (using a secure
-		  image), so copy 2 Mb.
-		*/
-		spi_flash_read(flash, flash_offset,
-			       CONFIG_SYS_MONITOR_LEN, membase);
-
-		if (0 != sbb_verify_image(0, 0, 0, 0, 0)) {
-			puts("\tInsecure!\n");
-
-			return -1;
-		}
-
-		memcpy((void *)&header, membase, sizeof(struct image_header));
-		spl_parse_image_header(&header);
-	} else {
-		spi_flash_read(flash, flash_offset,
-			       sizeof(struct image_header), &header);
-		spl_parse_image_header(&header);
-		spi_flash_read(flash, flash_offset,
-			       spl_image.size + sizeof(struct image_header),
-			       membase);
-	}
+	char *sbb_magic;
+	unsigned char sbb_encrypted;
+	unsigned int sbb_size;
+	void *membase = (void *)0x1000;
 
 	/*
-	  The base of system memory (0x40000000UL) should now contains
-	  a U-Boot image.
+	  The U-Boot SPI flash interface uses NULL in the in or out
+	  address to indicate direction.  That being the case, it
+	  isn't possible to copy from SPI flash to address 0 (base of
+	  system memory).  Since the header has to be skipped at the
+	  end anyway, with a memmove(), just start a bit above 0.
 	*/
 
+	/*
+	  Must begin with a U-Boot mkimage header of some sort.
+	*/
+
+	spi_flash_read(flash, flash_offset,
+		       sizeof(struct image_header), &header);
+	spl_parse_image_header(&header);
+	spi_flash_read(flash, flash_offset,
+		       spl_image.size + sizeof(struct image_header),
+		       membase);
 	spl_image.load_addr += (unsigned long)membase;
 
 	if (!image_check_magic(&header)) {
@@ -827,55 +839,80 @@ verify_image(struct spi_flash *flash,
 		return -1;
 	}
 
-
 	/*
-	  Remove the header.
+	  If secure boot is enabled, verify.
 	*/
 
-	memmove(membase, (membase + sizeof(struct image_header)),
+	if (0 != secure_boot) {
+#ifdef CONFIG_AXXIA_SIM
+		memmove((void *)0,
+			((void *)membase + sizeof(struct image_header) + 12),
+			spl_image.size);
+
+		return 0;
+#else
+		if (0 != sbb_verify_image(((void *)membase +
+					   sizeof(struct image_header)),
+					  (void *)0, 0, 1, 0)) {
+			puts("\tInsecure!\n");
+
+			return -1;
+		} else {
+			return 0;
+		}
+#endif
+	}
+
+	/*
+	  If secure boot is not enabled, but the image is signed,
+	  remove the secure boot header (12 bytes in the unencrypted
+	  case).
+	*/
+
+	sbb_magic = (membase + sizeof(struct image_header));
+	sbb_encrypted = *((unsigned char *)(membase +
+					    sizeof(struct image_header) + 9));
+	sbb_encrypted &= 1;
+
+	if (0 == strncmp(sbb_magic, "SBB!", 4)) {
+		sbb_size =
+			ntohl(*((unsigned int *)(membase +
+						 sizeof(struct image_header) +
+						 4)));
+		memmove((void *)0,
+			((void *)membase + sizeof(struct image_header) + 12),
+			sbb_size);
+
+		return 0;
+	}
+
+	/*
+	  Remove the mkimage header.
+	*/
+
+	memmove((void *)0, ((void *)membase + sizeof(struct image_header)),
 		(spl_image.size - sizeof(struct image_header)));
 
 	return 0;
 }
-#endif
-
-#if defined(CONFIG_AXXIA_SIM)
 
 /*
   ------------------------------------------------------------------------------
-  jump_to
+  jump_to_monitor
 */
 
 static void
-jump_to(void *address)
+jump_to_monitor(void *address)
 {
-        void (*entry)(void);
+	void (*entry)(void);
 
 	entry = (void (*)(void))address;
 	cleanup_before_linux();
 	entry();
-
-	for (;;)
-		;
-	return;
-}
-
-/*
-  ------------------------------------------------------------------------------
-*/
-
-static void
-load_image(void)
-{
-	jump_to((void *)0x8031001000);
-
-	for (;;)
-		;
+	acp_failure(__FILE__, __func__, __LINE__);
 
 	return;
 }
-
-#else
 
 /*
   ------------------------------------------------------------------------------
@@ -885,7 +922,6 @@ static void
 load_image(void)
 {
 	struct spi_flash *flash;
-#ifdef CONFIG_REDUNDANT_UBOOT
 	int watchdog_timeout;
 	int a_valid;
 	int b_valid;
@@ -893,9 +929,7 @@ load_image(void)
 	unsigned long b_sequence = 0;
 	int copy_to_use = 0;
 	int sbb_enabled = 0;
-#else  /* CONFIG_REDUNDANT_UBOOT */
 	struct image_header header;
-#endif	/* CONFIG_REDUNDANT_UBOOT */
 
 	/*
 	 * Load U-Boot image from SPI flash into RAM
@@ -910,143 +944,140 @@ load_image(void)
 		hang();
 	}
 
-#ifdef CONFIG_REDUNDANT_UBOOT
+	if (is_redundant_enabled()) {
+		/*
+		  Was the last reset caused by a watchdog timeout?
+		*/
 
-	/*
-	  Was the last reset caused by a watchdog timeout?
-	*/
+		watchdog_timeout = readl(SYSCON + 0xdc);
+		watchdog_timeout = (0 != (watchdog_timeout & 0x4));
 
-	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc,
-		   (ncp_uint32_t *)&watchdog_timeout);
-	watchdog_timeout = ((watchdog_timeout & 0x4) >> 2);
+		/*
+		  Is this a secure boot?
+		*/
 
-	/*
-	  Is this a secure boot?
-	*/
+		sbb_enabled = (1 == is_sbb_enabled(0));
 
-	sbb_enabled = (1 == is_sbb_enabled(0));
+		/*
+		  Is image A valid?
+		*/
 
-	/*
-	  Is image A valid?
-	*/
+		puts("Checking U-Boot Image A\n");
 
-	puts("Checking U-Boot Image A\n");
-
-	if (0 == verify_image(flash, CONFIG_UBOOT_OFFSET, sbb_enabled))
-		a_valid = 1;
-	else
-		a_valid = 0;
-
-	if (1 == a_valid) {
-		char *temp;
-
-		temp = getenv("uboot_a_sequence");
-
-		if (NULL != temp)
-			a_sequence = simple_strtoul(temp, NULL, 0);
+		if (0 == verify_image(flash, CONFIG_UBOOT_OFFSET, sbb_enabled))
+			a_valid = 1;
 		else
-			a_sequence = 0;
-	}
+			a_valid = 0;
 
-	/*
-	   Is image B valid?
-	*/
+		if (1 == a_valid) {
+			char *temp;
 
-	puts("Checking U-Boot Image B\n");
+			temp = getenv("uboot_a_sequence");
 
-	if (0 == verify_image(flash, CONFIG_UBOOT_OFFSET_REDUND, sbb_enabled))
-		b_valid = 1;
-	else
-		b_valid = 0;
-
-	if (1 == b_valid) {
-		char *temp;
-
-		temp = getenv("uboot_b_sequence");
-
-		if (NULL != temp)
-			b_sequence = simple_strtoul(temp, NULL, 0);
-		else
-			b_sequence = 0;
-	}
-
-	if (0 == a_valid && 0 == b_valid) {
-		acp_failure(__FILE__, __func__, __LINE__);
-	} else if (0 == a_valid && 0 != b_valid) {
-		copy_to_use = 1;
-	} else if (0 != a_valid && 0 == b_valid) {
-		copy_to_use = 0;
-	} else {
-		if (0xffffffff == a_sequence && b_sequence == 0)
-			copy_to_use = 1;
-		else if (b_sequence > a_sequence)
-			copy_to_use = 1;
-
-		if (0 != watchdog_timeout)
-			copy_to_use = (0 == copy_to_use) ? 1 : 0;
-	}
-
-	printf("U-Boot: Watchdog %d A/B Valid %d/%d A/B Sequence %lu/%lu => %s\n",
-	       watchdog_timeout, a_valid, b_valid,
-	       a_sequence, b_sequence,
-	       (0 == copy_to_use) ? "A" : "B");
-
-	/*
-	  If B was selected, do nothing, as it has already been
-	  loaded, if A, reload.
-	*/
-
-	if (0 == copy_to_use &&
-	    0 != verify_image(flash, CONFIG_UBOOT_OFFSET, sbb_enabled))
-		acp_failure(__FILE__, __func__, __LINE__);
-
-#else  /* CONFIG_REDUNDANT_UBOOT */
-
-	/* Load u-boot, mkimage header is 64 bytes. */
-	spi_flash_read(flash, CONFIG_UBOOT_OFFSET, 0x40, &header);
-	spl_parse_image_header(&header);
-	spl_image.load_addr = 0;
-
-	if (IH_MAGIC == image_get_magic(&header)) {
-		/* Load a U-Boot Image, Verifying Checksum */
-		spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS +
-			       sizeof(struct image_header),
-			       spl_image.size,
-			       (void *)0x4000000);
-		memmove((void *)0, (void *)0x4000000, spl_image.size);
-
-		if (ntohl(header.ih_dcrc) !=
-		    crc32(0, (unsigned char *)0,
-			  (spl_image.size - sizeof(struct image_header)))) {
-			puts("Bad U-Boot Image Checksums!\n");
-			acp_failure(__FILE__, __func__, __LINE__);
+			if (NULL != temp)
+				a_sequence = simple_strtoul(temp, NULL, 0);
+			else
+				a_sequence = 0;
 		}
+
+		/*
+		  Is image B valid?
+		*/
+
+		puts("Checking U-Boot Image B\n");
+
+		if (0 == verify_image(flash, CONFIG_UBOOT_OFFSET_REDUND,
+				      sbb_enabled))
+			b_valid = 1;
+		else
+			b_valid = 0;
+
+		if (1 == b_valid) {
+			char *temp;
+
+			temp = getenv("uboot_b_sequence");
+
+			if (NULL != temp)
+				b_sequence = simple_strtoul(temp, NULL, 0);
+			else
+				b_sequence = 0;
+		}
+
+		if (0 == a_valid && 0 == b_valid) {
+			acp_failure(__FILE__, __func__, __LINE__);
+		} else if (0 == a_valid && 0 != b_valid) {
+			copy_to_use = 1;
+		} else if (0 != a_valid && 0 == b_valid) {
+			copy_to_use = 0;
+		} else {
+			if (0xffffffff == a_sequence && b_sequence == 0)
+				copy_to_use = 1;
+			else if (b_sequence > a_sequence)
+				copy_to_use = 1;
+
+			if (0 != watchdog_timeout)
+				copy_to_use = (0 == copy_to_use) ? 1 : 0;
+		}
+
+		printf("U-Boot: Watchdog %d A/B Valid %d/%d A/B Sequence %lu/%lu => %s\n",
+		       watchdog_timeout, a_valid, b_valid,
+		       a_sequence, b_sequence,
+		       (0 == copy_to_use) ? "A" : "B");
+
+		/*
+		  If B was selected, do nothing, as it has already been
+		  loaded, if A, reload.
+		*/
+
+		if (0 == copy_to_use &&
+		    0 != verify_image(flash, CONFIG_UBOOT_OFFSET, sbb_enabled))
+			acp_failure(__FILE__, __func__, __LINE__);
 	} else {
-		/* Load a U-Boot Binary */
-		spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
-			       spl_image.size,
-			       (void *)0x4000000);
-		memmove((void *)0, (void *)0x4000000, spl_image.size);
-	}
+		/* Load u-boot, mkimage header is 64 bytes. */
+		spi_flash_read(flash, CONFIG_UBOOT_OFFSET, 0x40, &header);
+		spl_parse_image_header(&header);
+		spl_image.load_addr = 0;
 
-#if !defined(CONFIG_AXXIA_EMU)
-	if (0 != sbb_verify_image(0x00000000, 0x00000000, 0, 1, 1))
-		acp_failure(__FILE__, __func__, __LINE__);
+		if (IH_MAGIC == image_get_magic(&header)) {
+			/* Load a U-Boot Image, Verifying Checksum */
+			spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS +
+				       sizeof(struct image_header),
+				       spl_image.size,
+				       (void *)0x4000000);
+			memmove((void *)0, (void *)0x4000000, spl_image.size);
+
+			if (ntohl(header.ih_dcrc) !=
+			    crc32(0, (unsigned char *)0,
+				  (spl_image.size -
+				   sizeof(struct image_header)))) {
+				puts("Bad U-Boot Image Checksums!\n");
+				acp_failure(__FILE__, __func__, __LINE__);
+			}
+		} else {
+			/* Load a U-Boot Binary */
+			spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
+				       spl_image.size,
+				       (void *)0x4000000);
+			memmove((void *)0, (void *)0x4000000, spl_image.size);
+		}
+
+#ifdef CONFIG_AXXIA_SIM
+		memmove((void *)0, (void *)12, spl_image.size);
+#else
+		if (0 != sbb_verify_image(0x00000000, 0x00000000, 0, 1, 0))
+			acp_failure(__FILE__, __func__, __LINE__);
 #endif
-
-#endif	/* CONFIG_REDUNDANT_UBOOT */
+	}
 
 #ifdef COPY_MONITOR_TO_RAM
 	memcpy((void *)0x7ffc1000, (void *)0x8031001000, 0x10000);
-	asm volatile ("ldr x10, =0x7ffc1000\n"
-		      "ret x10");
+	jump_to_monitor((void *)0x7ffc1000);
+	/*asm volatile ("ldr x10, =0x7ffc1000\nret x10");*/
 #else
-	asm volatile ("ldr x10, =0x8031001000\n"
-		      "ret x10");
+	jump_to_monitor((void *)0x8031001000);
+	/*asm volatile ("ldr x10, =0x8031001000\nret x10");*/
 #endif
 }
-
-#endif
 
 /*
   ------------------------------------------------------------------------------
@@ -1059,15 +1090,12 @@ void
 board_init_f(ulong dummy)
 {
 	int rc;
-
-#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
-	unsigned long value;
-	unsigned long pvalue;
-#endif	/* CONFIG_AXXIA_EMU */
+	unsigned int value;
+	unsigned int pvalue;
+	int i;
 
 #ifdef CONFIG_MEMORY_RETENTION
 	int need_write;
-	int i;
 #endif	/* CONFIG_MEMORY_RETENTION */
 
  	/* Clear bss. */
@@ -1081,10 +1109,9 @@ board_init_f(ulong dummy)
                         CONFIG_SYS_SPL_MALLOC_SIZE);
 #endif
 
-#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
 	/* read and clear reset status (write one to clear) */
-	ncr_read32(NCP_REGION_ID(0x156, 0), 0x100, (ncp_uint32_t *)&value);
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x100, (ncp_uint32_t)value);
+	value = readl(SYSCON + 0x100);
+	writel(value, (SYSCON + 0x100));
 
 	/*
 	 * if this is a power-up/pin reset then initialize
@@ -1093,24 +1120,21 @@ board_init_f(ulong dummy)
 
 	if ((value & 0x00000001))
 		for (i = 0; i < 9; i++)
-			ncr_write32(NCP_REGION_ID(0x156, 0x00),
-				    (0xdc + (4 * i)), 0);
+			writel(0, (SYSCON + (0xdc + (4 * i))));
 
 	/*
 	 * Set bit 2 of 0xdc if the last reset was caused by a watchdog
 	 * timeout; otherwise, clear it.
 	 */
 
-	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc, (ncp_uint32_t *) &pvalue);
+	pvalue = readl(SYSCON + 0xdc);
 
-	if (0 != (value & 0xa))
+	if (0 != (value & 0x66))
 		pvalue |= 0x4;
 	else
 		pvalue &= ~0x4;
 
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0xdc, pvalue);
-#endif	/* !CONFIG_AXXIA_EMU && !CONFIG_AXXIA_SIM */
-
+	writel(pvalue, (SYSCON + 0xdc));
 	gd->baudrate = CONFIG_BAUDRATE;
 	serial_initialize();
 	serial_init();
@@ -1147,7 +1171,7 @@ board_init_f(ulong dummy)
 	if (0 != rc)
 		acp_failure(__FILE__, __func__, __LINE__);
 
-#ifndef CONFIG_AXXIA_EMU
+#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
 	puts("");
 	axxia_display_clocks();
 #endif
@@ -1235,20 +1259,20 @@ board_init_f(ulong dummy)
 	/* PERIPH-SCB is 0x8080400000 (0x171.1.0) */
 	/* TZC is 0x8004140000 (0x1d2.0.0) */
 
-	/* 0x171.1.0x10 = 0xffff */
-	writel(0xffff, (PERIPH_SCB + 0x10));
-	/* 0x171.1.0x18 = 0xffff */
-	writel(0xffff, (PERIPH_SCB + 0x18));
-	/* 0x171.1.0x20 = 0xffff */
-	writel(0xffff, (PERIPH_SCB + 0x20));
-	/* 0x170.1.0x10 = 0xffff */
-	writel(0xffff, (MMAP_SCB + 0x10));
-	/* 0x170.1.0x43800 0x2 */
-	writel(0x2, (MMAP_SCB + 0x43800));
-	/* 0x1d2.0.0x114 = 0xffffffff */
-	writel(0xffffffff, (TZC + 0x114));
-	/* 0x170.1.0x8 = 1 */
-	writel(0x1, (MMAP_SCB + 0x8));
+        /* 0x171.1.0x10 = 0xffff */
+        writel(0xffff, (PERIPH_SCB + 0x10));
+        /* 0x171.1.0x18 = 0xffff */
+        writel(0xffff, (PERIPH_SCB + 0x18));
+        /* 0x171.1.0x20 = 0xffff */
+        writel(0xffff, (PERIPH_SCB + 0x20));
+        /* 0x170.1.0x10 = 0xffff */
+        writel(0xffff, (MMAP_SCB + 0x10));
+        /* 0x170.1.0x43800 0x2 */
+        writel(0x2, (MMAP_SCB + 0x43800));
+        /* 0x1d2.0.0x114 = 0xffffffff */
+        writel(0xffffffff, (TZC + 0x114));
+        /* 0x170.1.0x8 = 1 */
+        writel(0x1, (MMAP_SCB + 0x8));
 
 #ifdef CONFIG_SPL_ENV_SUPPORT
 	mem_malloc_init((void *)CONFIG_SYS_MALLOC_BASE,	CONFIG_SYS_MALLOC_SIZE);

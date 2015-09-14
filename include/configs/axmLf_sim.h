@@ -234,6 +234,9 @@
   ==============================================================================
 */
 
+#define CONFIG_REDUNDANT_UBOOT
+#define CONFIG_REDUNDANT_UBOOT_AUTO
+
 #define CONFIG_GICV3
 #define GICD_BASE (0x8010000000)
 #define GICR_BASE (0x8010400000)
