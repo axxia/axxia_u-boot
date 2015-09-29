@@ -166,7 +166,7 @@ static void v7_maint_dcache_all(u32 operation)
 static void v7_dcache_clean_inval_range(u32 start,
 					u32 stop, u32 line_len)
 {
-	u32 mva;
+	u64 mva;
 
 	/* Align start to cache line boundary */
 	start &= ~(line_len - 1);
@@ -178,7 +178,7 @@ static void v7_dcache_clean_inval_range(u32 start,
 
 static void v7_dcache_inval_range(u32 start, u32 stop, u32 line_len)
 {
-	u32 mva;
+	u64 mva;
 
 	/*
 	 * If start address is not aligned to cache-line do not
@@ -195,11 +195,13 @@ static void v7_dcache_inval_range(u32 start, u32 stop, u32 line_len)
 	 * If stop address is not aligned to cache-line do not
 	 * invalidate the last cache-line
 	 */
-	if (stop & (line_len - 1)) {
+	if ((stop != 0xffffffff) && (stop & (line_len - 1))) {
 		printf("ERROR: %s - stop address is not aligned - 0x%08x\n",
-			__func__, stop);
+		       __func__, stop);
+
 		/* align to the beginning of this cache line */
-		stop &= ~(line_len - 1);
+		if (stop != 0xffffffff)
+			stop &= ~(line_len - 1);
 	}
 
 	for (mva = start; mva < stop; mva = mva + line_len) {
