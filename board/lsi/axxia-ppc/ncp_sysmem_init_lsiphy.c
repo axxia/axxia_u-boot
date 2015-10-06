@@ -3732,6 +3732,7 @@ ncp_sm_lsiphy_runtime_adj(
     ncp_bool_t isSysMem;
     ncp_uint32_t mask;
     ncp_uint32_t value;
+    ncp_uint32_t bl;
 
     if (smId >= NCP_EXTMEM_NUM_NODES) {
         NCP_CALL(NCP_ST_SYSMEM_INVALID_ID);
@@ -3756,7 +3757,15 @@ ncp_sm_lsiphy_runtime_adj(
     }
 #endif
 
-    /* indicate PHY initial training complete */
+    /* Enable Dynamic ODT */
+    mask = value = 0;
+    SMAV(ncp_phy_CFG_SYSMEM_PHY_DPCONFIG0_BLx_r_t, ovrdynodt, 0);
+    for (bl = 0; bl < parms->num_bytelanes; bl++) 
+    {
+        ncr_modify32(region, NCP_PHY_CFG_SYSMEM_PHY_DP_CONFIG0_BL(bl), 
+                        mask, value);
+    }
+
 
     if (isSysMem) {
         /* clear sw_leveling_mode */
