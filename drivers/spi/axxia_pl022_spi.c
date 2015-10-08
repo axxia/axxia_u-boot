@@ -6,7 +6,7 @@
  * Axxia devices.
  *
  * Based on pl022_spi.c, the driver by Armando Visconti,
- * ST Microelectonics, armando.visconti@st.com.  Which in turn was
+ * ST Microelectonics, armando.visconti@st.com.	 Which in turn was
  * based on on atmel_spi.c by Atmel Corporation.
  *
  * This program is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -56,22 +56,22 @@ struct axxia_pl022 {
 	u32	ssp_cid1;	       /* 0xff4 */
 	u32	ssp_cid2;	       /* 0xff8 */
 	u32	ssp_cid3;	       /* 0xffc */
-	u32     sspdma_ctl;            /* 0x1000 */
- 	u32     sspdma_cfg;            /* 0x1004 */
- 	u32     sspdma_addr_lo;        /* 0x1008 */
- 	u32     sspdma_addr_hi;        /* 0x100c */
-	u8      reserved_3[0x1040 - 0x1010];
- 	u32     sspdma_status;         /* 0x1040 */
- 	u32     sspdma_crc32;          /* 0x1044 */
-	u8      reserved_4[0x1080 - 0x1048];
- 	u32     sspdma_lvl_irq_stat;   /* 0x1080 */
- 	u32     sspdma_lvl_irq_mask;   /* 0x1084 */
- 	u32     sspdma_lvl_irq_inv;    /* 0x1088 */
- 	u32     sspdma_lvl_irq_nomask; /* 0x108c */
- 	u32     sspdma_edg_irq_stat;   /* 0x1090 */
- 	u32     sspdma_edg_irq_mask;   /* 0x1094 */
- 	u32     sspdma_edg_irq_inv;    /* 0x1098 */
- 	u32     sspdma_edg_irq_nomask; /* 0x109c */
+	u32	sspdma_ctl;	       /* 0x1000 */
+	u32	sspdma_cfg;	       /* 0x1004 */
+	u32	sspdma_addr_lo;	       /* 0x1008 */
+	u32	sspdma_addr_hi;	       /* 0x100c */
+	u8	reserved_3[0x1040 - 0x1010];
+	u32	sspdma_status;	       /* 0x1040 */
+	u32	sspdma_crc32;	       /* 0x1044 */
+	u8	reserved_4[0x1080 - 0x1048];
+	u32	sspdma_lvl_irq_stat;   /* 0x1080 */
+	u32	sspdma_lvl_irq_mask;   /* 0x1084 */
+	u32	sspdma_lvl_irq_inv;    /* 0x1088 */
+	u32	sspdma_lvl_irq_nomask; /* 0x108c */
+	u32	sspdma_edg_irq_stat;   /* 0x1090 */
+	u32	sspdma_edg_irq_mask;   /* 0x1094 */
+	u32	sspdma_edg_irq_inv;    /* 0x1098 */
+	u32	sspdma_edg_irq_nomask; /* 0x109c */
 };
 
 /* SSP Control Register 0  - SSP_CR0 */
@@ -140,16 +140,16 @@ static int pl022_is_supported(struct axxia_pl022_spi_slave *ps)
 
 	/* PL022 version is 0x00041022 */
 	if ((readl(&pl022->ssp_pid0) == 0x22) &&
-			(readl(&pl022->ssp_pid1) == 0x10) &&
-			((readl(&pl022->ssp_pid2) & 0xf) == 0x04) &&
-			(readl(&pl022->ssp_pid3) == 0x00))
+	    (readl(&pl022->ssp_pid1) == 0x10) &&
+	    ((readl(&pl022->ssp_pid2) & 0xf) == 0x04) &&
+	    (readl(&pl022->ssp_pid3) == 0x00))
 		return 1;
 
 	return 0;
 }
 
 struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
-			unsigned int max_hz, unsigned int mode)
+				  unsigned int max_hz, unsigned int mode)
 {
 	struct axxia_pl022_spi_slave *ps;
 	struct axxia_pl022 *pl022;
@@ -271,19 +271,116 @@ void spi_release_bus(struct spi_slave *slave)
 	writel(0x0, &pl022->ssp_cr1);
 }
 
+static void spi_normal_read(struct axxia_pl022 *pl022,
+			    const u8 *txp, u8 *rxp, u32 len)
+{
+	u32 len_tx = 0;
+	u32 len_rx = 0;
+	u8 value;
+
+	while (len_tx < len) {
+		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_TNF) {
+			value = (txp != NULL) ? *txp++ : 0;
+			writel(value, &pl022->ssp_dr);
+			len_tx++;
+		}
+
+		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RNE) {
+			value = readl(&pl022->ssp_dr);
+			if (rxp)
+				*rxp++ = value;
+			len_rx++;
+		}
+	}
+
+	while (len_rx < len_tx) {
+		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RNE) {
+			value = readl(&pl022->ssp_dr);
+			if (rxp)
+				*rxp++ = value;
+			len_rx++;
+		}
+	}
+
+	return;
+}
+
+static int spi_dma_read(struct axxia_pl022 *pl022,
+			unsigned int direction,
+			unsigned int dma_address_hi,
+			unsigned int dma_address_lo,
+			u32 len)
+{
+	unsigned int control;
+	unsigned int status;
+	unsigned int lvl_irq_stat;
+#ifdef CONFIG_SPL_BUILD
+	u32 pscb_val_pre;
+	u32 mscb_val_pre;
+
+	pscb_val_pre = readl(PERIPH_SCB + 0x43800);
+	mscb_val_pre = readl(MMAP_SCB + 0x42800);
+	writel(2, (PERIPH_SCB + 0x43800));
+	writel(2, (MMAP_SCB + 0x42800));
+#endif
+
+	/* Set the AXI address. */
+	writel(dma_address_hi, &pl022->sspdma_addr_hi);
+	writel(dma_address_lo, &pl022->sspdma_addr_lo);
+
+	/* Enable DMA */
+	writel(3, &pl022->ssp_dmacr);
+
+	/* Unmask interrupts. */
+	writel(0xf, &pl022->ssp_imsc);
+
+	/* Write the DMA control register. */
+	writel((0x80000000 | direction | (len -1)), &pl022->sspdma_ctl);
+
+	/* Wait for completion. */
+	do {
+		status = readl(&pl022->sspdma_status);
+		lvl_irq_stat = readl(&pl022->sspdma_lvl_irq_stat);
+
+		if (0 != (lvl_irq_stat & 0xe0))
+			return -1;
+	} while (0 == (status & 0x80000000));
+
+	/* Write the DMA control register. */
+	control = readl(&pl022->sspdma_ctl);
+	control &= ~0x80000000;
+	writel(control, &pl022->sspdma_ctl);
+
+	/* Disable DMA */
+	writel(0, &pl022->ssp_dmacr);
+
+	/* Mask interrupts. */
+	writel(0, &pl022->ssp_imsc);
+
+#ifdef CONFIG_SPL_BUILD
+	writel(pscb_val_pre, (PERIPH_SCB + 0x43800));
+	writel(mscb_val_pre, (MMAP_SCB + 0x42800));
+	flush_l3_cache();
+#endif
+
+	/* Verify that the right number of bits got moved. */
+	if ((len - 1) != (status & 0xffffff))
+		return -1;
+
+	return 0;
+}
+
 int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	     const void *dout, void *din, unsigned long flags)
 {
 	struct axxia_pl022_spi_slave *ps = to_pl022_spi(slave);
 	struct axxia_pl022 *pl022 = (struct axxia_pl022 *)ps->regs;
-	u32 len_tx = 0, len_rx = 0, len;
+	u32 len;
 	u32 ret = 0;
 	const u8 *txp = dout;
-	u8 *rxp = din, value;
-#ifdef CONFIG_SPL_BUILD
-	u32 pscb_val_pre;
-	u32 mscb_val_pre;
-#endif
+	u8 *rxp = din;
+	unsigned long address;
+	unsigned int direction;
 
 	if (bitlen == 0)
 		/* Finish any previously submitted transfers */
@@ -316,104 +413,49 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	  Whether this is a command or not is not explicitely known.  To
 	  decide, use 'flags' and 'bitlen'.
 
-	  If bitlen > 40 and flags is 2 (xfer end) use DMA.
-	 */
+	  If bitlen > 40 and flags is 2 (xfer end) use try to use DMA.
 
-	if (40 < bitlen && SPI_XFER_END == flags) {
-		unsigned long address;
+	  For DMA to work, the address and size must both be 32 bit
+	  aligned.
+	*/
+
+	if (NULL != txp && NULL == rxp) {
+		address = (unsigned long)txp;
+		direction = 0;
+	} else if (NULL == txp && NULL != rxp) {
+		address = (unsigned long)rxp;
+		direction = 0x40000000;
+	} else {
+		ret = -1;
+		flags |= SPI_XFER_END;
+		goto out;
+	}
+
+	if (40 < bitlen && SPI_XFER_END == flags &&
+	    0 == (address %4) && 0 == (len % 4)) {
 		unsigned int dma_address_hi;
 		unsigned int dma_address_lo;
-		unsigned int status;
-		unsigned int control;
-		unsigned int direction;
+		u32 dma_len;
 
-		if (NULL != dout && NULL == din) {
-			address = (unsigned long)dout;
-			direction = 0;
-		} else if (NULL == dout && NULL != din) {
-			address = (unsigned long)din;
-			direction = 0x40000000;
-		} else {
-			ret = -1;
-			flags |= SPI_XFER_END;
-			goto out;
-		}
-
+		dma_len = len & ~0x3;
+		len -= dma_len;
 		dma_address_hi = (unsigned int)(address >> 32);
 		dma_address_lo = (unsigned int)(address & 0xffffffff);
 
-#ifdef CONFIG_SPL_BUILD
-		pscb_val_pre = readl(PERIPH_SCB + 0x43800);
-		mscb_val_pre = readl(MMAP_SCB + 0x42800);
-		writel(2, (PERIPH_SCB + 0x43800));
-		writel(2, (MMAP_SCB + 0x42800));
-#endif
-
-		/* Set the AXI address. */
-		writel(dma_address_hi, &pl022->sspdma_addr_hi);
-		writel(dma_address_lo, &pl022->sspdma_addr_lo);
-
-		/* Enable DMA */
-		writel(3, &pl022->ssp_dmacr);
-
-		/* Unmask interrupts. */
-		writel(0xf, &pl022->ssp_imsc);
-
-		/* Write the DMA control register. */
-		writel((0x80000000 | direction | (len -1)), &pl022->sspdma_ctl);
-
-		/* Wait for completion. */
-		do {
-			status = readl(&pl022->sspdma_status);
-		} while (0 == (status & 0x80000000));
-
-		/* Write the DMA control register. */
-		control = readl(&pl022->sspdma_ctl);
-		control &= ~0x80000000;
-		writel(control, &pl022->sspdma_ctl);
-
-		/* Disable DMA */
-		writel(0, &pl022->ssp_dmacr);
-
-		/* Mask interrupts. */
-		writel(0, &pl022->ssp_imsc);
-
-#ifdef CONFIG_SPL_BUILD
-		writel(pscb_val_pre, (PERIPH_SCB + 0x43800));
-		writel(mscb_val_pre, (MMAP_SCB + 0x42800));
-		flush_l3_cache();
-#endif
-
-		/* Verify that the right number of bits got moved. */
-		if ((len - 1) != (status & 0xffffff)) {
- 			ret = -1;
+		if (0 != spi_dma_read(pl022, direction,
+				      dma_address_hi, dma_address_lo,
+				      dma_len)) {
+			ret = -1;
 			flags |= SPI_XFER_END;
 			goto out;
+		} else {
+			if (NULL == txp)
+				txp += dma_len;
+			else
+				rxp += dma_len;
 		}
 	} else {
-		while (len_tx < len) {
-			if (readl(&pl022->ssp_sr) & SSP_SR_MASK_TNF) {
-				value = (txp != NULL) ? *txp++ : 0;
-				writel(value, &pl022->ssp_dr);
-				len_tx++;
-			}
-
-			if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RNE) {
-				value = readl(&pl022->ssp_dr);
-				if (rxp)
-					*rxp++ = value;
-				len_rx++;
-			}
-		}
-
-		while (len_rx < len_tx) {
-			if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RNE) {
-				value = readl(&pl022->ssp_dr);
-				if (rxp)
-					*rxp++ = value;
-				len_rx++;
-			}
-		}
+		spi_normal_read(pl022, txp, rxp, len);
 	}
 
 out:
