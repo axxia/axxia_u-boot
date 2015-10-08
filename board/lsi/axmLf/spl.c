@@ -875,6 +875,9 @@ verify_image(struct spi_flash *flash,
 	sbb_encrypted &= 1;
 
 	if (0 == strncmp(sbb_magic, "SBB!", 4)) {
+		if (0 != sbb_encrypted)
+			return -1;
+
 		sbb_size =
 			ntohl(*((unsigned int *)(membase +
 						 sizeof(struct image_header) +
@@ -1043,8 +1046,8 @@ load_image(void)
 			spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS +
 				       sizeof(struct image_header),
 				       spl_image.size,
-				       (void *)0x4000000);
-			memmove((void *)0, (void *)0x4000000, spl_image.size);
+				       (void *)0x1000);
+			memmove((void *)0, (void *)0x1000, spl_image.size);
 
 			if (ntohl(header.ih_dcrc) !=
 			    crc32(0, (unsigned char *)0,
@@ -1057,12 +1060,30 @@ load_image(void)
 			/* Load a U-Boot Binary */
 			spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
 				       spl_image.size,
-				       (void *)0x4000000);
-			memmove((void *)0, (void *)0x4000000, spl_image.size);
+				       (void *)0x1000);
+			memmove((void *)0, (void *)0x1000, spl_image.size);
 		}
 
 #ifdef CONFIG_AXXIA_SIM
-		memmove((void *)0, (void *)12, spl_image.size);
+		{
+			void *header;
+			char *sbb_magic;
+			unsigned char sbb_encrypted;
+			unsigned int sbb_size;
+
+			header = malloc(12);
+			memcpy(header, (void *)0, 12);
+			sbb_magic = (void *)header;
+			sbb_encrypted = *((unsigned char *)(header + 12));
+			sbb_encrypted &= 1;
+
+			if (0 == strncmp(sbb_magic, "SBB!", 4) &&
+			    (0 == sbb_encrypted)) {
+				sbb_size = ntohl(*((unsigned int *)4));
+				memmove((void *)0, (void *)12, sbb_size);
+				free(header);
+			}
+		}
 #else
 		if (0 != sbb_verify_image(0x00000000, 0x00000000, 0, 1, 0))
 			acp_failure(__FILE__, __func__, __LINE__);
