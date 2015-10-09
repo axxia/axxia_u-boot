@@ -1,0 +1,35 @@
+if TARGET_AXXIA
+
+choice
+	prompt "Axxia SoC Select"
+	default TARGET_AXM5600
+
+config TARGET_AXM5600
+       bool "Axxia AXM5600"
+       select ARM64
+
+config TARGET_AXC6700
+       bool "Axxia AXC6700"
+       select ARM64
+
+endchoice
+
+choice
+	prompt "Axxia System Type"
+	default TARGET_HARDWARE
+
+config TARGET_SIMULATION
+       bool "Axxia Simulation"
+
+config TARGET_EMULATION
+       bool "Axxia Emulation"
+
+config TARGET_HARDWARE
+       bool "Axxia Hardware"
+
+endchoice
+
+source "arch/arm/mach-axxia/axm5600/Kconfig"
+source "arch/arm/mach-axxia/axc6700/Kconfig"
+
+endif

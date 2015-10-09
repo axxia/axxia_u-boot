@@ -1,0 +1,8 @@
+AXC6700 BOARD
+M:	John Jacques <john.jacques@intel.com>
+S:	Maintained
+F:	board/axxia/axc6700
+F:	include/configs/axc6700.h
+F:	configs/axc6700_sim_defconfig
+F:	configs/axc6700_emu_defconfig
+F:	configs/axc6700_defconfig
