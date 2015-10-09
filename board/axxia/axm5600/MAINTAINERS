@@ -1,0 +1,8 @@
+AXM5600 BOARD
+M:	John Jacques <john.jacques@intel.com>
+S:	Maintained
+F:	board/axxai/axm5600
+F:	include/configs/axm5600.h
+F:	configs/axm5600_sim_defconfig
+F:	configs/axm5600_emu_defconfig
+F:	configs/axm5600_defconfig

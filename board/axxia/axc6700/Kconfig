@@ -1,0 +1,12 @@
+if TARGET_AXC6700
+
+config SYS_VENDOR
+       default "axxia"
+
+config SYS_BOARD
+       default "axc6700"
+
+config SYS_CONFIG_NAME
+       default "axc6700"
+
+endif

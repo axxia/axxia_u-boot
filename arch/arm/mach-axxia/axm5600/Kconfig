@@ -1,0 +1,8 @@
+if TARGET_AXM5600
+
+config SYS_SOC
+       default "axm5600"
+
+source "board/axxia/axm5600/Kconfig"
+
+endif

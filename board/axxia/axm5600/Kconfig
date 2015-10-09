@@ -1,0 +1,12 @@
+if TARGET_AXM5600
+
+config SYS_VENDOR
+       default "axxia"
+
+config SYS_BOARD
+       default "axm5600"
+
+config SYS_CONFIG_NAME
+       default "axm5600"
+
+endif

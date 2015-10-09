@@ -72,6 +72,9 @@ choice
 	prompt "Target select"
 	default TARGET_HIKEY
 
+config TARGET_AXXIA
+       bool "Support for Axxia Targets"
+
 config ARCH_AT91
 	bool "Atmel AT91"
 
@@ -654,6 +657,8 @@ config ARCH_ROCKCHIP
 	select DM
 
 endchoice
+
+source "arch/arm/mach-axxia/Kconfig"
 
 source "arch/arm/mach-at91/Kconfig"
 

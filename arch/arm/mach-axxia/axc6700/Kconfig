@@ -1,0 +1,5 @@
+if TARGET_AXC6700
+
+source "board/axxia/axc6700/Kconfig"
+
+endif
