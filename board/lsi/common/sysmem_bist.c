@@ -21,6 +21,7 @@
  */
 
 #include <common.h>
+#include <watchdog.h>
 #include <asm/io.h>
 
 #if defined (CONFIG_AXXIA_344X) || defined (CONFIG_AXXIA_342X)
@@ -263,13 +264,15 @@ axxia_sysmem_bist_start(unsigned long region, int bits, int test,
 
 int
 axxia_sysmem_bist(unsigned long long address, unsigned long long length,
-	enum bistType type)
+		  enum bistType type)
 {
 	unsigned long bits;
 	int test, testVal, testEnd;
 	unsigned long result;
 	unsigned long interrupt_status;
 	unsigned long long temp;
+
+	unsigned int i;
 
 	/* Make sure the size is a power of 2. */
 	if (0 == ((length != 0) && ((length & (~length + 1)) == length))) {
@@ -316,62 +319,115 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length,
 			delay_loops = 20000;
 		} else {
 			printf("DATA Check MBIST on all nodes...\n");
-			delay_loops = 100000;
+			delay_loops = 500000;
 		}
+
 
 		axxia_sysmem_bist_start(smregion0, bits, test, address);
 
 		if (1 < sysmem->num_interfaces)
-			axxia_sysmem_bist_start(smregion1, bits, test, address);
+			axxia_sysmem_bist_start(smregion1, bits, test,
+						address);
+
+		WATCHDOG_RESET();
 
 		/* Poll for completion and get the results. */
-		if (0 != ncr_poll(smregion0, INT_STATUS_OFFSET,
-				  BIST_COMPLETION, BIST_COMPLETION,
-				  10000, delay_loops)) {
-			printf("SM Node 0x%lx Didn't Complete.\n",
-			       NCP_NODE_ID(smregion0));
-		} else {
-			ncr_read32(smregion0, INT_STATUS_OFFSET,
-				   (ncp_uint32_t *)&interrupt_status);
-			ncr_write32(smregion0,
-				    INT_STATUS_CLEAR_OFFSET, interrupt_status);
-			ncr_read32(smregion0, BIST_STATUS_OFFSET,
-				   (ncp_uint32_t *)&result);
-
-			if (result & (1 << test)) {
-				printf("\tSM Node 0 PASSED\n");
-			} else {
-				printf("\tSM Node 0 FAILED\n");
-				axxia_sysmem_bist_failure(smregion0);
-			}
-		}
-
-		if (1 < sysmem->num_interfaces) {
-			if (0 != ncr_poll(smregion1, INT_STATUS_OFFSET,
+		i = 0;
+		while (i < delay_loops)
+		{
+			WATCHDOG_RESET();  /* Reset watchdog*/       
+	
+			if (0 == ncr_poll(smregion0, INT_STATUS_OFFSET,
 					  BIST_COMPLETION, BIST_COMPLETION,
-					  10000, delay_loops)) {
-				printf("SM Node 0x%lx Didn't Complete.\n",
-				       NCP_NODE_ID(smregion1));
-			} else {
-				ncr_read32(smregion1, INT_STATUS_OFFSET,
+					  10000, 1000)) 
+			{ /* If BIST completed */
+				ncr_read32(smregion0, INT_STATUS_OFFSET,
 					   (ncp_uint32_t *)&interrupt_status);
-				ncr_write32(smregion1, INT_STATUS_CLEAR_OFFSET,
+				ncr_write32(smregion0,
+					    INT_STATUS_CLEAR_OFFSET,
 					    interrupt_status);
-				ncr_read32(smregion1, BIST_STATUS_OFFSET,
+				ncr_read32(smregion0, BIST_STATUS_OFFSET,
 					   (ncp_uint32_t *)&result);
 
-				if(result & (1 << test)) {
-					printf("\tSM Node 1 PASSED\n");
+				if (result & (1 << test)) {
+					printf("\n\tSM Node 0 PASSED\n");
 				} else {
-					printf("\tSM Node 1 FAILED\n");
-					axxia_sysmem_bist_failure(smregion1);
+					printf("\tSM Node 0 FAILED\n");
+					axxia_sysmem_bist_failure(smregion0);
 				}
+				break;/* Exit  loop if BIST complete */
+			}
+			printf(".");
+			i = i + 10000;
+		}
+
+    
+		if (i >= delay_loops)
+		{
+	
+			printf("SM Node 0x%lx Didn't Complete.\n",
+			       NCP_NODE_ID(smregion0));
+		}
+
+		WATCHDOG_RESET();
+
+		if (1 < sysmem->num_interfaces) {
+
+			WATCHDOG_RESET();
+
+			/* Poll for completion and get the results. */
+			i = 0;
+			while (i < delay_loops)
+			{
+				WATCHDOG_RESET();  /* Reset watchdog*/       
+	  
+				if (0 == ncr_poll(smregion1, INT_STATUS_OFFSET,
+						  BIST_COMPLETION,
+						  BIST_COMPLETION,
+						  10000, 1000)) 
+				{ /* If BIST completed */
+					ncr_read32(smregion1,
+						   INT_STATUS_OFFSET,
+						   (ncp_uint32_t
+						    *)&interrupt_status);
+					ncr_write32(smregion1,
+						    INT_STATUS_CLEAR_OFFSET,
+						    interrupt_status);
+					ncr_read32(smregion1,
+						   BIST_STATUS_OFFSET,
+						   (ncp_uint32_t *)&result);
+
+					if (result & (1 << test)) {
+						printf("\tSM Node 1 PASSED\n");
+					} else {
+						printf("\tSM Node 1 FAILED\n");
+		       
+						axxia_sysmem_bist_failure(smregion1);
+					}
+					break;/* Exit  loop if BIST complete
+					       */
+				}
+				printf(".");
+				i = i + 10000;
+
+			}
+
+      
+			if (i >= delay_loops)
+			{
+	  
+				printf("SM Node 0x%lx Didn't Complete.\n",
+				       NCP_NODE_ID(smregion1));
 			}
 		}
+
+
+
+		WATCHDOG_RESET();
 
 		/*
 		  Make sure to disable before letting the
-		  system access system memory.  Disabling
+		  system access system memory.Disabling
 		  BIST_GO param.
 		*/
 		ncr_and(smregion0, 0x8, 0xfffffffe);
