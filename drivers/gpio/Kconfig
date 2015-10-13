@@ -4,6 +4,11 @@
 
 menu "GPIO Support"
 
+config AXXIA_GPIO
+        bool "Axxia GPIO Driver"
+	help
+	  Enable the Axxia GPIO driver.
+
 config DM_GPIO
 	bool "Enable Driver Model for GPIO drivers"
 	depends on DM

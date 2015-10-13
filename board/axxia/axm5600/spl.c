@@ -24,6 +24,7 @@
 #include <serial.h>
 #include <malloc.h>
 #include <spl.h>
+#include <spi.h>
 #include <spi_flash.h>
 #include <watchdog.h>
 #include <asm/io.h>
@@ -636,6 +637,7 @@ void run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len)
 */
 
 #if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
+#if 0
 static void
 check_memory_ranges(void)
 {
@@ -773,6 +775,7 @@ check_memory_ranges(void)
 	}
 #endif
 }
+#endif
 
 #endif	/* CONFIG_AXXIA_EMU */
 
@@ -1126,7 +1129,7 @@ board_init_f(ulong dummy)
 	gd = &gdata;
 
 #ifdef CONFIG_SYS_SPL_MALLOC_START
-        mem_malloc_init((void *)CONFIG_SYS_SPL_MALLOC_START,
+        mem_malloc_init((ulong)CONFIG_SYS_SPL_MALLOC_START,
                         CONFIG_SYS_SPL_MALLOC_SIZE);
 #endif
 
@@ -1233,6 +1236,7 @@ board_init_f(ulong dummy)
 #else  /* SYSCACHE_ONLY_MODE */
 
 #if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
+#if 0
 	if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_BIST)) {
 		printf("Testing Memory From 0, 0x%llx bytes\n",
 		       sysmem->totalSize);
@@ -1240,6 +1244,7 @@ board_init_f(ulong dummy)
 	} else if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_RANGES)) {
 		check_memory_ranges();
 	}
+#endif
 #endif	/* CONFIG_AXXIA_EMU */
 
 	printf("\nSystem Initialized\n\n");
@@ -1294,7 +1299,7 @@ board_init_f(ulong dummy)
 	writel(0x1, (MMAP_SCB + 0x48));
 
 #ifdef CONFIG_SPL_ENV_SUPPORT
-	mem_malloc_init((void *)CONFIG_SYS_MALLOC_BASE,	CONFIG_SYS_MALLOC_SIZE);
+	mem_malloc_init((ulong)CONFIG_SYS_MALLOC_BASE, CONFIG_SYS_MALLOC_SIZE);
 	env_init();
 	env_relocate();
 #endif	/* CONFIG_SPL_ENV_SUPPORT */

@@ -133,6 +133,12 @@ config ZYNQ_SPI
 
 endif # if DM_SPI
 
+config AXXIA_SPI
+        bool "Axxia SPI Driver"
+        help
+ 	  Enable the Axxia SPI driver. Based on the ARM PL022 controller
+ 	  but with DMA support on some Axxia devices.
+
 config FSL_ESPI
 	bool "Freescale eSPI driver"
 	help

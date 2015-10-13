@@ -24,10 +24,10 @@
 #define CONFIG_AXXIA_SIM
 #define ARM64
 
-#define CONFIG_AXXIA_AXM_I2C
+/*#define CONFIG_AXXIA_AXM_I2C*/
 
+#if 0
 #define CONFIG_USB_XHCI_AXXIA
-
 #define CONFIG_CMD_USB 1
 #define CONFIG_USB_XHCI 1
 #define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS 1
@@ -36,7 +36,7 @@
 #define CONFIG_CMD_EXT2 1
 #define CONFIG_CMD_EXT4 1
 #define CONFIG_DOS_PARTITION 1
-
+#endif
 
 /*
   ==============================================================================
@@ -101,6 +101,7 @@
   ==============================================================================
 */
 
+#if 0
 #ifndef __ASSEMBLY__
 #define CONFIG_CMD_I2C
 #define CONFIG_CMD_SDRAM
@@ -233,6 +234,7 @@
 */
 
 #endif	/* __ASSEMBLY__ */
+#endif
 
 /*
   ==============================================================================
@@ -277,8 +279,8 @@
 
 #define SSP_DEFAULT_CLOCK  1000000
 
-#define CONFIG_AXXIA_PCI
-#define CONFIG_SPL_PCI_SUPPORT
+/*#define CONFIG_AXXIA_PCI*/
+/*#define CONFIG_SPL_PCI_SUPPORT*/
 
 /*#define CONFIG_AXXIA_FEMAC*/
 /*#define CONFIG_AXXIA_EIOA*/
@@ -317,43 +319,6 @@
 
 /* HACK: Define it until cache coherency is figured out */
 /* #define USE_CACHE_SYNC */
-
-/*
-  ==============================================================================
-  ==============================================================================
-  Non-Volatile Storage
-  ==============================================================================
-  ==============================================================================
-*/
-
-#define CONFIG_AXXIA_SERIAL_FLASH /* Include support for SPI flash. */
-
-#define CONFIG_AXXIA_SERIAL_FLASH_ENV
-#define CONFIG_ENV_IS_IN_SPI_FLASH
-
-#define CONFIG_PARAMETER_OFFSET          (512 * 1024)
-#define CONFIG_PARAMETER_SIZE            (64 * 1024)
-#define CONFIG_PARAMETER_RANGE           (64 * 1024)
-#define CONFIG_PARAMETER_OFFSET_REDUND \
-	(CONFIG_PARAMETER_OFFSET + CONFIG_PARAMETER_RANGE)
-#define CONFIG_PARAMETER_SIZE_REDUND     CONFIG_PARAMETER_SIZE
-#define CONFIG_PARAMETER_RANGE_REDUND    CONFIG_PARAMETER_RANGE
-
-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
-#define CONFIG_ENV_OFFSET \
-	(CONFIG_PARAMETER_OFFSET_REDUND + CONFIG_PARAMETER_RANGE_REDUND)
-#define CONFIG_ENV_SECT_SIZE             (64 * 1024)
-#define CONFIG_ENV_SIZE                  (64 * 1024)
-#define CONFIG_ENV_SECT_SIZE             (64 * 1024)
-#define CONFIG_ENV_RANGE                 (64 * 1024)
-#define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
-#define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
-#define CONFIG_ENV_RANGE_REDUND           CONFIG_ENV_RANGE
-
-#define CONFIG_UBOOT_OFFSET              (1 * 1024 * 1024)
-#define CONFIG_UBOOT_SIZE                (2 * 1024 * 1024)
-#define CONFIG_UBOOT_OFFSET_REDUND       (3 * 1024 * 1024)
-#define CONFIG_UBOOT_SIZE_REDUND         CONFIG_UBOOT_SIZE
 
 /*
   ==============================================================================
@@ -438,42 +403,6 @@
 #define CONFIG_AXXIA_PHY_ADDRESS 0x1e
 
 #define CONFIG_LSI_CLOCKS
-
-/*
-  ==============================================================================
-  ==============================================================================
-  Non-Volatile Storage
-  ==============================================================================
-  ==============================================================================
-*/
-
-#define CONFIG_AXXIA_SERIAL_FLASH /* Include support for SPI flash. */
-
-#define CONFIG_AXXIA_SERIAL_FLASH_ENV
-#define CONFIG_ENV_IS_IN_SPI_FLASH
-
-#define CONFIG_PARAMETER_OFFSET          (256 * 1024)
-#define CONFIG_PARAMETER_SIZE            (64 * 1024)
-#define CONFIG_PARAMETER_RANGE           (64 * 1024)
-#define CONFIG_PARAMETER_OFFSET_REDUND \
-	(CONFIG_PARAMETER_OFFSET + CONFIG_PARAMETER_RANGE)
-#define CONFIG_PARAMETER_SIZE_REDUND     CONFIG_PARAMETER_SIZE
-#define CONFIG_PARAMETER_RANGE_REDUND    CONFIG_PARAMETER_RANGE
-
-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
-#define CONFIG_ENV_OFFSET \
-	(CONFIG_PARAMETER_OFFSET_REDUND + CONFIG_PARAMETER_RANGE_REDUND)
-#define CONFIG_ENV_SECT_SIZE             (64 * 1024)
-#define CONFIG_ENV_SIZE                  (64 * 1024)
-#define CONFIG_ENV_RANGE                 (64 * 1024)
-#define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
-#define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
-#define CONFIG_ENV_RANGE_REDUND           CONFIG_ENV_RANGE
-
-#define CONFIG_UBOOT_OFFSET              (1 * 1024 * 1024)
-#define CONFIG_UBOOT_SIZE                (2 * 1024 * 1024)
-#define CONFIG_UBOOT_OFFSET_REDUND       (3 * 1024 * 1024)
-#define CONFIG_UBOOT_SIZE_REDUND         CONFIG_UBOOT_SIZE
 
 /*
   ==============================================================================
@@ -587,6 +516,43 @@ void axxia_mtest_check_ecc(void);
 /*
   ==============================================================================
   ==============================================================================
+  Non-Volatile Storage
+  ==============================================================================
+  ==============================================================================
+*/
+
+#define CONFIG_AXXIA_SERIAL_FLASH /* Include support for SPI flash. */
+
+#define CONFIG_AXXIA_SERIAL_FLASH_ENV
+#define CONFIG_ENV_IS_IN_SPI_FLASH
+
+#define CONFIG_PARAMETER_OFFSET          (512 * 1024)
+#define CONFIG_PARAMETER_SIZE            (64 * 1024)
+#define CONFIG_PARAMETER_RANGE           (64 * 1024)
+#define CONFIG_PARAMETER_OFFSET_REDUND \
+	(CONFIG_PARAMETER_OFFSET + CONFIG_PARAMETER_RANGE)
+#define CONFIG_PARAMETER_SIZE_REDUND     CONFIG_PARAMETER_SIZE
+#define CONFIG_PARAMETER_RANGE_REDUND    CONFIG_PARAMETER_RANGE
+
+#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
+#define CONFIG_ENV_OFFSET \
+	(CONFIG_PARAMETER_OFFSET_REDUND + CONFIG_PARAMETER_RANGE_REDUND)
+#define CONFIG_ENV_SECT_SIZE             (64 * 1024)
+#define CONFIG_ENV_SIZE                  (64 * 1024)
+#define CONFIG_ENV_SECT_SIZE             (64 * 1024)
+#define CONFIG_ENV_RANGE                 (64 * 1024)
+#define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
+#define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
+#define CONFIG_ENV_RANGE_REDUND           CONFIG_ENV_RANGE
+
+#define CONFIG_UBOOT_OFFSET              (1 * 1024 * 1024)
+#define CONFIG_UBOOT_SIZE                (2 * 1024 * 1024)
+#define CONFIG_UBOOT_OFFSET_REDUND       (3 * 1024 * 1024)
+#define CONFIG_UBOOT_SIZE_REDUND         CONFIG_UBOOT_SIZE
+
+/*
+  ==============================================================================
+  ==============================================================================
 */
 
 /*#define SYSCACHE_ONLY_MODE*/
@@ -667,7 +633,6 @@ int is_asic( void );
 
 #ifndef __ASSEMBLY__
 #define CONFIG_CMD_GPIO
-#define CONFIG_AXXIA_GPIO
 
 typedef enum { AXXIA_GPIO_0, AXXIA_GPIO_1 } axxia_gpio_t;
 
@@ -1080,8 +1045,6 @@ int serial_early_init(void);
 #define CONFIG_SYS_CACHELINE_SHIFT	6
 
 /* commands to include */
-#include <config_cmd_default.h>
-
 #define CONFIG_CMDLINE_EDITING
 
 /* Enabled commands */
@@ -1091,7 +1054,6 @@ int serial_early_init(void);
 /*#define CONFIG_CMD_I2C*/		/* I2C serial bus support	*/
 #define CONFIG_CMD_SPI		/* I2C serial bus support	*/
 #define CONFIG_CMD_SF 		/* Serial flash commands        */
-#define CONFIG_CMD_SAVEENV
 
 /* Disabled commands */
 #undef CONFIG_CMD_NET
@@ -1445,12 +1407,15 @@ void stop_watchdog(void);
 #define CONFIG_SYS_U_BOOT_MAX_SIZE_SECTORS	0x200 /* 256 KB */
 #define CONFIG_SPL_FAT_LOAD_PAYLOAD_NAME	"u-boot.img"
 
+#define CONFIG_ENV_SPI_BUS              0
+#define CONFIG_ENV_SPI_CS		0
+#define CONFIG_ENV_SPI_MAX_HZ           25000000
+#define CONFIG_ENV_SPI_MODE             SPI_MODE_0
 #define CONFIG_SPL_SPI_BUS		0
-#define CONFIG_SPL_SPI_CS		0
+#define CONFIG_SPL_SPI_CS               0
 #define CONFIG_SF_DEFAULT_SPEED         25000000
 #define CONFIG_SF_DEFAULT_MODE          SPI_MODE_0
 
-#define CONFIG_SPL_SPI_LOAD
 #define CONFIG_SPL_SPI_SUPPORT
 #define CONFIG_SPL_SPI_FLASH_SUPPORT
 #define CONFIG_SPL_LIBCOMMON_SUPPORT
@@ -1475,6 +1440,10 @@ void stop_watchdog(void);
 #else
 #define CONFIG_SYS_TEXT_BASE		0x00000000
 #endif
+
+#define CONFIG_SYS_SPI_FLASH_U_BOOT_OFFS  0x100000
+#define CONFIG_SYS_SPI_FLASH_U_BOOT_DST   0
+#define CONFIG_SYS_SPI_FLASH_U_BOOT_START 0
 
 
 /*
@@ -1516,7 +1485,6 @@ void stop_watchdog(void);
 
 #define OSMEMORY_DEFAULT SZ_1G
 
-#define CONFIG_CMD_MEMORY
 #define CONFIG_CMD_MEMTEST
 
 #define CONFIG_LSI_TEST
@@ -1579,6 +1547,15 @@ extern unsigned *phyRegs;
 #define CONFIG_SYS_BOOTM_LEN SZ_128M
 
 #define SPIN_LOOP_SIZE 0x40
+
+#if 0
+#define CONFIG_PL011_SERIAL
+#define CONFIG_PL01x_PORTS {(void *)UART0_ADDRESS}
+#define CONFIG_PL011_CLOCK 1
+#define CONFIG_CONS_INDEX 1
+#else
+#define CONFIG_AXXIA_SERIAL
+#endif
 
 /*
   ==============================================================================

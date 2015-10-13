@@ -78,6 +78,7 @@ void spl_spi_load_image(void)
 			       (void *)header);
 		spl_parse_image_header(header);
 		spi_flash_read(flash, CONFIG_SYS_SPI_U_BOOT_OFFS,
-			       spl_image.size, (void *)spl_image.load_addr);
+			       spl_image.size,
+			       (void *)((u64)spl_image.load_addr));
 	}
 }

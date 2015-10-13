@@ -7,10 +7,14 @@ choice
 config TARGET_AXM5600
        bool "Axxia AXM5600"
        select ARM64
+       select SUPPORT_SPL
+       select SPL
 
 config TARGET_AXC6700
        bool "Axxia AXC6700"
        select ARM64
+       select SUPPORT_SPL
+       select SPL
 
 endchoice
 

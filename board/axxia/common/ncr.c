@@ -22,7 +22,7 @@
 
 #include <common.h>
 #include <asm/io.h>
-#include "../axm55xx/ncp_nca_reg_defines.h"
+#include "../common/ncp_nca_reg_defines.h"
 
 #define WFC_TIMEOUT (400000)
 

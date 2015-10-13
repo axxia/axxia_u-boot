@@ -238,7 +238,7 @@ arch_early_init_r(void)
 ft_board_setup
 */
 
-void
+int
 ft_board_setup(void *blob, bd_t *bd)
 {
 	/*char cpu_string[40];*/
@@ -444,7 +444,7 @@ ft_board_setup(void *blob, bd_t *bd)
 #endif
 #endif
 
-	return;
+	return 0;
 }
 
 int
