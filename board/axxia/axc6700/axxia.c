@@ -1,22 +1,22 @@
 /*
- *  board/lsi/axxia-arm/axxia.c
- *
- *  Copyright (C) 2013 LSI (john.jacques@lsi.com)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
+*  board/lsi/axxia-arm/axxia.c
+*
+*  Copyright (C) 2013 LSI (john.jacques@lsi.com)
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
 
 #include <config.h>
 #include <common.h>
@@ -27,26 +27,26 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 /*
-  ==============================================================================
-  ==============================================================================
-  Private
-  ==============================================================================
-  ==============================================================================
+==============================================================================
+==============================================================================
+Private
+==============================================================================
+==============================================================================
 */
 
 /*
-  ==============================================================================
-  ==============================================================================
-  Public
-  ==============================================================================
-  ==============================================================================
+==============================================================================
+==============================================================================
+Public
+==============================================================================
+==============================================================================
 */
 
 /**
- * @brief board_init
- *
- * @return 0
- */
+* @brief board_init
+*
+* @return 0
+*/
 int
 board_init(void)
 {
@@ -75,8 +75,8 @@ board_init(void)
 }
 
 /*
-  ------------------------------------------------------------------------------
-  misc_init_f
+------------------------------------------------------------------------------
+misc_init_f
 */
 
 int
@@ -86,8 +86,8 @@ misc_init_f(void)
 }
 
 /*
-  ------------------------------------------------------------------------------
-  misc_init_r
+------------------------------------------------------------------------------
+misc_init_r
 */
 
 #define WA_811981_RETRIES 10000
@@ -139,7 +139,7 @@ misc_init_r(void)
 	  modules (via dbg_sw_enable register)
 	*/
 
-	/*writel(0xf, SYSCON + 0xcc);*/
+/*	writel(0xf, SYSCON + 0xcc); */
 
 	/* Enable EVENT (sev/wfe) signals to all cores */
 	writel(0xffff, SYSCON + 0x14);
@@ -160,10 +160,9 @@ void set_muxconf_regs_non_essential(void)
 }
 
 /*
-  ------------------------------------------------------------------------------
-  board_get_usable_ram_top
+ ------------------------------------------------------------------------------
+ board_get_usable_ram_top
 */
-
 ulong
 board_get_usable_ram_top(ulong total_size)
 {
@@ -171,20 +170,18 @@ board_get_usable_ram_top(ulong total_size)
 	unsigned long osmemory_value;
 
 	osmemory_string = getenv("osmemory");
-
 	if (NULL != osmemory_string) {
 		osmemory_value = simple_strtoul(osmemory_string, NULL, 0);
 		osmemory_value *= (1024 * 1024);
 	} else {
 		osmemory_value = OSMEMORY_DEFAULT;
 	}
-
 	return osmemory_value;
 }
 
 /*
-  ------------------------------------------------------------------------------
-  board_early_init_f
+------------------------------------------------------------------------------
+board_early_init_f
 */
 
 int
@@ -213,26 +210,14 @@ board_early_init_f(void)
 	printf("\n\nAxxia Version: UNKNOWN");
 #endif
 
-	printf("\n%s:%d - GICC_IIDR=0x%x\n", __FILE__, __LINE__,
-	       readl(0x8001000000 + 0xfc));
-	printf("%s:%d - GICD_IIDR=0x%x (0x%x)\n", __FILE__, __LINE__,
-	       readl(GICD_BASE + 0x8), readl(GICD_BASE + 0xffe0));
-	printf("%s:%d - GICR_IIDR=0x%x (0x%x)\n", __FILE__, __LINE__,
-	       readl(GICR_BASE + 0x4), readl(GICR_BASE + 0xffe0));
-
-	printf("%s:%d - pfuse=0x%x\n", __FILE__, __LINE__,
-	       readl(SYSCON + 0x34));
-	printf("%s:%d - nca+0xe0 is 0x%x\n", __FILE__, __LINE__,
-	       readl(NCA + 0xe0));
-
 	return 0;
 }
 
 /*
-  ------------------------------------------------------------------------------
-  arch_early_init_r
+------------------------------------------------------------------------------
+arch_early_init_r
 
-  Called just after the heap has been initialized.
+Called just after the heap has been initialized.
 */
 
 int
@@ -249,11 +234,11 @@ arch_early_init_r(void)
 }
 
 /*
-  ------------------------------------------------------------------------------
-  ft_board_setup
+------------------------------------------------------------------------------
+ft_board_setup
 */
 
-void
+int
 ft_board_setup(void *blob, bd_t *bd)
 {
 	/*char cpu_string[40];*/
@@ -459,7 +444,7 @@ ft_board_setup(void *blob, bd_t *bd)
 #endif
 #endif
 
-	return;
+	return 0;
 }
 
 int

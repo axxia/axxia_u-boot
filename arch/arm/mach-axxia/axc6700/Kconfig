@@ -1,5 +1,8 @@
 if TARGET_AXC6700
 
+config SYS_SOC
+       default "axc6700"
+
 source "board/axxia/axc6700/Kconfig"
 
 endif

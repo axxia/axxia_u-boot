@@ -117,6 +117,7 @@ serial_initfunc(arm_dcc_initialize);
 serial_initfunc(asc_serial_initialize);
 serial_initfunc(atmel_serial_initialize);
 serial_initfunc(au1x00_serial_initialize);
+serial_initfunc(axxia_serial_initialize);
 serial_initfunc(bfin_jtag_initialize);
 serial_initfunc(bfin_serial_initialize);
 serial_initfunc(bmw_serial_initialize);
@@ -210,6 +211,7 @@ void serial_initialize(void)
 	asc_serial_initialize();
 	atmel_serial_initialize();
 	au1x00_serial_initialize();
+	axxia_serial_initialize();
 	bfin_jtag_initialize();
 	bfin_serial_initialize();
 	bmw_serial_initialize();

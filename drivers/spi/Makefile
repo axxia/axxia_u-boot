@@ -19,6 +19,7 @@ obj-$(CONFIG_ALTERA_SPI) += altera_spi.o
 obj-$(CONFIG_ARMADA100_SPI) += armada100_spi.o
 obj-$(CONFIG_ATMEL_DATAFLASH_SPI) += atmel_dataflash_spi.o
 obj-$(CONFIG_ATMEL_SPI) += atmel_spi.o
+obj-$(CONFIG_AXXIA_SPI) += axxia_spi.o
 obj-$(CONFIG_BFIN_SPI) += bfin_spi.o
 obj-$(CONFIG_BFIN_SPI6XX) += bfin_spi6xx.o
 obj-$(CONFIG_CADENCE_QSPI) += cadence_qspi.o cadence_qspi_apb.o

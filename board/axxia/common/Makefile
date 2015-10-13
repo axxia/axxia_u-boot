@@ -30,7 +30,6 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-obj-$(CONFIG_AXXIA_FEMAC) += femac.o
 #COBJS += $(sort $(COBJS-y))
 
 else

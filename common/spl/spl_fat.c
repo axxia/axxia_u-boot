@@ -58,7 +58,7 @@ int spl_load_image_fat(block_dev_desc_t *block_dev,
 
 	spl_parse_image_header(header);
 
-	err = file_fat_read(filename, (u8 *)spl_image.load_addr, 0);
+	err = file_fat_read(filename, (void *)((u64)spl_image.load_addr), 0);
 
 end:
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
