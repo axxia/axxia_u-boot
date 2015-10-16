@@ -1548,14 +1548,7 @@ extern unsigned *phyRegs;
 
 #define SPIN_LOOP_SIZE 0x40
 
-#if 0
-#define CONFIG_PL011_SERIAL
-#define CONFIG_PL01x_PORTS {(void *)UART0_ADDRESS}
-#define CONFIG_PL011_CLOCK 1
-#define CONFIG_CONS_INDEX 1
-#else
 #define CONFIG_AXXIA_SERIAL
-#endif
 
 /*
   ==============================================================================
