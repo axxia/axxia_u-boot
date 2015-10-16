@@ -187,6 +187,8 @@ board_early_init_f
 int
 board_early_init_f(void)
 {
+	unsigned int el;
+
 	/*
 	  The bootROM code leaves SPI device 0 selected, BZ 45907.
 	  Deselect here.
@@ -209,6 +211,16 @@ board_early_init_f(void)
 #else
 	printf("\n\nAxxia Version: UNKNOWN");
 #endif
+	asm volatile("mrs %0, CurrentEL" : "=r" (el));
+
+	if (0xc == el)
+		printf("\nEL3");
+	else if (0x8 == el)
+		printf("\nEL2");
+	else if (0x4 == el)
+		printf("\nEL1");
+	else
+		printf("\nUnknown EL!");
 
 	return 0;
 }

@@ -30,7 +30,7 @@
 #include <spi.h>
 #include <asm/io.h>
 
-/*#define ENABLE_DMA*/
+#define ENABLE_DMA
 
 /* SSP registers mapping */
 struct axxia_pl022 {
@@ -328,6 +328,10 @@ static int spi_dma_read(struct axxia_pl022 *pl022,
 	writel(2, (MMAP_SCB + 0x42800));
 #endif
 
+#ifndef CONFIG_SPL_BUILD
+	printf("DMA Address: 0x%08x_%08x\n", dma_address_hi, dma_address_lo);
+#endif
+
 	/* Set the AXI address. */
 	writel(dma_address_hi, &pl022->sspdma_addr_hi);
 	writel(dma_address_lo, &pl022->sspdma_addr_lo);
@@ -365,6 +369,10 @@ static int spi_dma_read(struct axxia_pl022 *pl022,
 	writel(pscb_val_pre, (PERIPH_SCB + 0x43800));
 	writel(mscb_val_pre, (MMAP_SCB + 0x42800));
 	flush_l3_cache();
+#endif
+
+#ifndef CONFIG_SPL_BUILD
+	printf("len=0x%x status=0x%08x\n", len, status);
 #endif
 
 	/* Verify that the right number of bits got moved. */

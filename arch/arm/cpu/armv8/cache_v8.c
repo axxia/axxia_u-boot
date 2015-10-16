@@ -17,7 +17,7 @@ inline void set_pgtable_section(u64 *page_table, u64 index, u64 section,
 {
 	u64 value;
 
-	value = section | PMD_TYPE_SECT | PMD_SECT_AF;
+	value = section | PMD_TYPE_SECT | PMD_SECT_INNER_SHARE | PMD_SECT_AF;
 	value |= PMD_ATTRINDX(memory_type);
 	value |= share;
 	page_table[index] = value;
@@ -139,7 +139,16 @@ void dcache_disable(void)
 
 	set_sctlr(sctlr & ~(CR_C|CR_M));
 
-	flush_dcache_all();
+	/*
+	 * At this point, the previous contents of the stack are cached.
+	 * If anything gets written to the stack before the caches are
+	 * cleaned and invalidated, it will be written to memory.  Then,
+	 * when the cache is cleaned, it will get overwritten.
+	 */
+
+	__asm_flush_dcache_all();
+	flush_l3_cache();
+
 	__asm_invalidate_tlb_all();
 }
 
