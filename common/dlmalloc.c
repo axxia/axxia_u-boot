@@ -1503,14 +1503,14 @@ static void malloc_bin_reloc(void)
 static inline void malloc_bin_reloc(void) {}
 #endif
 
-ulong mem_malloc_start = 0;
-ulong mem_malloc_end = 0;
-ulong mem_malloc_brk = 0;
+void *mem_malloc_start = 0;
+void *mem_malloc_end = 0;
+void *mem_malloc_brk = 0;
 
 void *sbrk(ptrdiff_t increment)
 {
-	ulong old = mem_malloc_brk;
-	ulong new = old + increment;
+	void *old = mem_malloc_brk;
+	void *new = old + increment;
 
 	/*
 	 * if we are giving memory back make sure we clear it out since
@@ -1527,13 +1527,13 @@ void *sbrk(ptrdiff_t increment)
 	return (void *)old;
 }
 
-void mem_malloc_init(ulong start, ulong size)
+void mem_malloc_init(void *start, ulong size)
 {
 	mem_malloc_start = start;
 	mem_malloc_end = start + size;
 	mem_malloc_brk = start;
 
-	debug("using memory %#lx-%#lx for malloc()\n", mem_malloc_start,
+	debug("using memory %p-%p for malloc()\n", mem_malloc_start,
 	      mem_malloc_end);
 #ifdef CONFIG_SYS_MALLOC_CLEAR_ON_INIT
 	memset((void *)mem_malloc_start, 0x0, size);
@@ -2018,10 +2018,19 @@ static void malloc_extend_top(nb) INTERNAL_SIZE_T nb;
 
   brk = (char*)(MORECORE (sbrk_size));
 
+#if 0
   /* Fail if sbrk failed or if a foreign sbrk call killed our space */
   if (brk == (char*)(MORECORE_FAILURE) ||
       (brk < old_end && old_top != initial_top))
     return;
+#else
+	/*
+	 The above makes it impossible to move the heap downward
+	 TODO: Understand what is going on.
+	*/
+	if (brk == (char*)(MORECORE_FAILURE))
+		return;
+#endif
 
   sbrked_mem += sbrk_size;
 

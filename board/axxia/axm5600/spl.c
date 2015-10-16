@@ -1129,7 +1129,7 @@ board_init_f(ulong dummy)
 	gd = &gdata;
 
 #ifdef CONFIG_SYS_SPL_MALLOC_START
-        mem_malloc_init((ulong)CONFIG_SYS_SPL_MALLOC_START,
+        mem_malloc_init((void *)CONFIG_SYS_SPL_MALLOC_START,
                         CONFIG_SYS_SPL_MALLOC_SIZE);
 #endif
 
@@ -1299,7 +1299,7 @@ board_init_f(ulong dummy)
 	writel(0x1, (MMAP_SCB + 0x48));
 
 #ifdef CONFIG_SPL_ENV_SUPPORT
-	mem_malloc_init((ulong)CONFIG_SYS_MALLOC_BASE, CONFIG_SYS_MALLOC_SIZE);
+	mem_malloc_init((void *)CONFIG_SYS_MALLOC_BASE, CONFIG_SYS_MALLOC_SIZE);
 	env_init();
 	env_relocate();
 #endif	/* CONFIG_SPL_ENV_SUPPORT */

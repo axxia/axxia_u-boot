@@ -30,6 +30,8 @@
 #include <spi.h>
 #include <asm/io.h>
 
+/*#define ENABLE_DMA*/
+
 /* SSP registers mapping */
 struct axxia_pl022 {
 	u32	ssp_cr0;	       /* 0x000 */
@@ -305,6 +307,8 @@ static void spi_normal_read(struct axxia_pl022 *pl022,
 	return;
 }
 
+#ifdef ENABLE_DMA
+
 static int spi_dma_read(struct axxia_pl022 *pl022,
 			unsigned int direction,
 			unsigned int dma_address_hi,
@@ -370,6 +374,8 @@ static int spi_dma_read(struct axxia_pl022 *pl022,
 	return 0;
 }
 
+#endif	/* ENABLE_DMA */
+
 int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	     const void *dout, void *din, unsigned long flags)
 {
@@ -379,8 +385,10 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	u32 ret = 0;
 	const u8 *txp = dout;
 	u8 *rxp = din;
+#ifdef ENABLE_DMA
 	unsigned long address;
 	unsigned int direction;
+#endif	/* ENABLE_DMA */
 
 	if (bitlen == 0)
 		/* Finish any previously submitted transfers */
@@ -418,6 +426,8 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	  For DMA to work, the address and size must both be 32 bit
 	  aligned.
 	*/
+
+#ifdef ENABLE_DMA
 
 	if (NULL != txp && NULL == rxp) {
 		address = (unsigned long)txp;
@@ -457,6 +467,12 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	} else {
 		spi_normal_read(pl022, txp, rxp, len);
 	}
+
+#else  /* ENABLE_DMA */
+
+	spi_normal_read(pl022, txp, rxp, len);
+
+#endif /* ENABLE_DMA */
 
 out:
 	if (flags & SPI_XFER_END)
