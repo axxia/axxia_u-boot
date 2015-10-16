@@ -296,8 +296,6 @@
   ------------------------------------------------------------------------------
 */
 
-#endif	/* CONFIG_TARGET_EMULATION */
-
 /*#define CONFIG_AXXIA_XLF_EMU_V_1_0*/
 #define CONFIG_AXXIA_XLF_EMU
 #define CONFIG_AXXIA_EMU
@@ -408,6 +406,8 @@
 	"stdout=serial\0"
 
 #define CONFIG_BOOTCOMMAND "setenv autoload ; dhcp ; bootm"
+
+#endif	/* CONFIG_TARGET_EMULATION */
 
 #ifdef CONFIG_TARGET_HARDWARE
 
@@ -1586,6 +1586,43 @@ extern unsigned *phyRegs;
 #define SPIN_LOOP_SIZE 0x40
 
 #define CONFIG_AXXIA_SERIAL
+
+/*
+  ==============================================================================
+  ==============================================================================
+  Non-Volatile Storage
+  ==============================================================================
+  ==============================================================================
+*/
+
+#define CONFIG_AXXIA_SERIAL_FLASH /* Include support for SPI flash. */
+
+#define CONFIG_AXXIA_SERIAL_FLASH_ENV
+#define CONFIG_ENV_IS_IN_SPI_FLASH
+
+#define CONFIG_PARAMETER_OFFSET          (512 * 1024)
+#define CONFIG_PARAMETER_SIZE            (64 * 1024)
+#define CONFIG_PARAMETER_RANGE           (64 * 1024)
+#define CONFIG_PARAMETER_OFFSET_REDUND \
+	(CONFIG_PARAMETER_OFFSET + CONFIG_PARAMETER_RANGE)
+#define CONFIG_PARAMETER_SIZE_REDUND     CONFIG_PARAMETER_SIZE
+#define CONFIG_PARAMETER_RANGE_REDUND    CONFIG_PARAMETER_RANGE
+
+#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
+#define CONFIG_ENV_OFFSET \
+	(CONFIG_PARAMETER_OFFSET_REDUND + CONFIG_PARAMETER_RANGE_REDUND)
+#define CONFIG_ENV_SECT_SIZE             (64 * 1024)
+#define CONFIG_ENV_SIZE                  (64 * 1024)
+#define CONFIG_ENV_SECT_SIZE             (64 * 1024)
+#define CONFIG_ENV_RANGE                 (64 * 1024)
+#define CONFIG_ENV_OFFSET_REDUND         (CONFIG_ENV_OFFSET + CONFIG_ENV_RANGE)
+#define CONFIG_ENV_SIZE_REDUND            CONFIG_ENV_SIZE
+#define CONFIG_ENV_RANGE_REDUND           CONFIG_ENV_RANGE
+
+#define CONFIG_UBOOT_OFFSET              (1 * 1024 * 1024)
+#define CONFIG_UBOOT_SIZE                (2 * 1024 * 1024)
+#define CONFIG_UBOOT_OFFSET_REDUND       (3 * 1024 * 1024)
+#define CONFIG_UBOOT_SIZE_REDUND         CONFIG_UBOOT_SIZE
 
 /*
   ==============================================================================
