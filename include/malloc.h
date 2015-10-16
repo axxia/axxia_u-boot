@@ -949,11 +949,11 @@ struct mallinfo mALLINFo();
 /*
  * Begin and End of memory area for malloc(), and current "brk"
  */
-extern ulong mem_malloc_start;
-extern ulong mem_malloc_end;
-extern ulong mem_malloc_brk;
+extern void *mem_malloc_start;
+extern void *mem_malloc_end;
+extern void *mem_malloc_brk;
 
-void mem_malloc_init(ulong start, ulong size);
+void mem_malloc_init(void *start, ulong size);
 
 #ifdef __cplusplus
 };  /* end of extern "C" */

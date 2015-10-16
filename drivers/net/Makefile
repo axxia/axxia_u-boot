@@ -8,6 +8,9 @@
 obj-$(CONFIG_PPC4xx_EMAC) += 4xx_enet.o
 obj-$(CONFIG_ALTERA_TSE) += altera_tse.o
 obj-$(CONFIG_ARMADA100_FEC) += armada100_fec.o
+obj-$(CONFIG_AXXIA_NET) += axxia.o
+obj-$(CONFIG_AXXIA_NEMAC) += axxia-nemac.o
+obj-$(CONFIG_AXXIA_MDIO) += axxia-mdio.o
 obj-$(CONFIG_DRIVER_AT91EMAC) += at91_emac.o
 obj-$(CONFIG_DRIVER_AX88180) += ax88180.o
 obj-$(CONFIG_BCM_SF2_ETH) += bcm-sf2-eth.o
