@@ -444,7 +444,7 @@
 /*#define CONFIG_AXXIA_PCI*/
 /*#define CONFIG_SPL_PCI_SUPPORT*/
 
-#define CONFIG_AXXIA_FEMAC
+/*#define CONFIG_AXXIA_FEMAC*/
 /*#define CONFIG_AXXIA_EIOA*/
 /*#define CONFIG_SPL*/
 
