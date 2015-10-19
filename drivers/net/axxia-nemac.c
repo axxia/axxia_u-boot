@@ -387,6 +387,9 @@ nemac_link_up(struct nemac_priv *priv, struct phy_device *phy_dev)
 {
 	u32 enable, ctrl, rgmii_clk;
 
+	genphy_restart_aneg(priv->phy_dev);
+	genphy_startup(priv->phy_dev);
+
 	if (!phy_dev->link) {
 		printf("%s: No link.\n", phy_dev->dev->name);
 		return;
