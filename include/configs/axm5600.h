@@ -26,17 +26,7 @@
 
 #define CONFIG_AXXIA_AXM_I2C
 
-#if 0
-#define CONFIG_USB_XHCI_AXXIA
-#define CONFIG_CMD_USB 1
-#define CONFIG_USB_XHCI 1
-#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS 1
-#define CONFIG_USB_STORAGE 1
-#define CONFIG_CMD_USB_STORAGE 1
-#define CONFIG_CMD_EXT2 1
-#define CONFIG_CMD_EXT4 1
-#define CONFIG_DOS_PARTITION 1
-#endif
+#define CONFIG_AXXIA_USB
 
 /*
   ==============================================================================
@@ -786,18 +776,15 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 /* USB support */
 #ifdef CONFIG_AXXIA_USB
+#define CONFIG_USB_XHCI_AXXIA
 #define CONFIG_CMD_USB 1
-#define CONFIG_USB_EHCI 1
+#define CONFIG_USB_XHCI 1
+#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS 1
 #define CONFIG_USB_STORAGE 1
 #define CONFIG_CMD_USB_STORAGE 1
-#define CONFIG_USB_ULPI 1
-#define CONFIG_USB_ULPI_VIEWPORT 1
 #define CONFIG_CMD_EXT2 1
 #define CONFIG_CMD_EXT4 1
 #define CONFIG_DOS_PARTITION 1
-#define CONFIG_USB_ADDR (IO+0x140000)
-#define CONFIG_EHCI_IS_TDI 1
-#define CONFIG_CMD_LSI_ULPI 1
 #endif
 
 #ifndef __ASSEMBLY__
