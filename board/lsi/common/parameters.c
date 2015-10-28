@@ -259,6 +259,8 @@ read_parameters(void)
 			a_valid = 0;
 		}
 
+		debug("%s:%d - a_valid=%d a_sequence=0x%08x\n",
+		      __FILE__, __LINE__, a_valid, a_sequence);
 		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
 			       PARAMETERS_SIZE, parameters);
 
@@ -278,6 +280,9 @@ read_parameters(void)
 		} else {
 			b_valid = 0;
 		}
+
+		debug("%s:%d - b_valid=%d b_sequence=0x%08x\n",
+		      __FILE__, __LINE__, b_valid, b_sequence);
 
 		if (0 == a_valid && 0 == b_valid) {
 			acp_failure(__FILE__, __func__, __LINE__);
@@ -515,6 +520,18 @@ write_parameters(void)
 	}
 #endif
 
+#ifdef CONFIG_REDUNDANT_PARAMETERS
+	/* Write to the currently unused bank with higher sequence. */
+	if (0xffffffff > htonl(global->sequence)) {
+		unsigned long sequence;
+
+		sequence = htonl(global->sequence);
+		++sequence;
+		global->sequence = ntohl(sequence);
+	} else {
+		global->sequence = ntohl(0);
+	}
+
 	/* Update the Checksum */
 	debug("%s:%d - header->size=0x%lx header->checksum=0x%lx\n",
 	      __FILE__, __LINE__, header->size, header->checksum);
@@ -524,20 +541,18 @@ write_parameters(void)
 	debug("%s:%d - header->checksum=0x%lx\n",
 	      __FILE__, __LINE__, header->checksum);
 
-#ifdef CONFIG_REDUNDANT_PARAMETERS
-	/* Write the DDR Parameters */
 	rc = spi_flash_erase(flash,
 			     (0 == copy_in_use) ?
-			     CONFIG_PARAMETER_OFFSET :
-			     CONFIG_PARAMETER_OFFSET_REDUND,
+			     CONFIG_PARAMETER_OFFSET_REDUND :
+			     CONFIG_PARAMETER_OFFSET,
 			     flash->sector_size);
 
 	if (0 == rc) {
 		debug("Writing...\n");
 		rc = spi_flash_write(flash,
 				     (0 == copy_in_use) ?
-				     CONFIG_PARAMETER_OFFSET :
-				     CONFIG_PARAMETER_OFFSET_REDUND,
+				     CONFIG_PARAMETER_OFFSET_REDUND :
+				     CONFIG_PARAMETER_OFFSET,
 				     PARAMETERS_SIZE, parameters);
 
 		if (0 != rc) {
@@ -549,6 +564,15 @@ write_parameters(void)
 		return -1;
 	}
 #else  /* CONFIG_REDUNDANT_PARAMETERS */
+	/* Update the Checksum */
+	debug("%s:%d - header->size=0x%lx header->checksum=0x%lx\n",
+	      __FILE__, __LINE__, header->size, header->checksum);
+	header->checksum =
+		htonl(crc32(0, (parameters + 12),
+			    (ntohl(header->size) - 12)));
+	debug("%s:%d - header->checksum=0x%lx\n",
+	      __FILE__, __LINE__, header->checksum);
+
 	/* Write to the copy NOT in use first. */
 	debug("Erasing...\n");
 	rc = spi_flash_erase(flash,
