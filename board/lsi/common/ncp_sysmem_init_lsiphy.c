@@ -4031,7 +4031,7 @@ ncp_sysmem_init_lsiphy(
     }
 
 #ifndef AXM_35xx
-    if (  parms->ddrRetentionEnable && (parms->ddrRecovery == TRUE) )
+    if (  parms->ddrRetentionEnable )
     {
         if (NCP_ST_SUCCESS == ncp_sm_lsiphy_reg_restore(dev, smId, parms ))
         {
