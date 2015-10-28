@@ -539,6 +539,11 @@ write_parameters(void)
 				     CONFIG_PARAMETER_OFFSET :
 				     CONFIG_PARAMETER_OFFSET_REDUND,
 				     PARAMETERS_SIZE, parameters);
+
+		if (0 != rc) {
+			printf("%s:%d - Write Failed!\n", __FILE__, __LINE__);
+			return -1;
+		}
 	} else {
 		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
 		return -1;
@@ -559,6 +564,11 @@ write_parameters(void)
 				     CONFIG_PARAMETER_OFFSET_REDUND :
 				     CONFIG_PARAMETER_OFFSET,
 				     PARAMETERS_SIZE, parameters);
+
+		if (0 != rc) {
+			printf("%s:%d - Write Failed!\n", __FILE__, __LINE__);
+			return -1;
+		}
 	} else {
 		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
 		return -1;
@@ -579,6 +589,11 @@ write_parameters(void)
 				     CONFIG_PARAMETER_OFFSET :
 				     CONFIG_PARAMETER_OFFSET_REDUND,
 				     PARAMETERS_SIZE, parameters);
+
+		if (0 != rc) {
+			printf("%s:%d - Write Failed!\n", __FILE__, __LINE__);
+			return -1;
+		}
 	} else {
 		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
 		return -1;
