@@ -118,6 +118,30 @@ int is_asic( void );
 #define CONFIG_SPI_FLASH_SPANSION
 
 /*
+  Parameter Redundant Method.
+
+  There are two possibilities here.  One is the "golden version" method.
+  In this method, bank A will not be changed in the field, only bank B
+  will be updated.  The other method is to update the bank not in use.
+
+  In most cases, the application updating the image controls which
+  method is used.  There is one exception.  When DDR retention is
+  enabled, the SPL writes the DDR settings to the parameter file on
+  the first boot.  As the U-Boot environment is not yet available, the
+  choice of methods must be defined in this case.
+
+  Note that the second method, updating the other bank, should be safe
+  in all cases.  If writing to flash fails, the board will at least
+  keep booting.  The "golden version" method could cause the board to
+  only boot twice if writing to flash fails.  Usually, when using the
+  "golden version" method, the first boot happens during the
+  manufacturing process, and if the write to flash fails, the process
+  can be restarted.
+*/
+
+#define CONFIG_REDUNDANT_PARAMETERS_GOLDEN
+
+/*
   ==============================================================================
   ==============================================================================
   GPIO

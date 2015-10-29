@@ -521,6 +521,8 @@ write_parameters(void)
 #endif
 
 #ifdef CONFIG_REDUNDANT_PARAMETERS
+
+#ifndef CONFIG_REDUNDANT_PARAMETERS_GOLDEN
 	/* Write to the currently unused bank with higher sequence. */
 	if (0xffffffff > htonl(global->sequence)) {
 		unsigned long sequence;
@@ -531,6 +533,7 @@ write_parameters(void)
 	} else {
 		global->sequence = ntohl(0);
 	}
+#endif	/* CONFIG_REDUNDANT_PARAMETERS_GOLDEN */
 
 	/* Update the Checksum */
 	debug("%s:%d - header->size=0x%lx header->checksum=0x%lx\n",
@@ -541,6 +544,7 @@ write_parameters(void)
 	debug("%s:%d - header->checksum=0x%lx\n",
 	      __FILE__, __LINE__, header->checksum);
 
+#ifndef CONFIG_REDUNDANT_PARAMETERS_GOLDEN
 	rc = spi_flash_erase(flash,
 			     (0 == copy_in_use) ?
 			     CONFIG_PARAMETER_OFFSET_REDUND :
@@ -563,7 +567,33 @@ write_parameters(void)
 		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
 		return -1;
 	}
+#else  /* CONFIG_REDUNDANT_PARAMETERS_GOLDEN */
+	rc = spi_flash_erase(flash,
+			     (0 == copy_in_use) ?
+			     CONFIG_PARAMETER_OFFSET :
+			     CONFIG_PARAMETER_OFFSET_REDUND,
+			     flash->sector_size);
+
+	if (0 == rc) {
+		debug("Writing...\n");
+		rc = spi_flash_write(flash,
+				     (0 == copy_in_use) ?
+				     CONFIG_PARAMETER_OFFSET :
+				     CONFIG_PARAMETER_OFFSET_REDUND,
+				     PARAMETERS_SIZE, parameters);
+
+		if (0 != rc) {
+			printf("%s:%d - Write Failed!\n", __FILE__, __LINE__);
+			return -1;
+		}
+	} else {
+		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
+		return -1;
+	}
+#endif /* CONFIG_REDUNDANT_PARAMETERS_GOLDEN */
+
 #else  /* CONFIG_REDUNDANT_PARAMETERS */
+
 	/* Update the Checksum */
 	debug("%s:%d - header->size=0x%lx header->checksum=0x%lx\n",
 	      __FILE__, __LINE__, header->size, header->checksum);
@@ -622,6 +652,7 @@ write_parameters(void)
 		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
 		return -1;
 	}
+
 #endif	/* CONFIG_REDUNDANT_PARAMETERS */
 
 #ifdef CONFIG_AXXIA_ARM
