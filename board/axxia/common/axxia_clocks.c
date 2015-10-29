@@ -1,35 +1,35 @@
 /*
-*  Copyright (C) 2009 LSI Corporation
-*
-* See file CREDITS for list of people who contributed to this
-* project.
-*
-* This program is free software; you can redistribute it and/or
-* modify it under the terms of the GNU General Public License as
-* published by the Free Software Foundation; either version 2 of
-* the License, or (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-* MA 02111-1307 USA
-*/
+ *  Copyright (C) 2015 Intel
+ *
+ * See file CREDITS for list of people who contributed to this
+ * project.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
 
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
 
 /*
-===============================================================================
-===============================================================================
-Public Interface
-===============================================================================
-===============================================================================
+  ==============================================================================
+  ==============================================================================
+  Public Interface
+  ==============================================================================
+  ==============================================================================
 */
 
 unsigned int pfuse __attribute__ ((section ("data")));
@@ -40,8 +40,8 @@ unsigned int pfuse __attribute__ ((section ("data")));
 #define PARAMETERS_CLOCKS_55XX_1P0_HARDCODE     0x00000001
 
 /*
-------------------------------------------------------------------------------
-pll_init_5500
+  ------------------------------------------------------------------------------
+  pll_init_5500
 */
 
 #define PARAMETER_MASK 0x3ffffff
@@ -143,8 +143,8 @@ pll_init_5500(ncp_uint32_t region, ncp_uint32_t *parameters)
 }
 
 /*
-------------------------------------------------------------------------------
-clocks_init
+  ------------------------------------------------------------------------------
+  clocks_init
 */
 
 int
@@ -181,19 +181,19 @@ clocks_init( void )
 
 
 	/*
-	  -----------------------------------------------------------------------
+	  ----------------------------------------------------------------------
 	  PLL Setup
-	  -----------------------------------------------------------------------
+	  ----------------------------------------------------------------------
 	*/
 
 	/* fabpll */
-if ((0 == ((pfuse & 0x7e0) >> 5)) &&
-(clocks->flags & PARAMETERS_CLOCKS_55XX_1P0_HARDCODE))
-{
-clocks->fabpll_prms = 0x20000d1;
-clocks->fabpll_ctrl = 0x20c100;
-clocks->fabpll_csw  = 0x10;
-clocks->fabpll_div  = 0x0;
+	if ((0 == ((pfuse & 0x7e0) >> 5)) &&
+	    (clocks->flags & PARAMETERS_CLOCKS_55XX_1P0_HARDCODE))
+	{
+		clocks->fabpll_prms = 0x20000d1;
+		clocks->fabpll_ctrl = 0x20c100;
+		clocks->fabpll_csw  = 0x10;
+		clocks->fabpll_div  = 0x0;
 	}
 	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 3), &clocks->fabpll_prms))
 		return -1;
@@ -210,14 +210,14 @@ clocks->fabpll_div  = 0x0;
 	ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
 
 	/* syspll */
-if ((0 == ((pfuse & 0x7e0) >> 5)) &&
-(clocks->flags & PARAMETERS_CLOCKS_55XX_1P0_HARDCODE))
-{
-clocks->syspll_prms = 0x2981804;
-clocks->syspll_ctrl = 0x209100;
-clocks->syspll_csw  = 0x4;
-clocks->syspll_div  = 0x0;
-}
+	if ((0 == ((pfuse & 0x7e0) >> 5)) &&
+	    (clocks->flags & PARAMETERS_CLOCKS_55XX_1P0_HARDCODE))
+	{
+		clocks->syspll_prms = 0x2981804;
+		clocks->syspll_ctrl = 0x209100;
+		clocks->syspll_csw  = 0x4;
+		clocks->syspll_div  = 0x0;
+	}
 	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 5), &clocks->syspll_prms))
 		return -1;
 
@@ -329,8 +329,8 @@ get_pll(ncp_uint32_t prms, ncp_uint32_t seldiv)
 #endif
 
 /*
-------------------------------------------------------------------------------
-axxia_clock_get
+  ------------------------------------------------------------------------------
+  axxia_clock_get
 */
 
 int
@@ -480,7 +480,7 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 }
 
 /*
-------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
 */
 
 void

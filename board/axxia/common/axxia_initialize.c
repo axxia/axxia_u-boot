@@ -36,17 +36,21 @@ unsigned *phyRegs;
 #if defined(CONFIG_AXXIA_SIM)
 int sysmem_init(void) {	return 0; }
 #else
-#include "../common/ncp_sysmem_ext.h"
-#include "../common/ncp_sysmem_lsiphy.h"
+#include "ncp_sysmem_ext.h"
+#include "ncp_sysmem_lsiphy.h"
 unsigned reset_enabled = 1;
 unsigned ncp_sm_phy_reg_restore = 0;
 unsigned ncp_sm_phy_reg_dump = 0;
 #ifdef CONFIG_AXXIA_EMU
-#include "sysmem_emulation.c"
+#ifdef CONFIG_AXXIA_56XX_EMU
+#include "../axm5600/sysmem_emulation.c"
 #else
-#include "../common/sysmem_asic_common.c"
-#include "../common/ncp_sysmem_init_lsiphy.c"
-#include "../common/ncp_elm.c"
+#include "../axc6700/sysmem_emulation.c"
+#endif
+#else
+#include "sysmem_asic_common.c"
+#include "ncp_sysmem_init_lsiphy.c"
+#include "ncp_elm.c"
 #endif
 #endif
 

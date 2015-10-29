@@ -26,38 +26,27 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-#obj-y += axxia.o mdio.o phy.o usb_phy.o non_secure.o timer_init.o
-obj-y += axxia.o mdio.o phy.o non_secure.o timer_init.o
+obj-y += mdio.o phy.o non_secure.o timer_init.o
 
 ifdef CONFIG_AXXIA_EIOA
 obj-y += eioa.o ncp_task_config_axm55xx.o ncp_task_axm55xx.o
 obj-y += ncp_task_api_entry.o ncp_task_uboot_config_axm55xx.o
 endif
 
-obj-y += smp.o
-
 else
 
 ################################################################################
 ## SPL Build
 
-ifdef CONFIG_AXXIA_55XX
-ifndef CONFIG_AXXIA_EMU
-#obj-y += voltage.o pciesrio.o
-endif
-endif
-
-obj-y   += mbist_range.o spl.o axxia_initialize.o
+obj-y   += mbist_range.o secure.o
 
 endif
 
 ################################################################################
 ## All Builds
 
-#obj-y   += failure.o version.o axxia_clocks.o cache.o spi.o sbb.o vat.o
-obj-y   += failure.o version.o axxia_clocks.o cache.o outer_cache.o spi.o vat.o
-#obj-y   += lowlevel.o monitor.o tables.o
-obj-y   += sbb.o lowlevel.o
+obj-y   += failure.o version.o cache.o outer_cache.o spi.o vat.o
+obj-y   += lowlevel.o
 
 ifdef CONFIG_HW_WATCHDOG
 obj-y += watchdog.o

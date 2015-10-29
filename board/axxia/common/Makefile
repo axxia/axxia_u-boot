@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Copyright (C) 2013 LSI Corporation (john.jacques@lsi.com)
+# Copyright (C) 2015 Intel (john.jacques@intel.com)
 #
 # This program is free software;you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -19,35 +19,23 @@
 #
 ################################################################################
 
-#include $(TOPDIR)/config.mk
-#
-#.PHONY: version
-#
-#LIB	= $(obj)lib$(VENDOR).o
-
 ifndef CONFIG_SPL_BUILD
 
 ################################################################################
 ## Normal Build
 
-#COBJS += $(sort $(COBJS-y))
+obj-y += axxia.o
 
 else
 
 ################################################################################
 ## SPL Build
 
-obj-y += sysmem_reset.o
+obj-y += sysmem_reset.o spl.o axxia_initialize.o
 
 endif
 
 ################################################################################
 ## All Builds
 
-obj-y += lsi.o ncr.o sysmem_size.o
-
-ifdef CONFIG_AXXIA_55XX
-obj-y += sysmem_bist.o
-endif
-
-obj-y += parameters.o
+obj-y += lsi.o ncr.o sysmem_size.o parameters.o sbb.o axxia_clocks.o
