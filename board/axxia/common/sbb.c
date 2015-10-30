@@ -297,9 +297,28 @@ sbb_verify_image(void *source, void *destination,
 	unsigned long parameters[4];
 	int sbb_enabled;
 
-	/* If SBB is disabled, return success */
 	sbb_enabled = is_sbb_enabled(verbose);
 
+	/*
+	  If SBB is disabled, and the image is signed, but not
+	  encrypted, shift the image left by 12 -- skip the header.
+	*/
+	if (0 == sbb_enabled) {
+		unsigned char sbb_encrypted;
+		unsigned int sbb_size;
+
+		sbb_encrypted = *((unsigned char *)(source + 12));
+		sbb_encrypted &= 1;
+
+		if (0 == strncmp(source, "SBB!", strlen("SBB!")) &&
+		    0 == sbb_encrypted) {
+			sbb_size = ntohl(*((unsigned int *)(source + 4)));
+			memmove((void *)source, (void *)(source + 12),
+				sbb_size);
+		}
+	}
+
+	/* If SBB is disabled, return success */
 	if (1 != sbb_enabled)
 		return sbb_enabled;
 
