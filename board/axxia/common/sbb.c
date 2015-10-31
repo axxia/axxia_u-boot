@@ -322,6 +322,9 @@ sbb_verify_image(void *source, void *destination,
 	if (1 != sbb_enabled)
 		return sbb_enabled;
 
+	/* Flush the data cache, as the SBB has not access to L1/L2. */
+	flush_dcache_all();
+
 	/* Set up the parameters. */
 	parameters[0] = 0;
 	parameters[1] = (unsigned long)source;

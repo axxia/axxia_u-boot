@@ -66,7 +66,7 @@ ENDPROC(v7_outer_cache_flush_range)
 ENTRY(v7_outer_cache_inval_all)
 ENDPROC(v7_outer_cache_inval_all)
 
-ENTRY(flush_l3_cache)
+ENTRY(__asm_flush_l3_cache)
 	mov	x9, x30
 	mov	x0, 1
 	bl	set_outer_cache_state
@@ -74,7 +74,7 @@ ENTRY(flush_l3_cache)
 	bl	set_outer_cache_state
 	mov	x30, x9
 	ret
-ENDPROC(flush_l3_cache)
+ENDPROC(__asm_flush_l3_cache)
 
 ENTRY(v7_outer_cache_disable)
 ENDPROC(v7_outer_cache_disable)

@@ -147,7 +147,7 @@ void dcache_disable(void)
 	 */
 
 	__asm_flush_dcache_all();
-	flush_l3_cache();
+	__asm_flush_l3_cache();
 
 	__asm_invalidate_tlb_all();
 }

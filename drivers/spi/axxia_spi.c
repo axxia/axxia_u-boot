@@ -364,7 +364,7 @@ static int spi_dma_read(struct axxia_pl022 *pl022,
 #ifdef CONFIG_SPL_BUILD
 	writel(pscb_val_pre, (PERIPH_SCB + 0x43800));
 	writel(mscb_val_pre, (MMAP_SCB + 0x42800));
-	flush_l3_cache();
+	flush_dcache_all();
 #endif
 
 	/* Verify that the right number of bits got moved. */

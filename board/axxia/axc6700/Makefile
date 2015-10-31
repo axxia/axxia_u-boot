@@ -45,8 +45,7 @@ endif
 ################################################################################
 ## All Builds
 
-obj-y   += failure.o version.o cache.o outer_cache.o spi.o vat.o
-obj-y   += lowlevel.o
+obj-y   += failure.o version.o spi.o vat.o lowlevel.o
 
 ifdef CONFIG_HW_WATCHDOG
 obj-y += watchdog.o

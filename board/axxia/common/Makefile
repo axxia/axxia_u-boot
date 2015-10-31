@@ -39,3 +39,4 @@ endif
 ## All Builds
 
 obj-y += lsi.o ncr.o sysmem_size.o parameters.o sbb.o axxia_clocks.o
+obj-y += cache.o outer_cache.o
