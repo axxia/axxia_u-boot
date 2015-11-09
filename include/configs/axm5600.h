@@ -24,7 +24,7 @@
 #define CONFIG_AXXIA_SIM
 #define ARM64
 
-/*#define CONFIG_AXXIA_AXM_I2C*/
+#define CONFIG_AXXIA_AXM_I2C
 
 #if 0
 #define CONFIG_USB_XHCI_AXXIA
@@ -101,8 +101,8 @@
   ==============================================================================
 */
 
-#if 0
 #ifndef __ASSEMBLY__
+#ifdef CONFIG_AXXIA_AXM_I2C
 #define CONFIG_CMD_I2C
 #define CONFIG_CMD_SDRAM
 #define CONFIG_AXXIA_I2C
@@ -233,8 +233,8 @@
 ** Unused                                  0x00CC - 0x00FC
 */
 
-#endif	/* __ASSEMBLY__ */
 #endif
+#endif	/* __ASSEMBLY__ */
 
 /*
   ==============================================================================
@@ -1055,7 +1055,6 @@ int serial_early_init(void);
 #if 0
 #define CONFIG_CMD_MMC		/* MMC support                  */
 #endif
-/*#define CONFIG_CMD_I2C*/		/* I2C serial bus support	*/
 #define CONFIG_CMD_SPI		/* I2C serial bus support	*/
 #define CONFIG_CMD_SF 		/* Serial flash commands        */
 
