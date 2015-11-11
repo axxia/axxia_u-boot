@@ -697,7 +697,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define GPREG_USB    (GPREG + 0x08)
 #define GPREG_STATUS (GPREG + 0x0c)
 
-#define APB2_SER0_BASE (IO)
+#define APB2_SER0_BASE (0x8002000000)
 #define APB2_SER3_BASE (IO + 0x30000)
 #define NCP_APB2SER_INDIRECT_COMMAND_0      (0x00000000)
 #define NCP_APB2SER_INDIRECT_COMMAND_1      (0x00000004)

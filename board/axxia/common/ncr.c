@@ -346,437 +346,7 @@ ncr_unlock(int domain)
 	return;
 }
 
-#ifdef ACP_25xx
-
-/*
-  -------------------------------------------------------------------------------
-  ncr_read16_0x115
-*/
-
-static int
-ncr_read16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
-		 unsigned short *value)
-{
-	int wfc_timeout = WFC_TIMEOUT;
-
-	/*
-	  Handle the 0x115.1 node.
-	*/
-
-	if (NCP_REGION_ID(0x115, 1) == region) {
-		ncp_uint32_t base;
-
-		base = (IO + (unsigned long)0x3000);
-
-		if (0xffff < offset)
-			return -1;
-
-		writel((0x84c00000 + offset), POINTER(base + 4));
-
-		do {
-			--wfc_timeout;
-			*value = readl(base + 4);
-		} while (0 != (*value & 0x80000000) &&
-			 0 < wfc_timeout);
-
-		if (0 == wfc_timeout)
-			return -1;
-
-		*value = readl(base + 8);
-
-		return 0;
-	}
-
-	return -1;
-}
-
-/*
-  -------------------------------------------------------------------------------
-  ncr_write16_0x115
-*/
-
-static int
-ncr_write16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
-		  unsigned short *value)
-{
-	int wfc_timeout = WFC_TIMEOUT;
-
-	/*
-	  Handle the 0x115 nodes on AXM25xx
-	*/
-
-	if (NCP_REGION_ID(0x115, 1) == region) {
-		ncp_uint32_t base;
-
-		base = (IO + (unsigned long)0x3000);
-
-		if (0xffff < offset)
-			return -1;
-
-		writel(value, POINTER(base));
-		writel((0xc4c00000 + offset), POINTER(base + 4));
-
-		do {
-			--wfc_timeout;
-			value = readl(base + 4);
-		} while (0 != (value & 0x80000000) &&
-			 0 < wfc_timeout);
-
-		if (0 == wfc_timeout)
-			return -1;
-
-		return 0;
-	}
-
-	return -1;
-}
-
-/*
-  -------------------------------------------------------------------------------
-  ncr_read32_0x115
-*/
-
-static int
-ncr_read32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
-		 ncp_uint32_t *value)
-{
-	int wfc_timeout = WFC_TIMEOUT;
-
-	/*
-	  Handle the 0x115.0, 0x115.2, and 0x115.3 nodes on the AXM25xx.
-	*/
-
-	if ((NCP_REGION_ID(0x115, 0) == region) ||
-	    (NCP_REGION_ID(0x115, 2) == region) ||
-	    (NCP_REGION_ID(0x115, 3) == region)) {
-		ncp_uint32_t base = 0;
-
-		switch (NCP_TARGET_ID(region)) {
-		case 0:
-			base = (IO + (unsigned long)0x3030);
-			break;
-		case 2:
-			base = (IO + (unsigned long)0x3010);
-			break;
-		case 3:
-			base = (IO + (unsigned long)0x3020);
-			break;
-		default:
-			/* Unreachable, due to the if() above. */
-			break;
-		}
-
-		if (0xffff < offset)
-			return -1;
-
-		writel((0x85400000 + offset), POINTER(base + 4));
-
-		do {
-			--wfc_timeout;
-			*value = readl(base + 4);
-		} while (0 != (*value & 0x80000000) &&
-			 0 < wfc_timeout);
-
-		if (0 == wfc_timeout)
-			return -1;
-
-		*value = readl(base + 8);
-
-		return 0;
-	}
-
-	return -1;
-}
-
-/*
-  -------------------------------------------------------------------------------
-  ncr_write32_0x115
-*/
-
-static int
-ncr_write32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
-		  ncp_uint32_t *value)
-{
-	int wfc_timeout = WFC_TIMEOUT;
-
-	/*
-	  Handle the 0x115 nodes on AXM25xx
-	*/
-
-	if ((NCP_REGION_ID(0x115, 0) == region) ||
-	    (NCP_REGION_ID(0x115, 2) == region) ||
-	    (NCP_REGION_ID(0x115, 3) == region)) {
-		ncp_uint32_t base = 0;
-
-		switch (NCP_TARGET_ID(region)) {
-		case 0:
-			base = (IO + 0x3030);
-			break;
-		case 2:
-			base = (IO + 0x3010);
-			break;
-		case 3:
-			base = (IO + 0x3020);
-			break;
-		default:
-			/* Unreachable, due to the if() above. */
-			break;
-		}
-
-		if (0xffff < offset)
-			return -1;
-
-		writel(value, POINTER(base));
-		writel((0xc5400000 + offset), POINTER(base + 4));
-
-		do {
-			--wfc_timeout;
-			value = readl(base + 4);
-		} while (0 != (value & 0x80000000) &&
-			 0 < wfc_timeout);
-
-		if (0 == wfc_timeout)
-			return -1;
-
-		return 0;
-	}
-
-	return -1;
-}
-
-#endif	/* ACP_25xx */
-
 #if defined(CONFIG_AXXIA_55XX) || defined(CONFIG_AXXIA_55XX_EMU) || defined(CONFIG_AXXIA_SIM) || defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_EMU) || defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF) || defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF_SIM)
-
-/*
-  -------------------------------------------------------------------------------
-  ncr_read16_0x115
-*/
-
-static int
-ncr_read16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
-		 unsigned short *value)
-{
-	int wfc_timeout = WFC_TIMEOUT;
-	ncp_uint32_t temp;
-
-	/*
-	  Handle the 0x115.1 and 0x115.4 nodes on the AXM55xx.
-	*/
-
-	if ((NCP_REGION_ID(0x115, 1) == region) ||
-	    (NCP_REGION_ID(0x115, 4) == region)) {
-		unsigned long *base;
-
-		if (NCP_REGION_ID(0x115, 1) == region)
-			base = (unsigned long *)(IO + 0x1f0);
-		else
-			base = (unsigned long *)(IO + 0x220);
-
-		if (0xffff < offset)
-			return -1;
-
-		writel((0x84c00000 + offset), base + 1);
-
-		do {
-			--wfc_timeout;
-			temp = readl(base + 1);
-		} while (0 != (temp & 0x80000000) &&
-			 0 < wfc_timeout);
-
-		if (0 == wfc_timeout)
-			return -1;
-
-		*value = readl(base + 2);
-
-		return 0;
-	}
-
-	return -1;
-}
-
-/*
-  -------------------------------------------------------------------------------
-  ncr_write16_0x115
-*/
-
-static int
-ncr_write16_0x115(ncp_uint32_t region, ncp_uint32_t offset,
-		  unsigned short value)
-{
-	int wfc_timeout = WFC_TIMEOUT;
-	ncp_uint32_t temp;
-
-	/*
-	  Handle the 0x115 nodes on AXM25xx
-	*/
-
-	if ((NCP_REGION_ID(0x115, 1) == region) ||
-	    (NCP_REGION_ID(0x115, 4) == region)) {
-		unsigned long *base;
-
-		if (NCP_REGION_ID(0x115, 1) == region)
-			base = (unsigned long *)(IO + 0x1f0);
-		else
-			base = (unsigned long *)(IO + 0x220);
-
-		if (0xffff < offset)
-			return -1;
-
-		writel(value, base);
-		writel((0xc4c00000 + offset), base + 1);
-
-		do {
-			--wfc_timeout;
-			temp = readl(base + 1);
-		} while (0 != (temp & 0x80000000) &&
-			 0 < wfc_timeout);
-
-		if (0 == wfc_timeout)
-			return -1;
-
-		return 0;
-	}
-
-	return -1;
-}
-
-/*
-  -------------------------------------------------------------------------------
-  ncr_read32_0x115
-*/
-
-static int
-ncr_read32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
-		 ncp_uint32_t *value)
-{
-	int wfc_timeout = WFC_TIMEOUT;
-
-	/*
-	  Handle the 0x115.0, 0x115.1, 0x115.2, 0x115.3, 0x115.4 and 0x115.5
-	  nodes on the AXM55xx.
-	*/
-	if ((NCP_REGION_ID(0x115, 0) == region) ||
-	    (NCP_REGION_ID(0x115, 1) == region) ||
-	    (NCP_REGION_ID(0x115, 2) == region) ||
-	    (NCP_REGION_ID(0x115, 3) == region) ||
-	    (NCP_REGION_ID(0x115, 4) == region) ||
-	    (NCP_REGION_ID(0x115, 5) == region)) {
-		unsigned long *base = 0;
-
-		switch (NCP_TARGET_ID(region)) {
-		case 0:
-			base = (unsigned long *)(IO + 0x1e0);
-			break;
-		case 1:
-			base = (unsigned long *)(IO + 0x1f0);
-			break;
-		case 2:
-			base = (unsigned long *)(IO + 0x200);
-			break;
-		case 3:
-			base = (unsigned long *)(IO + 0x210);
-			break;
-		case 4:
-			base = (unsigned long *)(IO + 0x220);
-			break;
-		case 5:
-			base = (unsigned long *)(IO + 0x230);
-			break;
-		default:
-			/* Unreachable, due to the if() above. */
-			break;
-		}
-
-		if (0xffff < offset)
-			return -1;
-
-		writel((0x85400000 + offset), base + 1);
-
-		do {
-			--wfc_timeout;
-			*value = readl(base + 1);
-		} while (0 != (*value & 0x80000000) &&
-			 0 < wfc_timeout);
-
-		if (0 == wfc_timeout)
-			return -1;
-
-		*value = readl(base + 2);
-
-		return 0;
-	}
-
-	return -1;
-}
-
-/*
-  -------------------------------------------------------------------------------
-  ncr_write32_0x115
-*/
-
-static int
-ncr_write32_0x115(ncp_uint32_t region, ncp_uint32_t offset,
-		  ncp_uint32_t value)
-{
-	int wfc_timeout = WFC_TIMEOUT;
-
-	/*
-	  Handle the 0x115 nodes on AXM25xx
-	*/
-
-	if ((NCP_REGION_ID(0x115, 0) == region) ||
-	    (NCP_REGION_ID(0x115, 1) == region) ||
-	    (NCP_REGION_ID(0x115, 2) == region) ||
-	    (NCP_REGION_ID(0x115, 3) == region) ||
-	    (NCP_REGION_ID(0x115, 4) == region) ||
-	    (NCP_REGION_ID(0x115, 5) == region)) {
-		unsigned long *base = 0;
-
-		switch (NCP_TARGET_ID(region)) {
-		case 0:
-			base = (unsigned long *)(IO + 0x1e0);
-			break;
-		case 1:
-			base = (unsigned long *)(IO + 0x1f0);
-			break;
-		case 2:
-			base = (unsigned long *)(IO + 0x200);
-			break;
-		case 3:
-			base = (unsigned long *)(IO + 0x210);
-			break;
-		case 4:
-			base = (unsigned long *)(IO + 0x220);
-			break;
-		case 5:
-			base = (unsigned long *)(IO + 0x230);
-			break;
-		default:
-			/* Unreachable, due to the if() above. */
-			break;
-		}
-
-		if (0xffff < offset)
-			return -1;
-
-		writel(value, base);
-		writel((0xc5400000 + offset), base + 1);
-
-		do {
-			--wfc_timeout;
-			value = readl(base + 1);
-		} while (0 != (value & 0x80000000) &&
-			 0 < wfc_timeout);
-
-		if (0 == wfc_timeout)
-			return -1;
-
-		return 0;
-	}
-
-	return -1;
-}
 
 /*
   -------------------------------------------------------------------------------
@@ -966,24 +536,34 @@ ncr_apb2ser_indirect_setup(
 {
     ncp_uint32_t    nodeId     = NCP_NODE_ID(regionId);
     ncp_uint32_t    tgtId      = NCP_TARGET_ID(regionId);
-    
-    switch (nodeId) {
-        case 0x110:
-        case 0x111:
-        case 0x112:
-        case 0x113:
-        case 0x114:
-            *xferWidth = (tgtId == 1) ? 2 : 4;
-            break;
+	ncp_uint32_t    baseId	= 0;
 
-        default:
-            return -1;
-    }
+#ifdef CONFIG_AXXIA_56XX
+	if ((nodeId < 0x110) || (nodeId > 0x11a))
+		return -1;
+#endif
+#ifdef CONFIG_AXXIA_XLF
+	if ((nodeId < 0x110) || (nodeId > 0x11f))
+		return -1;
+#endif
 
-    *indirectOffset = ((nodeId - 0x110) * 0x60) + (tgtId * 0x10);
+	/* For 56xx, target 0 is PHY config, target > 0 is serdes */
+	*xferWidth = (tgtId > 0) ? 2 : 4;
 
-    return 0;
+	if (nodeId <= 0x114) {
+		/* nodes 0x110 - 0x114 */
+		baseId = (nodeId - 0x110) * 2;
+	} else if (nodeId >= 0x116) {
+		/* nodes 0x116 - 0x11a */
+		baseId = (nodeId - 0x111) * 2;
+	} else {
+		/* node 0x115 */
+		baseId = 0x14;
+	}
 
+	*indirectOffset = ((baseId + tgtId) * 0x10);
+
+	return 0;
 }
 
 
@@ -1053,15 +633,6 @@ ncr_read32_apb2ser(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value
         return -1;
     }
 
-    if (xferWidth != 4) {
-        return -1;
-    }
-
-    if (offset & (xferWidth - 1))
-    {
-        return -1;
-    }
-
     return ncr_apb2ser_indirect_access(offset, indirectOffset,
         value, 0, xferWidth);
 }
@@ -1082,22 +653,13 @@ ncr_write32_apb2ser(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value
         return -1;
     }
 
-    if (xferWidth != 4) {
-        return -1;
-    }
-
-    if (offset & (xferWidth - 1))
-    {
-        return -1;
-    }
-
     return ncr_apb2ser_indirect_access(offset, indirectOffset,
                 &value, 1, xferWidth);
 
 }
 
 
-#endif	/* CONFIG_AXXIA_55XX */
+#endif	/* CONFIG_AXXIA_56XX */
 
 /*
   ======================================================================
@@ -1122,32 +684,12 @@ ncr_read(ncp_uint32_t region,
 	command_data_register_2_t cdr2;	/* 0x101.0.0xf8 */
 	int wfc_timeout = WFC_TIMEOUT;
 
+	if ((NCP_TARGET_ID(region) >= 0x110) &&
+	    (NCP_TARGET_ID(region) <= 0x11f)) {
+		return ncr_read32_apb2ser(region, address, buffer);
+	}
+
 	switch (NCP_NODE_ID(region)) {
-    case 0x110:
-    case 0x111:
-    case 0x112:
-    case 0x113:
-    case 0x114:
-        return ncr_read32_apb2ser(region, address, buffer);
-	case 0x115:
-		/* Can be 16 bit (targets 1 & 4) or 32 bit. */
-		switch (NCP_TARGET_ID(region)) {
-		case 0:
-		case 2:
-		case 3:
-		case 5:
-			return ncr_read32_0x115(region, address,
-						(ncp_uint32_t *)buffer);
-			break;
-		case 1:
-		case 4:
-			return ncr_read16_0x115(region, address,
-						(unsigned short *)buffer);
-			break;
-		default:
-			return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
-		}
-		break;
 	case 0x153:
 		return ncr_read32_0x153(region, address, (ncp_uint32_t *)buffer);
 		break;
@@ -1361,10 +903,7 @@ ncr_read16(ncp_uint32_t region, ncp_uint32_t offset, unsigned short *value)
 
 	NCR_TRACE_READ16(region, offset);
 
-	if (0x115 == NCP_NODE_ID(region))
-		rc = ncr_read16_0x115(region, offset, value);
-	else
-		rc = ncr_read(region, 0, offset, 2, value);
+	rc = ncr_read(region, 0, offset, 2, value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1446,32 +985,12 @@ ncr_write(ncp_uint32_t region,
 	int dbs = (number - 1);
 	int wfc_timeout = WFC_TIMEOUT;
 
+	if ((NCP_TARGET_ID(region) >= 0x110) &&
+	    (NCP_TARGET_ID(region) <= 0x11f)) {
+		return ncr_write32_apb2ser(region, address,
+					   *((ncp_uint32_t *)buffer));
+	}
 	switch (NCP_NODE_ID(region)) {
-    case 0x110:
-    case 0x111:
-    case 0x112:
-    case 0x113:
-    case 0x114:
-        return ncr_write32_apb2ser(region, address, *((ncp_uint32_t *)buffer));
-	case 0x115:
-		/* Can be 16 bit (targets 1 & 4) or 32 bit. */
-		switch (NCP_TARGET_ID(region)) {
-		case 0:
-		case 2:
-		case 3:
-		case 5:
-			return ncr_write32_0x115(region, address,
-						 *((ncp_uint32_t *)buffer));
-			break;
-		case 1:
-		case 4:
-			return ncr_write16_0x115(region, address,
-						 *((ncp_uint32_t *)buffer));
-			break;
-		default:
-			return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
-		}
-		break;
 	case 0x153:
 		return ncr_write32_0x153(region, address,
 					 *((ncp_uint32_t *)buffer));
@@ -1696,10 +1215,7 @@ ncr_write16( ncp_uint32_t region, ncp_uint32_t offset, unsigned short value )
 
 	NCR_TRACE_WRITE16(region, offset, value);
 
-	if (0x115 == NCP_NODE_ID(region))
-		rc = ncr_write16_0x115(region, offset, value);
-	else
-		rc = ncr_write(region, 0, offset, 2, &value);
+	rc = ncr_write(region, 0, offset, 2, &value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
