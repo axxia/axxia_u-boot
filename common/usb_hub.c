@@ -98,6 +98,15 @@ static void usb_hub_power_on(struct usb_hub_device *hub)
 	dev = hub->pusb_dev;
 
 	debug("enabling power on all ports\n");
+#ifdef CONFIG_AXXIA_USB_POWERCYCLE
+    for (i = 0; i < dev->maxchild; i++) {
+		usb_clear_port_feature(dev, i + 1, USB_PORT_FEAT_POWER);
+		debug("port %d returns %lX\n", i + 1, dev->status);
+	}
+
+	/* Wait at least 2*bPwrOn2PwrGood for PP to change */
+	mdelay(pgood_delay);
+#endif
 	for (i = 0; i < dev->maxchild; i++) {
 		usb_set_port_feature(dev, i + 1, USB_PORT_FEAT_POWER);
 		debug("port %d returns %lX\n", i + 1, dev->status);

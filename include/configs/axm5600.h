@@ -26,7 +26,14 @@
 
 #define CONFIG_AXXIA_AXM_I2C
 
+/*
+ * xHCI model needs powercycling of usb ports, according to standard
+ * define ...USB_POWERCYCLE if uboot should handle this, 
+ * undefine if model is handling it
+*/
+
 #define CONFIG_AXXIA_USB
+#define CONFIG_AXXIA_USB_POWERCYCLE
 
 /*
   ==============================================================================
