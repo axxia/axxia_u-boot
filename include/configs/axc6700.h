@@ -25,18 +25,6 @@
 
 /*#define CONFIG_AXXIA_AXM_I2C*/
 
-#if 0
-#define CONFIG_USB_XHCI_AXXIA
-#define CONFIG_CMD_USB 1
-#define CONFIG_USB_XHCI 1
-#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS 1
-#define CONFIG_USB_STORAGE 1
-#define CONFIG_CMD_USB_STORAGE 1
-#define CONFIG_CMD_EXT2 1
-#define CONFIG_CMD_EXT4 1
-#define CONFIG_DOS_PARTITION 1
-#endif
-
 /*
   ==============================================================================
   ==============================================================================
@@ -247,6 +235,8 @@
 /*#define CONFIG_AXXIA_FEMAC*/
 /*#define CONFIG_AXXIA_EIOA*/
 
+#define CONFIG_CMD_SBB
+
 #endif	/* CONFIG_TARGET_SIMULATION */
 
 #ifdef CONFIG_TARGET_EMULATION
@@ -412,7 +402,7 @@
 
 #define CONFIG_MEMORY_RETENTION
 
-#define CONFIG_LSI_SBB
+#define CONFIG_CMD_SBB
 
 #define SSP_DEFAULT_CLOCK  4000000
 
