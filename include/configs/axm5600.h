@@ -286,6 +286,8 @@
 /*#define CONFIG_AXXIA_FEMAC*/
 /*#define CONFIG_AXXIA_EIOA*/
 
+#define CONFIG_CMD_SBB
+
 #endif	/* CONFIG_TARGET_SIMULATION */
 
 #ifdef CONFIG_TARGET_EMULATION
@@ -374,6 +376,8 @@
 
 #define CONFIG_BOOTCOMMAND "setenv autoload ; dhcp ; bootm"
 
+#define CONFIG_CMD_SBB
+
 #endif	/* CONFIG_TARGET_EMULATION */
 
 #ifdef CONFIG_TARGET_HARDWARE
@@ -404,6 +408,8 @@
 #define CONFIG_AXXIA_PHY_ADDRESS 0x1e
 
 #define CONFIG_LSI_CLOCKS
+
+#define CONFIG_CMD_SBB
 
 /*
   ==============================================================================
@@ -438,7 +444,7 @@
 
 #define CONFIG_MEMORY_RETENTION
 
-#define CONFIG_LSI_SBB
+#define CONFIG_CMD_SBB
 
 #define SSP_DEFAULT_CLOCK  4000000
 
@@ -1489,7 +1495,7 @@ void stop_watchdog(void);
 
 #define CONFIG_LSI_TEST
 
-#define CONFIG_LSI_SBB
+#define CONFIG_CMD_SBB
 
 #ifndef __ASSEMBLY__
 extern volatile unsigned long *crumbs;
