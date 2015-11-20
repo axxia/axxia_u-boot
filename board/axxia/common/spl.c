@@ -124,22 +124,22 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 
 		if ((type == spl_mtest_data) || (type == spl_mtest_all)) {
 			/*
-				* Data line test: write a pattern to the first
-				* location, write the 1's complement to a 'parking'
+			 * Data line test: write a pattern to the first
+			 * location, write the 1's complement to a 'parking'
 			 * address (changes the state of the data bus so a
 			 * floating bus doen't give a false OK), and then
-									 * read the value back. Note that we read it back
-									 * into a variable because the next time we read it,
-									 * it might be right (been there, tough to explain to
-				* the quality guys why it prints a failure when the
-				* "is" and "should be" are obviously the same in the
-				* error message).
-									 *
-									 * Rather than exhaustively testing, we test some
-									 * patterns by shifting '1' bits through a field of
-									 * '0's and '0' bits through a field of '1's (i.e.
-				* pattern and ~pattern).
-									 */
+			 * read the value back. Note that we read it back
+			 * into a variable because the next time we read it,
+			 * it might be right (been there, tough to explain to
+			 * the quality guys why it prints a failure when the
+			 * "is" and "should be" are obviously the same in the
+			 * error message).
+			 *
+			 * Rather than exhaustively testing, we test some
+			 * patterns by shifting '1' bits through a field of
+			 * '0's and '0' bits through a field of '1's (i.e.
+			 * pattern and ~pattern).
+			 */
 			addr = start;
 			dummy = start + 1;
 			for (j = 0;
