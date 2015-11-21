@@ -52,6 +52,103 @@ void ncr_sysmem_init_mode_disable(void);
 #define PARAMETERS_GLOBAL_RUN_SMEM_RANGES  0x40000000
 #define PARAMETERS_GLOBAL_RUN_SMEM_BIST    0x80000000
 
+typedef long long               ncp_int64_t;
+typedef unsigned long long      ncp_uint64_t;
+typedef unsigned                ncp_uint32_t;
+typedef long                    ncp_int32_t;
+typedef unsigned short          ncp_uint16_t;
+typedef unsigned char           ncp_uint8_t;
+typedef unsigned char           ncp_bool_t;
+typedef void *                  ncp_dev_hdl_t;
+typedef unsigned                ncp_region_id_t;
+
+typedef enum {
+	NCP_ST_SUCCESS = 0,
+	NCP_ST_ERROR,
+	NCP_ST_SYSMEM_INVALID_ID,
+	NCP_ST_SYSMEM_PHY_CPC_CAL_TIMEOUT,
+	NCP_ST_SYSMEM_PHY_TRAIN_TIMEOUT,
+	NCP_ST_SYSMEM_PHY_TRAIN_SW_TIMEOUT,
+	NCP_ST_SYSMEM_PHY_WL_ERR,
+	NCP_ST_SYSMEM_PHY_WL_DLY_ERR,
+	NCP_ST_SYSMEM_PHY_ECC_WL_ERR,
+	NCP_ST_SYSMEM_PHY_ECC_WL_DLY_ERR,
+	NCP_ST_SYSMEM_PHY_RDFIFO_OPT_ERR,
+	NCP_ST_SYSMEM_PHY_CPC_ERR,
+	NCP_ST_SYSMEM_PHY_RD_DLY_ERR,
+	NCP_ST_SYSMEM_PHY_RD_CAL_ERR,
+	NCP_ST_SYSMEM_PHY_WR_LVL_ERR,
+	NCP_ST_SYSMEM_PHY_RD_LVL_ERR,
+	NCP_ST_SYSMEM_PHY_GT_TRN_ERR,
+	NCP_ST_SYSMEM_PHY_CMD_DLY_ERR,
+	NCP_ST_TREEMEM_DDR_INIT_ERR,
+	NCP_ST_POLL_TIMEOUT
+} ncp_st_t;
+
+/*
+ * enumerated type for the four 'standard' topologies
+ * the values are assigned as a bit mask of which ranks
+ * (chip selects) exist.
+ */
+typedef enum {
+	NCP_SM_TOPO_ONE_SINGLE_RANK = 0x1,
+	NCP_SM_TOPO_ONE_DUAL_RANK   = 0x3,
+	NCP_SM_TOPO_TWO_SINGLE_RANK = 0x5,
+	NCP_SM_TOPO_TWO_DUAL_RANK   = 0xf
+} ncp_sm_topology_t;
+
+typedef enum {
+	/*
+	  NCP_SM_SDRAM_DENSITY_256MBIT  = 0,
+	*/
+	NCP_SM_SDRAM_DENSITY_512MBIT  = 1,
+	NCP_SM_SDRAM_DENSITY_1GBIT    = 2,
+	NCP_SM_SDRAM_DENSITY_2GBIT    = 3,
+	NCP_SM_SDRAM_DENSITY_4GBIT    = 4,
+	NCP_SM_SDRAM_DENSITY_8GBIT    = 5,
+	NCP_SM_SDRAM_DENSITY_16GBIT   = 6
+} ncp_sm_sdram_density_t;
+
+typedef enum {
+	NCP_SM_SDRAM_WIDTH_4BITS  = 0,
+	NCP_SM_SDRAM_WIDTH_8BITS  = 1,
+	NCP_SM_SDRAM_WIDTH_16BITS = 2,
+	NCP_SM_SDRAM_WIDTH_32BITS = 3
+} ncp_sm_sdram_width_t;
+
+typedef enum {
+	NCP_SM_PRIMARY_BUS_WIDTH_8BITS  = 0,
+	NCP_SM_PRIMARY_BUS_WIDTH_16BITS = 1,
+	NCP_SM_PRIMARY_BUS_WIDTH_32BITS = 2,
+	NCP_SM_PRIMARY_BUS_WIDTH_64BITS = 3
+} ncp_sm_primary_bus_width_t;
+
+typedef struct __attribute__((packed)) {
+	unsigned char sdram_rtt_nom[4];
+	unsigned char sdram_rtt_wr[4];
+	unsigned char sdram_data_drv_imp[4];
+	unsigned long phy_min_cal_delay;
+	unsigned long phy_adr_phase_select;
+	unsigned long phy_dp_io_vref_set;
+	unsigned long phy_adr_io_vref_set;
+	unsigned long phy_rdlvl_cmp_even;
+	unsigned long phy_rdlvl_cmp_odd;
+	unsigned long phy_write_align_finetune;
+} ncp_per_sysmem_parms_t;
+
+typedef enum {
+	NCP_SM_DDR3_MODE = 6,
+	NCP_SM_DDR4_MODE = 10
+} ncp_dram_class_t;
+
+typedef enum {
+	NCP_SM_REFRESH_MODE_1X = 0,
+	NCP_SM_REFRESH_MODE_2X = 1,
+	NCP_SM_REFRESH_MODE_4X = 2
+} ncp_refresh_mode_t;
+
+extern ncp_uint32_t sm_nodes[];
+
 #ifdef CONFIG_AXXIA_ARM
 
 typedef struct {
@@ -189,57 +286,118 @@ typedef void *   ncp_dev_hdl_t;
 typedef unsigned ncp_region_id_t;
 
 typedef struct {
-    unsigned char sdram_rtt_nom[4];
-    unsigned char sdram_rtt_wr[4];
-    unsigned char sdram_data_drv_imp[4];
-    unsigned phy_min_cal_delay;
-    unsigned phy_adr_phase_select;
-    unsigned phy_dp_io_vref_set;
-    unsigned phy_adr_io_vref_set;
-    unsigned phy_rdlvl_cmp_even;
-    unsigned phy_rdlvl_cmp_odd;
-    unsigned phy_write_align_finetune;
+	unsigned char sdram_rtt_nom[4];
+	unsigned char sdram_rtt_wr[4];
+	unsigned char sdram_data_drv_imp[4];
+	unsigned phy_min_cal_delay;
+	unsigned phy_adr_phase_select;
+	unsigned phy_dp_io_vref_set;
+	unsigned phy_adr_io_vref_set;
+	unsigned phy_rdlvl_cmp_even;
+	unsigned phy_rdlvl_cmp_odd;
+	unsigned phy_write_align_finetune;
 } __attribute__((packed)) per_mem_parms_t;
 
 typedef struct {
-	unsigned version;
-	unsigned ddrClockSpeedMHz;
-	unsigned auto_detect;
-	unsigned num_interfaces;
-	unsigned num_ranks_per_interface;
-	unsigned primary_bus_width;
-	unsigned topology;
-	unsigned min_ctrl_roundtrip_delay;
-	unsigned phy_rdlat;
-	unsigned added_rank_switch_delay;
-	unsigned zqcs_interval;
-	unsigned enableECC;
-	unsigned enable_runtime_updates;
-	unsigned dramPrechargePolicy;
-	unsigned open_page_size;
-	unsigned syscacheControl;
-	unsigned sdram_device_density;
-	unsigned sdram_device_width;
-	unsigned CAS_latency;
-	unsigned CAS_write_latency;
-	unsigned address_mirroring;
-	unsigned registeredDIMM;
-	unsigned rdimm_ctl_0_0;
-	unsigned rdimm_ctl_0_1;
-	unsigned rdimm_misc;
-	unsigned write_ODT_ctl;
-	unsigned read_ODT_ctl;
-	unsigned single_bit_mpr;
-	unsigned high_temp_dram;
+	ncp_uint8_t                 version;
+	ncp_bool_t                  auto_detect;
+	ncp_uint8_t                 num_interfaces;
+	ncp_uint8_t                 num_ranks_per_interface;
+	ncp_sm_topology_t           topology;
+	ncp_sm_sdram_density_t      sdram_device_density;
+	ncp_sm_sdram_width_t        sdram_device_width;
+	ncp_sm_primary_bus_width_t  primary_bus_width;
+	ncp_uint8_t                 CAS_latency;
+	ncp_uint8_t                 CAS_write_latency;
+	ncp_bool_t                  enableECC;
+	ncp_uint8_t                 min_phy_cal_delay;
+	ncp_uint8_t                 min_ctrl_roundtrip_delay;
+	ncp_bool_t                  single_bit_mpr;
+	ncp_uint32_t                rdcal_cmp_even;
+	ncp_uint32_t                rdcal_cmp_odd;
+	ncp_bool_t                  enable_deskew;
+	ncp_bool_t                  enable_rdlvl;
+	ncp_bool_t                  enable_auto_cpc;
 
-	per_mem_parms_t per_mem[2];
+	ncp_uint8_t                 added_rank_switch_delay;
+	ncp_bool_t                  high_temp_dram;
 
-	/* Not part of the parameters, used internally.	*/
-	unsigned ddrRetentionEnable;
-	unsigned ddrRecovery;
-	unsigned num_bytelanes;
- 	unsigned long long totalSize;
+	ncp_uint32_t                sdram_rtt_nom;
+	ncp_uint32_t                sdram_rtt_wr;
+	ncp_uint32_t                sdram_data_drv_imp;
+	ncp_uint32_t                phy_adr_imp;
+	ncp_uint32_t                phy_dat_imp;
+	ncp_uint32_t                phy_rcv_imp;
+
+	ncp_uint8_t                 phy_rdlat;
+	ncp_uint8_t                 address_mirroring;
+	ncp_uint8_t                 fixed_read_lat;
+	ncp_uint8_t                 bubble_clobber;
+	ncp_uint8_t                 syscacheMode;
+	ncp_bool_t                  syscacheDisable;
+
+	/* new for 5500 */
+	ncp_uint32_t                zqcs_interval;
+	ncp_bool_t                  enable_runtime_updates;
+	ncp_uint8_t                 dramPrechargePolicy;
+	ncp_uint32_t                open_page_size;
+	ncp_per_sysmem_parms_t      per_smem[2];
+
+	ncp_uint32_t                flags;
+	ncp_bool_t                  half_mem;
+	ncp_uint16_t                cmemMR1[2];
+
+	ncp_bool_t                 ddrRetentionEnable;
+	ncp_bool_t                 ddrRecovery;
+
+	ncp_uint16_t               ddrClockSpeedMHz;
+	ncp_uint8_t                 num_bytelanes;
+	ncp_int64_t                 totalSize;
+
+	/* RDIMM support */
+	ncp_uint32_t		rdimm_ctl_0_0;
+	ncp_uint32_t		rdimm_ctl_0_1;
+	ncp_uint32_t		rdimm_misc;
+
+	/* ODT Rd/Wr map support */
+	ncp_uint32_t		read_ODT_ctl;
+	ncp_uint32_t		write_ODT_ctl;
+
+	/* new for 5600 */
+	ncp_dram_class_t		dram_class;
+	ncp_uint32_t		additive_latency;
+	ncp_uint8_t			binned_CAS_latency; 	/* from part definition like CL-nRCD-nRP */
+	ncp_uint32_t		tck_ps;  		/* period or rate at which part runs in pico-sec */
+	ncp_uint8_t			refresh_mode;		/* 1 means 1x, 2 means 2x, 4 means 4x */
+	ncp_uint8_t                 address_inversion;	/* applies only to ddr4 */
+	ncp_uint8_t                 bstlen;			/* encoded burst_length during init and calculations */
+	ncp_uint8_t                 dm_masking;		/* support availability on external dram */
+	ncp_uint32_t		rdimm_ctl_0_2;
+	ncp_uint32_t		rdimm_ctl_0_3;
+	ncp_uint32_t		rdimm_ctl_0_4;
+	ncp_uint32_t		rdimm_ctl_1_0;
+	ncp_uint32_t		rdimm_ctl_1_1;
+	ncp_uint32_t		rdimm_ctl_1_2;
+	ncp_uint32_t		rdimm_ctl_1_3;
+	ncp_uint32_t		rdimm_ctl_1_4;
+	ncp_bool_t			vref_en;
+	ncp_uint32_t		vref_cs;
+	ncp_uint32_t		vref_val; 		/* VREF value per DRAM per chip-select- same for now */
+	ncp_uint16_t		wr_protect_en_mask;
+	ncp_bool_t			rdlvl_en;	/* Data eye training */
+	ncp_bool_t			dbi_en;		/* data-bus inversion for rd and wr enable */
+	ncp_bool_t			rdlvl_gate_en;	/* Gate training */
+	ncp_uint32_t		rdlvl_interval;	/* Max long count sequences between data eye training */
+	ncp_uint32_t		rdlvl_gate_interval;	/* Max long count sequences between gate training */
+	ncp_uint8_t			preamble_support;/* 0-3 */
+	ncp_uint8_t			crc_mode;/* Bit(0): 1 to enable crc gen/checking, Bit(1): 1: performed in MC 0: in PHY */
+	ncp_uint32_t		dq_map_0[5]; /* Bit Map is 144 bits, so only 16-bits of index 4 are valid */
+	ncp_uint32_t		dq_map_1[5]; /* Bit Map is 144 bits, so only 16-bits of index 4 are valid */
+	ncp_uint8_t			dq_map_odd_rank_swap_0; /* 4 bits representing chip-selects */
+	ncp_uint8_t			dq_map_odd_rank_swap_1; /* 4 bits representing chip-selects */
 } __attribute__((packed)) parameters_mem_t;
+
+typedef parameters_mem_t ncp_sm_parms_t;
 
 #ifdef CONFIG_AXXIA_ARM
 typedef struct {

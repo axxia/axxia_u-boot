@@ -22,10 +22,6 @@
 
 #include <common.h>
 
-static unsigned long sm_nodes [ ] = {
-	0x22, 0x0f, 0x08, 0x09
-};
-
 /*
   ==============================================================================
   ==============================================================================
@@ -39,5 +35,31 @@ static unsigned long sm_nodes [ ] = {
 int
 sysmem_init(void)
 {
+#ifdef CONFIG_AXXIA_SIM
 	return 0;
+#else
+	ncp_st_t ncp_sysmem_init_synopphy(ncp_dev_hdl_t, ncp_uint32_t,
+					  ncp_sm_parms_t *);
+
+#ifdef CONFIG_AXXIA_56XX
+	unsigned sm_nodes[] = {0x22, 0xf};
+#else
+	unsigned sm_nodes[] = {0x22, 0xf, 0x23, 0x24};
+#endif
+	int i;
+	int rc;
+
+	for (i = 0; i < sizeof(sm_nodes)/sizeof(unsigned); ++i) {
+		rc = ncp_sysmem_init_synopphy(NULL, sm_nodes[i], sysmem);
+
+		if (NCP_ST_SUCCESS != rc) {
+			printf("Initializing Sysmem Node 0x%x Failed!\n",
+			       sm_nodes[i]);
+
+			return -1;
+		}
+	}
+
+	return 0;
+#endif
 }

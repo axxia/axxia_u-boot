@@ -40,6 +40,10 @@ else
 
 obj-y   += mbist_range.o secure.o
 
+ifdef CONFIG_AXXIA_EMU
+obj-y	+= sysmem_emulation.o
+endif
+
 endif
 
 ################################################################################

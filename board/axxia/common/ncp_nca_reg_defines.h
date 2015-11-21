@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-#if 0 /* UBOOT */
+#if 0 /* __UBOOT__ */
 #include "ncp_sal_types.h"
 #endif
 
