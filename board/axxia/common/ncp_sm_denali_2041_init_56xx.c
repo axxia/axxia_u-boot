@@ -42,26 +42,6 @@
 #include "ncp_sysmem_synopphy.h"
 #endif
 
-/* From Address pins per JEDEC */
-#define NCP_SM_ENCODE_RTT_NOM_DDR3(val)  \
-	( ( (val & 0x1) << 2 ) |  /* a2 */ \
-	  ( (val & 0x2) << 5 ) |  /* a6 */ \
-	  ( (val & 0x4) << 7 ) )  /* a9 */
-
-#define NCP_SM_ENCODE_DRV_IMP_DDR3(val)  \
-	( ( (val & 0x1) << 1 ) |  /* a1 */ \
-	  ( (val & 0x2) << 4 ) )  /* a5 */ 
-
-#define NCP_SM_ENCODE_RTT_NOM_DDR4(val)  \
-	( ( (val & 0x1) << 8 ) |  /* a8 */ \
-	  ( (val & 0x2) << 8 ) |  /* a9 */ \
-	  ( (val & 0x4) << 8 ) )  /* a10 */
-
-#define NCP_SM_ENCODE_DRV_IMP_DDR4(val)  \
-	( ( (val & 0x1) << 1 ) |  /* a1 */ \
-	  ( (val & 0x2) << 1 ) )  /* a2 */ 
-
-
 extern ncp_sm_poll_controller_fn_t  pollControllerFn;
 
 ncp_uint32_t
@@ -197,6 +177,237 @@ ncp_uint32_t ddr4refresh_parms_by_density_2x[7] = { 0xffff, 0xffff, 0xffff, 1100
 ncp_uint32_t ddr4refresh_parms_by_density_4x[7] = { 0xffff, 0xffff, 0xffff, 90000, 110000, 160000, 0xffff/*chk */ };
 
 ncp_st_t
+ncp_sm_common_setup_56xx(
+		ncp_dev_hdl_t dev,
+		ncp_uint32_t  smNode,
+		ncp_sm_parms_t *parms,
+		ncp_common_timing_parameters_t *ctm)
+{
+	ncp_st_t ncpStatus = NCP_ST_SUCCESS;
+
+	ncp_uint16_t clkSpeedIndex=0;
+	ncp_uint16_t binnedCLIndex=0;
+	ncp_uint16_t tmpVal=0;
+
+	if ((parms == NULL) || (ctm == NULL))
+	{
+		printf("NULL parms\n");
+		NCP_CALL(NCP_ST_ERROR);
+	}
+
+	if ((parms->dram_class != NCP_SM_DDR3_MODE) && (parms->dram_class != NCP_SM_DDR4_MODE))
+	{
+		printf("Error specifying dram_class %d\n",parms->dram_class);
+		NCP_CALL(NCP_ST_ERROR);
+	}
+
+	if ((parms->dram_class == NCP_SM_DDR3_MODE) && 
+			(parms->ddrClockSpeedMHz != 400) &&
+			(parms->ddrClockSpeedMHz != 533) &&
+			(parms->ddrClockSpeedMHz != 667) &&
+			(parms->ddrClockSpeedMHz != 800) &&
+			(parms->ddrClockSpeedMHz != 933) &&
+			(parms->ddrClockSpeedMHz != 1066))
+	{
+		printf("ddr3 clock speed must be 400/533/667/800/933/1066 MHz\n");
+		NCP_CALL(NCP_ST_ERROR);
+	}
+
+	if ((parms->dram_class == NCP_SM_DDR4_MODE) && 
+			(parms->ddrClockSpeedMHz != 800) &&
+			(parms->ddrClockSpeedMHz != 933) &&
+			(parms->ddrClockSpeedMHz != 1067) &&
+			(parms->ddrClockSpeedMHz != 1200))
+	{
+		printf("ddr4 clock speed must be 800/933/1067/1200 MHz\n");
+		NCP_CALL(NCP_ST_ERROR);
+	}
+
+	if ((parms->dram_class == NCP_SM_DDR3_MODE) && 
+			(parms->sdram_device_width != 1) &&
+			(parms->sdram_device_width != 2))
+	{
+		printf("ddr3 device_width must be x8/x16 \n");
+		NCP_CALL(NCP_ST_ERROR);
+	}
+
+	if ((parms->dram_class == NCP_SM_DDR4_MODE) && 
+			(parms->sdram_device_width != 1) &&
+			(parms->sdram_device_width != 2))
+	{
+		printf("ddr4 device_width must be x8/x16 \n");
+		NCP_CALL(NCP_ST_ERROR);
+	}
+
+	/* tCK checks are non-trivial looking up various possibilities from JEDEC, hence doing a boundary check here so we stay on track */
+	if ((parms->dram_class == NCP_SM_DDR3_MODE) && 
+			(((parms->ddrClockSpeedMHz == 400) && ((parms->tck_ps < 2500) || (parms->tck_ps > 3300))) ||
+			 ((parms->ddrClockSpeedMHz == 533) && ((parms->tck_ps < 1875) || (parms->tck_ps > 3300))) ||
+			 ((parms->ddrClockSpeedMHz == 667) && ((parms->tck_ps < 1500) || (parms->tck_ps > 3300))) ||
+			 ((parms->ddrClockSpeedMHz == 800) && ((parms->tck_ps < 1250) || (parms->tck_ps > 3300))) ||
+			 ((parms->ddrClockSpeedMHz == 933) && ((parms->tck_ps < 1070) || (parms->tck_ps > 3300))) ||
+			 ((parms->ddrClockSpeedMHz == 1066) && ((parms->tck_ps < 938) || (parms->tck_ps > 3300)))))
+	{
+		printf("ddr3 invalid tck_ps clock-period in nano-sec \n");
+		NCP_CALL(NCP_ST_ERROR);
+	}
+
+	if ((parms->dram_class == NCP_SM_DDR4_MODE) && 
+			(((parms->ddrClockSpeedMHz == 800) && ((parms->tck_ps < 1250) || (parms->tck_ps > 1600))) ||
+			 ((parms->ddrClockSpeedMHz == 933) && ((parms->tck_ps < 1071) || (parms->tck_ps > 1600))) ||
+			 ((parms->ddrClockSpeedMHz == 1067) && ((parms->tck_ps < 938) || (parms->tck_ps > 1600))) ||
+			 ((parms->ddrClockSpeedMHz == 1200) && ((parms->tck_ps < 833) || (parms->tck_ps > 1600)))))
+	{
+		printf("ddr4 invalid tck_ps clock-period in nano-sec \n");
+		NCP_CALL(NCP_ST_ERROR);
+	}
+
+	if ((parms->topology != NCP_SM_TOPO_ONE_SINGLE_RANK) &&
+			(parms->topology != NCP_SM_TOPO_ONE_DUAL_RANK) &&
+			(parms->topology != NCP_SM_TOPO_TWO_DUAL_RANK))
+	{
+		printf("invalid chip-select_map i.e. topology selected \n");
+		NCP_CALL(NCP_ST_ERROR);
+	}
+
+	if (parms->dram_class == NCP_SM_DDR3_MODE)
+	{
+		/* derive clkSpeedIndex for later use */
+		while (parms->ddrClockSpeedMHz != speedbin_ddr3_vals[clkSpeedIndex].speed) clkSpeedIndex++;
+
+		/* validate binned_CL and derive binnedCLIndex for later use */
+		while ((parms->binned_CAS_latency != speedbin_ddr3_vals[clkSpeedIndex].binned_CL[binnedCLIndex]) &&
+				(speedbin_ddr3_vals[clkSpeedIndex].binned_CL[binnedCLIndex] != 0xff)) binnedCLIndex++;
+		if (speedbin_ddr3_vals[clkSpeedIndex].binned_CL[binnedCLIndex] == 0xff)
+		{
+			printf("invalid binned_CAS_latency\n");
+			NCP_CALL(NCP_ST_ERROR);
+		}
+
+		/* validate CAS_latency */
+		tmpVal = 0;
+		while ((parms->CAS_latency != speedbin_ddr3_vals[clkSpeedIndex].CL_config[tmpVal]) &&
+				(speedbin_ddr3_vals[clkSpeedIndex].CL_config[tmpVal] != 0xff)) tmpVal++;
+		if (speedbin_ddr3_vals[clkSpeedIndex].CL_config[tmpVal] == 0xff)
+		{
+			printf("invalid CAS_latency\n");
+			NCP_CALL(NCP_ST_ERROR);
+		}
+	}
+	else
+	{
+		/* derive clkSpeedIndex for later use */
+		while (parms->ddrClockSpeedMHz != speedbin_ddr4_vals[clkSpeedIndex].speed) clkSpeedIndex++;
+
+		/* validate binned_CL and derive binnedCLIndex for later use */
+		while ((parms->binned_CAS_latency != speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex]) &&
+				(speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex] != 0xff)) binnedCLIndex++;
+		if (speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex] == 0xff)
+		{
+			printf("invalid binned_CAS_latency\n");
+			NCP_CALL(NCP_ST_ERROR);
+		}
+
+		/* validate CAS_latency */
+		tmpVal = 0;
+		while ((parms->CAS_latency != speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal]) &&
+				(speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal] != 0xff)) tmpVal++;
+		if (speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal] == 0xff)
+		{
+			printf("invalid CAS_latency\n");
+			NCP_CALL(NCP_ST_ERROR);
+		}
+	}
+
+	/* validate tCK: this is non-trivial because of ranges used in JEDEC. TBD */
+
+	/* validate CWL: this is non-trivial because of many values depending on rates are Reserved per JEDEC. TBD */
+
+	/* Extract timing parameters for example:
+	 * ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRCD[binnedCLIndex]))
+	 * ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRCD[binnedCLIndex]))
+	 * over tCK period for calculation
+	 * Note that this is same as using ncp_ps_to_clk if running at prescribed rate.
+	 * However, for example a 933 part can be run at lower rates like 800 MHz, thus having a different tCK
+	 * and if using above method would cover <any> JEDEC tCK cases as well */
+
+	printf("X9/XLF MC node %d Common Timing Parameters Init....\n",smNode);
+
+	/* First Populate Commonly used Timing Parameters based on a) sm_parms info b) JEDEC */
+	if (parms->dram_class == NCP_SM_DDR3_MODE)
+	{
+		ctm->speed = speedbin_ddr3_vals[clkSpeedIndex].speed;  /* Mhz */
+		ctm->binned_CL = speedbin_ddr3_vals[clkSpeedIndex].binned_CL[binnedCLIndex];
+		ctm->CL_config = speedbin_ddr3_vals[clkSpeedIndex].CL_config[tmpVal];
+		ctm->tRCD = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRCD[binnedCLIndex]));
+		ctm->tRP = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRP[binnedCLIndex]));
+		ctm->tRAS = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRAS[binnedCLIndex]));
+		ctm->tRC = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRC[binnedCLIndex]));
+
+		/* sdram_device_width is defined as 0=x4(no support), 1=x8, 2=x16, 3=x32(no support)
+		 * 1KB page size for x8, 2KB page size for x16 */
+		ctm->tRRD = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRRD[parms->sdram_device_width - 1]));
+		ctm->tFAW = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tFAW[parms->sdram_device_width - 1]));
+
+		ctm->tCKE = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tCKE));
+	}
+	else
+	{
+		ctm->speed = speedbin_ddr4_vals[clkSpeedIndex].speed;  /* Mhz */
+		ctm->binned_CL = speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex];
+		ctm->CL_config = speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal];
+		ctm->tRCD = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRCD[binnedCLIndex])); 
+		ctm->tRP = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRP[binnedCLIndex])); 
+		ctm->tRAS = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRAS[binnedCLIndex])); 
+		ctm->tRC = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRC[binnedCLIndex])); 
+
+		ctm->tCCD_L = (speedbin_ddr4_vals[clkSpeedIndex].tCCD_L); 
+		ctm->tCCD_S = (speedbin_ddr4_vals[clkSpeedIndex].tCCD_S); 
+
+		/* sdram_device_width is defined as 0=x4, 1=x8, 2=x16, 3=x32(no support)
+		 * 512B page size for x4, 1KB page size for x8, 2KB page size for x16 */
+		ctm->tRRD_S = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRRD_S[parms->sdram_device_width])));
+		ctm->tRRD_L = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRRD_L[parms->sdram_device_width])));
+		ctm->tFAW = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tFAW[parms->sdram_device_width])));
+		ctm->tWTR_S = Max(2, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWTR_S)));
+		ctm->tWTR_L = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWTR_L)));
+		ctm->tRTP = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRTP)));
+		ctm->tWR = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWR));
+		ctm->tMRD = speedbin_ddr4_vals[clkSpeedIndex].tMRD;
+		ctm->tMOD = Max(24, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tMOD)));
+		ctm->tMPRR = speedbin_ddr4_vals[clkSpeedIndex].tMPRR;
+		ctm->tWR_MPR = Max(24, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWR_MPR)));
+		ctm->tZQinit = speedbin_ddr4_vals[clkSpeedIndex].tZQinit;
+		switch(parms->refresh_mode)
+		{
+			case NCP_SM_REFRESH_MODE_1X:
+				ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_1x[parms->sdram_device_density]));
+				ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_1x[parms->sdram_device_density]) + 10000)));
+				ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_1x[parms->sdram_device_density] + 10000));
+				break;
+			case NCP_SM_REFRESH_MODE_2X:
+				ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_2x[parms->sdram_device_density]));
+				ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_2x[parms->sdram_device_density]) + 10000)));
+				ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_2x[parms->sdram_device_density] + 10000));
+			case NCP_SM_REFRESH_MODE_4X:
+				ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_4x[parms->sdram_device_density]));
+				ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_4x[parms->sdram_device_density]) + 10000)));
+				ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_4x[parms->sdram_device_density] + 10000));
+			default:
+				;
+		}
+		ctm->tCKESR = Max(3, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tCKESR))) + 1;
+		ctm->tCKSRE = Max(5, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tCKESR)));
+		ctm->tCKE = Max(3, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tCKE)));
+		ctm->tMRD_PDA = Max(16, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tMRD_PDA)));
+		ctm->tREFI = ncp_ps_to_clk(parms->tck_ps, ((parms->high_temp_dram == TRUE) ?  3900000 : 7800000));
+	}
+
+	NCP_RETURN_LABEL
+		return ncpStatus;
+}
+
+ncp_st_t
 ncp_sm_denali_2041_init_56xx(
 		ncp_dev_hdl_t dev,
 		ncp_uint32_t  smNode,
@@ -205,10 +416,7 @@ ncp_sm_denali_2041_init_56xx(
 {
 	ncp_st_t ncpStatus = NCP_ST_SUCCESS;
 	ncp_region_id_t ctlReg = NCP_REGION_ID(smNode, NCP_SYSMEM_TGT_DENALI);
-	ncp_uint16_t clkSpeedIndex=0;
-	ncp_uint16_t binnedCLIndex=0;
 	ncp_uint32_t loop=0;
-	ncp_uint16_t tmpVal=0;
 
 	int i=0;
 	ncp_uint8_t rd_ODT[4];
@@ -394,87 +602,6 @@ ncp_sm_denali_2041_init_56xx(
 			NCP_CALL(NCP_ST_ERROR);
 	}
 
-	if ((parms == NULL) || (ctm == NULL))
-	{
-		printf("NULL parms\n");
-		NCP_CALL(NCP_ST_ERROR);
-	}
-
-	if ((parms->dram_class != NCP_SM_DDR3_MODE) && (parms->dram_class != NCP_SM_DDR4_MODE))
-	{
-		printf("Error specifying dram_class %d\n",parms->dram_class);
-		NCP_CALL(NCP_ST_ERROR);
-	}
-
-	if ((parms->dram_class == NCP_SM_DDR3_MODE) && 
-			(parms->ddrClockSpeedMHz != 400) &&
-			(parms->ddrClockSpeedMHz != 533) &&
-			(parms->ddrClockSpeedMHz != 667) &&
-			(parms->ddrClockSpeedMHz != 800) &&
-			(parms->ddrClockSpeedMHz != 933) &&
-			(parms->ddrClockSpeedMHz != 1066))
-	{
-		printf("ddr3 clock speed must be 400/533/667/800/933/1066 MHz\n");
-		NCP_CALL(NCP_ST_ERROR);
-	}
-
-	if ((parms->dram_class == NCP_SM_DDR4_MODE) && 
-			(parms->ddrClockSpeedMHz != 800) &&
-			(parms->ddrClockSpeedMHz != 933) &&
-			(parms->ddrClockSpeedMHz != 1067) &&
-			(parms->ddrClockSpeedMHz != 1200))
-	{
-		printf("ddr4 clock speed must be 800/933/1067/1200 MHz\n");
-		NCP_CALL(NCP_ST_ERROR);
-	}
-
-	if ((parms->dram_class == NCP_SM_DDR3_MODE) && 
-			(parms->sdram_device_width != 1) &&
-			(parms->sdram_device_width != 2))
-	{
-		printf("ddr3 device_width must be x8/x16 \n");
-		NCP_CALL(NCP_ST_ERROR);
-	}
-
-	if ((parms->dram_class == NCP_SM_DDR4_MODE) && 
-			(parms->sdram_device_width != 1) &&
-			(parms->sdram_device_width != 2))
-	{
-		printf("ddr4 device_width must be x8/x16 \n");
-		NCP_CALL(NCP_ST_ERROR);
-	}
-
-	/* tCK checks are non-trivial looking up various possibilities from JEDEC, hence doing a boundary check here so we stay on track */
-	if ((parms->dram_class == NCP_SM_DDR3_MODE) && 
-			(((parms->ddrClockSpeedMHz == 400) && ((parms->tck_ps < 2500) || (parms->tck_ps > 3300))) ||
-			 ((parms->ddrClockSpeedMHz == 533) && ((parms->tck_ps < 1875) || (parms->tck_ps > 3300))) ||
-			 ((parms->ddrClockSpeedMHz == 667) && ((parms->tck_ps < 1500) || (parms->tck_ps > 3300))) ||
-			 ((parms->ddrClockSpeedMHz == 800) && ((parms->tck_ps < 1250) || (parms->tck_ps > 3300))) ||
-			 ((parms->ddrClockSpeedMHz == 933) && ((parms->tck_ps < 1070) || (parms->tck_ps > 3300))) ||
-			 ((parms->ddrClockSpeedMHz == 1066) && ((parms->tck_ps < 938) || (parms->tck_ps > 3300)))))
-	{
-		printf("ddr3 invalid tck_ps clock-period in nano-sec \n");
-		NCP_CALL(NCP_ST_ERROR);
-	}
-
-	if ((parms->dram_class == NCP_SM_DDR4_MODE) && 
-			(((parms->ddrClockSpeedMHz == 800) && ((parms->tck_ps < 1250) || (parms->tck_ps > 1600))) ||
-			 ((parms->ddrClockSpeedMHz == 933) && ((parms->tck_ps < 1071) || (parms->tck_ps > 1600))) ||
-			 ((parms->ddrClockSpeedMHz == 1067) && ((parms->tck_ps < 938) || (parms->tck_ps > 1600))) ||
-			 ((parms->ddrClockSpeedMHz == 1200) && ((parms->tck_ps < 833) || (parms->tck_ps > 1600)))))
-	{
-		printf("ddr4 invalid tck_ps clock-period in nano-sec \n");
-		NCP_CALL(NCP_ST_ERROR);
-	}
-
-	if ((parms->topology != NCP_SM_TOPO_ONE_SINGLE_RANK) &&
-			(parms->topology != NCP_SM_TOPO_ONE_DUAL_RANK) &&
-			(parms->topology != NCP_SM_TOPO_TWO_DUAL_RANK))
-	{
-		printf("invalid chip-select_map i.e. topology selected \n");
-		NCP_CALL(NCP_ST_ERROR);
-	}
-
 	/* unpack the ODT control words into indexed arrays */
 	value  = parms->read_ODT_ctl;
 	value2 = parms->write_ODT_ctl;
@@ -487,138 +614,7 @@ ncp_sm_denali_2041_init_56xx(
 		value2 >>= 4;
 	}
 
-	if (parms->dram_class == NCP_SM_DDR3_MODE)
-	{
-		/* derive clkSpeedIndex for later use */
-		while (parms->ddrClockSpeedMHz != speedbin_ddr3_vals[clkSpeedIndex].speed) clkSpeedIndex++;
-
-		/* validate binned_CL and derive binnedCLIndex for later use */
-		while ((parms->binned_CAS_latency != speedbin_ddr3_vals[clkSpeedIndex].binned_CL[binnedCLIndex]) &&
-				(speedbin_ddr3_vals[clkSpeedIndex].binned_CL[binnedCLIndex] != 0xff)) binnedCLIndex++;
-		if (speedbin_ddr3_vals[clkSpeedIndex].binned_CL[binnedCLIndex] == 0xff)
-		{
-			printf("invalid binned_CAS_latency\n");
-			NCP_CALL(NCP_ST_ERROR);
-		}
-
-		/* validate CAS_latency */
-		tmpVal = 0;
-		while ((parms->CAS_latency != speedbin_ddr3_vals[clkSpeedIndex].CL_config[tmpVal]) &&
-				(speedbin_ddr3_vals[clkSpeedIndex].CL_config[tmpVal] != 0xff)) tmpVal++;
-		if (speedbin_ddr3_vals[clkSpeedIndex].CL_config[tmpVal] == 0xff)
-		{
-			printf("invalid CAS_latency\n");
-			NCP_CALL(NCP_ST_ERROR);
-		}
-	}
-	else
-	{
-		/* derive clkSpeedIndex for later use */
-		while (parms->ddrClockSpeedMHz != speedbin_ddr4_vals[clkSpeedIndex].speed) clkSpeedIndex++;
-
-		/* validate binned_CL and derive binnedCLIndex for later use */
-		while ((parms->binned_CAS_latency != speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex]) &&
-				(speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex] != 0xff)) binnedCLIndex++;
-		if (speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex] == 0xff)
-		{
-			printf("invalid binned_CAS_latency\n");
-			NCP_CALL(NCP_ST_ERROR);
-		}
-
-		/* validate CAS_latency */
-		tmpVal = 0;
-		while ((parms->CAS_latency != speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal]) &&
-				(speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal] != 0xff)) tmpVal++;
-		if (speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal] == 0xff)
-		{
-			printf("invalid CAS_latency\n");
-			NCP_CALL(NCP_ST_ERROR);
-		}
-	}
-
-	/* validate tCK: this is non-trivial because of ranges used in JEDEC. TBD */
-
-	/* validate CWL: this is non-trivial because of many values depending on rates are Reserved per JEDEC. TBD */
-
-	/* Extract timing parameters for example:
-	 * ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRCD[binnedCLIndex]))
-	 * ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRCD[binnedCLIndex]))
-	 * over tCK period for calculation
-	 * Note that this is same as using ncp_ps_to_clk if running at prescribed rate.
-	 * However, for example a 933 part can be run at lower rates like 800 MHz, thus having a different tCK
-	 * and if using above method would cover <any> JEDEC tCK cases as well */
-
 	printf("X9/XLF SMC %d Init....\n",smNode);
-
-	/* First Populate Commonly used Timing Parameters based on a) sm_parms info b) JEDEC */
-	if (parms->dram_class == NCP_SM_DDR3_MODE)
-	{
-		ctm->speed = speedbin_ddr3_vals[clkSpeedIndex].speed;  /* Mhz */
-		ctm->binned_CL = speedbin_ddr3_vals[clkSpeedIndex].binned_CL[binnedCLIndex];
-		ctm->CL_config = speedbin_ddr3_vals[clkSpeedIndex].CL_config[tmpVal];
-		ctm->tRCD = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRCD[binnedCLIndex]));
-		ctm->tRP = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRP[binnedCLIndex]));
-		ctm->tRAS = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRAS[binnedCLIndex]));
-		ctm->tRC = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRC[binnedCLIndex]));
-
-		/* sdram_device_width is defined as 0=x4(no support), 1=x8, 2=x16, 3=x32(no support)
-		 * 1KB page size for x8, 2KB page size for x16 */
-		ctm->tRRD = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRRD[parms->sdram_device_width - 1]));
-		ctm->tFAW = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tFAW[parms->sdram_device_width - 1]));
-
-		ctm->tCKE = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tCKE));
-	}
-	else
-	{
-		ctm->speed = speedbin_ddr4_vals[clkSpeedIndex].speed;  /* Mhz */
-		ctm->binned_CL = speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex];
-		ctm->CL_config = speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal];
-		ctm->tRCD = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRCD[binnedCLIndex])); 
-		ctm->tRP = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRP[binnedCLIndex])); 
-		ctm->tRAS = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRAS[binnedCLIndex])); 
-		ctm->tRC = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRC[binnedCLIndex])); 
-
-		ctm->tCCD_L = (speedbin_ddr4_vals[clkSpeedIndex].tCCD_L); 
-		ctm->tCCD_S = (speedbin_ddr4_vals[clkSpeedIndex].tCCD_S); 
-
-		/* sdram_device_width is defined as 0=x4, 1=x8, 2=x16, 3=x32(no support)
-		 * 512B page size for x4, 1KB page size for x8, 2KB page size for x16 */
-		ctm->tRRD_S = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRRD_S[parms->sdram_device_width])));
-		ctm->tRRD_L = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRRD_L[parms->sdram_device_width])));
-		ctm->tFAW = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tFAW[parms->sdram_device_width])));
-		ctm->tWTR_S = Max(2, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWTR_S)));
-		ctm->tWTR_L = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWTR_L)));
-		ctm->tRTP = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRTP)));
-		ctm->tWR = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWR));
-		ctm->tMRD = speedbin_ddr4_vals[clkSpeedIndex].tMRD;
-		ctm->tMOD = Max(24, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tMOD)));
-		ctm->tMPRR = speedbin_ddr4_vals[clkSpeedIndex].tMPRR;
-		ctm->tWR_MPR = Max(24, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWR_MPR)));
-		ctm->tZQinit = speedbin_ddr4_vals[clkSpeedIndex].tZQinit;
-		switch(parms->refresh_mode)
-		{
-			case NCP_SM_REFRESH_MODE_1X:
-				ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_1x[parms->sdram_device_density]));
-				ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_1x[parms->sdram_device_density]) + 10000)));
-				ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_1x[parms->sdram_device_density] + 10000));
-				break;
-			case NCP_SM_REFRESH_MODE_2X:
-				ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_2x[parms->sdram_device_density]));
-				ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_2x[parms->sdram_device_density]) + 10000)));
-				ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_2x[parms->sdram_device_density] + 10000));
-			case NCP_SM_REFRESH_MODE_4X:
-				ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_4x[parms->sdram_device_density]));
-				ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_4x[parms->sdram_device_density]) + 10000)));
-				ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_4x[parms->sdram_device_density] + 10000));
-			default:
-				;
-		}
-		ctm->tCKESR = Max(3, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tCKESR))) + 1;
-		ctm->tCKSRE = Max(5, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tCKESR)));
-		ctm->tCKE = Max(3, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tCKE)));
-		ctm->tMRD_PDA = Max(16, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tMRD_PDA)));
-		ctm->tREFI = ncp_ps_to_clk(parms->tck_ps, ((parms->high_temp_dram == TRUE) ?  3900000 : 7800000));
-	}
 
 	/* DENALI_CTL_00 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_00_5600, (ncp_uint32_t *)&reg00);
@@ -795,7 +791,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_18_5600, (ncp_uint32_t *)&reg18);
 	reg18.tras_lockout = 1;
 	reg18.tdal = (parms->dram_class == NCP_SM_DDR4_MODE) ? (ctm->tWR + ctm->tRP) 
-		: ( ncp_ps_to_clk(parms->tck_ps,15000) + ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr3_vals[clkSpeedIndex].tRP[binnedCLIndex]))); /* tWR + roundup(tRP/tCK) */
+		: ( ncp_ps_to_clk(parms->tck_ps,15000) + ctm->tRP); /* tWR + roundup(tRP/tCK) */
 	reg18.bstlen = parms->bstlen;/* 1 for BL2, 2 for BL4, 3 for BL8 */
 	reg18.trp_ab = parms->CAS_latency;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_18_5600, *((ncp_uint32_t *)&reg18));

@@ -322,10 +322,10 @@ typedef struct {
     ncp_uint32_t		rdlvl_gate_interval;	/* Max long count sequences between gate training */
     ncp_uint8_t			preamble_support;/* 0-3 */
     ncp_uint8_t			crc_mode;/* Bit(0): 1 to enable crc gen/checking, Bit(1): 1: performed in MC 0: in PHY */
-    ncp_uint32_t		dq_map_0[5]; /* Bit Map is 144 bits, so only 16-bits of index 4 are valid */
-    ncp_uint32_t		dq_map_1[5]; /* Bit Map is 144 bits, so only 16-bits of index 4 are valid */
+    ncp_uint32_t		dq_map_0[5]; /* XLF: Bit Map is 144 bits, so only 16-bits of index 4 are valid. For X9: Bit Map is 48 bits, so only 16-bits of index 1 are valid */
+    ncp_uint32_t		dq_map_1[5]; /* XLF only: Bit Map is 144 bits, so only 16-bits of index 4 are valid */
     ncp_uint8_t			dq_map_odd_rank_swap_0; /* 4 bits representing chip-selects */
-    ncp_uint8_t			dq_map_odd_rank_swap_1; /* 4 bits representing chip-selects */
+    ncp_uint8_t			dq_map_odd_rank_swap_1; /* XLF only: 4 bits representing chip-selects */
 } ncp_sm_parms_t;
 
 /* 
@@ -388,6 +388,10 @@ ncp_sysmem_init_lsiphy (ncp_dev_hdl_t dev,
 NCP_API ncp_st_t
 ncp_sysmem_init_synopphy (ncp_dev_hdl_t dev, 
                       ncp_uint32_t smId, 
+                      ncp_sm_parms_t *parms);
+NCP_API ncp_st_t
+ncp_treemem_init_synopphy (ncp_dev_hdl_t dev, 
+                      ncp_uint32_t cmId, 
                       ncp_sm_parms_t *parms);
 
 NCP_API ncp_st_t

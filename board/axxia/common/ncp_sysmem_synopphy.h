@@ -31,6 +31,25 @@
 #define errprintf(fmt,args...) printf(fmt,##args)
 #define dbgprintf(fmt,args...) printf(fmt,##args)
 
+/* From Address pins per JEDEC */
+#define NCP_SM_ENCODE_RTT_NOM_DDR3(val)  \
+	( ( (val & 0x1) << 2 ) |  /* a2 */ \
+	  ( (val & 0x2) << 5 ) |  /* a6 */ \
+	  ( (val & 0x4) << 7 ) )  /* a9 */
+
+#define NCP_SM_ENCODE_DRV_IMP_DDR3(val)  \
+	( ( (val & 0x1) << 1 ) |  /* a1 */ \
+	  ( (val & 0x2) << 4 ) )  /* a5 */ 
+
+#define NCP_SM_ENCODE_RTT_NOM_DDR4(val)  \
+	( ( (val & 0x1) << 8 ) |  /* a8 */ \
+	  ( (val & 0x2) << 8 ) |  /* a9 */ \
+	  ( (val & 0x4) << 8 ) )  /* a10 */
+
+#define NCP_SM_ENCODE_DRV_IMP_DDR4(val)  \
+	( ( (val & 0x1) << 1 ) |  /* a1 */ \
+	  ( (val & 0x2) << 1 ) )  /* a2 */ 
+
 /*
  * Timing Parameters
  * Common to MC, Phy
@@ -109,7 +128,14 @@ ncp_sm_ddr4_phy_init(
 		ncp_sm_parms_t *parms,
 		ncp_common_timing_parameters_t *ctm);
 
-NCP_API ncp_st_t
+ncp_st_t
+ncp_sm_common_setup_56xx(
+		ncp_dev_hdl_t   dev,
+		ncp_uint32_t    smNode,
+		ncp_sm_parms_t *parms,
+		ncp_common_timing_parameters_t *ctm);
+
+ncp_st_t
 ncp_sm_denali_2041_init_56xx(
 		ncp_dev_hdl_t   dev,
 		ncp_uint32_t    smNode,

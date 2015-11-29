@@ -1783,11 +1783,22 @@ ncp_sysmem_init_synopphy(
 	ncp_common_timing_parameters_t	ctm = {0};
 	ncp_uint32_t smNode = 0;
 
+#ifndef __UBOOT__
 	/* cmem setup
+	 * XLF has 1 CMEM, X9 has 2 CMEM's
 	 * If smId == 4 && chip == XLF, then setup CMEM-0
 	 * If smId == 2 && chip == X9, then setup CMEM-0
 	 * If smId == 3 && chip == X9, then setup CMEM-1
 	 */
+
+	if (((parms->version == NCP_CHIP_ACPXLF) && (smId == 4)) ||
+			((parms->version == NCP_CHIP_ACP56xx) && (smId == 2)) ||
+			((parms->version == NCP_CHIP_ACP56xx) && (smId == 3)))
+	{
+		NCP_CALL(ncp_treemem_init_synopphy(dev, smId, parms));
+		return ncpStatus;
+	}
+#endif
 
 	switch (smId) {
 		case 0:
@@ -1806,8 +1817,10 @@ ncp_sysmem_init_synopphy(
 			NCP_CALL(NCP_ST_ERROR);
 	}
 
+	/* ctm is populated so it can be commonly used during mc,phy setup */
+	NCP_CALL(ncp_sm_common_setup_56xx(dev, smNode, parms, &ctm)); 
+
 	/* Initialize the system memory controller... */
-	/* ctm is populated so it can be commonly used during phy setup as well */
 	NCP_CALL(ncp_sm_denali_2041_init_56xx(dev, smNode, parms, &ctm)); 
 
 	NCP_CALL(ncp_sm_ddr4_phy_init(dev, smNode, parms, &ctm)); 
