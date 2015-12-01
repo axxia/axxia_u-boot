@@ -99,7 +99,8 @@ axxia_initialize(void)
 #ifdef SYSCACHE_ONLY_MODE
 	ncr_l3tags();
 #else
-	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) {
+	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) &&
+	    (0 == sysmem->ddrRecovery)) {
 		ncr_tracer_enable();
 
 		if (0 != sysmem_init())

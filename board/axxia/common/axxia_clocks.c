@@ -237,26 +237,31 @@ clocks_init( void )
 		udelay(clocks->cpupll_psd);
 	}
 
-	/* DDR */
-	/*
-	  Enable protected writes and put the DDRs in reset.
-	  0x156.0.0x1038 - Reset Module Register
-	  smem[0,1]_phy_rst, smem[0,1]_phy_io_rst
-	  cmem_phy_rst, cmem[0,1]_phy_io_rst
+	/* 
+	 * DDR  - only do this if we are not doing retention reset 
 	*/
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x1000, 0x000000ab);
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x1038, 0x01e00000);
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x103c, 0x24000008);
-	udelay(1000);
+
+	if (0 == sysmem->ddrRecovery) {
+		/*
+		  Enable protected writes and put the DDRs in reset.
+		  0x156.0.0x1038 - Reset Module Register
+		  smem[0,1]_phy_rst, smem[0,1]_phy_io_rst
+		  cmem_phy_rst, cmem[0,1]_phy_io_rst
+		*/
+		ncr_write32(NCP_REGION_ID(0x156, 0), 0x1000, 0x000000ab);
+		ncr_write32(NCP_REGION_ID(0x156, 0), 0x1038, 0x01e00000);
+		ncr_write32(NCP_REGION_ID(0x156, 0), 0x103c, 0x24000008);
+		udelay(1000);
 
 
-	/* sm0pll */
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 6), &clocks->sm0pll_prms))
-		return -1;
+		/* sm0pll */
+		if (0 != pll_init_5500(NCP_REGION_ID(0x155, 6), &clocks->sm0pll_prms))
+			return -1;
 
-	/* sm1pll */
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 7), &clocks->sm1pll_prms))
-		return -1;
+		/* sm1pll */
+		if (0 != pll_init_5500(NCP_REGION_ID(0x155, 7), &clocks->sm1pll_prms))
+			return -1;
+	}
 
 	/* Set the peripheral clock */
 	if (0 != clocks->per_div) {

@@ -357,7 +357,6 @@ read_parameters(void)
 	       "0x%08x 0x%08x\n"
 	       "0x%08x 0x%08x\n"
 	       "0x%08x 0x%08x\n"
-	       "0x%08x 0x%08x\n"
 	       "0x%08x 0x%08x\n",
 	       header->magic, header->size, header->checksum, header->version,
 	       header->chipType,
@@ -366,9 +365,7 @@ read_parameters(void)
 	       header->clocksOffset, header->clocksSize,
 	       header->pciesrioOffset, header->pciesrioSize,
 	       header->systemMemoryOffset, header->systemMemorySize,
-	       header->classifierMemoryOffset, header->classifierMemorySize,
-	       header->systemMemoryRetentionOffset,
-	       header->systemMemoryRetentionSize);
+	       header->classifierMemoryOffset, header->classifierMemorySize);
 #endif
 
 	global = (parameters_global_t *)(parameters + header->globalOffset);
@@ -378,7 +375,22 @@ read_parameters(void)
 	clocks = (parameters_clocks_t *)(parameters + header->clocksOffset);
 	sysmem = (parameters_mem_t *)(parameters + header->systemMemoryOffset);
 #ifdef CONFIG_AXXIA_ARM
-	retention = (void *)(parameters + header->systemMemoryRetentionOffset);
+#ifdef CONFIG_MEMORY_RETENTION
+{
+	unsigned value;
+	/*
+	*  we use bit 0 of the persistent scratch register to
+	*  inidicate ddrRetention recovery.
+	*/
+	ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x00dc, &value);
+	sysmem->ddrRecovery = (value & 0x1) ;
+	value &= 0xfffffffe;
+	ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x00dc, value);
+
+	printf("ddrRetentionEnable = %d\n", sysmem->ddrRetentionEnable);
+	printf("ddrRecovery = %d\n", sysmem->ddrRecovery);
+}
+#endif
 #endif
 
 #ifdef DISPLAY_PARAMETERS
@@ -401,7 +413,7 @@ read_parameters(void)
 	return 0;
 }
 
-#ifdef CONFIG_MEMORY_RETENTION
+#if CONFIG_WRITE_PARAM_SUPPORT
 
 /*
   ------------------------------------------------------------------------------
@@ -609,4 +621,4 @@ release_and_return:
 #endif
 }
 
-#endif	/* CONFIG_MEMORY_RETENTION */
+#endif /* CONFIG_WRITE_PARAM_SUPPORT */

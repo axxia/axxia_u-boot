@@ -1118,10 +1118,6 @@ board_init_f(ulong dummy)
 	unsigned int pvalue;
 	int i;
 
-#ifdef CONFIG_MEMORY_RETENTION
-	int need_write;
-#endif	/* CONFIG_MEMORY_RETENTION */
-
  	/* Clear bss. */
 	memset(__bss_start, 0, __bss_end - __bss_start);
 
@@ -1248,27 +1244,6 @@ board_init_f(ulong dummy)
 #endif	/* CONFIG_AXXIA_EMU */
 
 	printf("\nSystem Initialized\n\n");
-
-#ifdef CONFIG_MEMORY_RETENTION
-	need_write = 0;
-
-	for (i = 0; i < sysmem->num_interfaces; i++) {
-		phyRegs = retention + (i * DDR_PHY_REGS_SIZE);
-
-		printf("checking phyRegs[%d] %p = %x\n", i, phyRegs, *phyRegs);
-
-		if (*phyRegs == DDR_PHY_REGS_TAG_SAVE) {
-			printf("Saved values for smId %d %p\n", i, phyRegs);
-			*phyRegs = DDR_PHY_REGS_TAG_PROM;
-			need_write = 1;
-		}
-	}
-
-	if ( need_write) {
-		printf("Writing DDR PHY registers to parameter space\n");
-		write_parameters();
-	}
-#endif	/* CONFIG_MEMORY_RETENTION */
 
 #endif	/* SYSCACHE_ONLY_MODE */
 
