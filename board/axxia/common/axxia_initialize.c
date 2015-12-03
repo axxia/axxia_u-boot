@@ -109,7 +109,6 @@ axxia_initialize(void)
 	  =============
 	*/
 
-	sysmem->ddrRecovery = 0;
 	printf("%s:%d - flags=0x%x ddrRecovery=0x%x\n",
 	       __FILE__, __LINE__, global->flags, sysmem->ddrRecovery);
 

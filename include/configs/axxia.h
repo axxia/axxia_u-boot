@@ -373,6 +373,7 @@ typedef struct {
  	unsigned char unused_1[2];
 	ncp_uint32_t dq_map_odd_rank_swap_0; 
 	ncp_uint32_t dq_map_odd_rank_swap_1; 
+	unsigned ddrRetentionEnable;
 	unsigned ddrRecovery;
 	unsigned long long totalSize;
 } __attribute__((packed)) parameters_mem_t;
