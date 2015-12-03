@@ -49,15 +49,27 @@ axxia_initialize
 int
 axxia_initialize(void)
 {
+	int rc;
+
 	/*
 	  ===============
 	  Read Parameters
 	  ===============
 	*/
 
+	rc = read_parameters();
+
 #if !defined(CONFIG_AXXIA_SIM)
-	if (0 != read_parameters())
+	if (0 != rc)
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+#else
+	/*
+	  For now, in simulation, don't require a parameter file.  If
+	  there is no parameter file, simply return success.
+	*/
+
+	if (0 != rc)
+		return 0;
 #endif
 
 	/*
@@ -95,7 +107,6 @@ axxia_initialize(void)
 	  =============
 	*/
 
-#if !defined(CONFIG_AXXIA_SIM)
 #ifdef SYSCACHE_ONLY_MODE
 	ncr_l3tags();
 #else
@@ -108,7 +119,6 @@ axxia_initialize(void)
 
 		ncr_tracer_disable();
 	}
-#endif
 #endif
 
 	/*

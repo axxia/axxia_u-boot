@@ -22,6 +22,9 @@
 
 #include <common.h>
 
+ncp_st_t
+ncp_sysmem_init_synopphy(ncp_dev_hdl_t, ncp_uint32_t, ncp_sm_parms_t *);
+
 /*
   ==============================================================================
   ==============================================================================
@@ -35,12 +38,6 @@
 int
 sysmem_init(void)
 {
-#ifdef CONFIG_AXXIA_SIM
-	return 0;
-#else
-	ncp_st_t ncp_sysmem_init_synopphy(ncp_dev_hdl_t, ncp_uint32_t,
-					  ncp_sm_parms_t *);
-
 #ifdef CONFIG_AXXIA_56XX
 	unsigned sm_nodes[] = {0x22, 0xf};
 #else
@@ -50,7 +47,7 @@ sysmem_init(void)
 	int rc;
 
 	for (i = 0; i < sizeof(sm_nodes)/sizeof(unsigned); ++i) {
-		rc = ncp_sysmem_init_synopphy(NULL, sm_nodes[i], sysmem);
+		rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
 
 		if (NCP_ST_SUCCESS != rc) {
 			printf("Initializing Sysmem Node 0x%x Failed!\n",
@@ -61,5 +58,4 @@ sysmem_init(void)
 	}
 
 	return 0;
-#endif
 }
