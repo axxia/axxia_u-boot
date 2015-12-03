@@ -38,7 +38,7 @@ ncp_sysmem_init_synopphy(ncp_dev_hdl_t, ncp_uint32_t, ncp_sm_parms_t *);
 int
 sysmem_init(void)
 {
-#ifdef CONFIG_AXXIA_56XX
+#if defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_SIM)
 	unsigned sm_nodes[] = {0x22, 0xf};
 #else
 	unsigned sm_nodes[] = {0x22, 0xf, 0x23, 0x24};
@@ -173,7 +173,6 @@ sysmem_init(void)
 #endif
 
 	for (i = 0; i < sizeof(sm_nodes)/sizeof(unsigned); ++i) {
-		printf("%s:%d - \n", __FILE__, __LINE__);
 		rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
 
 		if (NCP_ST_SUCCESS != rc) {
