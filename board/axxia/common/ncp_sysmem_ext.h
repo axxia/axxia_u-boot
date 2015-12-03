@@ -296,14 +296,14 @@ typedef struct {
     /* new for 5600 */
     ncp_dram_class_t		dram_class;
     ncp_per_sysmem_sdram_parms_t      per_smem[4];	/* X9 uses 0,1 indices, XLF used 0/1/2/3 indices */
-    ncp_uint32_t		additive_latency;
+    ncp_uint8_t			additive_latency;	/* number of dram clock cycles, typically (CAS_latency - MR1[A4:A3]) */
     ncp_uint8_t			binned_CAS_latency; 	/* from part definition like CL-nRCD-nRP */
-    ncp_uint32_t		tck_ps;  		/* period or rate at which part runs in pico-sec */
-    ncp_uint8_t			refresh_mode;		/* 1 means 1x, 2 means 2x, 4 means 4x */
-    ncp_uint8_t                 address_inversion;	/* applies only to ddr4 */
+    ncp_uint32_t		tck_ps;  		/* time period or rate at which part runs in pico-sec */
+    ncp_refresh_mode_t		refresh_mode;		/* 1 means 1x, 2 means 2x, 4 means 4x */
+    ncp_bool_t                  address_inversion;	/* applies only to ddr4 */
     ncp_uint8_t                 bstlen;			/* encoded burst_length during init and calculations */
-    ncp_uint8_t                 dm_masking;		/* support availability on external dram */
-    ncp_uint32_t		rdimm_ctl_0_2;
+    ncp_bool_t                  dm_masking;		/* data masking support availability on external dram */
+    ncp_uint32_t		rdimm_ctl_0_2;		/* 152 bits (16 4-bit words + 11 8-bit words) of Std Control word per DIMM */
     ncp_uint32_t		rdimm_ctl_0_3;
     ncp_uint32_t		rdimm_ctl_0_4;
     ncp_uint32_t		rdimm_ctl_1_0;
@@ -312,19 +312,21 @@ typedef struct {
     ncp_uint32_t		rdimm_ctl_1_3;
     ncp_uint32_t		rdimm_ctl_1_4;
     ncp_bool_t			vref_en;
-    ncp_uint32_t		vref_cs;
-    ncp_uint32_t		vref_val; 		/* VREF value per DRAM per chip-select- same for now */
-    ncp_uint16_t		wr_protect_en_mask;
-    ncp_bool_t			rdlvl_en;	/* Data eye training */
-    ncp_bool_t			dbi_en;		/* data-bus inversion for rd and wr enable */
-    ncp_bool_t			rdlvl_gate_en;	/* Gate training */
-    ncp_uint32_t		rdlvl_interval;	/* Max long count sequences between data eye training */
-    ncp_uint32_t		rdlvl_gate_interval;	/* Max long count sequences between gate training */
-    ncp_uint8_t			preamble_support;/* 0-3 */
-    ncp_uint8_t			crc_mode;/* Bit(0): 1 to enable crc gen/checking, Bit(1): 1: performed in MC 0: in PHY */
-    ncp_uint32_t		dq_map_0[5]; /* XLF: Bit Map is 144 bits, so only 16-bits of index 4 are valid. For X9: Bit Map is 48 bits, so only 16-bits of index 1 are valid */
-    ncp_uint32_t		dq_map_1[5]; /* XLF only: Bit Map is 144 bits, so only 16-bits of index 4 are valid */
-    ncp_uint8_t			dq_map_odd_rank_swap_0; /* 4 bits representing chip-selects */
+    ncp_uint8_t			vref_cs;		/* target chip-select for vref training operation */
+    ncp_uint8_t			vref_val; 		/* VREF value per DRAM for all chip-selects */
+    ncp_uint16_t		wr_protect_en_mask;	/* 16-bit Mask indicating write protection enable per region */
+    ncp_bool_t			rdlvl_en;		/* Data eye training enable */
+    ncp_bool_t			dbi_rd_en;              /* data-bus inversion for rd enable */
+    ncp_bool_t			dbi_wr_en;              /* data-bus inversion for wr enable */
+    ncp_bool_t			ca_parity_en;           /* Common Address Parity enable */
+    ncp_bool_t			rdlvl_gate_en;		/* Gate training */
+    ncp_uint16_t		rdlvl_interval;		/* Max long count sequences between data eye training */
+    ncp_uint16_t		rdlvl_gate_interval;	/* Max long count sequences between gate training */
+    ncp_uint8_t			preamble_support;	/* defines the read (bit0) and write (bit 1) preamble support of b'0-1 cycle, or b'1-2 cycle preamble */
+    ncp_uint8_t			crc_mode;		/* Bit(0): 1 to enable crc gen/checking, Bit(1): 1: performed in MC, 0: in PHY */
+    ncp_uint8_t			dq_map_0[18]; 		/* defines the DQ mapping of the output DQ pins from the MC/PHY per DIMM. For X9 specify all 18 bytes, for XLF specify info in 7:0 and 17th location. CMEM uses locations 5:0 */
+    ncp_uint8_t			dq_map_1[18]; 		/* defines the DQ mapping of the output DQ pins from the MC/PHY per DIMM. For X9 specify all 18 bytes, for XLF specify info in 7:0 and 17th locatio. CMEM does not use this  */
+    ncp_uint8_t			dq_map_odd_rank_swap_0; /* defines which chip-select per DIMM will use the DQ swapping. 4 bits representing chip-selects */
     ncp_uint8_t			dq_map_odd_rank_swap_1; /* XLF only: 4 bits representing chip-selects */
 } ncp_sm_parms_t;
 

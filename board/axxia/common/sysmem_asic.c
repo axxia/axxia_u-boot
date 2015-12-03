@@ -47,6 +47,7 @@ sysmem_init(void)
 	int rc;
 
 	for (i = 0; i < sizeof(sm_nodes)/sizeof(unsigned); ++i) {
+		printf("%s:%d - \n", __FILE__, __LINE__);
 		rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
 
 		if (NCP_ST_SUCCESS != rc) {

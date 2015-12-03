@@ -703,6 +703,8 @@ ncp_sm_denali_2041_init_56xx(
 			reg09.ca_parity_lat = 4;
 		else
 			reg09.ca_parity_lat = 5;
+		if (parms->ca_parity_en == FALSE)
+			reg09.ca_parity_lat = 0;
 		reg09.tmod_par = ncp_ps_to_clk(parms->tck_ps,15000) + reg09.ca_parity_lat;
 		reg09.tmrd_par = ncp_ps_to_clk(parms->tck_ps,15000) + reg09.ca_parity_lat;
 		reg09.additive_lat = parms->additive_latency; /* option to reggen tcl */
@@ -1301,7 +1303,7 @@ ncp_sm_denali_2041_init_56xx(
 		 * A12		read dbi 0 = disable
 		 * A13, A17	RFU
 		 */
-		reg84.mr5_data_0 = (parms->dbi_en << 11) | (parms->dbi_en << 12);
+		reg84.mr5_data_0 = (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
 	}
 	ctm->mr5 = reg84.mr5_data_0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_84_5600, *((ncp_uint32_t *)&reg84));
@@ -1488,8 +1490,8 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_126 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_126_5600, (ncp_uint32_t *)&reg126);
-	reg126.rd_dbi_en = parms->dbi_en;
-	reg126.wr_dbi_en = parms->dbi_en;
+	reg126.rd_dbi_en = parms->dbi_rd_en;
+	reg126.wr_dbi_en = parms->dbi_wr_en;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_126_5600, *((ncp_uint32_t *)&reg126));
 
 	/* DENALI_CTL_128 */
@@ -2124,28 +2126,40 @@ ncp_sm_denali_2041_init_56xx(
 	/* DENALI_CTL_387 (0x60c) through DENALI_CTL_391 (0x61c) */
 	for (loop=0; loop < 5; loop++)
 	{
+		value = 0;
 		if (loop == 4)
 		{
+			value |= (parms->dq_map_0[16] | (parms->dq_map_0[17] << 8));
 			ncr_write32(ctlReg, (NCP_DENALI_CTL_387_5600 + (loop * 0x4)),
-					(((parms->dq_map_odd_rank_swap_0 & 0xf) << 16) | (parms->dq_map_0[i] & 0xffff)));
+					(((parms->dq_map_odd_rank_swap_0 & 0xf) << 16) | value));
 		}
 		else
 		{
-			ncr_write32(ctlReg, (NCP_DENALI_CTL_387_5600 + (loop * 0x4)), parms->dq_map_0[i]);
+			for (i=0; i < 4; i++)
+			{
+				value |= (parms->dq_map_0[i + (loop * 4)] << (8 * i));
+			}
+			ncr_write32(ctlReg, (NCP_DENALI_CTL_387_5600 + (loop * 0x4)), value);
 		}
 	}
 
 	/* DENALI_CTL_392 (0x620) through DENALI_CTL_396 (0x630) */
 	for (loop=0; loop < 5; loop++)
 	{
+		value = 0;
 		if (loop == 4)
 		{
+			value |= (parms->dq_map_1[16] | (parms->dq_map_1[17] << 8));
 			ncr_write32(ctlReg, (NCP_DENALI_CTL_392_5600 + (loop * 0x4)), 
-					(((parms->dq_map_odd_rank_swap_1 & 0xf) << 16) | (parms->dq_map_1[i] & 0xffff)));
+					(((parms->dq_map_odd_rank_swap_1 & 0xf) << 16) | value));
 		}
 		else
 		{
-			ncr_write32(ctlReg, (NCP_DENALI_CTL_392_5600 + (loop * 0x4)), parms->dq_map_1[i]);
+			for (i=0; i < 4; i++)
+			{
+				value |= (parms->dq_map_1[i + (loop * 4)] << (8 * i));
+			}
+			ncr_write32(ctlReg, (NCP_DENALI_CTL_392_5600 + (loop * 0x4)), value);
 		}
 	}
 

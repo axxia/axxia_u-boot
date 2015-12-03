@@ -296,105 +296,84 @@ typedef struct {
 	unsigned phy_rdlvl_cmp_even;
 	unsigned phy_rdlvl_cmp_odd;
 	unsigned phy_write_align_finetune;
-} __attribute__((packed)) per_mem_parms_t;
+} __attribute__((packed)) per_sysmem_parms_t;
 
 typedef struct {
-	ncp_uint8_t                 version;
-	ncp_bool_t                  auto_detect;
-	ncp_uint8_t                 num_interfaces;
-	ncp_uint8_t                 num_ranks_per_interface;
-	ncp_sm_topology_t           topology;
-	ncp_sm_sdram_density_t      sdram_device_density;
-	ncp_sm_sdram_width_t        sdram_device_width;
-	ncp_sm_primary_bus_width_t  primary_bus_width;
-	ncp_uint8_t                 CAS_latency;
-	ncp_uint8_t                 CAS_write_latency;
-	ncp_bool_t                  enableECC;
-	ncp_uint8_t                 min_phy_cal_delay;
-	ncp_uint8_t                 min_ctrl_roundtrip_delay;
-	ncp_bool_t                  single_bit_mpr;
-	ncp_uint32_t                rdcal_cmp_even;
-	ncp_uint32_t                rdcal_cmp_odd;
-	ncp_bool_t                  enable_deskew;
-	ncp_bool_t                  enable_rdlvl;
-	ncp_bool_t                  enable_auto_cpc;
+	unsigned char sdram_rtt_nom[4];
+	unsigned char sdram_rtt_wr[4];
+	unsigned char sdram_data_drv_imp[4];
+} __attribute__((packed)) per_sysmem_sdram_parms_t;
 
-	ncp_uint8_t                 added_rank_switch_delay;
-	ncp_bool_t                  high_temp_dram;
-
-	ncp_uint32_t                sdram_rtt_nom;
-	ncp_uint32_t                sdram_rtt_wr;
-	ncp_uint32_t                sdram_data_drv_imp;
-	ncp_uint32_t                phy_adr_imp;
-	ncp_uint32_t                phy_dat_imp;
-	ncp_uint32_t                phy_rcv_imp;
-
-	ncp_uint8_t                 phy_rdlat;
-	ncp_uint8_t                 address_mirroring;
-	ncp_uint8_t                 fixed_read_lat;
-	ncp_uint8_t                 bubble_clobber;
-	ncp_uint8_t                 syscacheMode;
-	ncp_bool_t                  syscacheDisable;
-
-	/* new for 5500 */
-	ncp_uint32_t                zqcs_interval;
-	ncp_bool_t                  enable_runtime_updates;
-	ncp_uint8_t                 dramPrechargePolicy;
-	ncp_uint32_t                open_page_size;
-	ncp_per_sysmem_parms_t      per_smem[2];
-
-	ncp_uint32_t                flags;
-	ncp_bool_t                  half_mem;
-	ncp_uint16_t                cmemMR1[2];
-
-	ncp_bool_t                 ddrRetentionEnable;
-	ncp_bool_t                 ddrRecovery;
-
-	ncp_uint16_t               ddrClockSpeedMHz;
-	ncp_uint8_t                 num_bytelanes;
-	ncp_int64_t                 totalSize;
-
-	/* RDIMM support */
-	ncp_uint32_t		rdimm_ctl_0_0;
-	ncp_uint32_t		rdimm_ctl_0_1;
-	ncp_uint32_t		rdimm_misc;
-
-	/* ODT Rd/Wr map support */
-	ncp_uint32_t		read_ODT_ctl;
-	ncp_uint32_t		write_ODT_ctl;
-
-	/* new for 5600 */
-	ncp_dram_class_t		dram_class;
-	ncp_uint32_t		additive_latency;
-	ncp_uint8_t			binned_CAS_latency; 	/* from part definition like CL-nRCD-nRP */
-	ncp_uint32_t		tck_ps;  		/* period or rate at which part runs in pico-sec */
-	ncp_uint8_t			refresh_mode;		/* 1 means 1x, 2 means 2x, 4 means 4x */
-	ncp_uint8_t                 address_inversion;	/* applies only to ddr4 */
-	ncp_uint8_t                 bstlen;			/* encoded burst_length during init and calculations */
-	ncp_uint8_t                 dm_masking;		/* support availability on external dram */
-	ncp_uint32_t		rdimm_ctl_0_2;
-	ncp_uint32_t		rdimm_ctl_0_3;
-	ncp_uint32_t		rdimm_ctl_0_4;
-	ncp_uint32_t		rdimm_ctl_1_0;
-	ncp_uint32_t		rdimm_ctl_1_1;
-	ncp_uint32_t		rdimm_ctl_1_2;
-	ncp_uint32_t		rdimm_ctl_1_3;
-	ncp_uint32_t		rdimm_ctl_1_4;
-	ncp_bool_t			vref_en;
-	ncp_uint32_t		vref_cs;
-	ncp_uint32_t		vref_val; 		/* VREF value per DRAM per chip-select- same for now */
-	ncp_uint16_t		wr_protect_en_mask;
-	ncp_bool_t			rdlvl_en;	/* Data eye training */
-	ncp_bool_t			dbi_en;		/* data-bus inversion for rd and wr enable */
-	ncp_bool_t			rdlvl_gate_en;	/* Gate training */
-	ncp_uint32_t		rdlvl_interval;	/* Max long count sequences between data eye training */
-	ncp_uint32_t		rdlvl_gate_interval;	/* Max long count sequences between gate training */
-	ncp_uint8_t			preamble_support;/* 0-3 */
-	ncp_uint8_t			crc_mode;/* Bit(0): 1 to enable crc gen/checking, Bit(1): 1: performed in MC 0: in PHY */
-	ncp_uint32_t		dq_map_0[5]; /* Bit Map is 144 bits, so only 16-bits of index 4 are valid */
-	ncp_uint32_t		dq_map_1[5]; /* Bit Map is 144 bits, so only 16-bits of index 4 are valid */
-	ncp_uint8_t			dq_map_odd_rank_swap_0; /* 4 bits representing chip-selects */
-	ncp_uint8_t			dq_map_odd_rank_swap_1; /* 4 bits representing chip-selects */
+typedef struct {
+	ncp_uint32_t version;
+	ncp_uint32_t ddrClockSpeedMHz;
+	ncp_uint32_t autoDetect;
+	ncp_uint32_t numInterfaces;
+	ncp_uint32_t numRanks;
+	ncp_uint32_t primary_bus_width;
+	ncp_uint32_t topology;
+	ncp_uint32_t minCtrlRoundtripDelay;
+	ncp_uint32_t phy_rdlat;
+	ncp_uint32_t addedRankSwitchDly;
+	ncp_uint32_t zqcs_interval;
+	ncp_uint32_t enableECC;
+	ncp_uint32_t enableRuntime;
+	ncp_uint32_t dramPrechargePolicy;
+	ncp_uint32_t open_page_size;
+	ncp_uint32_t syscacheControl;
+	ncp_uint32_t sdram_device_density;
+	ncp_uint32_t sdram_device_width;
+	ncp_uint32_t CAS_latency;
+	ncp_uint32_t CAS_write_latency;
+	ncp_uint32_t address_mirroring;
+	ncp_uint32_t registeredDimm;
+	ncp_uint32_t rdimmCtl_0;
+	ncp_uint32_t rdimmCtl_1;
+	ncp_uint32_t rdimm_misc;
+	ncp_uint32_t write_ODT_ctl;
+	ncp_uint32_t read_ODT_ctl;
+	ncp_uint32_t singleBitMPR;
+	ncp_uint32_t high_temp_dram;
+	per_sysmem_parms_t per_sysmem[2];
+	ncp_uint32_t dram_class;
+	per_sysmem_sdram_parms_t per_smem[4];
+	ncp_uint32_t additive_latency;
+	ncp_uint32_t binned_CAS_latency;
+	ncp_uint32_t tck_ps;
+	ncp_uint32_t refresh_mode;
+	ncp_uint32_t address_inversion;
+	ncp_uint32_t bstlen;
+	ncp_uint32_t dm_masking;
+	ncp_uint32_t rdimm_ctl_0_0;
+	ncp_uint32_t rdimm_ctl_0_1;
+	ncp_uint32_t rdimm_ctl_0_2;
+	ncp_uint32_t rdimm_ctl_0_3;
+	ncp_uint32_t rdimm_ctl_0_4;
+	ncp_uint32_t rdimm_ctl_1_0;
+	ncp_uint32_t rdimm_ctl_1_1;
+	ncp_uint32_t rdimm_ctl_1_2;
+	ncp_uint32_t rdimm_ctl_1_3;
+	ncp_uint32_t rdimm_ctl_1_4;
+	ncp_uint32_t vref_en;
+	ncp_uint32_t vref_cs;
+	ncp_uint32_t vref_val;
+	ncp_uint32_t wr_protect_en_mask;
+	ncp_uint32_t rdlvl_en;
+	ncp_uint32_t dbi_rd_en;
+	ncp_uint32_t dbi_wr_en;
+	ncp_uint32_t ca_parity_en;  
+	ncp_uint32_t rdlvl_gate_en;
+	ncp_uint32_t rdlvl_interval;	
+	ncp_uint32_t rdlvl_gate_interval;
+	ncp_uint32_t preamble_support;
+	ncp_uint32_t crc_mode;
+	unsigned char dq_map_0[18];
+ 	unsigned char unused_0[2];
+	unsigned char dq_map_1[18];
+ 	unsigned char unused_1[2];
+	ncp_uint32_t dq_map_odd_rank_swap_0; 
+	ncp_uint32_t dq_map_odd_rank_swap_1; 
+	unsigned ddrRecovery;
 } __attribute__((packed)) parameters_mem_t;
 
 typedef parameters_mem_t ncp_sm_parms_t;

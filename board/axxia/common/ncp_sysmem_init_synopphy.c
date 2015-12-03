@@ -1071,7 +1071,7 @@ ncp_sm_ddr4_phy_training(
 	regDTCR0.dtdrs = 0x0; /* DTDRS Data training debug rank select */
 	regDTCR0.dtdbs = 0x0; /* DTDBS Data training debug byte select */
 	/* RDBI deskewing is not performed */
-	if (parms->dbi_en)
+	if (parms->dbi_rd_en)
 	{
 		regDTCR0.dtrdbitr = 0x2;
 	}
@@ -1795,7 +1795,10 @@ ncp_sysmem_init_synopphy(
 			((parms->version == NCP_CHIP_ACP56xx) && (smId == 2)) ||
 			((parms->version == NCP_CHIP_ACP56xx) && (smId == 3)))
 	{
+#if 0
+		/* until CMEM setup is implemented */
 		NCP_CALL(ncp_treemem_init_synopphy(dev, smId, parms));
+#endif
 		return ncpStatus;
 	}
 #endif
@@ -1830,7 +1833,7 @@ ncp_sysmem_init_synopphy(
 
 ncp_return:
 #ifdef NCP_SM_PHY_REG_DUMP
-	if (NCP_ST_SUCCESS != ncpStatus)
+	if ((NCP_ST_SUCCESS != ncpStatus) && (NCP_ST_ERROR != ncpStatus))
 	{
 		/* Dump contents of synop phy regs */
 		NCP_CALL(ncp_sm_ddr4_phy_reg_dump(dev, smNode));
