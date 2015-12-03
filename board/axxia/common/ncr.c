@@ -1167,15 +1167,20 @@ ncr_write(ncp_uint32_t region,
 	*/
 
 	if(0x3 !=
-	   ((ncr_register_read(POINTER(NCA + NCP_NCA_CFG_PIO_CDR0)) & 0x00c00000) >> 22)) {
-		printf("ncr_write( ) failed: 0x%lx, status1=0x%lx, status2=0x%lx\n",
-		       (unsigned long)((ncr_register_read(POINTER(NCA +
-								       NCP_NCA_CFG_PIO_CDR0)) &
-					0x00c00000) >> 22),
-		       (unsigned long)ncr_register_read(POINTER(NCA +
-								     NCP_NCA_CFG_RING_ERROR_STAT_R0)),
-		       (unsigned long)ncr_register_read(POINTER(NCA +
-								     NCP_NCA_CFG_RING_ERROR_STAT_R1)));
+	   ((ncr_register_read(POINTER(NCA + NCP_NCA_CFG_PIO_CDR0)) &
+	     0x00c00000) >> 22)) {
+		printf("ncr_write(0x%x, 0x%x, 0x%x, 0x%x, ) failed: 0x%lx, status1=0x%lx, status2=0x%lx\n",
+		       region, address_upper, address, number,
+		       (unsigned long)
+		       ((ncr_register_read(POINTER(NCA +
+						   NCP_NCA_CFG_PIO_CDR0)) &
+			 0x00c00000) >> 22),
+		       (unsigned long)
+		       ncr_register_read(POINTER(NCA +
+						 NCP_NCA_CFG_RING_ERROR_STAT_R0)),
+		       (unsigned long)
+		       ncr_register_read(POINTER(NCA +
+						 NCP_NCA_CFG_RING_ERROR_STAT_R1)));
 		ncr_unlock(LOCK_DOMAIN);
 
 		return -1;
