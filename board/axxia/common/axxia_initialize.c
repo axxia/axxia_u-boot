@@ -72,8 +72,6 @@ axxia_initialize(void)
 		return 0;
 #endif
 
-	printf("%s:%d - \n", __FILE__, __LINE__);
-
 	/*
 	  =======
 	  Voltage
@@ -109,18 +107,13 @@ axxia_initialize(void)
 	  =============
 	*/
 
-	printf("%s:%d - flags=0x%x ddrRecovery=0x%x\n",
-	       __FILE__, __LINE__, global->flags, sysmem->ddrRecovery);
-
 #ifdef SYSCACHE_ONLY_MODE
 	ncr_l3tags();
 #else
 	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) &&
 	    (0 == sysmem->ddrRecovery)) {
-		printf("%s:%d - \n", __FILE__, __LINE__);
 		ncr_tracer_enable();
 
-		printf("%s:%d - \n", __FILE__, __LINE__);
 		if (0 != sysmem_init())
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
