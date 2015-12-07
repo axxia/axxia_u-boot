@@ -209,8 +209,8 @@
 #define NCP_REGION_SYSCON                 (NCP_REGION_ID(0x156,  0)) /* */
 #define NCP_REGION_X7_ECM                 (NCP_REGION_ID(0x156,  1)) /* */
 #define NCP_REGION_IPI                    (NCP_REGION_ID(0x157,  0)) /* 343.0 */
-#define NCP_REGION_ELM_0                  (NCP_REGION_ID(0x158,  0)) /* 344.0 */
-#define NCP_REGION_ELM_1                  (NCP_REGION_ID(0x159,  0)) /* 345.0 */
+#define NCP_REGION_ELM_0                  (NCP_REGION_ID(0x167,  0)) /* 359.0 */
+#define NCP_REGION_ELM_1                  (NCP_REGION_ID(0x167,  1)) /* 359.0 */
 #define NCP_REGION_UART_3                 (NCP_REGION_ID(0x15a,  0)) /* 346.0 */
 #define NCP_REGION_PL301_1                (NCP_REGION_ID(0x15b,  0)) /* 347.0 */
 #define NCP_REGION_SMB                    (NCP_REGION_ID(0x15c,  0)) /* 348.0 */
