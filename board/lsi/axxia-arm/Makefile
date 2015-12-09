@@ -63,7 +63,7 @@ endif
 ################################################################################
 ## All Builds
 
-COBJS   += failure.o axxia_clocks.o cache.o spi.o debug.o sbb.o vat.o
+COBJS   += failure.o axxia_clocks.o outer_cache.o spi.o debug.o sbb.o vat.o
 SOBJS   += lowlevel.o monitor.o
 
 ifdef CONFIG_HW_WATCHDOG

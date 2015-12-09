@@ -1,5 +1,5 @@
 /*
- *  board/lsi/axxia-arm/cache.c
+ *  board/lsi/axxia-arm/outer_cache.S
  *
  *  Copyright (C) 2013 LSI (john.jacques@lsi.com)
  *
@@ -19,9 +19,7 @@
  */
 
 #include <config.h>
-#include <common.h>
-#include <asm/io.h>
-#include <asm/armv7.h>
+#include <linux/linkage.h>
 
 /*
   ------------------------------------------------------------------------------
@@ -38,40 +36,28 @@
   0b11 - FULL
 */
 
-int
-set_outer_cache_state(unsigned long state)
-{
+set_outer_cache_state:
 #ifndef CONFIG_AXXIA_SIM
-	int i;
-        unsigned long status;
-	int retries;
-	unsigned long hnf_offsets[] = {
-		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
-	};
-
-	if (0 != (state & ~0x3))
-		return -1;
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		writel(state, DICKENS + (0x10000 * hnf_offsets[i]) + 0x10);
-	}
-
-	for (i = 0; i < (sizeof(hnf_offsets) / sizeof(unsigned long)); ++i) {
-		retries = 10000;
-
-		do {
-			status = readl(DICKENS +
-				       (0x10000 * hnf_offsets[i]) + 0x18);
-			udelay(1);
-		} while ((0 < --retries) && ((state << 2) != (status & 0xf)));
-
-		if (0 == retries)
-			return -1;
-	}
+	/* Write the state. */
+	ldr	r3, =(DICKENS + 0x200000)
+	ldr	r2, =(DICKENS + 0x270000)
+1:	str	r0, [r3, #0x10]
+	add	r3, r3, #0x10000
+	cmp	r3, r2
+	ble	1b
+	/* Verify the state. */
+	ldr	r3, =(DICKENS + 0x200000)
+	ldr	r2, =(DICKENS + 0x270000)
+	mov	r0, r0, lsl #2
+1:	ldr	r1, [r3, #0x18]
+	cmp	r1, r0
+	bne	1b
+	add	r3, r3, #0x10000
+	cmp	r3, r2
+	ble	1b
 #endif
-
-	return 0;
-}
+	mov	r0, #0
+	mov	pc, lr
 
 /*
   ==============================================================================
@@ -86,78 +72,61 @@ set_outer_cache_state(unsigned long state)
   v7_outer_cache_enable
 */
 
-void
-v7_outer_cache_enable(void)
-{
-}
+ENTRY(v7_outer_cache_enable)
+	bx	lr
+ENDPROC(v7_outer_cache_enable)
+
 
 /*
   ------------------------------------------------------------------------------
   v7_outer_cache_disable
 */
 
-void
-v7_outer_cache_disable(void)
-{
-}
+ENTRY(v7_outer_cache_disable)
+	bx	lr
+ENDPROC(v7_outer_cache_disable)
 
 /*
   ------------------------------------------------------------------------------
   v7_outer_cache_flush_all
 */
 
-void
-v7_outer_cache_flush_all(void)
-{
-#ifndef RUN_UNCACHED
-	if (0 != set_outer_cache_state(0x1))
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
+ENTRY(v7_outer_cache_flush_all)
+	mov	r12, lr
+	mov	r0, #1
+	bl	set_outer_cache_state
 #ifndef LEAVE_L3_OFF
-	if (0 != set_outer_cache_state(0x3))
-		acp_failure(__FILE__, __FUNCTION__, __LINE__);
+	mov	r0, #3
+	bl	set_outer_cache_state
 #endif
-#endif
-
-	return;
-}
+	mov	lr, r12
+	bx	lr
+ENDPROC(v7_outer_cache_flush_all)
 
 /*
   ------------------------------------------------------------------------------
   v7_outer_cache_inval_all
 */
 
-void
-v7_outer_cache_inval_all(void)
-{
-}
+ENTRY(v7_outer_cache_inval_all)
+	bx	lr
+ENDPROC(v7_outer_cache_inval_all)
 
 /*
   ------------------------------------------------------------------------------
   v7_outer_cache_flush_range
 */
 
-void
-v7_outer_cache_flush_range(u32 start, u32 end)
-{
-	/*
-	  flushRange: DCCMVAC using the VA for the cache line we want
-	  to invalidate. Set CLIDR[26:24] to 3. (Step by 64B to
-	  increment through the range)
-	*/
-}
+ENTRY(v7_outer_cache_flush_range)
+	bx	lr
+ENDPROC(v7_outer_cache_flush_range)
 
 /*
   ------------------------------------------------------------------------------
   v7_outer_cache_inval_range
 */
 
-void
-v7_outer_cache_inval_range(u32 start, u32 end)
-{
-	/*
-	  invalidateRange: DCIMVAC using the VA for the cache line we
-	  want to invalidate. Set CLIDR[26:24] to 3. (Step by 64B to
-	  increment through the range)
-	*/
-}
+ENTRY(v7_outer_cache_inval_range)
+	bx	lr
+ENDPROC(v7_outer_cache_inval_range)
+
