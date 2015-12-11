@@ -658,7 +658,7 @@ void enable_lane(u32 phy, u32 lane, enum Dir dir)
 
 int pciesrio_setcontrol(unsigned long new_control)
 {
-	u32 pci_srio_sata_mode;
+	u32 pci_srio_sata_mode, val;
 	u32 rc_mode, phyVal0, phyVal1, srio0_mode, srio1_mode;
 	u32 srio0_speed, srio1_speed, sata0_speed, sata1_speed;
 	u32 sata0_mode, sata1_mode;
@@ -676,6 +676,11 @@ int pciesrio_setcontrol(unsigned long new_control)
 
 	srio0_speed = (new_control & 0x7000) >> 12;
 	srio1_speed = (new_control & 0x38000) >> 15;
+
+	/* LTSSM Disable for PEI0 */
+	val = readl(PCIE0_CC_GPREG_BASE + 0x38);
+	val &= (~(0x1));
+	writel(val, PCIE0_CC_GPREG_BASE + 0x38);
 
 	for (phy = 0; phy < 4; phy++)
 		enable_reset(phy);

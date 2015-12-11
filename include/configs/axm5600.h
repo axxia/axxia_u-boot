@@ -716,6 +716,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
   ==============================================================================
 */
 
+#define PCIE0_CC_GPREG_BASE 0xA003008000
+
 #ifdef CONFIG_AXXIA_PCI
 #define CONFIG_PCI_DW 1
 #define CONFIG_PCI 1
@@ -737,7 +739,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define PCIE1_AXI_GPREG_BASE 0xA005000000
 #define PCIE2_AXI_GPREG_BASE 0xA007000000
 
-#define PCIE0_CC_GPREG_BASE 0xA003008000
 #define PCIE1_CC_GPREG_BASE 0xA005008000
 #define PCIE2_CC_GPREG_BASE 0xA007008000
 
