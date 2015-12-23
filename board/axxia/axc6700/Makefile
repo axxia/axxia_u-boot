@@ -26,12 +26,7 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-obj-y += mdio.o phy.o non_secure.o timer_init.o
-
-ifdef CONFIG_AXXIA_EIOA
-obj-y += eioa.o ncp_task_config_axm55xx.o ncp_task_axm55xx.o
-obj-y += ncp_task_api_entry.o ncp_task_uboot_config_axm55xx.o
-endif
+obj-y += mdio.o phy.o timer_init.o
 
 else
 
@@ -49,7 +44,7 @@ endif
 ################################################################################
 ## All Builds
 
-obj-y   += failure.o version.o spi.o vat.o lowlevel.o
+obj-y   += failure.o version.o spi.o lowlevel.o
 
 ifdef CONFIG_HW_WATCHDOG
 obj-y += watchdog.o
