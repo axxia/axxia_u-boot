@@ -58,8 +58,12 @@ DECLARE_GLOBAL_DATA_PTR;
 /*
  * Board-specific Platform code can reimplement show_boot_progress () if needed
  */
+#ifdef CONFIG_AXXIA
+void show_boot_progress(int val) {}
+#else
 void inline __show_boot_progress (int val) {}
 void show_boot_progress (int val) __attribute__((weak, alias("__show_boot_progress")));
+#endif
 
 #if defined(CONFIG_UPDATE_TFTP)
 int update_tftp (ulong addr);
