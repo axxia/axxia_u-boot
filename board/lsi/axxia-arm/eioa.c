@@ -1141,7 +1141,7 @@ line_setup(int index)
 	/* Check for "macspeed".  If set, ignore the PHYs... */
 	envstring = getenv("macspeed");
 
-	if (NULL != envstring) {
+	if ((NULL != envstring) && (0 != strcmp("auto", envstring))) {
 		debug("Setting gmac%d to %s\n", port_by_index[index], envstring);
 
 		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
