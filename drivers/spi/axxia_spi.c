@@ -386,8 +386,8 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	const u8 *txp = dout;
 	u8 *rxp = din;
 #ifdef ENABLE_DMA
-	unsigned long address;
-	unsigned int direction;
+	unsigned long address = NULL;
+	unsigned int direction = 0;
 #endif	/* ENABLE_DMA */
 
 	if (bitlen == 0)
@@ -435,17 +435,13 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	} else if (NULL == txp && NULL != rxp) {
 		address = (unsigned long)rxp;
 		direction = 0x40000000;
-	} else {
-		ret = -1;
-		flags |= SPI_XFER_END;
-		goto out;
 	}
 
-	if (40 < bitlen && SPI_XFER_END == flags &&
+	if (40 < bitlen && (unsigned long)NULL != address &&
 	    0 == (address %4) && 0 == (len % 4)) {
 		unsigned int dma_address_hi;
 		unsigned int dma_address_lo;
-		u32 dma_len;
+ 		u32 dma_len;
 
 		dma_len = len & ~0x3;
 		len -= dma_len;
