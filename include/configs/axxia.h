@@ -4134,6 +4134,7 @@ void ncr_disable( void );
 
 #ifndef __ASSEMBLY__
 int setup_security(void);
+int voltage_init(void);
 #endif
 
 #endif /* __AXXIA_H */
