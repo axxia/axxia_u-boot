@@ -686,8 +686,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define I2C2	I2C2_ADDRESS
 #define I2C3	I2C3_ADDRESS
 
-#define GPIO0_ADDRESS (IO + 0x92000)
-#define GPIO1_ADDRESS (IO + 0x93000)
+#define GPIO0_ADDRESS (IO + 0x180000)
+#define GPIO1_ADDRESS (IO + 0x190000)
 
 #define MMAP_GPREG   (0x8032900000)
 #define MMAP_SCB     (0x8032000000)
