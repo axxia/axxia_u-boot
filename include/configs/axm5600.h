@@ -818,6 +818,7 @@ int usb_phy_init(void);
 
 #ifndef __ASSEMBLY__
 int sysmem_init(void);
+int cmem_init(void);
 #endif
 
 

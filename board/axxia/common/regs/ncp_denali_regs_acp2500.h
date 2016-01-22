@@ -1,18 +1,18 @@
 /*
- *  Copyright (C) 2014 LSI (john.jacques@lsi.com)
+ *  Copyright (C) 2016 Intel (john.jacques@intel.com)
  *
- * This program is free software;you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation;either version 2 of the License, or
+ * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY;without even the implied warranty of
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program;if not, write to the Free Software
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -91,7 +91,7 @@ extern "C" {
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_00_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -188,7 +188,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_01_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -263,7 +263,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_02_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -327,7 +327,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_03_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -397,7 +397,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_04_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -454,7 +454,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_05_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -513,7 +513,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_06_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -605,7 +605,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_07_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -702,7 +702,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_08_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -801,7 +801,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_09_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -900,7 +900,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_10_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -999,7 +999,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_11_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1090,7 +1090,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_12_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1179,7 +1179,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_13_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1278,12 +1278,12 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_14_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  7;
-     unsigned      weighted_round_robin_latency_control      :  1;/* obsolete for 5500 */
+     unsigned      weighted_round_robin_latency_control      :  1; /* obsolete for 5500 */
      unsigned      reserved1                                 :  7;
      unsigned      tref_enable                               :  1;
      unsigned      reserved2                                 :  7;
@@ -1355,7 +1355,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_15_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1426,7 +1426,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_16_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1497,7 +1497,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_17_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1568,7 +1568,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_18_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1639,7 +1639,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_19_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1727,7 +1727,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_20_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1735,7 +1735,7 @@ typedef struct
      unsigned      reserved0                                 :  6;
      unsigned      rdlvl_cs                                  :  2;
      unsigned      reserved1                                 :  6;
-     unsigned      ctrl_raw                                  :  2;/* obsolete for 5500 */
+     unsigned      ctrl_raw                                  :  2;  /* obsolete for 5500 */
      unsigned      reserved2                                 :  6;
      unsigned      bist_result                               :  2;
 #else    /* Little Endian */
@@ -1827,7 +1827,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_21_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1836,7 +1836,7 @@ typedef struct
      unsigned      reserved1                                 :  6;
      unsigned      wrlvl_cs                                  :  2;
      unsigned      reserved2                                 :  6;
-     unsigned      weighted_round_robin_weight_sharing       :  2;/* obsolete for 5500 */
+     unsigned      weighted_round_robin_weight_sharing       :  2;  /* obsolete for 5500 */
      unsigned      reserved3                                 :  6;
      unsigned      sw_leveling_mode                          :  2;
 #else    /* Little Endian */
@@ -1914,7 +1914,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_22_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1998,12 +1998,12 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_23_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  4;
-     unsigned      lvl_status                                :  4;/* only 3 bits on 2500 */
+     unsigned      lvl_status                                :  4;  /* only 3 bits on 2500 */
      unsigned      command_age_count                         :  8;
      unsigned      obsolete1                                 :  8;
      unsigned      reserved1                                 :  5;
@@ -2081,14 +2081,14 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_24_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  5;
      unsigned      tcke                                      :  3;
      unsigned      reserved1                                 :  4;
-     unsigned      q_fullness                                :  4;/* only 3 bites on 2500 */
+     unsigned      q_fullness                                :  4;  /* only 3 bites on 2500 */
      unsigned      obsolete1                                 :  8;
      unsigned      reserved2                                 :  5;
      unsigned      max_cs_reg                                :  3;
@@ -2169,7 +2169,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_25_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2265,7 +2265,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_26_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2364,7 +2364,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_27_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2470,7 +2470,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_28_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2575,7 +2575,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_29_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2679,7 +2679,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_30_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2773,7 +2773,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_31_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2878,7 +2878,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_32_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2981,7 +2981,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_33_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3082,7 +3082,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_34_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3175,13 +3175,13 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_35_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete3                                 :  8;
      unsigned      reserved0                                 :  1;
-     unsigned      tdfi_phy_wrlat                            :  7;/* only 5 bits on 2500 */
+     unsigned      tdfi_phy_wrlat                            :  7;  /* only 5 bits on 2500 */
      unsigned      reserved1                                 :  4;
      unsigned      tdfi_ctrlupd_min                          :  4;
      unsigned      reserved2                                 :  4;
@@ -3256,7 +3256,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_36_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3343,13 +3343,13 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_37_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete3                                 :  8;
      unsigned      reserved0                                 :  4;
-     unsigned      wrr_param_value_err                       :  4;/* obsolete on 5500 */
+     unsigned      wrr_param_value_err                       :  4;  /* obsolete on 5500 */
      unsigned      reserved1                                 :  3;
      unsigned      wrlat_adj                                 :  5;
      unsigned      reserved2                                 :  3;
@@ -3432,7 +3432,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_38_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3525,14 +3525,14 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_39_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  2;
      unsigned      tdal                                      :  6;
      unsigned      reserved1                                 :  1;
-     unsigned      rdlat_adj                                 :  7;/* only 6 bits on 2500 */
+     unsigned      rdlat_adj                                 :  7;  /* only 6 bits on 2500 */
      unsigned      reserved2                                 :  2;
      unsigned      out_of_range_type                         :  6;
      unsigned      reserved3                                 :  3;
@@ -3616,7 +3616,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_40_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3624,9 +3624,9 @@ typedef struct
      unsigned      tfaw                                      :  6;
      unsigned      obsolete2                                 :  8;
      unsigned      reserved1                                 :  1;
-     unsigned      tdfi_rddata_en                            :  7;/* only 6 bits on 2500 */
+     unsigned      tdfi_rddata_en                            :  7;  /* only 6 bits on 2500 */
      unsigned      reserved2                                 :  1;
-     unsigned      tdfi_phy_rdlat                            :  7;/* only 6 bits on 2500 */
+     unsigned      tdfi_phy_rdlat                            :  7;  /* only 6 bits on 2500 */
 #else    /* Little Endian */
      unsigned      tdfi_phy_rdlat                            :  7;
      unsigned      reserved2                                 :  1;
@@ -3701,14 +3701,14 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_41_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  2;
      unsigned      addr_space                                :  6;
      unsigned      reserved1                                 :  2;
-     unsigned      twr_int                                   :  6;/* obsolete on 5500 */
+     unsigned      twr_int                                   :  6;  /* obsolete on 5500 */
      unsigned      trc                                       :  8;
      unsigned      reserved2                                 :  3;
      unsigned      tmrd                                      :  5;
@@ -3784,7 +3784,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_42_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3849,12 +3849,12 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_43_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete3                                 :  8;
-     unsigned      out_of_range_length                       :  8;/* obsolete on 5500 */
+     unsigned      out_of_range_length                       :  8;  /* obsolete on 5500 */
      unsigned      ecc_u_synd                                :  8;
      unsigned      ecc_c_synd                                :  8;
 #else    /* Little Endian */
@@ -3890,7 +3890,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_44_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -3921,7 +3921,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_45_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -3952,7 +3952,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_46_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -3983,7 +3983,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_47_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4014,7 +4014,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_48_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4045,7 +4045,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_49_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4076,7 +4076,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_50_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4107,7 +4107,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_51_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4138,7 +4138,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_52_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4169,7 +4169,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_53_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4200,7 +4200,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_54_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4231,7 +4231,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_55_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4262,7 +4262,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_56_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4293,7 +4293,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_57_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -4342,7 +4342,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_58_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4401,7 +4401,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_59_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4464,7 +4464,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_60_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4527,7 +4527,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_61_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4588,11 +4588,11 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_62_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
-     unsigned      trcd_int                                  :  8;/* obsolete in 5500 */
+     unsigned      trcd_int                                  :  8;  /* obsolete in 5500 */
      unsigned      tras_min                                  :  8;
      unsigned      tmod                                      :  8;
      unsigned      obsolete0                                 :  8;
@@ -4647,7 +4647,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_63_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4706,7 +4706,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_64_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4765,7 +4765,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_65_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4818,7 +4818,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_66_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4879,7 +4879,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_67_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4942,7 +4942,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_68_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5007,7 +5007,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_69_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5063,7 +5063,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_70_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5102,7 +5102,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_71_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5133,7 +5133,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_72_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5173,7 +5173,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_73_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5210,7 +5210,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_74_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5241,7 +5241,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_75_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5272,7 +5272,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_76_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5303,7 +5303,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_77_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5334,7 +5334,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_78_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5365,7 +5365,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_79_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5396,7 +5396,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_80_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5427,7 +5427,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_81_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5464,7 +5464,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_82_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5501,7 +5501,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_83_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5538,7 +5538,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_84_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5581,7 +5581,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_85_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5624,7 +5624,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_86_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5667,7 +5667,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_87_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5704,7 +5704,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_88_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5741,7 +5741,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_89_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5778,7 +5778,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_90_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5809,7 +5809,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_91_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5840,7 +5840,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_92_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -5877,7 +5877,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_93_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5914,7 +5914,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_94_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int              cke_inactive;
@@ -5953,7 +5953,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_95_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5990,7 +5990,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_96_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6021,7 +6021,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_97_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6052,7 +6052,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_98_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6083,7 +6083,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_99_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6114,7 +6114,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_100_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6145,7 +6145,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_101_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6176,7 +6176,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_102_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6207,7 +6207,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_103_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6238,7 +6238,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_104_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6269,7 +6269,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_105_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6300,7 +6300,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_106_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6331,7 +6331,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_107_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6362,7 +6362,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_108_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6393,7 +6393,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_109_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6424,7 +6424,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_110_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6455,7 +6455,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_111_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6486,7 +6486,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_112_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6517,7 +6517,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_113_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6548,7 +6548,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_114_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6579,7 +6579,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_115_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6610,7 +6610,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_116_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6641,7 +6641,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_117_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6672,7 +6672,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_118_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6703,7 +6703,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_119_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6734,7 +6734,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_120_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6765,7 +6765,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_121_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6796,7 +6796,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_122_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6827,7 +6827,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_123_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6858,7 +6858,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_124_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6889,7 +6889,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_125_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -6920,7 +6920,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_126_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                trst_pwron;
@@ -6951,7 +6951,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_127_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            user_def_reg_0;
@@ -6982,7 +6982,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_128_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            user_def_reg_1;
@@ -7013,7 +7013,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_129_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int         user_def_reg_ro_0;
@@ -7044,7 +7044,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_130_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int         user_def_reg_ro_1;
@@ -7075,7 +7075,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_131_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int         user_def_reg_ro_2;
@@ -7106,7 +7106,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_132_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int         user_def_reg_ro_3;
@@ -7137,7 +7137,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_133_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int         user_def_reg_ro_4;
@@ -7168,7 +7168,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_134_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int         user_def_reg_ro_5;
@@ -7199,7 +7199,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_135_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int         user_def_reg_ro_6;
@@ -7230,7 +7230,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_136_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int         user_def_reg_ro_7;
@@ -7274,7 +7274,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_137_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7324,7 +7324,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_138_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7374,7 +7374,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_139_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7424,7 +7424,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_140_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7474,7 +7474,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_141_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7524,7 +7524,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_142_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7574,7 +7574,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_143_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7624,7 +7624,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_144_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7674,7 +7674,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_145_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7711,7 +7711,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_146_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_fail_addr;
@@ -7754,13 +7754,13 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_147_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
      unsigned      reserved0                                 :  4;
-     unsigned      bist_fail_addr                            :  4;/* only 3 bits on 2500 */
+     unsigned      bist_fail_addr                            :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
      unsigned      bist_fail_addr                            :  4;
      unsigned      reserved0                                 :  4;
@@ -7793,7 +7793,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_148_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int        bist_start_address;
@@ -7836,13 +7836,13 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_149_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
      unsigned      reserved0                                 :  4;
-     unsigned      bist_start_address                        :  4;/* only 3 bits on 2500 */
+     unsigned      bist_start_address                        :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
      unsigned      bist_start_address                        :  4;
      unsigned      reserved0                                 :  4;
@@ -7875,7 +7875,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_150_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                ecc_c_addr;
@@ -7918,13 +7918,13 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_151_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
      unsigned      reserved0                                 :  4;
-     unsigned      ecc_c_addr                                :  4;/* only 3 bits on 2500 */
+     unsigned      ecc_c_addr                                :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
      unsigned      ecc_c_addr                                :  4;
      unsigned      reserved0                                 :  4;
@@ -7957,7 +7957,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_152_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                ecc_u_addr;
@@ -8000,13 +8000,13 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_153_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
      unsigned      reserved0                                 :  4;
-     unsigned      ecc_u_addr                                :  4;/* only 3 bits on 2500 */
+     unsigned      ecc_u_addr                                :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
      unsigned      ecc_u_addr                                :  4;
      unsigned      reserved0                                 :  4;
@@ -8041,7 +8041,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_154_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int         out_of_range_addr;
@@ -8086,13 +8086,13 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_155_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
      unsigned      reserved0                                 :  4;
-     unsigned      out_of_range_addr                         :  4;/* only 3 bits on 2500 */
+     unsigned      out_of_range_addr                         :  4; /* only 3 bits on 2500 */
 #else    /* Little Endian */
      unsigned      out_of_range_addr                         :  4;
      unsigned      reserved0                                 :  4;
@@ -8127,7 +8127,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_156_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int       port_cmd_error_addr;
@@ -8172,13 +8172,13 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_157_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      obsolete1                                 : 24;
      unsigned      reserved0                                 :  4;
-     unsigned      port_cmd_error_addr                       :  4;/* only 3 bits on 2500 */
+     unsigned      port_cmd_error_addr                       :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
      unsigned      port_cmd_error_addr                       :  4;
      unsigned      reserved0                                 :  4;
@@ -8216,7 +8216,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_158_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int        rdlvl_error_status;
@@ -8264,7 +8264,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_159_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -8303,7 +8303,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_160_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -8334,7 +8334,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_161_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -8365,7 +8365,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_162_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                ecc_c_data;
@@ -8396,7 +8396,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_163_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                ecc_c_data;
@@ -8427,7 +8427,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_164_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                ecc_u_data;
@@ -8458,7 +8458,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_165_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                ecc_u_data;
@@ -8489,7 +8489,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_166_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int      rdlvl_gate_resp_mask;
@@ -8520,7 +8520,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_167_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int      rdlvl_gate_resp_mask;
@@ -8557,7 +8557,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_168_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -8594,7 +8594,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_169_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int           rdlvl_resp_mask;
@@ -8625,7 +8625,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_170_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int           rdlvl_resp_mask;
@@ -8662,7 +8662,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_171_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -8699,7 +8699,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_172_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -8730,7 +8730,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_173_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -8761,7 +8761,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_174_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -8792,7 +8792,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_175_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -8823,7 +8823,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_176_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -8854,7 +8854,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_177_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -8885,7 +8885,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_178_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -8916,7 +8916,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_179_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -8983,7 +8983,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_180_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9072,7 +9072,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_181_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9169,7 +9169,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_182_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9258,7 +9258,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_183_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9347,7 +9347,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_184_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9414,7 +9414,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_185_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9473,7 +9473,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_186_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9524,7 +9524,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_187_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9571,7 +9571,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_188_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9618,7 +9618,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_189_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9665,7 +9665,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_190_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9712,7 +9712,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_191_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9759,7 +9759,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_192_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9806,7 +9806,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_193_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9853,7 +9853,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_194_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9900,7 +9900,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_195_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9947,7 +9947,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_196_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -9994,7 +9994,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_197_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10041,7 +10041,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_198_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10093,7 +10093,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_199_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10150,7 +10150,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_200_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10207,7 +10207,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_201_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10264,7 +10264,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_202_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10321,7 +10321,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_203_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10368,7 +10368,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_204_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10415,7 +10415,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_205_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10462,7 +10462,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_206_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10509,7 +10509,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_207_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10562,7 +10562,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_208_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10621,7 +10621,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_209_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10680,7 +10680,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_210_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10739,7 +10739,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_211_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10798,7 +10798,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_212_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10843,7 +10843,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_213_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10890,7 +10890,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_214_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10937,7 +10937,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_215_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -10984,7 +10984,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_216_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11031,7 +11031,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_217_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11078,7 +11078,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_218_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11125,7 +11125,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_219_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11172,7 +11172,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_220_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11219,7 +11219,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_221_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11266,7 +11266,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_222_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11305,7 +11305,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_223_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            tdfi_rdlvl_max;
@@ -11338,7 +11338,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_224_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int           tdfi_rdlvl_resp;
@@ -11371,7 +11371,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_225_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            tdfi_wrlvl_max;
@@ -11404,7 +11404,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_226_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int           tdfi_wrlvl_resp;
@@ -11462,7 +11462,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_227_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11517,7 +11517,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_228_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11566,7 +11566,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_229_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11632,7 +11632,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_230_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11704,11 +11704,11 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_231_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
-     unsigned      wrlvl_refresh_interval                    : 16;/* obsolete in 5500 */
+     unsigned      wrlvl_refresh_interval                    : 16;  /* obsolete in 5500 */
      unsigned      reserved0                                 :  7;
      unsigned      wrlvl_en                                  :  1;
      unsigned      reserved1                                 :  4;
@@ -11781,7 +11781,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_232_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11836,7 +11836,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_233_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11876,7 +11876,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_234_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int               rdimm_ctl_0;
@@ -11910,7 +11910,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_235_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int               rdimm_ctl_0;
@@ -11956,7 +11956,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_236_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -11998,7 +11998,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_237_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int               rdimm_ctl_1;
@@ -12032,7 +12032,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_238_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int               rdimm_ctl_1;
@@ -12099,7 +12099,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_239_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12173,7 +12173,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_240_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12236,12 +12236,12 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_241_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  6;
-     unsigned      reg_dimm_parity_error                     :  2;/* obsolete in 5500 */
+     unsigned      reg_dimm_parity_error                     :  2;  /* obsolete in 5500 */
      unsigned      rdimm_tstab                               : 24;
 #else    /* Little Endian */
      unsigned      rdimm_tstab                               : 24;
@@ -12289,7 +12289,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_242_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12357,7 +12357,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_243_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12444,7 +12444,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_244_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12549,7 +12549,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_245_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12596,7 +12596,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_246_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -12627,7 +12627,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_247_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                 obsolete0;
@@ -12666,7 +12666,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_248_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12730,7 +12730,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_249_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12785,7 +12785,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_250_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12838,7 +12838,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_251_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12887,7 +12887,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_252_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12932,7 +12932,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_253_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -12973,7 +12973,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_254_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_data_mask;
@@ -13008,7 +13008,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_255_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_data_mask;
@@ -13043,7 +13043,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_256_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_data_mask;
@@ -13078,7 +13078,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_257_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_data_mask;
@@ -13111,7 +13111,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_258_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            xor_check_bits;
@@ -13171,7 +13171,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_259_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -13220,12 +13220,12 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_260_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  6;
-     unsigned      int_status                                : 26;/* only 25 bits on 2500 */
+     unsigned      int_status                                : 26;  /* only 25 bits on 2500 */
 #else    /* Little Endian */
      unsigned      int_status                                : 26;
      unsigned      reserved0                                 :  6;
@@ -13265,12 +13265,12 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_261_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
      unsigned      reserved0                                 :  6;
-     unsigned      int_mask                                  : 26;/* only 25 bits on 2500 */
+     unsigned      int_mask                                  : 26;  /* only 25 bits on 2500 */
 #else    /* Little Endian */
      unsigned      int_mask                                  : 26;
      unsigned      reserved0                                 :  6;
@@ -13302,7 +13302,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_262_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int             bist_exp_data;
@@ -13333,7 +13333,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_263_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int             bist_exp_data;
@@ -13364,7 +13364,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_264_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int             bist_exp_data;
@@ -13395,7 +13395,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_265_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int             bist_exp_data;
@@ -13426,7 +13426,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_266_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int             bist_exp_data;
@@ -13457,7 +13457,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_267_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int             bist_exp_data;
@@ -13488,7 +13488,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_268_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int             bist_exp_data;
@@ -13519,7 +13519,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_269_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int             bist_exp_data;
@@ -13550,7 +13550,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_270_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_fail_data;
@@ -13581,7 +13581,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_271_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_fail_data;
@@ -13612,7 +13612,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_272_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_fail_data;
@@ -13643,7 +13643,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_273_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_fail_data;
@@ -13674,7 +13674,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_274_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_fail_data;
@@ -13705,7 +13705,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_275_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_fail_data;
@@ -13736,7 +13736,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_276_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_fail_data;
@@ -13767,7 +13767,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_277_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            bist_fail_data;
@@ -13824,7 +13824,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_278_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -13885,7 +13885,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_279_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -13948,7 +13948,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_280_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14014,7 +14014,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_281_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14067,7 +14067,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_282_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14128,7 +14128,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_283_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14194,7 +14194,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_284_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14247,7 +14247,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_285_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14308,7 +14308,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_286_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14374,7 +14374,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_287_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14427,7 +14427,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_288_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14488,7 +14488,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_289_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14554,7 +14554,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_290_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14607,7 +14607,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_291_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14668,7 +14668,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_292_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14734,7 +14734,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_293_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14787,7 +14787,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_294_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14848,7 +14848,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_295_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14914,7 +14914,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_296_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -14967,7 +14967,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_297_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15028,7 +15028,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_298_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15094,7 +15094,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_299_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15147,7 +15147,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_300_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15208,7 +15208,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_301_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15274,7 +15274,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_302_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15327,7 +15327,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_303_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15388,7 +15388,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_304_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15454,7 +15454,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_305_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15507,7 +15507,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_306_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15568,7 +15568,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_307_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15634,7 +15634,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_308_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15687,7 +15687,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_309_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15748,7 +15748,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_310_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15814,7 +15814,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_311_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15867,7 +15867,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_312_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15928,7 +15928,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_313_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -15994,7 +15994,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_314_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16047,7 +16047,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_315_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16108,7 +16108,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_316_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16174,7 +16174,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_317_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16227,7 +16227,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_318_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16288,7 +16288,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_319_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16354,7 +16354,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_320_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16407,7 +16407,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_321_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16468,7 +16468,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_322_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16534,7 +16534,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_323_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16587,7 +16587,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_324_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16648,7 +16648,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_325_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16723,7 +16723,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_326_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16770,7 +16770,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_327_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int      tdfi_ctrlupd_interval;
@@ -16845,7 +16845,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_328_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -16942,7 +16942,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_329_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17034,7 +17034,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_330_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17044,7 +17044,7 @@ typedef struct
      unsigned      reserved1                                 :  7;
      unsigned      in_order_accept                           :  1;
      unsigned      reserved2                                 :  4;
-     unsigned      num_q_entries_act_disable                 :  4;/* only 3 bits on 2500 */
+     unsigned      num_q_entries_act_disable                 :  4;  /* only 3 bits on 2500 */
 #else    /* Little Endian */
      unsigned      num_q_entries_act_disable                 :  4;
      unsigned      reserved2                                 :  4;
@@ -17095,7 +17095,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_331_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17136,7 +17136,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_332_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int            refresh_per_zq;
@@ -17217,7 +17217,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_333_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17316,7 +17316,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_denali_DENALI_CTL_334_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17405,7 +17405,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_335_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17464,7 +17464,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_336_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17505,7 +17505,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_337_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int               zq_interval;
@@ -17542,7 +17542,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_338_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17615,7 +17615,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_339_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17682,7 +17682,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_340_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17759,7 +17759,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_341_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17832,7 +17832,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_342_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17887,7 +17887,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_343_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17938,7 +17938,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_344_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -17989,7 +17989,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_345_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18040,7 +18040,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_346_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18091,7 +18091,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_347_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18142,7 +18142,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_348_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18193,7 +18193,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_349_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18244,7 +18244,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_350_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18295,7 +18295,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_351_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18346,7 +18346,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_352_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18397,7 +18397,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_353_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18448,7 +18448,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_354_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18499,7 +18499,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_355_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18550,7 +18550,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_356_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18601,7 +18601,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_357_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18652,7 +18652,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_358_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18703,7 +18703,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_359_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18754,7 +18754,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_360_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18805,7 +18805,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_361_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18856,7 +18856,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_362_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18907,7 +18907,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_363_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -18958,7 +18958,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_364_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19009,7 +19009,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_365_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19060,7 +19060,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_366_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19111,7 +19111,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_367_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19157,7 +19157,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_368_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19203,7 +19203,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_369_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19252,7 +19252,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_370_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19298,7 +19298,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_371_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19344,7 +19344,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_372_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19407,7 +19407,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_373_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19457,7 +19457,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_374_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19520,7 +19520,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_375_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19570,7 +19570,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_376_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19633,7 +19633,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_377_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19683,7 +19683,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_378_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19746,7 +19746,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_379_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19796,7 +19796,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_380_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19859,7 +19859,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_381_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19909,7 +19909,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_382_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -19972,7 +19972,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_383_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20022,7 +20022,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_384_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20085,7 +20085,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_385_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20135,7 +20135,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_386_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20198,7 +20198,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_387_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20248,7 +20248,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_388_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20311,7 +20311,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_389_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20361,7 +20361,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_390_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20424,7 +20424,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_391_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20474,7 +20474,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_392_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20537,7 +20537,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_393_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20587,7 +20587,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_394_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20650,7 +20650,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_395_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20700,7 +20700,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_396_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20747,7 +20747,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_397_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20804,7 +20804,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_398_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20867,7 +20867,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_399_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -20938,7 +20938,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_400_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21003,7 +21003,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_401_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21066,7 +21066,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_402_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21129,7 +21129,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_403_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21192,7 +21192,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_404_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21255,7 +21255,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_405_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21318,7 +21318,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_406_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21381,7 +21381,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_407_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21444,7 +21444,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_408_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21507,7 +21507,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_409_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21570,7 +21570,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_410_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21633,7 +21633,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_411_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21696,7 +21696,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_412_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21759,7 +21759,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_413_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21822,7 +21822,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_414_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21885,7 +21885,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_415_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -21950,7 +21950,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_416_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -22017,7 +22017,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_417_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -22082,7 +22082,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_418_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -22162,7 +22162,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_419_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -22258,7 +22258,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_420_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -22316,7 +22316,7 @@ typedef struct
  * Applies to: 5500 --> ncp_denali_DENALI_CTL_421_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN

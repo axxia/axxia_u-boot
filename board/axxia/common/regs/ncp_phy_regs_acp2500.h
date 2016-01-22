@@ -1,18 +1,18 @@
 /*
- *  Copyright (C) 2014 LSI (john.jacques@lsi.com)
+ *  Copyright (C) 2016 Intel (john.jacques@intel.com)
  *
- * This program is free software;you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation;either version 2 of the License, or
+ * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY;without even the implied warranty of
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program;if not, write to the Free Software
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -52,7 +52,7 @@ extern "C" {
  *        applied to all rank delay settings. After a read burst
  *        the phase of the gate is compared to read DQS. An
  *        adjustment +/- one tap is then applied to the all
- *        rank gate delays setting;1 - auto updates are applied
+ *        rank gate delays setting; 1 - auto updates are applied
  *        on a per rank basis. After a read burst the phase
  *        of the gate is compared to read DQS and saved along
  *        with the rank setting for that particular burst. An
@@ -66,7 +66,7 @@ extern "C" {
  *     <td width="20%" align="center"> 14 </td>
  *   <td width="30%"> Disable Auto Gate Update: 0 - default, no effect.
  *        Gate delays are automatically adjusted by comparing
- *        the phase of the gate and DQS signals;1 - disables
+ *        the phase of the gate and DQS signals; 1 - disables
  *        the automatic gate delay updates.
  *   </td>
  * </tr>
@@ -78,7 +78,7 @@ extern "C" {
  *        on PHY I/O ODT when read data is being received. This
  *        is controlled by the read DQS gate signal. For dynamic
  *        ODT, PHY_CONFIG2[3] (ODT_OFF) must also be set to
- *        0;1 - Force PHY I/O ODT to be always on. (takes precedence
+ *        0; 1 - Force PHY I/O ODT to be always on. (takes precedence
  *        over PHY_CONFIG2[3] ODT_OFF)
  *   </td>
  * </tr>
@@ -94,7 +94,7 @@ extern "C" {
  *     <td width="20%" align="center"> 11 </td>
  *   <td width="30%"> Two Beat Burst: Legacy DDR1, 2 beat burst mode. 0
  *        - less than 4 beats per burst is not permitted (default
- *        mode);1 - two beats per burst allowed for DDR1 operation.
+ *        mode); 1 - two beats per burst allowed for DDR1 operation.
  *        NOTES: 1) This mode affects the accuracy of DQS gate
  *        tracking and is only recommended for the slow operating
  *        frequency of DDR1. 2) Two beat burst mode can only
@@ -106,7 +106,7 @@ extern "C" {
  *     <td width="20%" align="center"> 1 </td>
  *     <td width="20%" align="center"> 10 </td>
  *   <td width="30%"> Dynamic IO Receiver Power (LPR): 0 - LPR feed through
- *        to IO has control of the receiver power;1 - IO receiver
+ *        to IO has control of the receiver power; 1 - IO receiver
  *        power controlled by DR_GATING_IN pin. Receiver power
  *        is applied at least 1.5 clk1x cycles before the read
  *        burst pre-amble and is switched off after the last
@@ -139,7 +139,7 @@ extern "C" {
  *     <td width="20%" align="center"> 1 </td>
  *     <td width="20%" align="center"> 2 </td>
  *   <td width="30%"> DW PHASE ALIGN: 0 - 90 degree alignment of DQS out
- *        (and DM out in X4 mode) to DQ out transitions;1 -
+ *        (and DM out in X4 mode) to DQ out transitions; 1 -
  *        0 degree alignment of DQS out (and DM out in x4 mode)
  *        to DQ out transitions.
  *   </td>
@@ -166,7 +166,7 @@ extern "C" {
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DPCONFIG0_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -224,7 +224,7 @@ typedef struct
  *     <td width="20%" align="center"> 1 </td>
  *     <td width="20%" align="center"> 12 </td>
  *   <td width="30%"> Gate VT Wrap: 0 - Normal operation VT buffer required
- *        in the GATE delay setting;1 - Not supported.
+ *        in the GATE delay setting; 1 - Not supported.
  *   </td>
  * </tr>
  *   <tr>
@@ -233,7 +233,7 @@ typedef struct
  *     <td width="20%" align="center"> 11 </td>
  *   <td width="30%"> Granularity: DQS and spare delay cell granularity.
  *        0 - The DQS and spare delay cells have a granularity
- *        of 512 (9 bits);1 - The DQS and spare delay cells
+ *        of 512 (9 bits); 1 - The DQS and spare delay cells
  *        have a granularity of 1024 (10 bits).
  *   </td>
  * </tr>
@@ -285,7 +285,7 @@ typedef struct
  *     <td width="20%" align="center"> 1 </td>
  *     <td width="20%" align="center"> 5 </td>
  *   <td width="30%"> Apply Data: 0 - reference clks with zero phase shift
- *        are applied to data paths;1 - reference clks with
+ *        are applied to data paths; 1 - reference clks with
  *        90 degree phase shift are applied to data paths. This
  *        bit determines which reference clk is applied to the
  *        data input of the spare or read capture flops when
@@ -297,7 +297,7 @@ typedef struct
  *     <td width="20%" align="center"> 1 </td>
  *     <td width="20%" align="center"> 4 </td>
  *   <td width="30%"> Apply Clock: 0 - reference clks with zero phase shift
- *        are applied to clk paths;1 - reference clks with
+ *        are applied to clk paths; 1 - reference clks with
  *        90 degree phase shift are applied to clk paths. This
  *        bit determines which reference clk is applied to the
  *        clk input of the spare or read capture flops when
@@ -338,7 +338,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DPCONFIG2_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -407,7 +407,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_PUPPDQSDLY_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -452,7 +452,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_NUPPDQSDLY_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -497,7 +497,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_PLOWDQSDLY_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -542,7 +542,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_NLOWDQSDLY_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -587,7 +587,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_SPAREDLY_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -648,7 +648,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_GTUPPCTRL_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -713,7 +713,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_GTLOWCTRL_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -762,7 +762,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_WRTLVLUPP_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -807,7 +807,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_WRTLVLLOW_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -876,7 +876,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DPPWRMGR_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -941,7 +941,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DPGTSTAT_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1028,7 +1028,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_PHASE90SEL0_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1109,7 +1109,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_PHASE90SEL1_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1160,7 +1160,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_FINEDLYSELxx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1205,7 +1205,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_BC_ADRx_FINEDLYSELxx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1266,7 +1266,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_GTDLYCTRL_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1337,7 +1337,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_ADRPWRMGR_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1410,7 +1410,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_ADRGTSTAT_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1501,7 +1501,7 @@ typedef struct
  *        ADRGTSTAT register by the feedback state machine.
  *        ADR12: 00 - feedback TX ADR[5]/ RX ADR[4], 01 - feedback
  *        TX ADR[7]/ RX ADR[6], 10 - feedback TX ADR[11]/ RX
- *        ADR[10], 11 - invalid;ADR9: 00 - feedback TX ADR[2]/
+ *        ADR[10], 11 - invalid; ADR9: 00 - feedback TX ADR[2]/
  *        RX ADR[1], 01 - feedback TX ADR[4]/ RX ADR[3], 10
  *        - feedback TX ADR[8]/ RX ADR[7], 11 - invalid.
  *   </td>
@@ -1537,7 +1537,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG0_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1733,7 +1733,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG1_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -1822,7 +1822,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG3_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2005,7 +2005,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_WRLVLSMSTAT_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2220,7 +2220,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_RDLVLSTATPEDGE_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2297,7 +2297,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_RDLVLP2FDLY_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2340,7 +2340,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_RDLVLF2PDLY_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2627,7 +2627,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_GTTRAINSTAT0_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2756,7 +2756,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_GTTRAINSTAT1_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -2821,7 +2821,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DATBYTEDIS_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3006,7 +3006,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_RDDSKWSTAT_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3221,7 +3221,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_RDDSKWFATALSTAT_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3436,7 +3436,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_RDLVLSTATNEDGE_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3603,7 +3603,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_RDLVLCONFIG_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3678,7 +3678,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_RDLVLCMPDATEVN_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -3737,7 +3737,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_RDLVLCMPDATODD_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4053,7 +4053,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_PHYCONFIG2_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4315,7 +4315,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_SMCTRL_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4538,7 +4538,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_STAT_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4625,7 +4625,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_USRSYSCODE_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -4802,7 +4802,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_PVTCONFIG0_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5005,7 +5005,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_PVTCONFIG1_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5190,7 +5190,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DPIOVREFSET_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5343,7 +5343,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_ADRIOSET_1ST_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5448,7 +5448,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_ADRIOSET_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5511,7 +5511,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_ADRIOPUPD_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5568,7 +5568,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_WRLVLRESP_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5637,7 +5637,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DPRDDAT_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5684,7 +5684,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DPSPARESTAT_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5781,7 +5781,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DPIOLPRCTRL_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -5968,7 +5968,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_AD9_ADRIOLPRCTRL_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -6215,7 +6215,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_AD12_ADRIOLPRCTRL_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -6318,7 +6318,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_FBLOWUPPOFF_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -6359,7 +6359,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_VTCCOUNT_r_t
  *
  */
-
+ 
 typedef struct
 {
      unsigned  int                  vtccount;
@@ -6416,7 +6416,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ALIGN_DELAYS_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -6479,7 +6479,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DEBUG_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -6586,7 +6586,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DEBUGDLYCTRL_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -6669,7 +6669,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DEBUGWLRLPG_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -6747,7 +6747,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_DEBUGCSFBSM_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -6851,7 +6851,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_BISTCTRL_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -6920,7 +6920,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_BISTSTAT_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -6971,7 +6971,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_BIST_PATT0_BLx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7028,7 +7028,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_ADRx_BIST_PATT1_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7075,7 +7075,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_PUPPRATIO_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7118,7 +7118,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_NUPPRATIO_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7161,7 +7161,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_PLOWRATIO_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7204,7 +7204,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_NLOWRATIO_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7247,7 +7247,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_WRTALIGNDQx_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7290,7 +7290,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_WRTALIGNLOW_BC_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7333,7 +7333,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_WRTALIGNUPP_BC_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
@@ -7376,7 +7376,7 @@ typedef struct
  * Applies to: acp2500 --> ncp_phy_CFG_SYSMEM_PHY_RDALIGNDQx_BLxCSx_r_t
  *
  */
-
+ 
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN

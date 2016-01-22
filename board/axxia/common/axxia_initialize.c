@@ -122,6 +122,23 @@ axxia_initialize(void)
 #endif
 
 	/*
+	  ===========
+	  Tree Memory
+	  ===========
+	*/
+
+#if !defined(CONFIG_AXXIA_EMU)
+	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_CMEM))) {
+		ncr_tracer_enable();
+
+		if (0 != cmem_init())
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		ncr_tracer_disable();
+	}
+#endif
+
+	/*
 	  =========
 	  PCIe/SRIO
 	  =========

@@ -374,6 +374,8 @@ read_parameters(void)
 	voltage = (parameters_voltage_t *)(parameters + header->voltageOffset);
 	clocks = (parameters_clocks_t *)(parameters + header->clocksOffset);
 	sysmem = (parameters_mem_t *)(parameters + header->systemMemoryOffset);
+	cmem = (parameters_mem_t *)
+		(parameters + header->classifierMemoryOffset);
 #ifdef CONFIG_AXXIA_ARM
 #ifdef CONFIG_MEMORY_RETENTION
 {

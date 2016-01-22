@@ -1,23 +1,20 @@
-/**************************************************************************
- **                                                                       *
- **                           Intel CONFIDENTIAL                          *
- **                           PROPRIETARY NOTE                            *
- **                                                                       *
- **    This software contains information confidential and proprietary    *
- **    to Intel Corporation.  It shall not be reproduced in whole or in   *
- **    part, or transferred to other documents, or disclosed to third     *
- **    parties, or used for any purpose other than that for which it was  *
- **    obtained, without the prior written consent of Intel Corporation.  *
- **    (c) 2001-2014, Intel Corporation.  All rights reserved.            *
- **                                                                       *
- **  **********************************************************************
- **                                                                       *
- **  **********************************************************************
- **  File:       $HeadURL: $                                              *
- **  Version:    $Revision: $                                             *
- **  Date:       $Date: $                                                 *
- **  **********************************************************************/
-
+/*
+ *  Copyright (C) 2016 Intel (john.jacques@intel.com)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 #ifndef _NCP_DENALI_5600_REG_DEFINES_H_
 #define _NCP_DENALI_5600_REG_DEFINES_H_

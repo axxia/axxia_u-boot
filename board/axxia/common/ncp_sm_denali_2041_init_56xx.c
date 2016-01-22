@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014 rte/api/sysmem/ncp_sm_denali_2041_init_56xx.c
+ *  Copyright (C) 2016 Intel (john.jacques@intel.com)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,19 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
-/********************************************************************
- * ncp_sm_denali_2041_init_56xx.c
- *
- *   Initialization routine for the 
- *   Denali System Memory Controller for X9 and XLF
- *
- *
- *   With the appropriate wrapper macros this code code can 
- *   be included and compiled for both u-boot and RTE. If you
- *   are editing this code from within the RTE please do not 
- *   add anything that will break the u-boot build!!
- *******************************************************************/
 
 #ifdef __UBOOT__
 #include <common.h>
