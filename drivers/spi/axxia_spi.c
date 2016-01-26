@@ -30,7 +30,9 @@
 #include <spi.h>
 #include <asm/io.h>
 
+#ifndef SYSCACHE_ONLY_MODE
 #define ENABLE_DMA
+#endif
 
 /* SSP registers mapping */
 struct axxia_pl022 {

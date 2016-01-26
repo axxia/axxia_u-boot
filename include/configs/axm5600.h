@@ -376,6 +376,11 @@ void display_va_attr(void *);
 int axxia_sysmem_check_ecc(void);
 #endif	/* __ASSEMBLY__ */
 
+#define SYSCACHE_SIZE (8 * SZ_1M)
+
+#define GPDMA0 0x8004120000ULL
+#define GPDMA1 0x8004130000ULL
+
 /*
   ==============================================================================
   ==============================================================================
@@ -443,8 +448,6 @@ int axxia_sysmem_check_ecc(void);
   ==============================================================================
   ==============================================================================
 */
-
-/*#define SYSCACHE_ONLY_MODE*/
 
 #ifdef SYSCACHE_ONLY_MODE
 #ifndef __ASSEMBLY__

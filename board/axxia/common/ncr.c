@@ -1436,23 +1436,12 @@ ncr_l3tags(void)
 	int i;
 	ncp_uint32_t address;
 
-	/*donotwrite = 0;*/
-
-	/*
-	  ?
-	*/
-
-	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1000, 0x80000000);
-	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1004, 0x0fffff00);
-	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1008, 0x00000020);
-	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x100c, 0x00000000);
-
 	/*
 	  Set up cdar_memory
 	*/
 
 	for (i = 0; i < 64; ++i)
-		writel(0, POINTER(NCA + NCP_NCA_CDAR_MEMORY_BASE + (i * 4)));
+		writel(i, POINTER(NCA + NCP_NCA_CDAR_MEMORY_BASE + (i * 4)));
 
 	/*
 	  Write it
@@ -1461,7 +1450,7 @@ ncr_l3tags(void)
 	address = 0;
 
 	for (i = 0; i < (8 * 1024 * 1024) / 256; ++i, address += 256)
-		ncr_write(NCP_REGION_ID(512, 1), 0x20, address, 256, NULL);
+		ncr_write(NCP_REGION_ID(0x200, 1), 0, address, 256, NULL);
 
 	return;
 }

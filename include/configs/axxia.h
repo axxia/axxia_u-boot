@@ -11,6 +11,18 @@
 
 #define CONFIG_AXXIA
 
+#if defined(CONFIG_AXXIA_XLF_SIM) || \
+  defined(CONFIG_AXXIA_XLF_EMU) || \
+  defined(CONFIG_AXXIA_XLF)
+#define CONFIG_AXXIA_ANY_XLF
+#endif
+
+#if defined(CONFIG_AXXIA_56XX_SIM) || \
+  defined(CONFIG_AXXIA_56XX_EMU) || \
+  defined(CONFIG_AXXIA_56XX)
+#define CONFIG_AXXIA_ANY_56XX
+#endif
+
 #define CONFIG_AXXIA_SERIAL
 
 /*
@@ -4134,5 +4146,10 @@ int setup_security(void);
 int voltage_init(void);
 void spl_diagnostics(void);
 #endif
+
+#ifndef __ASSEMBLY__
+int gpdma_reset(void);
+int gpdma_xfer(void *, void *, size_t, int);
+#endif	/* __ASSEMBLY__ */
 
 #endif /* __AXXIA_H */

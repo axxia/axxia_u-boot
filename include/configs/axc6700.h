@@ -41,6 +41,7 @@
 /********** FEMAC PHY ADDRESS *************/
 #define CONFIG_AXXIA_PHY_ADDRESS 0x3
 
+#define SYSCACHE_SIZE (24 * SZ_1M)
 
 /* HACK: Define it until cache coherency is figured out */
 /* #define USE_CACHE_SYNC */
@@ -272,6 +273,7 @@
 /********** FEMAC PHY ADDRESS *************/
 #define CONFIG_AXXIA_PHY_ADDRESS 0x3
 
+#define SYSCACHE_SIZE (16 * SZ_1M)
 
 /* HACK: Define it until cache coherency is figured out */
 /* #define USE_CACHE_SYNC */
@@ -356,6 +358,8 @@
 #define CONFIG_AXXIA_PHY_ADDRESS 0x1e
 
 #define CONFIG_LSI_CLOCKS
+
+#define SYSCACHE_SIZE (24 * SZ_1M)
 
 /*
   ==============================================================================
@@ -479,12 +483,13 @@ int axxia_initialize(void);
 void display_va_attr(void *);
 #endif	/* __ASSEMBLY__ */
 
+#define GPDMA0 0x8005020000ULL
+#define GPDMA1 0x8005030000ULL
+
 /*
   ==============================================================================
   ==============================================================================
 */
-
-/*#define SYSCACHE_ONLY_MODE*/
 
 #ifdef SYSCACHE_ONLY_MODE
 #ifndef __ASSEMBLY__
@@ -1315,7 +1320,7 @@ void dump_packet(const char *, void *, int);
 
 /*#define CONFIG_SYS_THUMB_BUILD*/
 
-#define CONFIG_HW_WATCHDOG
+/*#define CONFIG_HW_WATCHDOG*/
 /*#define LEAVE_WATCHDOG_ON*/
 /*#define MAKE_WATCHDOG_PERMANENT*/
 /*#define WATCHDOG_RESET_SYSTEM*/

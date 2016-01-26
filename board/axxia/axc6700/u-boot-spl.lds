@@ -21,6 +21,13 @@ SECTIONS
 
   *(.text*)
  }
+
+#if defined(SYSCACHE_ONLY_MODE)
+ . = ALIGN(4096);
+ _page_tables = .;
+ . += 0x10000;
+#endif
+
  . = ALIGN(4);
  .rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
 

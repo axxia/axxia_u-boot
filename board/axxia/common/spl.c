@@ -46,6 +46,8 @@ DECLARE_GLOBAL_DATA_PTR;
   is_redundant_enabled
 */
 
+#ifndef SYSCACHE_ONLY_MODE
+
 static int
 is_redundant_enabled(void)
 {
@@ -62,6 +64,8 @@ is_redundant_enabled(void)
 	return 1;
 #endif
 }
+
+#endif	/* SYSCACHE_ONLY_MODE */
 
 /*
   ==============================================================================
@@ -565,6 +569,8 @@ u32 spl_boot_device(void)
   verify_image
 */
 
+#ifndef SYSCACHE_ONLY_MODE
+
 static int
 verify_image(struct spi_flash *flash,
 	     unsigned long flash_offset,
@@ -677,6 +683,8 @@ verify_image(struct spi_flash *flash,
 	return 0;
 }
 
+#endif	/* SYSCACHE_ONLY_MODE */
+
 /*
   ------------------------------------------------------------------------------
   jump_to_monitor
@@ -743,7 +751,71 @@ jump_to_monitor(void *address)
 
 /*
   ------------------------------------------------------------------------------
+  load_image
 */
+
+#ifdef SYSCACHE_ONLY_MODE
+
+static void
+load_image(void)
+{
+	struct spi_flash *flash;
+	struct image_header header;
+	unsigned int bytes_written = 0;
+	unsigned int buffer[64];
+	unsigned int offset = CONFIG_UBOOT_OFFSET;
+	unsigned int size;
+	unsigned int output = 0;
+
+	/*
+	  Initialize L3 cache by writing to all locations.  Write the
+	  U-Boot image at offset 0 and then fill the rest.
+	*/
+
+	flash = spi_flash_probe(CONFIG_SPL_SPI_BUS, CONFIG_SPL_SPI_CS,
+				CONFIG_SF_DEFAULT_SPEED,
+				CONFIG_SF_DEFAULT_MODE);
+
+	if (!flash) {
+		puts("SPI probe failed.\n");
+		hang();
+	}
+
+	spi_flash_read(flash, offset, sizeof(struct image_header), &header);
+	spl_parse_image_header(&header);
+
+	if (!image_check_magic(&header)) {
+		puts("\tBad Magic!\n");
+		hang();
+	}
+
+	if (!image_check_target_arch(&header)) {
+		puts("\tWrong Architecture!\n");
+		hang();
+	}
+
+	offset += sizeof(struct image_header);
+	size = spl_image.size - sizeof(struct image_header);
+
+	while (SYSCACHE_SIZE > bytes_written) {
+		memset(buffer, 0, sizeof(buffer));
+
+		if (0 < size) {
+			spi_flash_read(flash, offset,
+				       size > 256 ? 256 : size, buffer);
+			size -= size > 256 ? 256 : size;
+		}
+
+		memcpy((void *)(NCA + 0x1000), buffer, 256);
+		ncr_write(NCP_REGION_ID(0x200, 1), 0, output, 256, NULL);
+		bytes_written += 256;
+		output += 256;
+	}
+
+	return;
+}
+
+#else  /* SYSCACHE_ONLY_MODE */
 
 static void
 load_image(void)
@@ -953,6 +1025,8 @@ load_image(void)
 #endif
 }
 
+#endif	/* SYSCACHE_ONLY_MODE */
+
 /*
   ------------------------------------------------------------------------------
   board_init_f
@@ -1030,6 +1104,10 @@ board_init_f(ulong dummy)
 	printf("Axxia ATF Version: UNKNOWN\n");
 #endif
 
+#ifdef SYSCACHE_ONLY_MODE
+	printf("Running in System Cache\n");
+#endif
+
 #ifdef CONFIG_HW_WATCHDOG
 	rc = start_watchdog(WATCHDOG_TIMEOUT_SECS);
 
@@ -1070,6 +1148,11 @@ board_init_f(ulong dummy)
 	if (0 != rc)
 		acp_failure(__FILE__, __func__, __LINE__);
 
+	/*ZZZ*/
+	gpdma_reset();
+	gpdma_xfer((void *)0, (void *)(LSM + 0x1000), 0x100, 0);
+	/*ZZZ*/
+
 #if defined(CONFIG_AXXIA_SPL_DIAGNOSTICS)
 	printf("Press Any Key to Enter SPL Diagnostic Mode...\n");
 	{
@@ -1092,29 +1175,11 @@ board_init_f(ulong dummy)
 #endif
 
 #ifdef SYSCACHE_ONLY_MODE
-	printf("Syscache Only Mode!\n");
+	load_image();
+	printf("U-Boot Loaded in System Cache, Jumping to Monitor\n");
+	jump_to_monitor((void *)0x8031001000);
+#endif	/* SYSCACHE_ONLY_MODE */
 
-	{
-		unsigned long value;
-		unsigned long *address;
-
-		address = (unsigned long *)0x40000000;
-
-		for (;;) {
-			value = *address;
-			printf("Read 0x%x from 0x%p\n", value, address);
-			value = ~value;
-			*address = value;
-			value = *address;
-			printf("Read 0x%x from 0x%p\n", value, address);
-
-			if ((unsigned long)address < 0x40800000)
-				++address;
-			else
-				address = (unsigned long *)0x40000000;
-		}
-	}
-#else  /* SYSCACHE_ONLY_MODE */
 	if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_BIST)) {
 		printf("Testing Memory From 0, 0x%llx bytes\n",
 		       sysmem_size());
@@ -1124,7 +1189,6 @@ board_init_f(ulong dummy)
 	}
 
 	printf("\nSystem Initialized\n\n");
-#endif	/* SYSCACHE_ONLY_MODE */
 
 	/* Move the stack to ram. */
 	asm volatile ("mov sp, %0" : : "r" (CONFIG_SYS_INIT_SP_ADDR));

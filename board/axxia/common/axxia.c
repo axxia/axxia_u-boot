@@ -205,6 +205,10 @@ board_early_init_f(void)
 	printf("\n\nAxxia Version: UNKNOWN");
 #endif
 
+#ifdef SYSCACHE_ONLY_MODE
+	printf("\nRunning in System Cache");
+#endif
+
 	asm volatile("mrs %0, CurrentEL" : "=r" (el));
 
 	if (0xc == el)
