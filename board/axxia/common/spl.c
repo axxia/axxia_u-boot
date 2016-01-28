@@ -64,34 +64,31 @@ is_redundant_enabled(void)
 }
 
 /*
-  ----------------------------------------------------------------------
-  spl_mtest
+  ==============================================================================
+  SPL Memory Tests
+  ==============================================================================
 */
 
 enum spl_mtest_type {
 	spl_mtest_data = 0,
 	spl_mtest_addr,
 	spl_mtest_mtest,
+	spl_mtest_ecc,
 	spl_mtest_all
 };
 
-int
-spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
-	  enum spl_mtest_type type)
+/*
+  ------------------------------------------------------------------------------
+  mtest_data
+*/
+
+static int
+mtest_data(unsigned long *start, unsigned long *end)
 {
-#if 0
 	vu_long	*addr;
 	ulong	val;
 	ulong	readback;
 	ulong	errs = 0;
-	int iterations = 0;
-	vu_long	len;
-	vu_long	offset;
-	vu_long	test_offset;
-	vu_long	pattern;
-	vu_long	temp;
-	vu_long	anti_pattern;
-	vu_long	num_words;
 	vu_long *dummy;
 	int	j;
 
@@ -106,15 +103,297 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 		0xaaaaaaaa,	/* alternating 1/0 */
 	};
 
+	/*
+	 * Data line test: write a pattern to the first
+	 * location, write the 1's complement to a 'parking'
+	 * address (changes the state of the data bus so a
+	 * floating bus doen't give a false OK), and then
+	 * read the value back. Note that we read it back
+	 * into a variable because the next time we read it,
+	 * it might be right (been there, tough to explain to
+	 * the quality guys why it prints a failure when the
+	 * "is" and "should be" are obviously the same in the
+	 * error message).
+	 *
+	 * Rather than exhaustively testing, we test some
+	 * patterns by shifting '1' bits through a field of
+	 * '0's and '0' bits through a field of '1's (i.e.
+	 * pattern and ~pattern).
+	 */
+	addr = start;
+	dummy = start + 1;
+
+	for (j = 0; j < sizeof(bitpattern)/sizeof(bitpattern[0]); ++j) {
+		for (val = bitpattern[j]; val != 0; val <<= 1) {
+			*addr  = val;
+			/* clear the test data off of the bus */
+			*dummy	= ~val;
+			readback = *addr;
+
+			if (readback != val) {
+				printf("FAILURE (data line): " \
+				       "expected %08lx, actual %08lx\n",
+				       val, readback);
+				errs++;
+			}
+
+			*addr  = ~val;
+			*dummy	= val;
+			readback = *addr;
+
+			if (readback != ~val) {
+				printf("FAILURE (data line): " \
+				       "Is %08lx, should be %08lx\n",
+				       readback, ~val);
+				errs++;
+			}
+		}
+	}
+
+	return errs;
+}
+
+/*
+  ----------------------------------------------------------------------
+  mtest_addr
+*/
+
+static int
+mtest_addr(unsigned long *start, unsigned long *end)
+{
+	ulong	errs = 0;
+	vu_long	len;
+	vu_long	offset;
+	vu_long	test_offset;
+	vu_long	pattern;
+	vu_long	temp;
+	vu_long	anti_pattern;
+
 	pattern = 0;
 
-	printf("Testing %08x ... %08x:\n", (uint)start, (uint)end);
+	/*
+	 * Based on code whose Original Author and Copyright
+	 * information follows: Copyright (c) 1998 by Michael
+	 * Barr. This software is placed into the public
+	 * domain and may be used for any purpose. However,
+	 * this notice must not be changed or removed and no
+	 * warranty is either expressed or implied by its
+	 * publication or distribution.
+	 */
+
+	/*
+	 * Address line test
+	 *
+	 * Description: Test the address bus wiring in a
+	 *		memory region by performing a walking
+	 *		1's test on the relevant bits of the
+	 *		address and checking for aliasing.
+	 *		This test will find single-bit
+	 *		address failures such as stuck -high,
+	 *		stuck-low, and shorted pins. The base
+	 *		address and size of the region are
+	 *		selected by the caller.
+	 *
+	 * Notes:	For best results, the selected base
+	 *		address should have enough LSB 0's to
+	 *		guarantee single address bit changes.
+	 *		For example, to test a 64-Kbyte
+	 *		region, select a base address on a
+	 *		64-Kbyte boundary. Also, select the
+	 *		region size as a power-of-two if at
+	 *		all possible.
+	 *
+	 * Returns:
+	 * 0 if the test succeeds, 1 if the test fails.
+	 */
+	len = ((ulong)end - (ulong)start)/sizeof(vu_long);
+	pattern = (vu_long) 0xaaaaaaaa;
+	anti_pattern = (vu_long) 0x55555555;
+
+	/*
+	 * Write the default pattern at each of the
+	 * power-of-two offsets.
+	 */
+	for (offset = 1; offset < len; offset <<= 1)
+		start[offset] = pattern;
+
+	/*
+	 * Check for address bits stuck high.
+	 */
+	test_offset = 0;
+	start[test_offset] = anti_pattern;
+
+	for (offset = 1; offset < len; offset <<= 1) {
+		temp = start[offset];
+		if (temp != pattern) {
+			printf("\nFAILURE: Address bit stuck" \
+			       " high @ 0x%.8lx:" \
+			       " expected 0x%.8lx," \
+			       " actual 0x%.8lx\n", \
+			       (ulong)&start[offset],
+			       pattern, temp);
+			errs++;
+		}
+	}
+	start[test_offset] = pattern;
+	WATCHDOG_RESET();
+
+	/*
+	 * Check for addr bits stuck low or shorted.
+	 */
+	for (test_offset = 1; test_offset < len;
+	     test_offset <<= 1) {
+		start[test_offset] = anti_pattern;
+
+		for (offset = 1; offset < len; offset <<= 1) {
+			temp = start[offset];
+			if ((temp != pattern) &&
+			    (offset != test_offset)) {
+				printf("\nFAILURE: Address bit"\
+				       "stuck low or"
+				       " shorted @" \
+				       " 0x%.8lx:" \
+				       " expected 0x%.8lx, "\
+				       "actual 0x%.8lx\n",
+				       (ulong)&start[offset],
+				       pattern,
+				       temp);
+				errs++;
+			}
+		}
+		start[test_offset] = pattern;
+	}
+
+	return errs;
+}
+
+/*
+  ----------------------------------------------------------------------
+  mtest_mtest
+*/
+
+static int
+mtest_mtest(unsigned long *start, unsigned long *end)
+{
+	ulong	errs = 0;
+	vu_long	offset;
+	vu_long	pattern;
+	vu_long	temp;
+	vu_long	anti_pattern;
+	vu_long	num_words;
+
+	pattern = 0;
+
+	/*
+	 * Description: Test the integrity of a physical
+	 *	memory device by performing an
+	 *	increment/decrement test over the
+	 *	entire region. In the process every
+	 *	storage bit in the device is tested
+	 *	as a zero and a one. The base address
+	 *	and the size of the region are
+	 *	selected by the caller.
+	 *
+	 * Returns:
+	 *     0 if the test succeeds, 1 if the test fails.
+	 */
+	num_words =
+		((ulong)end - (ulong)start)/sizeof(vu_long) + 1;
+
+	/*
+	 * Fill memory with a known pattern.
+	 */
+	for (pattern = 1, offset = 0;
+	     offset < num_words; pattern++,
+		     offset++) {
+		start[offset] = pattern;
+		if ((offset % 1000000) == 0)
+			WATCHDOG_RESET();
+	}
+
+	/*
+	 * Check each location and invert it
+	 * for the second pass.
+	 */
+	for (pattern = 1, offset = 0;
+	     offset < num_words; pattern++,
+		     offset++) {
+		if ((offset % 1000000) == 0)
+			WATCHDOG_RESET();
+		temp = start[offset];
+		if (temp != pattern) {
+			printf("\nFAILURE (read/write) " \
+			       "@ 0x%.8lx:" \
+			       " expected 0x%.8lx," \
+			       " actual 0x%.8lx)\n",
+			       (ulong)&start[offset],
+			       pattern, temp);
+			errs++;
+		}
+
+		anti_pattern = ~pattern;
+		start[offset] = anti_pattern;
+	}
+
+	/*
+	 * Check each location for the inverted pattern
+	 * and zero it.
+	 */
+	for (pattern = 1, offset = 0; offset < num_words;
+	     pattern++,
+		     offset++) {
+		if ((offset % 1000000) == 0)
+			WATCHDOG_RESET();
+		anti_pattern = ~pattern;
+		temp = start[offset];
+		if (temp != anti_pattern) {
+			printf("\nFAILURE (read/write):"\
+			       " @ 0x%.8lx:"
+			       " expected 0x%.8lx, "\
+			       "actual 0x%.8lx)\n",\
+			       (ulong)&start[offset],
+			       anti_pattern,
+			       temp);
+			errs++;
+		}
+		start[offset] = 0;
+	}
+
+	return errs;
+}
+
+/*
+  ----------------------------------------------------------------------
+  mtest_ecc
+*/
+
+static int
+mtest_ecc(unsigned long *start, unsigned long *end)
+{
+	return 0;
+}
+
+/*
+  ----------------------------------------------------------------------
+  spl_mtest
+
+  Drivers for all the available tests.
+*/
+
+int
+spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
+	  enum spl_mtest_type type)
+{
+	ulong	errs = 0;
+	int iterations = 0;
+
+	printf("Testing 0x%p ... 0x%p:\n", start, end);
 
 	for (;;) {
-
 		if (iterations >= total_iterations) {
 			printf("Tested %d iteration(s) with %lu errors.\n",
 			       iterations, errs);
+
 			return errs != 0;
 		}
 
@@ -122,229 +401,19 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 		printf("Iteration: %d\n", iterations);
 		debug("\n");
 
-		if ((type == spl_mtest_data) || (type == spl_mtest_all)) {
-			/*
-			 * Data line test: write a pattern to the first
-			 * location, write the 1's complement to a 'parking'
-			 * address (changes the state of the data bus so a
-			 * floating bus doen't give a false OK), and then
-			 * read the value back. Note that we read it back
-			 * into a variable because the next time we read it,
-			 * it might be right (been there, tough to explain to
-			 * the quality guys why it prints a failure when the
-			 * "is" and "should be" are obviously the same in the
-			 * error message).
-			 *
-			 * Rather than exhaustively testing, we test some
-			 * patterns by shifting '1' bits through a field of
-			 * '0's and '0' bits through a field of '1's (i.e.
-			 * pattern and ~pattern).
-			 */
-			addr = start;
-			dummy = start + 1;
-			for (j = 0;
-			     j < sizeof(bitpattern)/sizeof(bitpattern[0]);
-			     j++) {
-				for (val = bitpattern[j]; val != 0; val <<= 1) {
-					*addr  = val;
-					/* clear the test data off of the bus */
-					*dummy	= ~val;
-					readback = *addr;
-					if (readback != val) {
-						printf("FAILURE (data line): " \
-						       "expected %08lx, actual %08lx\n",
-						       val, readback);
-						errs++;
-					}
-					*addr  = ~val;
-					*dummy	= val;
-					readback = *addr;
-					if (readback != ~val) {
-						printf("FAILURE (data line): " \
-						       "Is %08lx, should be %08lx\n",
-						       readback, ~val);
-						errs++;
-					}
-				}
-			}
-		}
+		if ((type == spl_mtest_data) || (type == spl_mtest_all))
+			errs += mtest_data(start, end);
 
-		if ((type == spl_mtest_addr) || (type == spl_mtest_all)) {
-			/*
-			 * Based on code whose Original Author and Copyright
-			 * information follows: Copyright (c) 1998 by Michael
-			 * Barr. This software is placed into the public
-			 * domain and may be used for any purpose. However,
-			 * this notice must not be changed or removed and no
-			 * warranty is either expressed or implied by its
-			 * publication or distribution.
-			 */
+		if ((type == spl_mtest_addr) || (type == spl_mtest_all))
+			errs += mtest_addr(start, end);
 
-			/*
-			 * Address line test
-			 *
-			 * Description: Test the address bus wiring in a
-			 *		memory region by performing a walking
-			 *		1's test on the relevant bits of the
-			 *		address and checking for aliasing.
-			 *		This test will find single-bit
-			 *		address failures such as stuck -high,
-			 *		stuck-low, and shorted pins. The base
-			 *		address and size of the region are
-			 *		selected by the caller.
-			 *
-			 * Notes:	For best results, the selected base
-			 *		address should have enough LSB 0's to
-			 *		guarantee single address bit changes.
-			 *		For example, to test a 64-Kbyte
-			 *		region, select a base address on a
-			 *		64-Kbyte boundary. Also, select the
-			 *		region size as a power-of-two if at
-			 *		all possible.
-			 *
-			 * Returns:
-			 * 0 if the test succeeds, 1 if the test fails.
-			 */
-			len = ((ulong)end - (ulong)start)/sizeof(vu_long);
-			pattern = (vu_long) 0xaaaaaaaa;
-			anti_pattern = (vu_long) 0x55555555;
+		if ((type == spl_mtest_mtest) || (type == spl_mtest_all))
+			errs += mtest_mtest(start, end);
 
-			printf("%s:%d: length = 0x%.8lx\n",
-			       __FILE__, __LINE__,
-			       len);
-			/*
-			 * Write the default pattern at each of the
-			 * power-of-two offsets.
-			 */
-			for (offset = 1; offset < len; offset <<= 1)
-				start[offset] = pattern;
-
-			/*
-			 * Check for address bits stuck high.
-			 */
-			test_offset = 0;
-			start[test_offset] = anti_pattern;
-
-			for (offset = 1; offset < len; offset <<= 1) {
-				temp = start[offset];
-				if (temp != pattern) {
-					printf("\nFAILURE: Address bit stuck" \
-					       " high @ 0x%.8lx:" \
-					       " expected 0x%.8lx," \
-					       " actual 0x%.8lx\n", \
-					       (ulong)&start[offset],
-					       pattern, temp);
-					errs++;
-				}
-			}
-			start[test_offset] = pattern;
-			WATCHDOG_RESET();
-
-			/*
-			 * Check for addr bits stuck low or shorted.
-			 */
-			for (test_offset = 1; test_offset < len;
-			     test_offset <<= 1) {
-				start[test_offset] = anti_pattern;
-
-				for (offset = 1; offset < len; offset <<= 1) {
-					temp = start[offset];
-					if ((temp != pattern) &&
-					    (offset != test_offset)) {
-						printf("\nFAILURE: Address bit"\
-						       "stuck low or"
-						       " shorted @" \
-						       " 0x%.8lx:" \
-						       " expected 0x%.8lx, "\
-						       "actual 0x%.8lx\n",
-						       (ulong)&start[offset],
-						       pattern,
-						       temp);
-						errs++;
-					}
-				}
-				start[test_offset] = pattern;
-			}
-		}
-
-		if ((type == spl_mtest_mtest) || (type == spl_mtest_all)) {
-			/*
-			 * Description: Test the integrity of a physical
-			 *	memory device by performing an
-			 *	increment/decrement test over the
-			 *	entire region. In the process every
-			 *	storage bit in the device is tested
-			 *	as a zero and a one. The base address
-			 *	and the size of the region are
-			 *	selected by the caller.
-			 *
-			 * Returns:
-			 *     0 if the test succeeds, 1 if the test fails.
-			 */
-			num_words =
-				((ulong)end - (ulong)start)/sizeof(vu_long) + 1;
-
-			/*
-			 * Fill memory with a known pattern.
-			 */
-			for (pattern = 1, offset = 0;
-			     offset < num_words; pattern++,
-				     offset++) {
-				start[offset] = pattern;
-				if ((offset % 1000000) == 0)
-					WATCHDOG_RESET();
-			}
-
-			/*
-			 * Check each location and invert it
-			 * for the second pass.
-			 */
-			for (pattern = 1, offset = 0;
-			     offset < num_words; pattern++,
-				     offset++) {
-				if ((offset % 1000000) == 0)
-					WATCHDOG_RESET();
-				temp = start[offset];
-				if (temp != pattern) {
-					printf("\nFAILURE (read/write) " \
-					       "@ 0x%.8lx:" \
-					       " expected 0x%.8lx," \
-					       " actual 0x%.8lx)\n",
-					       (ulong)&start[offset],
-					       pattern, temp);
-					errs++;
-				}
-
-				anti_pattern = ~pattern;
-				start[offset] = anti_pattern;
-			}
-
-			/*
-			 * Check each location for the inverted pattern
-			 * and zero it.
-			 */
-			for (pattern = 1, offset = 0; offset < num_words;
-			     pattern++,
-				     offset++) {
-				if ((offset % 1000000) == 0)
-					WATCHDOG_RESET();
-				anti_pattern = ~pattern;
-				temp = start[offset];
-				if (temp != anti_pattern) {
-					printf("\nFAILURE (read/write):"\
-					       " @ 0x%.8lx:"
-					       " expected 0x%.8lx, "\
-					       "actual 0x%.8lx)\n",\
-					       (ulong)&start[offset],
-					       anti_pattern,
-					       temp);
-					errs++;
-				}
-				start[offset] = 0;
-			}
-		}
+		if ((type == spl_mtest_ecc) || (type == spl_mtest_all))
+			errs += mtest_ecc(start, end);
 	}
-#endif
+
 	return 0;
 }
 
@@ -356,428 +425,39 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
   ==============================================================================
 */
 
-/* For spl mtest range testing, find the memory ranges (1G page table entries)
-   that cover what is being tested */
-void sw_test_page_fit(unsigned long in_addr, unsigned long in_len,
-		      unsigned long mbist_addr[],
-		      unsigned long mbist_len[])
-{
-	unsigned int i = 0, j = 0;
-	unsigned long start_addr = 0;
-
-	for (i = 0; i < 16; i++) {
-		if (in_addr < (start_addr + 0x400000)) {
-			if ((in_addr + in_len) <= (start_addr + 0x400000)) {
-				mbist_addr[j] = in_addr;
-				mbist_len[j] = in_len;
-				mbist_len[j+1] = 0;
-				return;
-			} else {
-				if (i == 15) {
-					/* supports only 16 GB sysmem */
-					return;
-				}
-				mbist_addr[j] = in_addr;
-				mbist_len[j] = (start_addr + 0x400000)
-					- in_addr;
-				in_addr = start_addr + 0x400000;
-				in_len = (mbist_addr[j] + in_len)
-					- (start_addr + 0x400000);
-				start_addr = start_addr + 0x400000;
-				j++;
-			}
-		} else {
-			start_addr = start_addr + 0x400000;
-		}
-	}
-}
-
-/* Create Page table entries and run spl_mtest on ranges provided
-   in U-boot parameter file */
-void run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len)
-{
-#if 0
-	unsigned long *add_sw_addr, *add_sw_len;
-	int j;
-
-	add_sw_addr = malloc(3 * sizeof(unsigned long));
-	add_sw_len = malloc(3 * sizeof(unsigned long));
-	memset(add_sw_addr, 0, 3 * sizeof(unsigned long));
-	memset(add_sw_len, 0, 3 * sizeof(unsigned long));
-
-	printf("test_addr = 0x%llx, test_len = 0x%llx\n", (unsigned long long)in_addr*256, (unsigned long long)(in_len*256));
-
-	sw_test_page_fit(in_addr, in_len, add_sw_addr, add_sw_len);
-	for (j = 0; j < 3; j++) {
-		unsigned long start_addr = 0, end_addr = 0;
-		unsigned long val = 0;
-		if (add_sw_len[j] != 0) {
-			unsigned long *out;
-			int count, ncount;
-			if (((unsigned long long)(add_sw_addr[j]
-						  + add_sw_len[j])*256) <= 0x40000000) {
-				if ((global->flags
-				     & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST)
-				    && (global->flags
-					& PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST)
-				    && (global->flags
-					& PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
-					if (spl_mtest((unsigned long *)
-						      ((add_sw_addr[j]*256) + 0x40000000),
-						      (unsigned long *)(((add_sw_addr[j]
-									  + add_sw_len[j])*256) + 0x40000000-1),
-						      1, spl_mtest_all)) {
-						printf("SPL Memory Test FAILED\n");
-					}
-					continue;
-				}
-				if (global->flags
-				    & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
-					if (spl_mtest((unsigned long *)
-						      ((add_sw_addr[j]*256) + 0x40000000),
-						      (unsigned long *)(((add_sw_addr[j]
-									  + add_sw_len[j])*256) + 0x40000000-1),
-						      1, spl_mtest_all)) {
-						printf("SPL Memory MTest FAILED\n");
-					}
-				}
-				if (global->flags &
-				    PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
-					if (spl_mtest((unsigned long *)
-						      ((add_sw_addr[j]*256) + 0x40000000),
-						      (unsigned long *)(((add_sw_addr[j]
-									  + add_sw_len[j])*256) + 0x40000000-1),
-						      1, spl_mtest_addr)) {
-						printf("SPL Memory ADDR Test FAILED\n");
-					}
-				}
-				if (global->flags &
-				    PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
-					if (spl_mtest((unsigned long *)
-						      ((add_sw_addr[j]*256) + 0x40000000),
-						      (unsigned long *)(((add_sw_addr[j]
-									  + add_sw_addr[j])*256) + 0x40000000-1),
-						      1, spl_mtest_data)) {
-						printf("SPL Memory DATA Test FAILED\n");
-					}
-				}
-				continue;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x40000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x80000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x40000000;
-				val = 0x40040c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x80000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0xc0000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x80000000;
-				val = 0x80040c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0xc0000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x100000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0xc0000000;
-				val = 0xc0040c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x100000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x140000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x100000000;
-				val = 0x00140c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x140000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x180000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x140000000;
-				val = 0x40140c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x180000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x1c0000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x180000000;
-				val = 0x80140c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x1c0000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x200000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x1c0000000;
-				val = 0xc0140c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x200000000)
-				   && (((unsigned long long) (add_sw_addr[j]
-							      + add_sw_len[j])*256) <= 0x240000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x200000000;
-				val = 0x00240c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x240000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x280000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x240000000;
-				val = 0x40240c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x280000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x2c0000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x280000000;
-				val = 0x80240c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x2c0000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x300000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x2c0000000;
-				val = 0xc0240c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x300000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x340000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x300000000;
-				val = 0x00340c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x340000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x380000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x340000000;
-				val = 0x40340c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x380000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x3c0000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x380000000;
-				val = 0x80340c52;
-			} else if ((((unsigned long long)add_sw_addr[j]*256)
-				    >= 0x3c0000000)
-				   && (((unsigned long long)(add_sw_addr[j]
-							     + add_sw_len[j])*256) <= 0x400000000)) {
-				start_addr = ((unsigned long long)
-					      add_sw_addr[j]*256) - 0x3c0000000;
-				val = 0xc0340c52;
-			} else {
-				printf("Unsupported memory range\n");
-				continue;
-			}
-			end_addr = start_addr + (add_sw_len[j] * 256)-1;
-			out = (unsigned long *)
-				(secure_page_table + 0x3000);
-			for (count = 0; count < 0x1000; ) {
-				for (ncount = 0; ncount < 16; ncount++) {
-					*out++ = val;
-					count = count + 4;
-				}
-				val += 0x1000000;
-			}
-			mmu_page_table_flush((unsigned long)secure_page_table,
-					     (unsigned long)secure_page_table +
-					     PAGE_TABLE_SIZE);
-			if ((global->flags
-			     & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST)
-			    && (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST)
-			    && (global->flags
-				& PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)) {
-				if (spl_mtest(
-					    (unsigned long *)(start_addr+0xc0000000),
-					    (unsigned long *)(end_addr+0xc0000000),
-					    1, spl_mtest_all)) {
-					printf("SPL Memory Test FAILED\n");
-				}
-				continue;
-			}
-			if (global->flags
-			    & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST) {
-				if (spl_mtest(
-					    (unsigned long *)(start_addr+0xc0000000),
-					    (unsigned long *)(end_addr+0xc0000000),
-					    1, spl_mtest_mtest)) {
-					printf("SPL Memory MTest FAILED\n");
-				}
-			}
-			if (global->flags
-			    & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST) {
-				if (spl_mtest(
-					    (unsigned long *)(start_addr+0xc0000000),
-					    (unsigned long *)(end_addr+0xc0000000),
-					    1, spl_mtest_addr)) {
-					printf("SPL Memory ADDR Test FAILED\n");
-				}
-			}
-			if (global->flags
-			    & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST) {
-				if (spl_mtest(
-					    (unsigned long *)(start_addr+0xc0000000),
-					    (unsigned long *)(end_addr+0xc0000000),
-					    1, spl_mtest_data)) {
-					printf("SPL Memory DATA Test FAILED\n");
-				}
-			}
-		} else
-			break;
-	}
-#endif
-}
-
 /*
   ------------------------------------------------------------------------------
   check_memory_ranges
 */
 
-#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
-#if 0
 static void
 check_memory_ranges(void)
 {
-	unsigned long *ranges = (unsigned long *)&global->memory_ranges;
-	int i, j;
-	unsigned long *mbist_addr, *mbist_len;
-	unsigned long *add_mbist_addr, *add_mbist_len;
-	unsigned long *add_sw_addr, *add_sw_len;
-	unsigned long *test_addr, *test_len;
-	unsigned long *prot_addr, *prot_len;
-	unsigned long memSize, dual_ddr, maskbits;
-	unsigned ret;
+	int i;
+	unsigned int *ranges;
 
-	mbist_addr = malloc(32 * 3 * sizeof(unsigned long));
-	add_mbist_addr = malloc(32 * sizeof(unsigned long));
-	add_sw_addr = malloc(32 * sizeof(unsigned long));
-	test_addr = malloc(8 * 3 * sizeof(unsigned long));
-	mbist_len = malloc(32 * 3 * sizeof(unsigned long));
-	add_mbist_len = malloc(32 * sizeof(unsigned long));
-	add_sw_len = malloc(32 * sizeof(unsigned long));
-	test_len = malloc(8 * 3 * sizeof(unsigned long));
-	prot_addr = malloc(5 * sizeof(unsigned long));
-	prot_len = malloc(5 * sizeof(unsigned long));
+	ranges = &global->memory_ranges[0];
 
-	memset(mbist_addr, 0, 32 * 3 * sizeof(unsigned long));
-	memset(mbist_len, 0, 32 * 3 * sizeof(unsigned long));
-	memset(add_mbist_addr, 0, 32 * sizeof(unsigned long));
-	memset(add_mbist_len, 0, 32 * sizeof(unsigned long));
-	memset(add_sw_addr, 0, 32 * sizeof(unsigned long));
-	memset(add_sw_len, 0, 32 * sizeof(unsigned long));
-	memset(test_addr, 0, 8 * sizeof(unsigned long));
-	memset(test_len, 0, 8 * sizeof(unsigned long));
-	memset(prot_addr, 0, 5 * sizeof(unsigned long));
-	memset(prot_len, 0, 5 * sizeof(unsigned long));
+	for (i = 0; i < 8; ++i) {
+		unsigned long offset;
+		unsigned long end;
 
+		offset = (unsigned long)(*ranges++);
+		offset *= 0x100000;
+		end = (unsigned long)(*ranges++);
 
-	for (i = 0; i < 8; i++) {
-		unsigned long long offset = (unsigned long long)*ranges++;
-		unsigned long long length = (unsigned long long)*ranges++;
+		if (0 == end)
+			continue;
 
-		offset <<= 20;
-		length <<= 20;
-
-		if (0ULL != length) {
-			printf("Testing Memory From 0x%llx, 0x%llx bytes\n",
-			       offset, length);
-			mbist_addr[i] = offset/256;
-			mbist_len[i] = length/256;
-		} else {
-			mbist_len[i] = 0;
-			test_len[i] = 0;
-			prot_len[i] = 0;
-			break;
-		}
-	}
-	memSize = sysmem->totalSize/256;
-
-#ifdef CONFIG_HYBRID_MBIST
-
-	if (sysmem->num_interfaces == 0x2)
-		dual_ddr = 1;
-	else
-		dual_ddr = 0;
-
-	if (sysmem->num_ranks_per_interface == 0x2) {
-		maskbits = 4;
-	} else if (sysmem->num_ranks_per_interface == 0x4) {
-		maskbits = 5;
-	} else {
-		/* sysmem->num_ranks_per_interface is 1 */
-		maskbits = 3;
+		end *= 0x100000;
+		end = offset + end;
+		spl_mtest((unsigned long *)offset,
+			  (unsigned long *)end,
+			  1, spl_mtest_all);
 	}
 
-	ret = mbist_range(memSize, dual_ddr, maskbits, 1024,
-			  mbist_addr, mbist_len,
-			  test_addr, test_len, prot_addr, prot_len);
-	if (ret != 0) {
-		printf("mbist_range failed with %d\n", ret);
-	} else {
-		for (i = 0; i < 96; i++) {
-			if (mbist_len[i] != 0) {
-				mbist_power2(mbist_addr[i], mbist_len[i],
-					     add_mbist_addr, add_mbist_len);
-				for (j = 0; j < 32; j++) {
-					if (add_mbist_len[j] != 0) {
-						axxia_sysmem_bist(
-							(unsigned long long)
-							add_mbist_addr[j]*256,
-							(unsigned long long)
-							add_mbist_len[j]*256);
-					} else {
-						break;
-					}
-				}
-			} else {
-				break;
-			}
-		}
-		for (i = 0; i < 96; i++) {
-			if (test_len[i] != 0) {
-				if ((test_addr[i]+test_len[i]) > memSize) {
-					printf("Testing range exceeds System memory size\n");
-				} else if (((unsigned long long)test_len[i]*256)
-					   > 0x40000000) {
-					printf("Testing length cannot exceed 1G \n");
-				} else {
-					run_spl_mtest_ranges(test_addr[i],
-							     test_len[i]);
-				}
-			} else {
-				break;
-			}
-		}
-		for (i = 0; i < 5; i++) {
-			if (prot_len[i] != 0)
-				printf("prot_addr = 0x%lx, prot_len = 0x%lx\n", prot_addr[i], prot_len[i]);
-			else
-				break;
-		}
-	}
-#else
-	for (i = 0; i < 8; i++) {
-		if (mbist_len[i] != 0) {
-			if ((mbist_addr[i]+mbist_len[i]) > memSize) {
-				printf("Testing range exceeds System memory size\n");
-			} else if (((unsigned long long)mbist_len[i]*256)
-				   > 0x40000000) {
-				printf("Testing length cannot exceed 1G \n");
-			} else {
-				run_spl_mtest_ranges(mbist_addr[i],
-						     mbist_len[i]);
-			}
-		} else
-			break;
-	}
-#endif
+	return;
 }
-#endif
-
-#endif	/* CONFIG_AXXIA_EMU */
 
 u32 spl_boot_device(void)
 {
@@ -1160,11 +840,13 @@ board_init_f(ulong dummy)
 	serial_init();
 	gd->have_console = 1;
 
-	puts("_______              _____            _____________________ \n"
+	puts("\n"
+	     "_______              _____            _____________________  \n"
 	     "___    |___  _____  ____(_)_____ _    __  ___/__  __ \\__  / \n"
 	     "__  /| |_  |/_/_  |/_/_  /_  __ `/    _____ \\__  /_/ /_  /  \n"
-	     "_  ___ |_>  < __>  < _  / / /_/ /     ____/ /_  ____/_  /___\n"
-	     "/_/  |_/_/|_| /_/|_| /_/  \\__,_/      /____/ /_/     /_____/\n\n");
+	     "_  ___ |_>  < __>  < _  / / /_/ /     ____/ /_  ____/_  /___ \n"
+	     "/_/  |_/_/|_| /_/|_| /_/  \\__,_/      /____/ /_/     /_____/\n"
+	     "\n");
 
 #ifdef AXXIA_VERSION
 	printf("Axxia Version: %s\n", AXXIA_VERSION);
@@ -1196,16 +878,6 @@ board_init_f(ulong dummy)
 	axxia_display_clocks();
 #endif
 
-#ifdef CONFIG_SPL_MTEST
-	printf("Running the SPL Memory Test\n");
-	if (spl_mtest((unsigned long *)0x40000000,
-		      (unsigned long *)0x7fffffff, 10, spl_mtest_all)) {
-		printf("SPL Memory Test FAILED\n");
-	} else {
-		printf("SPL Memory Test SUCCESSFUL\n");
-	}
-#endif	/* CONFIG_SPL_MTEST */
-
 #ifdef SYSCACHE_ONLY_MODE
 	printf("Syscache Only Mode!\n");
 
@@ -1230,21 +902,15 @@ board_init_f(ulong dummy)
 		}
 	}
 #else  /* SYSCACHE_ONLY_MODE */
-
-#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
-#if 0
 	if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_BIST)) {
 		printf("Testing Memory From 0, 0x%llx bytes\n",
-		       sysmem->totalSize);
-		axxia_sysmem_bist(0ULL, sysmem->totalSize);
+		       sysmem_size());
+		axxia_sysmem_bist(0ULL, sysmem_size(), data);
 	} else if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_SMEM_RANGES)) {
 		check_memory_ranges();
 	}
-#endif
-#endif	/* CONFIG_AXXIA_EMU */
 
 	printf("\nSystem Initialized\n\n");
-
 #endif	/* SYSCACHE_ONLY_MODE */
 
 	/* Move the stack to ram. */
@@ -1260,7 +926,7 @@ board_init_f(ulong dummy)
 #endif	/* CONFIG_SPL_ENV_SUPPORT */
 
 	/*
-	  Jump to the monitor.
+	  Load U-Boot in memory and jump to the monitor.
 	*/
 
 	load_image();

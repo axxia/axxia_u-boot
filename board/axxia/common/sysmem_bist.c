@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2009 LSI Corporation
+ * Copyright (C) 2016 Intel Corporation
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -21,80 +21,125 @@
  */
 
 #include <common.h>
-#include <asm/io.h>
 
-#if defined (CONFIG_AXXIA_344X) || defined (CONFIG_AXXIA_342X)
-#include "regs/ncp_denali_regs.h"
-#include "regs/ncp_denali_reg_defines.h"
-#include "regs/ncp_phy_regs.h"
-#include "regs/ncp_phy_reg_defines.h"
-#endif
-
-#if defined (CONFIG_AXXIA_25xx) || defined(CONFIG_AXXIA_55XX)
-#include "regs/ncp_denali_regs_acp2500.h"
-#include "regs/ncp_denali_reg_defines_acp2500.h"
-#include "regs/ncp_phy_regs_acp2500.h"
-#include "regs/ncp_phy_reg_defines_acp2500.h"
-#endif
+#include "ncp_sysmem_ext.h"
+#include "ncp_sysmem_lsiphy.h" /* for macros and stuff mainly */
+#include "ncp_sysmem_synopphy.h"
 
 /*
-  ===============================================================================
-  ===============================================================================
+  ==============================================================================
+  ==============================================================================
   Local
-  ===============================================================================
-  ===============================================================================
+  ==============================================================================
+  ==============================================================================
 */
 
-#if defined(ACP_X1V1)
-#define INT_STATUS_OFFSET 0x16c
-#define BIST_COMPLETION 0x200
-#define ECC_ERROR_MASK 0x3c
-#elif defined(CONFIG_AXXIA_344X) || defined(CONFIG_AXXIA_342X)
-#define INT_STATUS_OFFSET 0x16c
-#define BIST_COMPLETION 0x400
-#define ECC_ERROR_MASK 0x78
-#elif defined(CONFIG_AXXIA_25xx)
-#define INT_STATUS_OFFSET 0x410
-#define BIST_COMPLETION 0x800
-#define ECC_ERROR_MASK 0x78
-#elif defined(CONFIG_AXXIA_55XX)
-#define INT_STATUS_OFFSET 0x410
-#define BIST_COMPLETION 0x400
-#define ECC_ERROR_MASK 0x78
+#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_56XX)
+static unsigned int nodes[] = {0x22, 0xf}; /* Two Controllers */
+#elif defined(CONFIG_AXXIA_XLF_SIM) || defined(CONFIG_AXXIA_XLF)
+static unsigned int nodes[] = {0x22, 0xf, 0x23, 0x24}; /* Four Controllers */
 #endif
 
-#define BIST_STATUS_OFFSET 0x50
+#ifndef CONFIG_AXXIA_EMU
 
-#if defined(CONFIG_AXXIA_25xx) || defined(CONFIG_AXXIA_55XX)
-#define INT_STATUS_CLEAR_OFFSET 0x548
-#else
-#define INT_STATUS_CLEAR_OFFSET 0x164
-#endif
+#define number_of_nodes() (sizeof(nodes) / sizeof(unsigned int))
+
+struct bist_test {
+	unsigned int node;
+	unsigned int region;
+	unsigned int high;
+	unsigned int low;
+	unsigned int bits;
+	enum bist_type type;
+};
+
+/*
+  ------------------------------------------------------------------------------
+  check_node_ecc
+*/
+
+static int
+check_node_ecc(unsigned int node)
+{
+	ncp_uint32_t value;
+
+	/* Is ECC enabled?  If not, return success. */
+	ncr_read32(NCP_REGION_ID(node, 0), NCP_DENALI_CTL_101_5600, &value);
+
+	if (0 == (value & 1))
+		return 0;
+
+	/* Otherwise, check the interrupt status. */
+	ncr_read32(NCP_REGION_ID(node, 0), NCP_DENALI_CTL_366_5600, &value);
+
+	if (0 == (value & 0x78))
+		return 0;
+
+	printf("ECC Errors (Node 0x%x)\n"
+	       "\tCorrectible 0x%x\n"
+	       "\tMultiple Correctible 0x%x\n"
+	       "\tUncorrectible 0x%x\n"
+	       "\tMultiple Uncorrectible 0x%x\n",
+	       node,
+	       ((value & 0x8) >> 3), ((value & 0x10) >> 4),
+	       ((value & 0x20) >> 5), ((value & 0x40) >> 6));
+
+	return -1;
+}
 
 /*
   ----------------------------------------------------------------------
-  axxia_sysmem_bist_failure
+  bist_result
 */
 
 static void
-axxia_sysmem_bist_failure(unsigned long region)
+bist_result(struct bist_test *test)
 {
 	int i;
-	unsigned long value;
-	unsigned long offsets[] = {
-		0x248, 0x24c,
-#if defined(CONFIG_AXXIA_25xx) || defined(CONFIG_AXXIA_55XX)
-		0x418, 0x41c, 0x420, 0x424, 0x428, 0x42c, 0x430, 0x434,
-		0x438, 0x43c, 0x440, 0x444, 0x448, 0x44c, 0x450, 0x454
-#else
-		0x2b0, 0x2b4, 0x2b8, 0x2bc, 0x2c0, 0x2c4, 0x2c8, 0x2cc
-#endif
+	ncp_uint32_t value;
+	unsigned int offsets[] = {
+		NCP_DENALI_CTL_366_5600, /* Interrupt Status */
+		NCP_DENALI_CTL_367_5600, /* Interrupt Status */
+		NCP_DENALI_CTL_135_5600, /* Expected Data */
+		NCP_DENALI_CTL_136_5600, /* Expected Data */
+		NCP_DENALI_CTL_137_5600, /* Expected Data */
+		NCP_DENALI_CTL_138_5600, /* Expected Data */
+		NCP_DENALI_CTL_139_5600, /* Expected Data */
+		NCP_DENALI_CTL_140_5600, /* Expected Data */
+		NCP_DENALI_CTL_141_5600, /* Expected Data */
+		NCP_DENALI_CTL_142_5600, /* Expected Data */
+		NCP_DENALI_CTL_143_5600, /* Actual Data */
+		NCP_DENALI_CTL_144_5600, /* Actual Data */
+		NCP_DENALI_CTL_145_5600, /* Actual Data */
+		NCP_DENALI_CTL_146_5600, /* Actual Data */
+		NCP_DENALI_CTL_147_5600, /* Actual Data */
+		NCP_DENALI_CTL_148_5600, /* Actual Data */
+		NCP_DENALI_CTL_149_5600, /* Actual Data */
+		NCP_DENALI_CTL_150_5600, /* Actual Data */
+		NCP_DENALI_CTL_151_5600, /* Failure Address */
+		NCP_DENALI_CTL_152_5600, /* Failure Address */
 	};
 
-	for (i = 0;i < (sizeof(offsets) / sizeof(unsigned long));++i) {
-		ncr_read32(region, offsets[i], (ncp_uint32_t *)&value);
-		printf("\t\tRegion:0x%08lx Offset:0x%04lx Value:0x%08lx\n",
-		       region, offsets[i], value);
+	/* Get the result. */
+	ncr_read32(test->region, NCP_DENALI_CTL_94_5600, &value);
+
+	if (data == test->type && 1 == (value & 0x1)) {
+		printf("\tDATA (node 0x%02x): Passed\n",
+		       NCP_NODE_ID(test->region));
+
+		return;
+	} else if (addr == test->type && 0x2 == (value & 0x2)) {
+		printf("\tADDRESS (node 0x%02x): Passed\n",
+		       NCP_NODE_ID(test->region));
+
+		return;
+	}
+
+	/* There was a failure, display "offsets". */
+	for (i = 0; i < (sizeof(offsets) / sizeof(unsigned long)); ++i) {
+		ncr_read32(test->region, offsets[i], &value);
+		printf("\tRegion:0x%08x Offset:0x%04x Value:0x%08x\n",
+		       test->region, offsets[i], value);
 	}
 
 	return;
@@ -102,159 +147,214 @@ axxia_sysmem_bist_failure(unsigned long region)
 
 /*
   ----------------------------------------------------------------------
-  axxia_sysmem_asic_check_ecc
+  bist_start
 */
 
 static void
-axxia_sysmem_asic_check_ecc(unsigned long region)
+bist_start(struct bist_test *test)
 {
-	unsigned long value;
+	unsigned int value;
 
-#ifdef CONFIG_AXXIA_55XX
-	ncr_read32(region, NCP_DENALI_CTL_421, (ncp_uint32_t *)&value);
+	/* Acknowledge any existing interrupts. */
+	ncr_write32(test->region, NCP_DENALI_CTL_368_5600, 0xffffffff);
+	ncr_write32(test->region, NCP_DENALI_CTL_369_5600, 0x3);
 
-	if (1 != ((ncp_denali_DENALI_CTL_421_t *)&value)->ecc_en) {
-		if (NCP_NODE_ID(region) == 0x22) {
-			/* SM0 */
-			printf("ECC is not enabled for SM0 node 0x%03lx\n",
-		       NCP_NODE_ID(region));
-		} else if (NCP_NODE_ID(region) == 0xf) {
-			/* SM1 */
-			printf("ECC is not enabled for SM1 node 0x%03lx\n",
-		       NCP_NODE_ID(region));
-		}
-		return;
-	}
-#else
-	ncr_read32(region, NCP_DENALI_CTL_20, &value);
+	/* Set the address. */
+	ncr_write32(test->region, NCP_DENALI_CTL_95_5600, test->low);
+	ncr_write32(test->region, NCP_DENALI_CTL_96_5600, test->high);
 
-	if (3 != ((ncp_denali_DENALI_CTL_20_t *)&value)->ctrl_raw) {
-		printf("ECC is not enabled for node 0x%03lx\n",
-		       NCP_NODE_ID(region));
-		return;
-	}
-#endif
+	/* Set the length (power of 2). */
+	value = (test->bits << 8);
 
-	ncr_read32(region, INT_STATUS_OFFSET, (ncp_uint32_t *)&value);
+	if (data == test->type)
+		value |= (1 << 16);
+	else
+		value |= (1 << 24);
 
-	if (0 == (value & ECC_ERROR_MASK)) {
-#ifdef CONFIG_AXXIA_55XX
-		if (NCP_NODE_ID(region) == 0x22) {
-			printf("No ECC Errors Detected on SM0 Node 0x%03lx.\n",
-		       NCP_NODE_ID(region));
-		} else if (NCP_NODE_ID(region) == 0xf) {
-			printf("No ECC Errors Detected on SM1 Node 0x%03lx.\n",
-		       NCP_NODE_ID(region));
-		}
-#else
-			printf("No ECC Errors Detected on Node 0x%03lx.\n",
-		       NCP_NODE_ID(region));
-#endif
-	} else {
-		int i;
-		unsigned long offsets[] = {
-			0x0ac, 0x258, 0x260, 0x264, 0x288, 0x28c, 0x290, 0x294
-		};
+	ncr_write32(test->region, NCP_DENALI_CTL_94, value);
 
-#ifdef CONFIG_AXXIA_55XX
-		if (NCP_NODE_ID(region) == 0x22) {
-			printf("ECC Errors Detected on SM0 Node 0x%03lx: 0x%02lx\n",
-		       NCP_NODE_ID(region), (value & ECC_ERROR_MASK));
-		} else if (NCP_NODE_ID(region) == 0xf) {
-			printf("ECC Errors Detected on SM1 Node 0x%03lx: 0x%02lx\n",
-		       NCP_NODE_ID(region), (value & ECC_ERROR_MASK));
-		}
-#else
-		printf("ECC Errors Detected on Node 0x%03lx: 0x%02lx\n",
-		       NCP_NODE_ID(region), (value & ECC_ERROR_MASK));
-#endif
-
-		for (i = 0;i < (sizeof(offsets) / sizeof(unsigned long));
-		     ++ i) {
-			ncr_read32(region, offsets[i], (ncp_uint32_t *)&value);
-			printf("\tRegion:0x%08lx Offset:0x%04lx Value:0x%08lx\n",
-			       region, offsets[i], value);
-		}
-	}
-
-	return;
-}
-
-/*
-  ----------------------------------------------------------------------
-  axxia_sysmem_bist_start
-*/
-
-static void
-axxia_sysmem_bist_start(unsigned long region, int bits, int test,
-			unsigned long long address)
-{
-	/* Disable BIST_GO parameter */
-	ncr_and(region, 0x8, 0xfffffffe);
-
-	/* Unset the previous data and address test modes. */
-	ncr_and(region, 0x4, 0xfefeffff);
-
-	/* Program to test either address or data. */
-	if (1 == test) {
-		ncr_or(region, 0x4, 0x00010000);
-	} else {
-		ncr_or(region, 0x4, 0x01000000);
-	}
-
-	/* Program the start address. */
-	ncr_write32(region, 0x250, /* bottom 32 bits */
-		    (unsigned long)(address & 0xffffffff));
-	ncr_write32(region, 0x254, /* top 4 bits */
-		    ((unsigned long)((address & 0xffffffff00000000ULL) >> 32)) &
-		    0xf);
-
-	/* Program the data mask. */
-#if defined(CONFIG_AXXIA_25xx) || defined(CONFIG_AXXIA_55XX)
-	ncr_write32(region, 0x3f8, 0);
-	ncr_write32(region, 0x3fc, 0);
-	ncr_write32(region, 0x400, 0);
-	ncr_write32(region, 0x404, 0);
-#else
-	ncr_write32(region, 0x280, 0);
-	ncr_write32(region, 0x284, 0);
-#endif
-
-	/*
-	  The end address is specified by the number
-	  of address bits.
-	*/
-	if (1 == test) {
-		/*
-		  For address checking, the spec says
-		  the register value should be value
-		  calculated
-		*/
-		ncr_and(region, 0xa4, 0xc0ffffff);
-		ncr_or(region, 0xa4, ((bits) << 24));
-	} else {
-		/*
-		  For data checking we just use the
-		  value calculated above for the
-		  specified memory size. (i.e. 2GB ==
-		  31 bits).
-		*/
-		ncr_and(region, 0xa4, 0xc0ffffff);
-		ncr_or(region, 0xa4, ((bits) << 24));
-	}
-
-	/* Erase the interrupt status from the previous run. */
-#if defined(CONFIG_AXXIA_25xx) || defined (CONFIG_AXXIA_55XX)
-	ncr_or(region, INT_STATUS_CLEAR_OFFSET, 0x200);
-#else
-	ncr_or(region, INT_STATUS_CLEAR_OFFSET, 0x600);
-#endif
+	/* Unmask all bits. */
+	ncr_write32(test->region, NCP_DENALI_CTL_97_5600, 0);
+	ncr_write32(test->region, NCP_DENALI_CTL_98_5600, 0);
+	ncr_write32(test->region, NCP_DENALI_CTL_99_5600, 0);
+	ncr_write32(test->region, NCP_DENALI_CTL_100_5600, 0);
 
 	/* Start the test. */
-	ncr_or(region, 0x8, 0x1);
+	ncr_or(test->region, NCP_DENALI_CTL_93, (1 << 24));
 
 	return;
 }
+
+#endif	/* CONFIG_AXXIA_EMU */
+
+/*
+  ==============================================================================
+  ==============================================================================
+  Public Interface
+  ==============================================================================
+  ==============================================================================
+*/
+
+#ifndef CONFIG_AXXIA_EMU
+
+/*
+  ----------------------------------------------------------------------
+  axxia_sysmem_bist
+
+  Note that the address given here is not the same as the core's
+  physical address.  The address here is below the L3/system cache
+  and on the other side of the munging that occurs there!
+
+  Note also that, at least for now, the available memory is divided
+  evenly across the nodes.  This is not technically required, but
+  there is no way at present to handle any other case -- this code
+  assumes memory is evenly divided among the nodes/controllers.
+
+  To test all of memory, use an address of 0 and a lenght of sysmem_size().
+
+  As for length, the following assumes that the nodes are contiguous.
+
+  The data test does everything that the address test does and more.
+  The tests must be run separately.
+*/
+
+int
+axxia_sysmem_bist(unsigned long long address, unsigned long long length,
+		  enum bist_type type)
+{
+	unsigned long bits;
+	unsigned long long temp;
+	unsigned int node;
+	unsigned long long offset;
+	unsigned long long size_per_node;
+	struct bist_test bist_tests[number_of_nodes()];
+	struct bist_test *test;
+
+	memset(bist_tests, 0, sizeof(bist_tests));
+
+	/*
+	  Make sure that length is a power of 2 (required by the
+	  hardware) and that the requested address and length are
+	  within the range of available memory.
+	*/
+
+	if (0 == ((length != 0) && ((length & (~length + 1)) == length))) {
+		printf("BIST: The given length, 0x%llx, is NOT a power of 2.\n",
+		       length);
+
+		return -1;
+	}
+
+	if (sysmem_size() < (address + length)) {
+		printf("BIST: The requested test is out of range.\n");
+		return -1;
+	}
+
+	/*
+	  Initialize the bist_tests array...
+	 */
+
+	size_per_node = sysmem_size() / (unsigned long long)number_of_nodes();
+	node = (unsigned int)(address / size_per_node);
+	offset = address - (node * size_per_node);
+
+	while (0 < length && node < number_of_nodes()) {
+		unsigned long long length_to_test;
+
+		length_to_test = (size_per_node - offset);
+
+		if (length < length_to_test)
+			length_to_test = length;
+
+		if (0 == ((length_to_test != 0) &&
+			  ((length_to_test &
+			    (~length_to_test + 1)) == length_to_test))) {
+			printf("BIST: Length in node not a power of 2!\n");
+
+			return -1;
+		}
+
+		test = &bist_tests[node];
+
+		/* Get the power of two... */
+		bits = 0;
+		temp = 1;
+
+		while (temp < length_to_test) {
+			++bits;
+			temp <<= 1;
+		}
+
+		/* Fill in the test array. */
+		test->node = node;
+		test->region = NCP_REGION_ID(nodes[node], 0);
+		test->high = offset & 0x3f00000000 >> 32;
+		test->low = offset & 0xffffffff;
+		test->bits = bits;
+		test->type = type;
+
+		/* Check for ECC errors. */
+		check_node_ecc(NCP_NODE_ID(test->region));
+
+		/* Start the test. */
+		bist_start(test);
+
+		/* Update the length etc. */
+		length -= length_to_test;
+		++node;
+		offset = 0;
+	}
+
+	/*
+	  Wait for completion and get the results.
+	*/
+
+	for (node = 0; node < number_of_nodes(); ++node, ++test) {
+		test = &bist_tests[node];
+
+		if (0 == test->region)
+			continue;
+
+		if (0 != ncr_poll(test->region, NCP_DENALI_CTL_366_5600,
+				  0x400, 0x400, 100,
+				  type == addr ? 0x20000 : 0x100000)) {
+			printf("SM Node 0x%x Didn't Complete.\n",
+			       NCP_NODE_ID(test->region));
+
+			return -1;
+		} else {
+			check_node_ecc(NCP_NODE_ID(test->region));
+			bist_result(test);
+		}
+	}
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  axxia_sysmem_check_ecc
+*/
+
+int
+axxia_sysmem_check_ecc(void)
+{
+	int i;
+	int rc;
+
+	rc = 0;
+
+	for (i = 0; i < number_of_nodes(); ++ i) {
+		rc |= check_node_ecc(nodes[i]);
+	}
+
+	if (0 != rc)
+		return -1;
+
+	return 0;
+}
+
+#else  /* CONFIG_AXXIA_EMU */
 
 /*
   ----------------------------------------------------------------------
@@ -265,143 +365,19 @@ int
 axxia_sysmem_bist(unsigned long long address, unsigned long long length,
 		  enum bist_type type)
 {
-	unsigned long bits;
-	int test, test_val, test_end;
-	unsigned long result;
-	unsigned long interrupt_status;
-	unsigned long long temp;
-
-	/* Make sure the size is a power of 2. */
-	if (0 == ((length != 0) && ((length & (~length + 1)) == length))) {
-		printf("length, 0x%llx, is NOT a power of 2.\n", length);
-		return -1;
-	}
-
-	/* What power of 2 is it? */
-	bits = 0;
-	temp = 1;
-
-	while (temp < length) {
-		++bits;
-		temp <<= 1;
-	}
-
-	printf("Running the Built In Self Test on 2^%lu bytes at 0x%llx.\n",
-	       bits, address);
-
-	/* Check for ECC errors. */
-	axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
-
-	if (1 < sysmem->num_interfaces)
-		axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x00f, 0));
-
-	if (type == data) {
-		test_val = 0;
-		test_end = 0;
-	} else if (type == addr) {
-		test_val = 1;
-		test_end = 1;
-	} else {
-		test_val = 1;
-		test_end = 0;
-	}
-
-	for (test = test_val; test >= test_end; --test) {
-		unsigned long smregion0 = NCP_REGION_ID(0x22, 0);
-		unsigned long smregion1 = NCP_REGION_ID(0xf, 0);
-		unsigned long delay_loops;
-
-		if (1 == test) {
-			printf("ADDRESS Check MBIST on all nodes...\n");
-			delay_loops = 20000;
-		} else {
-			printf("DATA Check MBIST on all nodes...\n");
-			delay_loops = 100000;
-		}
-
-		axxia_sysmem_bist_start(smregion0, bits, test, address);
-
-		if (1 < sysmem->num_interfaces)
-			axxia_sysmem_bist_start(smregion1, bits, test, address);
-
-		/* Poll for completion and get the results. */
-		if (0 != ncr_poll(smregion0, INT_STATUS_OFFSET,
-				  BIST_COMPLETION, BIST_COMPLETION,
-				  10000, delay_loops)) {
-			printf("SM Node 0x%lx Didn't Complete.\n",
-			       NCP_NODE_ID(smregion0));
-		} else {
-			ncr_read32(smregion0, INT_STATUS_OFFSET,
-				   (ncp_uint32_t *)&interrupt_status);
-			ncr_write32(smregion0,
-				    INT_STATUS_CLEAR_OFFSET, interrupt_status);
-			ncr_read32(smregion0, BIST_STATUS_OFFSET,
-				   (ncp_uint32_t *)&result);
-
-			if (result & (1 << test)) {
-				printf("\tSM Node 0 PASSED\n");
-			} else {
-				printf("\tSM Node 0 FAILED\n");
-				axxia_sysmem_bist_failure(smregion0);
-			}
-		}
-
-		if (1 < sysmem->num_interfaces) {
-			if (0 != ncr_poll(smregion1, INT_STATUS_OFFSET,
-					  BIST_COMPLETION, BIST_COMPLETION,
-					  10000, delay_loops)) {
-				printf("SM Node 0x%lx Didn't Complete.\n",
-				       NCP_NODE_ID(smregion1));
-			} else {
-				ncr_read32(smregion1, INT_STATUS_OFFSET,
-					   (ncp_uint32_t *)&interrupt_status);
-				ncr_write32(smregion1, INT_STATUS_CLEAR_OFFSET,
-					    interrupt_status);
-				ncr_read32(smregion1, BIST_STATUS_OFFSET,
-					   (ncp_uint32_t *)&result);
-
-				if(result & (1 << test)) {
-					printf("\tSM Node 1 PASSED\n");
-				} else {
-					printf("\tSM Node 1 FAILED\n");
-					axxia_sysmem_bist_failure(smregion1);
-				}
-			}
-		}
-
-		/*
-		  Make sure to disable before letting the
-		  system access system memory.  Disabling
-		  BIST_GO param.
-		*/
-		ncr_and(smregion0, 0x8, 0xfffffffe);
-
-		do {
-			ncr_read32(smregion0, 0x8, (ncp_uint32_t *)&result);
-		} while (0 != (result & 1));
-
-		if (1 < sysmem->num_interfaces) {
-			ncr_and(smregion1, 0x8, 0xfffffffe);
-
-			do {
-				ncr_read32(smregion1, 0x8,
-					   (ncp_uint32_t *)&result);
-			} while (0 != (result & 1));
-		}
-	}
-
-	axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
-
-	if (1 < sysmem->num_interfaces)
-		axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x00f, 0));
-
 	return 0;
 }
 
-void
-axxia_mtest_check_ecc() {
-	axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x022, 0));
+/*
+  ------------------------------------------------------------------------------
+  axxia_sysmem_check_ecc
+*/
 
-	if (1 < sysmem->num_interfaces)
-		axxia_sysmem_asic_check_ecc(NCP_REGION_ID(0x00f, 0));
+int
+axxia_sysmem_check_ecc(void)
+{
+	return 0;
 }
+
+
+#endif /* CONFIG_AXXIA_EMU */

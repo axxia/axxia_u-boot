@@ -473,7 +473,6 @@
 void acp_failure(const char *, const char *, const int);
 int axxia_initialize(void);
 void display_va_attr(void *);
-void axxia_mtest_check_ecc(void);
 #endif	/* __ASSEMBLY__ */
 
 /*
@@ -487,23 +486,6 @@ void axxia_mtest_check_ecc(void);
 #ifndef __ASSEMBLY__
 void ncr_l3tags(void);
 #endif
-#endif
-
-/****** BIST *************/
-#ifndef __ASSEMBLY__
-#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
-int axxia_sysmem_bist(unsigned long long address, unsigned long long sysmem_size);
-unsigned int mbist_range(
-	unsigned long memsize, unsigned long dual_ddr,
-	unsigned long maskbits, unsigned long mbist_multiple,
-	unsigned long mbist_addr[], unsigned long mbist_len[],
-	unsigned long test_addr[], unsigned long test_len[],
-	unsigned long prot_addr[], unsigned long prot_len[]);
-
-void mbist_power2(unsigned long in_addr, unsigned long in_len,
-	unsigned long mbist_addr[], unsigned long mbist_len[]);
-
-#endif  /* !CONFIG_AXXIA_EMU && !CONFIG_AXXIA_SIM*/
 #endif
 
 /*

@@ -4043,33 +4043,9 @@ unsigned long long sysmem_size(void);
   ==============================================================================
 */
 
-/**********************************************************************
- * CONFIG_HYBRID_MBIST
- *
- * In order to use the MBIST controller to test a specific CPU linear range
- * of memory, software must understand the address munging algorithm and convert
- * the CPU linear range into multiple DDR physical sub-ranges. And, even after
- * doing this, due to the complicated nature of the munging algorithm and
- * limitations of the MBIST controller hardware, there will be some sub
- * ranges that cannot be tested using the MBIST hardware and therefore would
- * need to be tested via a software based memory test. Hence, we have this
- * hybrid approach for range based memory testing. This approach uses
- * the MBIST hardware in combination with software testing
- * of memory areas that cannot be covered by the MBIST controller. With
- * the hybrid approach, the user can only protect 768M or less of sysmem
- * by specifying the memory ranges on which they want the hybrid tests run.
- * It has been observed that hybrid approach versus s/w based memory testing
- * on the same range is 10-12 times faster.
- * If the user defines CONFIG_HYBRID_MBIST, then the ranges specified in
- * parameter file for memory range testing, will use the hybrid approach and
- * if CONFIG_HYBRID_MBIST is not defined, then s/w based spl_mtest will be
- * used for memory range testing. The user can specific which kind of spl_mtest
- * needs to be run by setting bits in Global Flags
- */
-#define CONFIG_HYBRID_MBIST
+#define CONFIG_SYS_ALT_MEMTEST
 
-/* Please note that CONFIG_SPL_MTEST just tests 0-1GB of sysmem */
-/*#define CONFIG_SPL_MTEST*/
+#define CONFIG_SPL_MTEST
 /*#define SM_PLL_533_MHZ*/
 /*#define RUN_UNCACHED*/
 /*#define RUN_NONSECURE*/
@@ -4133,6 +4109,10 @@ void ncr_disable( void );
 */
 
 #ifndef __ASSEMBLY__
+enum bist_type {addr, data};
+int axxia_sysmem_check_ecc(void);
+int axxia_sysmem_bist(unsigned long long address, unsigned long long length,
+		      enum bist_type type);
 int setup_security(void);
 int voltage_init(void);
 #endif

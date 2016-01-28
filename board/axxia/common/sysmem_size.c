@@ -32,7 +32,6 @@
 unsigned long long
 sysmem_size(void)
 {
-#ifndef CONFIG_AXXIA_SIM
 	unsigned long long sdram_capacity_bytes;
 	unsigned long sdram_device_width_bits;
 	unsigned long primary_bus_width_bits;
@@ -51,11 +50,7 @@ sysmem_size(void)
 		sysmem->numInterfaces * sysmem->numRanks *
 		sdram_capacity_bytes *
 		(primary_bus_width_bits / sdram_device_width_bits);
-
 	sysmem->totalSize = sdram_capacity_bytes;
 
 	return sysmem->totalSize;
-#else  /* CONFIG_AXXIA_SIM */
-	return 0x100000000ULL;
-#endif	/* CONFIG_AXXIA_SIM */
 }
