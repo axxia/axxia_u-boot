@@ -348,7 +348,7 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 		*frequency = 387000;
 		break;
 	case clock_peripheral:
-		*frequency = 200000;
+		*frequency = 500;
 		break;
 	case clock_core:
 		*frequency = 1400000;
