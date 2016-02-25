@@ -39,6 +39,10 @@ obj-y += ncp_cm_ctrl_init_56xx.o ncp_treemem_init_synopphy.o
 obj-y += sysmem_asic.o voltage.o
 endif
 
+ifdef CONFIG_AXXIA_SPL_DIAGNOSTICS
+obj-y += spl_diagnostics.o
+endif
+
 endif
 
 ################################################################################

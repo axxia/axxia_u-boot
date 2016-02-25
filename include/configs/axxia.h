@@ -4108,6 +4108,14 @@ void ncr_disable( void );
   ==============================================================================
 */
 
+/*
+  Define the following to add a hook to the SPL that allows diagnostic
+  code to be run after initializing system memory but before using it.
+  Tests can be created in board/axxia/common/spl_diagnostics.c.
+*/
+
+/*#define CONFIG_AXXIA_SPL_DIAGNOSTICS*/
+
 #ifndef __ASSEMBLY__
 enum bist_type {addr, data};
 int axxia_sysmem_check_ecc(void);
@@ -4115,6 +4123,7 @@ int axxia_sysmem_bist(unsigned long long address, unsigned long long length,
 		      enum bist_type type);
 int setup_security(void);
 int voltage_init(void);
+void spl_diagnostics(void);
 #endif
 
 #endif /* __AXXIA_H */

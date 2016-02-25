@@ -873,6 +873,22 @@ board_init_f(ulong dummy)
 	if (0 != rc)
 		acp_failure(__FILE__, __func__, __LINE__);
 
+#if defined(CONFIG_AXXIA_SPL_DIAGNOSTICS)
+	printf("Press Any Key to Enter SPL Diagnostic Mode...\n");
+	{
+		int delay = 30;
+
+		while (0 < delay--) {
+			if (tstc()) {
+				spl_diagnostics();
+				break;
+			}
+
+			mdelay(100);
+		}
+	}
+#endif	/* CONFIG_AXXIA_SPL_DIAGNOSTICS */
+
 #if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
 	puts("");
 	axxia_display_clocks();
