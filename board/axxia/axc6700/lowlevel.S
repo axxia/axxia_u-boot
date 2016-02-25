@@ -12,8 +12,8 @@ lowlevel_init:
 	mrs	x0, ID_PFR1_EL1
 	and	w0, w0, 0x10000
 	cbz	w0, 1f
-	ldr	x0, =CONFIG_SYS_CNTR_FREQ
-	msr	CNTFRQ_EL0, x0
+	ldr	x0, =COUNTER_FREQUENCY
+	msr	cntfrq_el0, x0
 1:
 #endif
 
