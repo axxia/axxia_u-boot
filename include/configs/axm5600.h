@@ -43,7 +43,8 @@
   ==============================================================================
 */
 
-#define CONFIG_BAUDRATE    9600
+#define COUNTER_FREQUENCY 128000000
+#define CONFIG_BAUDRATE   9600
 
 
 /********** FEMAC PHY ADDRESS *************/
@@ -252,8 +253,6 @@
 #define CONFIG_AXXIA_NEMAC
 /*#define CONFIG_AXXIA_EIOA*/
 
-#define CONFIG_SYS_CNTR_FREQ 62500000
-
 #define CONFIG_EXTRA_ENV_SETTINGS		\
 	"loadaddr=0x80100000\0"			\
 	"kernel_addr=0x100000\0"		\
@@ -313,7 +312,8 @@
   ==============================================================================
 */
 
-#define CONFIG_BAUDRATE    9600
+#define COUNTER_FREQUENCY 256000000
+#define CONFIG_BAUDRATE   9600
 
 
 /********** FEMAC PHY ADDRESS *************/
@@ -334,10 +334,6 @@
 #define CONFIG_REDUNDANT_UBOOT
 #define CONFIG_REDUNDANT_UBOOT_AUTO
 
-/*#define CONFIG_HW_WATCHDOG*/
-/*#define LEAVE_WATCHDOG_ON*/
-#define WATCHDOG_TIMEOUT_SECS 240
-
 #define CONFIG_GICV3
 #define GICD_BASE (0x8010000000)
 #define GICR_BASE (0x8010200000)
@@ -345,8 +341,6 @@
 #define CONFIG_BOOTP_ID_CACHE_SIZE 32
 
 /*#define CONFIG_SYS_DCACHE_OFF*/
-
-#define CONFIG_SYS_CNTR_FREQ 4000000
 
 #define V_MIN   795
 #define V_SAFE  940
@@ -402,6 +396,7 @@
 */
 
 #define DEFAULT_SDCR_VALUE 0x00080a02
+#define COUNTER_FREQUENCY  256000000
 #define CONFIG_BAUDRATE    9600
 
 /********** FEMAC PHY ADDRESS *************/
@@ -421,10 +416,6 @@
 
 #define AXXIA_OR_IN_FUSE_FORCE
 
-/*#define CONFIG_HW_WATCHDOG*/
-/*#define LEAVE_WATCHDOG_ON*/
-#define WATCHDOG_TIMEOUT_SECS 240
-
 #define CONFIG_GICV3
 #define GICD_BASE (0x8010000000)
 #define GICR_BASE (0x8010200000)
@@ -432,8 +423,6 @@
 #define CONFIG_BOOTP_ID_CACHE_SIZE 32
 
 /*#define CONFIG_SYS_DCACHE_OFF*/
-
-#define CONFIG_SYS_CNTR_FREQ 4000000
 
 #define CONFIG_REDUNDANT_PARAMETERS
 #define CONFIG_REDUNDANT_UBOOT
@@ -1368,7 +1357,10 @@ void dump_packet(const char *, void *, int);
 
 /*#define CONFIG_SYS_THUMB_BUILD*/
 
-/*#define CONFIG_HW_WATCHDOG*/
+#define CONFIG_HW_WATCHDOG
+/*#define LEAVE_WATCHDOG_ON*/
+/*#define MAKE_WATCHDOG_PERMANENT*/
+#define WATCHDOG_TIMEOUT_SECS 240
 
 #ifndef __ASSEMBLY__
 int start_watchdog(unsigned int);
@@ -1488,7 +1480,6 @@ extern volatile unsigned long *crumbs;
 extern volatile unsigned long long *scratch;
 #endif
 
-#define COUNTER_FREQUENCY 256000000
 #define CPU_RELEASE_ADDR 0x400000
 
 #define CONFIG_SYS_GENERIC_BOARD

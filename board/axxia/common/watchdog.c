@@ -32,8 +32,8 @@ Public
 */
 
 /*
-------------------------------------------------------------------------------
-hw_watchdog_reset
+  ------------------------------------------------------------------------------
+  hw_watchdog_reset
 */
 
 void
@@ -85,6 +85,11 @@ start_watchdog(unsigned int timeout)
 	/* Lock syscon. */
 	writel(0, (SYSCON + 0x2000));
 
+#ifdef MAKE_WATCHDOG_PERMANENT
+	/* Write 0x4 to 0x171.1.0x900 */
+	writel(0x2, (PERIPH_SCB + 0x100000 + 0x900));
+#endif
+
 	return 0;
 }
 
@@ -96,13 +101,14 @@ stop_watchdog
 void
 stop_watchdog(void)
 {
+#ifndef MAKE_WATCHDOG_PERMANENT
 	unsigned long reset_control;
-
-	/* Unlock syscon. */
-	writel(0xab, (SYSCON + 0x2000));
 
 	/* Turn off the timer. */
 	writel(0, (TIMER5 + TIMER_CONTROL));
+
+	/* Unlock syscon. */
+	writel(0xab, (SYSCON + 0x2000));
 
 	/* Disable watchdog resets. */
 	reset_control = readl(SYSCON + 0x2008);
@@ -111,6 +117,20 @@ stop_watchdog(void)
 
 	/* Lock syscon. */
 	writel(0, (SYSCON + 0x2000));
+#endif	/* MAKE_WATCHDOG_PERMANENT */
+
+	return;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  hw_watchdog_init
+*/
+
+void
+hw_watchdog_init(void)
+{
+	start_watchdog(WATCHDOG_TIMEOUT_SECS);
 
 	return;
 }
