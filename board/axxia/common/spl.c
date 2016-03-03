@@ -365,11 +365,81 @@ mtest_mtest(unsigned long *start, unsigned long *end)
 /*
   ----------------------------------------------------------------------
   mtest_ecc
+
+  The object of this test is to make sure all the physical lines
+  connecting memory work.  The patterns are based on the patterns
+  used during coarse write leveling.
+
+  Note that the name, ecc, simply means that the ECC lines should be
+  excersized as well as the data/address lines.
 */
 
 static int
 mtest_ecc(unsigned long *start, unsigned long *end)
 {
+	int i;
+	unsigned long *memory;
+	unsigned long patterns[] = {
+		0xed76c3c392790f56,
+		0x14cffe90f414bafc,
+		0x0213a40229acc6ba,
+		0x923b663440ff84f2,
+		0xf4b90a1c203eff5a,
+		0x32409395517a4434,
+		0x6780cade6aed1ab0,
+		0xe6f38088f1c96f7d,
+		0x9bf98feb7efffc08,
+		0xaa49f06d12c46b44,
+		0xac35d1a4bd1d02d1,
+		0x298b4e091d0c0beb,
+		0x1045f89d74ea7d2f,
+		0x55b65995591809be,
+		0x69f558ba0c894c83,
+		0xd27e9e7ee3dc14c9,
+		0xf1f76fd4b9df2547,
+		0x4d1a99d7bbec92ec,
+		0xd48b5ae66287cd9e,
+		0xa5536cf1987f4bce,
+		0xdfec8e2f3802c6b5,
+		0xd3d28b18afdee879,
+		0x8c3de09aafe75289,
+		0x3c2521c5c0032135,
+		0xddcb086a85b4e341,
+		0xc343b3418e23d95e,
+		0x6757d6dec7c883d4,
+		0x746938ff42f92872,
+		0xbee0d90d6256228b,
+		0xaa23014136d7a3d5,
+		0x111f392e9ec0603c,
+		0x2ce3abbaa9967c59
+	};
+
+	/* Make sure enough space is available starting at start. */
+	if ((end - start) < (sizeof(patterns) / sizeof(unsigned long))) {
+		printf("Not enough memory for ECC test (%lu minimum).\n",
+		       (sizeof(patterns) / sizeof(unsigned long)));
+		return -1;
+	}
+
+	/* Write all patterns. */
+	memory = start;
+
+	for (i = 0; i < (sizeof(patterns) / sizeof(unsigned long)); ++i)
+		*memory++ = patterns[i];
+
+	/* Read and compare. */
+	memory = start;
+
+	for (i = 0; i < (sizeof(patterns) / sizeof(unsigned long));
+	     ++i, ++memory) {
+		if (patterns[i] != *memory) {
+			printf("ECC Compare Failed at 0x%p: 0x%lx != 0x%lx\n",
+			       (start + i), *memory, patterns[i]);
+
+			return -1;
+		}
+	}
+
 	return 0;
 }
 
