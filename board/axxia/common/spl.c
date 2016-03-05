@@ -456,8 +456,16 @@ spl_mtest(unsigned long *start, unsigned long *end, int total_iterations,
 {
 	ulong	errs = 0;
 	int iterations = 0;
+	char *spl_mtest_str[] = {
+		"Data",
+		"Address",
+		"standard",
+		"ECC",
+		"All"
+	};
 
-	printf("Testing 0x%p ... 0x%p:\n", start, end);
+	printf("Running %s Test: 0x%p ... 0x%p:\n",
+	       spl_mtest_str[type], start, end);
 
 	for (;;) {
 		if (iterations >= total_iterations) {
@@ -521,9 +529,31 @@ check_memory_ranges(void)
 
 		end *= 0x100000;
 		end = offset + end;
-		spl_mtest((unsigned long *)offset,
-			  (unsigned long *)end,
-			  1, spl_mtest_all);
+
+		printf("--> global->flags=0x%x 0x%x 0x%x\n",
+		       global->flags,
+		       PARAMETERS_GLOBAL_ENABLE_SW_MEM_ECC_TEST,
+		       PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST);
+
+		if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)
+			spl_mtest((unsigned long *)offset,
+				  (unsigned long *)end,
+				  1, spl_mtest_data);
+
+		if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST)
+			spl_mtest((unsigned long *)offset,
+				  (unsigned long *)end,
+				  1, spl_mtest_addr);
+
+		if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST)
+			spl_mtest((unsigned long *)offset,
+				  (unsigned long *)end,
+				  1, spl_mtest_mtest);
+
+		if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_ECC_TEST)
+			spl_mtest((unsigned long *)offset,
+				  (unsigned long *)end,
+				  1, spl_mtest_ecc);
 	}
 
 	return;
