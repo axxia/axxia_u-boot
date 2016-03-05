@@ -35,9 +35,33 @@ sysmem_size(void)
 	unsigned long long sdram_capacity_bytes;
 	unsigned long sdram_device_width_bits;
 	unsigned long primary_bus_width_bits;
+#if !defined(CONFIG_SPL_BUILD)
+	int rc;
 
-#ifndef CONFIG_SPL_BUILD
-	if (0 != read_parameters())
+	/*
+	  In the U-Boot case (not SPL), reading the parameters is
+	  required to determine the amount of memory available.
+	*/
+
+	rc = read_parameters();
+#endif	/* CONFIG_SPL_BUILD */
+
+	/*
+	  For now, when in simulation, with no parameter file, just
+	  assume 4 GB.
+	*/
+
+#if defined(CONFIG_AXXIA_SIM)
+	if (0 == parameters_avail()) {
+		printf("Running with no parameters, guessing 4G of memory\n");
+		sysmem->totalSize = (4ULL * (1ULL << 30));
+
+		return sysmem->totalSize;
+	}
+#endif
+
+#if !defined(CONFIG_SPL_BUILD)
+	if (0 != rc)
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 

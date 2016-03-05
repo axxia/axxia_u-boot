@@ -44,7 +44,7 @@
 
 static void *parameters __attribute__ ((section("data")));
 static int copy_in_use __attribute__ ((section("data")));
-static int parameters_read __attribute__ ((section("data")));
+static int parameters_read __attribute__ ((section("data"))) = 0;
 
 #if defined(CONFIG_AXXIA_PPC)
 /*
@@ -624,3 +624,14 @@ release_and_return:
 }
 
 #endif /* CONFIG_WRITE_PARAM_SUPPORT */
+
+/*
+  ------------------------------------------------------------------------------
+  parameters_avail
+*/
+
+int
+parameters_avail(void)
+{
+	return (1 == parameters_read);
+}
