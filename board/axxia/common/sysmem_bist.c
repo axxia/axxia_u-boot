@@ -21,6 +21,7 @@
  */
 
 #include <common.h>
+#include <watchdog.h>
 
 #include "ncp_sysmem_ext.h"
 #include "ncp_sysmem_lsiphy.h" /* for macros and stuff mainly */
@@ -310,21 +311,45 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length,
 	*/
 
 	for (node = 0; node < number_of_nodes(); ++node, ++test) {
+		int complete = 0;
+		int remaining;
+
 		test = &bist_tests[node];
 
 		if (0 == test->region)
 			continue;
 
-		if (0 != ncr_poll(test->region, NCP_DENALI_CTL_366_5600,
-				  0x400, 0x400, 100,
-				  type == addr ? 0x20000 : 0x100000)) {
+		/*
+		  Break polling into pieces to keep the watchdog up to date.
+		*/
+
+		if (addr == type)
+			remaining = 150000;
+		else
+			remaining = 1000000;
+
+		while (0 < remaining) {
+			WATCHDOG_RESET();
+
+			if (0 == ncr_poll(test->region, NCP_DENALI_CTL_366_5600,
+					  0x400, 0x400, 100, 10000)) {
+				complete = 1;
+				WATCHDOG_RESET();
+				check_node_ecc(NCP_NODE_ID(test->region));
+				bist_result(test);
+				break;
+			}
+
+			remaining -= 10000;
+		}
+
+		WATCHDOG_RESET();
+
+		if (0 == complete) {
 			printf("SM Node 0x%x Didn't Complete.\n",
 			       NCP_NODE_ID(test->region));
 
 			return -1;
-		} else {
-			check_node_ecc(NCP_NODE_ID(test->region));
-			bist_result(test);
 		}
 	}
 
