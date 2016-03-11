@@ -34,7 +34,7 @@
 */
 
 #define CONFIG_BAUDRATE    9600
-
+#define WATCHDOG_TIMEOUT_SECS 240
 
 /********** FEMAC PHY ADDRESS *************/
 #define CONFIG_AXXIA_PHY_ADDRESS 0x3
@@ -263,7 +263,7 @@
 */
 
 #define CONFIG_BAUDRATE    9600
-
+#define WATCHDOG_TIMEOUT_SECS 1000
 
 /********** FEMAC PHY ADDRESS *************/
 #define CONFIG_AXXIA_PHY_ADDRESS 0x3
@@ -344,6 +344,7 @@
 
 #define DEFAULT_SDCR_VALUE 0x00080a02
 #define CONFIG_BAUDRATE    9600
+#define WATCHDOG_TIMEOUT_SECS 240
 
 /********** FEMAC PHY ADDRESS *************/
 #define CONFIG_AXXIA_PHY_ADDRESS 0x1e
@@ -1311,7 +1312,6 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_HW_WATCHDOG
 /*#define LEAVE_WATCHDOG_ON*/
 /*#define MAKE_WATCHDOG_PERMANENT*/
-#define WATCHDOG_TIMEOUT_SECS 240
 
 #ifndef __ASSEMBLY__
 int start_watchdog(unsigned int);
