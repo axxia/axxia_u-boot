@@ -273,47 +273,41 @@ void spi_release_bus(struct spi_slave *slave)
 	writel(0x0, &pl022->ssp_cr1);
 }
 
-static void spi_normal_read(struct axxia_pl022 *pl022,
-			    const u8 *txp, u8 *rxp, u32 len)
+static int
+spi_normal_read(struct axxia_pl022 *pl022, const u8 *txp, u8 *rxp, u32 len)
 {
-	u32 len_tx = 0;
-	u32 len_rx = 0;
+	u32 len_tx;
+	u32 len_rx;
 	u8 value;
 
-	while (len_tx < len) {
-		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_TNF) {
+	for (len_tx = 0, len_rx = 0; len_rx < len; ) {
+		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RFF)
+			return -1;
+
+		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RNE) {
+			value = readl(&pl022->ssp_dr);
+			if (rxp)
+				*rxp++ = value;
+			len_rx++;
+		}
+
+		if (len_tx < len &&
+		    (readl(&pl022->ssp_sr) & SSP_SR_MASK_TNF)) {
 			value = (txp != NULL) ? *txp++ : 0;
 			writel(value, &pl022->ssp_dr);
 			len_tx++;
 		}
-
-		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RNE) {
-			value = readl(&pl022->ssp_dr);
-			if (rxp)
-				*rxp++ = value;
-			len_rx++;
-		}
 	}
 
-	while (len_rx < len_tx) {
-		if (readl(&pl022->ssp_sr) & SSP_SR_MASK_RNE) {
-			value = readl(&pl022->ssp_dr);
-			if (rxp)
-				*rxp++ = value;
-			len_rx++;
-		}
-	}
-
-	return;
+	return 0;
 }
 
 #ifdef ENABLE_DMA
 
-static int spi_dma_read(struct axxia_pl022 *pl022,
-			unsigned int direction,
-			unsigned int dma_address_hi,
-			unsigned int dma_address_lo,
-			u32 len)
+static
+int spi_dma_read(struct axxia_pl022 *pl022, unsigned int direction,
+		 unsigned int dma_address_hi, unsigned int dma_address_lo,
+		 u32 len)
 {
 	unsigned int control;
 	unsigned int status;
@@ -376,8 +370,9 @@ static int spi_dma_read(struct axxia_pl022 *pl022,
 
 #endif	/* ENABLE_DMA */
 
-int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
-	     const void *dout, void *din, unsigned long flags)
+int
+spi_xfer(struct spi_slave *slave, unsigned int bitlen,
+	 const void *dout, void *din, unsigned long flags)
 {
 	struct axxia_pl022_spi_slave *ps = to_pl022_spi(slave);
 	struct axxia_pl022 *pl022 = (struct axxia_pl022 *)ps->regs;
@@ -461,12 +456,20 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 				rxp += dma_len;
 		}
 	} else {
-		spi_normal_read(pl022, txp, rxp, len);
+		ret = spi_normal_read(pl022, txp, rxp, len);
+
+		/* Errors always terminate an ongoing transfer. */
+		if (0 != ret)
+			flags |= SPI_XFER_END;
 	}
 
 #else  /* ENABLE_DMA */
 
-	spi_normal_read(pl022, txp, rxp, len);
+	ret = spi_normal_read(pl022, txp, rxp, len);
+
+	/* Errors always terminate an ongoing transfer. */
+	if (0 != ret)
+		flags |= SPI_XFER_END;
 
 #endif /* ENABLE_DMA */
 
