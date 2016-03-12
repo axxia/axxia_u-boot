@@ -40,11 +40,30 @@ void dwc3_set_mode(struct dwc3 *dwc3_reg, u32 mode)
 			DWC3_GCTL_PRTCAPDIR(mode));
 }
 
+static void dwc3_phy_reset(struct dwc3 *dwc3_reg)
+{
+	/* Assert USB3 PHY reset */
+	setbits_le32(&dwc3_reg->g_usb3pipectl[0], DWC3_GUSB3PIPECTL_PHYSOFTRST);
+
+	/* Assert USB2 PHY reset */
+	setbits_le32(&dwc3_reg->g_usb2phycfg, DWC3_GUSB2PHYCFG_PHYSOFTRST);
+
+	mdelay(100);
+
+	/* Clear USB3 PHY reset */
+	clrbits_le32(&dwc3_reg->g_usb3pipectl[0], DWC3_GUSB3PIPECTL_PHYSOFTRST);
+
+	/* Clear USB2 PHY reset */
+	clrbits_le32(&dwc3_reg->g_usb2phycfg, DWC3_GUSB2PHYCFG_PHYSOFTRST);
+}
+
 static void dwc3_core_soft_reset(struct dwc3 *dwc3_reg)
 {
 	/* Before Resetting PHY, put Core in Reset */
 	setbits_le32(&dwc3_reg->g_ctl, DWC3_GCTL_CORESOFTRESET);
 
+	/* Reset the PHY */
+	dwc3_phy_reset(dwc3_reg);
 
 	/* After PHYs are stable we can take Core out of reset state */
 	clrbits_le32(&dwc3_reg->g_ctl, DWC3_GCTL_CORESOFTRESET);
