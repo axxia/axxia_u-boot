@@ -969,6 +969,25 @@ board_init_f(ulong dummy)
 		puts("Failed to start watchdog timer!\n");
 #endif	/* CONFIG_HW_WATCHDOG */
 
+#ifdef CONFIG_AXXIA_USB
+	/*
+	  Set the optional PHY registers.  Note that these values only
+	  get cleared by a chip or system reset, not by a USB
+	  controller/phy soft reset.
+	*/
+
+	writel(COMPDISTUNE0_VALUE, COMPDISTUNE0);
+	writel(OTGTUNE0_VALUE, OTGTUNE0);
+	writel(SQRXTUNE0_VALUE, SQRXTUNE0);
+	writel(TXFSLSTUNE0_VALUE, TXFSLSTUNE0);
+	writel(TXHSXVTUNE0_VALUE, TXHSXVTUNE0);
+	writel(TXPREEMPAMPTUNE0_VALUE, TXPREEMPAMPTUNE0);
+	writel(TXPREEMPPULSETUNE0_VALUE, TXPREEMPPULSETUNE0);
+	writel(TXRESTUNE0_VALUE, TXRESTUNE0);
+	writel(TXRISETUNE0_VALUE, TXRISETUNE0);
+	writel(TXVREFTUNE0_VALUE, TXVREFTUNE0);
+#endif	/* CONFIG_AXXIA_USB */
+
 	rc = axxia_initialize();
 	if (0 != rc)
 		acp_failure(__FILE__, __func__, __LINE__);
