@@ -3912,7 +3912,6 @@ extern void *retention;
 
 int read_parameters(void);
 int write_parameters(void);
-int parameters_avail(void);
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_CMD_LSI_PARAMETERS
