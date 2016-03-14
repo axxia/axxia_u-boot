@@ -357,7 +357,6 @@ read_parameters(void)
 	       "0x%08x 0x%08x\n"
 	       "0x%08x 0x%08x\n"
 	       "0x%08x 0x%08x\n"
-	       "0x%08x 0x%08x\n"
 	       "0x%08x 0x%08x\n",
 	       header->magic, header->size, header->checksum, header->version,
 	       header->chipType,
@@ -366,9 +365,7 @@ read_parameters(void)
 	       header->clocksOffset, header->clocksSize,
 	       header->pciesrioOffset, header->pciesrioSize,
 	       header->systemMemoryOffset, header->systemMemorySize,
-	       header->classifierMemoryOffset, header->classifierMemorySize,
-	       header->systemMemoryRetentionOffset,
-	       header->systemMemoryRetentionSize);
+	       header->classifierMemoryOffset, header->classifierMemorySize);
 #endif
 
 	global = (parameters_global_t *)(parameters + header->globalOffset);
@@ -380,7 +377,6 @@ read_parameters(void)
 	cmem = (parameters_mem_t *)
 		(parameters + header->classifierMemoryOffset);
 #ifdef CONFIG_AXXIA_ARM
-	retention = (void *)(parameters + header->systemMemoryRetentionOffset);
 #ifdef CONFIG_MEMORY_RETENTION
 {
 	unsigned value;
@@ -419,7 +415,7 @@ read_parameters(void)
 	return 0;
 }
 
-#ifdef CONFIG_MEMORY_RETENTION
+#if CONFIG_WRITE_PARAM_SUPPORT
 
 /*
   ------------------------------------------------------------------------------
@@ -532,21 +528,6 @@ write_parameters(void)
 	}
 #endif
 
-#ifdef CONFIG_REDUNDANT_PARAMETERS
-
-#ifndef CONFIG_REDUNDANT_PARAMETERS_GOLDEN
-	/* Write to the currently unused bank with higher sequence. */
-	if (0xffffffff > htonl(global->sequence)) {
-		unsigned long sequence;
-
-		sequence = htonl(global->sequence);
-		++sequence;
-		global->sequence = ntohl(sequence);
-	} else {
-		global->sequence = ntohl(0);
-	}
-#endif	/* CONFIG_REDUNDANT_PARAMETERS_GOLDEN */
-
 	/* Update the Checksum */
 	debug("%s:%d - header->size=0x%x header->checksum=0x%x\n",
 	      __FILE__, __LINE__, header->size, header->checksum);
@@ -556,30 +537,8 @@ write_parameters(void)
 	debug("%s:%d - header->checksum=0x%x\n",
 	      __FILE__, __LINE__, header->checksum);
 
-#ifndef CONFIG_REDUNDANT_PARAMETERS_GOLDEN
-	rc = spi_flash_erase(flash,
-			     (0 == copy_in_use) ?
-			     CONFIG_PARAMETER_OFFSET_REDUND :
-			     CONFIG_PARAMETER_OFFSET,
-			     flash->sector_size);
-
-	if (0 == rc) {
-		debug("Writing...\n");
-		rc = spi_flash_write(flash,
-				     (0 == copy_in_use) ?
-				     CONFIG_PARAMETER_OFFSET_REDUND :
-				     CONFIG_PARAMETER_OFFSET,
-				     PARAMETERS_SIZE, parameters);
-
-		if (0 != rc) {
-			printf("%s:%d - Write Failed!\n", __FILE__, __LINE__);
-			return -1;
-		}
-	} else {
-		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
-		return -1;
-	}
-#else  /* CONFIG_REDUNDANT_PARAMETERS_GOLDEN */
+#ifdef CONFIG_REDUNDANT_PARAMETERS
+	/* Write the DDR Parameters */
 	rc = spi_flash_erase(flash,
 			     (0 == copy_in_use) ?
 			     CONFIG_PARAMETER_OFFSET :
@@ -593,28 +552,11 @@ write_parameters(void)
 				     CONFIG_PARAMETER_OFFSET :
 				     CONFIG_PARAMETER_OFFSET_REDUND,
 				     PARAMETERS_SIZE, parameters);
-
-		if (0 != rc) {
-			printf("%s:%d - Write Failed!\n", __FILE__, __LINE__);
-			return -1;
-		}
 	} else {
 		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
 		return -1;
 	}
-#endif /* CONFIG_REDUNDANT_PARAMETERS_GOLDEN */
-
 #else  /* CONFIG_REDUNDANT_PARAMETERS */
-
-	/* Update the Checksum */
-	debug("%s:%d - header->size=0x%x header->checksum=0x%x\n",
-	      __FILE__, __LINE__, header->size, header->checksum);
-	header->checksum =
-		htonl(crc32(0, (parameters + 12),
-			    (ntohl(header->size) - 12)));
-	debug("%s:%d - header->checksum=0x%x\n",
-	      __FILE__, __LINE__, header->checksum);
-	
 	/* Write to the copy NOT in use first. */
 	debug("Erasing...\n");
 	rc = spi_flash_erase(flash,
@@ -630,11 +572,6 @@ write_parameters(void)
 				     CONFIG_PARAMETER_OFFSET_REDUND :
 				     CONFIG_PARAMETER_OFFSET,
 				     PARAMETERS_SIZE, parameters);
-
-		if (0 != rc) {
-			printf("%s:%d - Write Failed!\n", __FILE__, __LINE__);
-			return -1;
-		}
 	} else {
 		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
 		return -1;
@@ -655,22 +592,16 @@ write_parameters(void)
 				     CONFIG_PARAMETER_OFFSET :
 				     CONFIG_PARAMETER_OFFSET_REDUND,
 				     PARAMETERS_SIZE, parameters);
-
-		if (0 != rc) {
-			printf("%s:%d - Write Failed!\n", __FILE__, __LINE__);
-			return -1;
-		}
 	} else {
 		printf("%s:%d - Erase Failed!\n", __FILE__, __LINE__);
 		return -1;
 	}
-
 #endif	/* CONFIG_REDUNDANT_PARAMETERS */
 
 #ifdef CONFIG_AXXIA_ARM
 	buffer = parameters;
 
-	for (i = 0; i < (PARAMETERS_SIZE / 4); ++i) {
+	for (i = 0;i < (PARAMETERS_SIZE / 4);++i) {
 		*buffer = ntohl(*buffer);
 		++buffer;
 	}
@@ -692,7 +623,7 @@ release_and_return:
 #endif
 }
 
-#endif /* CONFIG_MEMORY_RETENTION */
+#endif /* CONFIG_WRITE_PARAM_SUPPORT */
 
 /*
   ------------------------------------------------------------------------------
