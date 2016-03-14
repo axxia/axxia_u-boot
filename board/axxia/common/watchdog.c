@@ -64,7 +64,6 @@ start_watchdog(unsigned int timeout)
 		return -2;
 
 	count = (unsigned int)new_count;
-	printf("%s:%d - count is 0x%x\n", __FILE__, __LINE__, count);
 
 	/* Unlock syscon. */
 	writel(0xab, (SYSCON + 0x2000));
