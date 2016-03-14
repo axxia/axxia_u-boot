@@ -493,13 +493,13 @@ nemac_eth_init(struct eth_device *dev, bd_t *board_info)
 	writel(tmp, priv->reg + NEM_DMA_CTL);
 
 	/* Start up the PHY */
+	nemac_link_up(priv, priv->phy_dev);
+
 	if (phy_startup(priv->phy_dev) != 0) {
 		printf("Failed to initialize PHY %s\n",
 		       priv->phy_dev->dev->name);
 		return -1;
 	}
-
-	nemac_link_up(priv, priv->phy_dev);
 
 	/* If there's no link, fail */
 	return priv->phy_dev->link ? 0 : -1;
