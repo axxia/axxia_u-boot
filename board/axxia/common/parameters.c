@@ -44,7 +44,7 @@
 
 static void *parameters __attribute__ ((section("data")));
 static int copy_in_use __attribute__ ((section("data")));
-static int parameters_read __attribute__ ((section("data")));
+static int do_read = 1;
 
 #if defined(CONFIG_AXXIA_PPC)
 /*
@@ -156,12 +156,22 @@ read_parameters(void)
 #endif
 	int rc;
 	struct spi_flash *flash;
+#ifdef CONFIG_REDUNDANT_PARAMETERS
+	int watchdog_timeout;
+	int a_valid;
+	int b_valid;
+	int a_sequence = 0;
+	int b_sequence = 0;
+#endif	/* CONFIG_REDUNDANT_PARAMETERS */
 
 #ifdef CONFIG_SPL_BUILD
-	parameters = (void *)PARAMETERS_ADDRESS;
+	if (1 == do_read)
+		parameters = (void *)PARAMETERS_ADDRESS;
 #else
-	parameters = malloc(PARAMETERS_SIZE);
-	memset(parameters, 0, PARAMETERS_SIZE);
+	if (1 == do_read) {
+		parameters = malloc(PARAMETERS_SIZE);
+		memset(parameters, 0, PARAMETERS_SIZE);
+	}
 #endif
 
 	header = parameters;
@@ -171,6 +181,8 @@ read_parameters(void)
 	  EEPROM contains a valid but incorrect (unusable) parameter
 	  table.
 	*/
+
+#ifdef CONFIG_SPL_BUILD
 
 	/* Verify that the paramater table is valid. */
 	if (0 == verify_parameters(parameters, 1)) {
@@ -221,124 +233,133 @@ read_parameters(void)
 
 			return -1;
 		}
-	} else {
-#ifdef CONFIG_REDUNDANT_PARAMETERS
-		int watchdog_timeout;
-		int a_valid;
-		int b_valid;
-		int a_sequence = 0;
-		int b_sequence = 0;
 
-		ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc,
-			   (ncp_uint32_t *)&watchdog_timeout);
-		watchdog_timeout = ((watchdog_timeout & 0x4) >> 2);
-
-		flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
-					CONFIG_SF_DEFAULT_MODE);
-
-		if (!flash)
-			return -1;
-
-		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
-			       PARAMETERS_SIZE, parameters);
-
-		if (0 == verify_parameters(parameters, 0)) {
-			a_valid = 1;
-			buffer = parameters;
-
-			for (i = 0;i < (PARAMETERS_SIZE / 4);++i) {
-				*buffer = ntohl(*buffer);
-				++buffer;
-			}
-
-			global = (parameters_global_t *)
-				(parameters + header->globalOffset);
-
-			a_sequence = global->sequence;
-		} else {
-			a_valid = 0;
-		}
-
-		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
-			       PARAMETERS_SIZE, parameters);
-
-		if (0 == verify_parameters(parameters, 0)) {
-			b_valid = 1;
-			buffer = parameters;
-
-			for (i = 0;i < (PARAMETERS_SIZE / 4);++i) {
-				*buffer = ntohl(*buffer);
-				++buffer;
-			}
-
-			global = (parameters_global_t *)
-				(parameters + header->globalOffset);
-
-			b_sequence = global->sequence;
-		} else {
-			b_valid = 0;
-		}
-
-		if (0 == a_valid && 0 == b_valid) {
-			acp_failure(__FILE__, __func__, __LINE__);
-		} else if (0 == a_valid && 0 != b_valid) {
-			copy_in_use = 1;
-		} else if (0 != a_valid && 0 == b_valid) {
-			copy_in_use = 0;
-		} else {
-			if (0xffffffff == a_sequence && b_sequence == 0)
-				copy_in_use = 1;
-			else if (b_sequence > a_sequence)
-				copy_in_use = 1;
-			else
-				copy_in_use = 0;
-
-			if (0 != watchdog_timeout)
-				copy_in_use = (0 == copy_in_use) ? 1 : 0;
-		}
-
-		printf("Parameters: Watchdog %d A/B Valid %d/%d A/B Sequence %d/%d => %s\n",
-		       watchdog_timeout, a_valid, b_valid,
-		       a_sequence, b_sequence,
-		       (0 == copy_in_use) ? "A" : "B");
-
-		if (0 == copy_in_use)
-			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
-				       PARAMETERS_SIZE, parameters);
-		else
-			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
-				       PARAMETERS_SIZE, parameters);
-#else  /* CONFIG_REDUNDANT_PARAMETERS */
-		flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
-					CONFIG_SF_DEFAULT_MODE);
-
-		if (!flash)
-			return -1;
-
-		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
-			       PARAMETERS_SIZE, parameters);
-
-		if (0 != verify_parameters(parameters, 0)) {
-			printf("Primary Parameters Corrupt, using Backup!\n");
-
-			/* Try the redunant copy. */
-			spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
-				       PARAMETERS_SIZE, parameters);
-
-			if (0 != verify_parameters(parameters, 0)) {
-				printf("Backup Parameters Corrupt!\n");
-
-				return -1;
-			}
-
-			copy_in_use = 1;
-		} else {
-			copy_in_use = 0;
-		}
-#endif	/* CONFIG_REDUNDANT_PARAMETERS */
+		goto parameters_read;
 	}
 
-	parameters_read = 1;
+#endif	/* CONFIG_SPL_BUILD */
+
+#ifdef CONFIG_REDUNDANT_PARAMETERS
+
+	ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc,
+		   (ncp_uint32_t *)&watchdog_timeout);
+	watchdog_timeout = ((watchdog_timeout & 0x4) >> 2);
+
+	flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
+				CONFIG_SF_DEFAULT_MODE);
+
+	if (!flash)
+		goto parameter_read_failed;
+
+	rc = spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
+			    PARAMETERS_SIZE, parameters);
+
+	if (0 == rc && 0 == verify_parameters(parameters, 0)) {
+		a_valid = 1;
+		buffer = parameters;
+
+		for (i = 0;i < (PARAMETERS_SIZE / 4);++i) {
+			*buffer = ntohl(*buffer);
+			++buffer;
+		}
+
+		global = (parameters_global_t *)
+			(parameters + header->globalOffset);
+
+		a_sequence = global->sequence;
+	} else {
+		a_valid = 0;
+	}
+
+	rc = spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
+			    PARAMETERS_SIZE, parameters);
+
+	if (0 == rc && 0 == verify_parameters(parameters, 0)) {
+		b_valid = 1;
+		buffer = parameters;
+
+		for (i = 0;i < (PARAMETERS_SIZE / 4);++i) {
+			*buffer = ntohl(*buffer);
+			++buffer;
+		}
+
+		global = (parameters_global_t *)
+			(parameters + header->globalOffset);
+
+		b_sequence = global->sequence;
+	} else {
+		b_valid = 0;
+	}
+
+	if (0 == a_valid && 0 == b_valid) {
+		goto parameter_read_failed;
+	} else if (0 == a_valid && 0 != b_valid) {
+		copy_in_use = 1;
+	} else if (0 != a_valid && 0 == b_valid) {
+		copy_in_use = 0;
+	} else {
+		if (0xffffffff == a_sequence && b_sequence == 0)
+			copy_in_use = 1;
+		else if (b_sequence > a_sequence)
+			copy_in_use = 1;
+		else
+			copy_in_use = 0;
+
+		if (0 != watchdog_timeout)
+			copy_in_use = (0 == copy_in_use) ? 1 : 0;
+	}
+
+	printf("Parameters: Watchdog %d A/B Valid %d/%d A/B Sequence %d/%d => %s\n",
+	       watchdog_timeout, a_valid, b_valid,
+	       a_sequence, b_sequence,
+	       (0 == copy_in_use) ? "A" : "B");
+
+	if (0 == copy_in_use)
+		rc = spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
+				    PARAMETERS_SIZE, parameters);
+	else
+		rc = spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
+				    PARAMETERS_SIZE, parameters);
+
+	if (0 != rc)
+		goto parameter_read_failed;
+
+#else  /* CONFIG_REDUNDANT_PARAMETERS */
+
+	flash = spi_flash_probe(0, 0, CONFIG_SF_DEFAULT_SPEED,
+				CONFIG_SF_DEFAULT_MODE);
+
+	if (!flash)
+		goto parameter_read_failed;
+
+	rc = spi_flash_read(flash, CONFIG_PARAMETER_OFFSET,
+			    PARAMETERS_SIZE, parameters);
+
+	if (0 != rc || 0 != verify_parameters(parameters, 0)) {
+		printf("Primary Parameters Corrupt, using Backup!\n");
+
+		/* Try the redunant copy. */
+		rc = spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
+				    PARAMETERS_SIZE, parameters);
+
+		if (0 != rc || 0 != verify_parameters(parameters, 0)) {
+			printf("Backup Parameters Corrupt!\n");
+
+			goto parameter_read_failed;
+		}
+
+		copy_in_use = 1;
+	} else {
+		copy_in_use = 0;
+	}
+
+#endif	/* CONFIG_REDUNDANT_PARAMETERS */
+
+#ifdef CONFIG_SPL_BUILD
+parameters_read:
+#endif
+
+	do_read = 0;
 
 #ifdef CONFIG_AXXIA_ARM
 	buffer = parameters;
@@ -382,20 +403,20 @@ read_parameters(void)
 #ifdef CONFIG_AXXIA_ARM
 	retention = (void *)(parameters + header->systemMemoryRetentionOffset);
 #ifdef CONFIG_MEMORY_RETENTION
-{
-	unsigned value;
-	/*
-	*  we use bit 0 of the persistent scratch register to
-	*  inidicate ddrRetention recovery.
-	*/
-	ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x00dc, &value);
-	sysmem->ddrRecovery = (value & 0x1) ;
-	value &= 0xfffffffe;
-	ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x00dc, value);
+	{
+		unsigned value;
+		/*
+		 *  we use bit 0 of the persistent scratch register to
+		 *  inidicate ddrRetention recovery.
+		 */
+		ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x00dc, &value);
+		sysmem->ddrRecovery = (value & 0x1) ;
+		value &= 0xfffffffe;
+		ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x00dc, value);
 
-	printf("ddrRetentionEnable = %d\n", sysmem->ddrRetentionEnable);
-	printf("ddrRecovery = %d\n", sysmem->ddrRecovery);
-}
+		printf("ddrRetentionEnable = %d\n", sysmem->ddrRetentionEnable);
+		printf("ddrRecovery = %d\n", sysmem->ddrRecovery);
+	}
 #endif
 #endif
 
@@ -417,9 +438,17 @@ read_parameters(void)
 	}
 
 	return 0;
+
+parameter_read_failed:
+
+#ifndef CONFIG_SPL_BUILD
+	free(parameters);
+#endif
+
+	return -1;
 }
 
-#if CONFIG_MEMORY_RETENTION
+#ifdef CONFIG_MEMORY_RETENTION
 
 /*
   ------------------------------------------------------------------------------
@@ -436,7 +465,7 @@ write_parameters(void)
 	int i;
 	int rc = -1;
 
-	if (0 == parameters_read) {
+	if (1 == do_read) {
 		printf("Parameters haven't been read!\n");
 		return -1;
 	}

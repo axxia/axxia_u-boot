@@ -35,11 +35,30 @@ sysmem_size(void)
 	unsigned long long sdram_capacity_bytes;
 	unsigned long sdram_device_width_bits;
 	unsigned long primary_bus_width_bits;
+#ifndef CONFIG_SPL_BUILD
+	int rc;
+#endif
+
+#ifdef CONFIG_AXXIA_EMU
+	sysmem->totalSize = 4ULL * (1ULL << 30);
+
+	return sysmem->totalSize;
+#endif
 
 #ifndef CONFIG_SPL_BUILD
-	if (0 != read_parameters())
+	rc = read_parameters();
+
+#ifdef CONFIG_AXXIA_SIM
+	if (0 != rc) {
+		sysmem->totalSize = 4ULL * (1ULL << 30);
+
+		return sysmem->totalSize;
+	}
+#else  /* CONFIG_AXXIA_SIM */
+	if (0 != rc)
 		acp_failure(__FILE__, __FUNCTION__, __LINE__);
-#endif
+#endif	/* CONFIG_AXXIA_SIM */
+#endif	/* CONFIG_SPL_BUILD */
 
 	sdram_capacity_bytes =
 		(1 << sysmem->sdram_device_density) *
