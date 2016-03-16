@@ -100,6 +100,7 @@ axxia_initialize(void)
 
 	serial_initialize();
 	serial_init();
+	axxia_display_clocks();
 
 	/*
 	  =============
