@@ -40,6 +40,8 @@ static int clocks_uninitialized = 1;
 #ifndef CONFIG_AXXIA_EMU
 #ifdef CONFIG_SPL_BUILD
 
+static ncp_uint32_t get_pll(ncp_uint32_t, ncp_uint32_t);
+
 /*
   ------------------------------------------------------------------------------
   pll_init_frac
@@ -227,6 +229,32 @@ clocks_init( void )
 	clocks_uninitialized = 0;
 #endif
 
+	/* Update cntfrq_el0 to Contain the System Clock */
+#if defined(CONFIG_SPL_BUILD)
+	{
+		unsigned long frequency;
+		unsigned csw;
+		unsigned div;
+
+		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &csw);
+
+		if (0 == (csw & 0x0000000c)) {
+			frequency = CLK_REF0 / 1000;
+		} else if (1 == (csw & 0x0000000c) >> 2) {
+			ncr_read32(NCP_REGION_ID(0x155,8), 0x0, &div);
+			frequency = get_pll(div, 1);
+		} else {
+			ncr_read32(NCP_REGION_ID(0x155,8), 0x0, &div);
+			frequency = get_pll(div, 2);
+		}
+
+		frequency *= 1000;
+
+		asm volatile("msr cntfrq_el0, %0"
+			     : : "r" (frequency) : "memory");
+	}
+#endif
+
 	return 0;
 }
 
@@ -261,12 +289,24 @@ get_pll(ncp_uint32_t plldiv, ncp_uint32_t seldiv)
 int
 acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 {
+	/*
+	  If the system clock is requested, return the value stored in
+	  cntfrq_el0.
+	*/
+
+	if (clock_system == clock) {
+		unsigned long cntfrq;
+
+		asm volatile("mrs %0, cntfrq_el0" : "=r" (cntfrq));
+		cntfrq /= 1000;
+		*frequency = (ncp_uint32_t)cntfrq;
+
+		return 0;
+	}
+
 #if defined(CONFIG_AXXIA_EMU)
 
 	switch (clock) {
-	case clock_system:
-		*frequency = 4096;
-		break;
 	case clock_peripheral:
 		*frequency = 2000;
 		break;
@@ -293,9 +333,6 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 
 	if (0 != clocks_uninitialized) {
 		switch (clock) {
-		case clock_system:
-			*frequency = 500000;
-			break;
 		case clock_peripheral:
 			*frequency = 250;
 			break;
@@ -413,6 +450,7 @@ axxia_display_clocks(void)
 	ncp_uint32_t loss_count;
 
 	printf("\n== PLL/Clock Speeds ==\n");
+
 	acp_clock_get(clock_system, &speed);
 	speed /= 1000;
 	printf("        System: %4u MHz Loss of Lock Count ", speed);
