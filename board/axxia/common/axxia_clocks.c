@@ -37,107 +37,78 @@ unsigned int pfuse __attribute__ ((section ("data")));
 #ifndef CONFIG_AXXIA_EMU
 #ifdef CONFIG_SPL_BUILD
 
-#define PARAMETERS_CLOCKS_55XX_1P0_HARDCODE     0x00000001
-
 /*
   ------------------------------------------------------------------------------
-  pll_init_5500
+  pll_init_frac
 */
 
-#define PARAMETER_MASK 0x3ffffff
-#define CONTROL_MASK 0x3df300
-
 static int
-pll_init_5500(ncp_uint32_t region, ncp_uint32_t *parameters)
+pll_init_frac(ncp_uint32_t region, ncp_uint32_t *parameters)
 {
-	int i, timeout = 10000;
-	ncp_uint32_t value, prms;
+	int timeout = 10000;
+	ncp_uint32_t ctrl, value;
 
-	/*
-	  Set the parameter value and reset the PLL, with
-	  bypass and bypass_select (in the control register), set.
+    /* Assert all power down bits and put the PLL in bypass.  */
+    ctrl = 0x0000007f;
+	ncr_write32(region, 0x08, ctrl);
 
-	  Enable the PLL.
-	*/
-	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0xc00);
-	prms = (parameters[0] & PARAMETER_MASK) | 0x80000000;
-	ncr_write32(region, 0x0, prms);
-	udelay(100);
-	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0xc02);
+    /* Check if the PLL should be programmed */
+    if (!(parameters[0] & 0x0001)) {
+        return 0;
+    }
 
-	/*
-	  Enable clock_sync for DDR PLLs
-	*/
+	/* Set divider values.  */
+	ncr_write32(region, 0x00, parameters[1]);
 
-	if ((region == NCP_REGION_ID(0x155, 6)) ||
-	    (region == NCP_REGION_ID(0x155, 7)) ||
-	    (region == NCP_REGION_ID(0x155, 8))) {
-		prms |= 0x40000000;
-		ncr_write32(region, 0x0, prms);
-	}
+    /* If in fractional mode, write the fraction */
+    if (parameters[0] & 0x0100) {
+        ncr_write32(region, 0x00, parameters[2]);
+    }
+    
+    /* Clear loss of lock counter and interrupts */
+    ncr_write32(region, 0x0c, 0x0);
+    ncr_write32(region, 0x10, 0x7);
 
-	/*
-	  Wait for pll_locked.
-	*/
+    /* Set control if using external FB divider */
+    if (parameters[0] & 0x1000) {
+        ctrl |= 0x100;
+        ncr_write32(region, 0x08, ctrl);
+    }
+
+    /* Insure at least 1us between deassert/assert of PD bits */
+    udelay(1);
+
+    /* De-assert pll PD, as well as DACPD and DSMPD in fractional mode */
+    ctrl &= ~0x40;
+    if (parameters[0] & 0x0100) {
+        ctrl &= ~0x30;
+    }
+	ncr_write32(region, 0x08, ctrl);
+
+	/* Wait for PLL Lock indication */
+    udelay(1);
 	do {
 		ncr_read32(region, 0x20, &value);
 	} while ((0 == (value & 0x80000000) &&
 		  (0 < --timeout)));
 
 	if (0 == timeout)
-		return -1;
+        return -1;
 
-	/*
-	  Clear bypass.
-	*/
-	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0x402);
+	/* Take the PLL out of bypass */
+    ctrl &= ~0x01;
+	ncr_write32(region, 0x08, ctrl);
 
-	/*
-	  Clear the lock loss count and interrupt, and enable the count.
-	*/
-	ncr_write32(region, 0xc, 0);
-	ncr_write32(region, 0x10, 1);
-	prms |= 0x20000000;
-	ncr_write32(region, 0x0, prms);
+	/* De-assert Fout PD bits */
+    ctrl &= ~0x0c;
+	ncr_write32(region, 0x08, ctrl);
 
-	/*
-	  Set the divider and switch the clocks
-	  CPUPLL has multiple switches.
-	*/
-	if (region == NCP_REGION_ID(0x155, 4)) {
-		/* CPUPLL */
-		if (0 != parameters[3]) {
-			ncr_write32(NCP_REGION_ID(0x156,0), 0x8, parameters[3]);
-			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &value);
-			value |= 0x100000;
-			ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
-			value &= ~0x100000;
-			ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
-		}
-		if (0 != parameters[2]) {
-			/* Switch the cluster clocks individually */
-			value = 0;
-			for (i = 0; i < 4; i++) {
-				value |= parameters[2] & (0x3 << (i * 2));
-				ncr_write32(NCP_REGION_ID(0x156,0), 0x0, value);
-				udelay(parameters[4]);
-			}
-		}
-	} else {
-		if (0 != parameters[3]) {
-			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &value);
-			value |= parameters[3];
-			ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
-			value &= ~0x100000;
-			ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
-		}
-		if (0 != parameters[2]) {
-			ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &value);
-			value |= parameters[2];
-			ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
-			udelay(parameters[4]);
-		}
-	}
+	/* Enable loss of lock counter */
+    if ((parameters[0] & 0x0010)) {
+        ctrl |= 0x80;
+        ncr_write32(region, 0x08, ctrl);
+    }
+    udelay(parameters[3]);
 
 	return 0;
 }
@@ -150,35 +121,32 @@ pll_init_5500(ncp_uint32_t region, ncp_uint32_t *parameters)
 int
 clocks_init( void )
 {
-	ncp_uint32_t value;
+	ncp_uint32_t value, i;
 
 #ifdef DISPLAY_PARAMETERS
 	printf("-- -- Clocks\n"
-	       "0x%x\n"
-	       "0x%x 0x%x 0x%x 0x%x 0x%x\n"
-	       "0x%x 0x%x 0x%x 0x%x 0x%x\n"
-	       "0x%x 0x%x 0x%x 0x%x 0x%x\n"
-	       "0x%x 0x%x 0x%x 0x%x 0x%x\n"
-	       "0x%x 0x%x 0x%x 0x%x 0x%x\n"
-	       "0x%x 0x%x 0x%x 0x%x 0x%x\n"
+	       "0x%x, 0x%x\n"
 	       "0x%x 0x%x 0x%x 0x%x\n"
-	       "0x%x 0x%x 0x%x 0x%x\n",
-	       clocks->flags,
-	       clocks->syspll_prms, clocks->syspll_ctrl, clocks->syspll_csw,
-	       clocks->syspll_div, clocks->syspll_psd, clocks->cpupll_prms,
-	       clocks->cpupll_ctrl, clocks->cpupll_csw, clocks->cpupll_div,
-	       clocks->cpupll_psd, clocks->sm0pll_prms, clocks->sm0pll_ctrl,
-	       clocks->sm0pll_csw, clocks->sm0pll_div, clocks->sm0pll_psd,
-	       clocks->sm1pll_prms, clocks->sm1pll_ctrl, clocks->sm1pll_csw,
-	       clocks->sm1pll_div, clocks->sm1pll_psd, clocks->tmpll_prms,
-	       clocks->tmpll_ctrl, clocks->tmpll_csw, clocks->tmpll_div,
-	       clocks->tmpll_psd, clocks->fabpll_prms, clocks->fabpll_ctrl,
-	       clocks->fabpll_csw, clocks->fabpll_div, clocks->fabpll_psd,
-	       clocks->nrcpinput_csw, clocks->nrcpinput_div,
-	       clocks->per_csw, clocks->per_div, clocks->emmc_csw,
-	       clocks->emmc_div, clocks->debug_csw, clocks->stop_csw);
+	       "0x%x 0x%x 0x%x 0x%x\n"
+	       "0x%x 0x%x 0x%x 0x%x\n"
+	       "0x%x 0x%x 0x%x 0x%x\n"
+	       "0x%x 0x%x 0x%x 0x%x\n"
+	       "0x%x 0x%x 0x%x 0x%x\n"
+	       "0x%x 0x%x 0x%x 0x%x\n"
+	       "0x%x 0x%x\n",
+	       clocks->version, clocks->flags,
+	       clocks->syspll_flags, clocks->syspll_div, clocks->syspll_frac,
+	       clocks->syspll_psd, clocks->cpupll_flags, clocks->cpupll_div,
+           clocks->cpupll_frac, clocks->cpupll_psd, clocks->sm0pll_flags,
+           clocks->sm0pll_div, clocks->sm0pll_frac, clocks->sm0pll_psd,
+	       clocks->sm1pll_flags, clocks->sm1pll_div, clocks->sm1pll_frac,
+	       clocks->sm1pll_psd, clocks->tm0pll_flags, clocks->tm0pll_div,
+           clocks->tm0pll_frac, clocks->tm0pll_psd, clocks->fabpll_flags,
+           clocks->fabpll_div, clocks->fabpll_frac, clocks->fabpll_psd,
+           clocks->nrcp0pll_flags, clocks->nrcp0pll_div, clocks->nrcp0pll_frac,
+           clocks->nrcp0pll_psd,
+	       clocks->cpu_csw, clocks->sys_csw);
 #endif
-
 
 	/*
 	  ----------------------------------------------------------------------
@@ -186,123 +154,71 @@ clocks_init( void )
 	  ----------------------------------------------------------------------
 	*/
 
-	/* fabpll */
-	if ((0 == ((pfuse & 0x7e0) >> 5)) &&
-	    (clocks->flags & PARAMETERS_CLOCKS_55XX_1P0_HARDCODE))
-	{
-		clocks->fabpll_prms = 0x20000d1;
-		clocks->fabpll_ctrl = 0x20c100;
-		clocks->fabpll_csw  = 0x10;
-		clocks->fabpll_div  = 0x0;
-	}
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 3), &clocks->fabpll_prms))
+    /* sm0pll */
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 6), &clocks->sm0pll_flags))
 		return -1;
-
 
 	/* cpupll */
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 4), &clocks->cpupll_prms))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 7), &clocks->cpupll_flags))
 		return -1;
-
-	/* Debug Clock Setup */
-	ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &value);
-	value |= clocks->debug_csw;
-	value |= clocks->stop_csw;
-	ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
 
 	/* syspll */
-	if ((0 == ((pfuse & 0x7e0) >> 5)) &&
-	    (clocks->flags & PARAMETERS_CLOCKS_55XX_1P0_HARDCODE))
-	{
-		clocks->syspll_prms = 0x2981804;
-		clocks->syspll_ctrl = 0x209100;
-		clocks->syspll_csw  = 0x4;
-		clocks->syspll_div  = 0x0;
-	}
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 5), &clocks->syspll_prms))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 8), &clocks->syspll_flags))
 		return -1;
 
-	/* NRCP input clock select */
-	if (0 != clocks->nrcpinput_div) {
-		ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &value);
-		value |= clocks->nrcpinput_div;
-		ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
-		value &= ~0x100000;
-		ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
-	}
-
-	if (0 != clocks->nrcpinput_csw) {
-		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &value);
-		value |= clocks->nrcpinput_csw;
-		ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
-		udelay(clocks->cpupll_psd);
-	}
-
-	/* 
-	 * DDR  - only do this if we are not doing retention reset 
-	*/
-
-	if (0 == sysmem->ddrRecovery) {
-		/*
-		  Enable protected writes and put the DDRs in reset.
-		  0x156.0.0x1038 - Reset Module Register
-		  smem[0,1]_phy_rst, smem[0,1]_phy_io_rst
-		  cmem_phy_rst, cmem[0,1]_phy_io_rst
-		*/
-		ncr_write32(NCP_REGION_ID(0x156, 0), 0x1000, 0x000000ab);
-		ncr_write32(NCP_REGION_ID(0x156, 0), 0x1038, 0x01e00000);
-		ncr_write32(NCP_REGION_ID(0x156, 0), 0x103c, 0x24000008);
-		udelay(1000);
-
-
-		/* sm0pll */
-		if (0 != pll_init_5500(NCP_REGION_ID(0x155, 6), &clocks->sm0pll_prms))
-			return -1;
-
-		/* sm1pll */
-		if (0 != pll_init_5500(NCP_REGION_ID(0x155, 7), &clocks->sm1pll_prms))
-			return -1;
-	}
-
-	/* Set the peripheral clock */
-	if (0 != clocks->per_div) {
-		ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &value);
-		value |= clocks->per_div;
-		ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
-		value &= ~0x100000;
-		ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
-	}
-	if (0 != clocks->per_csw) {
-		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &value);
-		value |= clocks->per_csw;
-		ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
-		udelay(clocks->sm1pll_psd);
-	}
-
-	/* Set the emmc clock */
-	if (0 != clocks->emmc_div) {
-		ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &value);
-		value |= clocks->emmc_div;
-		ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
-		value &= ~0x100000;
-		ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
-	}
-	if (0 != clocks->emmc_csw) {
-		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &value);
-		value |= clocks->emmc_csw;
-		ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
-		udelay(clocks->sm1pll_psd);
-	}
+	/* fabpll */
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 9), &clocks->fabpll_flags))
+		return -1;
 
 	/* tm0pll */
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 8), &clocks->tmpll_prms))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x165, 0), &clocks->tm0pll_flags))
 		return -1;
 
-	/*
-	  Take DDRs out of reset and disable protected writes.
-	*/
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x1038, 0x0);
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x103c, 0x0);
-	ncr_write32(NCP_REGION_ID(0x156, 0), 0x1000, 0x0);
+    /* sm1pll */
+    if (0 != pll_init_frac(NCP_REGION_ID(0x165, 1), &clocks->sm1pll_flags))
+			return -1;
+
+
+    /* CPU switch. Switch the 4 CPU cluster clocks individually */
+    value = 0;
+    for (i = 0; i < 4; i++) {
+        value |= clocks->cpu_csw & (0x3 << (i * 2));
+        ncr_write32(NCP_REGION_ID(0x156,0), 0x0, value);
+        udelay(clocks->cpupll_psd);
+    }
+
+    /* SYS/FAB switch. Switch System and FAB clocks individually */
+    value = 0;
+
+    /* clk_sys (bits 3:2) */
+    value |= clocks->sys_csw & 0x00C;
+    ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
+    udelay(clocks->syspll_psd);
+
+    /* clk_fab (bits 5:4) */
+    value |= clocks->sys_csw & 0x030;
+    ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
+    udelay(clocks->fabpll_psd);
+
+    /* clk_gic (bits 8:7) */
+    value |= clocks->sys_csw & 0x180;
+    ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
+    udelay(clocks->syspll_psd);
+
+    /* clk_atclk (bits 10:9) */
+    value |= clocks->sys_csw & 0x600;
+    ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
+    udelay(clocks->syspll_psd);
+
+    /* clk_nuevo (bit 11) */
+    value |= clocks->sys_csw & 0x800;
+    ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
+    udelay(clocks->syspll_psd);
+
+    /* clk_per (bit 6) */
+    value |= clocks->sys_csw & 0x040;
+    ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
+    udelay(clocks->syspll_psd);
 
 	return 0;
 }
@@ -311,21 +227,20 @@ clocks_init( void )
 
 #ifndef CONFIG_AXXIA_SIM
 static ncp_uint32_t
-get_pll(ncp_uint32_t prms, ncp_uint32_t seldiv)
+get_pll(ncp_uint32_t plldiv, ncp_uint32_t seldiv)
 {
 	ncp_uint32_t frequency;
-	ncp_uint32_t postdiv;
+	ncp_uint32_t postdiv1, postdiv2;
 	ncp_uint32_t fbdiv;
 	ncp_uint32_t refdiv;
 
-	postdiv = (prms & 0xf) + 1;
-	fbdiv = ((prms & 0xfff0) >> 4) + 3;
-	refdiv = ((prms & 0x1f0000) >> 16) + 1;
+	fbdiv = plldiv & 0xfff;
+	refdiv = (plldiv & 0x3f000) >> 12;
+	postdiv2 = (plldiv & 0x1c0000) >> 18;
+	postdiv1 = (plldiv & 0xe00000) >> 21;
 	frequency =  CLK_REF0 / 1000;
-	frequency *= fbdiv;
-	frequency /= refdiv;
-	frequency /= postdiv;
-	frequency /= seldiv;
+	frequency *= fbdiv; /* Can't account for the fraction with integer math */
+	frequency /= (refdiv * postdiv1 * postdiv2 * seldiv);
 
 	return frequency;
 }
@@ -389,7 +304,6 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 #else
 	ncp_uint32_t csw;
 	ncp_uint32_t div;
-	ncp_uint32_t prms;
 
 	switch (clock) {
 	case clock_fab:
@@ -397,29 +311,26 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 
 		if (0 == (csw & 0x00000030)) {
 			*frequency = CLK_REF0 / 1000;
-		} else if (1 == (csw & 0x00000030)) {
-			ncr_read32(NCP_REGION_ID(0x155,3), 0x0, &prms);
-			*frequency = get_pll(prms, 1);
+		} else if (1 == (csw & 0x00000030) >> 4) {
+			ncr_read32(NCP_REGION_ID(0x155,9), 0x0, &div);
+			*frequency = get_pll(div, 1);
 		} else {
-			ncr_read32(NCP_REGION_ID(0x155,3), 0x0, &prms);
-			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &div);
-			*frequency = get_pll(prms,
-					     ((div & 0xf00) >> 8) + 1);
+			ncr_read32(NCP_REGION_ID(0x155,9), 0x0, &div);
+			*frequency = get_pll(div, 2);
 		}
 		break;
+
 	case clock_system:
 		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &csw);
 
 		if (0 == (csw & 0x0000000c)) {
 			*frequency = CLK_REF0 / 1000;
-		} else if (1 == (csw & 0x0000000c)) {
-			ncr_read32(NCP_REGION_ID(0x155,5), 0x0, &prms);
-			*frequency = get_pll(prms, 1);
+		} else if (1 == (csw & 0x0000000c) >> 2) {
+			ncr_read32(NCP_REGION_ID(0x155,8), 0x0, &div);
+			*frequency = get_pll(div, 1);
 		} else {
-			ncr_read32(NCP_REGION_ID(0x155,5), 0x0, &prms);
-			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &div);
-			*frequency = get_pll(prms,
-					     ((div & 0xf0) >> 4) + 1);
+			ncr_read32(NCP_REGION_ID(0x155,8), 0x0, &div);
+			*frequency = get_pll(div, 2);
 		}
 		break;
 
@@ -429,23 +340,22 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 		if (0 == (csw & 0x00000003)) {
 			*frequency = CLK_REF0 / 1000;
 		} else if (1 == (csw & 0x00000003)) {
-			ncr_read32(NCP_REGION_ID(0x155,4), 0x0, &prms);
-			*frequency = get_pll(prms, 1);
+			ncr_read32(NCP_REGION_ID(0x155,7), 0x0, &div);
+			*frequency = get_pll(div, 1);
 		} else {
-			ncr_read32(NCP_REGION_ID(0x155,4), 0x0, &prms);
-			ncr_read32(NCP_REGION_ID(0x156,0), 0x8, &div);
-			*frequency = get_pll(prms, (div & 0xf) + 1);
+			ncr_read32(NCP_REGION_ID(0x155,7), 0x0, &div);
+			*frequency = get_pll(div, 2);
 		}
 		break;
 
 	case clock_memory:   /* returns sm0 speed */
-		ncr_read32(NCP_REGION_ID(0x155,6), 0x0, &prms);
-		*frequency = get_pll(prms, 1);
+		ncr_read32(NCP_REGION_ID(0x155,6), 0x0, &div);
+		*frequency = get_pll(div, 1);
 		break;
 
 	case clock_treemem:
-		ncr_read32(NCP_REGION_ID(0x155,8), 0x0, &prms);
-		*frequency = get_pll(prms, 1);
+		ncr_read32(NCP_REGION_ID(0x165,0), 0x0, &div);
+		*frequency = get_pll(div, 1);
 		break;
 
 	case clock_peripheral:
@@ -454,23 +364,19 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 		if (0 == (csw & 0x00000040)) {
 			*frequency = CLK_REF0 / 1000;
 		} else {
-			ncr_read32(NCP_REGION_ID(0x155,7), 0x0, &prms);
-			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &div);
-			*frequency = get_pll(prms,
-					     ((div & 0xf000) >> 12) + 1);
+			ncr_read32(NCP_REGION_ID(0x155,8), 0x0, &div);
+            *frequency = get_pll(div, 2);
 		}
 		break;
 
 	case clock_emmc:
 		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &csw);
 
-		if (0 == (csw & 0x00000100)) {
-			*frequency = CLK_REF0 / 1000;
+		if (0 == (csw & 0x00000040)) {
+			*frequency = CLK_REF0 / (1000 * 5);
 		} else {
-			ncr_read32(NCP_REGION_ID(0x155,7), 0x0, &prms);
-			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &div);
-			*frequency = get_pll(prms,
-					     ((div & 0xf0000) >> 16) + 1);
+			ncr_read32(NCP_REGION_ID(0x155,8), 0x0, &div);
+            *frequency = get_pll(div, (2 * 5));
 		}
 		break;
 
@@ -492,43 +398,75 @@ void
 axxia_display_clocks(void)
 {
 	ncp_uint32_t speed;
-	ncp_uint32_t loss_count0;
-	ncp_uint32_t loss_count1;
+	ncp_uint32_t ctrl;
+	ncp_uint32_t loss_count;
 
+    printf("\nClock Speeds:\n");
 	acp_clock_get(clock_system, &speed);
 	speed /= 1000;
-	ncr_read32(NCP_REGION_ID(0x155, 5), 0xc, &loss_count0);
-	printf("    System: %4u MHz Loss of Lock Count %u\n",
-	       speed, loss_count0);
+    printf("    System: %4u MHz Loss of Lock Count ", speed);
+	ncr_read32(NCP_REGION_ID(0x155, 8), 0x8, &ctrl);
+    if (0 == (ctrl & 0x80))
+        printf("Disabled\n");
+    else {
+        ncr_read32(NCP_REGION_ID(0x155, 8), 0xc, &loss_count);
+        printf("%u\n", loss_count);
+    }
 
 	acp_clock_get(clock_core, &speed);
 	speed /= 1000;
-	ncr_read32(NCP_REGION_ID(0x155, 4), 0xc, &loss_count0);
-	printf("       Cpu: %4u MHz Loss of Lock Count %u\n",
-	       speed, loss_count0);
+    printf("    CPU: %4u MHz Loss of Lock Count ", speed);
+	ncr_read32(NCP_REGION_ID(0x155, 7), 0x8, &ctrl);
+    if (0 == (ctrl & 0x80))
+        printf("Disabled\n");
+    else {
+        ncr_read32(NCP_REGION_ID(0x155, 7), 0xc, &loss_count);
+        printf("%u\n", loss_count);
+    }
 
 	acp_clock_get(clock_memory, &speed);
 	speed /= 1000;
-	ncr_read32(NCP_REGION_ID(0x155, 6), 0xc, &loss_count0);
-	ncr_read32(NCP_REGION_ID(0x155, 7), 0xc, &loss_count1);
-	printf("    Memory: %4u MHz Loss of Lock Count %u/%u\n",
-	       speed, loss_count0, loss_count1);
+    printf("    Memory: %4u MHz Loss of Lock Count ", speed);
+	ncr_read32(NCP_REGION_ID(0x155, 6), 0x8, &ctrl);
+    if (0 == (ctrl & 0x80))
+        printf("Disabled / ");
+    else {
+        ncr_read32(NCP_REGION_ID(0x155, 6), 0xc, &loss_count);
+        printf("%u / ", loss_count);
+    }
+	ncr_read32(NCP_REGION_ID(0x165, 1), 0x8, &ctrl);
+    if (0 == (ctrl & 0x80))
+        printf("Disabled\n");
+    else {
+        ncr_read32(NCP_REGION_ID(0x165, 1), 0xc, &loss_count);
+        printf("%u\n", loss_count);
+    }
 
 	acp_clock_get(clock_fab, &speed);
 	speed /= 1000;
-	ncr_read32(NCP_REGION_ID(0x155, 3), 0xc, &loss_count0);
-	printf("    Fabric: %4u MHz Loss of Lock Count %u\n",
-	       speed, loss_count0);
+    printf("    Fabric: %4u MHz Loss of Lock Count ", speed);
+	ncr_read32(NCP_REGION_ID(0x155, 9), 0x8, &ctrl);
+    if (0 == (ctrl & 0x80))
+        printf("Disabled\n");
+    else {
+        ncr_read32(NCP_REGION_ID(0x155, 9), 0xc, &loss_count);
+        printf("%u\n", loss_count);
+    }
 
 	acp_clock_get(clock_treemem, &speed);
 	speed /= 1000;
-	ncr_read32(NCP_REGION_ID(0x155, 8), 0xc, &loss_count0);
-	printf("      Tree: %4u MHz Loss of Lock Count %u\n",
-	       speed, loss_count0);
+    printf("    Tree: %4u MHz Loss of Lock Count ", speed);
+	ncr_read32(NCP_REGION_ID(0x165, 0), 0x8, &ctrl);
+    if (0 == (ctrl & 0x80))
+        printf("Disabled\n");
+    else {
+        ncr_read32(NCP_REGION_ID(0x165, 0), 0xc, &loss_count);
+        printf("%u\n", loss_count);
+    }
 
 	acp_clock_get(clock_peripheral, &speed);
 	speed /= 1000;
-	printf("Peripheral: %4u MHz\n", speed);
+	printf("    Peripheral: %4u MHz\n", speed);
 
 	acp_clock_get(clock_emmc, &speed);
 	speed /= 1000;
