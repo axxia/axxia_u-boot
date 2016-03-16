@@ -33,6 +33,7 @@
   ==============================================================================
 */
 
+#define COUNTER_FREQUENCY  128000000
 #define CONFIG_BAUDRATE    9600
 #define WATCHDOG_TIMEOUT_SECS 240
 
@@ -262,6 +263,7 @@
   ==============================================================================
 */
 
+#define COUNTER_FREQUENCY  5120000
 #define CONFIG_BAUDRATE    9600
 #define WATCHDOG_TIMEOUT_SECS 1000
 
@@ -342,6 +344,7 @@
   ==============================================================================
 */
 
+#define COUNTER_FREQUENCY  256000000
 #define DEFAULT_SDCR_VALUE 0x00080a02
 #define CONFIG_BAUDRATE    9600
 #define WATCHDOG_TIMEOUT_SECS 240
@@ -1422,7 +1425,6 @@ extern volatile unsigned long *crumbs;
 extern volatile unsigned long long *scratch;
 #endif
 
-#define COUNTER_FREQUENCY 256000000
 #define CPU_RELEASE_ADDR 0x400000
 
 #define CONFIG_SYS_GENERIC_BOARD

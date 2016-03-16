@@ -43,7 +43,7 @@
   ==============================================================================
 */
 
-#define COUNTER_FREQUENCY 128000000
+#define COUNTER_FREQUENCY 500000000
 #define CONFIG_BAUDRATE   9600
 #define WATCHDOG_TIMEOUT_SECS 240
 
@@ -312,7 +312,7 @@
   ==============================================================================
 */
 
-#define COUNTER_FREQUENCY 256000000
+#define COUNTER_FREQUENCY 5000000
 #define CONFIG_BAUDRATE   9600
 #define WATCHDOG_TIMEOUT_SECS 1000
 
