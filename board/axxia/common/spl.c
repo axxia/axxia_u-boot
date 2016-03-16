@@ -530,11 +530,6 @@ check_memory_ranges(void)
 		end *= 0x100000;
 		end = offset + end;
 
-		printf("--> global->flags=0x%x 0x%x 0x%x\n",
-		       global->flags,
-		       PARAMETERS_GLOBAL_ENABLE_SW_MEM_ECC_TEST,
-		       PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST);
-
 		if (global->flags & PARAMETERS_GLOBAL_ENABLE_SW_MEM_DATA_TEST)
 			spl_mtest((unsigned long *)offset,
 				  (unsigned long *)end,
