@@ -406,7 +406,7 @@ parameters_read:
 #ifdef CONFIG_AXXIA_ARM
 	retention = (void *)(parameters + header->systemMemoryRetentionOffset);
 #ifdef CONFIG_MEMORY_RETENTION
-	{
+	if (0 != (global->flags & PARAMETERS_GLOBAL_ENABLE_RETENTION)) {
 		unsigned value;
 		/*
 		 *  we use bit 0 of the persistent scratch register to
@@ -417,8 +417,10 @@ parameters_read:
 		value &= 0xfffffffe;
 		ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x00dc, value);
 
-		printf("ddrRetentionEnable = %d\n", sysmem->ddrRetentionEnable);
-		printf("ddrRecovery = %d\n", sysmem->ddrRecovery);
+		printf("DDR Retention Enabled, Recovery = %d\n",
+		       sysmem->ddrRecovery);
+	} else {
+		printf("DDR Retention Not Enabled\n");
 	}
 #endif
 #endif
