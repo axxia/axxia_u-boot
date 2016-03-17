@@ -964,6 +964,12 @@ board_init_f(ulong dummy)
 		puts("Failed to start watchdog timer!\n");
 #endif	/* CONFIG_HW_WATCHDOG */
 
+#if defined(CONFIG_AXXIA_XLF) || defined(CONFIG_AXXIA_XLF_EMU)
+	/* Set the default TTYPE for NCAP (v3 only, XLF). */
+	writel(0x22002ba1, 0x800404024c);
+	writel(0x120a122f, 0x800404028c);
+#endif
+
 #ifdef CONFIG_AXXIA_USB
 	/*
 	  Set the optional PHY registers.  Note that these values only
