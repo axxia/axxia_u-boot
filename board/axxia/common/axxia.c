@@ -189,14 +189,7 @@ board_early_init_f(void)
 {
 	unsigned int el;
 
-	/*
-	  The bootROM code leaves SPI device 0 selected, BZ 45907.
-	  Deselect here.
-	*/
-
-	writel(0x1f, (ncp_uint32_t *)(SSP + SSP_CSR));
-
-	gd->ram_size = 0x40000000;
+	gd->ram_size = CONFIG_MAX_MEM_MAPPED;
 
 	serial_init();
 	gd->have_console = 1;
@@ -211,6 +204,7 @@ board_early_init_f(void)
 #else
 	printf("\n\nAxxia Version: UNKNOWN");
 #endif
+
 	asm volatile("mrs %0, CurrentEL" : "=r" (el));
 
 	if (0xc == el)
@@ -239,8 +233,9 @@ arch_early_init_r(void)
 	  System Memory Size
 	*/
 
-	printf("Sysmem Size: %llu Mb\n",
+	printf("Sysmem Size: %llu MB\n",
 	       (sysmem_size() / (1024ULL * 1024ULL)));
+	debug("Relocation Address: 0x%lx\n", gd->relocaddr);
 
 	return 0;
 }

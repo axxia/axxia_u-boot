@@ -4101,6 +4101,9 @@ void ncr_disable( void );
   ==============================================================================
 */
 
+#define CONFIG_VERY_BIG_RAM
+#define CONFIG_MAX_MEM_MAPPED ((phys_size_t)1 << 30)
+
 /*
   Define the following to add a hook to the SPL that allows diagnostic
   code to be run after initializing system memory but before using it.
