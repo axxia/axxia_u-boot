@@ -164,6 +164,9 @@ read_parameters(void)
 	int b_sequence = 0;
 #endif	/* CONFIG_REDUNDANT_PARAMETERS */
 
+	if (0 == do_read)
+		return 0;
+
 #ifdef CONFIG_SPL_BUILD
 	if (1 == do_read)
 		parameters = (void *)PARAMETERS_ADDRESS;
