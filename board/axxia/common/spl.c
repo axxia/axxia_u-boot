@@ -93,14 +93,14 @@ mtest_data(unsigned long *start, unsigned long *end)
 	int	j;
 
 	static const ulong bitpattern[] = {
-		0x00000001,	/* single bit */
-		0x00000003,	/* two adjacent bits */
-		0x00000007,	/* three adjacent bits */
-		0x0000000F,	/* four adjacent bits */
-		0x00000005,	/* two non-adjacent bits */
-		0x00000015,	/* three non-adjacent bits */
-		0x00000055,	/* four non-adjacent bits */
-		0xaaaaaaaa,	/* alternating 1/0 */
+		0x0000000000000001,	/* single bit */
+		0x0000000000000003,	/* two adjacent bits */
+		0x0000000000000007,	/* three adjacent bits */
+		0x000000000000000F,	/* four adjacent bits */
+		0x0000000000000005,	/* two non-adjacent bits */
+		0x0000000000000015,	/* three non-adjacent bits */
+		0x0000000000000055,	/* four non-adjacent bits */
+		0xaaaaaaaaaaaaaaaa,	/* alternating 1/0 */
 	};
 
 	/*
@@ -207,8 +207,8 @@ mtest_addr(unsigned long *start, unsigned long *end)
 	 * 0 if the test succeeds, 1 if the test fails.
 	 */
 	len = ((ulong)end - (ulong)start)/sizeof(vu_long);
-	pattern = (vu_long) 0xaaaaaaaa;
-	anti_pattern = (vu_long) 0x55555555;
+	pattern = (vu_long) 0xaaaaaaaaaaaaaaaa;
+	anti_pattern = (vu_long) 0x5555555555555555;
 
 	/*
 	 * Write the default pattern at each of the
