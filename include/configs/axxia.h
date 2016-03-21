@@ -4101,8 +4101,13 @@ void ncr_disable( void );
   ==============================================================================
 */
 
-#define CONFIG_VERY_BIG_RAM
-#define CONFIG_MAX_MEM_MAPPED ((phys_size_t)1 << 30)
+/*
+  U-Boot will only use this much memory when relocating, loading
+  images, etc.  The device tree will be updated with the actual size
+  of system memory.
+*/
+
+#define CONFIG_UBOOT_MAX_MEM ((phys_size_t)1 << 30)
 
 /*
   Define the following to add a hook to the SPL that allows diagnostic

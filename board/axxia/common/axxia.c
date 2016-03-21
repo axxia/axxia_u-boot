@@ -189,7 +189,7 @@ board_early_init_f(void)
 {
 	unsigned int el;
 
-	gd->ram_size = CONFIG_MAX_MEM_MAPPED;
+	gd->ram_size = CONFIG_UBOOT_MAX_MEM;
 
 	serial_init();
 	gd->have_console = 1;
@@ -264,6 +264,8 @@ ft_board_setup(void *blob, bd_t *bd)
 	char *ad_value;
 	char *macspeed;
 	ncp_uint32_t tmp;
+	u64 start[CONFIG_NR_DRAM_BANKS];
+	u64 size[CONFIG_NR_DRAM_BANKS];
 
 	/*
 	  Set the PLL/Clock frequencies.
@@ -444,6 +446,14 @@ ft_board_setup(void *blob, bd_t *bd)
 		}
 	}
 #endif
+
+	start[0] = 0;
+	size[0] = sysmem_size();
+	rc = fdt_fixup_memory_banks(blob, start, size, 1);
+
+	if (0 != rc)
+		printf("%s:%d - Couldn't update memory banks!\n",
+		       __FILE__, __LINE__);
 
 #ifdef CONFIG_HW_WATCHDOG
 #ifndef LEAVE_WATCHDOG_ON

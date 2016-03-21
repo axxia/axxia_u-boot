@@ -24,6 +24,8 @@
 
 #include <common.h>
 
+DECLARE_GLOBAL_DATA_PTR;
+
 /*
   ------------------------------------------------------------------------------
   sysmem_size
@@ -50,7 +52,7 @@ sysmem_size(void)
 
 #ifdef CONFIG_AXXIA_SIM
 	if (0 != rc) {
-		sysmem->totalSize = 4ULL * (1ULL << 30);
+		sysmem->totalSize = 16ULL * (1ULL << 30);
 
 		return sysmem->totalSize;
 	}
@@ -72,4 +74,32 @@ sysmem_size(void)
 	sysmem->totalSize = sdram_capacity_bytes;
 
 	return sysmem->totalSize;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  get_effective_memsize
+*/
+
+phys_size_t
+get_effective_memsize(void)
+{
+	printf("%s:%d - \n", __FILE__, __LINE__);
+
+	return CONFIG_UBOOT_MAX_MEM;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  dram_init_banksize
+*/
+
+void
+dram_init_banksize(void)
+{
+	printf("%s:%d - \n", __FILE__, __LINE__);
+	gd->bd->bi_dram[0].start = 0;
+	gd->bd->bi_dram[0].size = CONFIG_UBOOT_MAX_MEM;
+
+	return;
 }
