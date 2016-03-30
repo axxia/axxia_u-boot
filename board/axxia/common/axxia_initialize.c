@@ -78,12 +78,10 @@ axxia_initialize(void)
 	  =======
 	*/
 
-#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
-#if 0
+#if !defined(CONFIG_AXXIA_EMU)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_VOLTAGE))
 		if (0 != voltage_init())
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-#endif
 #endif
 
 	/*
