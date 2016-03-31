@@ -977,6 +977,8 @@ board_init_f(ulong dummy)
 	  controller/phy soft reset.
 	*/
 
+	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE,
+	       SSP_LANE0_ANA_RX_SCOPE_VDCC);
 	writel(COMPDISTUNE0_VALUE, COMPDISTUNE0);
 	writel(OTGTUNE0_VALUE, OTGTUNE0);
 	writel(SQRXTUNE0_VALUE, SQRXTUNE0);

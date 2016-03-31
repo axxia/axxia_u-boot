@@ -355,9 +355,6 @@ static void dwc3_phy_setup(struct dwc3 *dwc)
 	if (dwc->del_p1p2p3_quirk)
 		reg |= DWC3_GUSB3PIPECTL_DEP1P2P3_EN;
 
-	if (dwc->del_phy_power_chg_quirk)
-		reg |= DWC3_GUSB3PIPECTL_DEPOCHANGE;
-
 	if (dwc->lfps_filter_quirk)
 		reg |= DWC3_GUSB3PIPECTL_LFPSFILT;
 
@@ -369,6 +366,14 @@ static void dwc3_phy_setup(struct dwc3 *dwc)
 
 	if (dwc->dis_u3_susphy_quirk)
 		reg &= ~DWC3_GUSB3PIPECTL_SUSPHY;
+
+#ifdef CONFIG_AXXIA_USB_WA_54631
+	reg |= DSC3_GUSB3PIPECTL_DISRXDETP3;
+	reg &= ~DWC3_GUSB3PIPECTL_DEPOCHANGE;
+#else
+	if (dwc->del_phy_power_chg_quirk)
+		reg |= DWC3_GUSB3PIPECTL_DEPOCHANGE;
+#endif
 
 	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
 

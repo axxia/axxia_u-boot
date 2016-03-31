@@ -19,7 +19,7 @@
   ------------------------------------------------------------------------------
 */
 
-/*#define CONFIG_AXXIA_56XX_SIM_V_1_0*/
+
 #define CONFIG_AXXIA_56XX_SIM
 #define CONFIG_AXXIA_SIM
 #define ARM64
@@ -387,6 +387,18 @@
 #define CONFIG_AXXIA_56XX
 #define ARM64
 
+#define CONFIG_AXXIA_AXM_I2C
+
+/*
+ * xHCI model needs powercycling of usb ports, according to standard
+ * define ...USB_POWERCYCLE if uboot should handle this, 
+ * undefine if model is handling it
+*/
+
+#define CONFIG_AXXIA_USB
+#define CONFIG_AXXIA_USB_POWERCYCLE
+#define CONFIG_AXXIA_USB_WA_54631
+
 /*
   ==============================================================================
   ==============================================================================
@@ -548,27 +560,29 @@ int axxia_sysmem_check_ecc(void);
 
 #define AXI2SER6 0x8003800000
 
-#define COMPDISTUNE0       (AXI2SER6 + 0x40000)
-#define OTGTUNE0           (AXI2SER6 + 0x40004)
-#define SQRXTUNE0          (AXI2SER6 + 0x40008)
-#define TXFSLSTUNE0        (AXI2SER6 + 0x4000c)
-#define TXHSXVTUNE0        (AXI2SER6 + 0x40010)
-#define TXPREEMPAMPTUNE0   (AXI2SER6 + 0x40014)
-#define TXPREEMPPULSETUNE0 (AXI2SER6 + 0x40018)
-#define TXRESTUNE0         (AXI2SER6 + 0x4001c)
-#define TXRISETUNE0        (AXI2SER6 + 0x40020)
-#define TXVREFTUNE0        (AXI2SER6 + 0x40024)
+#define SSP_LANE0_ANA_RX_SCOPE_VDCC (AXI2SER6 + 0x4098)
+#define COMPDISTUNE0                (AXI2SER6 + 0x40000)
+#define OTGTUNE0                    (AXI2SER6 + 0x40004)
+#define SQRXTUNE0                   (AXI2SER6 + 0x40008)
+#define TXFSLSTUNE0                 (AXI2SER6 + 0x4000c)
+#define TXHSXVTUNE0                 (AXI2SER6 + 0x40010)
+#define TXPREEMPAMPTUNE0            (AXI2SER6 + 0x40014)
+#define TXPREEMPPULSETUNE0          (AXI2SER6 + 0x40018)
+#define TXRESTUNE0                  (AXI2SER6 + 0x4001c)
+#define TXRISETUNE0                 (AXI2SER6 + 0x40020)
+#define TXVREFTUNE0                 (AXI2SER6 + 0x40024)
 
-#define COMPDISTUNE0_VALUE       4
-#define OTGTUNE0_VALUE           4
-#define SQRXTUNE0_VALUE          3
-#define TXFSLSTUNE0_VALUE        3
-#define TXHSXVTUNE0_VALUE        3
-#define TXPREEMPAMPTUNE0_VALUE   0
-#define TXPREEMPPULSETUNE0_VALUE 0
-#define TXRESTUNE0_VALUE         1
-#define TXRISETUNE0_VALUE        2
-#define TXVREFTUNE0_VALUE        8
+#define SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE 1
+#define COMPDISTUNE0_VALUE                4
+#define OTGTUNE0_VALUE                    4
+#define SQRXTUNE0_VALUE                   3
+#define TXFSLSTUNE0_VALUE                 3
+#define TXHSXVTUNE0_VALUE                 3
+#define TXPREEMPAMPTUNE0_VALUE            0
+#define TXPREEMPPULSETUNE0_VALUE          0
+#define TXRESTUNE0_VALUE                  1
+#define TXRISETUNE0_VALUE                 2
+#define TXVREFTUNE0_VALUE                 8
 
 /*
   ==============================================================================
