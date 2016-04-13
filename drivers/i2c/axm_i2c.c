@@ -450,11 +450,7 @@ i2c_init(int speed, int slave)
 int
 i2c_set_bus_speed(unsigned int speed)
 {
-#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF_SIM)
 	unsigned long long i2c_addr = i2c_base_addr();
-#else
-	unsigned i2c_addr = i2c_base_addr();
-#endif
 	unsigned per_clock;
 	unsigned clk_mhz;
 	unsigned divisor;
