@@ -868,6 +868,35 @@ load_image(void)
 #endif
 	}
 
+#ifdef COUNTER_FREQUENCY_MULTIPLIER
+	/*
+	  During performance testing, it is sometimes useful to see
+	  how much affect OS overhead is having.  This is especially
+	  true when using the emulation platform, as the clocks are
+	  quite a bit slower.  The following multiplies the cntfrq_el0
+	  value on all cores by a factor set in the environment,
+	  'cntfrq_multiplier'.  Since sleeps/delays will increase by
+	  this factor, system ticks will be delayed by that factor as
+	  well.  This should allow performance code to get more cycles
+	  per tick.
+	*/
+
+	{
+		char *temp;
+		unsigned long frequency;
+
+		temp = getenv("cntfrq_multiplier");
+
+		if (NULL != temp) {
+			frequency = simple_strtoul(temp, NULL, 0);
+			printf("CNTRFQ_EL0 will be multipled by %lu.\n",
+			       frequency);
+			frequency = COUNTER_FREQUENCY * frequency;
+			asm volatile ("msr cntfrq_el0, %0" : : "r" (frequency));
+		}
+	}
+#endif
+
 #ifdef COPY_MONITOR_TO_RAM
 	memcpy((void *)0x7ffc1000, (void *)0x8031001000, 0x10000);
 	jump_to_monitor((void *)0x7ffc1000);

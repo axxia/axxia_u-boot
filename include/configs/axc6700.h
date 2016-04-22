@@ -263,6 +263,7 @@
   ==============================================================================
 */
 
+#define COUNTER_FREQUENCY_MULTIPLIER
 #define COUNTER_FREQUENCY  5000000
 #define CONFIG_BAUDRATE    9600
 #define WATCHDOG_TIMEOUT_SECS 1000
