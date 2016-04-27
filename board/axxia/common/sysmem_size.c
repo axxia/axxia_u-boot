@@ -84,8 +84,6 @@ sysmem_size(void)
 phys_size_t
 get_effective_memsize(void)
 {
-	printf("%s:%d - \n", __FILE__, __LINE__);
-
 	return CONFIG_UBOOT_MAX_MEM;
 }
 
@@ -97,7 +95,6 @@ get_effective_memsize(void)
 void
 dram_init_banksize(void)
 {
-	printf("%s:%d - \n", __FILE__, __LINE__);
 	gd->bd->bi_dram[0].start = 0;
 	gd->bd->bi_dram[0].size = CONFIG_UBOOT_MAX_MEM;
 
