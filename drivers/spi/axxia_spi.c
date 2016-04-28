@@ -361,6 +361,10 @@ int spi_dma_read(struct axxia_pl022 *pl022, unsigned int direction,
 	flush_dcache_all();
 #endif
 
+	/* Clear out the RX fifo. */
+	while (0x3 != readl(&pl022->ssp_sr))
+		readl(&pl022->ssp_dr);
+
 	/* Verify that the right number of bits got moved. */
 	if ((len - 1) != (status & 0xffffff))
 		return -1;
