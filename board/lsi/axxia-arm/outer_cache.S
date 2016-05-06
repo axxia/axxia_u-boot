@@ -93,7 +93,7 @@ ENDPROC(v7_outer_cache_disable)
 
 ENTRY(v7_outer_cache_flush_all)
 	mov	r12, lr
-	mov	r0, #1
+	mov	r0, #0
 	bl	set_outer_cache_state
 #ifndef LEAVE_L3_OFF
 	mov	r0, #3
