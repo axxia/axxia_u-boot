@@ -17,7 +17,7 @@
 */
 
 set_outer_cache_state:
-#ifndef CONFIG_AXXIA_SIM
+#ifndef CONFIG_TARGET_SIMULATION
 	/* Make sure the give state is valid (0, 1, 2, or 3). */
 	mov	w10, ~0x3
 	and	w10, w0, w10
@@ -53,13 +53,22 @@ set_outer_cache_state_failed:
 	mov	x0, -1
 	ret
 set_outer_cache_state_succeeded:
-#endif
+#endif /* CONFIG_TARGET_SIMULATION */
 	mov	x0, 0
 	ret
 
+ENTRY(v7_outer_cache_inval_range)
+ENDPROC(v7_outer_cache_inval_range)
+
+ENTRY(v7_outer_cache_flush_range)
+ENDPROC(v7_outer_cache_flush_range)
+
+ENTRY(v7_outer_cache_inval_all)
+ENDPROC(v7_outer_cache_inval_all)
+
 ENTRY(__asm_flush_l3_cache)
 	mov	x9, x30
-	mov	x0, 1
+	mov	x0, 0
 	bl	set_outer_cache_state
 #ifndef LEAVE_L3_IN_SFONLY
 	mov	x0, 3
@@ -68,3 +77,13 @@ ENTRY(__asm_flush_l3_cache)
 	mov	x30, x9
 	ret
 ENDPROC(__asm_flush_l3_cache)
+
+ENTRY(v7_outer_cache_flush_all)
+	b	__asm_flush_l3_cache
+ENDPROC(v7_outer_cache_flush_all)
+
+ENTRY(v7_outer_cache_disable)
+ENDPROC(v7_outer_cache_disable)
+
+ENTRY(v7_outer_cache_enable)
+ENDPROC(v7_outer_cache_enable)
