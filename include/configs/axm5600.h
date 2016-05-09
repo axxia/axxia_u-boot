@@ -43,6 +43,7 @@
   ==============================================================================
 */
 
+#define CONFIG_BOOTDELAY  0
 #define COUNTER_FREQUENCY 500000000
 #define CONFIG_BAUDRATE   9600
 #define WATCHDOG_TIMEOUT_SECS 240
@@ -126,7 +127,6 @@
 				"earlycon=pl011,0x8080000000 " \
 				"mem=2G"
 #define CONFIG_BOOTCOMMAND	"bootm 4010000 - 4000000"
-#define CONFIG_BOOTDELAY	3
 
 #define V_MIN   795
 #define V_SAFE  940
@@ -169,6 +169,7 @@
   ==============================================================================
 */
 
+#define CONFIG_BOOTDELAY 3
 #define COUNTER_FREQUENCY_MULTIPLIER
 #define COUNTER_FREQUENCY 4000000
 #define CONFIG_BAUDRATE   9600
@@ -212,12 +213,9 @@
 #define CONFIG_AXXIA_NEMAC
 /*#define CONFIG_AXXIA_EIOA*/
 
-#define CONFIG_BOOTDELAY 3
-
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"baudrate=9600\0" \
 	"bootargs=console=ttyAMA0 mem=1024M ip=dhcp root=/dev/nfs rw\0" \
-	"bootdelay=5\0" \
 	"ethact=NEMAC\0" \
 	"fdt_high=0x20000000\0" \
 	"initrd_high=0x20000000\0" \
@@ -265,6 +263,7 @@
   ==============================================================================
 */
 
+#define CONFIG_BOOTDELAY   3
 #define DEFAULT_SDCR_VALUE 0x00080a02
 #define COUNTER_FREQUENCY  256000000
 #define CONFIG_BAUDRATE    9600
@@ -313,8 +312,6 @@
 /*#define CONFIG_AXXIA_FEMAC*/
 /*#define CONFIG_AXXIA_EIOA*/
 /*#define CONFIG_SPL*/
-
-#define CONFIG_BOOTDELAY 3
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
