@@ -33,7 +33,7 @@ else
 ################################################################################
 ## SPL Build
 
-obj-y   += mbist_range.o secure.o
+obj-y   += mbist_range.o secure.o ncp_l3lock_region_init.o
 
 ifdef CONFIG_AXXIA_EMU
 obj-y	+= sysmem_emulation.o

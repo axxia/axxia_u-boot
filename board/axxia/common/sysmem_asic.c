@@ -21,6 +21,9 @@
  */
 
 #include <common.h>
+#if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
+#include "../axc6700/ncp_l3lock_region.h"
+#endif
 
 ncp_st_t
 ncp_sysmem_init_synopphy(ncp_dev_hdl_t, ncp_uint32_t, ncp_sm_parms_t *);
@@ -221,6 +224,9 @@ sysmem_init(void)
 #else
 	unsigned sm_nodes[] = {0x22, 0xf, 0x23, 0x24};
 #endif
+#if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
+	ncp_l3lock_region_info_t *ncp_l3lock_region_info;
+#endif
 	int i;
 	int rc;
 
@@ -238,6 +244,25 @@ sysmem_init(void)
 			return -1;
 		}
 	}
+
+#if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
+	ncp_l3lock_region_info = (ncp_l3lock_region_info_t *)
+		&sysmem->total_l3_locked_size;
+#endif
+
+#if defined(CONFIG_AXXIA_XLF_EMU)
+	rc = ncp_l3lock_region_init(NULL, ncp_l3lock_region_info, 1);
+#elif defined(CONFIG_AXXIA_XLF)
+	rc = ncp_l3lock_region_init(NULL, ncp_l3lock_region_info, 0);
+#endif
+
+#if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
+	if (NCP_ST_SUCCESS != rc) {
+		printf("Locking L3 Cache Failed!\n");
+
+		return -1;
+	}
+#endif
 
 	return 0;
 }
