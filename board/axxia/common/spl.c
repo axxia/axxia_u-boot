@@ -682,14 +682,60 @@ verify_image(struct spi_flash *flash,
   jump_to_monitor
 */
 
+typedef enum {
+	AXXIA_5600 = 0,
+	AXXIA_6700 = 1
+} axxia_target_t;
+
+typedef enum {
+	AXXIA_SIM = 0,
+	AXXIA_EMU = 1,
+	AXXIA_HW = 2
+} axxia_platform_t;
+
+typedef enum {
+	AXXIA_NONE = 0,
+	AXXIA_SYSCACHE_ONLY = 1
+} axxia_option_t;
+
+typedef struct axxia_configuration {
+	axxia_target_t target;
+	axxia_platform_t platform;
+	axxia_option_t option;
+} axxia_configuration_t;
+
 static void
 jump_to_monitor(void *address)
 {
-	void (*entry)(void);
+	void (*entry)(void *, void *);
+	axxia_configuration_t axxia_configuration;
 
-	entry = (void (*)(void))address;
+#if defined(CONFIG_AXXIA_56XX_SIM)
+	axxia_configuration.target = AXXIA_5600;
+	axxia_configuration.platform = AXXIA_SIM;
+#elif defined(CONFIG_AXXIA_56XX_EMU)
+	axxia_configuration.target = AXXIA_5600;
+	axxia_configuration.platform = AXXIA_EMU;
+#elif defined(CONFIG_AXXIA_56XX)
+	axxia_configuration.target = AXXIA_5600;
+	axxia_configuration.platform = AXXIA_HW;
+#elif defined(CONFIG_AXXIA_XLF_SIM)
+	axxia_configuration.target = AXXIA_6700;
+	axxia_configuration.platform = AXXIA_SIM;
+#elif defined(CONFIG_AXXIA_XLF_EMU)
+	axxia_configuration.target = AXXIA_6700;
+	axxia_configuration.platform = AXXIA_EMU;
+#elif defined(CONFIG_AXXIA_XLF)
+	axxia_configuration.target = AXXIA_6700;
+	axxia_configuration.platform = AXXIA_HW;
+#endif
+#ifdef SYSCACHE_ONLY_MODE
+	axxia_configuration.option = AXXIA_SYSCACHE_ONLY;
+#endif
+
+	entry = (void (*)(void *, void *))address;
 	cleanup_before_linux();
-	entry();
+	entry(NULL, &axxia_configuration);
 	acp_failure(__FILE__, __func__, __LINE__);
 
 	return;
