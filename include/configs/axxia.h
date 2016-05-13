@@ -3626,6 +3626,7 @@ typedef struct {
 	unsigned memory_ranges[16];
 	unsigned sequence;
 	char description[128];
+	unsigned bist_bit_masks[4];
 } __attribute__((packed)) parameters_global_t;
 
 #else  /* CONFIG_AXXIA_ARM */
@@ -3762,6 +3763,7 @@ typedef struct {
 	unsigned char sdram_rtt_nom[4];
 	unsigned char sdram_rtt_wr[4];
 	unsigned char sdram_data_drv_imp[4];
+	unsigned char sdram_rtt_park[4];
 } __attribute__((packed)) per_sysmem_sdram_parms_t;
 
 typedef struct {
@@ -3787,8 +3789,8 @@ typedef struct {
 	ncp_uint32_t CAS_write_latency;
 	ncp_uint32_t address_mirroring;
 	ncp_uint32_t registeredDimm;
-	ncp_uint32_t rdimmCtl_0;
-	ncp_uint32_t rdimmCtl_1;
+	ncp_uint32_t rdimm_ctl_0_0;
+	ncp_uint32_t rdimm_ctl_0_1;
 	ncp_uint32_t rdimm_misc;
 	ncp_uint32_t write_ODT_ctl;
 	ncp_uint32_t read_ODT_ctl;
@@ -3796,7 +3798,6 @@ typedef struct {
 	ncp_uint32_t high_temp_dram;
 	per_sysmem_parms_t per_sysmem[2];
 	ncp_uint32_t dram_class;
-	per_sysmem_sdram_parms_t per_smem[4];
 	ncp_uint32_t additive_latency;
 	ncp_uint32_t binned_CAS_latency;
 	ncp_uint32_t tck_ps;
@@ -3804,8 +3805,6 @@ typedef struct {
 	ncp_uint32_t address_inversion;
 	ncp_uint32_t bstlen;
 	ncp_uint32_t dm_masking;
-	ncp_uint32_t rdimm_ctl_0_0;
-	ncp_uint32_t rdimm_ctl_0_1;
 	ncp_uint32_t rdimm_ctl_0_2;
 	ncp_uint32_t rdimm_ctl_0_3;
 	ncp_uint32_t rdimm_ctl_0_4;
@@ -3814,15 +3813,12 @@ typedef struct {
 	ncp_uint32_t rdimm_ctl_1_2;
 	ncp_uint32_t rdimm_ctl_1_3;
 	ncp_uint32_t rdimm_ctl_1_4;
-	ncp_uint32_t vref_en;
 	ncp_uint32_t vref_cs;
 	ncp_uint32_t vref_val;
 	ncp_uint32_t wr_protect_en_mask;
-	ncp_uint32_t rdlvl_en;
 	ncp_uint32_t dbi_rd_en;
 	ncp_uint32_t dbi_wr_en;
 	ncp_uint32_t ca_parity_en;  
-	ncp_uint32_t rdlvl_gate_en;
 	ncp_uint32_t rdlvl_interval;	
 	ncp_uint32_t rdlvl_gate_interval;
 	ncp_uint32_t preamble_support;
@@ -3831,8 +3827,20 @@ typedef struct {
  	unsigned char unused_0[2];
 	unsigned char dq_map_1[18];
  	unsigned char unused_1[2];
-	ncp_uint32_t dq_map_odd_rank_swap_0; 
-	ncp_uint32_t dq_map_odd_rank_swap_1; 
+	ncp_uint32_t dq_map_odd_rank_swap_0;
+	ncp_uint32_t dq_map_odd_rank_swap_1;
+	per_sysmem_sdram_parms_t per_smem[4];
+	ncp_uint32_t packedDqDmDqsODT;
+	ncp_uint32_t packedAddrCmdCtrlOI;
+	ncp_uint32_t packedClockOI;
+	ncp_uint32_t packedDqDmDqsOI;
+	ncp_uint32_t packedAddrCmdCtrlClkSlewRates;
+	ncp_uint32_t packedDqDmDqsSlewRates;
+	ncp_uint32_t packedPHYTrainingOptions;
+	/* This is the ncp_l3lock_region_info_t structure from the RTE. */
+	ncp_uint32_t total_l3_locked_size;
+	ncp_uint32_t region[4];
+	/* Only used in U-Boot, not part of the RTE structure. */
 	unsigned ddrRetentionEnable;
 	unsigned ddrRecovery;
 	unsigned long long totalSize;

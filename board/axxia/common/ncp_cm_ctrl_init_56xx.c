@@ -87,11 +87,15 @@ ncp_cm_denali_init_56xx(
 	ncp_memory_controller_DENALI_CTL_43_t reg43 = {0};
 	ncp_memory_controller_DENALI_CTL_44_t reg44 = {0};
 	ncp_memory_controller_DENALI_CTL_46_t reg46 = {0};
+	ncp_memory_controller_DENALI_CTL_47_t reg47 = {0};
+	ncp_memory_controller_DENALI_CTL_48_t reg48 = {0};
 	ncp_memory_controller_DENALI_CTL_49_t reg49 = {0};
 	ncp_memory_controller_DENALI_CTL_50_t reg50 = {0};
 	ncp_memory_controller_DENALI_CTL_51_t reg51 = {0};
 	ncp_memory_controller_DENALI_CTL_52_t reg52 = {0};
 	ncp_memory_controller_DENALI_CTL_54_t reg54 = {0};
+	ncp_memory_controller_DENALI_CTL_55_t reg55 = {0};
+	ncp_memory_controller_DENALI_CTL_56_t reg56 = {0};
 	ncp_memory_controller_DENALI_CTL_57_t reg57 = {0};
 	ncp_memory_controller_DENALI_CTL_58_t reg58 = {0};
 	ncp_memory_controller_DENALI_CTL_62_t reg62 = {0};
@@ -107,6 +111,7 @@ ncp_cm_denali_init_56xx(
 	ncp_memory_controller_DENALI_CTL_80_t reg80 = {0};
 	ncp_memory_controller_DENALI_CTL_82_t reg82 = {0};
 	ncp_memory_controller_DENALI_CTL_83_t reg83 = {0};
+	ncp_memory_controller_DENALI_CTL_85_t reg85 = {0};
 	ncp_memory_controller_DENALI_CTL_96_t reg96 = {0};
 	ncp_memory_controller_DENALI_CTL_97_t reg97 = {0};
 	ncp_memory_controller_DENALI_CTL_98_t reg98 = {0};
@@ -141,6 +146,7 @@ ncp_cm_denali_init_56xx(
 	ncp_cmem_cfg_ddr_cfg_r_t ddrCfg = {0};
 	ncp_cmem_cfg_ddr_ctl_r_t ddrCtl = {0};
 	ncp_uint32_t cmId = 0;
+	ncp_uint32_t tmp = 0;
 
 	/* this below is only for sm_parms's per_smem[n] access */
 	switch (cmNode) {
@@ -224,18 +230,18 @@ ncp_cm_denali_init_56xx(
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_06, (ncp_uint32_t *)&reg06);
 	/* number of clocks that memory will be held in reset during init seq
-	 * assuming 200ns is sufficient */
-	reg06.trst_pwron = ncp_ps_to_clk(parms->tck_ps,200*(1000));
+	 * assuming 200us is sufficient */
+	reg06.trst_pwron = ncp_ps_to_clk(parms->tck_ps,200*(1000000));
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_06, *((ncp_uint32_t *)&reg06));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_07, (ncp_uint32_t *)&reg07);
 	/* number of clocks after reset before cke will become active
-	 * assuming 500ns is sufficient */
-	reg07.cke_inactive = ncp_ps_to_clk(parms->tck_ps,500*(1000));
+	 * assuming 500us is sufficient */
+	reg07.cke_inactive = ncp_ps_to_clk(parms->tck_ps,500*(1000000));
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_07, *((ncp_uint32_t *)&reg07));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_08, (ncp_uint32_t *)&reg08);
-	reg08.tdll = 0x200;
+	reg08.tdll = 0x255;
 	reg08.caslat_lin = parms->CAS_latency * 2; /* CAS latency linear value */
 	reg08.wrlat = parms->CAS_write_latency;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_08, *((ncp_uint32_t *)&reg08));
@@ -280,14 +286,15 @@ ncp_cm_denali_init_56xx(
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_12, (ncp_uint32_t *)&reg12);
 	reg12.trp = ctm->tRP;
 	reg12.twtr_l = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWTR_L : 0x0;
-	reg12.twtr = ncp_ps_to_clk(parms->tck_ps,7500);
+	reg12.twtr = ncp_ps_to_clk(parms->tck_ps,2500);
 	reg12.tras_min = ctm->tRAS;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_12, *((ncp_uint32_t *)&reg12));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_13, (ncp_uint32_t *)&reg13);
-	reg13.tmrd = 4;
+	reg13.tmrd = 8;
 	reg13.trtp_ap = 4; /* for auto-precharge get from speedbin_ddr4 */
-	reg13.trtp = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tRTP : ncp_ps_to_clk(parms->tck_ps,7500);
+	/*reg13.trtp = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tRTP : ncp_ps_to_clk(parms->tck_ps,7500);*/
+	reg13.trtp = ncp_ps_to_clk(parms->tck_ps,7500);
 	reg13.tfaw = ctm->tFAW;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_13, *((ncp_uint32_t *)&reg13));
 
@@ -298,7 +305,8 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_14, *((ncp_uint32_t *)&reg14));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_15, (ncp_uint32_t *)&reg15);
-	reg15.tcke = ctm->tCKE;
+	/*reg15.tcke = ctm->tCKE;*/
+	reg15.tcke = ncp_ps_to_clk(parms->tck_ps,5000);
 	reg15.tckesr = reg15.tcke + 1; /* tCKE + 1nCK */
 	reg15.twr_mpr = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR_MPR : 0x0;
 	reg15.writeinterp = 0; /* for both ddr3, ddr4 */
@@ -395,7 +403,52 @@ ncp_cm_denali_init_56xx(
 	 * A11:A9	WR and RTP (Write Recovery and Read to Precharge for auto precharge)
 	 * A17, A13, A12	RFU = 0 during MRS
 	 */
-	reg42.mr0_data_0 = (((parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR : ncp_ps_to_clk(parms->tck_ps,15000)) << 9) | (parms->CAS_latency << 4);
+	switch (parms->CAS_latency)
+	{
+		/* A6:A5:A4:A3(0):A2 */
+		case 9: 
+			tmp = 0x0;
+			break;
+		case 10: 
+			tmp = 0x1;
+			break;
+		case 11: 
+			tmp = 0x4;
+			break;
+		case 12: 
+			tmp = 0x5;
+			break;
+		case 13: 
+			tmp = 0x8;
+			break;
+		case 14: 
+			tmp = 0x9;
+			break;
+		case 15: 
+			tmp = 0xc;
+			break;
+		case 16: 
+			tmp = 0xd;
+			break;
+		case 18: 
+			tmp = 0x10;
+			break;
+		case 20: 
+			tmp = 0x11;
+			break;
+		case 22: 
+			tmp = 0x14;
+			break;
+		case 24: 
+			tmp = 0x15;
+			break;
+		default:
+			tmp = 0;
+	}
+
+	reg42.mr0_data_0 = (((parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR : ncp_ps_to_clk(parms->tck_ps,15000)) << 9);
+	reg42.mr0_data_0 &= ~(0x7c);
+	reg42.mr0_data_0 |= (tmp << 2);
 	ctm->mr0 = reg42.mr0_data_0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_42, *((ncp_uint32_t *)&reg42));
 
@@ -418,12 +471,13 @@ ncp_cm_denali_init_56xx(
 	{
 		reg43.mr1_data_0 = NCP_SM_ENCODE_RTT_NOM_DDR4(parms->per_smem[cmId].sdram_rtt_nom[0]) |
 			NCP_SM_ENCODE_DRV_IMP_DDR4(parms->per_smem[cmId].sdram_data_drv_imp[0]) |
-			(parms->additive_latency << 3);
+			(parms->additive_latency << 3) | (0x1 /*DLLenable*/);
 	}
 	else
 	{
 		reg43.mr1_data_0 = NCP_SM_ENCODE_RTT_NOM_DDR3(parms->per_smem[cmId].sdram_rtt_nom[0]) |
-			NCP_SM_ENCODE_DRV_IMP_DDR3(parms->per_smem[cmId].sdram_data_drv_imp[0]);
+			NCP_SM_ENCODE_DRV_IMP_DDR3(parms->per_smem[cmId].sdram_data_drv_imp[0]) | 
+			(0x1 /*DLLenable*/);
 	}
 	ctm->mr1 = reg43.mr1_data_0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_43, *((ncp_uint32_t *)&reg43));
@@ -445,8 +499,6 @@ ncp_cm_denali_init_56xx(
 	 */
 	if (parms->dram_class == NCP_SM_DDR4_MODE)
 	{
-		ncp_uint32_t tmp = parms->CAS_write_latency;
-
 		switch (parms->CAS_write_latency)
 		{
 			case 9:
@@ -471,9 +523,12 @@ ncp_cm_denali_init_56xx(
 				tmp = 6;
 				break;
 			default:
+				tmp = 0;
 				;
 		}
-		reg44.mr2_data_0 = (tmp << 3) | (parms->per_smem[cmId].sdram_rtt_wr[0] << 9);
+		reg44.mr2_data_0 = (parms->per_smem[cmId].sdram_rtt_wr[0] << 9);
+		reg44.mr2_data_0 &= ~(0x38);
+		reg44.mr2_data_0 |= (tmp << 3);
 		if (parms->high_temp_dram == TRUE)
 		{
 			reg44.mr2_data_0 |= 0x80;
@@ -496,8 +551,6 @@ ncp_cm_denali_init_56xx(
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_46, (ncp_uint32_t *)&reg46);
 	{
-		ncp_uint32_t	tmp = 0;
-
 		/* data to prog into mem mode reg 3 for cs 0 */
 		/* Implementation for MR3 from JEDEC (ddr4) */
 
@@ -534,19 +587,70 @@ ncp_cm_denali_init_56xx(
 	ctm->mr3 = reg46.mr3_data_0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_46, *((ncp_uint32_t *)&reg46));
 
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_47, (ncp_uint32_t *)&reg47);
+	{
+		/* data to prog into mem mode reg 4 for cs 0 */
+		/* Implementation for MR4 from JEDEC (ddr4) */
+
+		/*
+		 * A0		RFU
+		 * A1		Max power-down mode 0 = disable
+		 * A2		temp controlled refresh range 0 = normal 1 = extended
+		 * A3 		temp controlled refresh mode 0 = disable, 1 = enable
+		 * A4		Int vref monitor 0 = disable
+		 * A5		RFU
+		 * A8:A6	cs to cmd/addr latency mode 0 = disable
+		 * A9		self refresh abort 0 = disable
+		 * A10		read preamble training mode 0 = disable
+		 * A11		read preamble 0 = 1 nCK
+		 * A12		write preamble 0 = 1 nCK
+		 * A13, A17	RFU
+		 */
+		if (parms->high_temp_dram == TRUE)
+		{
+			reg47.mr4_data_0 |= 0x4;
+		}
+	}
+	ctm->mr4 = reg47.mr4_data_0;
+	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_47, *((ncp_uint32_t *)&reg47));
+
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_48, (ncp_uint32_t *)&reg48);
+	{
+		/* data to prog into mem mode reg 5 for cs 0 */
+		/* Implementation for MR5 from JEDEC (ddr4) */
+
+		/*
+		 * A2:A0	CA parity lat mode 0 = disable
+		 * A3		crc error clear 0 = clear
+		 * A4		ca parity error status 0 = clear
+		 * A5		odt input buffer 0 = activated
+		 * A8:A6	rtt_park 0 = disable
+		 * A9		ca parity persistent error 0 = disable
+		 * A10		data mask 0 = disable
+		 * A11		write dbi 0 = disable
+		 * A12		read dbi 0 = disable
+		 * A13, A17	RFU
+		 */
+		reg48.mr5_data_0 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[cmId].sdram_rtt_park[0]) |
+			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+	}
+	ctm->mr5 = reg48.mr5_data_0;
+	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_48, *((ncp_uint32_t *)&reg48));
+
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_49, (ncp_uint32_t *)&reg49);
 	{
 		/* data to prog into mem mode reg 6 for cs 0 */
 		/* Implementation for MR6 from JEDEC (ddr4) */
 
 		/*
-		 * A5:A0	vref training value
+		 * A5:A0	vref training value (set this to 0x18)
 		 * A6		vref training range
 		 * A7		vref training enable
 		 * A9,A8	RFU
 		 * A12:A10	tCCD_L
 		 * A13, A17	RFU
 		 */
+#if 0
 		/* Override tCCD_L originally from speedBin in ctm using below algo */
 		if( (parms->CAS_latency==10) && (parms->CAS_write_latency==9) )
 		{
@@ -568,25 +672,165 @@ ncp_cm_denali_init_56xx(
 		{
 			ctm->tCCD_L = 0x2;
 		}
-		reg49.mr6_data_0 = (parms->dram_class == NCP_SM_DDR4_MODE) ? (ctm->tCCD_L << 10) : 0x0;
+		reg49.mr6_data_0 = ((parms->dram_class == NCP_SM_DDR4_MODE) ? (ctm->tCCD_L << 10) : 0x0) | 0x18;
+#else
+		switch (ctm->tCCD_L)
+		{
+			case 4:
+				tmp = 0;
+				break;
+			case 5:
+				tmp = 1;
+				break;
+			case 6:
+				tmp = 2;
+				break;
+			case 7:
+				tmp = 3;
+				break;
+			case 8:
+				tmp = 4;
+				break;
+			default:
+				tmp = 0;
+				;
+		}
+		reg49.mr6_data_0 = 0x18;
+		reg49.mr6_data_0 &= ~(0x1c00);
+		reg49.mr6_data_0 |= ((parms->dram_class == NCP_SM_DDR4_MODE) ? (tmp << 10) : 0x0);
+#endif
 	}
 	ctm->mr6 = reg49.mr6_data_0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_49, *((ncp_uint32_t *)&reg49));
+
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_50, (ncp_uint32_t *)&reg50);
 	reg50.mr0_data_1 = reg42.mr0_data_0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_50, *((ncp_uint32_t *)&reg50));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_51, (ncp_uint32_t *)&reg51);
-	reg51.mr1_data_1 = reg43.mr1_data_0;
+	/* data to prog into mem mode reg 1 for cs 0 */
+	/* Implementation for MR1 from JEDEC (ddr4) */
+
+	/*
+	 * A0 		DLL Enable 0=disable
+	 * A2,A1	Output Driver Impedance Control
+	 * A4, A3	Additive Latency
+	 * A6,A5	RFU = 0 during MRS
+	 * A7		Write Leveling Enable 0 = disable
+	 * A10/9/8	RTT_NOM
+	 * A11		TDQS enable 0 = disable
+	 * A12		Qoff 0 = output buffer enabled
+	 * A13,A17	RFU 0 during MRS
+	 */
+	if (parms->dram_class == NCP_SM_DDR4_MODE)
+	{
+		reg51.mr1_data_1 = NCP_SM_ENCODE_RTT_NOM_DDR4(parms->per_smem[cmId].sdram_rtt_nom[1]) |
+			NCP_SM_ENCODE_DRV_IMP_DDR4(parms->per_smem[cmId].sdram_data_drv_imp[1]) |
+			(parms->additive_latency << 3) | (0x1 /*DLLenable*/);
+	}
+	else
+	{
+		reg51.mr1_data_1 = NCP_SM_ENCODE_RTT_NOM_DDR3(parms->per_smem[cmId].sdram_rtt_nom[1]) |
+			NCP_SM_ENCODE_DRV_IMP_DDR3(parms->per_smem[cmId].sdram_data_drv_imp[1]) | 
+			(0x1 /*DLLenable*/);
+	}
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_51, *((ncp_uint32_t *)&reg51));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_52, (ncp_uint32_t *)&reg52);
-	reg52.mr2_data_1 = reg44.mr2_data_0;
+	/* data to prog into mem mode reg 2 for cs 0 */
+	/* Implementation for MR2 from JEDEC (ddr4) */
+
+	/*
+	 * A2:A0 	RFU 0 during MRS
+	 * A5:A3	CAS Write Latency
+	 * A7:A6	LP ASR 0 = Normal, 1 = Reduced temp, 2 = extended temp, 3 = auto self-refresh
+	 * A8		RFU 0 during MRS
+	 * A10:A9	RTT_WR
+	 * A11		RFU 0 during MRS
+	 * A12		write CRC 0 = disable
+	 * A13		RFU 0 during MRS	
+	 * A17		RFU 0 during MRS	
+	 */
+	if (parms->dram_class == NCP_SM_DDR4_MODE)
+	{
+		switch (parms->CAS_write_latency)
+		{
+			case 9:
+				tmp = 0;
+				break;
+			case 10:
+				tmp = 1;
+				break;
+			case 11:
+				tmp = 2;
+				break;
+			case 12:
+				tmp = 3;
+				break;
+			case 14:
+				tmp = 4;
+				break;
+			case 16:
+				tmp = 5;
+				break;
+			case 18:
+				tmp = 6;
+				break;
+			default:
+				tmp = 0;
+				;
+		}
+		reg52.mr2_data_1 = (parms->per_smem[cmId].sdram_rtt_wr[1] << 9);
+		reg52.mr2_data_1 &= ~(0x38);
+		reg52.mr2_data_1 |= (tmp << 3);
+		if (parms->high_temp_dram == TRUE)
+		{
+			reg52.mr2_data_1 |= 0x80;
+		}
+		else
+		{
+			reg52.mr2_data_1 |= 0x40;
+		}
+	}
+	else
+	{
+		reg52.mr2_data_1 = ((parms->CAS_write_latency - 5 ) << 3) | (parms->per_smem[cmId].sdram_rtt_wr[1] << 9);
+		if (parms->high_temp_dram == TRUE)
+		{
+			reg52.mr2_data_1 |= 0x80;
+		}
+	}
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_52, *((ncp_uint32_t *)&reg52));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_54, (ncp_uint32_t *)&reg54);
 	reg54.mr3_data_1 = reg46.mr3_data_0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_54, *((ncp_uint32_t *)&reg54));
+
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_55, (ncp_uint32_t *)&reg55);
+	reg55.mr4_data_1 = reg47.mr4_data_0;
+	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_55, *((ncp_uint32_t *)&reg55));
+
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_56, (ncp_uint32_t *)&reg56);
+	{
+		/* data to prog into mem mode reg 5 for cs 0 */
+		/* Implementation for MR5 from JEDEC (ddr4) */
+
+		/*
+		 * A2:A0	CA parity lat mode 0 = disable
+		 * A3		crc error clear 0 = clear
+		 * A4		ca parity error status 0 = clear
+		 * A5		odt input buffer 0 = activated
+		 * A8:A6	rtt_park 0 = disable
+		 * A9		ca parity persistent error 0 = disable
+		 * A10		data mask 0 = disable
+		 * A11		write dbi 0 = disable
+		 * A12		read dbi 0 = disable
+		 * A13, A17	RFU
+		 */
+		reg56.mr5_data_1 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[cmId].sdram_rtt_park[1]) |
+			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+	}
+	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_56, *((ncp_uint32_t *)&reg56));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_57, (ncp_uint32_t *)&reg57);
 	reg57.mr6_data_1 = reg49.mr6_data_0;
@@ -604,17 +848,17 @@ ncp_cm_denali_init_56xx(
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_71, (ncp_uint32_t *)&reg71);
 	reg71.zqinit = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tZQinit : ncp_ps_to_clk(parms->tck_ps, 1000000); /* 1 us */
-	reg71.zqcl = ncp_ps_to_clk(parms->tck_ps, 360000); /* 360 ns */
+	reg71.zqcl = 512;/* ncp_ps_to_clk(parms->tck_ps, 360000); *//* 360 ns */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_71, *((ncp_uint32_t *)&reg71));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_72, (ncp_uint32_t *)&reg72);
-	reg72.zqcs = ncp_ps_to_clk(parms->tck_ps, 90000); /* 90 ns */
+	reg72.zqcs = 128;/* ncp_ps_to_clk(parms->tck_ps, 90000); *//* 90 ns */
 	reg72.zq_req = 0x0;
 	reg72.zq_on_sref_exit = 0x2;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_72, *((ncp_uint32_t *)&reg72));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_73, (ncp_uint32_t *)&reg73);
-	reg73.zq_interval = 0x40;
+	reg73.zq_interval = ((parms->zqcs_interval /* units in micro-sec */)*1000000)/parms->tck_ps;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_73, *((ncp_uint32_t *)&reg73));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_74, (ncp_uint32_t *)&reg74);
@@ -671,7 +915,7 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_82, *((ncp_uint32_t *)&reg82));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_83, (ncp_uint32_t *)&reg83);
-	reg83.bg_rotate_en = 0x0;
+	reg83.bg_rotate_en = 0x1;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_83, *((ncp_uint32_t *)&reg83));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_96, (ncp_uint32_t *)&reg96);
@@ -759,7 +1003,7 @@ ncp_cm_denali_init_56xx(
 	reg118.rdlvl_cs_map = 0x3; /* 0xf */
 	reg118.rdlvl_gate_cs_map = 0x3; /* 0xf */
 	reg118.vref_cs = parms->vref_cs; /* default cs0 set to 0x1 */
-	reg118.vref_en = parms->vref_en; /* default disabled set to 0x0 */
+	reg118.vref_en = ((parms->packedPHYTrainingOptions >> 17) & 0x1); /* default disabled set to 0x0 */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_118, *((ncp_uint32_t *)&reg118));
 	if (parms->dram_class == NCP_SM_DDR4_MODE)
 	{
@@ -767,7 +1011,7 @@ ncp_cm_denali_init_56xx(
 		ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_119, (ncp_uint32_t *)&reg119);
 		/* vref_pda_en is per DRAM addressability during VREF training, set to simply
 		 * vref_en setting. */
-		reg119.vref_pda_en = parms->vref_en;
+		reg119.vref_pda_en = ((parms->packedPHYTrainingOptions >> 17) & 0x1);
 		/* defines the range and value for vref training - 0x67 set to ~70%
 		 * It is 7 bits, b[6] is range, whereas b[5:0] is the actual vref value
 		 * there is setting for each DRAM for each chip-select */
@@ -895,7 +1139,18 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_00, *((ncp_uint32_t *)&reg00));
 
 	/* poll for memory init operation */
-	ncr_poll(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_84,  0x0100,  0x0100,  1000000,  10000);
+	ncpStatus = (ncr_poll(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_84,  0x0100,  0x0100,  1000000,  10000));
+
+	if (ncpStatus == NCP_ST_POLL_TIMEOUT)
+	{
+		errprintf("POLL timeout while waiting for MC init to complete [line:%d]\n",__LINE__);
+	}
+
+	/* Clear all interrupts */
+	/* DENALI_CTL_85 */
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_85, (ncp_uint32_t *)&reg85);
+	reg85.int_ack = 0x7fffffff; /* clears associated bit in int_status */
+	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_85, *((ncp_uint32_t *)&reg85));
 
 	NCP_COMMENT("## End CMEM%d config", cmNode);
 

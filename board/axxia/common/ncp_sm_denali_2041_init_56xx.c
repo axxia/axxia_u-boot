@@ -137,7 +137,7 @@ ncp_ddr4_speedbin_vals_t speedbin_ddr4_vals[4] =  {
 		{46850,47920,49000}, 5, 4, {4200, 4200, 5300}, {5300, 5300, 6400}, {17000, 23000, 30000}, 2500, 7500, 7500, 15000, 8, 15000, 
 		1, 15000, 1024, 160000, 160000, 5000, 10000, 5000, 10000},
 
-	{/*DDR3-2133 Table*/1067, {14,15,16}, {9,10,11,12,13,14,15,16,0xff}, {13130,14060,15000}, {13130,14060,15000}, {33000,33000,33000}, 
+	{/*DDR3-2133 Table*/1066, {14,15,16}, {9,10,11,12,13,14,15,16,0xff}, {13130,14060,15000}, {13130,14060,15000}, {33000,33000,33000}, 
 		{46130,47060,48000}, 6, 4, {3700, 3700, 5300}, {5300, 5300, 6400}, {15000, 21000, 30000}, 2500, 7500, 7500, 15000, 8, 15000, 
 		1, 15000, 1024, 160000, 160000, 5000, 10000, 5000, 10000},
 
@@ -203,10 +203,10 @@ ncp_sm_common_setup_56xx(
 	if ((parms->dram_class == NCP_SM_DDR4_MODE) && 
 			(parms->ddrClockSpeedMHz != 800) &&
 			(parms->ddrClockSpeedMHz != 933) &&
-			(parms->ddrClockSpeedMHz != 1067) &&
+			(parms->ddrClockSpeedMHz != 1066) &&
 			(parms->ddrClockSpeedMHz != 1200))
 	{
-		printf("ddr4 clock speed must be 800/933/1067/1200 MHz\n");
+		printf("ddr4 clock speed must be 800/933/1066/1200 MHz\n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -226,6 +226,14 @@ ncp_sm_common_setup_56xx(
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
+	if ((parms->dram_class == NCP_SM_DDR4_MODE) && 
+			(parms->bstlen != 3))
+	{
+		/* 1 for BL2, 2 for BL4, 3 for BL8 */
+		printf("ddr4 bstlen must be 3 \n");
+		NCP_CALL(NCP_ST_ERROR);
+	}
+
 	/* tCK checks are non-trivial looking up various possibilities from JEDEC, hence doing a boundary check here so we stay on track */
 	if ((parms->dram_class == NCP_SM_DDR3_MODE) && 
 			(((parms->ddrClockSpeedMHz == 400) && ((parms->tck_ps < 2500) || (parms->tck_ps > 3300))) ||
@@ -235,17 +243,17 @@ ncp_sm_common_setup_56xx(
 			 ((parms->ddrClockSpeedMHz == 933) && ((parms->tck_ps < 1070) || (parms->tck_ps > 3300))) ||
 			 ((parms->ddrClockSpeedMHz == 1066) && ((parms->tck_ps < 938) || (parms->tck_ps > 3300)))))
 	{
-		printf("ddr3 invalid tck_ps clock-period in nano-sec \n");
+		printf("ddr3 invalid tck_ps clock-period in pico-sec \n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
 	if ((parms->dram_class == NCP_SM_DDR4_MODE) && 
 			(((parms->ddrClockSpeedMHz == 800) && ((parms->tck_ps < 1250) || (parms->tck_ps > 1600))) ||
 			 ((parms->ddrClockSpeedMHz == 933) && ((parms->tck_ps < 1071) || (parms->tck_ps > 1600))) ||
-			 ((parms->ddrClockSpeedMHz == 1067) && ((parms->tck_ps < 938) || (parms->tck_ps > 1600))) ||
+			 ((parms->ddrClockSpeedMHz == 1066) && ((parms->tck_ps < 938) || (parms->tck_ps > 1600))) ||
 			 ((parms->ddrClockSpeedMHz == 1200) && ((parms->tck_ps < 833) || (parms->tck_ps > 1600)))))
 	{
-		printf("ddr4 invalid tck_ps clock-period in nano-sec \n");
+		printf("ddr4 invalid tck_ps clock-period in pico-sec \n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -318,7 +326,7 @@ ncp_sm_common_setup_56xx(
 	 * However, for example a 933 part can be run at lower rates like 800 MHz, thus having a different tCK
 	 * and if using above method would cover <any> JEDEC tCK cases as well */
 
-	printf("X9/XLF MC node %d Common Timing Parameters Init....\n",smNode);
+	/*printf("X9/XLF MC node %d Common Timing Parameters Init....\n",smNode);*/
 
 	/* First Populate Commonly used Timing Parameters based on a) sm_parms info b) JEDEC */
 	if (parms->dram_class == NCP_SM_DDR3_MODE)
@@ -404,6 +412,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncp_st_t ncpStatus = NCP_ST_SUCCESS;
 	ncp_region_id_t ctlReg = NCP_REGION_ID(smNode, NCP_SYSMEM_TGT_DENALI);
 	ncp_uint32_t loop=0;
+	ncp_uint32_t tmp=0;
 
 	int i=0;
 	ncp_uint8_t rd_ODT[4];
@@ -571,7 +580,17 @@ ncp_sm_denali_2041_init_56xx(
 	ncp_denali_DENALI_CTL_386_5600_t reg386 = {0};
 	ncp_uint32_t smId = 0;
 
-	/* this below is only for sm_parms's per_smem[n] access */
+	/* this below is only for sm_parms's per_smem[n] access
+	 * n is a packed parms index i.e.
+	 * index 0 corresponds to 4 chars as u32 wherein
+	 *		char0: interface-0 rank-0
+	 *		char1: interface-0 rank-1
+	 *		char2: interface-0 rank-2
+	 *		char3: interface-0 rank-3
+	 * X9 has 2 SMEM's so it uses only per_smem 0,1 indices and given dual-rank
+	 *	the char-2,3 will always be zero.
+	 * XLF has 4 SMEM's so it uses 0,1,2,3 per_smem[4] indices
+	 */
 	switch (smNode) {
 		case 0x22:
 			smId  = 0x0;	/* X9/XLF */
@@ -601,7 +620,7 @@ ncp_sm_denali_2041_init_56xx(
 		value2 >>= 4;
 	}
 
-	printf("X9/XLF SMC %d Init....\n",smNode);
+	/*printf("X9/XLF SMC %d Init....\n",smNode);*/
 
 	/* DENALI_CTL_00 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_00_5600, (ncp_uint32_t *)&reg00);
@@ -659,16 +678,16 @@ ncp_sm_denali_2041_init_56xx(
 	/* DENALI_CTL_06 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_06_5600, (ncp_uint32_t *)&reg06);
 	/* number of clocks that memory will be held in reset during init seq
-	 * assuming 200ns is sufficient */
-	reg06.trst_pwron = ncp_ps_to_clk(parms->tck_ps,200*(1000));
+	 * assuming 200us is sufficient */
+	reg06.trst_pwron = ncp_ps_to_clk(parms->tck_ps,200*(1000000));
 	ncr_write32(ctlReg, NCP_DENALI_CTL_06_5600, *((ncp_uint32_t *)&reg06));
 
 
 	/* DENALI_CTL_07 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_07_5600, (ncp_uint32_t *)&reg07);
 	/* number of clocks after reset before cke will become active
-	 * assuming 500ns is sufficient */
-	reg07.cke_inactive = ncp_ps_to_clk(parms->tck_ps,500*(1000));
+	 * assuming 500us is sufficient */
+	reg07.cke_inactive = ncp_ps_to_clk(parms->tck_ps,500*(1000000));
 	ncr_write32(ctlReg, NCP_DENALI_CTL_07_5600, *((ncp_uint32_t *)&reg07));
 
 
@@ -676,7 +695,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_08_5600, (ncp_uint32_t *)&reg08);
 	reg08.wrlat = parms->CAS_write_latency;
 	reg08.caslat_lin = parms->CAS_latency * 2; /* CAS latency linear value */
-	reg08.tdll = 0x200; /* for dd3 it is 512 clocks */
+	reg08.tdll = 0x255; /* for dd3 it is 512 clocks */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_08_5600, *((ncp_uint32_t *)&reg08));
 
 
@@ -686,7 +705,7 @@ ncp_sm_denali_2041_init_56xx(
 	{
 		if (parms->ddrClockSpeedMHz <= 300)
 			reg09.ca_parity_lat = 0;
-		else if (parms->ddrClockSpeedMHz <= 1067)
+		else if (parms->ddrClockSpeedMHz <= 1066)
 			reg09.ca_parity_lat = 4;
 		else
 			reg09.ca_parity_lat = 5;
@@ -728,16 +747,17 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_12_5600, (ncp_uint32_t *)&reg12);
 	reg12.trp = ctm->tRP;
 	reg12.twtr_l = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWTR_L : 0x0;
-	reg12.twtr = ncp_ps_to_clk(parms->tck_ps,7500);
+	reg12.twtr = ncp_ps_to_clk(parms->tck_ps,2500);
 	reg12.tras_min = ctm->tRAS;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_12_5600, *((ncp_uint32_t *)&reg12));
 
 
 	/* DENALI_CTL_13 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_13_5600, (ncp_uint32_t *)&reg13);
-	reg13.tmrd = 4;
+	reg13.tmrd = 8;
 	reg13.trtp_ap = 4; /* for auto-precharge get from speedbin_ddr4 */
-	reg13.trtp = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tRTP : ncp_ps_to_clk(parms->tck_ps,7500);
+	/*reg13.trtp = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tRTP : ncp_ps_to_clk(parms->tck_ps,7500);*/
+	reg13.trtp = ncp_ps_to_clk(parms->tck_ps,7500);
 	reg13.tfaw = ctm->tFAW;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_13_5600, *((ncp_uint32_t *)&reg13));
 
@@ -752,7 +772,8 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_15 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_15_5600, (ncp_uint32_t *)&reg15);
-	reg15.tcke = ctm->tCKE;
+	/*reg15.tcke = ctm->tCKE;*/
+	reg15.tcke = ncp_ps_to_clk(parms->tck_ps,5000);
 	reg15.tckesr = reg15.tcke + 1; /* tCKE + 1nCK */
 	reg15.twr_mpr = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR_MPR : 0x0;
 	reg15.writeinterp = 0; /* for both ddr3, ddr4 */
@@ -1131,7 +1152,52 @@ ncp_sm_denali_2041_init_56xx(
 		 * A11:A9	WR and RTP (Write Recovery and Read to Precharge for auto precharge)
 		 * A17, A13, A12	RFU = 0 during MRS
 		 */
-		reg78.mr0_data_0 = (((parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR : ncp_ps_to_clk(parms->tck_ps,15000)) << 9) | (parms->CAS_latency << 4);
+		/* Do the CAS latency translation per Table-2 in JEDEC */
+		switch (parms->CAS_latency)
+		{
+			/* A6:A5:A4:A3(0):A2 */
+			case 9: 
+				tmp = 0x0;
+				break;
+			case 10: 
+				tmp = 0x1;
+				break;
+			case 11: 
+				tmp = 0x4;
+				break;
+			case 12: 
+				tmp = 0x5;
+				break;
+			case 13: 
+				tmp = 0x8;
+				break;
+			case 14: 
+				tmp = 0x9;
+				break;
+			case 15: 
+				tmp = 0xc;
+				break;
+			case 16: 
+				tmp = 0xd;
+				break;
+			case 18: 
+				tmp = 0x10;
+				break;
+			case 20: 
+				tmp = 0x11;
+				break;
+			case 22: 
+				tmp = 0x14;
+				break;
+			case 24: 
+				tmp = 0x15;
+				break;
+			default:
+				tmp = 0;
+		}
+		reg78.mr0_data_0 = (((parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR : ncp_ps_to_clk(parms->tck_ps,15000)) << 9);
+		reg78.mr0_data_0 &= ~(0x7c);
+		reg78.mr0_data_0 |= (tmp << 2);
 #endif
 	}
 	ctm->mr0 = reg78.mr0_data_0;
@@ -1158,12 +1224,13 @@ ncp_sm_denali_2041_init_56xx(
 		{
 			reg79.mr1_data_0 = NCP_SM_ENCODE_RTT_NOM_DDR4(parms->per_smem[smId].sdram_rtt_nom[0]) |
 				NCP_SM_ENCODE_DRV_IMP_DDR4(parms->per_smem[smId].sdram_data_drv_imp[0]) |
-				(parms->additive_latency << 3);
+				(parms->additive_latency << 3) | (0x1 /*DLLenable*/);
 		}
 		else
 		{
 			reg79.mr1_data_0 = NCP_SM_ENCODE_RTT_NOM_DDR3(parms->per_smem[smId].sdram_rtt_nom[0]) |
-				NCP_SM_ENCODE_DRV_IMP_DDR3(parms->per_smem[smId].sdram_data_drv_imp[0]);
+				NCP_SM_ENCODE_DRV_IMP_DDR3(parms->per_smem[smId].sdram_data_drv_imp[0]) |
+				(0x1 /*DLLenable*/);
 		}
 	}
 	ctm->mr1 = reg79.mr1_data_0;
@@ -1186,9 +1253,38 @@ ncp_sm_denali_2041_init_56xx(
 		 * A13		RFU 0 during MRS	
 		 * A17		RFU 0 during MRS	
 		 */
+		switch (parms->CAS_write_latency)
+		{
+			/* A5:A4:A3 */
+			case 9: 
+				tmp = 0x0;
+				break;
+			case 10: 
+				tmp = 0x1;
+				break;
+			case 11: 
+				tmp = 0x2;
+				break;
+			case 12: 
+				tmp = 0x3;
+				break;
+			case 14: 
+				tmp = 0x4;
+				break;
+			case 16: 
+				tmp = 0x5;
+				break;
+			case 18: 
+				tmp = 0x6;
+				break;
+			default:
+				tmp = 0;
+		}
 		if (parms->dram_class == NCP_SM_DDR4_MODE)
 		{
-			reg80.mr2_data_0 = (parms->CAS_write_latency << 3) | (parms->per_smem[smId].sdram_rtt_wr[0] << 9);
+			reg80.mr2_data_0 = (parms->per_smem[smId].sdram_rtt_wr[0] << 9);
+			reg80.mr2_data_0 &= ~(0x38);
+			reg80.mr2_data_0 |= (tmp << 3);
 			if (parms->high_temp_dram == TRUE)
 			{
 				reg80.mr2_data_0 |= 0x80;
@@ -1290,7 +1386,8 @@ ncp_sm_denali_2041_init_56xx(
 		 * A12		read dbi 0 = disable
 		 * A13, A17	RFU
 		 */
-		reg84.mr5_data_0 = (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+		reg84.mr5_data_0 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[smId].sdram_rtt_park[0]) |
+			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
 	}
 	ctm->mr5 = reg84.mr5_data_0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_84_5600, *((ncp_uint32_t *)&reg84));
@@ -1302,14 +1399,37 @@ ncp_sm_denali_2041_init_56xx(
 		/* Implementation for MR6 from JEDEC (ddr4) */
 
 		/*
-		 * A5:A0	vref training value
+		 * A5:A0	vref training value (set this to 0x18)
 		 * A6		vref training range
 		 * A7		vref training enable
 		 * A9,A8	RFU
 		 * A12:A10	tCCD_L
 		 * A13, A17	RFU
 		 */
-		reg85.mr6_data_0 = (parms->dram_class == NCP_SM_DDR4_MODE) ? (ctm->tCCD_L << 10) : 0x0;
+		switch (ctm->tCCD_L)
+		{
+			case 4:
+				tmp = 0;
+				break;
+			case 5:
+				tmp = 1;
+				break;
+			case 6:
+				tmp = 2;
+				break;
+			case 7:
+				tmp = 3;
+				break;
+			case 8:
+				tmp = 4;
+				break;
+			default:
+				tmp = 0;
+				;
+		}
+		reg85.mr6_data_0 = 0x18;
+		reg85.mr6_data_0 &= ~(0x1c00);
+		reg85.mr6_data_0 |= ((parms->dram_class == NCP_SM_DDR4_MODE) ? (tmp << 10) : 0x0);
 	}
 	ctm->mr6 = reg85.mr6_data_0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_85_5600, *((ncp_uint32_t *)&reg85));
@@ -1336,9 +1456,52 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_88 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_88_5600, (ncp_uint32_t *)&reg88);
+	/* data to prog into mem mode reg 2 for cs 0 */
+	/* Implementation for MR2 from JEDEC (ddr4) */
+
+	/*
+	 * A2:A0 	RFU 0 during MRS
+	 * A5:A3	CAS Write Latency
+	 * A7:A6	LP ASR 0 = Normal, 1 = Reduced temp, 2 = extended temp, 3 = auto self-refresh
+	 * A8		RFU 0 during MRS
+	 * A10:A9	RTT_WR
+	 * A11		RFU 0 during MRS
+	 * A12		write CRC 0 = disable
+	 * A13		RFU 0 during MRS	
+	 * A17		RFU 0 during MRS	
+	 */
+	switch (parms->CAS_write_latency)
+	{
+		/* A5:A4:A3 */
+		case 9: 
+			tmp = 0x0;
+			break;
+		case 10: 
+			tmp = 0x1;
+			break;
+		case 11: 
+			tmp = 0x2;
+			break;
+		case 12: 
+			tmp = 0x3;
+			break;
+		case 14: 
+			tmp = 0x4;
+			break;
+		case 16: 
+			tmp = 0x5;
+			break;
+		case 18: 
+			tmp = 0x6;
+			break;
+		default:
+			tmp = 0;
+	}
 	if (parms->dram_class == NCP_SM_DDR4_MODE)
 	{
-		reg88.mr2_data_1 = (parms->CAS_write_latency << 3) | (parms->per_smem[smId].sdram_rtt_wr[1] << 9);
+		reg88.mr2_data_1 = (parms->per_smem[smId].sdram_rtt_wr[1] << 9);
+		reg88.mr2_data_1 &= ~(0x38);
+		reg88.mr2_data_1 |= (tmp << 3);
 		if (parms->high_temp_dram == TRUE)
 		{
 			reg88.mr2_data_1 |= 0x80;
@@ -1375,7 +1538,25 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_92 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_92_5600, (ncp_uint32_t *)&reg92);
-	reg92.mr5_data_1 = reg84.mr5_data_0;
+	{
+		/* data to prog into mem mode reg 5 for cs 0 */
+		/* Implementation for MR5 from JEDEC (ddr4) */
+
+		/*
+		 * A2:A0	CA parity lat mode 0 = disable
+		 * A3		crc error clear 0 = clear
+		 * A4		ca parity error status 0 = clear
+		 * A5		odt input buffer 0 = activated
+		 * A8:A6	rtt_park 0 = disable
+		 * A9		ca parity persistent error 0 = disable
+		 * A10		data mask 0 = disable
+		 * A11		write dbi 0 = disable
+		 * A12		read dbi 0 = disable
+		 * A13, A17	RFU
+		 */
+		reg92.mr5_data_1 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[smId].sdram_rtt_park[1]) |
+			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+	}
 	ncr_write32(ctlReg, NCP_DENALI_CTL_92_5600, *((ncp_uint32_t *)&reg92));
 
 	/* DENALI_CTL_93 */
@@ -1398,8 +1579,8 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_114 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_114_5600, (ncp_uint32_t *)&reg114);
-	reg114.zqcs = ncp_ps_to_clk(parms->tck_ps, 90000); /* 90 ns */
-	reg114.zqcl = ncp_ps_to_clk(parms->tck_ps, 360000); /* 360 ns */
+	reg114.zqcs = 128;/* ncp_ps_to_clk(parms->tck_ps, 90000); *//* 90 ns */
+	reg114.zqcl = 512;/* ncp_ps_to_clk(parms->tck_ps, 360000); *//* 360 ns */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_114_5600, *((ncp_uint32_t *)&reg114));
 
 	/* DENALI_CTL_115 */
@@ -1412,7 +1593,7 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_116 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_116_5600, (ncp_uint32_t *)&reg116);
-	reg116.zq_interval = 64;
+	reg116.zq_interval = ((parms->zqcs_interval /* units in micro-sec */)*1000000)/parms->tck_ps;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_116_5600, *((ncp_uint32_t *)&reg116));
 
 	/* DENALI_CTL_117 */
@@ -1483,7 +1664,7 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_128 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_128_5600, (ncp_uint32_t *)&reg128);
-	reg128.bg_rotate_en = 0x0;
+	reg128.bg_rotate_en = 0x1;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_128_5600, *((ncp_uint32_t *)&reg128));
 
 	/* DENALI_CTL_155 */
@@ -1566,7 +1747,7 @@ ncp_sm_denali_2041_init_56xx(
 	reg178.rdlvl_cs_map = 0xf;
 	reg178.rdlvl_gate_cs_map = 0xf;
 	reg178.vref_cs = parms->vref_cs; /* default cs0 set to 0x1 */
-	reg178.vref_en = parms->vref_en; /* default disabled set to 0x0 */
+	reg178.vref_en = ((parms->packedPHYTrainingOptions >> 17) & 0x1); /* default disabled set to 0x0 */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_178_5600, *((ncp_uint32_t *)&reg178));
 
 	if (parms->dram_class == NCP_SM_DDR4_MODE)
@@ -1575,7 +1756,7 @@ ncp_sm_denali_2041_init_56xx(
 		ncr_read32(ctlReg, NCP_DENALI_CTL_179_5600, (ncp_uint32_t *)&reg179);
 		/* vref_pda_en is per DRAM addressability during VREF training, set to simply
 		 * vref_en setting. */
-		reg179.vref_pda_en = parms->vref_en;
+		reg179.vref_pda_en = ((parms->packedPHYTrainingOptions >> 17) & 0x1);
 		/* defines the range and value for vref training - 0x67 set to ~70%
 		 * It is 7 bits, b[6] is range, whereas b[5:0] is the actual vref value
 		 * there is setting for each DRAM for each chip-select */
@@ -1776,10 +1957,10 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_336_5600, (ncp_uint32_t *)&reg336);
 	/* Adjustment for PHY read timing */
 	/* Should this be cas_lat + additive_lat + ca_parity_lat Check ?? Should minimum be 4 ? */
-	reg336.rdlat_adj = 0xd; 
+	reg336.rdlat_adj = ((parms->CAS_latency + parms->additive_latency + reg09.ca_parity_lat - reg19.reg_dimm_enable) - 3);
 	/* Adjustment for PHY write timing */
 	/* Should this be write_lat + additive_lat + ca_parity_lat Check ?? Should minimum be 1 ? */
-	reg336.wrlat_adj = parms->CAS_write_latency;
+	reg336.wrlat_adj = ((parms->CAS_write_latency + parms->additive_latency + reg09.ca_parity_lat - reg19.reg_dimm_enable) - 1);
 	reg336.tdfi_ctrl_delay = 0x2;
 	reg336.tdfi_dram_clk_disable = 0x2; /* from register_gen TCL */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_336_5600, *((ncp_uint32_t *)&reg336));
@@ -1815,8 +1996,8 @@ ncp_sm_denali_2041_init_56xx(
 	/* DENALI_CTL_342 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_342_5600, (ncp_uint32_t *)&reg342);
 	reg342.rdlvl_resp_mask = 0x0; /* from reg gen */
-	reg342.rdlvl_en = parms->rdlvl_en;
-	reg342.rdlvl_gate_en = parms->rdlvl_gate_en;
+	reg342.rdlvl_en = 0x0; /* controller will never drive data-eye training, the PHY would */
+	reg342.rdlvl_gate_en = ((parms->packedPHYTrainingOptions >> 10) & 0x1);
 	ncr_write32(ctlReg, NCP_DENALI_CTL_342_5600, *((ncp_uint32_t *)&reg342));
 
 	/* DENALI_CTL_343 */
@@ -1868,9 +2049,52 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_351 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_351_5600, (ncp_uint32_t *)&reg351);
+	/* data to prog into mem mode reg 2 for cs 0 */
+	/* Implementation for MR2 from JEDEC (ddr4) */
+
+	/*
+	 * A2:A0 	RFU 0 during MRS
+	 * A5:A3	CAS Write Latency
+	 * A7:A6	LP ASR 0 = Normal, 1 = Reduced temp, 2 = extended temp, 3 = auto self-refresh
+	 * A8		RFU 0 during MRS
+	 * A10:A9	RTT_WR
+	 * A11		RFU 0 during MRS
+	 * A12		write CRC 0 = disable
+	 * A13		RFU 0 during MRS	
+	 * A17		RFU 0 during MRS	
+	 */
+	switch (parms->CAS_write_latency)
+	{
+		/* A5:A4:A3 */
+		case 9: 
+			tmp = 0x0;
+			break;
+		case 10: 
+			tmp = 0x1;
+			break;
+		case 11: 
+			tmp = 0x2;
+			break;
+		case 12: 
+			tmp = 0x3;
+			break;
+		case 14: 
+			tmp = 0x4;
+			break;
+		case 16: 
+			tmp = 0x5;
+			break;
+		case 18: 
+			tmp = 0x6;
+			break;
+		default:
+			tmp = 0;
+	}
 	if (parms->dram_class == NCP_SM_DDR4_MODE)
 	{
-		reg351.mr2_data_2 = (parms->CAS_write_latency << 3) | (parms->per_smem[smId].sdram_rtt_wr[2] << 9);
+		reg351.mr2_data_2 = (parms->per_smem[smId].sdram_rtt_wr[2] << 9);
+		reg351.mr2_data_2 &= ~(0x38);
+		reg351.mr2_data_2 |= (tmp << 3);
 		if (parms->high_temp_dram == TRUE)
 		{
 			reg351.mr2_data_2 |= 0x80;
@@ -1907,7 +2131,25 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_355 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_355_5600, (ncp_uint32_t *)&reg355);
-	reg355.mr5_data_2 = reg84.mr5_data_0;
+	{
+		/* data to prog into mem mode reg 5 for cs 0 */
+		/* Implementation for MR5 from JEDEC (ddr4) */
+
+		/*
+		 * A2:A0	CA parity lat mode 0 = disable
+		 * A3		crc error clear 0 = clear
+		 * A4		ca parity error status 0 = clear
+		 * A5		odt input buffer 0 = activated
+		 * A8:A6	rtt_park 0 = disable
+		 * A9		ca parity persistent error 0 = disable
+		 * A10		data mask 0 = disable
+		 * A11		write dbi 0 = disable
+		 * A12		read dbi 0 = disable
+		 * A13, A17	RFU
+		 */
+		reg355.mr5_data_2 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[smId].sdram_rtt_park[2]) |
+			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+	}
 	ncr_write32(ctlReg, NCP_DENALI_CTL_355_5600, *((ncp_uint32_t *)&reg355));
 
 	/* DENALI_CTL_356 */
@@ -1937,9 +2179,52 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_359 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_359_5600, (ncp_uint32_t *)&reg359);
+	/* data to prog into mem mode reg 2 for cs 0 */
+	/* Implementation for MR2 from JEDEC (ddr4) */
+
+	/*
+	 * A2:A0 	RFU 0 during MRS
+	 * A5:A3	CAS Write Latency
+	 * A7:A6	LP ASR 0 = Normal, 1 = Reduced temp, 2 = extended temp, 3 = auto self-refresh
+	 * A8		RFU 0 during MRS
+	 * A10:A9	RTT_WR
+	 * A11		RFU 0 during MRS
+	 * A12		write CRC 0 = disable
+	 * A13		RFU 0 during MRS	
+	 * A17		RFU 0 during MRS	
+	 */
+	switch (parms->CAS_write_latency)
+	{
+		/* A5:A4:A3 */
+		case 9: 
+			tmp = 0x0;
+			break;
+		case 10: 
+			tmp = 0x1;
+			break;
+		case 11: 
+			tmp = 0x2;
+			break;
+		case 12: 
+			tmp = 0x3;
+			break;
+		case 14: 
+			tmp = 0x4;
+			break;
+		case 16: 
+			tmp = 0x5;
+			break;
+		case 18: 
+			tmp = 0x6;
+			break;
+		default:
+			tmp = 0;
+	}
 	if (parms->dram_class == NCP_SM_DDR4_MODE)
 	{
-		reg359.mr2_data_3 = (parms->CAS_write_latency << 3) | (parms->per_smem[smId].sdram_rtt_wr[3] << 9);
+		reg359.mr2_data_3 = (parms->per_smem[smId].sdram_rtt_wr[3] << 9);
+		reg359.mr2_data_3 &= ~(0x38);
+		reg359.mr2_data_3 |= (tmp << 3);
 		if (parms->high_temp_dram == TRUE)
 		{
 			reg359.mr2_data_3 |= 0x80;
@@ -1976,7 +2261,25 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_363 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_363_5600, (ncp_uint32_t *)&reg363);
-	reg363.mr5_data_3 = reg84.mr5_data_0;
+	{
+		/* data to prog into mem mode reg 5 for cs 0 */
+		/* Implementation for MR5 from JEDEC (ddr4) */
+
+		/*
+		 * A2:A0	CA parity lat mode 0 = disable
+		 * A3		crc error clear 0 = clear
+		 * A4		ca parity error status 0 = clear
+		 * A5		odt input buffer 0 = activated
+		 * A8:A6	rtt_park 0 = disable
+		 * A9		ca parity persistent error 0 = disable
+		 * A10		data mask 0 = disable
+		 * A11		write dbi 0 = disable
+		 * A12		read dbi 0 = disable
+		 * A13, A17	RFU
+		 */
+		reg363.mr5_data_3 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[smId].sdram_rtt_park[3]) |
+			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+	}
 	ncr_write32(ctlReg, NCP_DENALI_CTL_363_5600, *((ncp_uint32_t *)&reg363));
 
 	/* DENALI_CTL_364 */
@@ -1989,7 +2292,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_365_5600, (ncp_uint32_t *)&reg365);
 	reg365.memdata_ratio_3 = 0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_365_5600, *((ncp_uint32_t *)&reg365));
-
+#if 0
 	/* int_status */
 	/* DENALI_CTL_368 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_368_5600, (ncp_uint32_t *)&reg368);
@@ -2000,6 +2303,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_369_5600, (ncp_uint32_t *)&reg369);
 	reg369.int_ack = 0x3; /* clears associated bit in int_status */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_369_5600, *((ncp_uint32_t *)&reg369));
+#endif
 
 	/* int_mask */
 	/* DENALI_CTL_370 */
@@ -2156,10 +2460,31 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_write32(ctlReg, NCP_DENALI_CTL_00_5600, *((ncp_uint32_t *)&reg00));
 
 	/* poll for memory init operation bit-8 */
-	ncr_poll(ctlReg, NCP_DENALI_CTL_366_5600,  0x0100,  0x0100,  1000000,  10000);
+	ncpStatus = (ncr_poll(ctlReg, NCP_DENALI_CTL_366_5600,  0x0100,  0x0100,  1000000,  10000));
+
+	if (ncpStatus == NCP_ST_POLL_TIMEOUT)
+	{
+		errprintf("POLL timeout while waiting for MC init to complete [line:%d]\n",__LINE__);
+	}
 
 	/* poll for DFI init complete operation bit-30 */
-	ncr_poll(ctlReg, NCP_DENALI_CTL_366_5600,  0x40000000,  0x40000000,  1000000,  10000);
+	ncpStatus = (ncr_poll(ctlReg, NCP_DENALI_CTL_366_5600,  0x40000000,  0x40000000,  1000000,  10000));
+
+	if (ncpStatus == NCP_ST_POLL_TIMEOUT)
+	{
+		errprintf("POLL timeout while waiting for DFI init to complete [line:%d]\n",__LINE__);
+	}
+
+	/* Clear all interrupts */
+	/* DENALI_CTL_368 */
+	ncr_read32(ctlReg, NCP_DENALI_CTL_368_5600, (ncp_uint32_t *)&reg368);
+	reg368.int_ack = 0xffffffff;  /* clears associated bit in int_status */
+	ncr_write32(ctlReg, NCP_DENALI_CTL_368_5600, *((ncp_uint32_t *)&reg368));
+
+	/* DENALI_CTL_369 */
+	ncr_read32(ctlReg, NCP_DENALI_CTL_369_5600, (ncp_uint32_t *)&reg369);
+	reg369.int_ack = 0x3; /* clears associated bit in int_status */
+	ncr_write32(ctlReg, NCP_DENALI_CTL_369_5600, *((ncp_uint32_t *)&reg369));
 
 	NCP_RETURN_LABEL
 		return ncpStatus;

@@ -50,6 +50,11 @@
 	( ( (val & 0x1) << 1 ) |  /* a1 */ \
 	  ( (val & 0x2) << 1 ) )  /* a2 */ 
 
+#define NCP_SM_ENCODE_RTT_PARK_DDR4(val)  \
+	( ( (val & 0x1) << 6 ) |  /* a6 */ \
+	  ( (val & 0x2) << 6 ) |  /* a7 */ \
+	  ( (val & 0x4) << 6 ) )  /* a8 */
+
 /*
  * Timing Parameters
  * Common to MC, Phy
@@ -106,6 +111,11 @@ ncp_ps_to_clk(
 		ncp_uint32_t num_ps);
 
 ncp_st_t
+ncp_sm_ddr4_mc_reg_dump(
+		ncp_dev_hdl_t   dev,
+		ncp_uint32_t    smNode);
+
+ncp_st_t
 ncp_sm_ddr4_phy_reg_dump(
 		ncp_dev_hdl_t   dev,
 		ncp_uint32_t    smNode);
@@ -117,6 +127,12 @@ ncp_sm_ddr4_phy_training_error_check(
 
 ncp_st_t
 ncp_sm_ddr4_phy_training(
+		ncp_dev_hdl_t   dev,
+		ncp_uint32_t    smNode,
+		ncp_sm_parms_t *parms);
+
+ncp_st_t
+ncp_sm_ddr4_post_phy_training_mc_setup(
 		ncp_dev_hdl_t   dev,
 		ncp_uint32_t    smNode,
 		ncp_sm_parms_t *parms);

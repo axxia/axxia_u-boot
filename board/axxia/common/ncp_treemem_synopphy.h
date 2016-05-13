@@ -44,6 +44,12 @@ ncp_cm_ddr4_phy_training(
 		ncp_sm_parms_t *parms);
 
 ncp_st_t
+ncp_cm_ddr4_post_phy_training_mc_setup(
+		ncp_dev_hdl_t   dev,
+		ncp_uint32_t    cmNode,
+		ncp_sm_parms_t *parms);
+
+ncp_st_t
 ncp_cm_ddr4_phy_init(
 		ncp_dev_hdl_t   dev,
 		ncp_uint32_t    cmNode,
