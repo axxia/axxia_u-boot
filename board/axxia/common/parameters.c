@@ -422,6 +422,8 @@ parameters_read:
 	} else {
 		printf("DDR Retention Not Enabled\n");
 	}
+#else
+	sysmem->ddrRecovery = 0;
 #endif
 #endif
 
