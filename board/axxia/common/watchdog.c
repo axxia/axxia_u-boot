@@ -71,9 +71,12 @@ start_watchdog(unsigned int timeout)
 	/* Disable the timer. */
 	writel(0, (TIMER5 + TIMER_CONTROL));
 
-	/* Enable watchdog 0, system reset. */
+	/* Enable watchdog 0, chip reset. */
 	value = readl(SYSCON + 0x2008);
-	value |= 0x140;
+	value |= 0x100;
+#ifdef WATCHDOG_RESET_SYSTEM
+	value |= 0x40;
+#endif
 	writel(value, (SYSCON + 0x2008));
 
 	/* Set up and enable the timer. */

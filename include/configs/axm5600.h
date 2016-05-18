@@ -1423,6 +1423,7 @@ void dump_packet(const char *, void *, int);
 #define CONFIG_HW_WATCHDOG
 /*#define LEAVE_WATCHDOG_ON*/
 /*#define MAKE_WATCHDOG_PERMANENT*/
+/*#define WATCHDOG_RESET_SYSTEM*/
 
 #ifndef __ASSEMBLY__
 int start_watchdog(unsigned int);
