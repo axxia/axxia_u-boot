@@ -1453,11 +1453,11 @@ void stop_watchdog(void);
 
 #define CONFIG_ENV_SPI_BUS              0
 #define CONFIG_ENV_SPI_CS		0
-#define CONFIG_ENV_SPI_MAX_HZ           25000000
+#define CONFIG_ENV_SPI_MAX_HZ           5000000
 #define CONFIG_ENV_SPI_MODE             SPI_MODE_0
 #define CONFIG_SPL_SPI_BUS		0
 #define CONFIG_SPL_SPI_CS               0
-#define CONFIG_SF_DEFAULT_SPEED         25000000
+#define CONFIG_SF_DEFAULT_SPEED         5000000
 #define CONFIG_SF_DEFAULT_MODE          SPI_MODE_0
 
 #define CONFIG_SPL_SPI_SUPPORT
