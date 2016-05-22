@@ -11,7 +11,7 @@
 #include <malloc.h>
 
 #undef BZ33327_WA
-#define BZ33327_WA
+/*#define BZ33327_WA*/
 
 #define MDIO_REG_CTRL		0x00
 #define MDIO_REG_STATUS		0x04
@@ -22,7 +22,10 @@ static int
 axxia_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
 {
 	void __iomem *base = bus->priv;
-	u32 command, status;
+	u32 command;
+#if defined(BZ33327_WA)
+	u32 status;
+#endif
 
 #if defined(BZ33327_WA)
 	/* Set the mdio_busy (status) bit.  */
@@ -57,7 +60,10 @@ static int
 axxia_mdio_write(struct mii_dev *bus, int addr, int devad, int reg, u16 val)
 {
 	void __iomem *base = bus->priv;
-	u32 command, status;
+	u32 command;
+#if defined(BZ33327_WA)
+	u32 status;
+#endif
 
 	/* Wait for mdio_busy (control) to be clear. */
 	do {
@@ -128,5 +134,19 @@ axxia_mdio_init(void)
 	writel(offset, dev->priv + MDIO_REG_CLK_OFFSET);
 	writel(period, dev->priv + MDIO_REG_CLK_PERIOD);
 	initialized = 1;
+
+	/*
+	  Set the RGMII Clock Pad Skew
+
+	  This is PHY specific, and may only apply to Victoria.
+	*/
+
+#ifdef CONFIG_TARGET_HARDWARE
+	dev->write(dev, 7, 0, 0xd, 2);
+	dev->write(dev, 7, 0, 0xe, 8);
+	dev->write(dev, 7, 0, 0xd, 0x4002);
+	dev->write(dev, 7, 0, 0xe, 0x3ff);
+#endif
+
 	return 0;
 }
