@@ -1783,8 +1783,8 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_157 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_157_5600, (ncp_uint32_t *)&reg157);
-	reg157.r2w_diffcs_dly = 0x2;
-	reg157.r2r_diffcs_dly = 0x2;
+	reg157.r2w_diffcs_dly = 0x6;
+	reg157.r2r_diffcs_dly = 0x6;
 	reg157.rd_to_odth = 0x5;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_157_5600, *((ncp_uint32_t *)&reg157));
 
@@ -1792,8 +1792,8 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_158_5600, (ncp_uint32_t *)&reg158);
 	reg158.r2w_samecs_dly = 0x4;
 	reg158.r2r_samecs_dly = 0x0;
-	reg158.w2w_diffcs_dly = 0x2;
-	reg158.w2r_diffcs_dly = 0x2;
+	reg158.w2w_diffcs_dly = 0x6;
+	reg158.w2r_diffcs_dly = 0x6;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_158_5600, *((ncp_uint32_t *)&reg158));
 
 	/* DENALI_CTL_159 */

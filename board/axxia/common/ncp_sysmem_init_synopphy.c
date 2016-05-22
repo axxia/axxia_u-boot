@@ -325,6 +325,7 @@ ncp_sm_ddr4_mc_reg_dump(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_120_5600, (ncp_uint32_t *)&reg120);
 	ncr_read32(ctlReg, NCP_DENALI_CTL_121_5600, (ncp_uint32_t *)&reg121);
 	ncr_read32(ctlReg, NCP_DENALI_CTL_122_5600, (ncp_uint32_t *)&reg122);
+	ncr_read32(ctlReg, NCP_DENALI_CTL_128_5600, (ncp_uint32_t *)&reg128);
 	ncr_read32(ctlReg, NCP_DENALI_CTL_397_5600, (ncp_uint32_t *)&reg397);
 
 	printf ("OPTIMAL_RMODW_EN \t= 0x%x", reg21.optimal_rmodw_en); 
