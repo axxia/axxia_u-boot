@@ -68,7 +68,7 @@ sysmem_size(void)
 	sdram_device_width_bits = 4 * (1 << sysmem->sdram_device_width);
 	primary_bus_width_bits = 8 * (1 << sysmem->primary_bus_width);
 	sdram_capacity_bytes =
-		sysmem->numInterfaces * sysmem->numRanks *
+		sysmem->numInterfaces * sysmem->num_ranks_per_interface *
 		sdram_capacity_bytes *
 		(primary_bus_width_bits / sdram_device_width_bits);
 	sysmem->totalSize = sdram_capacity_bytes;

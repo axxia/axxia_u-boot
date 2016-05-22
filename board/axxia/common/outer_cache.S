@@ -82,8 +82,20 @@ ENTRY(v7_outer_cache_flush_all)
 	b	__asm_flush_l3_cache
 ENDPROC(v7_outer_cache_flush_all)
 
-ENTRY(v7_outer_cache_disable)
-ENDPROC(v7_outer_cache_disable)
+ENTRY(__asm_disable_l3_cache)
+	mov	x9, x30
+	mov	x0, 0
+	bl	set_outer_cache_state
+	mov	x30, x9
+	ret
+ENDPROC(__asm_disable_l3_cache)
 
-ENTRY(v7_outer_cache_enable)
-ENDPROC(v7_outer_cache_enable)
+ENTRY(__asm_enable_l3_cache)
+#ifndef LEAVE_L3_IN_SFONLY
+	mov	x9, x30
+	mov	x0, 3
+	bl	set_outer_cache_state
+	mov	x30, x9
+#endif
+	ret
+ENDPROC(__asm_enable_l3_cache)

@@ -57,12 +57,12 @@ typedef struct {
 typedef struct {
 	/* from JEDEC section 9 79-4 */
 	ncp_uint16_t  	speed; 		/* comes from part as ddrClockSpeed in sm_parms */
-	ncp_uint8_t   	binned_CL[3]; 	/* comes from part CL-nRCD-nRP as user input in sm_parms */
-	ncp_uint8_t   	CL_config[9]; 	/* comes from sm_parms as CAS_latency */
-	ncp_uint16_t   	tRCD[3];	/* JEDEC unit of ns converted to ps so don't have to deal with floats */
-	ncp_uint16_t   	tRP[3];		/* JEDEC unit of ns converted to ps */
-	ncp_uint16_t   	tRAS[3];	/* JEDEC unit of ns converted to ps */
-	ncp_uint16_t   	tRC[3];		/* JEDEC unit of ns converted to ps */
+	ncp_uint8_t   	binned_CL[4]; 	/* comes from part CL-nRCD-nRP as user input in sm_parms */
+	ncp_uint8_t   	CL_config[10]; 	/* comes from sm_parms as CAS_latency */
+	ncp_uint16_t   	tRCD[4];	/* JEDEC unit of ns converted to ps so don't have to deal with floats */
+	ncp_uint16_t   	tRP[4];		/* JEDEC unit of ns converted to ps */
+	ncp_uint16_t   	tRAS[4];	/* JEDEC unit of ns converted to ps */
+	ncp_uint16_t   	tRC[4];		/* JEDEC unit of ns converted to ps */
 
 	/* from JEDEC section 12.3 79-4 */
 	ncp_uint16_t	tCCD_L;		/* nCK */
@@ -129,20 +129,20 @@ ncp_ddr3_speedbin_vals_t speedbin_ddr3_vals[6] =  {
 
 ncp_ddr4_speedbin_vals_t speedbin_ddr4_vals[4] =  {
 
-	{/*DDR3-1600 Table*/800, {10,11,12}, {9,10,11,12,0xff,0xff,0xff,0xff,0xff}, {12500,13750,15000}, {12500,13750,15000}, {35000,35000,35000}, 
-		{47500,48750,50000}, 5, 4, {5000, 5000, 6000}, {6000, 6000, 7500}, {20000, 25000, 35000}, 2500, 7500, 7500, 15000, 8, 15000, 
+	{/*DDR3-1600 Table*/800, {10,11,12,0xff}, {9,10,11,12,0xff,0xff,0xff,0xff,0xff,0xff}, {12500,13750,15000,0xff}, {12500,13750,15000,0xff}, {35000,35000,35000,0xff}, 
+		{47500,48750,50000,0xff}, 5, 4, {5000, 5000, 6000}, {6000, 6000, 7500}, {20000, 25000, 35000}, 2500, 7500, 7500, 15000, 8, 15000, 
 		1, 15000, 1024, 160000, 160000, 5000, 10000, 5000, 10000},
 
-	{/*DDR3-1866 Table*/933, {12,13,14}, {9,10,11,12,13,14,0xff,0xff,0xff}, {12850,13920,15000}, {12850,13920,15000}, {34000,34000,34000}, 
-		{46850,47920,49000}, 5, 4, {4200, 4200, 5300}, {5300, 5300, 6400}, {17000, 23000, 30000}, 2500, 7500, 7500, 15000, 8, 15000, 
+	{/*DDR3-1866 Table*/933, {12,13,14,0xff}, {9,10,11,12,13,14,0xff,0xff,0xff,0xff}, {12850,13920,15000,0xff}, {12850,13920,15000,0xff}, {34000,34000,34000,0xff}, 
+		{46850,47920,49000,0xff}, 5, 4, {4200, 4200, 5300}, {5300, 5300, 6400}, {17000, 23000, 30000}, 2500, 7500, 7500, 15000, 8, 15000, 
 		1, 15000, 1024, 160000, 160000, 5000, 10000, 5000, 10000},
 
-	{/*DDR3-2133 Table*/1066, {14,15,16}, {9,10,11,12,13,14,15,16,0xff}, {13130,14060,15000}, {13130,14060,15000}, {33000,33000,33000}, 
-		{46130,47060,48000}, 6, 4, {3700, 3700, 5300}, {5300, 5300, 6400}, {15000, 21000, 30000}, 2500, 7500, 7500, 15000, 8, 15000, 
+	{/*DDR3-2133 Table*/1066, {14,15,16,0xff}, {9,10,11,12,13,14,15,16,0xff,0xff}, {13130,14060,15000,0xff}, {13130,14060,15000,0xff}, {33000,33000,33000,0xff}, 
+		{46130,47060,48000,0xff}, 6, 4, {3700, 3700, 5300}, {5300, 5300, 6400}, {15000, 21000, 30000}, 2500, 7500, 7500, 15000, 8, 15000, 
 		1, 15000, 1024, 160000, 160000, 5000, 10000, 5000, 10000},
 
-	{/*DDR3-2400 Table*/1200, {15,16,18}, {9,10,11,12,13,14,15,16,18}, {12500,13320,15000}, {12500,13320,15000}, {32000,32000,32000}, 
-		{44500,45320,47000}, 6, 4, {3300, 3300, 5300}, {4900, 4900, 6400}, {13000, 21000, 30000}, 2500, 7500, 7500, 15000, 8, 15000, 
+	{/*DDR3-2400 Table*/1200, {15,16,17,18}, {9,10,11,12,13,14,15,16,17,18}, {12500,13320,14160,15000}, {12500,13320,14160,15000}, {32000,32000,32000,32000}, 
+		{44500,45320,46160,47000}, 6, 4, {3300, 3300, 5300}, {4900, 4900, 6400}, {13000, 21000, 30000}, 2500, 7500, 7500, 15000, 8, 15000, 
 		1, 15000, 1024, 160000, 160000, 5000, 10000, 5000, 10000}
 
 };
@@ -178,13 +178,13 @@ ncp_sm_common_setup_56xx(
 
 	if ((parms == NULL) || (ctm == NULL))
 	{
-		printf("NULL parms\n");
+		errprintf("NULL parms\n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
 	if ((parms->dram_class != NCP_SM_DDR3_MODE) && (parms->dram_class != NCP_SM_DDR4_MODE))
 	{
-		printf("Error specifying dram_class %d\n",parms->dram_class);
+		errprintf("Error specifying dram_class %d\n",parms->dram_class);
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -196,7 +196,7 @@ ncp_sm_common_setup_56xx(
 			(parms->ddrClockSpeedMHz != 933) &&
 			(parms->ddrClockSpeedMHz != 1066))
 	{
-		printf("ddr3 clock speed must be 400/533/667/800/933/1066 MHz\n");
+		errprintf("ddr3 clock speed must be 400/533/667/800/933/1066 MHz\n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -206,7 +206,7 @@ ncp_sm_common_setup_56xx(
 			(parms->ddrClockSpeedMHz != 1066) &&
 			(parms->ddrClockSpeedMHz != 1200))
 	{
-		printf("ddr4 clock speed must be 800/933/1066/1200 MHz\n");
+		errprintf("ddr4 clock speed must be 800/933/1066/1200 MHz\n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -214,7 +214,7 @@ ncp_sm_common_setup_56xx(
 			(parms->sdram_device_width != 1) &&
 			(parms->sdram_device_width != 2))
 	{
-		printf("ddr3 device_width must be x8/x16 \n");
+		errprintf("ddr3 device_width must be x8/x16 \n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -222,7 +222,7 @@ ncp_sm_common_setup_56xx(
 			(parms->sdram_device_width != 1) &&
 			(parms->sdram_device_width != 2))
 	{
-		printf("ddr4 device_width must be x8/x16 \n");
+		errprintf("ddr4 device_width must be x8/x16 \n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -230,7 +230,7 @@ ncp_sm_common_setup_56xx(
 			(parms->bstlen != 3))
 	{
 		/* 1 for BL2, 2 for BL4, 3 for BL8 */
-		printf("ddr4 bstlen must be 3 \n");
+		errprintf("ddr4 bstlen must be 3 \n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -243,7 +243,7 @@ ncp_sm_common_setup_56xx(
 			 ((parms->ddrClockSpeedMHz == 933) && ((parms->tck_ps < 1070) || (parms->tck_ps > 3300))) ||
 			 ((parms->ddrClockSpeedMHz == 1066) && ((parms->tck_ps < 938) || (parms->tck_ps > 3300)))))
 	{
-		printf("ddr3 invalid tck_ps clock-period in pico-sec \n");
+		errprintf("ddr3 invalid tck_ps clock-period in pico-sec \n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -253,7 +253,7 @@ ncp_sm_common_setup_56xx(
 			 ((parms->ddrClockSpeedMHz == 1066) && ((parms->tck_ps < 938) || (parms->tck_ps > 1600))) ||
 			 ((parms->ddrClockSpeedMHz == 1200) && ((parms->tck_ps < 833) || (parms->tck_ps > 1600)))))
 	{
-		printf("ddr4 invalid tck_ps clock-period in pico-sec \n");
+		errprintf("ddr4 invalid tck_ps clock-period in pico-sec \n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -261,7 +261,7 @@ ncp_sm_common_setup_56xx(
 			(parms->topology != NCP_SM_TOPO_ONE_DUAL_RANK) &&
 			(parms->topology != NCP_SM_TOPO_TWO_DUAL_RANK))
 	{
-		printf("invalid chip-select_map i.e. topology selected \n");
+		errprintf("invalid chip-select_map i.e. topology selected \n");
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -275,7 +275,7 @@ ncp_sm_common_setup_56xx(
 				(speedbin_ddr3_vals[clkSpeedIndex].binned_CL[binnedCLIndex] != 0xff)) binnedCLIndex++;
 		if (speedbin_ddr3_vals[clkSpeedIndex].binned_CL[binnedCLIndex] == 0xff)
 		{
-			printf("invalid binned_CAS_latency\n");
+			errprintf("invalid binned_CAS_latency\n");
 			NCP_CALL(NCP_ST_ERROR);
 		}
 
@@ -285,7 +285,7 @@ ncp_sm_common_setup_56xx(
 				(speedbin_ddr3_vals[clkSpeedIndex].CL_config[tmpVal] != 0xff)) tmpVal++;
 		if (speedbin_ddr3_vals[clkSpeedIndex].CL_config[tmpVal] == 0xff)
 		{
-			printf("invalid CAS_latency\n");
+			errprintf("invalid CAS_latency\n");
 			NCP_CALL(NCP_ST_ERROR);
 		}
 	}
@@ -299,7 +299,7 @@ ncp_sm_common_setup_56xx(
 				(speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex] != 0xff)) binnedCLIndex++;
 		if (speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex] == 0xff)
 		{
-			printf("invalid binned_CAS_latency\n");
+			errprintf("invalid binned_CAS_latency\n");
 			NCP_CALL(NCP_ST_ERROR);
 		}
 
@@ -309,7 +309,7 @@ ncp_sm_common_setup_56xx(
 				(speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal] != 0xff)) tmpVal++;
 		if (speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal] == 0xff)
 		{
-			printf("invalid CAS_latency\n");
+			errprintf("invalid CAS_latency\n");
 			NCP_CALL(NCP_ST_ERROR);
 		}
 	}
@@ -326,7 +326,7 @@ ncp_sm_common_setup_56xx(
 	 * However, for example a 933 part can be run at lower rates like 800 MHz, thus having a different tCK
 	 * and if using above method would cover <any> JEDEC tCK cases as well */
 
-	/*printf("X9/XLF MC node %d Common Timing Parameters Init....\n",smNode);*/
+	/*dbgprintf("X9/XLF MC node %d Common Timing Parameters Init....\n",smNode);*/
 
 	/* First Populate Commonly used Timing Parameters based on a) sm_parms info b) JEDEC */
 	if (parms->dram_class == NCP_SM_DDR3_MODE)
@@ -396,6 +396,47 @@ ncp_sm_common_setup_56xx(
 		ctm->tCKE = Max(3, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tCKE)));
 		ctm->tMRD_PDA = Max(16, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tMRD_PDA)));
 		ctm->tREFI = ncp_ps_to_clk(parms->tck_ps, ((parms->high_temp_dram == TRUE) ?  3900000 : 7800000));
+
+		dbgprintf("ctm->speed = %d, ctm->binned_CL = %d, ctm->CL_config = %d, ctm->tRCD = %d, ctm->tRP = %d, ctm->tRAS = %d, ctm->tRC = %d, ctm->tCCD_L = %d, ctm->tCCD_S = %d, ctm->tRRD_S = %d, ctm->tRRD_L = %d, ctm->tFAW = %d, ctm->tWTR_S = %d, ctm->tWTR_L = %d, ctm->tRTP = %d, ctm->tWR = %d, ctm->tMRD = %d, ctm->tMOD = %d, ctm->tMPRR = %d, ctm->tWR_MPR = %d, ctm->tZQinit = %d, ctm->tRFC = %d, ctm->tXPR = %d, ctm->tXS = %d, ctm->tCKESR = %d, ctm->tCKSRE = %d, ctm->tCKE = %d, ctm->tMRD_PDA = %d, ctm->tREFI = %d\n",
+				ctm->speed,
+				ctm->binned_CL,
+				ctm->CL_config,
+				ctm->tRCD,
+				ctm->tRP,
+				ctm->tRAS,
+				ctm->tRC,
+				ctm->tCCD_L,
+				ctm->tCCD_S,
+				ctm->tRRD_S,
+				ctm->tRRD_L,
+				ctm->tFAW,
+				ctm->tWTR_S,
+				ctm->tWTR_L,
+				ctm->tRTP,
+				ctm->tWR,
+				ctm->tMRD,
+				ctm->tMOD,
+				ctm->tMPRR,
+				ctm->tWR_MPR,
+				ctm->tZQinit,
+				ctm->tRFC,
+				ctm->tXPR,
+				ctm->tXS,
+				ctm->tCKESR,
+				ctm->tCKSRE,
+				ctm->tCKE,
+				ctm->tMRD_PDA,
+				ctm->tREFI);
+		/* HACK */
+		/*ctm->tRC = 50;*/
+		/*ctm->tRRD_S = 7;*/
+		/*ctm->tRP = 14;*/
+		/*ctm->tFAW = 38;*/
+		/*ctm->tRCD = 14;*/
+		ctm->tMOD = 12; /* on MC this should be 12 and on PHY this should be 4 */
+		/*ctm->tCKE = 6;*/
+		/*ctm->tXS = 0x200;*/
+		/*ctm->tCCD_L = 0x0;*/
 	}
 
 	NCP_RETURN_LABEL
@@ -413,6 +454,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncp_region_id_t ctlReg = NCP_REGION_ID(smNode, NCP_SYSMEM_TGT_DENALI);
 	ncp_uint32_t loop=0;
 	ncp_uint32_t tmp=0;
+	/*ncp_uint32_t tmp1=0;*/
 
 	int i=0;
 	ncp_uint8_t rd_ODT[4];
@@ -500,6 +542,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncp_denali_DENALI_CTL_121_5600_t reg121 = {0};
 	ncp_denali_DENALI_CTL_122_5600_t reg122 = {0};
 	ncp_denali_DENALI_CTL_123_5600_t reg123 = {0};
+	ncp_denali_DENALI_CTL_124_5600_t reg124 = {0};
 	ncp_denali_DENALI_CTL_125_5600_t reg125 = {0};
 	ncp_denali_DENALI_CTL_126_5600_t reg126 = {0};
 	ncp_denali_DENALI_CTL_128_5600_t reg128 = {0};
@@ -507,6 +550,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncp_denali_DENALI_CTL_156_5600_t reg156 = {0};
 	ncp_denali_DENALI_CTL_157_5600_t reg157 = {0};
 	ncp_denali_DENALI_CTL_158_5600_t reg158 = {0};
+	ncp_denali_DENALI_CTL_159_5600_t reg159 = {0};
 	ncp_denali_DENALI_CTL_163_5600_t reg163 = {0};
 	ncp_denali_DENALI_CTL_164_5600_t reg164 = {0};
 	ncp_denali_DENALI_CTL_166_5600_t reg166 = {0};
@@ -577,6 +621,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncp_denali_DENALI_CTL_379_5600_t reg379 = {0};
 	ncp_denali_DENALI_CTL_380_5600_t reg380 = {0};
 	ncp_denali_DENALI_CTL_381_5600_t reg381 = {0};
+	ncp_denali_DENALI_CTL_382_5600_t reg382 = {0};
 	ncp_denali_DENALI_CTL_386_5600_t reg386 = {0};
 	ncp_uint32_t smId = 0;
 
@@ -620,13 +665,16 @@ ncp_sm_denali_2041_init_56xx(
 		value2 >>= 4;
 	}
 
-	/*printf("X9/XLF SMC %d Init....\n",smNode);*/
+	/*dbgprintf("X9/XLF SMC %d Init....\n",smNode);*/
 
 	/* DENALI_CTL_00 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_00_5600, (ncp_uint32_t *)&reg00);
 	reg00.dram_class = parms->dram_class;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_00_5600, *((ncp_uint32_t *)&reg00));
-	/*printf("start=0x%x dram_class=0x%x version=0x%x reg00=0x%x\n",reg00.start,reg00.dram_class,reg00.version,*((ncp_uint32_t *)&reg00));*/
+	/*dbgprintf("start=0x%x dram_class=0x%x version=0x%x reg00=0x%x\n",reg00.start,reg00.dram_class,reg00.version,*((ncp_uint32_t *)&reg00));*/
+
+	ncr_read32(ctlReg, NCP_DENALI_CTL_117_5600, (ncp_uint32_t *)&reg117);
+	ncr_read32(ctlReg, NCP_DENALI_CTL_118_5600, (ncp_uint32_t *)&reg118);
 
 	/* DENALI_CTL_01 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_01_5600, (ncp_uint32_t *)&reg01);
@@ -647,7 +695,7 @@ ncp_sm_denali_2041_init_56xx(
 				reg117.row_diff = reg01.max_row_reg - 17; /* A0-A16 */
 				break;
 			default:
-				printf("invalid sdram_device_density\n");
+				errprintf("invalid sdram_device_density\n");
 				NCP_CALL(NCP_ST_ERROR);
 		}
 		reg118.col_diff = reg01.max_col_reg - 10; /* A0-A9 always */
@@ -695,7 +743,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_08_5600, (ncp_uint32_t *)&reg08);
 	reg08.wrlat = parms->CAS_write_latency;
 	reg08.caslat_lin = parms->CAS_latency * 2; /* CAS latency linear value */
-	reg08.tdll = 0x255; /* for dd3 it is 512 clocks */
+	reg08.tdll = 0x300;/*0x255;*/ /* for dd3 it is 512 clocks */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_08_5600, *((ncp_uint32_t *)&reg08));
 
 
@@ -755,7 +803,7 @@ ncp_sm_denali_2041_init_56xx(
 	/* DENALI_CTL_13 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_13_5600, (ncp_uint32_t *)&reg13);
 	reg13.tmrd = 8;
-	reg13.trtp_ap = 4; /* for auto-precharge get from speedbin_ddr4 */
+	reg13.trtp_ap = ctm->tRTP;/* was 4;*/ /* for auto-precharge get from speedbin_ddr4 */
 	/*reg13.trtp = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tRTP : ncp_ps_to_clk(parms->tck_ps,7500);*/
 	reg13.trtp = ncp_ps_to_clk(parms->tck_ps,7500);
 	reg13.tfaw = ctm->tFAW;
@@ -803,7 +851,7 @@ ncp_sm_denali_2041_init_56xx(
 	reg18.tdal = (parms->dram_class == NCP_SM_DDR4_MODE) ? (ctm->tWR + ctm->tRP) 
 		: ( ncp_ps_to_clk(parms->tck_ps,15000) + ctm->tRP); /* tWR + roundup(tRP/tCK) */
 	reg18.bstlen = parms->bstlen;/* 1 for BL2, 2 for BL4, 3 for BL8 */
-	reg18.trp_ab = parms->CAS_latency;
+	reg18.trp_ab = ctm->tRP;/* was this before parms->CAS_latency;*/
 	ncr_write32(ctlReg, NCP_DENALI_CTL_18_5600, *((ncp_uint32_t *)&reg18));
 
 
@@ -926,7 +974,7 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_35 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_35_5600, (ncp_uint32_t *)&reg35);
-	reg35.cs_map_dimm_0 = parms->topology;
+	reg35.cs_map_dimm_0 = parms->topology; /* only for RDIMM */
 	reg35.rdimm_tstab = (parms->dram_class == NCP_SM_DDR4_MODE) ? ncp_ps_to_clk(parms->tck_ps,5*(1000000)) : ncp_ps_to_clk(parms->tck_ps,6*(1000000));
 	ncr_write32(ctlReg, NCP_DENALI_CTL_35_5600, *((ncp_uint32_t *)&reg35));
 
@@ -1037,7 +1085,7 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_49 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_49_5600, (ncp_uint32_t *)&reg49);
-	reg49.lpi_wakeup_en = 0x1f;
+	reg49.lpi_wakeup_en = 0x0;/* HACK was 0x1f */
 	reg49.lpi_timer_wakeup = 4;
 	reg49.lpi_sr_mcclk_gate_wakeup = 3;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_49_5600, *((ncp_uint32_t *)&reg49));
@@ -1117,7 +1165,7 @@ ncp_sm_denali_2041_init_56xx(
 			else if (tWR > 14) wr = 0;
 			else if (tWR > 4) wr = tWR - 4;
 			else wr = 1;
-			if (wr > 7) printf ("DDR3:Invalid write-recovery for MR0 %d\n",wr);
+			if (wr > 7) errprintf ("DDR3:Invalid write-recovery for MR0 %d\n",wr);
 
 			/* data to prog into mem mode reg 0 for cs 0 */
 			reg78.mr0_data_0 = (ddr3bst + (bsttype << 3) + (parms->CAS_latency << 4) + 
@@ -1135,7 +1183,7 @@ ncp_sm_denali_2041_init_56xx(
 			if (tWR < 10) wr = 0;
 			else if (tWR > 20) wr = (tWR + 3) / 4;
 			else wr = ((tWR + 1) / 2) - 5;
-			if (wr > 6) printf ("DDR4:Invalid write-recovery for MR0 %d\n",wr);
+			if (wr > 6) errprintf ("DDR4:Invalid write-recovery for MR0 %d\n",wr);
 
 			/* data to prog into mem mode reg 0 for cs 0 */
 			reg78.mr0_data_0 = (ddr4bst + (caslat_bit0 << 2) + (bsttype << 3) + (caslat_bit3_1 << 4) + (wr << 9));
@@ -1178,13 +1226,20 @@ ncp_sm_denali_2041_init_56xx(
 				tmp = 0xc;
 				break;
 			case 16: 
+			case 17:
 				tmp = 0xd;
 				break;
 			case 18: 
 				tmp = 0x10;
 				break;
+			case 19: 
+				tmp = 0xe;
+				break;
 			case 20: 
 				tmp = 0x11;
+				break;
+			case 21: 
+				tmp = 0xf;
 				break;
 			case 22: 
 				tmp = 0x14;
@@ -1195,7 +1250,34 @@ ncp_sm_denali_2041_init_56xx(
 			default:
 				tmp = 0;
 		}
-		reg78.mr0_data_0 = (((parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR : ncp_ps_to_clk(parms->tck_ps,15000)) << 9);
+		/* A11-A9 is based off tWR and tRTP, note- tWR is twice tRTP */
+		switch (ctm->tRTP)
+		{
+			case 5:
+				tmp1 = 0;
+				break;
+			case 6:
+				tmp1 = 1;
+				break;
+			case 7:
+				tmp1 = 2;
+				break;
+			case 8:
+				tmp1 = 3;
+				break;
+			case 9:
+				tmp1 = 4;
+				break;
+			case 10:
+				tmp1 = 5;
+				break;
+			case 12:
+				tmp1 = 6;
+				break;
+			default:
+				tmp1 = 0;
+		}
+		reg78.mr0_data_0 = (((parms->dram_class == NCP_SM_DDR4_MODE) ? tmp1 : ncp_ps_to_clk(parms->tck_ps,15000)) << 9);
 		reg78.mr0_data_0 &= ~(0x7c);
 		reg78.mr0_data_0 |= (tmp << 2);
 #endif
@@ -1303,6 +1385,8 @@ ncp_sm_denali_2041_init_56xx(
 			}
 		}
 	}
+	/* HACK: */
+	/*reg80.mr2_data_0 &= ~(0x40);*/
 	ctm->mr2 = reg80.mr2_data_0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_80_5600, *((ncp_uint32_t *)&reg80));
 
@@ -1337,6 +1421,8 @@ ncp_sm_denali_2041_init_56xx(
 			reg82.mr3_data_0 = 0;
 		}
 	}
+	/* HACK: For 1866,2133,2400 set 10:9 01, for 1600 set as '00*/
+	reg82.mr3_data_0 |= 0x200;
 	ctm->mr3 = reg82.mr3_data_0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_82_5600, *((ncp_uint32_t *)&reg82));
 
@@ -1431,6 +1517,8 @@ ncp_sm_denali_2041_init_56xx(
 		reg85.mr6_data_0 &= ~(0x1c00);
 		reg85.mr6_data_0 |= ((parms->dram_class == NCP_SM_DDR4_MODE) ? (tmp << 10) : 0x0);
 	}
+	/* HACK */
+	reg85.mr6_data_0 |= 0x800;
 	ctm->mr6 = reg85.mr6_data_0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_85_5600, *((ncp_uint32_t *)&reg85));
 
@@ -1445,12 +1533,13 @@ ncp_sm_denali_2041_init_56xx(
 	{
 		reg87.mr1_data_1 = NCP_SM_ENCODE_RTT_NOM_DDR4(parms->per_smem[smId].sdram_rtt_nom[1]) |
 			NCP_SM_ENCODE_DRV_IMP_DDR4(parms->per_smem[smId].sdram_data_drv_imp[1]) |
-			(parms->additive_latency << 3);
+			(parms->additive_latency << 3) | (0x1 /*DLLenable*/);
 	}
 	else
 	{
 		reg87.mr1_data_1 = NCP_SM_ENCODE_RTT_NOM_DDR3(parms->per_smem[smId].sdram_rtt_nom[1]) |
-			NCP_SM_ENCODE_DRV_IMP_DDR3(parms->per_smem[smId].sdram_data_drv_imp[1]);
+			NCP_SM_ENCODE_DRV_IMP_DDR3(parms->per_smem[smId].sdram_data_drv_imp[1]) |
+			(0x1 /*DLLenable*/);
 	}
 	ncr_write32(ctlReg, NCP_DENALI_CTL_87_5600, *((ncp_uint32_t *)&reg87));
 
@@ -1571,6 +1660,12 @@ ncp_sm_denali_2041_init_56xx(
 	reg101.ecc_en = parms->enableECC;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_101_5600, *((ncp_uint32_t *)&reg101));
 
+	/* This is needed in the case where MC init's the DRAM's and for done to be achieved */
+	/* DENALI_CTL_382 */
+	ncr_read32(ctlReg, NCP_DENALI_CTL_382_5600, (ncp_uint32_t *)&reg382);
+	reg382.init_start = 1;
+	ncr_write32(ctlReg, NCP_DENALI_CTL_382_5600, *((ncp_uint32_t *)&reg382));
+
 	/* DENALI_CTL_113 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_113_5600, (ncp_uint32_t *)&reg113);
 	reg113.zqinit = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tZQinit : ncp_ps_to_clk(parms->tck_ps, 1000000); /* 1 us */
@@ -1593,18 +1688,16 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_116 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_116_5600, (ncp_uint32_t *)&reg116);
-	reg116.zq_interval = ((parms->zqcs_interval /* units in micro-sec */)*1000000)/parms->tck_ps;
+	reg116.zq_interval = (((parms->zqcs_interval /* units in micro-sec */)*1000000)/parms->tck_ps)/1024 /* long count seq */;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_116_5600, *((ncp_uint32_t *)&reg116));
 
 	/* DENALI_CTL_117 */
-	ncr_read32(ctlReg, NCP_DENALI_CTL_117_5600, (ncp_uint32_t *)&reg117);
 	/* reg117.row_diff set early on */
 	reg117.bank_diff = 0; /* all banks being used */
 	reg117.zqcs_rotate = 1;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_117_5600, *((ncp_uint32_t *)&reg117));
 
 	/* DENALI_CTL_118 */
-	ncr_read32(ctlReg, NCP_DENALI_CTL_118_5600, (ncp_uint32_t *)&reg118);
 	reg118.aprebit = 0xa; /* loc of auto pre-charge bit in dram addr */
 	/* reg118.col_diff set early on */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_118_5600, *((ncp_uint32_t *)&reg118));
@@ -1645,12 +1738,17 @@ ncp_sm_denali_2041_init_56xx(
 	reg123.cs_map = parms->topology;
 	reg123.burst_on_fly_bit = 0xc;
 	reg123.reduc = (parms->primary_bus_width == 2) ? 1 : 0;
-	reg123.memdata_ratio_0 = 0;
+	reg123.memdata_ratio_0 = (parms->sdram_device_width == 1) ? 3 : 2;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_123_5600, *((ncp_uint32_t *)&reg123));
+
+	/* DENALI_CTL_124 */
+	ncr_read32(ctlReg, NCP_DENALI_CTL_124_5600, (ncp_uint32_t *)&reg124);
+	reg124.memdata_ratio_1 = (parms->sdram_device_width == 1) ? 3 : 2;
+	ncr_write32(ctlReg, NCP_DENALI_CTL_124_5600, *((ncp_uint32_t *)&reg124));
 
 	/* DENALI_CTL_125 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_125_5600, (ncp_uint32_t *)&reg125);
-	reg125.rd_preamble_training_en = 0x1;
+	reg125.rd_preamble_training_en = 0x0;
 	reg125.preamble_support = parms->preamble_support;
 	reg125.ctrlupd_req_per_aref_en = 0x1;
 	reg125.ctrlupd_req = 0x0;
@@ -1680,23 +1778,28 @@ ncp_sm_denali_2041_init_56xx(
 	reg156.odt_en = 0x1;
 	reg156.todth_rd = 0x6;
 	reg156.todth_wr = 0x6;
-	reg156.todtl_2cmd = 0x8;
+	reg156.todtl_2cmd = (parms->additive_latency + parms->CAS_write_latency -2 + 1);/* was 0x8 */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_156_5600, *((ncp_uint32_t *)&reg156));
 
 	/* DENALI_CTL_157 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_157_5600, (ncp_uint32_t *)&reg157);
 	reg157.r2w_diffcs_dly = 0x2;
 	reg157.r2r_diffcs_dly = 0x2;
-	reg157.rd_to_odth = 0x4;
+	reg157.rd_to_odth = 0x5;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_157_5600, *((ncp_uint32_t *)&reg157));
 
 	/* DENALI_CTL_158 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_158_5600, (ncp_uint32_t *)&reg158);
-	reg158.r2w_samecs_dly = 0x2;
+	reg158.r2w_samecs_dly = 0x4;
 	reg158.r2r_samecs_dly = 0x0;
 	reg158.w2w_diffcs_dly = 0x2;
 	reg158.w2r_diffcs_dly = 0x2;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_158_5600, *((ncp_uint32_t *)&reg158));
+
+	/* DENALI_CTL_159 */
+	ncr_read32(ctlReg, NCP_DENALI_CTL_159_5600, (ncp_uint32_t *)&reg159);
+	reg159.w2r_samecs_dly = 0x2;
+	ncr_write32(ctlReg, NCP_DENALI_CTL_159_5600, *((ncp_uint32_t *)&reg159));
 
 	/* DENALI_CTL_163 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_163_5600, (ncp_uint32_t *)&reg163);
@@ -1747,7 +1850,7 @@ ncp_sm_denali_2041_init_56xx(
 	reg178.rdlvl_cs_map = 0xf;
 	reg178.rdlvl_gate_cs_map = 0xf;
 	reg178.vref_cs = parms->vref_cs; /* default cs0 set to 0x1 */
-	reg178.vref_en = ((parms->packedPHYTrainingOptions >> 17) & 0x1); /* default disabled set to 0x0 */
+	reg178.vref_en = 0x0;/* would be done by PHY ((parms->packedPHYTrainingOptions >> 17) & 0x1);*/ /* default disabled set to 0x0 */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_178_5600, *((ncp_uint32_t *)&reg178));
 
 	if (parms->dram_class == NCP_SM_DDR4_MODE)
@@ -1843,7 +1946,7 @@ ncp_sm_denali_2041_init_56xx(
 	/* DENALI_CTL_189 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_189_5600, (ncp_uint32_t *)&reg189);
 	reg189.axi0_w_priority = 0x8; /* write priority 0 is highest */
-	reg189.port_addr_protection_en = 0x1; /* enable port address range protection logic by default */
+	reg189.port_addr_protection_en = 0x0; /* enable port address range protection logic by default */
 	reg189.axi0_address_range_enable = 0x0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_189_5600, *((ncp_uint32_t *)&reg189));
 
@@ -1867,7 +1970,7 @@ ncp_sm_denali_2041_init_56xx(
 		 * axi0_range_rid_check_bits_0 through 14
 		 * over multiple registers.
 		 */
-		ncr_write32(ctlReg, (NCP_DENALI_CTL_222_5600 + (loop * 0x14)), 0xffffff);
+		ncr_write32(ctlReg, (NCP_DENALI_CTL_222_5600 + (loop * 0x14)), 0xffffffff);
 
 		/* Programming
 		 * axi0_range_wid_check_bits_id_lookup_0 through 14
@@ -1891,7 +1994,9 @@ ncp_sm_denali_2041_init_56xx(
 		 * axi0_range_rid_check_bits_id_lookup_1*
 		 * over multiple registers.
 		 */
-		ncr_write32(ctlReg, (NCP_DENALI_CTL_225_5600 + (loop * 0x14)), 0xfffff);
+		ncr_write32(ctlReg, (NCP_DENALI_CTL_225_5600 + (loop * 0x14)), 0x0ffff);
+
+		ncr_write32(ctlReg, (NCP_DENALI_CTL_226_5600 + (loop * 0x14)), 0x30000);
 	}
 
 	/* DENALI_CTL_261 */
@@ -1920,7 +2025,7 @@ ncp_sm_denali_2041_init_56xx(
 	/* DENALI_CTL_330 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_330_5600, (ncp_uint32_t *)&reg330);
 	reg330.tdfi_phy_rdlat = parms->phy_rdlat;
-	reg330.dram_clk_disable = 0x0;
+	reg330.dram_clk_disable = ~(parms->topology);
 	ncr_write32(ctlReg, NCP_DENALI_CTL_330_5600, *((ncp_uint32_t *)&reg330));
 
 	/* DENALI_CTL_331 */
@@ -1997,7 +2102,7 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_342_5600, (ncp_uint32_t *)&reg342);
 	reg342.rdlvl_resp_mask = 0x0; /* from reg gen */
 	reg342.rdlvl_en = 0x0; /* controller will never drive data-eye training, the PHY would */
-	reg342.rdlvl_gate_en = ((parms->packedPHYTrainingOptions >> 10) & 0x1);
+	reg342.rdlvl_gate_en = 0x0;/*would be done by PHY ((parms->packedPHYTrainingOptions >> 10) & 0x1);*/
 	ncr_write32(ctlReg, NCP_DENALI_CTL_342_5600, *((ncp_uint32_t *)&reg342));
 
 	/* DENALI_CTL_343 */
@@ -2013,7 +2118,7 @@ ncp_sm_denali_2041_init_56xx(
 	/* DENALI_CTL_345 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_345_5600, (ncp_uint32_t *)&reg345);
 	reg345.rdlvl_gate_interval = parms->rdlvl_gate_interval;
-	reg345.tdfi_phy_wrdata = (1 + (parms->preamble_support >> 1)); /* from reg tcl */
+	reg345.tdfi_phy_wrdata = 2;/*(1 + (parms->preamble_support >> 1));*/ /* from reg tcl */
 	reg345.tdfi_rdcslat = 0xc; /* cas_latency + additive lat + ca_parity_lat - (preamble_support & 0x1); is this correct ? */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_345_5600, *((ncp_uint32_t *)&reg345));
 
@@ -2285,12 +2390,12 @@ ncp_sm_denali_2041_init_56xx(
 	/* DENALI_CTL_364 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_364_5600, (ncp_uint32_t *)&reg364);
 	reg364.mr6_data_3 = reg85.mr6_data_0;
-	reg364.memdata_ratio_2 = 0;
+	reg364.memdata_ratio_2 = (parms->sdram_device_width == 1) ? 3 : 2;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_364_5600, *((ncp_uint32_t *)&reg364));
 
 	/* DENALI_CTL_365 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_365_5600, (ncp_uint32_t *)&reg365);
-	reg365.memdata_ratio_3 = 0;
+	reg365.memdata_ratio_3 = (parms->sdram_device_width == 1) ? 3 : 2;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_365_5600, *((ncp_uint32_t *)&reg365));
 #if 0
 	/* int_status */
@@ -2453,7 +2558,7 @@ ncp_sm_denali_2041_init_56xx(
 			ncr_write32(ctlReg, (NCP_DENALI_CTL_392_5600 + (loop * 0x4)), value);
 		}
 	}
-
+#if 0
 	/* start MC init operation */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_00_5600, (ncp_uint32_t *)&reg00);
 	reg00.start = 0x1;
@@ -2474,6 +2579,7 @@ ncp_sm_denali_2041_init_56xx(
 	{
 		errprintf("POLL timeout while waiting for DFI init to complete [line:%d]\n",__LINE__);
 	}
+#endif
 
 	/* Clear all interrupts */
 	/* DENALI_CTL_368 */

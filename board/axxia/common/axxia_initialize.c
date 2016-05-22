@@ -107,13 +107,34 @@ axxia_initialize(void)
 	*/
 
 #ifndef SYSCACHE_ONLY_MODE
+	extern void __asm_disable_l3_cache(void);
+	extern void __asm_enable_l3_cache(void);
+
 	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) &&
 	    (0 == sysmem->ddrRecovery)) {
 		ncr_tracer_enable();
+		__asm_disable_l3_cache();
 
 		if (0 != sysmem_init())
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
+		writel(0x00000000, (ELM0 + 0x40));
+		writel(0x01ffffff, (ELM0 + 0x44));
+		writel(0x00000000, (ELM0 + 0x48));
+
+		writel(0x00000000, (ELM1 + 0x40));
+		writel(0x01ffffff, (ELM1 + 0x44));
+		writel(0x00000000, (ELM1 + 0x48));
+
+		do {
+			udelay(10);
+		} while (0 != readl(ELM0 + 0x44));
+
+		do {
+			udelay(10);
+		} while (0 != readl(ELM1 + 0x44));
+
+		__asm_enable_l3_cache();
 		ncr_tracer_disable();
 	}
 #endif

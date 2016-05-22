@@ -3783,7 +3783,7 @@ typedef struct {
 	ncp_uint32_t ddrClockSpeedMHz;
 	ncp_uint32_t autoDetect;
 	ncp_uint32_t numInterfaces;
-	ncp_uint32_t numRanks;
+	ncp_uint32_t num_ranks_per_interface;
 	ncp_uint32_t primary_bus_width;
 	ncp_uint32_t topology;
 	ncp_uint32_t minCtrlRoundtripDelay;

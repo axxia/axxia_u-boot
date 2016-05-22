@@ -29,7 +29,8 @@
 
 /* using printf as default, can be changed to invoke some other logging if available */
 #define errprintf(fmt,args...) printf(fmt,##args)
-#define dbgprintf(fmt,args...) printf(fmt,##args)
+/*#define dbgprintf(fmt,args...) printf(fmt,##args)*/
+#define dbgprintf(fmt,args...)
 
 /* From Address pins per JEDEC */
 #define NCP_SM_ENCODE_RTT_NOM_DDR3(val)  \

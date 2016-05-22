@@ -161,13 +161,13 @@ ncp_sm_ddr4_mc_reg_dump(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_36_5600, (ncp_uint32_t *)&reg36);
 
 	printf ("\n ***** System Configuration ***** \n");
-	printf ("CS_MAP = 0x%x", reg123.cs_map); 
+	printf ("CS_MAP \t= 0x%x", reg123.cs_map); 
 	printf ("\n");
-	printf ("CS_MAP_DIMM_0 = 0x%x\t", reg35.cs_map_dimm_0); 
-	printf ("RANK0_MAP_DIMM_0 = 0x%x\t", reg36.rank0_map_dimm_0); 
+	printf ("CS_MAP_DIMM_0 \t= 0x%x\t", reg35.cs_map_dimm_0); 
+	printf ("RANK0_MAP_DIMM_0 \t= 0x%x\t", reg36.rank0_map_dimm_0); 
 	printf ("\n");
-	printf ("CS_MAP_DIMM_1 = 0x%x\t", reg36.cs_map_dimm_1); 
-	printf ("RANK0_MAP_DIMM_1 = 0x%x", reg36.rank0_map_dimm_1); 
+	printf ("CS_MAP_DIMM_1 \t= 0x%x\t", reg36.cs_map_dimm_1); 
+	printf ("RANK0_MAP_DIMM_1 \t= 0x%x", reg36.rank0_map_dimm_1); 
 	printf ("\n");
 
 	ncr_read32(ctlReg, NCP_DENALI_CTL_10_5600, (ncp_uint32_t *)&reg10);
@@ -179,35 +179,35 @@ ncp_sm_ddr4_mc_reg_dump(
 	}
 
 	ncr_read32(ctlReg, NCP_DENALI_CTL_11_5600, (ncp_uint32_t *)&reg11);
-	printf ("TRC = 0x%x\t", reg11.trc);
-	printf ("TRRD = 0x%x\t", reg11.trrd);
-	printf ("TRRD_L = 0x%x\t", reg11.trrd_l);
-	printf ("TCCD = 0x%x\t", reg10.tccd);
-	printf ("TCCD_L = 0x%x", reg11.tccd_l);
+	printf ("TRC \t= 0x%x\t", reg11.trc);
+	printf ("TRRD \t= 0x%x\t", reg11.trrd);
+	printf ("TRRD_L \t= 0x%x\t", reg11.trrd_l);
+	printf ("TCCD \t= 0x%x\t", reg10.tccd);
+	printf ("TCCD_L \t= 0x%x", reg11.tccd_l);
 	printf ("\n");
 	ncr_read32(ctlReg, NCP_DENALI_CTL_12_5600, (ncp_uint32_t *)&reg12);
 	ncr_read32(ctlReg, NCP_DENALI_CTL_18_5600, (ncp_uint32_t *)&reg18);
-	printf ("TRP = 0x%x\t", reg12.trp);
-	printf ("TRP_AB = 0x%x\t", reg18.trp_ab);
-	printf ("TWTR = 0x%x\t", reg12.twtr);
-	printf ("TWTR_L = 0x%x\t", reg12.twtr_l);
-	printf ("TRAS_MIN = 0x%x", reg12.tras_min);
+	printf ("TRP \t= 0x%x\t", reg12.trp);
+	printf ("TRP_AB \t= 0x%x\t", reg18.trp_ab);
+	printf ("TWTR \t= 0x%x\t", reg12.twtr);
+	printf ("TWTR_L \t= 0x%x\t", reg12.twtr_l);
+	printf ("TRAS_MIN \t= 0x%x", reg12.tras_min);
 	printf ("\n");
 	ncr_read32(ctlReg, NCP_DENALI_CTL_13_5600, (ncp_uint32_t *)&reg13);
 	ncr_read32(ctlReg, NCP_DENALI_CTL_16_5600, (ncp_uint32_t *)&reg16);
-	printf ("TRTP = 0x%x\t", reg13.trtp);
-	printf ("TFAW = 0x%x\t", reg13.tfaw);
-	printf ("TWR = 0x%x\t", reg16.twr);
-	printf ("TRCD = 0x%x\t", reg16.trcd);
-	printf ("TREF = 0x%x", reg42.tref);
+	printf ("TRTP \t= 0x%x\t", reg13.trtp);
+	printf ("TFAW \t= 0x%x\t", reg13.tfaw);
+	printf ("TWR \t= 0x%x\t", reg16.twr);
+	printf ("TRCD \t= 0x%x\t", reg16.trcd);
+	printf ("TREF \t= 0x%x", reg42.tref);
 	printf ("\n");
 
 	ncr_read32(ctlReg, NCP_DENALI_CTL_41_5600, (ncp_uint32_t *)&reg41);
 	ncr_read32(ctlReg, NCP_DENALI_CTL_114_5600, (ncp_uint32_t *)&reg114);
-	printf ("TRFC = 0x%x\t", reg41.trfc);
-	printf ("ZQCS = 0x%x\t", reg114.zqcs);
-	printf ("ZQCL = 0x%x\t", reg114.zqcl);
-	printf ("TMRD = 0x%x", reg13.tmrd);
+	printf ("TRFC \t= 0x%x\t", reg41.trfc);
+	printf ("ZQCS \t= 0x%x\t", reg114.zqcs);
+	printf ("ZQCL \t= 0x%x\t", reg114.zqcl);
+	printf ("TMRD \t= 0x%x", reg13.tmrd);
 	printf ("\n");
 
 	printf ("\n ***** MR Registers ***** \n");
@@ -217,7 +217,7 @@ ncp_sm_ddr4_mc_reg_dump(
 
 	wrrtp = (tmp >> 9) & 0x7;
 	cas = ((((tmp >> 4) & 0x7)*2) +((tmp >> 2) & 0x1));
-	printf ("MR0 = 0x%u\n",tmp);
+	printf ("MR0 = 0x%x\n",tmp);
 	printf ("    - Write Recover/RTP = %s\n", ((wrrtp == 0) ? "10/5" :
 				(wrrtp == 1) ? "12/6" :
 				(wrrtp == 2) ? "14/7" :
@@ -246,7 +246,7 @@ ncp_sm_ddr4_mc_reg_dump(
 	drv_impd = ((tmp >> 1) & 0x3);
 	rtt_nom  = ((tmp >> 8) & 0x7);
 	additivelatency = ((tmp >> 3) & 0x3);
-	printf ("MR1 = 0x%u\n",tmp);
+	printf ("MR1 = 0x%x\n",tmp);
 	printf ("    - RTT_NOM \t\t= %s\n", ((rtt_nom == 0) ? "RTT_NOM disabled" :
 				(rtt_nom == 1) ? "RZQ/4 (60 ohm)" :
 				(rtt_nom == 2) ? "RZQ/2 (120 ohm)" :
@@ -266,7 +266,7 @@ ncp_sm_ddr4_mc_reg_dump(
 	wrcrc = ((tmp >> 12) & 0x1);
 	rtt_wr = ((tmp >> 9) & 0x3);
 	cwl = ((tmp >> 3) & 0xf);
-	printf ("MR2 = 0x%u\n",tmp);
+	printf ("MR2 = 0x%x\n",tmp);
 	printf ("    - Write CRC \t= %s\n", wrcrc ? "ENABLED" : "DISABLED");
 	printf ("    - RTT_WR \t\t= %s\n", ((rtt_wr == 0) ? "Dynamic ODT OFF" :
 				(rtt_wr == 1) ? "RZQ/2 (120 ohm)" :
@@ -284,13 +284,13 @@ ncp_sm_ddr4_mc_reg_dump(
 	/* MR3 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_82_5600, &tmp);
 
-	printf ("MR3 = 0x%u\n",tmp);
+	printf ("MR3 = 0x%x\n",tmp);
 
 	/* MR4 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_83_5600, &tmp);
 
 	cslat = ((tmp >> 6) & 0x7);
-	printf ("MR4 = 0x%u\n",tmp);
+	printf ("MR4 = 0x%x\n",tmp);
 	printf ("    - Wr/Rd Preamble \t= %u/%u\n", ((tmp >> 12) & 0x1), ((tmp >> 11) & 0x1));
 	printf ("    - CS to CMD/ADDR latency = %u (0 is DISABLED)\n", (cslat == 0) ? 0 : cslat+2);
 
@@ -300,7 +300,7 @@ ncp_sm_ddr4_mc_reg_dump(
 	rddbi = ((tmp >> 12) & 0x1);
 	wrdbi = ((tmp >> 11) & 0x1);
 	caparlat = tmp & 0x7;
-	printf ("MR5 = 0x%u\n",tmp);
+	printf ("MR5 = 0x%x\n",tmp);
 	printf ("    - Wr/Rd DBI \t= %u/%u\n", wrdbi, rddbi);
 	printf ("    - CA Parity Latency = %s\n", ((caparlat == 0) ? "DISABLED" :
 				(caparlat == 1) ? "4 - 1600,1866,2133" :
@@ -312,7 +312,7 @@ ncp_sm_ddr4_mc_reg_dump(
 
 	ccd_l = ((tmp >> 10) & 0x7);
 	vreftrain = tmp & 0x7f;
-	printf ("MR6 = 0x%u\n",tmp);
+	printf ("MR6 = 0x%x\n",tmp);
 	printf ("    - tCCD_L \t\t= %s\n", ((ccd_l == 0) ? "4 - <= 1333" :
 				(ccd_l == 1) ? "5 - <= 1866" :
 				(ccd_l == 2) ? "6 - <= 2400" :
@@ -327,22 +327,22 @@ ncp_sm_ddr4_mc_reg_dump(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_122_5600, (ncp_uint32_t *)&reg122);
 	ncr_read32(ctlReg, NCP_DENALI_CTL_397_5600, (ncp_uint32_t *)&reg397);
 
-	printf ("OPTIMAL_RMODW_EN = 0x%x", reg21.optimal_rmodw_en); 
+	printf ("OPTIMAL_RMODW_EN \t= 0x%x", reg21.optimal_rmodw_en); 
 	printf ("\n");
-	printf ("ADDR_CMP_EN = 0x%x\t", reg119.addr_cmp_en); 
-	printf ("RW_SAME_EN = 0x%x\t", reg120.rw_same_en); 
-	printf ("PRIORITY_EN = 0x%x\t", reg120.priority_en); 
-	printf ("PLACEMENT_EN = 0x%x\t", reg120.placement_en); 
-	printf ("BANK_SPLIT_EN = 0x%x", reg120.bank_split_en); 
+	printf ("ADDR_CMP_EN \t= 0x%x\t", reg119.addr_cmp_en); 
+	printf ("RW_SAME_EN \t= 0x%x\t", reg120.rw_same_en); 
+	printf ("PRIORITY_EN \t= 0x%x\t", reg120.priority_en); 
+	printf ("PLACEMENT_EN \t= 0x%x\t", reg120.placement_en); 
+	printf ("BANK_SPLIT_EN \t= 0x%x", reg120.bank_split_en); 
 	printf ("\n");
-	printf ("W2R_SPLIT_EN = 0x%x\t", reg121.w2r_split_en); 
-	printf ("CS_SAME_EN = 0x%x\t", reg121.cs_same_en); 
-	printf ("RW_SAME_PAGE_EN = 0x%x\t", reg121.rw_same_page_en); 
-	printf ("SWAP_EN = 0x%x", reg122.swap_en);  
+	printf ("W2R_SPLIT_EN \t= 0x%x\t", reg121.w2r_split_en); 
+	printf ("CS_SAME_EN \t= 0x%x\t", reg121.cs_same_en); 
+	printf ("RW_SAME_PAGE_EN \t= 0x%x\t", reg121.rw_same_page_en); 
+	printf ("SWAP_EN \t= 0x%x", reg122.swap_en);  
 	printf ("\n");
-	printf ("IN_ORDER_ACCEPT = 0x%x\t", reg124.in_order_accept);
-	printf ("BG_ROTATE_EN = 0x%x\t", reg128.bg_rotate_en);
-	printf ("WR_ORDER_REQ = 0x%x", reg397.wr_order_req);
+	printf ("IN_ORDER_ACCEPT \t= 0x%x\t", reg124.in_order_accept);
+	printf ("BG_ROTATE_EN \t= 0x%x\t", reg128.bg_rotate_en);
+	printf ("WR_ORDER_REQ \t= 0x%x", reg397.wr_order_req);
 	printf ("\n");
 
 	printf ("\n ***** ODT Configuration ***** \n");
@@ -350,16 +350,16 @@ ncp_sm_ddr4_mc_reg_dump(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_157_5600, (ncp_uint32_t *)&reg157);
 	ncr_read32(ctlReg, NCP_DENALI_CTL_155_5600, (ncp_uint32_t *)&reg155);
 
-	printf ("ODT_EN = 0x%x\t", reg156.odt_en); 
-	printf ("TODTH_RD = 0x%x\t", reg156.todth_rd); 
-	printf ("TODTH_WR = 0x%x\t", reg156.todth_wr); 
-	printf ("TODTL_2CMD = 0x%x\t", reg156.todtl_2cmd); 
-	printf ("RD_TO_ODTH = 0x%x", reg157.rd_to_odth); 
+	printf ("ODT_EN \t= 0x%x\t", reg156.odt_en); 
+	printf ("TODTH_RD \t= 0x%x\t", reg156.todth_rd); 
+	printf ("TODTH_WR \t= 0x%x\t", reg156.todth_wr); 
+	printf ("TODTL_2CMD \t= 0x%x\t", reg156.todtl_2cmd); 
+	printf ("RD_TO_ODTH \t= 0x%x", reg157.rd_to_odth); 
 	printf ("\n");
-	printf ("ODT_RD_MAP_CS0 = 0x%x\t", reg155.odt_rd_map_cs0); 
-	printf ("ODT_WR_MAP_CS0 = 0x%x\t", reg155.odt_wr_map_cs0); 
-	printf ("ODT_RD_MAP_CS1 = 0x%x\t", reg155.odt_rd_map_cs1); 
-	printf ("ODT_WR_MAP_CS1 = 0x%x", reg155.odt_wr_map_cs1); 
+	printf ("ODT_RD_MAP_CS0 \t= 0x%x\t", reg155.odt_rd_map_cs0); 
+	printf ("ODT_WR_MAP_CS0 \t= 0x%x\t", reg155.odt_wr_map_cs0); 
+	printf ("ODT_RD_MAP_CS1 \t= 0x%x\t", reg155.odt_rd_map_cs1); 
+	printf ("ODT_WR_MAP_CS1 \t= 0x%x", reg155.odt_wr_map_cs1); 
 	printf ("\n");
 
 	printf ("\n ***** Turnaround Configuration ***** \n");
@@ -449,87 +449,87 @@ ncp_sm_ddr4_phy_reg_dump(
 			numbytes++;
 		}
 	}
-	dbgprintf ("NUM BYTES calculated as %d\n", numbytes);
+	printf ("NUM BYTES calculated as %d\n", numbytes);
 
 	/* DCR */
 	ncr_read32(phyReg, NCP_PHY_DCR_5600, (ncp_uint32_t *)&regDCR);
 	if (regDCR.ddrmd != 0x4)
 	{
-		dbgprintf ("ERROR: DCR[2:0] - Expect DDR4\n");
+		printf ("ERROR: DCR[2:0] - Expect DDR4\n");
 	}
 	if (regDCR.ddr2t != 0x1)
 	{
-		dbgprintf ("ERROR: DCR[28] - Expect DDR2T\n");
+		printf ("ERROR: DCR[28] - Expect DDR2T\n");
 	}
 	if (regDCR.udimm != 0x1)
 	{
-		dbgprintf ("WARNING: DCR[29] - Expect Address Mirroring\n");
+		printf ("WARNING: DCR[29] - Expect Address Mirroring\n");
 	}
 	if (regDCR.ubg)
 	{
-		dbgprintf ("PHY is configured for x16 DRAM devices\n");
+		printf ("PHY is configured for x16 DRAM devices\n");
 	}
 	else
 	{
-		dbgprintf ("PHY is configured for x8 DRAM devices\n");
+		printf ("PHY is configured for x8 DRAM devices\n");
 	}
 
 	/* PGCR0-5 */
 	ncr_read32(phyReg, NCP_PHY_PGCR2_5600, (ncp_uint32_t *)&regPGCR2);
 	period = (7800 * 9 * 2 * 1000/regPGCR2.trefprd);
 	freq = (1000000 / period);
-	dbgprintf ("PGCR2 - Best Guess DDR Clock Frequency = %d MHz\n",freq);
+	printf ("PGCR2 - Best Guess DDR Clock Frequency = %d MHz\n",freq);
 
 	ncr_read32(phyReg, NCP_PHY_PGCR3_5600, (ncp_uint32_t *)&regPGCR3);
 	if (regPGCR3.rdmode != 1)
 	{
-		dbgprintf ("ERROR: PGCR3 RDMODE should be -Static Read Response\n");
+		printf ("ERROR: PGCR3 RDMODE should be -Static Read Response\n");
 	}
 
 	ncr_read32(phyReg, NCP_PHY_PGCR4_5600, &tmp);
 	if (tmp != 0)
 	{
-		dbgprintf ("ERROR: Check PGCR4 value - 0x%x!\n", tmp);
+		printf ("ERROR: Check PGCR4 value - 0x%x!\n", tmp);
 	}
 
 	/* PTR0-2 */
 	ncr_read32(phyReg, NCP_PHY_PTR0_5600, (ncp_uint32_t *)&regPTR0);
-	dbgprintf ("tPLLGS = %d ns clocks(min 4000 ns?)\n",(regPTR0.tpllgs * period)/1000);
-	dbgprintf ("tPLLPD = %d ns clocks(min 1000 ns?)\n",(regPTR0.tpllpd * period)/1000);
+	printf ("tPLLGS = %d ns clocks(min 4000 ns?)\n",(regPTR0.tpllgs * period)/1000);
+	printf ("tPLLPD = %d ns clocks(min 1000 ns?)\n",(regPTR0.tpllpd * period)/1000);
 
 	ncr_read32(phyReg, NCP_PHY_PTR1_5600, (ncp_uint32_t *)&regPTR1);
-	dbgprintf ("tPLLRST = %d ns clocks(min 9000 ns?)\n",(regPTR1.tpllrst * period)/1000);
-	dbgprintf ("tPLLLOCK = %d ns clocks(min 100000 ns?)\n",(regPTR1.tplllock * period)/1000);
+	printf ("tPLLRST = %d ns clocks(min 9000 ns?)\n",(regPTR1.tpllrst * period)/1000);
+	printf ("tPLLLOCK = %d ns clocks(min 100000 ns?)\n",(regPTR1.tplllock * period)/1000);
 
 	/* PLLCR0 */
 	ncr_read32(phyReg, NCP_PHY_PLLCR0_5600, (ncp_uint32_t *)&regPLLCR0);
 	if (((regPLLCR0.frqsel == 0) && (freq < 440)) || ((regPLLCR0.frqsel == 1) && ((freq < 225) || (freq > 490))))
 	{
-		dbgprintf ("ERROR: PLLCR0.FRQSEL is incorrect for frequency of %d MHz\n",freq);
+		printf ("ERROR: PLLCR0.FRQSEL is incorrect for frequency of %d MHz\n",freq);
 	}
 
 	/*ncr_read32(phyReg, NCP_PHY_PLLCR_5600, (ncp_uint32_t *)&regPLLCR);
 	  if (((regPLLCR.frqsel == 0) && (freq < 440)) || ((regPLLCR.frqsel == 1) && ((freq < 225) || (freq > 490))))
 	  {
-	  dbgprintf ("ERROR: PLLCR.FRQSEL is incorrect for frequency of %d MHz\n",freq);
+	  printf ("ERROR: PLLCR.FRQSEL is incorrect for frequency of %d MHz\n",freq);
 	  }*/
 
 	/* ZQCR */
 	ncr_read32(phyReg, NCP_PHY_ZQCR_5600, (ncp_uint32_t *)&regZQCR);
 	if ((regZQCR.term_off != 0x0) || (regZQCR.zqpd != 0x0))
 	{
-		dbgprintf ("ZQCR[7:0] should be all 0\n");
+		printf ("ZQCR[7:0] should be all 0\n");
 	}
 	if (regZQCR.pgwait != 0x7)
 	{
-		dbgprintf ("ERROR: ZQCR.PGWAIT should be 0x7, but got 0x%d\n",regZQCR.pgwait);
+		printf ("ERROR: ZQCR.PGWAIT should be 0x7, but got 0x%d\n",regZQCR.pgwait);
 	}
 
 	/* MR0-6 */
 	ncr_read32(phyReg, NCP_PHY_MR0_5600, (ncp_uint32_t *)&regMR0);
 	ncr_read32(phyReg, NCP_PHY_MR0_5600, &tmp);
-	dbgprintf ("MR0 = 0x%x\n",tmp);
-	dbgprintf ("    - Write Recover/RTP = %s\n", ((regMR0.wr == 0) ? "10/5" :
+	printf ("MR0 = 0x%x\n",tmp);
+	printf ("    - Write Recover/RTP = %s\n", ((regMR0.wr == 0) ? "10/5" :
 				(regMR0.wr == 1) ? "12/6" :
 				(regMR0.wr == 2) ? "14/7" :
 				(regMR0.wr == 3) ? "16/8" :
@@ -537,7 +537,7 @@ ncp_sm_ddr4_phy_reg_dump(
 				(regMR0.wr == 5) ? "20/10" :
 				(regMR0.wr == 6) ? "24/12" :
 				"Err/Err"));
-	dbgprintf ("    - CAS \t\t= %s\n", ((((regMR0.cl_6_4 * 2) + (regMR0.cl_2)) == 0) ? "9" :
+	printf ("    - CAS \t\t= %s\n", ((((regMR0.cl_6_4 * 2) + (regMR0.cl_2)) == 0) ? "9" :
 				(((regMR0.cl_6_4 * 2) + (regMR0.cl_2)) == 1) ? "10" :
 				(((regMR0.cl_6_4 * 2) + (regMR0.cl_2)) == 2) ? "11" :
 				(((regMR0.cl_6_4 * 2) + (regMR0.cl_2)) == 3) ? "12" :
@@ -553,8 +553,8 @@ ncp_sm_ddr4_phy_reg_dump(
 
 	ncr_read32(phyReg, NCP_PHY_MR1_5600, (ncp_uint32_t *)&regMR1);
 	ncr_read32(phyReg, NCP_PHY_MR1_5600, &tmp);
-	dbgprintf ("MR1 = 0x%x\n",tmp);
-	dbgprintf ("    - RTT_NOM \t\t= %s\n", ((((tmp & 0x700) >> 8) == 0) ? "RTT_NOM disabled" :
+	printf ("MR1 = 0x%x\n",tmp);
+	printf ("    - RTT_NOM \t\t= %s\n", ((((tmp & 0x700) >> 8) == 0) ? "RTT_NOM disabled" :
 				(((tmp & 0x700) >> 8) == 1) ? "RZQ/4 (60 ohm)" :
 				(((tmp & 0x700) >> 8) == 2) ? "RZQ/2 (120 ohm)" :
 				(((tmp & 0x700) >> 8) == 3) ? "RZQ/6 (40 ohm)" :
@@ -562,20 +562,20 @@ ncp_sm_ddr4_phy_reg_dump(
 				(((tmp & 0x700) >> 8) == 5) ? "RZQ/5 (48 ohm)" :
 				(((tmp & 0x700) >> 8) == 6) ? "RZQ/3 (80 ohm)" :
 				"RZQ/7 (38 ohm)"));
-	dbgprintf ("    - AL \t\t= %d\n", regMR1.al);
-	dbgprintf ("    - DRV Impedance\t= %s\n", ((((tmp & 0x6) >> 1) == 0) ? "RZQ/7 (34 ohm)" :
+	printf ("    - AL \t\t= %d\n", regMR1.al);
+	printf ("    - DRV Impedance\t= %s\n", ((((tmp & 0x6) >> 1) == 0) ? "RZQ/7 (34 ohm)" :
 				(((tmp & 0x6) >> 1) == 1) ? "RZQ/5 (48 ohm)" :
 				"ERROR"));
 
 	ncr_read32(phyReg, NCP_PHY_MR2_5600, (ncp_uint32_t *)&regMR2);
 	ncr_read32(phyReg, NCP_PHY_MR2_5600, &tmp);
-	dbgprintf ("MR2 = 0x%x\n",tmp);
-	dbgprintf ("    - Write CRC \t= %s\n", ((tmp & 0x1000) >> 12) ? "ENABLED" : "DISABLED"); /* per jedec */
-	dbgprintf ("    - RTT_WR \t\t= %s\n", ((regMR2.rttwr == 0) ? "Dynamic ODT OFF" :
+	printf ("MR2 = 0x%x\n",tmp);
+	printf ("    - Write CRC \t= %s\n", ((tmp & 0x1000) >> 12) ? "ENABLED" : "DISABLED"); /* per jedec */
+	printf ("    - RTT_WR \t\t= %s\n", ((regMR2.rttwr == 0) ? "Dynamic ODT OFF" :
 				(regMR2.rttwr == 1) ? "RZQ/2 (120 ohm)" :
 				(regMR2.rttwr == 2) ? "RZQ/1 (240 ohm)" :
 				"High-Z"));
-	dbgprintf ("    - CWL \t\t= %s\n", ((regMR2.cwl == 0) ? "9  - 1600" :
+	printf ("    - CWL \t\t= %s\n", ((regMR2.cwl == 0) ? "9  - 1600" :
 				(regMR2.cwl == 1) ? "10 - 1866" :
 				(regMR2.cwl == 2) ? "11 - 2133,1600" :
 				(regMR2.cwl == 3) ? "12 - 2400,1866" :
@@ -585,31 +585,31 @@ ncp_sm_ddr4_phy_reg_dump(
 				"ERROR"));
 
 	ncr_read32(phyReg, NCP_PHY_MR3_5600, &tmp);
-	dbgprintf ("MR3 = 0x%x\n",tmp);
+	printf ("MR3 = 0x%x\n",tmp);
 
 	ncr_read32(phyReg, NCP_PHY_MR4_5600, (ncp_uint32_t *)&regMR4);
 	ncr_read32(phyReg, NCP_PHY_MR4_5600, &tmp);
-	dbgprintf ("MR4 = 0x%x\n",tmp);
-	dbgprintf ("    - Wr/Rd Preamble \t= %d/%d\n", regMR4.wrp, regMR4.rdp);
-	dbgprintf ("    - CS to CMD/ADDR latency = %d\n", (regMR4.cs2cmdl == 0) ? 0/*"DISABLED"*/ : (regMR4.cs2cmdl+2));
+	printf ("MR4 = 0x%x\n",tmp);
+	printf ("    - Wr/Rd Preamble \t= %d/%d\n", regMR4.wrp, regMR4.rdp);
+	printf ("    - CS to CMD/ADDR latency = %d\n", (regMR4.cs2cmdl == 0) ? 0/*"DISABLED"*/ : (regMR4.cs2cmdl+2));
 
 	ncr_read32(phyReg, NCP_PHY_MR5_5600, (ncp_uint32_t *)&regMR5);
 	ncr_read32(phyReg, NCP_PHY_MR5_5600, &tmp);
-	dbgprintf ("MR5 = 0x%x\n",tmp);
-	dbgprintf ("    - Wr/Rd DBI \t= %d/%d\n", regMR5.wdbi, regMR5.rdbi);
-	dbgprintf ("    - CA Parity Latency = %s\n", ((regMR5.capm == 0) ? "DISABLED" :
+	printf ("MR5 = 0x%x\n",tmp);
+	printf ("    - Wr/Rd DBI \t= %d/%d\n", regMR5.wdbi, regMR5.rdbi);
+	printf ("    - CA Parity Latency = %s\n", ((regMR5.capm == 0) ? "DISABLED" :
 				(regMR5.capm == 1) ? "4 - 1600,1866,2133" :
 				(regMR5.capm == 2) ? "5 - 2400" :
 				"ERROR"));
 
 	ncr_read32(phyReg, NCP_PHY_MR6_5600, (ncp_uint32_t *)&regMR6);
 	ncr_read32(phyReg, NCP_PHY_MR6_5600, &tmp);
-	dbgprintf ("MR6 = 0x%x\n",tmp);
-	dbgprintf ("    - tCCD_L \t\t= %s\n", ((regMR6.tccdl == 0) ? "4 - <= 1333" :
+	printf ("MR6 = 0x%x\n",tmp);
+	printf ("    - tCCD_L \t\t= %s\n", ((regMR6.tccdl == 0) ? "4 - <= 1333" :
 				(regMR6.tccdl == 1) ? "5 - <= 1866" :
 				(regMR6.tccdl == 2) ? "6 - <= 2400" :
 				"ERROR"));
-	dbgprintf ("    - VREF Trained value = 0x%X\n",(tmp & 0x7f)); /* from jedec */
+	printf ("    - VREF Trained value = 0x%X\n",(tmp & 0x7f)); /* from jedec */
 
 	/* DTPR0-6 */
 	ncr_read32(phyReg, NCP_PHY_DTPR0_5600, (ncp_uint32_t *)&regDTPR0);
@@ -617,49 +617,50 @@ ncp_sm_ddr4_phy_reg_dump(
 	ncr_read32(phyReg, NCP_PHY_DTPR4_5600, (ncp_uint32_t *)&regDTPR4);
 	ncr_read32(phyReg, NCP_PHY_DTPR5_5600, (ncp_uint32_t *)&regDTPR5);
 
-	dbgprintf ("tRC  \t= %d\t",  regDTPR5.trc);
-	dbgprintf ("tRRD \t= %d\n",  regDTPR0.trrd);
+	printf ("tRC  \t= %d\t",  regDTPR5.trc);
+	printf ("tRRD \t= %d\n",  regDTPR0.trrd);
 
-	dbgprintf ("tRP  \t= %d\t",  regDTPR0.trp);
-	dbgprintf ("tWTR \t= %d\t",  regDTPR5.twtr);
-	dbgprintf ("tRAS \t= %d\n",  regDTPR0.tras);
+	printf ("tRP  \t= %d\t",  regDTPR0.trp);
+	printf ("tWTR \t= %d\t",  regDTPR5.twtr);
+	printf ("tRAS \t= %d\n",  regDTPR0.tras);
 
-	dbgprintf ("tRTP \t= %d\t",  regDTPR0.trtp);
-	dbgprintf ("tFAW \t= %d\t",  regDTPR1.tfaw);
-	dbgprintf ("tRCD \t= %d\n",  regDTPR5.trcd);
+	printf ("tRTP \t= %d\t",  regDTPR0.trtp);
+	printf ("tFAW \t= %d\t",  regDTPR1.tfaw);
+	printf ("tRCD \t= %d\n",  regDTPR5.trcd);
 
-	dbgprintf ("tRFC \t= %d\t",  regDTPR4.trfc);
-	dbgprintf ("tMRD \t= %d\t",  regDTPR1.tmrd);
-	dbgprintf ("tMOD \t= %d\t",  regDTPR1.tmod);
-	dbgprintf ("tWLMRD \t= %d\t",regDTPR1.twlmrd);
-	dbgprintf ("tWLO \t= %d\n",  regDTPR4.twlo);
+	printf ("tRFC \t= %d\t",  regDTPR4.trfc);
+	printf ("tMRD \t= %d\t",  regDTPR1.tmrd);
+	printf ("tMOD \t= %d\t",  regDTPR1.tmod);
+	printf ("tWLMRD \t= %d\t",regDTPR1.twlmrd);
+	printf ("tWLO \t= %d\n",  regDTPR4.twlo);
 
 	/* PTR3-4 */
 	ncr_read32(phyReg, NCP_PHY_PTR3_5600, (ncp_uint32_t *)&regPTR3);
 	ncr_read32(phyReg, NCP_PHY_PTR4_5600, (ncp_uint32_t *)&regPTR4);
 
-	dbgprintf ("tDINIT0 = %d ns (min 500000 ns?)\n",((regPTR3.tdinit0) * period)/1000);
-	dbgprintf ("tDINIT1 = %d clocks (tRFC + 5 ?)\n",regPTR3.tdinit1);
-	dbgprintf ("tDINIT2 = %d ns (min 200000 ns?)\n",((regPTR4.tdinit2) * period)/1000);
+	printf ("tDINIT0 = %d ns (min 500000 ns?)\n",((regPTR3.tdinit0) * period)/1000);
+	printf ("tDINIT1 = %d clocks (tRFC + 5 ?)\n",regPTR3.tdinit1);
+	printf ("tDINIT2 = %d ns (min 200000 ns?)\n",((regPTR4.tdinit2) * period)/1000);
 
 	/* DXCCR */
 	ncr_read32(phyReg, NCP_PHY_DXCCR_5600, (ncp_uint32_t *)&regDXCCR);
 	ncr_read32(phyReg, NCP_PHY_DXCCR_5600, &tmp);
 
-	dbgprintf ("DXCCR register = 0x%x\n", tmp);
-	dbgprintf ("MSBDQ = %d\n",regDXCCR.msbudq);
+	printf ("DXCCR register = 0x%x\n", tmp);
+	printf ("MSBDQ = %d\n",regDXCCR.msbudq);
 
 	/* DTCR0-1 */
 	ncr_read32(phyReg, NCP_PHY_DTCR0_5600, (ncp_uint32_t *)&regDTCR0);
 	ncr_read32(phyReg, NCP_PHY_DTCR1_5600, (ncp_uint32_t *)&regDTCR1);
 
 	if (regDTCR0.dtmpr == 0) {
-		dbgprintf ("ERROR: DQS Gate Training does NOT use MPR. Not Recommended for DDR4\n");
+		printf ("ERROR: DQS Gate Training does NOT use MPR. Not Recommended for DDR4\n");
 	}
 	if (regDTCR0.dtcmpd == 0) {
-		dbgprintf ("NOTE: DQS Gate Training does NOT use data comparison.\n");
+		printf ("NOTE: DQS Gate Training does NOT use data comparison.\n");
 	}
 
+	numranks = regDTCR1.ranken;
 	if (regDTCR1.ranken == 3)  
 	{
 		numranks = 2;
@@ -672,27 +673,27 @@ ncp_sm_ddr4_phy_reg_dump(
 	{
 		numranks = 4;
 	}
-	dbgprintf ("NUMBER of RANKS configured = %d\n", numranks);
+	printf ("NUMBER of RANKS configured = %d\n", numranks);
 
 	/* VTCR0-1 */
 	ncr_read32(phyReg, NCP_PHY_VTCR0_5600, (ncp_uint32_t *)&regVTCR0);
-	dbgprintf ("tVREF = %d ns (min 150 ns?)\n",((1 << (regVTCR0.tvref + 4)) * period)/1000);
+	printf ("tVREF = %d ns (min 150 ns?)\n",((1 << (regVTCR0.tvref + 4)) * period)/1000);
 
-	dbgprintf ("\n************** ODT and Impedance config - Assuming RZQ=240ohm ******************\n");
-	dbgprintf ("\t\t\t");
+	printf ("\n************** ODT and Impedance config - Assuming RZQ=240ohm ******************\n");
+	printf ("\t\t\t");
 	numislands = 4;
 	for (bytecnt = 0; bytecnt < numislands; bytecnt++) 
 	{
-		dbgprintf ("Island %d \t", bytecnt);
+		printf ("Island %d \t", bytecnt);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
 	/* ZQnPR */
-	dbgprintf ("Output Impedance\t");
+	printf ("Output Impedance\t");
 	for (bytecnt = 0; bytecnt < numislands; bytecnt++) 
 	{
 		ncr_read32(phyReg, (NCP_PHY_ZQ0PR_5600 + (0x10 * bytecnt)), (ncp_uint32_t *)&regZQ0PR);
-		dbgprintf (" %s \t", (((regZQ0PR.zqdiv & 0xF) == 1 ) ? "240 ohm" :
+		printf (" %s \t", (((regZQ0PR.zqdiv & 0xF) == 1 ) ? "240 ohm" :
 					((regZQ0PR.zqdiv & 0xF) == 3 ) ? "120 ohm" :
 					((regZQ0PR.zqdiv & 0xF) == 5 ) ? "80 ohm" :
 					((regZQ0PR.zqdiv & 0xF) == 7 ) ? "60 ohm" :
@@ -701,12 +702,12 @@ ncp_sm_ddr4_phy_reg_dump(
 					((regZQ0PR.zqdiv & 0xF) == 13 ) ? "34 ohm" :
 					"UNKNOWN"));
 	} 
-	dbgprintf ("\n");
-	dbgprintf ("ODT settings\t\t");
+	printf ("\n");
+	printf ("ODT settings\t\t");
 	for (bytecnt = 0; bytecnt < numislands; bytecnt++) 
 	{
 		ncr_read32(phyReg, (NCP_PHY_ZQ0PR_5600 + (0x10 * bytecnt)), (ncp_uint32_t *)&regZQ0PR);
-		dbgprintf (" %s \t", ((((regZQ0PR.zqdiv & 0xF0) >> 4) == 1 ) ? "240 ohm" :
+		printf (" %s \t", ((((regZQ0PR.zqdiv & 0xF0) >> 4) == 1 ) ? "240 ohm" :
 					(((regZQ0PR.zqdiv & 0xF0) >> 4) == 3 ) ? "120 ohm" :
 					(((regZQ0PR.zqdiv & 0xF0) >> 4) == 5 ) ? "80 ohm" :
 					(((regZQ0PR.zqdiv & 0xF0) >> 4) == 7 ) ? "60 ohm" :
@@ -715,391 +716,391 @@ ncp_sm_ddr4_phy_reg_dump(
 					(((regZQ0PR.zqdiv & 0xF0) >> 4) == 13 ) ? "34 ohm" :
 					"UNKNOWN"));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
 	/* Data Training Results */
-	dbgprintf ("\n***********************************************************\n");
-	dbgprintf (" ** DDR Training typically occurs in the following order **\n");
-	dbgprintf ("***********************************************************\n");
-	dbgprintf (" *  1) PHY INIT \t\t-> PHY PLLs are initialized, and delay lines are calibrated\n");
-	dbgprintf (" *  2) Write Leveling \t\t-> DQS at DRAM each is aligned to the Clock at each DRAM\n");
-	dbgprintf (" *  3) Gate Training \t\t-> The timing for expecting a DQS from DRAM during a read is determined\n");
-	dbgprintf (" *  4) Write Latency Adjust \t-> The correct write latency is determined after write leveling\n");
-	dbgprintf (" *  5) Static Read Training \t-> Minimum amount of time to leave read data in read FIFOs is determined\n");
-	dbgprintf (" *  6) Read bit de-skew \t-> Each bit in a data lane is adjusted for timing to optimize reads\n");
-	dbgprintf (" *  7) Write bit de-skew \t-> Each bit in a data lane is adjusted for timing to optimize writes\n");
-	dbgprintf (" *  8) Read eye training \t-> Read DQS is adjusted to optimally place DQS edge in center of data eye\n");
-	dbgprintf (" *  9) Write eye training \t-> Write DQS is adjusted to optimally place DQS edge in center of data eye\n");
-	dbgprintf (" * 10) VREF training \t\t-> Adjust VREF settings in DRAM and in PHY for optimal placement\n");
+	printf ("\n***********************************************************\n");
+	printf (" ** DDR Training typically occurs in the following order **\n");
+	printf ("***********************************************************\n");
+	printf (" *  1) PHY INIT \t\t-> PHY PLLs are initialized, and delay lines are calibrated\n");
+	printf (" *  2) Write Leveling \t\t-> DQS at DRAM each is aligned to the Clock at each DRAM\n");
+	printf (" *  3) Gate Training \t\t-> The timing for expecting a DQS from DRAM during a read is determined\n");
+	printf (" *  4) Write Latency Adjust \t-> The correct write latency is determined after write leveling\n");
+	printf (" *  5) Static Read Training \t-> Minimum amount of time to leave read data in read FIFOs is determined\n");
+	printf (" *  6) Read bit de-skew \t-> Each bit in a data lane is adjusted for timing to optimize reads\n");
+	printf (" *  7) Write bit de-skew \t-> Each bit in a data lane is adjusted for timing to optimize writes\n");
+	printf (" *  8) Read eye training \t-> Read DQS is adjusted to optimally place DQS edge in center of data eye\n");
+	printf (" *  9) Write eye training \t-> Write DQS is adjusted to optimally place DQS edge in center of data eye\n");
+	printf (" * 10) VREF training \t\t-> Adjust VREF settings in DRAM and in PHY for optimal placement\n");
 
-	dbgprintf ("\n**************** Training Errors *******************\n");
-	dbgprintf ("***** All Values in Binary with Error per rank *****\n");
-	dbgprintf ("\t\t\t");
+	printf ("\n**************** Training Errors *******************\n");
+	printf ("***** All Values in Binary with Error per rank *****\n");
+	printf ("\t\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
-		dbgprintf ("Byte %d \t", bytecnt);
+		printf ("Byte %d \t", bytecnt);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 	errorindicated = 0;
 	vreferrorindicated = 0;
 
-	dbgprintf ("Gate Train Error\t");
+	printf ("Gate Train Error\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnRSR0 */
 		ncr_read32(phyReg, (NCP_PHY_DX0RSR0_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0RSR0);
 		errorindicated += regDX0RSR0.qsgerr;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0RSR0.qsgerr & 0x8) ? 1 : 0),
 				((regDX0RSR0.qsgerr & 0x4) ? 1 : 0),
 				((regDX0RSR0.qsgerr & 0x2) ? 1 : 0),
 				((regDX0RSR0.qsgerr & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Read Leveling Error\t");
+	printf ("Read Leveling Error\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnRSR1 */
 		ncr_read32(phyReg, (NCP_PHY_DX0RSR1_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0RSR1);
 		errorindicated += regDX0RSR1.rdlvlerr;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0RSR1.rdlvlerr & 0x8) ? 1 : 0),
 				((regDX0RSR1.rdlvlerr & 0x4) ? 1 : 0),
 				((regDX0RSR1.rdlvlerr & 0x2) ? 1 : 0),
 				((regDX0RSR1.rdlvlerr & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("WriteLatencyDQ Error\t");
+	printf ("WriteLatencyDQ Error\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnRSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0RSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0RSR2);
 		errorindicated += regDX0RSR2.wlawn;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0RSR2.wlawn & 0x8) ? 1 : 0),
 				((regDX0RSR2.wlawn & 0x4) ? 1 : 0),
 				((regDX0RSR2.wlawn & 0x2) ? 1 : 0),
 				((regDX0RSR2.wlawn & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Write Latency Error\t");
+	printf ("Write Latency Error\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnRSR3 */
 		ncr_read32(phyReg, (NCP_PHY_DX0RSR3_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0RSR3);
 		errorindicated += regDX0RSR3.wlaerr;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0RSR3.wlaerr & 0x8) ? 1 : 0),
 				((regDX0RSR3.wlaerr & 0x4) ? 1 : 0),
 				((regDX0RSR3.wlaerr & 0x2) ? 1 : 0),
 				((regDX0RSR3.wlaerr & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Host VREF Error\t\t");
+	printf ("Host VREF Error\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 	
 	{
 		/* DXnGSR3 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR3_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR3);
 		errorindicated += regDX0GSR3.hverr;
 		vreferrorindicated += regDX0GSR3.hverr;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR3.hverr & 0x8) ? 1 : 0),
 				((regDX0GSR3.hverr & 0x4) ? 1 : 0),
 				((regDX0GSR3.hverr & 0x2) ? 1 : 0),
 				((regDX0GSR3.hverr & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Host VREF Warning\t");
+	printf ("Host VREF Warning\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR3 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR3_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR3);
 		errorindicated += regDX0GSR3.hvwrn;
 		vreferrorindicated += regDX0GSR3.hvwrn;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR3.hvwrn & 0x8) ? 1 : 0),
 				((regDX0GSR3.hvwrn & 0x4) ? 1 : 0),
 				((regDX0GSR3.hvwrn & 0x2) ? 1 : 0),
 				((regDX0GSR3.hvwrn & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("DRAM VREF Error\t\t");
+	printf ("DRAM VREF Error\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR3 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR3_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR3);
 		errorindicated += regDX0GSR3.dverr;
 		vreferrorindicated += regDX0GSR3.dverr;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR3.dverr & 0x8) ? 1 : 0),
 				((regDX0GSR3.dverr & 0x4) ? 1 : 0),
 				((regDX0GSR3.dverr & 0x2) ? 1 : 0),
 				((regDX0GSR3.dverr & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("DRAM VREF Warning\t");
+	printf ("DRAM VREF Warning\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR3 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR3_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR3);
 		errorindicated += regDX0GSR3.dvwrn;
 		vreferrorindicated += regDX0GSR3.dvwrn;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR3.dvwrn & 0x8) ? 1 : 0),
 				((regDX0GSR3.dvwrn & 0x4) ? 1 : 0),
 				((regDX0GSR3.dvwrn & 0x2) ? 1 : 0),
 				((regDX0GSR3.dvwrn & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
 	if (vreferrorindicated) 
 	{
-		dbgprintf ("VREF Debug Code\t");
+		printf ("VREF Debug Code\t");
 		for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 		{
 			/* DXnGSR3 */
 			ncr_read32(phyReg, (NCP_PHY_DX0GSR3_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR3);
 			errorindicated += regDX0GSR3.estat;
 			vreferrorindicated += regDX0GSR3.estat;
-			dbgprintf (" %d%d%d%d \t", 
+			printf (" %d%d%d%d \t", 
 					((regDX0GSR3.estat & 0x8) ? 1 : 0),
 					((regDX0GSR3.estat & 0x4) ? 1 : 0),
 					((regDX0GSR3.estat & 0x2) ? 1 : 0),
 					((regDX0GSR3.estat & 0x1) ? 1 : 0));
 		}
-		dbgprintf ("\n");
+		printf ("\n");
 	}
 
-	dbgprintf ("\n**************** Training Errors *******************\n");
-	dbgprintf ("******** All Values in Binary. NOT per rank *********\n");
-	dbgprintf ("\t\t\t");
+	printf ("\n**************** Training Errors *******************\n");
+	printf ("******** All Values in Binary. NOT per rank *********\n");
+	printf ("\t\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
-		dbgprintf ("Byte %d \t", bytecnt);
+		printf ("Byte %d \t", bytecnt);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Read bit deskew Error\t");
+	printf ("Read bit deskew Error\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
 		errorindicated += regDX0GSR2.rderr;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.rderr & 0x8) ? 1 : 0),
 				((regDX0GSR2.rderr & 0x4) ? 1 : 0),
 				((regDX0GSR2.rderr & 0x2) ? 1 : 0),
 				((regDX0GSR2.rderr & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Read bit deskew Warn\t");
+	printf ("Read bit deskew Warn\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
 		errorindicated += regDX0GSR2.rdwn;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.rdwn & 0x8) ? 1 : 0),
 				((regDX0GSR2.rdwn & 0x4) ? 1 : 0),
 				((regDX0GSR2.rdwn & 0x2) ? 1 : 0),
 				((regDX0GSR2.rdwn & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Write bit deskew Error\t");
+	printf ("Write bit deskew Error\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
 		errorindicated += regDX0GSR2.wderr;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.wderr & 0x8) ? 1 : 0),
 				((regDX0GSR2.wderr & 0x4) ? 1 : 0),
 				((regDX0GSR2.wderr & 0x2) ? 1 : 0),
 				((regDX0GSR2.wderr & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Write bit deskew Warn\t");
+	printf ("Write bit deskew Warn\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
 		errorindicated += regDX0GSR2.wdwn;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.wdwn & 0x8) ? 1 : 0),
 				((regDX0GSR2.wdwn & 0x4) ? 1 : 0),
 				((regDX0GSR2.wdwn & 0x2) ? 1 : 0),
 				((regDX0GSR2.wdwn & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Read eye Center Error\t");
+	printf ("Read eye Center Error\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
 		errorindicated += regDX0GSR2.reerr;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.reerr & 0x8) ? 1 : 0),
 				((regDX0GSR2.reerr & 0x4) ? 1 : 0),
 				((regDX0GSR2.reerr & 0x2) ? 1 : 0),
 				((regDX0GSR2.reerr & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Read eye Center Warn\t");
+	printf ("Read eye Center Warn\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
 		errorindicated += regDX0GSR2.rewn;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.rewn & 0x8) ? 1 : 0),
 				((regDX0GSR2.rewn & 0x4) ? 1 : 0),
 				((regDX0GSR2.rewn & 0x2) ? 1 : 0),
 				((regDX0GSR2.rewn & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Write eye Center Error\t");
+	printf ("Write eye Center Error\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
 		errorindicated += regDX0GSR2.weerr;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.weerr & 0x8) ? 1 : 0),
 				((regDX0GSR2.weerr & 0x4) ? 1 : 0),
 				((regDX0GSR2.weerr & 0x2) ? 1 : 0),
 				((regDX0GSR2.weerr & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Write eye Center Warn\t");
+	printf ("Write eye Center Warn\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
 		errorindicated += regDX0GSR2.wewn;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.wewn & 0x8) ? 1 : 0),
 				((regDX0GSR2.wewn & 0x4) ? 1 : 0),
 				((regDX0GSR2.wewn & 0x2) ? 1 : 0),
 				((regDX0GSR2.wewn & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Static Read Error\t");
+	printf ("Static Read Error\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
 		errorindicated += regDX0GSR2.srderr;
-		dbgprintf (" %d%d%d%d \t", 
+		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.srderr & 0x8) ? 1 : 0),
 				((regDX0GSR2.srderr & 0x4) ? 1 : 0),
 				((regDX0GSR2.srderr & 0x2) ? 1 : 0),
 				((regDX0GSR2.srderr & 0x1) ? 1 : 0));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
 	if (errorindicated) {
-		dbgprintf ("\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n");
-		dbgprintf ("ERROR: See above for a training error indicated\n");
-		dbgprintf ("ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n");
+		printf ("\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n");
+		printf ("ERROR: See above for a training error indicated\n");
+		printf ("ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n");
 	}
 
 	ncr_read32(phyReg, NCP_PHY_RANKIDR_5600, (ncp_uint32_t *)&regRANKIDR);
 
-	dbgprintf ("\n***********************************************************\n");
-	dbgprintf ("************ All Results are based on Rank #%d *************\n", regRANKIDR.rankrid);
-	dbgprintf ("***********************************************************\n");
+	printf ("\n***********************************************************\n");
+	printf ("************ All Results are based on Rank #%d *************\n", regRANKIDR.rankrid);
+	printf ("***********************************************************\n");
 
-	dbgprintf ("\n**************** Period Measurement Results *******************\n");
-	dbgprintf ("\t\t\t");
+	printf ("\n**************** Period Measurement Results *******************\n");
+	printf ("\t\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
-		dbgprintf ("Byte %d \t", bytecnt);
+		printf ("Byte %d \t", bytecnt);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Master Delay Initial\t");
-	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
-	{
-		/* DXnMDLR0 */
-		ncr_read32(phyReg, (NCP_PHY_DX0MDLR0_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0MDLR0);
-		dbgprintf (" 0x%X \t",regDX0MDLR0.iprd);
-	}
-	dbgprintf ("\n");
-
-	dbgprintf ("Master Delay Target\t");
+	printf ("Master Delay Initial\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnMDLR0 */
 		ncr_read32(phyReg, (NCP_PHY_DX0MDLR0_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0MDLR0);
-		dbgprintf (" 0x%X \t",regDX0MDLR0.tprd);
+		printf (" 0x%X \t",regDX0MDLR0.iprd);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Master Delay Selected\t");
+	printf ("Master Delay Target\t");
+	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
+	{
+		/* DXnMDLR0 */
+		ncr_read32(phyReg, (NCP_PHY_DX0MDLR0_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0MDLR0);
+		printf (" 0x%X \t",regDX0MDLR0.tprd);
+	}
+	printf ("\n");
+
+	printf ("Master Delay Selected\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnMDLR1 */
 		ncr_read32(phyReg, (NCP_PHY_DX0MDLR1_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0MDLR1);
-		dbgprintf (" 0x%X \t",regDX0MDLR1.mdld);
+		printf (" 0x%X \t",regDX0MDLR1.mdld);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Write Level Period\t");
+	printf ("Write Level Period\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR0 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR0_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR0);
-		dbgprintf (" 0x%X \t",regDX0GSR0.wlprd);
+		printf (" 0x%X \t",regDX0GSR0.wlprd);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Read Level Period\t");
+	printf ("Read Level Period\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGSR0 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR0_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR0);
-		dbgprintf (" 0x%X \t",regDX0GSR0.gdqsprd);
+		printf (" 0x%X \t",regDX0GSR0.gdqsprd);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("\n**************** LCDL Training Results *******************\n");
-	dbgprintf ("\t\t\t");
+	printf ("\n**************** LCDL Training Results *******************\n");
+	printf ("\t\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
-		dbgprintf ("Byte %d \t", bytecnt);
+		printf ("Byte %d \t", bytecnt);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Write DQS Delay\t\t");
+	printf ("Write DQS Delay\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnLCDLR0 */
 		ncr_read32(phyReg, (NCP_PHY_DX0LCDLR0_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0LCDLR0);
-		dbgprintf (" 0x%X \t",regDX0LCDLR0.wld);
+		printf (" 0x%X \t",regDX0LCDLR0.wld);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Write Adjust\t\t");
+	printf ("Write Adjust\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGTR0 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GTR0_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GTR0);
-		dbgprintf (" %s \t",((regDX0GTR0.wlsl == 0) ? "-1" :
+		printf (" %s \t",((regDX0GTR0.wlsl == 0) ? "-1" :
 					(regDX0GTR0.wlsl == 1) ? "-0.5" :
 					(regDX0GTR0.wlsl == 2) ? "+-0" :
 					(regDX0GTR0.wlsl == 3) ? "+0.5" :
@@ -1111,123 +1112,123 @@ ncp_sm_ddr4_phy_reg_dump(
 					(regDX0GTR0.wlsl == 9) ? "+3.5" :
 					"ERROR"));
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Write Data Delay\t");
+	printf ("Write Data Delay\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnLCDLR1 */
 		ncr_read32(phyReg, (NCP_PHY_DX0LCDLR1_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0LCDLR1);
-		dbgprintf (" 0x%X \t",regDX0LCDLR1.wdqd);
+		printf (" 0x%X \t",regDX0LCDLR1.wdqd);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("DQS Gate Delay\t\t");
+	printf ("DQS Gate Delay\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnLCDLR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0LCDLR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0LCDLR2);
-		dbgprintf (" 0x%X \t",regDX0LCDLR2.dqsgd);
+		printf (" 0x%X \t",regDX0LCDLR2.dqsgd);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("DQS Gate Adjust\t\t");
+	printf ("DQS Gate Adjust\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnGTR0 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GTR0_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GTR0);
 		if (regDX0GTR0.dgsl == 0) 
 		{
-			dbgprintf (" +-0 \t");
+			printf (" +-0 \t");
 		}
 		else 
 		{
-			dbgprintf (" +%.1f \t",((double)regDX0GTR0.dgsl/2));
+			printf (" +%.1f \t",((double)regDX0GTR0.dgsl/2));
 		}		      
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Read DQS Delay\t\t");
+	printf ("Read DQS Delay\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnLCDLR3 */
 		ncr_read32(phyReg, (NCP_PHY_DX0LCDLR3_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0LCDLR3);
-		dbgprintf (" 0x%X \t",regDX0LCDLR3.rdqsd);
+		printf (" 0x%X \t",regDX0LCDLR3.rdqsd);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Read DQSN Delay\t\t");
+	printf ("Read DQSN Delay\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
 		/* DXnLCDLR4 */
 		ncr_read32(phyReg, (NCP_PHY_DX0LCDLR4_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0LCDLR4);
-		dbgprintf (" 0x%X \t",regDX0LCDLR4.rdqsnd);
+		printf (" 0x%X \t",regDX0LCDLR4.rdqsnd);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("\n**************** Other Training Results *******************\n");
-	dbgprintf ("\t\t\t");
+	printf ("\n**************** Other Training Results *******************\n");
+	printf ("\t\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
-		dbgprintf ("Byte %d \t", bytecnt);
+		printf ("Byte %d \t", bytecnt);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Static Read Delay\t");
+	printf ("Static Read Delay\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++)
 	{
 		/* DXnGCR0 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GCR0_5600 + (bytecnt * 0x100)), (ncp_uint32_t *)&regDX0GCR0);
-		dbgprintf (" 0x%X \t",regDX0GCR0.rddly);
+		printf (" 0x%X \t",regDX0GCR0.rddly);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
 	/* VREF training */
-	dbgprintf ("Host VREF rank0\t\t");
+	printf ("Host VREF rank0\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++)
 	{
 		/* DXnGCR5 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GCR5_5600 + (bytecnt * 0x100)), (ncp_uint32_t *)&regDX0GCR5);
-		dbgprintf (" 0x%X \t",regDX0GCR5.dxrefiselr0);
+		printf (" 0x%X \t",regDX0GCR5.dxrefiselr0);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("Host VREF rank1\t\t");
+	printf ("Host VREF rank1\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++)
 	{
 		/* DXnGCR5 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GCR5_5600 + (bytecnt * 0x100)), (ncp_uint32_t *)&regDX0GCR5);
-		dbgprintf (" 0x%X \t",regDX0GCR5.dxrefiselr1);
+		printf (" 0x%X \t",regDX0GCR5.dxrefiselr1);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("DRAM VREF rank0\t\t");
+	printf ("DRAM VREF rank0\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++)
 	{
 		/* DXnGCR6 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GCR6_5600 + (bytecnt * 0x100)), (ncp_uint32_t *)&regDX0GCR6);
-		dbgprintf (" 0x%X \t",regDX0GCR6.dxdqvrefr0);
+		printf (" 0x%X \t",regDX0GCR6.dxdqvrefr0);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("DRAM VREF rank1\t\t");
+	printf ("DRAM VREF rank1\t\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++)
 	{
 		/* DXnGCR6 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GCR6_5600 + (bytecnt * 0x100)), (ncp_uint32_t *)&regDX0GCR6);
-		dbgprintf (" 0x%X \t",regDX0GCR6.dxdqvrefr1);
+		printf (" 0x%X \t",regDX0GCR6.dxdqvrefr1);
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("\n**************** Read Data bit deskew Results *******************\n");
-	dbgprintf ("         D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |\n");
-	dbgprintf ("         Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  M  |  Q  |  Q  |\n");
-	dbgprintf ("         0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |     |  S  |  SN |\n");
-	dbgprintf ("------------------------------------------------------------------\n");
+	printf ("\n**************** Read Data bit deskew Results *******************\n");
+	printf ("         D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |\n");
+	printf ("         Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  M  |  Q  |  Q  |\n");
+	printf ("         0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |     |  S  |  SN |\n");
+	printf ("------------------------------------------------------------------\n");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
-		dbgprintf ("Byte %d ", bytecnt);
-		dbgprintf ("  ");
+		printf ("Byte %d ", bytecnt);
+		printf ("  ");
 		for (bits = 0; bits <= 10; bits++) 
 		{
 			field = bits % 4;
@@ -1248,21 +1249,21 @@ ncp_sm_ddr4_phy_reg_dump(
 					val = (tmp & 0x3f000000) >> 24;
 					break;
 			}
-			dbgprintf ("%d|  ", val);
+			printf ("%d|  ", val);
 		}
-		dbgprintf ("\n");
+		printf ("\n");
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
-	dbgprintf ("**************** Write Data bit deskew Results *******************\n");
-	dbgprintf ("         D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  O  |\n");
-	dbgprintf ("         Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  M  |  Q  |  E  |\n");
-	dbgprintf ("         0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |     |  S  |     |\n");
-	dbgprintf ("------------------------------------------------------------------\n");
+	printf ("**************** Write Data bit deskew Results *******************\n");
+	printf ("         D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  D  |  O  |\n");
+	printf ("         Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  Q  |  M  |  Q  |  E  |\n");
+	printf ("         0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |     |  S  |     |\n");
+	printf ("------------------------------------------------------------------\n");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
 	{
-		dbgprintf ("Byte %d ", bytecnt);
-		dbgprintf ("  ");
+		printf ("Byte %d ", bytecnt);
+		printf ("  ");
 		for (bits = 0; bits <= 10; bits++) 
 		{
 			field = bits % 4;
@@ -1283,11 +1284,11 @@ ncp_sm_ddr4_phy_reg_dump(
 					val = (tmp & 0x3f000000) >> 24;
 					break;
 			}
-			dbgprintf ("%d|  ", val);
+			printf ("%d|  ", val);
 		}
-		dbgprintf ("\n");
+		printf ("\n");
 	}
-	dbgprintf ("\n");
+	printf ("\n");
 
 	/* Trained Registers
 #ACLCDLR0
@@ -1327,51 +1328,61 @@ ncp_sm_ddr4_phy_training_error_check(
 	if (regPGSR0.verr)
 	{
 		errprintf("VREF Training Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.zcerr)
 	{
 		errprintf("Impedance Calibration Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.wlerr)
 	{
 		errprintf("Write Leveling Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.qsgerr)
 	{
 		errprintf("DQS Gate Training Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.wlaerr)
 	{
 		errprintf("Write Leveling Adjustment Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.rderr)
 	{
 		errprintf("Read Bit Deskew Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.wderr)
 	{
 		errprintf("Write Bit Deskew Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.reerr)
 	{
 		errprintf("Read Eye Training Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.weerr)
 	{
 		errprintf("Write Eye Training Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.caerr)
 	{
 		errprintf("CA Training Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.cawrn)
@@ -1382,6 +1393,7 @@ ncp_sm_ddr4_phy_training_error_check(
 	if (regPGSR0.srderr)
 	{
 		errprintf("Static Read Error\n");
+		ncpStatus = NCP_ST_ERROR;
 	}
 
 	NCP_RETURN_LABEL
@@ -1469,7 +1481,7 @@ ncp_sm_ddr4_phy_training(
 	regDTCR0.dtdstp = 0x0; /* DTDSTP Data training debug step */
 	regDTCR0.dtexd = 0x0; /* DTEXD Data training extended write DQ */
 	regDTCR0.dtexg = 0x0; /* DTEXG Data training early/extended gate */
-	regDTCR0.rfshdt = 0x9; /* Assuming PHY refresh enabled during training */
+	regDTCR0.rfshdt = 0x0; /* Assuming PHY refresh enabled during training */
 	ncr_write32(phyReg, NCP_PHY_DTCR0_5600, *((ncp_uint32_t *)&regDTCR0));
 
 	/* DTCR1 */
@@ -1496,9 +1508,9 @@ ncp_sm_ddr4_phy_training(
 
 	/* BISTAR1 */
 	ncr_read32(phyReg, NCP_PHY_BISTAR1_5600, (ncp_uint32_t *)&regBISTAR1);
-	regBISTAR1.brank = parms->topology;
+	regBISTAR1.brank = 0x0;/* was parms->topology - 1;*/
 	regBISTAR1.bainc = 0x8; /* for BL8 lower bits should be 000 to mark beginning of burst boundary */
-	regBISTAR1.bmrank = 0x1; /* BIST Maximum rank */
+	regBISTAR1.bmrank = parms->num_ranks_per_interface - 1; /* BIST Maximum rank */
 	ncr_write32(phyReg, NCP_PHY_BISTAR1_5600, *((ncp_uint32_t *)&regBISTAR1));
 
 	ncr_write32(phyReg, NCP_PHY_BISTAR2_5600, 0x000000c8); /* 31:28 BIST max bank address, 11:0 BIST max col address */
@@ -1563,16 +1575,24 @@ ncp_sm_ddr4_phy_training(
 		/* Check the General Status register */
 
 		/* poll for idone(bit 0) */
-		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1,  0x1,  1000000,  10000));
+		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x21,  0x21,  1000,  10000));
 
 		if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
-			errprintf("POLL timeout while waiting for write levelling training to complete [line:%d] exp 0x1 read 0x%x\n",__LINE__, tmp);
+			errprintf("POLL timeout while waiting for write levelling training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
+			return ncpStatus;
 		}
 
 		/* Checking for Error's */
-		NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		if (ncpStatus == NCP_ST_ERROR)
+		{
+			return ncpStatus;
+		}
+
+		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+		dbgprintf("SUCCESS: result while waiting for write levelling training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
 	}
 
 	/* work-around for Star 9000952604 */
@@ -1652,16 +1672,24 @@ ncp_sm_ddr4_phy_training(
 		/* Check the General Status register */
 
 		/* poll for idone(bit 0) */
-		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1,  0x1,  1000000,  10000));
+		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x41,  0x41,  1000,  10000));
 
 		if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
-			errprintf("POLL timeout while waiting for read DQS gate training to complete [line:%d] exp 0x1 read 0x%x\n",__LINE__, tmp);
+			errprintf("POLL timeout while waiting for read DQS gate training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
+			return ncpStatus;
 		}
 
 		/* Checking for Error's */
-		NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		if (ncpStatus == NCP_ST_ERROR)
+		{
+			return ncpStatus;
+		}
+
+		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+		dbgprintf("SUCCESS: result while waiting for read DQS gate training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
 	}
 
 	/* Enable QS counter enable by writing DXCCR[22]=1'b1 QSCNTEN */
@@ -1722,16 +1750,24 @@ ncp_sm_ddr4_phy_training(
 		/* Check the General Status register */
 
 		/* poll for idone(bit 0) */
-		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1,  0x1,  1000000,  10000));
+		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x81,  0x81,  1000,  10000));
 
 		if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
-			errprintf("POLL timeout while waiting for write level adjustment to complete [line:%d] exp 0x1 read 0x%x\n",__LINE__, tmp);
+			errprintf("POLL timeout while waiting for write level adjustment to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
+			return ncpStatus;
 		}
 
 		/* Checking for Error's */
-		NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		if (ncpStatus == NCP_ST_ERROR)
+		{
+			return ncpStatus;
+		}
+
+		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+		dbgprintf("SUCCESS: result while waiting for write level adjustment to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
 	}
 
 
@@ -1810,16 +1846,24 @@ ncp_sm_ddr4_phy_training(
 		/* Check the General Status register */
 
 		/* poll for idone(bit 0) */
-		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1,  0x1,  1000000,  10000));
+		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x2001,  0x2001,  1000,  10000));
 
 		if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
-			errprintf("POLL timeout while SRD training [line:%d] exp 0x1 read 0x%x\n",__LINE__, tmp);
+			errprintf("POLL timeout while SRD training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
+			return ncpStatus;
 		}
 
-		/* Checking Training Error's */
-		NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		/* Checking for Error's */
+		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		if (ncpStatus == NCP_ST_ERROR)
+		{
+			return ncpStatus;
+		}
+
+		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+		dbgprintf("SUCCESS: result while waiting for srd training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
 	}
 
 	/* Read Data Bit Deskew Training */
@@ -1875,16 +1919,24 @@ ncp_sm_ddr4_phy_training(
 		/* Check the General Status register */
 
 		/* poll for idone(bit 0) */
-		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1,  0x1,  1000000,  10000));
+		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x101,  0x101,  1000,  10000));
 
 		if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
-			errprintf("POLL timeout while read data bit deskew training [line:%d] exp 0x1 read 0x%x\n",__LINE__, tmp);
+			errprintf("POLL timeout while read data bit deskew training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
+			return ncpStatus;
 		}
 
-		/* Checking Training Error's */
-		NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		/* Checking for Error's */
+		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		if (ncpStatus == NCP_ST_ERROR)
+		{
+			return ncpStatus;
+		}
+
+		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+		dbgprintf("SUCCESS: result while waiting for read deskew training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
 	}
 
 	/* Write Data Bit Deskew Training */
@@ -1940,16 +1992,24 @@ ncp_sm_ddr4_phy_training(
 		/* Check the General Status register */
 
 		/* poll for idone(bit 0) */
-		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1,  0x1,  1000000,  10000));
+		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x201,  0x201,  1000,  10000));
 
 		if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
-			errprintf("POLL timeout while write data bit deskew training [line:%d] exp 0x1 read 0x%x\n",__LINE__, tmp);
+			errprintf("POLL timeout while write data bit deskew training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
+			return ncpStatus;
 		}
 
-		/* Checking Training Error's */
-		NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		/* Checking for Error's */
+		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		if (ncpStatus == NCP_ST_ERROR)
+		{
+			return ncpStatus;
+		}
+
+		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+		dbgprintf("SUCCESS: result while waiting for write deskew training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
 	}
 
 	/* Read Data Eye Training */
@@ -2005,16 +2065,24 @@ ncp_sm_ddr4_phy_training(
 		/* Check the General Status register */
 
 		/* poll for idone(bit 0) */
-		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1,  0x1,  1000000,  10000));
+		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x401,  0x401,  1000,  10000));
 
 		if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
-			errprintf("POLL timeout while read data eye training [line:%d] exp 0x1 read 0x%x\n",__LINE__, tmp);
+			errprintf("POLL timeout while read data eye training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
+			return ncpStatus;
 		}
 
-		/* Checking Training Error's */
-		NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		/* Checking for Error's */
+		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		if (ncpStatus == NCP_ST_ERROR)
+		{
+			return ncpStatus;
+		}
+
+		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+		dbgprintf("SUCCESS: result while waiting for read eye training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
 	}
 
 	/* Write Data Eye Training */
@@ -2070,16 +2138,24 @@ ncp_sm_ddr4_phy_training(
 		/* Check the General Status register */
 
 		/* poll for idone(bit 0) */
-		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1,  0x1,  1000000,  10000));
+		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x801,  0x801,  1000,  10000));
 
 		if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
-			errprintf("POLL timeout while write data eye training [line:%d] exp 0x1 read 0x%x\n",__LINE__, tmp);
+			errprintf("POLL timeout while write data eye training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
+			return ncpStatus;
 		}
 
-		/* Checking Training Error's */
-		NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		/* Checking for Error's */
+		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		if (ncpStatus == NCP_ST_ERROR)
+		{
+			return ncpStatus;
+		}
+
+		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+		dbgprintf("SUCCESS: result while waiting for write eye training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
 	}
 
 	/* VREF Training */
@@ -2135,20 +2211,32 @@ ncp_sm_ddr4_phy_training(
 		/* Check the General Status register */
 
 		/* poll for idone(bit 0) */
-		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1,  0x1,  1000000,  10000));
+		ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x4001,  0x4001,  1000,  10000));
 
 		if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
-			errprintf("POLL timeout while VREF training [line:%d] exp 0x1 read 0x%x\n",__LINE__, tmp);
+			errprintf("POLL timeout while VREF training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
+			return ncpStatus;
 		}
 
-		/* Checking Training Error's */
-		NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		/* Checking for Error's */
+		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+		if (ncpStatus == NCP_ST_ERROR)
+		{
+			return ncpStatus;
+		}
+
+		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+		dbgprintf("SUCCESS: result while waiting for vref training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
 	}
 
 	ncr_read32(phyReg, NCP_PHY_VTDR_5600, &tmp);
 	/*dbgprintf("After VREF training VTDR result = 0x%x\n",tmp);*/
+
+	ncr_read32(phyReg, NCP_PHY_DTCR0_5600, (ncp_uint32_t *)&regDTCR0);
+	regDTCR0.rfshdt = 0x9; /* Assuming PHY refresh enabled during training */
+	ncr_write32(phyReg, NCP_PHY_DTCR0_5600, *((ncp_uint32_t *)&regDTCR0));
 
 	/* PGCR1 */
 	ncr_read32(phyReg, NCP_PHY_PGCR1_5600, (ncp_uint32_t *)&regPGCR1);
@@ -2217,6 +2305,7 @@ ncp_sm_ddr4_phy_init(
 	ncp_phy_ZQ2PR_5600_t regZQ2PR = {0};
 	ncp_phy_ZQ3PR_5600_t regZQ3PR = {0};
 	ncp_phy_ACIOCR0_5600_t regACIOCR0 = {0};
+	/*ncp_phy_DX0GCR0_5600_t regDX0GCR0 = {0};*/
 
 	ncp_denali_DENALI_CTL_00_5600_t reg00 = {0};
 
@@ -2225,7 +2314,7 @@ ncp_sm_ddr4_phy_init(
 	if (regPGSR0.aplock)
 	{
 		/* AC PLL lock set */
-		dbgprintf("WARNING: PHY still configured!! PLEASE RESET. \n");
+		errprintf("WARNING: PHY still configured!! PLEASE RESET. \n");
 		return ncpStatus;
 	}
 
@@ -2234,7 +2323,7 @@ ncp_sm_ddr4_phy_init(
 	regPGCR0.icpc = 1;
 	ncr_write32(phyReg, NCP_PHY_PGCR0_5600, *((ncp_uint32_t *)&regPGCR0));
 
-	if (parms->enableECC == TRUE)
+	if ((parms->enableECC == TRUE) && (parms->version == NCP_CHIP_ACPXLF))
 	{
 		/* DXCCR */
 		ncr_read32(phyReg, NCP_PHY_DXCCR_5600, (ncp_uint32_t *)&regDXCCR);
@@ -2261,7 +2350,7 @@ ncp_sm_ddr4_phy_init(
 	/* PGCR1 */
 	ncr_read32(phyReg, NCP_PHY_PGCR1_5600, (ncp_uint32_t *)&regPGCR1);
 	regPGCR1.wlstep = 1; /* write leveling step */
-	regPGCR1.pubmode = 1; /* PUB controls the interface to PHY and SDRAM */
+	/*regPGCR1.pubmode = 1;*/ /* PUB controls the interface to PHY and SDRAM */
 	regPGCR1.ioddrm = 1; /* DDR4 */
 	ncr_write32(phyReg, NCP_PHY_PGCR1_5600, *((ncp_uint32_t *)&regPGCR1));
 
@@ -2271,11 +2360,12 @@ ncp_sm_ddr4_phy_init(
 	regBISTRR.bdxen = 1; /* bist datx8 enable */
 	regBISTRR.bdpat = 3;
 	ncr_write32(phyReg, NCP_PHY_BISTRR_5600, *((ncp_uint32_t *)&regBISTRR));
+
 	ncr_read32(phyReg, NCP_PHY_BISTUDPR_5600, (ncp_uint32_t *)&regBISTUDPR);
 	regBISTUDPR.budp0 = 0xaaaa;
 	regBISTUDPR.budp1 = 0x5555;
 	ncr_write32(phyReg, NCP_PHY_BISTUDPR_5600, *((ncp_uint32_t *)&regBISTUDPR));
-
+#if 1
 	/* PTR3 */
 	ncr_read32(phyReg, NCP_PHY_PTR3_5600, (ncp_uint32_t *)&regPTR3);
 	/* dram init time in cke, use 500us per dwc pub */
@@ -2288,9 +2378,9 @@ ncp_sm_ddr4_phy_init(
 	/* 200us on power up */
 	regPTR4.tdinit2 = ncp_ps_to_clk(parms->tck_ps, 200000000);
 	/* time from ZQ init to first command */
-	regPTR4.tdinit3 = 1024; /* ctm->tZQinit */
+	regPTR4.tdinit3 = ctm->tZQinit; /* 1024 */
 	ncr_write32(phyReg, NCP_PHY_PTR4_5600, *((ncp_uint32_t *)&regPTR4));
-
+#endif
 	/* DTPR0 */
 	ncr_read32(phyReg, NCP_PHY_DTPR0_5600, (ncp_uint32_t *)&regDTPR0);
 	regDTPR0.trtp = ctm->tRTP;
@@ -2320,7 +2410,7 @@ ncp_sm_ddr4_phy_init(
 	/*regDTPR3.tdqsck = default */
 	/*regDTPR3.tdqsckmax = default */
 	/*regDTPR3.tdllk = default */
-	regDTPR3.tccd = ctm->tCCD_L;
+	regDTPR3.tccd = 0x1;/* For PHY and DDR4 */
 	/*regDTPR3.tofdx = default */ /* ODT turn-off delay extension */
 	ncr_write32(phyReg, NCP_PHY_DTPR3_5600, *((ncp_uint32_t *)&regDTPR3));
 
@@ -2404,7 +2494,7 @@ ncp_sm_ddr4_phy_init(
 		/* DX0GCR1 .. DX8GCR1 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GCR1_5600 + (0x100 * i)), (ncp_uint32_t *)&regDX0GCR1);
 		regDX0GCR1.dxpddmode = 0x0000;
-		regDX0GCR1.dxpdrmode = 0xaaaa;
+		regDX0GCR1.dxpdrmode = 0x0000; /* based on pub_routines */
 		ncr_write32(phyReg, (NCP_PHY_DX0GCR1_5600 + (0x100 * i)), *((ncp_uint32_t *)&regDX0GCR1));
 	}
 
@@ -2412,7 +2502,7 @@ ncp_sm_ddr4_phy_init(
 	{
 		/* DX0GCR3 .. DX8GCR3 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GCR3_5600 + (0x100 * i)), (ncp_uint32_t *)&regDX0GCR3);
-		regDX0GCR3.dspdrmode = 0x2;
+		regDX0GCR3.dspdrmode = 0x0; /* based on pub_routines */
 		/* default for others ?? */
 		ncr_write32(phyReg, (NCP_PHY_DX0GCR3_5600 + (0x100 * i)), *((ncp_uint32_t *)&regDX0GCR3));
 
@@ -2447,6 +2537,7 @@ ncp_sm_ddr4_phy_init(
 	regDCR.mprdq = 0x1; /* both primary and other DQ pins all drive same data from MPR */
 
 	/* This is for read data on all byte lanes during read DQS gate training */
+#if 0
 	if (parms->primary_bus_width == 2)
 	{
 		/* half-datapath feature */
@@ -2456,9 +2547,10 @@ ncp_sm_ddr4_phy_init(
 	{
 		regDCR.bytemask = 0xff; 
 	}
+#endif
 
 	/* No simultaneous Rank Access on same clock cycle allowed */
-	regDCR.nosra = 0x1; 
+	regDCR.nosra = parms->address_mirroring; 
 
 	/* 2T timing should be used by PUB generated sdram transactions */
 	regDCR.ddr2t = 0x1; 
@@ -2499,7 +2591,7 @@ ncp_sm_ddr4_phy_init(
 	regZQCR.term_off = 0x0;
 	regZQCR.zqpd = 0x0;
 	regZQCR.pgwait = 0x7; /* 467 clock */
-	regZQCR.zcalt = 0x3; /* continous cal */
+	regZQCR.zcalt = 0x1; /* continous cal */
 	regZQCR.avgmax = 0x2; /* 8 rounds */
 	regZQCR.avgen = 0x1; /* averaging on */
 	regZQCR.iodlmt = 0x2;
@@ -2645,6 +2737,7 @@ ncp_sm_ddr4_phy_init(
 	 * use 400 clock safety margin per PUB
 	 */
 	regPGCR2.trefprd = (9 * ctm->tREFI) - 400;
+	/*regPGCR2.trefprd = 0x10a8;*/
 	ncr_write32(phyReg, NCP_PHY_PGCR2_5600, *((ncp_uint32_t *)&regPGCR2));
 
 	/* NOTE: MR settings are coming from end-user's selection in ASE and they
@@ -2733,19 +2826,29 @@ ncp_sm_ddr4_phy_init(
 	regPIR.ctldinit = 0; 
 	regPIR.rdimminit = 0; 
 	ncr_write32(phyReg, NCP_PHY_PIR_5600, *((ncp_uint32_t *)&regPIR));
+	ncr_read32(phyReg, NCP_PHY_PIR_5600, &tmp);
 
 	/* Check the General Status register */
 
-	/* poll for idone(bit 0), pldone(1), dcdone(2), zcdone(3), didone(4) */
-	ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1f,  0x1f,  1000000,  10000));
+	/* poll for idone(bit 0), pldone(1), dcdone(2), zcdone(3) */
+	ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0xf,  0xf,  1000,  10000));
 
 	if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 	{
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 		errprintf("POLL timeout during PHY init [line:%d] exp 0x1f read 0x%x\n",__LINE__, tmp);
+		return ncpStatus;
 	}
 
-	NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+	/* Checking for Error's */
+	ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+	if (ncpStatus == NCP_ST_ERROR)
+	{
+		return ncpStatus;
+	}
+
+	ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+	dbgprintf("SUCCESS: result after PHY init PLL init and impedance calibration [line:%d] read 0x%x\n",__LINE__, tmp);
 
 	/* disable all unused bytes */
 	if ((parms->enableECC == FALSE) && (parms->version == NCP_CHIP_ACP56xx))
@@ -2767,6 +2870,10 @@ ncp_sm_ddr4_phy_init(
 
 #if 0 	/* Check if this is needed ?? MC is already init'd by this point
 	 * should DRAM init be done by PHY-side or should PHY be told Controller will do DRAM init ?? */
+
+	dbgprintf("DRAM init initiated by PHY!!!!!\n");
+	/*ncr_read32(phyReg, NCP_PHY_GPR0_5600, &tmp);
+	  dbgprintf("pubmode = %d PHY:GPR0=0x%x\n",regPGCR1.pubmode, tmp);*/
 
 	/* PGCR1 */
 	ncr_read32(phyReg, NCP_PHY_PGCR1_5600, (ncp_uint32_t *)&regPGCR1);
@@ -2806,32 +2913,48 @@ ncp_sm_ddr4_phy_init(
 	/* Check the General Status register */
 
 	/* poll for idone(bit 0), didone(4) */
-	ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x11,  0x11,  1000000,  10000));
+	ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x11,  0x11,  1000,  10000));
 
 	if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 	{
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 		errprintf("POLL timeout during SDRAM initialization by PHY [line:%d] exp 0x11 read 0x%x\n",__LINE__, tmp);
+		return ncpStatus;
 	}
 
-	NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+	/* Checking for Error's */
+	ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+	if (ncpStatus == NCP_ST_ERROR)
+	{
+		return ncpStatus;
+	}
+
+	ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+	dbgprintf("SUCCESS: result during SDRAM initialization by PHY [line:%d] read 0x%x\n",__LINE__, tmp);
+
 
 	/* SDRAM Initialization by PHY done !!! */
-
+#if 0
 	/* start MC init operation */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_00_5600, (ncp_uint32_t *)&reg00);
 	reg00.start = 0x1;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_00_5600, *((ncp_uint32_t *)&reg00));
 
 	/* poll for memory init operation bit-8 */
-	ncpStatus = (ncr_poll(ctlReg, NCP_DENALI_CTL_366_5600,  0x0100,  0x0100,  1000000,  10000));
+	ncpStatus = (ncr_poll(ctlReg, NCP_DENALI_CTL_366_5600,  0x0100,  0x0100,  1000,  10000));
 
 	if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 	{
 		ncr_read32(ctlReg, NCP_DENALI_CTL_366_5600, &tmp);
 		errprintf("POLL timeout during MC init [line:%d] exp 0x100 read 0x%x\n",__LINE__, tmp);
 	}
+#endif
 #else
+	dbgprintf("DRAM init initiated by MC!!!!!\n");
+	/*ncr_read32(phyReg, NCP_PHY_PGCR1_5600, (ncp_uint32_t *)&regPGCR1);
+	  ncr_read32(phyReg, NCP_PHY_GPR0_5600, &tmp);
+	  dbgprintf("pubmode = %d PHY:GPR0=0x%x\n",regPGCR1.pubmode, tmp);*/
+
 	ncr_read32(phyReg, NCP_PHY_PIR_5600, (ncp_uint32_t *)&regPIR);
 	regPIR.init = 1; 
 	regPIR.zcal = 0; 
@@ -2854,18 +2977,33 @@ ncp_sm_ddr4_phy_init(
 	regPIR.rdimminit = 0; 
 	ncr_write32(phyReg, NCP_PHY_PIR_5600, *((ncp_uint32_t *)&regPIR));
 
-	/* Check the General Status register */
+	/*ncr_read32(phyReg, NCP_PHY_PIR_5600, &tmp);
+	  dbgprintf("regPIR written as = 0x%x\n",tmp);*/
 
+	ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+	dbgprintf("During MC initialization of the DRAM's [line:%d] PGSR0 = 0x%x\n",__LINE__, tmp);
+	/* Check the General Status register */
+#if 0
 	/* poll for idone(bit 0) */
-	ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1,  0x1,  1000000,  10000));
+	ncpStatus = (ncr_poll(phyReg, NCP_PHY_PGSR0_5600,  0x1f,  0x1f,  1000,  10000));
 
 	if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 	{
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 		errprintf("POLL timeout during MC initialization the DRAM's [line:%d] exp 0x11 read 0x%x\n",__LINE__, tmp);
+		return ncpStatus;
 	}
 
-	NCP_CALL(ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+	/* Checking for Error's */
+	ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
+	if (ncpStatus == NCP_ST_ERROR)
+	{
+		return ncpStatus;
+	}
+
+	ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
+	dbgprintf("SUCCESS: result during MC initialization the DRAM's [line:%d] exp 0x11 read 0x%x\n",__LINE__, tmp);
+#endif
 
 	/* start MC init operation */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_00_5600, (ncp_uint32_t *)&reg00);
@@ -2873,13 +3011,19 @@ ncp_sm_ddr4_phy_init(
 	ncr_write32(ctlReg, NCP_DENALI_CTL_00_5600, *((ncp_uint32_t *)&reg00));
 
 	/* poll for memory init operation bit-8 */
-	ncpStatus = (ncr_poll(ctlReg, NCP_DENALI_CTL_366_5600,  0x0100,  0x0100,  1000000,  10000));
+	ncpStatus = (ncr_poll(ctlReg, NCP_DENALI_CTL_366_5600,  0x0100,  0x0100,  1000,  1000));
+
+	ncr_read32(ctlReg, NCP_DENALI_CTL_366_5600, &tmp);
+	dbgprintf("CTL_366 int_status = 0x%x looking for 0x100\n",tmp);
+	ncr_read32(ctlReg, NCP_DENALI_CTL_367_5600, &tmp);
+	dbgprintf("CTL_367 int_status = 0x%x\n",tmp);
 
 	if (ncpStatus == NCP_ST_POLL_TIMEOUT)
 	{
 		ncr_read32(ctlReg, NCP_DENALI_CTL_366_5600, &tmp);
 		errprintf("POLL timeout during MC init [line:%d] exp 0x100 read 0x%x\n",__LINE__, tmp);
 	}
+
 #endif
 
 	NCP_RETURN_LABEL
@@ -2897,7 +3041,9 @@ ncp_sm_ddr4_post_phy_training_mc_setup(
 
 	ncp_denali_DENALI_CTL_125_5600_t reg125 = {0};
 	ncp_denali_DENALI_CTL_368_5600_t reg368 = {0};
+	ncp_denali_DENALI_CTL_369_5600_t reg369 = {0};
 	ncp_denali_DENALI_CTL_370_5600_t reg370 = {0};
+	ncp_denali_DENALI_CTL_371_5600_t reg371 = {0};
 
 	/* DENALI_CTL_125 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_125_5600, (ncp_uint32_t *)&reg125);
@@ -2908,14 +3054,24 @@ ncp_sm_ddr4_post_phy_training_mc_setup(
 	/* clear 17th and 30th bit of interrupt before clearing the mask, else interrupt gets set. */
 	/* DENALI_CTL_368 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_368_5600, (ncp_uint32_t *)&reg368);
-	reg368.int_ack = 0x40020000;  /* clears associated bit in int_status */
+	reg368.int_ack = 0xffffffff;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_368_5600, *((ncp_uint32_t *)&reg368));
+
+	/* DENALI_CTL_369 */
+	ncr_read32(ctlReg, NCP_DENALI_CTL_369_5600, (ncp_uint32_t *)&reg369);
+	reg369.int_ack = 0x3;
+	ncr_write32(ctlReg, NCP_DENALI_CTL_369_5600, *((ncp_uint32_t *)&reg369));
 
 	/* int_mask */
 	/* DENALI_CTL_370 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_370_5600, (ncp_uint32_t *)&reg370);
 	reg370.int_mask = 0x0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_370_5600, *((ncp_uint32_t *)&reg370));
+
+	/* DENALI_CTL_371 */
+	ncr_read32(ctlReg, NCP_DENALI_CTL_371_5600, (ncp_uint32_t *)&reg371);
+	reg371.int_mask &= ~(0x7);
+	ncr_write32(ctlReg, NCP_DENALI_CTL_371_5600, *((ncp_uint32_t *)&reg371));
 
 	NCP_RETURN_LABEL
 		return ncpStatus;

@@ -109,6 +109,7 @@ ncp_cm_denali_init_56xx(
 	ncp_memory_controller_DENALI_CTL_78_t reg78 = {0};
 	ncp_memory_controller_DENALI_CTL_79_t reg79 = {0};
 	ncp_memory_controller_DENALI_CTL_80_t reg80 = {0};
+	ncp_memory_controller_DENALI_CTL_81_t reg81 = {0};
 	ncp_memory_controller_DENALI_CTL_82_t reg82 = {0};
 	ncp_memory_controller_DENALI_CTL_83_t reg83 = {0};
 	ncp_memory_controller_DENALI_CTL_85_t reg85 = {0};
@@ -147,6 +148,7 @@ ncp_cm_denali_init_56xx(
 	ncp_cmem_cfg_ddr_ctl_r_t ddrCtl = {0};
 	ncp_uint32_t cmId = 0;
 	ncp_uint32_t tmp = 0;
+	ncp_uint32_t tmp1=0;
 
 	/* this below is only for sm_parms's per_smem[n] access */
 	switch (cmNode) {
@@ -184,6 +186,9 @@ ncp_cm_denali_init_56xx(
 	reg00.dram_class = parms->dram_class; /* ddr3=6, ddr4=10 */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_00, *((ncp_uint32_t *)&reg00));
 
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_74, (ncp_uint32_t *)&reg74);
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_75, (ncp_uint32_t *)&reg75);
+
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_01, (ncp_uint32_t *)&reg01);
 	if (parms->dram_class == NCP_SM_DDR4_MODE)
 	{
@@ -202,7 +207,7 @@ ncp_cm_denali_init_56xx(
 				reg74.row_diff = reg01.max_row_reg - 17; /* A0-A16 */
 				break;
 			default:
-				printf("invalid sdram_device_density\n");
+				errprintf("invalid sdram_device_density\n");
 				NCP_CALL(NCP_ST_ERROR);
 		}
 		reg75.col_diff = reg01.max_col_reg - 10; /* A0-A9 always */
@@ -241,7 +246,7 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_07, *((ncp_uint32_t *)&reg07));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_08, (ncp_uint32_t *)&reg08);
-	reg08.tdll = 0x255;
+	reg08.tdll = 0x300;/*0x255;*/
 	reg08.caslat_lin = parms->CAS_latency * 2; /* CAS latency linear value */
 	reg08.wrlat = parms->CAS_write_latency;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_08, *((ncp_uint32_t *)&reg08));
@@ -292,7 +297,7 @@ ncp_cm_denali_init_56xx(
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_13, (ncp_uint32_t *)&reg13);
 	reg13.tmrd = 8;
-	reg13.trtp_ap = 4; /* for auto-precharge get from speedbin_ddr4 */
+	reg13.trtp_ap = ctm->tRTP;/*4;*/ /* for auto-precharge get from speedbin_ddr4 */
 	/*reg13.trtp = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tRTP : ncp_ps_to_clk(parms->tck_ps,7500);*/
 	reg13.trtp = ncp_ps_to_clk(parms->tck_ps,7500);
 	reg13.tfaw = ctm->tFAW;
@@ -428,13 +433,20 @@ ncp_cm_denali_init_56xx(
 			tmp = 0xc;
 			break;
 		case 16: 
+		case 17: 
 			tmp = 0xd;
 			break;
 		case 18: 
 			tmp = 0x10;
 			break;
+		case 19: 
+			tmp = 0xe;
+			break;
 		case 20: 
 			tmp = 0x11;
+			break;
+		case 21: 
+			tmp = 0xf;
 			break;
 		case 22: 
 			tmp = 0x14;
@@ -445,8 +457,36 @@ ncp_cm_denali_init_56xx(
 		default:
 			tmp = 0;
 	}
+	/* A11-A9 is based off tWR and tRTP, note- tWR is twice tRTP */
+	switch (ctm->tRTP)
+	{
+		case 5:
+			tmp1 = 0;
+			break;
+		case 6:
+			tmp1 = 1;
+			break;
+		case 7:
+			tmp1 = 2;
+			break;
+		case 8:
+			tmp1 = 3;
+			break;
+		case 9:
+			tmp1 = 4;
+			break;
+		case 10:
+			tmp1 = 5;
+			break;
+		case 12:
+			tmp1 = 6;
+			break;
+		default:
+			tmp1 = 0;
+	}
 
-	reg42.mr0_data_0 = (((parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR : ncp_ps_to_clk(parms->tck_ps,15000)) << 9);
+
+	reg42.mr0_data_0 = (((parms->dram_class == NCP_SM_DDR4_MODE) ? tmp1 : ncp_ps_to_clk(parms->tck_ps,15000)) << 9);
 	reg42.mr0_data_0 &= ~(0x7c);
 	reg42.mr0_data_0 |= (tmp << 2);
 	ctm->mr0 = reg42.mr0_data_0;
@@ -567,6 +607,7 @@ ncp_cm_denali_init_56xx(
 		 */
 		if (parms->dram_class == NCP_SM_DDR4_MODE)
 		{
+			/* check */
 			if ((parms->CAS_latency == 16) ||
 					(parms->CAS_latency == 18) ||
 					(parms->CAS_latency == 14))
@@ -700,6 +741,8 @@ ncp_cm_denali_init_56xx(
 		reg49.mr6_data_0 |= ((parms->dram_class == NCP_SM_DDR4_MODE) ? (tmp << 10) : 0x0);
 #endif
 	}
+	/* HACK */
+	reg49.mr6_data_0 |= 0x800;
 	ctm->mr6 = reg49.mr6_data_0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_49, *((ncp_uint32_t *)&reg49));
 
@@ -858,17 +901,15 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_72, *((ncp_uint32_t *)&reg72));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_73, (ncp_uint32_t *)&reg73);
-	reg73.zq_interval = ((parms->zqcs_interval /* units in micro-sec */)*1000000)/parms->tck_ps;
+	reg73.zq_interval = (((parms->zqcs_interval /* units in micro-sec */)*1000000)/parms->tck_ps)/1024 /* long count seq */;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_73, *((ncp_uint32_t *)&reg73));
 
-	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_74, (ncp_uint32_t *)&reg74);
 	reg74.zq_in_progress = 0x0;
 	reg74.zqcs_rotate = 0x1;
 	reg74.bank_diff = 0; /* all banks being used or should this be 0x1 */
 	/* reg74.row_diff set early on */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_74, *((ncp_uint32_t *)&reg74));
 
-	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_75, (ncp_uint32_t *)&reg75);
 	/* reg75.col_diff set early on */
 	reg75.aprebit = 0xa; /* loc of auto pre-charge bit in dram addr */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_75, *((ncp_uint32_t *)&reg75));
@@ -880,16 +921,16 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_76, *((ncp_uint32_t *)&reg76));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_77, (ncp_uint32_t *)&reg77);
-	reg77.bank_split_en = 0x1;
-	reg77.placement_en = 0x1;
-	reg77.priority_en = 0x1;
-	reg77.rw_same_en = 0x1;
+	reg77.bank_split_en = 0x0;
+	reg77.placement_en = 0x0;
+	reg77.priority_en = 0x0;
+	reg77.rw_same_en = 0x0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_77, *((ncp_uint32_t *)&reg77));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_78, (ncp_uint32_t *)&reg78);
-	reg78.rw_same_page_en = 0x1;
-	reg78.cs_same_en = 0x1;
-	reg78.w2r_split_en = 0x1;
+	reg78.rw_same_page_en = 0x0;
+	reg78.cs_same_en = 0x0;
+	reg78.w2r_split_en = 0x0;
 	reg78.disable_rw_group_w_bnk_conflict = 0x1;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_78, *((ncp_uint32_t *)&reg78));
 
@@ -903,15 +944,20 @@ ncp_cm_denali_init_56xx(
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_80, (ncp_uint32_t *)&reg80);
 	reg80.cs_map = parms->topology;
 	reg80.burst_on_fly_bit = 0xc;
-	reg80.reduc = (parms->primary_bus_width == 2) ? 1 : 0;
-	reg80.memdata_ratio_0 = 0x0;
+	reg80.reduc = 1; /* for CMEM this should always be ON */
+	reg80.memdata_ratio_0 = (parms->sdram_device_width == 1) ? 3 : 2;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_80, *((ncp_uint32_t *)&reg80));
+
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_81, (ncp_uint32_t *)&reg81);
+	reg81.in_order_accept = 1;
+	reg81.memdata_ratio_1 = (parms->sdram_device_width == 1) ? 3 : 2;
+	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_81, *((ncp_uint32_t *)&reg81));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_82, (ncp_uint32_t *)&reg82);
 	reg82.ctrlupd_req = 0x0;
-	reg82.ctrlupd_req_per_aref_en = 0x0;
+	reg82.ctrlupd_req_per_aref_en = 0x1;
 	reg82.preamble_support = parms->preamble_support;
-	reg82.rd_preamble_training_en = 0x1;
+	reg82.rd_preamble_training_en = 0x0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_82, *((ncp_uint32_t *)&reg82));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_83, (ncp_uint32_t *)&reg83);
@@ -928,7 +974,7 @@ ncp_cm_denali_init_56xx(
 	reg97.odt_wr_map_cs0 = wr_ODT[0];
 	reg97.odt_rd_map_cs1 = rd_ODT[1];
 	reg97.odt_wr_map_cs1 = wr_ODT[1];
-	reg97.todtl_2cmd = 0x8;
+	reg97.todtl_2cmd = (parms->additive_latency + parms->CAS_write_latency -2 + 1);/* was 0x8 */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_97, *((ncp_uint32_t *)&reg97));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_98, (ncp_uint32_t *)&reg98);
@@ -938,7 +984,7 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_98, *((ncp_uint32_t *)&reg98));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_99, (ncp_uint32_t *)&reg99);
-	reg99.rd_to_odth = 0x4;
+	reg99.rd_to_odth = 0x5; /* check was 4 */
 	reg99.r2r_diffcs_dly = 0x2;
 	reg99.r2w_diffcs_dly = 0x2;
 	reg99.w2r_diffcs_dly = 0x2;
@@ -947,8 +993,8 @@ ncp_cm_denali_init_56xx(
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_100, (ncp_uint32_t *)&reg100);
 	reg100.w2w_diffcs_dly = 0x2;
 	reg100.r2r_samecs_dly = 0x0;
-	reg100.r2w_samecs_dly = 0x2;
-	reg100.w2r_samecs_dly = 0x0;
+	reg100.r2w_samecs_dly = 0x4;
+	reg100.w2r_samecs_dly = 0x2;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_100, *((ncp_uint32_t *)&reg100));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_103, (ncp_uint32_t *)&reg103);
@@ -974,7 +1020,7 @@ ncp_cm_denali_init_56xx(
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_106, (ncp_uint32_t *)&reg106);
 	reg106.wrlvl_aref_en = 0x1;
 	reg106.wrlvl_rotate = 0x0;
-	reg106.wrlvl_cs_map = 0x3; /* 0xf */
+	reg106.wrlvl_cs_map = 0x3;
 	reg106.wrlvl_error_status = 0x0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_106, *((ncp_uint32_t *)&reg106));
 
@@ -1000,10 +1046,10 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_117, *((ncp_uint32_t *)&reg117));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_118, (ncp_uint32_t *)&reg118);
-	reg118.rdlvl_cs_map = 0x3; /* 0xf */
-	reg118.rdlvl_gate_cs_map = 0x3; /* 0xf */
+	reg118.rdlvl_cs_map = 0x3;
+	reg118.rdlvl_gate_cs_map = 0x3;
 	reg118.vref_cs = parms->vref_cs; /* default cs0 set to 0x1 */
-	reg118.vref_en = ((parms->packedPHYTrainingOptions >> 17) & 0x1); /* default disabled set to 0x0 */
+	reg118.vref_en = 0x0;/* would be done by PHY ((parms->packedPHYTrainingOptions >> 17) & 0x1);*/ /* default disabled set to 0x0 */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_118, *((ncp_uint32_t *)&reg118));
 	if (parms->dram_class == NCP_SM_DDR4_MODE)
 	{
@@ -1033,7 +1079,7 @@ ncp_cm_denali_init_56xx(
 		reg121.vref_val_dev3_1 = parms->vref_val;
 		reg121.vref_val_ecc_dev0_0 = parms->vref_val;
 		reg121.vref_val_ecc_dev0_1 = parms->vref_val;
-		reg121.axi0_all_strobes_used_enable = 0x1; /* allows AXI port to accept Wr without waiting for all data */
+		reg121.axi0_all_strobes_used_enable = 0x0; /* allows AXI port to accept Wr without waiting for all data */
 		ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_121, *((ncp_uint32_t *)&reg121));
 	}
 
@@ -1045,7 +1091,7 @@ ncp_cm_denali_init_56xx(
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_124, (ncp_uint32_t *)&reg124);
 	reg124.tdfi_phy_rdlat = parms->phy_rdlat; /* check 48762 for 0x30 value */
-	reg124.dram_clk_disable = 0x0;
+	reg124.dram_clk_disable = ~(parms->topology);
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_124, *((ncp_uint32_t *)&reg124));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_125, (ncp_uint32_t *)&reg125);
@@ -1095,7 +1141,7 @@ ncp_cm_denali_init_56xx(
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_139, (ncp_uint32_t *)&reg139);
 	reg139.rdlvl_gate_interval = parms->rdlvl_gate_interval;
-	reg139.tdfi_phy_wrdata = (1 + (parms->preamble_support >> 1)); /* from reg tcl */
+	reg139.tdfi_phy_wrdata = 2;/*(1 + (parms->preamble_support >> 1));*/ /* from reg tcl */
 	reg139.tdfi_rdcslat = 0xc; /* cas_latency + additive lat + ca_parity_lat - (preamble_support & 0x1); is this correct ? */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_139, *((ncp_uint32_t *)&reg139));
 
@@ -1132,7 +1178,7 @@ ncp_cm_denali_init_56xx(
 	ddrCtl.erase_mem_go = 0x0;
 	ddrCtl.erase_mem_mini = 0x0;
 	ncr_write32(cmemCfgRegion, NCP_CMEM_CFG_DDR_CTL, *((ncp_uint32_t *)&ddrCtl));
-
+#if 0
 	/* Init MC */
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_00, (ncp_uint32_t *)&reg00);
 	reg00.start = 1;
@@ -1145,7 +1191,7 @@ ncp_cm_denali_init_56xx(
 	{
 		errprintf("POLL timeout while waiting for MC init to complete [line:%d]\n",__LINE__);
 	}
-
+#endif
 	/* Clear all interrupts */
 	/* DENALI_CTL_85 */
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_85, (ncp_uint32_t *)&reg85);
