@@ -688,6 +688,10 @@ verify_image(struct spi_flash *flash,
 /*
   ------------------------------------------------------------------------------
   jump_to_monitor
+
+  This function is intentional not made static to enable using a jtag
+  debugger to boot a system with no external host and uninitialized
+  serial flash.
 */
 
 typedef enum {
@@ -712,11 +716,12 @@ typedef struct axxia_configuration {
 	axxia_option_t option;
 } axxia_configuration_t;
 
-static void
+static axxia_configuration_t axxia_configuration;
+
+void
 jump_to_monitor(void *address)
 {
 	void (*entry)(void *, void *);
-	axxia_configuration_t axxia_configuration;
 
 #if defined(CONFIG_AXXIA_56XX_SIM)
 	axxia_configuration.target = AXXIA_5600;
@@ -745,6 +750,19 @@ jump_to_monitor(void *address)
 	cleanup_before_linux();
 	entry(NULL, &axxia_configuration);
 	acp_failure(__FILE__, __func__, __LINE__);
+
+	return;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  jtag_jump_to_monitor
+*/
+
+void
+jtag_jump_to_monitor(void)
+{
+	jump_to_monitor((void *)0x8031001000);
 
 	return;
 }
