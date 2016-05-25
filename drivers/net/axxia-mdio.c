@@ -133,6 +133,10 @@ axxia_mdio_init(void)
 	}
 	writel(offset, dev->priv + MDIO_REG_CLK_OFFSET);
 	writel(period, dev->priv + MDIO_REG_CLK_PERIOD);
+
+	/* Enable the MDIO Clock. */
+	writel(0x10, PERIPH_GPREG + 0x18);
+
 	initialized = 1;
 
 	/*
