@@ -107,6 +107,7 @@ axxia_initialize(void)
 	*/
 
 #ifndef SYSCACHE_ONLY_MODE
+#if !defined(CONFIG_AXXIA_SIM)
 	extern void __asm_disable_l3_cache(void);
 	extern void __asm_enable_l3_cache(void);
 
@@ -137,6 +138,7 @@ axxia_initialize(void)
 		__asm_enable_l3_cache();
 		ncr_tracer_disable();
 	}
+#endif
 #endif
 
 	/*
