@@ -256,13 +256,6 @@ ft_board_setup(void *blob, bd_t *bd)
 	int node;
 	int rc;
 #if !defined(CONFIG_AXXIA_SIM) && !defined(CONFIG_AXXIA_EMU)
-	int i;
-	acp_clock_t clocks[] = {
-		clock_core, clock_peripheral, clock_emmc
-	};
-	const char *clock_names[] = {
-		"/clocks/cpu", "/clocks/peripheral", "/clocks/emmc"
-	};
 	ncp_uint32_t phy0_ctrl, phy1_ctrl;
 #endif
 	char *ad_value;
@@ -270,59 +263,6 @@ ft_board_setup(void *blob, bd_t *bd)
 	ncp_uint32_t tmp;
 	u64 start[CONFIG_NR_DRAM_BANKS];
 	u64 size[CONFIG_NR_DRAM_BANKS];
-
-	/*
-	  Set the PLL/Clock frequencies.
-	*/
-
-#if !defined(CONFIG_AXXIA_SIM) && !defined(CONFIG_AXXIA_EMU)
-	for (i = 0; i < (sizeof(clocks) / sizeof(acp_clock_t)); ++i) {
-		node = fdt_path_offset(blob, clock_names[i]);
-
-		if (0 > node)
-			acp_failure(__FILE__, __func__, __LINE__);
-
-		acp_clock_get(clocks[i], &tmp);
-		tmp *= 1000;
-		printf("%s/frequency: %u\n", clock_names[i], tmp);
-		tmp = htonl(tmp);
-		rc = fdt_setprop(blob, node, "frequency",
-				 &tmp, sizeof(ncp_uint32_t));
-
-		if (0 != rc)
-			printf("%s:%d - Couldn't set PLLs!\n",
-			       __FILE__, __LINE__);
-	}
-#endif
-
-	/*
-	  Fix up the spin table addresses.
-	*/
-
-#if 0
-
-	tmp = htonl((unsigned long)&spin_table[0] + spin_loop_release_offset);
-
-	for (i = 1; i < 16; ++i) {
-		sprintf(cpu_string, "/cpus/cpu@%d", i);
-		node = fdt_path_offset(blob, cpu_string);
-		tmp = (ncp_uint32_t)((void *)(&spin_table[i * SPIN_LOOP_SIZE]));
-		tmp = htonl(tmp);
-
-		if (0 > node)
-			continue;
-
-		rc = fdt_setprop(blob, node, "cpu-release-addr",
-				 &tmp, sizeof(ncp_uint32_t));
-
-		if (0 != rc) {
-			printf("%s:%d - Error setting property, %d!\n",
-			       __FILE__, __LINE__, rc);
-			continue;
-		}
-	}
-
-#endif
 
 	/*
 	  Set the PHY link type.
