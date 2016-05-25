@@ -1166,11 +1166,6 @@ board_init_f(ulong dummy)
 	if (0 != rc)
 		acp_failure(__FILE__, __func__, __LINE__);
 
-	/*ZZZ*/
-	gpdma_reset();
-	gpdma_xfer((void *)0, (void *)(LSM + 0x1000), 0x100, 0);
-	/*ZZZ*/
-
 #if defined(CONFIG_AXXIA_SPL_DIAGNOSTICS)
 	printf("Press Any Key to Enter SPL Diagnostic Mode...\n");
 	{
