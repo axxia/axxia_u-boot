@@ -401,8 +401,14 @@ parameters_read:
 	voltage = (parameters_voltage_t *)(parameters + header->voltageOffset);
 	clocks = (parameters_clocks_t *)(parameters + header->clocksOffset);
 	sysmem = (parameters_mem_t *)(parameters + header->systemMemoryOffset);
+	sysmem->ddrRetentionEnable = 0;
+	sysmem->ddrRecovery = 0;
+	sysmem->totalSize = 0;
 	cmem = (parameters_mem_t *)
 		(parameters + header->classifierMemoryOffset);
+	cmem->ddrRetentionEnable = 0;
+	cmem->ddrRecovery = 0;
+	cmem->totalSize = 0;
 #ifdef CONFIG_AXXIA_ARM
 	retention = (void *)(parameters + header->systemMemoryRetentionOffset);
 #ifdef CONFIG_MEMORY_RETENTION
