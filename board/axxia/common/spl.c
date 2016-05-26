@@ -759,7 +759,7 @@ jump_to_monitor(void *address)
   jtag_jump_to_monitor
 */
 
-void
+void __attribute__((used))
 jtag_jump_to_monitor(void)
 {
 	jump_to_monitor((void *)0x8031001000);
@@ -1220,6 +1220,8 @@ board_init_f(ulong dummy)
 	*/
 
 	load_image();
+
+	jtag_jump_to_monitor();
 
 	return;
 }
