@@ -289,24 +289,12 @@ get_pll(ncp_uint32_t plldiv, ncp_uint32_t seldiv)
 int
 acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 {
-	/*
-	  If the system clock is requested, return the value stored in
-	  cntfrq_el0.
-	*/
-
-	if (clock_system == clock) {
-		unsigned long cntfrq;
-
-		asm volatile("mrs %0, cntfrq_el0" : "=r" (cntfrq));
-		cntfrq /= 1000;
-		*frequency = (ncp_uint32_t)cntfrq;
-
-		return 0;
-	}
-
 #if defined(CONFIG_AXXIA_EMU)
 
 	switch (clock) {
+	case clock_system:
+		*frequency = COUNTER_FREQUENCY / 1000;
+		break;
 	case clock_peripheral:
 		*frequency = 2000;
 		break;
@@ -333,6 +321,9 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 
 	if (0 != clocks_uninitialized) {
 		switch (clock) {
+		case clock_system:
+			*frequency = COUNTER_FREQUENCY / 1000;
+			break;
 		case clock_peripheral:
 			*frequency = 250;
 			break;

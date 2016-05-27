@@ -1060,6 +1060,10 @@ board_init_f(ulong dummy)
 	unsigned int pvalue;
 	int i;
 
+	/* Set the CNTFRQ register. */
+	asm volatile("msr cntfrq_el0, %0"
+		     : : "r" (COUNTER_FREQUENCY) : "memory");
+
  	/* Clear bss. */
 	memset(__bss_start, 0, __bss_end - __bss_start);
 
@@ -1165,6 +1169,15 @@ board_init_f(ulong dummy)
 	rc = axxia_initialize();
 	if (0 != rc)
 		acp_failure(__FILE__, __func__, __LINE__);
+
+#ifdef CONFIG_HW_WATCHDOG
+	/*
+	  Now that the PLLs/Clocks may be different, re-calculate the
+	  number of cycles for a watchdog timeout.
+	*/
+
+	set_watchdog_timeout(WATCHDOG_TIMEOUT_SECS);
+#endif	/* CONFIG_HW_WATCHDOG */
 
 #if defined(CONFIG_AXXIA_SPL_DIAGNOSTICS)
 	printf("Press Any Key to Enter SPL Diagnostic Mode...\n");
