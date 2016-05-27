@@ -124,12 +124,15 @@ bist_result(struct bist_test *test)
 	/* Get the result. */
 	ncr_read32(test->region, NCP_DENALI_CTL_94_5600, &value);
 
-	if (data == test->type && 1 == (value & 0x1)) {
+	/* TODO: explain... */
+	ncr_write32(test->region, NCP_DENALI_CTL_93_5600, 0x818);
+
+	if (data == test->type && 1 == (value & 1)) {
 		printf("\tDATA (node 0x%02x): Passed\n",
 		       NCP_NODE_ID(test->region));
 
 		return;
-	} else if (addr == test->type && 0x2 == (value & 0x2)) {
+	} else if (addr == test->type && 0x2 == (value & 2)) {
 		printf("\tADDRESS (node 0x%02x): Passed\n",
 		       NCP_NODE_ID(test->region));
 
@@ -137,7 +140,7 @@ bist_result(struct bist_test *test)
 	}
 
 	/* There was a failure, display "offsets". */
-	for (i = 0; i < (sizeof(offsets) / sizeof(unsigned long)); ++i) {
+	for (i = 0; i < (sizeof(offsets) / sizeof(unsigned int)); ++i) {
 		ncr_read32(test->region, offsets[i], &value);
 		printf("\tRegion:0x%08x Offset:0x%04x Value:0x%08x\n",
 		       test->region, offsets[i], value);
@@ -324,9 +327,11 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length,
 		*/
 
 		if (addr == type)
-			remaining = 150000;
+			remaining = 40000;
 		else
-			remaining = 1000000;
+			remaining = 300000;
+
+		remaining *= (size_per_node / (1024 * 1024 * 1024));
 
 		while (0 < remaining) {
 			WATCHDOG_RESET();
