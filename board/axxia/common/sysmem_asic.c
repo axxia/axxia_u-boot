@@ -21,6 +21,9 @@
  */
 
 #include <common.h>
+#include <asm/system.h>
+#include <asm/io.h>
+
 #if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
 #include "../axc6700/ncp_l3lock_region.h"
 #endif
@@ -221,19 +224,25 @@ sysmem_init(void)
 {
 #if defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_SIM)
 	unsigned sm_nodes[] = {0x22, 0xf};
+	unsigned long elm_bases[] = {ELM0, ELM1};
 #else
 	unsigned sm_nodes[] = {0x22, 0xf, 0x23, 0x24};
+	unsigned long elm_bases[] = {ELM0, ELM1, ELM2, ELM3};
 #endif
 #if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
 	ncp_l3lock_region_info_t *ncp_l3lock_region_info;
 #endif
 	int i;
-	int rc;
+	int rc = NCP_ST_SUCCESS;
 
 #ifdef DISPLAY_PARAMETERS
 	display_mem_parameters("System Memory", sysmem);
 #endif
 
+	/* Disable System Cache */
+	__asm_disable_l3_cache();
+
+	/* Initialize Memory */
 	for (i = 0; i < sizeof(sm_nodes)/sizeof(unsigned); ++i) {
 		rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
 
@@ -243,6 +252,26 @@ sysmem_init(void)
 
 			return -1;
 		}
+	}
+
+	/* Clear Memory */
+	for (i = 0; i < sizeof(elm_bases) / sizeof(unsigned long); ++i) {
+		/* TODO: Only clear memory that exists... */
+		writel(0, elm_bases[i] + 0x40);
+		writel(0x1ffffff, elm_bases[i] + 0x44);
+		writel(0, elm_bases[i] + 0x48);
+	}
+
+	for (i = 0; i < sizeof(elm_bases) / sizeof(unsigned long); ++i) {
+		unsigned timeout = 100000;
+
+		do {
+			udelay(10);
+			--timeout;
+		} while ((0 < timeout) && (0 != readl(elm_bases[i] + 0x44)));
+
+		if (0 == timeout)
+			printf("Time Out Clearing System Memory: %d!\n", i);
 	}
 
 #if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
@@ -257,12 +286,12 @@ sysmem_init(void)
 #endif
 
 #if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
-	if (NCP_ST_SUCCESS != rc) {
+	if (NCP_ST_SUCCESS != rc)
 		printf("Locking L3 Cache Failed!\n");
-
-		return -1;
-	}
 #endif
 
-	return 0;
+	/* Re-enable the L3 cache. */
+	__asm_enable_l3_cache();
+
+	return rc;
 }

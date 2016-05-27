@@ -57,15 +57,6 @@ set_outer_cache_state_succeeded:
 	mov	x0, 0
 	ret
 
-ENTRY(v7_outer_cache_inval_range)
-ENDPROC(v7_outer_cache_inval_range)
-
-ENTRY(v7_outer_cache_flush_range)
-ENDPROC(v7_outer_cache_flush_range)
-
-ENTRY(v7_outer_cache_inval_all)
-ENDPROC(v7_outer_cache_inval_all)
-
 ENTRY(__asm_flush_l3_cache)
 	mov	x9, x30
 	mov	x0, 0
@@ -77,10 +68,6 @@ ENTRY(__asm_flush_l3_cache)
 	mov	x30, x9
 	ret
 ENDPROC(__asm_flush_l3_cache)
-
-ENTRY(v7_outer_cache_flush_all)
-	b	__asm_flush_l3_cache
-ENDPROC(v7_outer_cache_flush_all)
 
 ENTRY(__asm_disable_l3_cache)
 	mov	x9, x30

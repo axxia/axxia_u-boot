@@ -4152,4 +4152,9 @@ int gpdma_reset(void);
 int gpdma_xfer(void *, void *, size_t, int);
 #endif	/* __ASSEMBLY__ */
 
+#ifndef __ASSEMBLY__
+void __asm_disable_l3_cache(void);
+void __asm_enable_l3_cache(void);
+#endif	/* __ASSEMBLY__ */
+
 #endif /* __AXXIA_H */
