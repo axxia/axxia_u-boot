@@ -23,6 +23,29 @@
 
 static unsigned int count = 0xffffffff;
 
+static unsigned int
+calculate_count(unsigned int timeout)
+{
+	unsigned int per_clock_hz;
+	unsigned long long new_count;
+
+	/* Set 'count'. */
+	if (0 != acp_clock_get(clock_peripheral, &per_clock_hz))
+		return -1;
+
+	per_clock_hz *= 1000;
+	new_count = timeout * (unsigned long long)per_clock_hz;
+
+	if (0xffffffffULL < new_count) {
+		printf("Using max watchdog timeout of %us instead of %us!\n",
+		       (0xffffffff / per_clock_hz), timeout);
+
+		new_count = 0xffffffff;
+	}
+
+	return (unsigned int)new_count;
+}
+
 /*
 ==============================================================================
 ==============================================================================
@@ -51,19 +74,9 @@ int
 start_watchdog(unsigned int timeout)
 {
 	unsigned int value;
-	unsigned int per_clock_hz;
-	unsigned long long new_count;
 
-	/* Set 'count'. */
-	if (0 != acp_clock_get(clock_peripheral, &per_clock_hz))
-		return -1;
-
-	new_count = timeout * per_clock_hz * 1000;
-
-	if (0xffffffffULL < new_count)
-		return -2;
-
-	count = (unsigned int)new_count;
+	/* Get the new count value. */
+	count = calculate_count(timeout);
 
 	/* Unlock syscon. */
 	writel(0xab, (SYSCON + 0x2000));
@@ -122,6 +135,42 @@ stop_watchdog(void)
 #endif	/* MAKE_WATCHDOG_PERMANENT */
 
 	return;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  get_watchdog_timeout
+*/
+
+int
+get_watchdog_timeout(void)
+{
+	unsigned int per_clock_hz;
+
+	/* Set 'count'. */
+	if (0 != acp_clock_get(clock_peripheral, &per_clock_hz))
+		return -1;
+
+	per_clock_hz *= 1000;
+
+	return (count / per_clock_hz);
+}
+
+/*
+  ------------------------------------------------------------------------------
+  set_watchdog_timeout
+*/
+
+unsigned int
+set_watchdog_timeout(unsigned int timeout)
+{
+	/* Set 'count'. */
+	count = calculate_count(timeout);
+
+	/* Update the load register. */
+	writel(count, (TIMER5 + TIMER_LOAD));
+
+	return get_watchdog_timeout();
 }
 
 /*
