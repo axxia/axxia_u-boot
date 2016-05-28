@@ -276,6 +276,8 @@ mtest_addr(unsigned long *start, unsigned long *end)
   mtest_mtest
 */
 
+#define WATCHDOG_MOD 1000000
+
 static int
 mtest_mtest(unsigned long *start, unsigned long *end)
 {
@@ -285,6 +287,7 @@ mtest_mtest(unsigned long *start, unsigned long *end)
 	vu_long	temp;
 	vu_long	anti_pattern;
 	vu_long	num_words;
+	vu_long progress_mod;
 
 	pattern = 0;
 
@@ -307,31 +310,45 @@ mtest_mtest(unsigned long *start, unsigned long *end)
 	/*
 	 * Fill memory with a known pattern.
 	 */
-	for (pattern = 1, offset = 0;
-	     offset < num_words; pattern++,
-		     offset++) {
+
+	puts("Filling");
+	progress_mod = (num_words / (79 - strlen("Filling")));
+	WATCHDOG_RESET();
+
+	for (pattern = 1, offset = 0; offset < num_words; pattern++, offset++) {
 		start[offset] = pattern;
-		if ((offset % 1000000) == 0)
+
+		if ((offset % WATCHDOG_MOD) == 0)
 			WATCHDOG_RESET();
+
+		if ((offset % progress_mod) == 0)
+			puts(".");
 	}
+
+	puts("\n");
 
 	/*
 	 * Check each location and invert it
 	 * for the second pass.
 	 */
-	for (pattern = 1, offset = 0;
-	     offset < num_words; pattern++,
-		     offset++) {
-		if ((offset % 1000000) == 0)
+
+	puts("Comparing and Inverting");
+	progress_mod = (num_words / (79 - strlen("Comparing and Inverting")));
+	WATCHDOG_RESET();
+
+	for (pattern = 1, offset = 0; offset < num_words; pattern++, offset++) {
+		if ((offset % WATCHDOG_MOD) == 0)
 			WATCHDOG_RESET();
+
+		if ((offset % progress_mod) == 0)
+			puts(".");
+
 		temp = start[offset];
+
 		if (temp != pattern) {
-			printf("\nFAILURE (read/write) " \
-			       "@ 0x%.8lx:" \
-			       " expected 0x%.8lx," \
-			       " actual 0x%.8lx)\n",
-			       (ulong)&start[offset],
-			       pattern, temp);
+			printf("\nFAILURE (read/write) @ 0x%.8lx: " \
+			       "expected 0x%.8lx, actual 0x%.8lx)\n",
+			       (ulong)&start[offset], pattern, temp);
 			errs++;
 		}
 
@@ -339,29 +356,38 @@ mtest_mtest(unsigned long *start, unsigned long *end)
 		start[offset] = anti_pattern;
 	}
 
+	puts("\n");
+
 	/*
 	 * Check each location for the inverted pattern
 	 * and zero it.
 	 */
-	for (pattern = 1, offset = 0; offset < num_words;
-	     pattern++,
-		     offset++) {
-		if ((offset % 1000000) == 0)
+
+	puts("Comparing");
+	progress_mod = (num_words / (79 - strlen("Comparing")));
+	WATCHDOG_RESET();
+
+	for (pattern = 1, offset = 0; offset < num_words; pattern++, offset++) {
+		if ((offset % WATCHDOG_MOD) == 0)
 			WATCHDOG_RESET();
+
+		if ((offset % progress_mod) == 0)
+			puts(".");
+
 		anti_pattern = ~pattern;
 		temp = start[offset];
+
 		if (temp != anti_pattern) {
-			printf("\nFAILURE (read/write):"\
-			       " @ 0x%.8lx:"
-			       " expected 0x%.8lx, "\
-			       "actual 0x%.8lx)\n",\
-			       (ulong)&start[offset],
-			       anti_pattern,
-			       temp);
+			printf("\nFAILURE (read/write): @ 0x%.8lx: "
+			       "expected 0x%.8lx, actual 0x%.8lx)\n",
+			       (ulong)&start[offset], anti_pattern, temp);
 			errs++;
 		}
+
 		start[offset] = 0;
 	}
+
+	puts("\n");
 
 	return errs;
 }
