@@ -24,6 +24,8 @@
 #include <asm/system.h>
 #include <asm/io.h>
 
+#include "ncp_sysmem_ext.h"
+
 #if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
 #include "../axc6700/ncp_l3lock_region.h"
 #endif
@@ -33,6 +35,12 @@ ncp_sysmem_init_synopphy(ncp_dev_hdl_t, ncp_uint32_t, ncp_sm_parms_t *);
 
 ncp_st_t
 ncp_treemem_init_synopphy(ncp_dev_hdl_t, ncp_uint32_t, ncp_sm_parms_t *);
+
+ncp_st_t
+ncp_elm_init(ncp_dev_hdl_t, ncp_sm_parms_t *);
+
+ncp_st_t
+ncp_elm_sysmem_fill(ncp_dev_hdl_t, ncp_sm_parms_t *);
 
 #ifdef DISPLAY_PARAMETERS
 static void
@@ -224,19 +232,32 @@ sysmem_init(void)
 {
 #if defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_SIM)
 	unsigned sm_nodes[] = {0x22, 0xf};
-	unsigned long elm_bases[] = {ELM0, ELM1};
 #else
 	unsigned sm_nodes[] = {0x22, 0xf, 0x23, 0x24};
-	unsigned long elm_bases[] = {ELM0, ELM1, ELM2, ELM3};
 #endif
 #if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
 	ncp_l3lock_region_info_t *ncp_l3lock_region_info;
 #endif
 	int i;
+	ncp_uint32_t version_save;
 	int rc = NCP_ST_SUCCESS;
 
 #ifdef DISPLAY_PARAMETERS
 	display_mem_parameters("System Memory", sysmem);
+#endif
+
+	/*
+	  Save the version of the parameter subsection and replace it
+	  with the chip version as expected by the RTE code.
+	*/
+
+	version_save = sysmem->version;
+#if defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_SIM)
+	sysmem->version = NCP_CHIP_ACP56xx;
+#elif defined(CONFIG_AXXIA_XLF) || defined(CONFIG_AXXIA_XLF_SIM)
+	sysmem->version = NCP_CHIP_ACPXLF;
+#else
+#error "Invalid Chip Type!"
 #endif
 
 	/* Disable System Cache */
@@ -247,31 +268,30 @@ sysmem_init(void)
 		rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
 
 		if (NCP_ST_SUCCESS != rc) {
-			printf("Initializing Sysmem Node 0x%x Failed!\n",
+ 			printf("Initializing Sysmem Node 0x%x Failed!\n",
 			       sm_nodes[i]);
 
 			return -1;
 		}
 	}
 
-	/* Clear Memory */
-	for (i = 0; i < sizeof(elm_bases) / sizeof(unsigned long); ++i) {
-		/* TODO: Only clear memory that exists... */
-		writel(0, elm_bases[i] + 0x40);
-		writel(0x1ffffff, elm_bases[i] + 0x44);
-		writel(0, elm_bases[i] + 0x48);
+	/* Initialize the ELMs */
+	rc = ncp_elm_init(NULL, sysmem);
+
+	if (NCP_ST_SUCCESS != rc) {
+		printf("Initializing ELMs Failed!\n");
+
+		return -1;
 	}
 
-	for (i = 0; i < sizeof(elm_bases) / sizeof(unsigned long); ++i) {
-		unsigned timeout = 100000;
+	if (0 != sysmem->enableECC) {
+		rc = ncp_elm_sysmem_fill(NULL, sysmem);
 
-		do {
-			udelay(10);
-			--timeout;
-		} while ((0 < timeout) && (0 != readl(elm_bases[i] + 0x44)));
+		if (NCP_ST_SUCCESS != rc) {
+			printf("Filling Sysmem Failed!\n");
 
-		if (0 == timeout)
-			printf("Time Out Clearing System Memory: %d!\n", i);
+			return -1;
+		}
 	}
 
 #if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
@@ -292,6 +312,12 @@ sysmem_init(void)
 
 	/* Re-enable the L3 cache. */
 	__asm_enable_l3_cache();
+
+	/*
+	  Restore the version of the parameter subsection.
+	*/
+
+	sysmem->version = version_save;
 
 	return rc;
 }

@@ -98,6 +98,7 @@ axxia_initialize(void)
 
 	serial_initialize();
 	serial_init();
+	(void)sysmem_size();
 
 	/*
 	  =============
