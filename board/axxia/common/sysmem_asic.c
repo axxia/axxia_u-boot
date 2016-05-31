@@ -45,7 +45,7 @@ display_mem_parameters(const char *title, parameters_mem_t *parameters)
 	printf("version=0x%08x\n", parameters->version);
 	printf("ddrClockSpeedMHz=0x%08x\n", parameters->ddrClockSpeedMHz);
 	printf("auto_detect=0x%08x\n", parameters->autoDetect);
-	printf("num_interfaces=0x%08x\n", parameters->numInterfaces);
+	printf("num_interfaces=0x%08x\n", parameters->num_interfaces);
 	printf("num_ranks_per_interface=0x%08x\n", parameters->numRanks);
 	printf("primary_bus_width=0x%08x\n", parameters->primary_bus_width);
 	printf("topology=0x%08x\n", parameters->topology);
