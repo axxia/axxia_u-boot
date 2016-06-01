@@ -306,7 +306,7 @@
 
 #define SSP_DEFAULT_CLOCK  4000000
 
-/*#define CONFIG_AXXIA_PCI*/
+#define CONFIG_AXXIA_PCI
 /*#define CONFIG_SPL_PCI_SUPPORT*/
 
 /*#define CONFIG_AXXIA_FEMAC*/
