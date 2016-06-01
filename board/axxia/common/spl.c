@@ -1212,6 +1212,7 @@ board_init_f(ulong dummy)
 
 		while (0 < delay--) {
 			if (tstc()) {
+				getc(); /* discard character */
 				spl_diagnostics();
 				break;
 			}
