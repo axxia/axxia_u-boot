@@ -6,7 +6,9 @@ void reset_cpu(ulong ignored)
 	unsigned int reset_ctl;
 
 	if (0 != (global->flags & PARAMETERS_GLOBAL_DISABLE_RESET)) {
+#ifdef CONFIG_HW_WATCHDOG
 		stop_watchdog();
+#endif
 		asm volatile ("7: b 7b");
 	}
 
