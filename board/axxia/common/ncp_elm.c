@@ -82,14 +82,18 @@ ncp_elm_init(
         if ((parms->version == NCP_CHIP_ACP56xx) ||
             (parms->version == NCP_CHIP_ACPXLF))
 	{
+	    ncp_denali_DENALI_CTL_128_5600_t reg128 = {0};
+
+	    ncr_read32(NCP_REGION_ID(0x22, NCP_SYSMEM_TGT_DENALI), NCP_DENALI_CTL_128_5600, (ncp_uint32_t *)&reg128);
+
             switch (parms->num_ranks_per_interface)
             {
                 case 1 : 
-                    xorMask = 0xf << (ddrBits - 25);
+                    xorMask = (reg128.bg_rotate_en) ? (0x7 << (ddrBits - 24)) : (0xf << (ddrBits - 25));
                     break;
     
                 case 2:
-                    xorMask = 0x1f << (ddrBits - 26);
+                    xorMask = (reg128.bg_rotate_en) ? (0xf << (ddrBits - 25)) : (0x1f << (ddrBits - 26));
                     break;
     
                 default:
