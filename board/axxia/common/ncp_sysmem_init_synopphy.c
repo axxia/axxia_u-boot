@@ -1523,6 +1523,8 @@ ncp_sm_ddr4_phy_training(
 	regVTCR1.ENUM = 0x1; /* number of LCDL eye points for which training is repeated */
 	regVTCR1.vwcr = 0xf; /* VREF word count */
 	regVTCR1.hvss = 0x0; /* host vref step size */
+	regVTCR1.shrnk = 0x0; /* static host Vref rank value */
+	regVTCR1.shren = 0x1; /* static host Vref rank enable */
 	ncr_write32(phyReg, NCP_PHY_VTCR1_5600, *((ncp_uint32_t *)&regVTCR1));
 
 	/* PIR */
