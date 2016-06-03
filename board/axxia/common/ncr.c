@@ -514,7 +514,7 @@ ncr_write32_0x167(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 
 typedef struct
 {
-#ifdef NCP_NCA_BIG_ENDIAN
+#ifdef NCP_NCA_BIG_ENDIAN_DISABLED_BY_JL   /* //jl*/
      unsigned      valid                                     :  1;
      unsigned      hwrite                                    :  1;
      unsigned      tshift                                    :  4;
@@ -566,7 +566,7 @@ ncr_apb2ser_indirect_setup(
 		baseId = 0x14;
 	}
 
-	*indirectOffset = ((baseId + tgtId) * 0x10);
+	*indirectOffset = ((baseId + tgtId) * 0x10000);
 
 	return 0;
 }
@@ -588,7 +588,7 @@ ncr_apb2ser_indirect_access(
     /* build the command1 register */
     pCmd1->valid = 1;
     pCmd1->hwrite = isWrite;
-    pCmd1->tshift = 1;
+    pCmd1->tshift = 0x1;
     pCmd1->htrans = 2; 
     pCmd1->hsize  = (xferWidth == 2) ? 1 : 2;
     pCmd1->haddr  = offset;
@@ -598,6 +598,8 @@ ncr_apb2ser_indirect_access(
         /* write the data to be written */
 	    writel(*buffer, POINTER(APB2_SER0_BASE + indirectOffset));
     }
+
+	printf("Reg: %08x \n\r",reg); //jl
 
     /* write command 1 */
     writel(reg, POINTER(APB2_SER0_BASE + indirectOffset + NCP_APB2SER_INDIRECT_COMMAND_1));
@@ -658,6 +660,7 @@ ncr_write32_apb2ser(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value
         return -1;
     }
 
+	printf("Write %08x  %08x:  %08x \n\r", offset, indirectOffset, value); //jl
     return ncr_apb2ser_indirect_access(offset, indirectOffset,
                 &value, 1, xferWidth);
 
@@ -689,8 +692,8 @@ ncr_read(ncp_uint32_t region,
 	command_data_register_2_t cdr2;	/* 0x101.0.0xf8 */
 	int wfc_timeout = WFC_TIMEOUT;
 
-	if ((NCP_TARGET_ID(region) >= 0x110) &&
-	    (NCP_TARGET_ID(region) <= 0x11f)) {
+	if ((NCP_NODE_ID(region) >= 0x110) &&
+	    (NCP_NODE_ID(region) <= 0x11f)) {
 		return ncr_read32_apb2ser(region, address, buffer);
 	}
 
@@ -990,8 +993,8 @@ ncr_write(ncp_uint32_t region,
 	int dbs = (number - 1);
 	int wfc_timeout = WFC_TIMEOUT;
 
-	if ((NCP_TARGET_ID(region) >= 0x110) &&
-	    (NCP_TARGET_ID(region) <= 0x11f)) {
+	if ((NCP_NODE_ID(region) >= 0x110) &&
+	    (NCP_NODE_ID(region) <= 0x11f)) {
 		return ncr_write32_apb2ser(region, address,
 					   *((ncp_uint32_t *)buffer));
 	}

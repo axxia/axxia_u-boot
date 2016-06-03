@@ -506,14 +506,14 @@ void enable_reset(u32 phy)
 		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
 			   &regVal);
 		regVal |= (1 << 19);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
+			    regVal);  //jl
 	} else if (phy == 3) {
 		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
 			   &regVal);
 		regVal |= (1 << 29);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
+			    regVal);  //jl
 	}
 }
 
@@ -537,14 +537,14 @@ void release_reset(u32 phy)
 		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
 			   &regVal);
 		regVal &= (~(1 << 19));
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
+			    regVal);   //jl
 	} else if (phy == 3) {
 		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
 			   &regVal);
 		regVal &= (~(1 << 29));
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
+			    regVal);   //jl
 	}
 }
 
@@ -664,7 +664,9 @@ int pciesrio_setcontrol(unsigned long new_control)
 	u32 sata0_mode, sata1_mode;
 	int phy, lane;
 
-	pci_srio_sata_mode = (new_control & 0x003c0000)>>16;
+	//printf("In pciesrio_setcontrol \n\r");  //jl
+
+	pci_srio_sata_mode = (new_control & 0x03c00000)>>22;  //jl
 	sata0_mode = (new_control & 0x20) >> 5;
 	sata1_mode = (new_control & 0x40) >> 6;
 
@@ -685,12 +687,20 @@ int pciesrio_setcontrol(unsigned long new_control)
 	for (phy = 0; phy < 4; phy++)
 		enable_reset(phy);
 
+	printf("Case: %08x \n\r", pci_srio_sata_mode); //jl
+	printf("Forcing case 1\n\r");
+	pci_srio_sata_mode = 1; //jl
+
+
+
 	switch (pci_srio_sata_mode) {
 	case 0:
+		printf("In case 0 \n\r"); //jl		
+
 		/* PEI0x8 */
-		rc_mode = (new_control & 0x80)>>15;
+		rc_mode = (new_control & 0x80)<<15; //jl
 		/* Enable PEI0, PEI0 RC mode */
-		phyVal0 = (new_control & 0x1) | rc_mode;
+		phyVal0 = (new_control & 0x1) | rc_mode;  //jl
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0, phyVal0);
 		/* PIPE port select -- Enable PIPE0 interface */
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4, (0x1<<24));
@@ -698,10 +708,12 @@ int pciesrio_setcontrol(unsigned long new_control)
 			release_reset(phy);
 		break;
 	case 1:
+		
+		printf("In case 1 \n\r"); //jl
 		/* PEI0x4_PEI1x4 */
-		rc_mode = (new_control & 0x80)>>15;
+		rc_mode = (new_control & 0x80)<<15;  //jl
 		/* Enable PEI0/PEI1, PEI0 RC mode */
-		phyVal0 = (new_control & 0x3) | rc_mode;
+		phyVal0 = (new_control & 0x3) | rc_mode; //jl
 		/* PEI0x4 */
 		phyVal0 |= (0x1 << 26);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0, phyVal0);
@@ -710,12 +722,29 @@ int pciesrio_setcontrol(unsigned long new_control)
 		/* PIPE port select -- Enable PIPE0/PIPE1 interface */
 		phyVal1 |= (0x2 << 24);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4, phyVal1);
+
+		printf("phy0 %08x \n\r",phyVal0); //jl
+		printf("phy1 %08x \n\r",phyVal1); //jl
+
+
 		for (phy = 0; phy < 4; phy++)
 			release_reset(phy);
+
+
+		/* //jl read back phy registers to check values */
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x0,  &phyVal0);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,  &phyVal1);		
+
+		printf("phy0 after release_reset %08x \n\r",phyVal0); //jl
+		printf("phy1 after release_reset %08x \n\r",phyVal1); //jl
+		
+		
 		break;
 	case 2:
+		printf("In case 2 \n\r"); //jl
+
 		/* PEI0x4_PEI1x2_SATA0x1_SATA1x1 */
-		rc_mode = (new_control & 0x80)>>15;
+		rc_mode = (new_control & 0x80)<<15; //jl
 		/* Enable PEI0/PEI1, PEI0 RC mode */
 		phyVal0 = (new_control & 0x3) | rc_mode;
 		/* PEI0x4 */
@@ -766,8 +795,11 @@ int pciesrio_setcontrol(unsigned long new_control)
 		}
 		break;
 	case 3:
+
+		printf("In case 3 \n\r"); //jl
+
 		/* PEI0x2_PEI2x2_PEI1x2_SATA0x1_SATA1x1 */
-		rc_mode = (new_control & 0x80)>>15;
+		rc_mode = (new_control & 0x80)<<15;  //jl
 		/* Enable PEI0/PEI1/PEI2, PEI0 RC mode */
 		phyVal0 = (new_control & 0x7) | rc_mode;
 		/* PEI0x2_PEI2x2 */
@@ -819,8 +851,11 @@ int pciesrio_setcontrol(unsigned long new_control)
 		}
 		break;
 	case 4:
+
+		printf("In case 4 \n\r"); //jl
+
 		/* PEI0x2_SRIO0x2_PEI1x4 */
-		rc_mode = (new_control & 0x80)>>15;
+		rc_mode = (new_control & 0x80)<<15; //jl
 		/* Enable PEI0/PEI1/SRIO0, PEI0 RC mode */
 		phyVal0 = (new_control & 0x3) | rc_mode;
 		/* PEI0x2_SRI0x2 */
@@ -894,7 +929,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 		break;
 	case 5:
 		/* PEI0x2_SRIO0x2_PEI1x2_SATA0x1_SATA1x1 */
-		rc_mode = (new_control & 0x80)>>15;
+		rc_mode = (new_control & 0x80)<<15; //jl
 		/* Enable PEI0/PEI1/SRIO0, PEI0 RC mode */
 		phyVal0 = (new_control & 0x3) | rc_mode;
 		/* PEI0x2_SRI0x2 */
@@ -994,7 +1029,7 @@ int pciesrio_setcontrol(unsigned long new_control)
 		break;
 	case 6:
 		/* PEI0x2_SRIO0x2_PEI1x2_PEI2x2 */
-		rc_mode = (new_control & 0x80)>>15;
+		rc_mode = (new_control & 0x80)<<15;  //jl
 		/* Enable PEI0/PEI1/PEI2/SRIO0, PEI0 RC mode */
 		phyVal0 = (new_control & 0x7) | rc_mode;
 		/* PEI0x2_SRIO0x2 */

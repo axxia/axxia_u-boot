@@ -615,8 +615,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_PCI_SCAN_SHOW 1
 
 #define ACP_PEI0 1
-#define ACP_PEI1 1
-#define ACP_PEI2 1
+#define ACP_PEI1_JL 1
+#define ACP_PEI2_JL 1
 
 #define CONFIG_SYS_PCIE_NR_PORTS 3
 

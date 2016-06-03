@@ -72,6 +72,9 @@ axxia_initialize(void)
 		return 0;
 #endif
 
+
+	//printf("global->flags = %08x \n",global->flags);  //jl
+
 	/*
 	  =======
 	  Voltage
@@ -141,12 +144,12 @@ axxia_initialize(void)
 	  =========
 	*/
 
-#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
-#if 0
+#if defined(CONFIG_AXXIA_ANY_56XX) && \
+  !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_PEI))
+
 		if (0 != pciesrio_init(pciesrio->control))
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-#endif
 #endif
 
 	return 0;

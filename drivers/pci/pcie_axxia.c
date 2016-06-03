@@ -437,16 +437,21 @@ int axxia_pcie_link_up(struct pci_controller *hose)
 {
 	u32 rdlh_lnk, smlh_lnk, smlh_state;
 
+	printf("In axxia_pcie_link_up \n\r"); //jl
+
 	axxia_cc_gpreg_readl(hose, PEI_SII_PWR_MGMT_REG, &smlh_lnk);
 	axxia_cc_gpreg_readl(hose, PEI_SII_DBG_0_MON_REG, &rdlh_lnk);
 
 	axxia_cc_gpreg_readl(hose, PEI_SII_PWR_MGMT_REG, &smlh_state);
 	smlh_state = (smlh_state & PEI_SMLH_LINK_STATE) >> 4;
-	if (smlh_state != 0x11) {
+	if ( (smlh_state != 0x11) && (smlh_state != 0x23) ) {  //jl
 		printf("smlh_state = 0x%x\n", smlh_state);
 		printf("PCIe LINK IS NOT UP\n");
 		return 0;
 	}
+
+	printf("smlh_state = 0x%x\n", smlh_state); //jl
+
 	return 1;
 }
 
@@ -457,11 +462,16 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 	u32 memlimit;
 	struct pci_hose_data *data;
 
+	printf("In axxia_pcie_setup_rc \n\r"); //jl
+
 	data = (struct pci_hose_data *)hose->priv_data;
 
 	/* set the number of lanes */
 	axxia_pcie_readl_rc(hose, PCIE_PORT_LINK_CONTROL, &val);
 	val &= ~PORT_LINK_MODE_MASK;
+	
+	printf("NUmber of lanes: %08x \n\r",data->lanes); //jl
+
 	switch (data->lanes) {
 	case 1:
 		val |= PORT_LINK_MODE_1_LANES;
@@ -494,26 +504,38 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 
 	/* setup bus numbers */
 	axxia_pcie_readl_rc(hose, PCI_PRIMARY_BUS, &val);
+
 	val &= 0xff000000;
 	val |= 0x00010100;
 	axxia_pcie_writel_rc(hose, val, PCI_PRIMARY_BUS);
 	/* setup memory base, memory limit */
-	membase = ((u32)data->mem_mod_base & 0xfff00000) >> 16;
-	memlimit = (data->mem_size + (u32)data->mem_mod_base) & 0xfff00000;
-	val = memlimit | membase;
+	membase = ((u32)data->mem_mod_base & 0xfff00000) >> 16; //jl is this needed ?
+	memlimit = (data->mem_size + (u32)data->mem_mod_base) & 0xfff00000;  //jl is this needed ?
+	val = memlimit | membase; //jl is this needed ?
+	
 	axxia_pcie_writel_rc(hose, val, PCI_MEMORY_BASE);
-
+	
 	/* setup command register */
 	axxia_pcie_readl_rc(hose, PCI_COMMAND, &val);
+	
 	val &= 0xffff0000;
 	val |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY |
 		PCI_COMMAND_MASTER | PCI_COMMAND_SERR;
 	axxia_pcie_writel_rc(hose, val, PCI_COMMAND);
+	
+	
+	/* JL Add Mikes tweak for GEN3_EQ_CONTROL */
+	axxia_pcie_writel_rc(hose, 0x1037201, 0x8a8);  //jl 
+
 
 	/* LTSSM enable */
 	axxia_cc_gpreg_readl(hose, PEI_GENERAL_CORE_CTL_REG, &val);
+	mdelay(100);  //jl
+
 	val |= 0x1;
 	axxia_cc_gpreg_writel(hose, 0x1, PEI_GENERAL_CORE_CTL_REG);
+	mdelay(100); //jl
+
 }
 
 static int axxia_pcie_establish_link(struct pci_controller *hose)
@@ -555,6 +577,9 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		hose_data[port].mem_mod_base = CONFIG_SYS_PCIE0_MEMBASE;
 		hose_data[port].mem_size = CONFIG_SYS_PCIE0_MEMSIZE;
 		hose_data[port].mem_bus_addr = CONFIG_PCIE0_BUS_START;
+		/* Hard code lanes to 4 for now */
+		hose_data[port].lanes = 1;
+
 		break;
 #ifdef ACP_PEI1
 	case 1:
@@ -599,6 +624,8 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		       PCI_REGION_MEM);
 	hose->region_count++;
 	pci_register_hose(hose);
+
+	printf("Jumping to axxia_pcie_establish_link \n\r"); //jl
 
 	if (axxia_pcie_establish_link(hose)) {
 		printf("Failed to establish PCIe link\n");
