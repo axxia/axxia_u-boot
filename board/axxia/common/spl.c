@@ -1173,9 +1173,11 @@ board_init_f(ulong dummy)
 
 #ifdef CONFIG_AXXIA_USB
 	/*
-	  Set the optional PHY registers.  Note that these values only
-	  get cleared by a chip or system reset, not by a USB
-	  controller/phy soft reset.
+	  The USB phy reads the values stored in the following
+	  registers when enabled.  Some of the default values need to
+	  be changed.
+
+	  After wrting the new values, use SYSCON to reset the USB phy.
 	*/
 
 	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE,
@@ -1190,6 +1192,20 @@ board_init_f(ulong dummy)
 	writel(TXRESTUNE0_VALUE, TXRESTUNE0);
 	writel(TXRISETUNE0_VALUE, TXRISETUNE0);
 	writel(TXVREFTUNE0_VALUE, TXVREFTUNE0);
+	writel(PCSRXLOSMASK_VALUE, PCSRXLOSMASK);
+	writel(PCSTXDEEMPH3P4DB_VALUE, PCSTXDEEMPH3P4DB);
+	writel(PCSTXDEEMPH6DB_VALUE, PCSTXDEEMPH6DB);
+	writel(PCSTXSWINGFULL_VALUE, PCSTXSWINGFULL);
+	writel(TXVBOOSTLVL_VALUE, TXVBOOSTLVL);
+
+ 	writel(0xab, (SYSCON + 0x2000));
+	value = readl(SYSCON + 0x2044);
+	value |= (1 << 17);
+	writel(value, (SYSCON + 0x2044));
+	udelay(1);
+	value &= ~(1 << 17);
+	writel(value, (SYSCON + 0x2044));
+ 	writel(0, (SYSCON + 0x2000));
 #endif	/* CONFIG_AXXIA_USB */
 
 	rc = axxia_initialize();

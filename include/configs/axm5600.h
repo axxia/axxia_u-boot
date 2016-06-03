@@ -415,6 +415,11 @@ int axxia_sysmem_check_ecc(void);
 #define TXRESTUNE0                  (AXI2SER6 + 0x4001c)
 #define TXRISETUNE0                 (AXI2SER6 + 0x40020)
 #define TXVREFTUNE0                 (AXI2SER6 + 0x40024)
+#define PCSRXLOSMASK                (AXI2SER6 + 0x40038)
+#define PCSTXDEEMPH3P4DB            (AXI2SER6 + 0x4003c)
+#define PCSTXDEEMPH6DB              (AXI2SER6 + 0x40040)
+#define PCSTXSWINGFULL              (AXI2SER6 + 0x40044)
+#define TXVBOOSTLVL                 (AXI2SER6 + 0x40048)
 
 #define SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE 1
 #define COMPDISTUNE0_VALUE                4
@@ -427,6 +432,11 @@ int axxia_sysmem_check_ecc(void);
 #define TXRESTUNE0_VALUE                  1
 #define TXRISETUNE0_VALUE                 2
 #define TXVREFTUNE0_VALUE                 8
+#define PCSRXLOSMASK_VALUE                0x3e8
+#define PCSTXDEEMPH3P4DB_VALUE            0x16
+#define PCSTXDEEMPH6DB_VALUE              0x16
+#define PCSTXSWINGFULL_VALUE              0x7a
+#define TXVBOOSTLVL_VALUE                 4
 
 /*
   ==============================================================================
