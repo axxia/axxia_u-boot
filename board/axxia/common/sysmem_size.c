@@ -63,7 +63,7 @@ sysmem_size(void)
 #endif	/* CONFIG_SPL_BUILD */
 
 	sdram_capacity_bytes =
-		(1 << sysmem->sdram_device_density) *
+		(1ULL << sysmem->sdram_device_density) *
 		((256 * 1024 * 1024) / 8);
 	sdram_device_width_bits = 4 * (1 << sysmem->sdram_device_width);
 	primary_bus_width_bits = 8 * (1 << sysmem->primary_bus_width);
