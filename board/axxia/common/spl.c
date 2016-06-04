@@ -742,39 +742,41 @@ typedef struct axxia_configuration {
 	axxia_option_t option;
 } axxia_configuration_t;
 
-static axxia_configuration_t axxia_configuration;
+extern void *__monitor_parameters;
 
 void
 jump_to_monitor(void *address)
 {
 	void (*entry)(void *, void *);
+	axxia_configuration_t *axxia_configuration;
 
+	axxia_configuration = (axxia_configuration_t *)&__monitor_parameters;
 #if defined(CONFIG_AXXIA_56XX_SIM)
-	axxia_configuration.target = AXXIA_5600;
-	axxia_configuration.platform = AXXIA_SIM;
+	axxia_configuration->target = AXXIA_5600;
+	axxia_configuration->platform = AXXIA_SIM;
 #elif defined(CONFIG_AXXIA_56XX_EMU)
-	axxia_configuration.target = AXXIA_5600;
-	axxia_configuration.platform = AXXIA_EMU;
+	axxia_configuration->target = AXXIA_5600;
+	axxia_configuration->platform = AXXIA_EMU;
 #elif defined(CONFIG_AXXIA_56XX)
-	axxia_configuration.target = AXXIA_5600;
-	axxia_configuration.platform = AXXIA_HW;
+	axxia_configuration->target = AXXIA_5600;
+	axxia_configuration->platform = AXXIA_HW;
 #elif defined(CONFIG_AXXIA_XLF_SIM)
-	axxia_configuration.target = AXXIA_6700;
-	axxia_configuration.platform = AXXIA_SIM;
+	axxia_configuration->target = AXXIA_6700;
+	axxia_configuration->platform = AXXIA_SIM;
 #elif defined(CONFIG_AXXIA_XLF_EMU)
-	axxia_configuration.target = AXXIA_6700;
-	axxia_configuration.platform = AXXIA_EMU;
+	axxia_configuration->target = AXXIA_6700;
+	axxia_configuration->platform = AXXIA_EMU;
 #elif defined(CONFIG_AXXIA_XLF)
-	axxia_configuration.target = AXXIA_6700;
-	axxia_configuration.platform = AXXIA_HW;
+	axxia_configuration->target = AXXIA_6700;
+	axxia_configuration->platform = AXXIA_HW;
 #endif
 #ifdef SYSCACHE_ONLY_MODE
-	axxia_configuration.option = AXXIA_SYSCACHE_ONLY;
+	axxia_configuration->option = AXXIA_SYSCACHE_ONLY;
 #endif
 
 	entry = (void (*)(void *, void *))address;
 	cleanup_before_linux();
-	entry(NULL, &axxia_configuration);
+	entry(NULL, axxia_configuration);
 	acp_failure(__FILE__, __func__, __LINE__);
 
 	return;

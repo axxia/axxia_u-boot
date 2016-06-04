@@ -11,6 +11,10 @@ __image_copy_start = .;
 *(.vectors)
 arch/arm/cpu/armv8/start.o (.text*)
 
+. = ALIGN(4);
+__monitor_parameters = .;
+. += 256;
+
 /*
 	Include the secure monitor.
 */
