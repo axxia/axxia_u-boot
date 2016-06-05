@@ -135,7 +135,9 @@ axxia_mdio_init(void)
 	writel(period, dev->priv + MDIO_REG_CLK_PERIOD);
 
 	/* Enable the MDIO Clock. */
+#ifndef CONFIG_TARGET_EMULATION
 	writel(0x10, PERIPH_GPREG + 0x18);
+#endif
 
 	initialized = 1;
 
