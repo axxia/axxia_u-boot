@@ -4122,7 +4122,9 @@ void ncr_disable( void );
 */
 
 #define WATCHDOG_TIMEOUT_SECS 16
+#ifndef CONFIG_TARGET_EMULATION
 #define CONFIG_HW_WATCHDOG
+#endif
 /*#define LEAVE_WATCHDOG_ON*/
 /*#define MAKE_WATCHDOG_PERMANENT*/
 /*#define WATCHDOG_RESET_SYSTEM*/
