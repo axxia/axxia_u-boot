@@ -107,7 +107,6 @@ axxia_initialize(void)
 	*/
 
 #ifndef SYSCACHE_ONLY_MODE
-#if !defined(CONFIG_AXXIA_SIM) /* TODO: Get this working in simulation */
 	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) &&
 	    (0 == sysmem->ddrRecovery)) {
 		ncr_tracer_enable();
@@ -117,7 +116,6 @@ axxia_initialize(void)
 
 		ncr_tracer_disable();
 	}
-#endif
 #endif
 
 	/*
