@@ -239,7 +239,7 @@ arch_early_init_r(void)
 
 	printf("Sysmem Size: %llu MB\n",
 	       (sysmem_size() / (1024ULL * 1024ULL)));
-	debug("Relocation Address: 0x%lx\n", gd->relocaddr);
+	printf("Relocation Address: 0x%lx\n", gd->relocaddr);
 
 	return 0;
 }
