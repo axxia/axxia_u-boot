@@ -54,7 +54,8 @@ display_mem_parameters(const char *title, parameters_mem_t *parameters)
 	printf("ddrClockSpeedMHz=0x%08x\n", parameters->ddrClockSpeedMHz);
 	printf("auto_detect=0x%08x\n", parameters->autoDetect);
 	printf("num_interfaces=0x%08x\n", parameters->num_interfaces);
-	printf("num_ranks_per_interface=0x%08x\n", parameters->numRanks);
+	printf("num_ranks_per_interface=0x%08x\n",
+	       parameters->num_ranks_per_interface);
 	printf("primary_bus_width=0x%08x\n", parameters->primary_bus_width);
 	printf("topology=0x%08x\n", parameters->topology);
 	printf("min_ctrl_roundtrip_delay=0x%08x\n",
@@ -75,8 +76,8 @@ display_mem_parameters(const char *title, parameters_mem_t *parameters)
 	printf("CAS_write_latency=0x%08x\n", parameters->CAS_write_latency);
 	printf("address_mirroring=0x%08x\n", parameters->address_mirroring);
 	printf("registeredDIMM=0x%08x\n", parameters->registeredDimm);
-	printf("rdimm_ctl_0_0=0x%08x\n", parameters->rdimmCtl_0);
-	printf("rdimm_ctl_0_1=0x%08x\n", parameters->rdimmCtl_1);
+	printf("rdimm_ctl_0_0=0x%08x\n", parameters->rdimm_ctl_0_0);
+	printf("rdimm_ctl_0_1=0x%08x\n", parameters->rdimm_ctl_0_1);
 	printf("rdimm_msic=0x%08x\n", parameters->rdimm_misc);
 	printf("write_ODT_ctl=0x%08x\n", parameters->write_ODT_ctl);
 	printf("read_ODT_ctl=0x%08x\n", parameters->read_ODT_ctl);
@@ -135,15 +136,12 @@ display_mem_parameters(const char *title, parameters_mem_t *parameters)
 	printf("rdimm_ctl_1_2=0x%08x\n", parameters->rdimm_ctl_1_2);
 	printf("rdimm_ctl_1_3=0x%08x\n", parameters->rdimm_ctl_1_3);
 	printf("rdimm_ctl_1_4=0x%08x\n", parameters->rdimm_ctl_1_4);
-	printf("vref_en=0x%08x\n", parameters->vref_en);
 	printf("vref_cs=0x%08x\n", parameters->vref_cs);
 	printf("vref_val=0x%08x\n", parameters->vref_val);
 	printf("wr_protect_en_mask=0x%08x\n", parameters->wr_protect_en_mask);
-	printf("rdlvl_en=0x%08x\n", parameters->rdlvl_en);
 	printf("dbi_rd_en=0x%08x\n", parameters->dbi_rd_en);
 	printf("dbi_wr_en=0x%08x\n", parameters->dbi_wr_en);
 	printf("ca_parity_en; =0x%08x\n", parameters->ca_parity_en);
-	printf("rdlvl_gate_en=0x%08x\n", parameters->rdlvl_gate_en);
 	printf("rdlvl_interval;=0x%08x\n", parameters->rdlvl_interval);
 	printf("rdlvl_gate_interval=0x%08x\n", parameters->rdlvl_gate_interval);
 	printf("preamble_support=0x%08x\n", parameters->preamble_support);
