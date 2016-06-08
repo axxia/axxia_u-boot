@@ -514,7 +514,7 @@ ncr_write32_0x167(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 
 typedef struct
 {
-#ifdef NCP_NCA_BIG_ENDIAN_DISABLED_BY_JL   /* //jl*/
+#ifdef NCP_BIG_ENDIAN
      unsigned      valid                                     :  1;
      unsigned      hwrite                                    :  1;
      unsigned      tshift                                    :  4;
