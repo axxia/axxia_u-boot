@@ -649,9 +649,18 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 void
 pci_init_board(void)
 {
+	if (0 == (global->flags & PARAMETERS_GLOBAL_SET_PEI))
+		return;
+
 #ifdef ACP_PEI0
-	/* PEI0 is enabled, enumerate it */
-	(void)pci_axxia_init(&hose[0], 0);
+	unsigned int value;
+
+	/* PEI0 is enabled, enumerate it -- if it is in RC mode. */
+	ncr_read32(NCP_REGION_ID(0x115, 0), 0, &value);
+	printf("%s:%d - value is 0x%x\n", __FILE__, __LINE__, value);
+
+	if (0 != (value & (1 << 22)))
+		(void)pci_axxia_init(&hose[0], 0);
 #endif
 #ifdef ACP_PEI1
 	/* PEI1 is enabled, enumerate it */
