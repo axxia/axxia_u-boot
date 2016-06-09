@@ -1328,61 +1328,61 @@ ncp_sm_ddr4_phy_training_error_check(
 
 	if (regPGSR0.verr)
 	{
-		errprintf("VREF Training Error\n");
+		errprintf("VREF Training Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.zcerr)
 	{
-		errprintf("Impedance Calibration Error\n");
+		errprintf("Impedance Calibration Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.wlerr)
 	{
-		errprintf("Write Leveling Error\n");
+		errprintf("Write Leveling Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.qsgerr)
 	{
-		errprintf("DQS Gate Training Error\n");
+		errprintf("DQS Gate Training Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.wlaerr)
 	{
-		errprintf("Write Leveling Adjustment Error\n");
+		errprintf("Write Leveling Adjustment Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.rderr)
 	{
-		errprintf("Read Bit Deskew Error\n");
+		errprintf("Read Bit Deskew Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.wderr)
 	{
-		errprintf("Write Bit Deskew Error\n");
+		errprintf("Write Bit Deskew Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.reerr)
 	{
-		errprintf("Read Eye Training Error\n");
+		errprintf("Read Eye Training Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.weerr)
 	{
-		errprintf("Write Eye Training Error\n");
+		errprintf("Write Eye Training Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.caerr)
 	{
-		errprintf("CA Training Error\n");
+		errprintf("CA Training Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
@@ -1393,7 +1393,7 @@ ncp_sm_ddr4_phy_training_error_check(
 
 	if (regPGSR0.srderr)
 	{
-		errprintf("Static Read Error\n");
+		errprintf("Static Read Error SMEM(0x%x)\n",smNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
@@ -3142,7 +3142,7 @@ ncp_sysmem_init_synopphy(
 
 ncp_return:
 #ifdef NCP_SM_PHY_REG_DUMP
-	if ((NCP_ST_SUCCESS != ncpStatus) && (NCP_ST_ERROR != ncpStatus))
+	if (NCP_ST_SUCCESS != ncpStatus)
 	{
 		/* Dump contents of synop phy regs */
 		NCP_CALL(ncp_sm_ddr4_phy_reg_dump(dev, smNode));

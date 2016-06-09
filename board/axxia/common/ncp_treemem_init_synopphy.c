@@ -976,61 +976,61 @@ ncp_cm_ddr4_phy_training_error_check(
 
 	if (regPGSR0.verr)
 	{
-		errprintf("VREF Training Error\n");
+		errprintf("VREF Training Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.zcerr)
 	{
-		errprintf("Impedance Calibration Error\n");
+		errprintf("Impedance Calibration Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.wlerr)
 	{
-		errprintf("Write Leveling Error\n");
+		errprintf("Write Leveling Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.qsgerr)
 	{
-		errprintf("DQS Gate Training Error\n");
+		errprintf("DQS Gate Training Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.wlaerr)
 	{
-		errprintf("Write Leveling Adjustment Error\n");
+		errprintf("Write Leveling Adjustment Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.rderr)
 	{
-		errprintf("Read Bit Deskew Error\n");
+		errprintf("Read Bit Deskew Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.wderr)
 	{
-		errprintf("Write Bit Deskew Error\n");
+		errprintf("Write Bit Deskew Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.reerr)
 	{
-		errprintf("Read Eye Training Error\n");
+		errprintf("Read Eye Training Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.weerr)
 	{
-		errprintf("Write Eye Training Error\n");
+		errprintf("Write Eye Training Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
 	if (regPGSR0.caerr)
 	{
-		errprintf("CA Training Error\n");
+		errprintf("CA Training Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
@@ -1041,7 +1041,7 @@ ncp_cm_ddr4_phy_training_error_check(
 
 	if (regPGSR0.srderr)
 	{
-		errprintf("Static Read Error\n");
+		errprintf("Static Read Error CMEM(0x%x)\n",cmNode);
 		ncpStatus = NCP_ST_ERROR;
 	}
 
