@@ -22,4 +22,10 @@ config NETCONSOLE
 	  Support the 'nc' input/output device for networked console.
 	  See README.NetConsole for details.
 
+config NET_ONCE
+	bool "Setup Ethernet once"
+	help
+	  Setup ethernet and phy only when dhcp command is called. Prevents 
+	  setup and teardown of the link for each command. 
+
 endif   # if NET

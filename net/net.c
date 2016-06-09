@@ -401,17 +401,29 @@ int net_loop(enum proto_t protocol)
 
 	bootstage_mark_name(BOOTSTAGE_ID_ETH_START, "eth_start");
 	net_init();
-	if (eth_is_on_demand_init() || protocol != NETCONS) {
-		eth_halt();
-		eth_set_current();
-		ret = eth_init();
-		if (ret < 0) {
-			eth_halt();
-			return ret;
-		}
-	} else {
+
+#ifdef CONFIG_NET_ONCE
+	if ((eth_get_dev()->state == ETH_STATE_PASSIVE) && (protocol != DHCP)) {
 		eth_init_state_only();
+	} else {
+#endif
+		if (eth_is_on_demand_init() || protocol != NETCONS) {
+			eth_halt();
+			eth_set_current();
+			ret = eth_init();
+
+			if (ret < 0) {
+				eth_halt();
+
+				return ret;
+			}
+		} else {
+			eth_init_state_only();
+		}
+#ifdef CONFIG_NET_ONCE
 	}
+#endif
+
 restart:
 #ifdef CONFIG_USB_KEYBOARD
 	net_busy_flag = 0;
@@ -615,9 +627,11 @@ restart:
 				setenv_hex("filesize", net_boot_file_size);
 				setenv_hex("fileaddr", load_addr);
 			}
+#ifndef CONFIG_NET_ONCE
 			if (protocol != NETCONS)
 				eth_halt();
 			else
+#endif
 				eth_halt_state_only();
 
 			eth_set_last_protocol(protocol);
