@@ -437,20 +437,20 @@ int axxia_pcie_link_up(struct pci_controller *hose)
 {
 	u32 rdlh_lnk, smlh_lnk, smlh_state;
 
-	printf("In axxia_pcie_link_up \n\r"); //jl
+	debug("In axxia_pcie_link_up \n\r");
 
 	axxia_cc_gpreg_readl(hose, PEI_SII_PWR_MGMT_REG, &smlh_lnk);
 	axxia_cc_gpreg_readl(hose, PEI_SII_DBG_0_MON_REG, &rdlh_lnk);
 
 	axxia_cc_gpreg_readl(hose, PEI_SII_PWR_MGMT_REG, &smlh_state);
 	smlh_state = (smlh_state & PEI_SMLH_LINK_STATE) >> 4;
-	if ( (smlh_state != 0x11) && (smlh_state != 0x23) ) {  //jl
-		printf("smlh_state = 0x%x\n", smlh_state);
-		printf("PCIe LINK IS NOT UP\n");
+	if ( (smlh_state != 0x11) && (smlh_state != 0x23) ) {
+		debug("smlh_state = 0x%x\n", smlh_state);
+		debug("PCIe LINK IS NOT UP\n");
 		return 0;
 	}
 
-	printf("smlh_state = 0x%x\n", smlh_state); //jl
+	debug("smlh_state = 0x%x\n", smlh_state);
 
 	return 1;
 }
@@ -462,7 +462,7 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 	u32 memlimit;
 	struct pci_hose_data *data;
 
-	printf("In axxia_pcie_setup_rc \n\r"); //jl
+	debug("In axxia_pcie_setup_rc \n\r");
 
 	data = (struct pci_hose_data *)hose->priv_data;
 
@@ -470,7 +470,7 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 	axxia_pcie_readl_rc(hose, PCIE_PORT_LINK_CONTROL, &val);
 	val &= ~PORT_LINK_MODE_MASK;
 	
-	printf("NUmber of lanes: %08x \n\r",data->lanes); //jl
+	debug("NUmber of lanes: %08x \n\r", data->lanes);
 
 	switch (data->lanes) {
 	case 1:
@@ -543,10 +543,10 @@ static int axxia_pcie_establish_link(struct pci_controller *hose)
 	/* setup root complex */
 	axxia_pcie_setup_rc(hose);
 
-	if (axxia_pcie_link_up(hose))
-		printf("Link up\n");
-	else
+	if (!axxia_pcie_link_up(hose))
 		return 1;
+
+	debug("Link up\n");
 
 	return 0;
 }
@@ -564,8 +564,9 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		    pcie_write_config_dword);
 
 	switch (port) {
+#ifdef ACP_PEI0
 	case 0:
-		printf("PEI0 Root Complex.\n");
+		debug("PEI0 Root Complex.\n");
 		/* PEI0 RC mode */
 		hose_data[port].dbi_base = PCIE0_DBI_BASE;
 		hose_data[port].axi_gpreg_base = PCIE0_AXI_GPREG_BASE;
@@ -579,11 +580,11 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		hose_data[port].mem_bus_addr = CONFIG_PCIE0_BUS_START;
 		/* Hard code lanes to 4 for now */
 		hose_data[port].lanes = 1;
-
 		break;
+#endif
 #ifdef ACP_PEI1
 	case 1:
-		printf("PEI1 Root Complex.\n");
+		debug("PEI1 Root Complex.\n");
 		/* PEI1 RC mode */
 		hose_data[port].dbi_base = PCIE1_DBI_BASE;
 		hose_data[port].axi_gpreg_base = PCIE1_AXI_GPREG_BASE;
@@ -599,7 +600,7 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 #endif
 #ifdef ACP_PEI2
 	case 2:
-		printf("PEI2 Root Complex.\n");
+		debug("PEI2 Root Complex.\n");
 		/* PEI2 RC mode */
 		hose_data[port].dbi_base = PCIE2_DBI_BASE;
 		hose_data[port].axi_gpreg_base = PCIE2_AXI_GPREG_BASE;
@@ -625,10 +626,10 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 	hose->region_count++;
 	pci_register_hose(hose);
 
-	printf("Jumping to axxia_pcie_establish_link \n\r"); //jl
+	debug("Jumping to axxia_pcie_establish_link \n\r"); //jl
 
 	if (axxia_pcie_establish_link(hose)) {
-		printf("Failed to establish PCIe link\n");
+		debug("Failed to establish PCIe link\n");
 		return 1;
 	}
 	/* program correct class for RC */
@@ -649,27 +650,38 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 void
 pci_init_board(void)
 {
-	if (0 == (global->flags & PARAMETERS_GLOBAL_SET_PEI))
-		return;
-
-#ifdef ACP_PEI0
+#if defined(ACP_PEI0) || defined(ACP_PEI1) || defined(ACP_PEI2)
 	unsigned int value;
 
-	/* PEI0 is enabled, enumerate it -- if it is in RC mode. */
 	ncr_read32(NCP_REGION_ID(0x115, 0), 0, &value);
-	printf("%s:%d - value is 0x%x\n", __FILE__, __LINE__, value);
+	debug("vlaue=0x%x\n", value);
+#endif
 
-	if (0 != (value & (1 << 22)))
+#ifdef ACP_PEI0
+	/* If PEI0 is enabled and in RC mode, enumerate it. */
+	if (0 != (value & (1 << 0)) &&  0 != (value & (1 << 22))) {
+		debug("enumerating hose[0]\n");
 		(void)pci_axxia_init(&hose[0], 0);
+	}
 #endif
+
 #ifdef ACP_PEI1
-	/* PEI1 is enabled, enumerate it */
-	(void)pci_axxia_init(&hose[1], 1);
+	/* If PEI1 is enabled, enumerate it. */
+	if (0 != (value & (1 << 1))) {
+		debug("enumerating hose[1]\n");
+		(void)pci_axxia_init(&hose[1], 1);
+	}
 #endif
+
 #ifdef ACP_PEI2
-	/* PEI2 is enabled, enumerate it */
-	(void)pci_axxia_init(&hose[2], 2);
+	/* If PEI2 is enabled, enumerate it. */
+	if (0 != (value & (1 << 2))) {
+		debug("enumerating hose[2]\n");
+		(void)pci_axxia_init(&hose[2], 2);
+	}
 #endif
+
+	return;
 }
 
 #endif /* CONFIG_PCI */
