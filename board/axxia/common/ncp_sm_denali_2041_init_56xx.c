@@ -1693,7 +1693,16 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_117 */
 	/* reg117.row_diff set early on */
-	reg117.bank_diff = 0; /* all banks being used */
+	if (parms->sdram_device_width == 2)
+	{
+		/* x16 */
+		reg117.bank_diff = 1; /* encoded number of banks on the DRAM's */
+	}
+	else if (parms->sdram_device_width == 1)
+	{
+		/* x8 */
+		reg117.bank_diff = 0; /* encoded number of banks on the DRAM's */
+	}
 	reg117.zqcs_rotate = 1;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_117_5600, *((ncp_uint32_t *)&reg117));
 
@@ -1762,7 +1771,7 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_128 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_128_5600, (ncp_uint32_t *)&reg128);
-	reg128.bg_rotate_en = 0x1;
+	reg128.bg_rotate_en = 0x1; /* always */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_128_5600, *((ncp_uint32_t *)&reg128));
 
 	/* DENALI_CTL_155 */

@@ -961,7 +961,7 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_82, *((ncp_uint32_t *)&reg82));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_83, (ncp_uint32_t *)&reg83);
-	reg83.bg_rotate_en = 0x1;
+	reg83.bg_rotate_en = 0x0; /* always */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_83, *((ncp_uint32_t *)&reg83));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_96, (ncp_uint32_t *)&reg96);

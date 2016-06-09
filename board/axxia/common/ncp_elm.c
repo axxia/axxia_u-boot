@@ -82,18 +82,33 @@ ncp_elm_init(
         if ((parms->version == NCP_CHIP_ACP56xx) ||
             (parms->version == NCP_CHIP_ACPXLF))
 	{
+	    ncp_uint32_t	mungebits = 0, mungemask = 0, cscount = 0;
 	    ncp_denali_DENALI_CTL_128_5600_t reg128 = {0};
 
 	    ncr_read32(NCP_REGION_ID(0x22, NCP_SYSMEM_TGT_DENALI), NCP_DENALI_CTL_128_5600, (ncp_uint32_t *)&reg128);
 
+      	    if (4 == parms->num_ranks_per_interface)
+        	cscount = 2;
+      	    else if (2 == parms->num_ranks_per_interface)
+        	cscount = 1;
+      	    else if (1 == parms->num_ranks_per_interface)
+        	cscount = 0;
+
+	    mungebits = 4 - (reg128.bg_rotate_en) - ((parms->sdram_device_width == 2) ? 1 /*x16*/ : 0/*x8*/) + cscount;
+	    mungemask = ((1 << mungebits) - 1);
+
             switch (parms->num_ranks_per_interface)
             {
                 case 1 : 
-                    xorMask = (reg128.bg_rotate_en) ? (0x7 << (ddrBits - 24)) : (0xf << (ddrBits - 25));
+                    xorMask = (mungemask << ((reg128.bg_rotate_en) + ((parms->sdram_device_width == 2) ? 1 : 0) + ddrBits - 25));
                     break;
     
                 case 2:
-                    xorMask = (reg128.bg_rotate_en) ? (0xf << (ddrBits - 25)) : (0x1f << (ddrBits - 26));
+                    xorMask = (mungemask << ((reg128.bg_rotate_en) + ((parms->sdram_device_width == 2) ? 1 : 0) + ddrBits - 26));
+                    break;
+    
+                case 4:
+                    xorMask = (mungemask << ((reg128.bg_rotate_en) + ((parms->sdram_device_width == 2) ? 1 : 0) + ddrBits - 27));
                     break;
     
                 default:
