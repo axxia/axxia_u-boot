@@ -252,104 +252,88 @@ ft_board_setup
 int
 ft_board_setup(void *blob, bd_t *bd)
 {
-	/*char cpu_string[40];*/
-	int node;
 	int rc;
-#if !defined(CONFIG_AXXIA_SIM) && !defined(CONFIG_AXXIA_EMU)
-	ncp_uint32_t phy0_ctrl, phy1_ctrl;
+#if !defined(CONFIG_TARGET_SIMULATION) && !defined(CONFIG_TARGET_EMULATION)
+#if defined(ACP_PEI0) || defined(ACP_PEI1) || defined(ACP_PEI2)
+	int node;
+	ncp_uint32_t pciesrio;
 #endif
-	char *ad_value;
-	char *macspeed;
-	ncp_uint32_t tmp;
+#endif
 	u64 start[CONFIG_NR_DRAM_BANKS];
 	u64 size[CONFIG_NR_DRAM_BANKS];
 
 	/*
-	  Set the PHY link type.
-
-	  The default is auto (auto-negotiate) if macspeed is not set.
+	  Disable PEIn controllers that are not enabled or RC.
 	*/
 
-	node = fdt_path_offset(blob, "/femac@0x2010120000");
+#if !defined(CONFIG_TARGET_SIMULATION) && !defined(CONFIG_TARGET_EMULATION)
+#if defined(ACP_PEI0) || defined(ACP_PEI1) || defined(ACP_PEI2)
+
+	ncr_read32(NCP_REGION_ID(0x115, 0), 0, &pciesrio);
+
+	node = fdt_path_offset(blob, "/soc/pcie@c000000000");
 
 	if (0 <= node) {
-		macspeed = getenv("macspeed");
-
-		if (NULL == macspeed)
-			macspeed = "auto";
-
-		if (0 == strncmp(macspeed, "auto", strlen("auto"))) {
-			ad_value = getenv("ad_value");
-
-			if (NULL == ad_value)
-				tmp = htonl(0x1e1);
-			else
-				tmp = htonl(simple_strtoul(ad_value, NULL, 0));
-
-			rc = fdt_setprop(blob, node, "ad-value", &tmp,
-					 sizeof(ncp_uint32_t));
-
-			if (0 != rc)
-				printf("%s:%d - Couldn't set ad-value!\n",
-				       __FILE__, __LINE__);
-
-			rc = fdt_setprop(blob, node, "phy-link", "auto",
-					 strlen("auto"));
-
-			if (0 != rc)
-				printf("%s:%d - Couldn't set phy-link!\n",
-				       __FILE__, __LINE__);
+		if (0 != (pciesrio & (1 << 0)) && 0 != (pciesrio & (1 << 22))) {
+			/* If PEI0 is enabled and is RC, set OKAY; */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
+			printf("Enabling PEI0 as Root Complex\n");
 		} else {
-			rc = fdt_setprop(blob, node, "phy-link", macspeed,
-					 strlen(macspeed));
-
-			if (0 != rc)
-				printf("%s:%d - Couldn't set phy-link!\n",
-				       __FILE__, __LINE__);
+			/* otherwise, set DISABLE. */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_DISABLED, 0);
+			printf("Disabling PEI0\n");
 		}
+
+		if (0 != rc)
+			printf("%s:%d - Couldn't set PEI0 status!\n",
+			       __FILE__, __LINE__);
 	}
 
-	/*
-	  Enable PEI0/PEI1 controllers
-	*/
-
-#if !defined(CONFIG_AXXIA_SIM) && !defined(CONFIG_AXXIA_EMU)
-	node = fdt_path_offset(blob, "/pciex@0x3000000000");
+	/* PEI1 is always RC. */
+	node = fdt_path_offset(blob, "/soc/pcie@c800000000");
 
 	if (0 <= node) {
-		/* check if PEI0 is enabled */
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &phy0_ctrl);
-
-		if (phy0_ctrl & 0x1) {
-			/* PEI0 is enabled */
+		if (0 != (pciesrio & (1 << 1))) {
+			/* If PEI1 is enabled, set OKAY; */
 			rc = fdt_set_node_status(blob, node,
 						 FDT_STATUS_OKAY, 0);
-
-			if (0 != rc)
-				printf("%s:%d - Couldn't set PEI0 status!\n",
-				       __FILE__, __LINE__);
-
-			printf("PEI0 is enabled\n");
+			printf("Enabling PEI1 as Root Complex\n");
+		} else {
+			/* otherwise, set DISABLE. */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_DISABLED, 0);
+			printf("Disabling PEI1\n");
 		}
+
+		if (0 != rc)
+			printf("%s:%d - Couldn't set PEI1 status!\n",
+			       __FILE__, __LINE__);
 	}
 
-	node = fdt_path_offset(blob, "/pciex@0x3080000000");
+	/* PEI2 is always RC. */
+	node = fdt_path_offset(blob, "/soc/pcie@d000000000");
 
 	if (0 <= node) {
-		/* check if PEI1 is enabled */
-		ncr_read32(NCP_REGION_ID(0x115, 3), 0x200, &phy1_ctrl);
-
-		if (phy1_ctrl & 0x1) {
-			/* PEI1 is enabled */
+		if (0 != (pciesrio & (1 << 1))) {
+			/* If PEI2 is enabled, set OKAY; */
 			rc = fdt_set_node_status(blob, node,
 						 FDT_STATUS_OKAY, 0);
-
-			if (0 != rc)
-				printf("%s:%d - Couldn't set PEI1 status!\n",
-				       __FILE__, __LINE__);
-			printf("PEI1 is enabled\n");
+			printf("Enabling PEI2 as Root Complex\n");
+		} else {
+			/* otherwise, set DISABLE. */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_DISABLED, 0);
+			printf("Disabling PEI2\n");
 		}
+
+		if (0 != rc)
+			printf("%s:%d - Couldn't set PEI2 status!\n",
+			       __FILE__, __LINE__);
 	}
+
+#if 0
 
 	/*
 	  Enable SRI00/SRIO1 controllers
@@ -389,6 +373,9 @@ ft_board_setup(void *blob, bd_t *bd)
 			printf("SRIO1 is enabled\n");
 		}
 	}
+
+#endif
+#endif
 #endif
 
 	start[0] = 0;

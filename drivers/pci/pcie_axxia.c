@@ -650,6 +650,10 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 void
 pci_init_board(void)
 {
+#if defined(CONFIG_TARGET_SIMULATION)
+	return;
+#endif
+
 #if defined(ACP_PEI0) || defined(ACP_PEI1) || defined(ACP_PEI2)
 	unsigned int value;
 
