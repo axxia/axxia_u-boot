@@ -1200,6 +1200,12 @@ board_init_f(ulong dummy)
 	writel(PCSTXSWINGFULL_VALUE, PCSTXSWINGFULL);
 	writel(TXVBOOSTLVL_VALUE, TXVBOOSTLVL);
 
+	/* Switch the USB interrupt from edge to level. */
+	value = readl(0x9000200004);
+	value &= ~2;
+	writel(value, 0x9000200004);
+
+	/* Reset the USB PHY. */
  	writel(0xab, (SYSCON + 0x2000));
 	value = readl(SYSCON + 0x2044);
 	value |= (1 << 17);
