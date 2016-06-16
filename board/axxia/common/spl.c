@@ -1222,9 +1222,6 @@ board_init_f(ulong dummy)
 	value &= ~(1 << 17);
 	writel(value, (SYSCON + 0x2044));
  	writel(0, (SYSCON + 0x2000));
-
-	/* Make the USB controller uncached. */
-	writel(0x20302030, 0x9000200000);
 #endif	/* CONFIG_AXXIA_USB */
 
 	rc = axxia_initialize();
