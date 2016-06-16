@@ -740,6 +740,8 @@ typedef struct axxia_configuration {
 	axxia_target_t target;
 	axxia_platform_t platform;
 	axxia_option_t option;
+	unsigned int per_clock_hz;
+	unsigned int baud_rate;
 } axxia_configuration_t;
 
 extern void *__monitor_parameters;
@@ -774,6 +776,12 @@ jump_to_monitor(void *address)
 	axxia_configuration->option = AXXIA_SYSCACHE_ONLY;
 #endif
 
+	if (0 != acp_clock_get(clock_peripheral,
+			       &axxia_configuration->per_clock_hz))
+		acp_failure(__FILE__, __func__, __LINE__);
+
+	axxia_configuration->per_clock_hz *= 1000;
+	axxia_configuration->baud_rate = gd->baudrate;
 	entry = (void (*)(void *, void *))address;
 	cleanup_before_linux();
 	entry(NULL, axxia_configuration);
