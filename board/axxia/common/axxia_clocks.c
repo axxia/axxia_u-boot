@@ -229,32 +229,6 @@ clocks_init( void )
 	clocks_uninitialized = 0;
 #endif
 
-	/* Update cntfrq_el0 to Contain the System Clock */
-#if defined(CONFIG_SPL_BUILD)
-	{
-		unsigned long frequency;
-		unsigned csw;
-		unsigned div;
-
-		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &csw);
-
-		if (0 == (csw & 0x0000000c)) {
-			frequency = CLK_REF0 / 1000;
-		} else if (1 == (csw & 0x0000000c) >> 2) {
-			ncr_read32(NCP_REGION_ID(0x155,8), 0x0, &div);
-			frequency = get_pll(div, 1);
-		} else {
-			ncr_read32(NCP_REGION_ID(0x155,8), 0x0, &div);
-			frequency = get_pll(div, 2);
-		}
-
-		frequency *= 1000;
-
-		asm volatile("msr cntfrq_el0, %0"
-			     : : "r" (frequency) : "memory");
-	}
-#endif
-
 	return 0;
 }
 
