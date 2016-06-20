@@ -1473,7 +1473,7 @@ ncp_sm_denali_2041_init_56xx(
 		 * A13, A17	RFU
 		 */
 		reg84.mr5_data_0 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[smId].sdram_rtt_park[0]) |
-			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+			((parms->dm_masking << 10) /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
 	}
 	ctm->mr5 = reg84.mr5_data_0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_84_5600, *((ncp_uint32_t *)&reg84));
@@ -1644,7 +1644,7 @@ ncp_sm_denali_2041_init_56xx(
 		 * A13, A17	RFU
 		 */
 		reg92.mr5_data_1 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[smId].sdram_rtt_park[1]) |
-			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+			((parms->dm_masking << 10) /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
 	}
 	ncr_write32(ctlReg, NCP_DENALI_CTL_92_5600, *((ncp_uint32_t *)&reg92));
 
@@ -2263,7 +2263,7 @@ ncp_sm_denali_2041_init_56xx(
 		 * A13, A17	RFU
 		 */
 		reg355.mr5_data_2 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[smId].sdram_rtt_park[2]) |
-			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+			((parms->dm_masking << 10) /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
 	}
 	ncr_write32(ctlReg, NCP_DENALI_CTL_355_5600, *((ncp_uint32_t *)&reg355));
 
@@ -2393,7 +2393,7 @@ ncp_sm_denali_2041_init_56xx(
 		 * A13, A17	RFU
 		 */
 		reg363.mr5_data_3 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[smId].sdram_rtt_park[3]) |
-			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+			((parms->dm_masking << 10) /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
 	}
 	ncr_write32(ctlReg, NCP_DENALI_CTL_363_5600, *((ncp_uint32_t *)&reg363));
 

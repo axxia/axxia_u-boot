@@ -673,7 +673,7 @@ ncp_cm_denali_init_56xx(
 		 * A13, A17	RFU
 		 */
 		reg48.mr5_data_0 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[cmId].sdram_rtt_park[0]) |
-			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+			((parms->dm_masking << 10) /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
 	}
 	ctm->mr5 = reg48.mr5_data_0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_48, *((ncp_uint32_t *)&reg48));
@@ -871,7 +871,7 @@ ncp_cm_denali_init_56xx(
 		 * A13, A17	RFU
 		 */
 		reg56.mr5_data_1 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[cmId].sdram_rtt_park[1]) |
-			(0x400 /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
+			((parms->dm_masking << 10) /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
 	}
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_56, *((ncp_uint32_t *)&reg56));
 
