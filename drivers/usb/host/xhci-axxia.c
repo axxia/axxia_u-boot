@@ -51,7 +51,10 @@ static void dwc3_phy_reset(struct dwc3 *dwc3_reg)
 	mdelay(100);
 
 	/* Clear USB3 PHY reset */
-	clrbits_le32(&dwc3_reg->g_usb3pipectl[0], DWC3_GUSB3PIPECTL_PHYSOFTRST);
+#ifndef DISABLE_USB3
+	clrbits_le32(&dwc3_reg->g_usb3pipectl[0],
+		     DWC3_GUSB3PIPECTL_PHYSOFTRST);
+#endif
 
 	/* Clear USB2 PHY reset */
 	clrbits_le32(&dwc3_reg->g_usb2phycfg, DWC3_GUSB2PHYCFG_PHYSOFTRST);
