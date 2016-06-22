@@ -42,6 +42,17 @@ void dwc3_set_mode(struct dwc3 *dwc3_reg, u32 mode)
 
 static void dwc3_phy_reset(struct dwc3 *dwc3_reg)
 {
+	char *disable_usb3_string;
+	int disable_usb3;
+
+	disable_usb3_string = getenv("disable_usb3");
+
+	if (NULL != disable_usb3_string &&
+	    0 == strncmp(disable_usb3_string, "true", strlen("true")))
+		disable_usb3 = 1;
+	else
+		disable_usb3 = 0;
+
 	/* Assert USB3 PHY reset */
 	setbits_le32(&dwc3_reg->g_usb3pipectl[0], DWC3_GUSB3PIPECTL_PHYSOFTRST);
 
@@ -51,7 +62,9 @@ static void dwc3_phy_reset(struct dwc3 *dwc3_reg)
 	mdelay(100);
 
 	/* Clear USB3 PHY reset */
-	clrbits_le32(&dwc3_reg->g_usb3pipectl[0], DWC3_GUSB3PIPECTL_PHYSOFTRST);
+	if (0 == disable_usb3)
+		clrbits_le32(&dwc3_reg->g_usb3pipectl[0],
+			     DWC3_GUSB3PIPECTL_PHYSOFTRST);
 
 	/* Clear USB2 PHY reset */
 	clrbits_le32(&dwc3_reg->g_usb2phycfg, DWC3_GUSB2PHYCFG_PHYSOFTRST);
