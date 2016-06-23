@@ -327,9 +327,9 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length,
 		*/
 
 		if (addr == type)
-			remaining = 40000;
+			remaining = 80000;
 		else
-			remaining = 300000;
+			remaining = 600000;
 
 		remaining *= (size_per_node / (1024 * 1024 * 1024));
 
