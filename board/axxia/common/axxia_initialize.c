@@ -72,16 +72,13 @@ axxia_initialize(void)
 		return 0;
 #endif
 
-
-	//printf("global->flags = %08x \n",global->flags);  //jl
-
 	/*
 	  =======
 	  Voltage
 	  =======
 	*/
 
-#if !defined(CONFIG_AXXIA_EMU)
+#if !defined(CONFIG_TARGET_EMULATION)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_VOLTAGE))
 		if (0 != voltage_init())
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
@@ -93,7 +90,7 @@ axxia_initialize(void)
 	  ======
 	*/
 
-#if !defined(CONFIG_AXXIA_EMU)
+#if !defined(CONFIG_TARGET_EMULATION)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_CLOCKS))
 		if (0 != clocks_init())
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
@@ -145,9 +142,9 @@ axxia_initialize(void)
 	*/
 
 #if defined(CONFIG_AXXIA_ANY_56XX) && \
-  !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
+  !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM) && \
+  !defined(PEI_SETUP_IN_LINUX)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_PEI))
-
 		if (0 != pciesrio_init(pciesrio->control))
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif

@@ -245,29 +245,129 @@ arch_early_init_r(void)
 }
 
 /*
-------------------------------------------------------------------------------
-ft_board_setup
+  ------------------------------------------------------------------------------
+  ft_update_pei
 */
 
+#if defined(PEI_SETUP_IN_LINUX)
 int
-ft_board_setup(void *blob, bd_t *bd)
+ft_update_pei(void *blob)
 {
-	int rc;
-#if !defined(CONFIG_TARGET_SIMULATION) && !defined(CONFIG_TARGET_EMULATION)
-#if defined(ACP_PEI0) || defined(ACP_PEI1) || defined(ACP_PEI2)
 	int node;
-	ncp_uint32_t pciesrio;
-#endif
-#endif
-	u64 start[CONFIG_NR_DRAM_BANKS];
-	u64 size[CONFIG_NR_DRAM_BANKS];
+	int rc;
 
 	/*
-	  Disable PEIn controllers that are not enabled or RC.
+	  In this case, Linux will set up the PEIs.
+
+	  TODO: Update SRIO handling.
 	*/
 
-#if !defined(CONFIG_TARGET_SIMULATION) && !defined(CONFIG_TARGET_EMULATION)
-#if defined(ACP_PEI0) || defined(ACP_PEI1) || defined(ACP_PEI2)
+	/* Add the pei_control node and set control based on the parameters. */
+
+	node = fdt_path_offset(blob, "/soc");
+
+	if (0 <= node) {
+		rc = fdt_add_subnode(blob, node, "pei_control");
+
+		if (0 > rc)
+			return -1;
+	} else
+		return -1;
+
+	node = fdt_path_offset(blob, "/soc/pei_control");
+
+	if (0 <= node) {
+		unsigned int value;
+
+		value = cpu_to_fdt32(pciesrio->control);
+		rc = fdt_setprop(blob, node, "control", &value, sizeof(value));
+
+		if (0 > rc)
+			return -1;
+	} else
+		return -1;
+
+	printf("%s:%d - Linux will handle PEI setup.\n", __FILE__, __LINE__);
+
+	/* Enable PEIs based on the paramters. */
+
+	node = fdt_path_offset(blob, "/soc/pcie@c000000000");
+
+	if (0 <= node) {
+		if (0 != (pciesrio->control & (1 << 0)) &&
+		    0 != (pciesrio->control & (1 << 7))) {
+			/* If PEI0 is enabled and is RC, set OKAY; */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
+			printf("Enabling PEI0 as Root Complex\n");
+		} else {
+			/* otherwise, set DISABLE. */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_DISABLED, 0);
+			printf("Disabling PEI0\n");
+		}
+
+		if (0 != rc)
+			printf("%s:%d - Couldn't set PEI0 status!\n",
+			       __FILE__, __LINE__);
+	}
+
+	node = fdt_path_offset(blob, "/soc/pcie@c800000000");
+
+	if (0 <= node) {
+		if (0 != (pciesrio->control & (1 << 1))) {
+			/* If PEI1 is enabled, set OKAY; */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
+			printf("Enabling PEI1 as Root Complex\n");
+		} else {
+			/* otherwise, set DISABLE. */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_DISABLED, 0);
+			printf("Disabling PEI1\n");
+		}
+
+		if (0 != rc)
+			printf("%s:%d - Couldn't set PEI1 status!\n",
+			       __FILE__, __LINE__);
+	}
+
+	node = fdt_path_offset(blob, "/soc/pcie@d000000000");
+
+	if (0 <= node) {
+		if (0 != (pciesrio->control & (1 << 1))) {
+			/* If PEI2 is enabled, set OKAY; */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
+			printf("Enabling PEI2 as Root Complex\n");
+		} else {
+			/* otherwise, set DISABLE. */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_DISABLED, 0);
+			printf("Disabling PEI2\n");
+		}
+
+		if (0 != rc)
+			printf("%s:%d - Couldn't set PEI2 status!\n",
+			       __FILE__, __LINE__);
+	}
+
+	return 0;
+}
+#else
+int
+ft_update_pei(void *blob)
+{
+	int node;
+	ncp_uint32_t pciesrio;
+	int rc;
+
+	/*
+	  In this case, the PEIs have already been set up by the SPL.
+	  Use the control value to determine which PEIs are enabled.
+
+	  TODO: Update SRIO handling.
+	*/
 
 	ncr_read32(NCP_REGION_ID(0x115, 0), 0, &pciesrio);
 
@@ -333,50 +433,36 @@ ft_board_setup(void *blob, bd_t *bd)
 			       __FILE__, __LINE__);
 	}
 
-#if 0
+	return 0;
+}
+#endif
+
+
+/*
+------------------------------------------------------------------------------
+ft_board_setup
+*/
+
+int
+ft_board_setup(void *blob, bd_t *bd)
+{
+	int rc;
+	u64 start[CONFIG_NR_DRAM_BANKS];
+	u64 size[CONFIG_NR_DRAM_BANKS];
 
 	/*
-	  Enable SRI00/SRIO1 controllers
+	  Update the PEI setup.
 	*/
 
-	node = fdt_path_offset(blob, "/rapidio@0x3100000000");
+	rc = ft_update_pei(blob);
 
-	if (0 <= node) {
-		/* check if SRIO0 is enabled */
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &phy0_ctrl);
+	if (0 != rc)
+		printf("%s:%d - Couldn't update PEIs!\n",
+		       __FILE__, __LINE__);
 
-		if (phy0_ctrl & 0x8) {
-			/* SRIO0 is enabled */
-			rc = fdt_set_node_status(blob, node,
-						 FDT_STATUS_OKAY, 0);
-			if (0 != rc)
-				printf("%s:%d - Couldn't set SRIO0 status!\n",
-				       __FILE__, __LINE__);
-			printf("SRIO0 is enabled\n");
-		}
-	}
-
-	node = fdt_path_offset(blob, "/rapidio@0x3140000000");
-
-	if (0 <= node) {
-		/* check if SRIO1 is enabled */
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x200, &phy0_ctrl);
-
-		if (phy0_ctrl & 0x400) {
-			/* SRIO1 is enabled */
-			rc = fdt_set_node_status(blob, node,
-						 FDT_STATUS_OKAY, 0);
-
-			if (0 != rc)
-				printf("%s:%d - Couldn't set SRIO1 status!\n",
-				       __FILE__, __LINE__);
-			printf("SRIO1 is enabled\n");
-		}
-	}
-
-#endif
-#endif
-#endif
+	/*
+	  Update the size of system memory in the device tree.
+	*/
 
 	start[0] = 0;
 	size[0] = sysmem_size();

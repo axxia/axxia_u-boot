@@ -17,7 +17,39 @@
 #include <common.h>
 #include <asm/io.h>
 
-#ifdef CONFIG_AXXIA_56XX
+/*#define TRACE*/
+#ifdef TRACE
+static inline unsigned int
+_pss_readl(uint32_t volatile *address)
+{
+	unsigned int value;
+
+	value = readl(address);
+	printf("pss_readl: Read 0x%x from 0x%010llx\n",
+	       value, (unsigned long long)address);
+
+	return value;
+}
+#define pss_readl(address) ({						\
+			printf("%s:%d - ", __FILE__, __LINE__);		\
+			_pss_readl((uint32_t volatile *)(address));	\
+		})
+static inline void
+_pss_writel(unsigned int value, uint32_t volatile *address)
+{
+	writel(value, address);
+	printf("pss_writel: wrote 0x%x to 0x%010llx\n",
+	       value, (unsigned long long)address);
+}
+#define pss_writel(value, address) ({					\
+			printf("%s:%d - ", __FILE__, __LINE__);		\
+			_pss_writel((value), (uint32_t volatile *)(address)); \
+		})
+#else  /* TRACE */
+#define pss_readl(address) readl((address))
+#define pss_writel(value, address) writel((value), (address))
+#endif /* TRACE */
+
 /* Applicable only to H/W */
 enum SataMode {
 	SATA0,
@@ -696,9 +728,9 @@ int pciesrio_setcontrol(unsigned int new_control)
 	srio1_speed = (new_control & 0x38000) >> 15;
 
 	/* LTSSM Disable for PEI0 */
-	val = readl(PCIE0_CC_GPREG_BASE + 0x38);
+	val = pss_readl(PCIE0_CC_GPREG_BASE + 0x38);
 	val &= (~(0x1));
-	writel(val, PCIE0_CC_GPREG_BASE + 0x38);
+	pss_writel(val, PCIE0_CC_GPREG_BASE + 0x38);
 
 	for (phy = 0; phy < 4; phy++)
 		enable_reset(phy);
@@ -1385,9 +1417,18 @@ int pciesrio_setcontrol(unsigned int new_control)
 int
 pciesrio_init(unsigned int control)
 {
-	if (0x80000000 != control)
+	if (0x80000000 != control) {
+#ifdef TRACE
+		printf("%s:%d - Starting Trace: 0x%x\n",
+		       __FILE__, __LINE__, control);
+		ncr_tracer_enable();
+#endif
 		pciesrio_setcontrol(control);
+#ifdef TRACE
+		ncr_tracer_disable();
+		printf("%s:%d - Trace is Over\n", __FILE__, __LINE__);
+#endif
+	}
+
 	return 0;
 }
-
-#endif

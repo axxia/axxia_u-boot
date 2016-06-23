@@ -675,6 +675,9 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
   ==============================================================================
   ==============================================================================
 */
+
+#define PCIE0_CC_GPREG_BASE 0xA003008000
+
 #ifdef CONFIG_AXXIA_PCI
 #define CONFIG_PCI_DW 1
 #define CONFIG_PCI 1
@@ -1427,9 +1430,9 @@ extern volatile unsigned long long *scratch;
 
 #ifndef __ASSEMBLY__
 void axxia_display_clocks(void);
-int clocks_init(void);
+int clocks_init(int);
 int voltage_init(void);
-int pciesrio_init(unsigned long);
+int pciesrio_init(unsigned int);
 int is_sbb_enabled(int);
 int sbb_verify_image(void *, void *, int, int, int);
 extern unsigned int pfuse;

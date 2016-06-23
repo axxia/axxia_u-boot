@@ -340,7 +340,7 @@
 
 #define CONFIG_AXXIA_ARM
 
-/* #define NCR_TRACER */
+/*#define NCR_TRACER*/
 
 #ifndef __ASSEMBLY__
 #include <linux/types.h>
@@ -364,6 +364,8 @@ int axxia_sysmem_check_ecc(void);
 
 #define GPDMA0 0x8004120000ULL
 #define GPDMA1 0x8004130000ULL
+
+/*#define PEI_SETUP_IN_LINUX*/
 
 /*
   ==============================================================================
