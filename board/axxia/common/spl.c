@@ -620,6 +620,7 @@ verify_image(struct spi_flash *flash,
 	  Must begin with a U-Boot mkimage header of some sort.
 	*/
 
+	WATCHDOG_RESET();
 	spi_flash_read(flash, flash_offset,
 		       sizeof(struct image_header), &header);
 	spl_parse_image_header(&header);
@@ -627,6 +628,7 @@ verify_image(struct spi_flash *flash,
 		       spl_image.size + sizeof(struct image_header),
 		       membase);
 	spl_image.load_addr += (unsigned long)membase;
+	WATCHDOG_RESET();
 
 	if (!image_check_magic(&header)) {
 		puts("\tBad Magic!\n");
@@ -653,6 +655,7 @@ verify_image(struct spi_flash *flash,
 	  If secure boot is enabled, verify.
 	*/
 
+	WATCHDOG_RESET();
 	if (0 != secure_boot) {
 #ifdef CONFIG_AXXIA_SIM
 		memmove((void *)0,
@@ -679,6 +682,7 @@ verify_image(struct spi_flash *flash,
 	  case).
 	*/
 
+	WATCHDOG_RESET();
 	sbb_magic = (membase + sizeof(struct image_header));
 	sbb_encrypted = *((unsigned char *)(membase +
 					    sizeof(struct image_header) + 9));
@@ -703,6 +707,7 @@ verify_image(struct spi_flash *flash,
 	  Remove the mkimage header.
 	*/
 
+	WATCHDOG_RESET();
 	memmove((void *)0, ((void *)membase + sizeof(struct image_header)),
 		(spl_image.size - sizeof(struct image_header)));
 
@@ -915,6 +920,7 @@ load_image(void)
 		  Is image A valid?
 		*/
 
+		WATCHDOG_RESET();
 		puts("Checking U-Boot Image A\n");
 
 		if (0 == verify_image(flash, CONFIG_UBOOT_OFFSET, sbb_enabled))
@@ -937,6 +943,7 @@ load_image(void)
 		  Is image B valid?
 		*/
 
+		WATCHDOG_RESET();
 		puts("Checking U-Boot Image B\n");
 
 		if (0 == verify_image(flash, CONFIG_UBOOT_OFFSET_REDUND,
