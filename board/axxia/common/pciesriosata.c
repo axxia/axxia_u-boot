@@ -562,7 +562,7 @@ int check_pll_lock(enum PLLMode mode, u32 phy)
 		ncr_read32(NCP_REGION_ID(0x115, 0), 0x184 + (phy * 8),
 			   &regVal);
 		regVal &= (1 << (20 + mode));
-	} while ((!regVal) || (count++ < 5));
+	} while ((!regVal) && (count++ < 5));
 
 	return regVal;
 }
@@ -587,7 +587,7 @@ int check_ack(u32 phy, u32 lane, enum Dir dir)
 			regVal &= (1 << (0 + lane));
 		else
 			regVal &= (1 << (16 + lane));
-	} while ((!regVal) || (count++ < 5));
+	} while ((!regVal) && (count++ < 5));
 
 	return regVal;
 }
@@ -614,7 +614,7 @@ int check_rx_valid(u32 phy, u32 lane)
 		udelay(100000);
 		ncr_read32(NCP_REGION_ID(0x115, 0), 0x184 + (phy * 8), &regVal);
 		regVal &= (1 << (24 + (4 * lane)));
-	} while ((!regVal) || (count++ < 5));
+	} while ((!regVal) && (count++ < 5));
 
 	return regVal;
 }
