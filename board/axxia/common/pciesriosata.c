@@ -619,7 +619,13 @@ int check_rx_valid(u32 phy, u32 lane)
 	return regVal;
 }
 
-int powerup_lane(u32 phy, u32 lane, enum PowerState state, enum Dir dir)
+/*
+  ------------------------------------------------------------------------------
+  powerup_lane
+*/
+
+static int
+powerup_lane(u32 phy, u32 lane, enum PowerState state, enum Dir dir)
 {
 	u32 regVal, powerVal;
 	u32 offset;
@@ -629,30 +635,42 @@ int powerup_lane(u32 phy, u32 lane, enum PowerState state, enum Dir dir)
 	else
 		offset = 0x18 + (lane * 0x1c) + 0x14;
 
-	ncr_read32(NCP_REGION_ID(0x116, 0), offset, &regVal);
+	ncr_read32(NCP_REGION_ID(0x115, 0), offset, &regVal);
 	regVal &= 0xffffffce;
 	/* New Transmitter setting request */
 	powerVal = (state == P2) ? 3 : ((state == P1) ? 2 : 0);
-	regVal |= powerVal | (1 << 0);
+	regVal |= (powerVal << 4) | (1 << 0);
 	ncr_write32(NCP_REGION_ID(0x115, 0), offset, regVal);
 
 	/* Check if ack is set */
 	return check_ack(phy, lane, dir);
 }
 
-void enable_lane(u32 phy, u32 lane, enum Dir dir)
+/*
+  ------------------------------------------------------------------------------
+  enable_lane
+*/
+
+static void
+enable_lane(u32 phy, u32 lane, enum Dir dir)
 {
 	u32 regVal;
+	u32 offset;
 
-	ncr_read32(NCP_REGION_ID(0x116, 0), (0x18 + (lane * 0x1c) + 0x4),
-		   &regVal);
+	if (TX == dir)
+		offset = 0x18 + (lane * 0x1c);
+	else
+		offset = 0x18 + (lane * 0x1c) + 0x14;
 
-	if (dir == TX)
+	ncr_read32(NCP_REGION_ID(0x115, 0), offset, &regVal);
+
+	if (TX ==dir)
 		regVal |= (1 << 25);
 	else
 		regVal |= (1 << 21);
-	ncr_write32(NCP_REGION_ID(0x115, 0), (0x18 + (lane * 0x1c) + 0x4),
-		    regVal);
+
+	ncr_write32(NCP_REGION_ID(0x115, 0), offset, regVal);
+
 	return;
 }
 
