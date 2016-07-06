@@ -92,18 +92,20 @@ start_watchdog(unsigned int timeout)
 #endif
 	writel(value, (SYSCON + 0x2008));
 
-	/* Set up and enable the timer. */
+	/* Set up the timer. */
 	writel(count, (TIMER5 + TIMER_LOAD));
 	writel(count, (TIMER5 + TIMER_VALUE));
-	writel(0xe2, (TIMER5 + TIMER_CONTROL));
-
-	/* Lock syscon. */
-	writel(0, (SYSCON + 0x2000));
 
 #ifdef MAKE_WATCHDOG_PERMANENT
 	/* Write 0x4 to 0x171.1.0x900 */
 	writel(0x2, (PERIPH_SCB + 0x100000 + 0x900));
 #endif
+
+	/* Enable the timer. */
+	writel(0xe2, (TIMER5 + TIMER_CONTROL));
+
+	/* Lock syscon. */
+	writel(0, (SYSCON + 0x2000));
 
 	return 0;
 }
