@@ -22,6 +22,7 @@
 
 #include <common.h>
 #include <serial.h>
+#include "ncp_sysmem_ext.h"
 
 /*
 ==============================================================================
@@ -40,6 +41,9 @@ Public Interface
 ==============================================================================
 ==============================================================================
 */
+ncp_st_t
+ncp_elm_init(ncp_dev_hdl_t, ncp_sm_parms_t *);
+
 
 /*
 ------------------------------------------------------------------------------
@@ -92,7 +96,7 @@ axxia_initialize(void)
 
 #if !defined(CONFIG_TARGET_EMULATION)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_CLOCKS))
-		if (0 != clocks_init())
+		if (0 != clocks_init(sysmem->ddrRecovery))
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 
@@ -106,15 +110,39 @@ axxia_initialize(void)
 	  =============
 	*/
 
-#ifndef SYSCACHE_ONLY_MODE
-	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) &&
-	    (0 == sysmem->ddrRecovery)) {
-		ncr_tracer_enable();
+#if !defined(SYSCACHE_ONLY_MODE) && !defined(CONFIG_TARGET_EMULATION)
+	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) {
+		if (0 == sysmem->ddrRecovery) {
+			ncr_tracer_enable();
 
-		if (0 != sysmem_init())
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+			if (0 != sysmem_init())
+				acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
-		ncr_tracer_disable();
+			ncr_tracer_disable();
+		} else {
+			ncp_uint32_t version_save;
+
+			printf("initializing ELMs for ddrRecovery\n");
+
+			/* Initialize the ELMs */
+			version_save = sysmem->version;
+#if defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_SIM)
+			sysmem->version = NCP_CHIP_ACP56xx;
+#elif defined(CONFIG_AXXIA_XLF) || defined(CONFIG_AXXIA_XLF_SIM)
+			sysmem->version = NCP_CHIP_ACPXLF;
+#else
+#error "Invalid Chip Type!"
+#endif
+			rc = ncp_elm_init(NULL, sysmem);
+
+			sysmem->version = version_save;
+
+			if (NCP_ST_SUCCESS != rc) {
+				printf("Initializing ELMs Failed!\n");
+
+				return -1;
+			}
+		}
 	}
 #endif
 

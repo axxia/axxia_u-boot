@@ -1063,7 +1063,7 @@ ncp_sm_denali_2041_init_56xx(
 	reg46.cke_delay = 3;
 	reg46.enable_quick_srefresh = 1;
 	reg46.srefresh_exit_no_refresh = 0;
-	reg46.pwrup_srefresh_exit = (parms->ddrRecovery == TRUE) ? 1 : 0;
+	reg46.pwrup_srefresh_exit = 0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_46_5600, *((ncp_uint32_t *)&reg46));
 
 

@@ -124,7 +124,7 @@ pll_init_frac(ncp_uint32_t region, ncp_uint32_t *parameters)
 */
 
 int
-clocks_init( void )
+clocks_init( int ddrRecovery )
 {
 	ncp_uint32_t value, i;
 
@@ -159,9 +159,16 @@ clocks_init( void )
 	  ----------------------------------------------------------------------
 	*/
 
-	/* sm0pll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 6), &clocks->sm0pll_flags))
-		return -1;
+	if (ddrRecovery == 0) {
+		/* sm0pll */
+		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 6), &clocks->sm0pll_flags))
+			return -1;
+		/* sm1pll */
+		if (0 != pll_init_frac(NCP_REGION_ID(0x165, 1), &clocks->sm1pll_flags))
+			return -1;
+	} else {
+		printf("skipping SM PLL setup for ddrRecovery\n");
+	}
 
 	/* cpupll */
 	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 7), &clocks->cpupll_flags))
@@ -177,10 +184,6 @@ clocks_init( void )
 
 	/* tm0pll */
 	if (0 != pll_init_frac(NCP_REGION_ID(0x165, 0), &clocks->tm0pll_flags))
-		return -1;
-
-	/* sm1pll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x165, 1), &clocks->sm1pll_flags))
 		return -1;
 
 
