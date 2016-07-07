@@ -127,9 +127,9 @@
 				"mem=2G"
 #define CONFIG_BOOTCOMMAND	"bootm 4010000 - 4000000"
 
-#define V_MIN   795
-#define V_SAFE  940
-#define V_MAX  1050
+#define V_MIN  700
+#define V_SAFE 910
+#define V_MAX  956
 
 #define CONFIG_MEMORY_RETENTION
 
