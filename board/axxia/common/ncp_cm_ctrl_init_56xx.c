@@ -906,7 +906,16 @@ ncp_cm_denali_init_56xx(
 
 	reg74.zq_in_progress = 0x0;
 	reg74.zqcs_rotate = 0x1;
-	reg74.bank_diff = 0; /* all banks being used or should this be 0x1 */
+	if (parms->sdram_device_width == 2)
+	{
+		/* x16 */
+		reg74.bank_diff = 1; /* encoded number of banks on the DRAM's */
+	}
+	else if (parms->sdram_device_width == 1)
+	{
+		/* x8 */
+		reg74.bank_diff = 0; /* encoded number of banks on the DRAM's */
+	}
 	/* reg74.row_diff set early on */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_74, *((ncp_uint32_t *)&reg74));
 
