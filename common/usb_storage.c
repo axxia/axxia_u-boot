@@ -98,13 +98,15 @@ struct us_data {
 	trans_cmnd	transport;		/* transport routine */
 };
 
-#ifdef CONFIG_USB_EHCI
+#if defined(CONFIG_USB_EHCI)
 /*
  * The U-Boot EHCI driver can handle any transfer length as long as there is
  * enough free heap space left, but the SCSI READ(10) and WRITE(10) commands are
  * limited to 65535 blocks.
  */
 #define USB_MAX_XFER_BLK	65535
+#elif defined(CONFIG_USB_XHCI)
+#define USB_MAX_XFER_BLK        4096
 #else
 #define USB_MAX_XFER_BLK	20
 #endif
