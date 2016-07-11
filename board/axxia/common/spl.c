@@ -1196,9 +1196,6 @@ board_init_f(ulong dummy)
 
 	  After wrting the new values, use SYSCON to reset the USB phy.
 	*/
-
-	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE,
-	       SSP_LANE0_ANA_RX_SCOPE_VDCC);
 	writel(COMPDISTUNE0_VALUE, COMPDISTUNE0);
 	writel(OTGTUNE0_VALUE, OTGTUNE0);
 	writel(SQRXTUNE0_VALUE, SQRXTUNE0);
@@ -1221,14 +1218,31 @@ board_init_f(ulong dummy)
 	writel(value, 0x9000200004);
 
 	/* Reset the USB PHY. */
- 	writel(0xab, (SYSCON + 0x2000));
+	writel(0xab, (SYSCON + 0x2000));
 	value = readl(SYSCON + 0x2044);
 	value |= (1 << 17);
 	writel(value, (SYSCON + 0x2044));
 	udelay(1);
 	value &= ~(1 << 17);
 	writel(value, (SYSCON + 0x2044));
- 	writel(0, (SYSCON + 0x2000));
+	writel(0, (SYSCON + 0x2000));
+
+	do {
+		udelay(10);
+		value = readl(AXI2SER6 + 0x6c);
+	} while (0 != (value & (1 << 2)));
+
+	writel(0x8, (AXI2SER6 + 0xc));
+	value = readl(AXI2SER6 + 0x10) & 0x3ff;
+
+	if (60 < value)
+		writel(42, (AXI2SER6 + 0x10));
+
+	writel(0x54c, (AXI2SER6 + 0xc));
+	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE, SSP_LANE0_ANA_RX_SCOPE_VDCC);
+	writel(0x400, AXI2SER6 + 0x24040);
+	writel(0x6, AXI2SER6 + 0x40bc);
+	writel(0x80, AXI2SER6 + 0xd4);
 #endif	/* CONFIG_AXXIA_USB */
 
 	rc = axxia_initialize();
