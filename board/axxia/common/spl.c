@@ -652,28 +652,32 @@ verify_image(struct spi_flash *flash,
 	}
 
 	/*
+	  Now that the image has been verified from the U-Boot
+	  perspective, remove the mkimage header.
+	*/
+
+	membase += sizeof(struct image_header);
+
+	/*
 	  If secure boot is enabled, verify.
 	*/
 
 	WATCHDOG_RESET();
-	if (0 != secure_boot) {
-#ifdef CONFIG_AXXIA_SIM
-		memmove((void *)0,
-			((void *)membase + sizeof(struct image_header) + 12),
-			spl_image.size);
 
-		return 0;
-#else
-		if (0 != sbb_verify_image(((void *)membase +
-					   sizeof(struct image_header)),
-					  (void *)0, 0, 1, 0)) {
+	if (0 != secure_boot) {
+#ifndef CONFIG_TARGET_SIMULATION
+		if (0 != sbb_verify_image((void *)membase, (void *)membase,
+					  0, 1, 0)) {
 			puts("\tInsecure!\n");
 
 			return -1;
-		} else {
-			return 0;
 		}
 #endif
+
+		memmove((void *)0, (void *)membase,
+			spl_image.size - sizeof(struct image_header));
+
+		return 0;
 	}
 
 	/*
@@ -683,32 +687,26 @@ verify_image(struct spi_flash *flash,
 	*/
 
 	WATCHDOG_RESET();
-	sbb_magic = (membase + sizeof(struct image_header));
-	sbb_encrypted = *((unsigned char *)(membase +
-					    sizeof(struct image_header) + 9));
+	sbb_magic = membase;
+	sbb_encrypted = *((unsigned char *)(membase + 9));
 	sbb_encrypted &= 1;
 
 	if (0 == strncmp(sbb_magic, "SBB!", 4)) {
 		if (0 != sbb_encrypted)
 			return -1;
 
-		sbb_size =
-			ntohl(*((unsigned int *)(membase +
-						 sizeof(struct image_header) +
-						 4)));
-		memmove((void *)0,
-			((void *)membase + sizeof(struct image_header) + 12),
-			sbb_size);
+		sbb_size = ntohl(*((unsigned int *)(membase + 4)));
+		memmove((void *)0, ((void *)membase + 12), sbb_size);
 
 		return 0;
 	}
 
 	/*
-	  Remove the mkimage header.
+	  Remove membase.
 	*/
 
 	WATCHDOG_RESET();
-	memmove((void *)0, ((void *)membase + sizeof(struct image_header)),
+	memmove((void *)0, (void *)membase,
 		(spl_image.size - sizeof(struct image_header)));
 
 	return 0;
