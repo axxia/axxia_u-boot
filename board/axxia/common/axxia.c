@@ -369,7 +369,11 @@ ft_update_pei(void *blob)
 	  TODO: Update SRIO handling.
 	*/
 
+#if defined(CONFIG_TARGET_SIMULATION)
+	pciesrio = 0;
+#else
 	ncr_read32(NCP_REGION_ID(0x115, 0), 0, &pciesrio);
+#endif
 
 	node = fdt_path_offset(blob, "/soc/pcie@c000000000");
 
