@@ -525,8 +525,7 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 	
 	
 	/* JL Add Mikes tweak for GEN3_EQ_CONTROL */
-	axxia_pcie_writel_rc(hose, 0x1037201, 0x8a8);  //jl 
-
+	axxia_pcie_writel_rc(hose, 0x1017201, 0x8a8);  //jl 
 
 	/* LTSSM enable */
 	axxia_cc_gpreg_readl(hose, PEI_GENERAL_CORE_CTL_REG, &val);
