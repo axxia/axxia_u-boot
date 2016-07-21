@@ -340,6 +340,9 @@ sbb_verify_image(void *source, void *destination,
 		return -1;
 	}
 
+	/* Flush results to memory. */
+	flush_dcache_all();
+
 	if (0 != verbose)
 		printf("SBB: Image Verification Successful\n");
 
