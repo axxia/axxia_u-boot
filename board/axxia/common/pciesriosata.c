@@ -518,68 +518,6 @@ void setup_srio_mode(enum SrioMode mode, enum SrioSpeed speed)
 	}
 }
 
-void enable_reset(u32 phy)
-{
-	u32 regVal;
-
-	if (phy == 0) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x0,
-			   &regVal);
-		regVal |= (1 << 5);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0,
-			    regVal);
-	} else if (phy == 1) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x0,
-			   &regVal);
-		regVal |= (1 << 14);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0,
-			    regVal);
-	} else if (phy == 2) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
-			   &regVal);
-		regVal |= (1 << 19);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
-			    regVal);  //jl
-	} else if (phy == 3) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
-			   &regVal);
-		regVal |= (1 << 29);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
-			    regVal);  //jl
-	}
-}
-
-void release_reset(u32 phy)
-{
-	u32 regVal;
-
-	if (phy == 0) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x0,
-			   &regVal);
-		regVal &= (~(1 << 5));
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0,
-			    regVal);
-	} else if (phy == 1) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x0,
-			   &regVal);
-		regVal &= (~(1 << 14));
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0,
-			    regVal);
-	} else if (phy == 2) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
-			   &regVal);
-		regVal &= (~(1 << 19));
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
-			    regVal);   //jl
-	} else if (phy == 3) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
-			   &regVal);
-		regVal &= (~(1 << 29));
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
-			    regVal);   //jl
-	}
-}
-
 int check_pll_lock(enum PLLMode mode, u32 phy)
 {
 	u32 regVal;
@@ -731,10 +669,11 @@ int pciesrio_setcontrol(unsigned int new_control)
 	val = pss_readl(PCIE0_CC_GPREG_BASE + 0x38);
 	val &= (~(0x1));
 	pss_writel(val, PCIE0_CC_GPREG_BASE + 0x38);
+	mdelay(100);		/* TODO: Why is this needed? */
 
-	for (phy = 0; phy < 4; phy++)
-		enable_reset(phy);
-
+ 	ncr_read32(NCP_REGION_ID(0x115, 0), 0, &phyVal0);
+	phyVal0 &= ~1;
+ 	ncr_write32(NCP_REGION_ID(0x115, 0), 0, phyVal0);
 	mdelay(100);		/* TODO: Why is this needed? */
 
 	switch (pci_srio_sata_mode) {
@@ -746,30 +685,17 @@ int pciesrio_setcontrol(unsigned int new_control)
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0, phyVal0);
 		/* PIPE port select -- Enable PIPE0 interface */
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4, (0x1<<24));
-		for (phy = 0; phy < 4; phy++)
-			release_reset(phy);
 		break;
 	case 1:
-		/* PEI0x4_PEI1x4 */
-		rc_mode = (new_control & 0x80)<<15;  //jl
-		/* Enable PEI0/PEI1, PEI0 RC mode */
-		phyVal0 = (new_control & 0x3) | rc_mode; //jl
-		/* PEI0x4 */
-		phyVal0 |= (0x1 << 26);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0, phyVal0);
-		/* PEI1x4 */
-		phyVal1 = (0x1 << 22);
-		/* PIPE port select -- Enable PIPE0/PIPE1 interface */
-		phyVal1 |= (0x2 << 24);
+		/*
+		  PEI0x4, PEI1x4
+		*/
+
+		phyVal1 = 0x0e7001ac;
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4, phyVal1);
 
-		for (phy = 0; phy < 4; phy++)
-			release_reset(phy);
-
-		/* //jl read back phy registers to check values */
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x0,  &phyVal0);
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,  &phyVal1);		
-
+		phyVal0 = 0x84400040;
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0, phyVal0);
 		break;
 	case 2:
 		/* PEI0x4_PEI1x2_SATA0x1_SATA1x1 */
@@ -788,8 +714,6 @@ int pciesrio_setcontrol(unsigned int new_control)
 			setup_sata_mode(SATA0, sata0_speed);
 		if (sata1_mode)
 			setup_sata_mode(SATA1, sata1_speed);
-		for (phy = 0; phy < 4; phy++)
-			release_reset(phy);
 		if (!check_pll_lock(PLLA, 1)) {
 			printf("PLLA didn't lock\n");
 			return 1;
@@ -841,8 +765,6 @@ int pciesrio_setcontrol(unsigned int new_control)
 			setup_sata_mode(SATA0, sata0_speed);
 		if (sata1_mode)
 			setup_sata_mode(SATA1, sata1_speed);
-		for (phy = 0; phy < 4; phy++)
-			release_reset(phy);
 
 		if (!check_pll_lock(PLLA, 1)) {
 			printf("PLLA didn't lock\n");
@@ -897,8 +819,6 @@ int pciesrio_setcontrol(unsigned int new_control)
 			    phyVal1 | srio0_speed);
 		if (srio0_mode)
 			setup_srio_mode(SRIO0, srio0_speed);
-		for (phy = 0; phy < 4; phy++)
-			release_reset(phy);
 		if (!check_pll_lock(PLLA, 1)) {
 			printf("PLLA didn't lock\n");
 			return 1;
@@ -975,8 +895,6 @@ int pciesrio_setcontrol(unsigned int new_control)
 			setup_sata_mode(SATA1, sata1_speed);
 		if (srio0_mode)
 			setup_srio_mode(SRIO0, srio0_speed);
-		for (phy = 0; phy < 4; phy++)
-			release_reset(phy);
 		if (!check_pll_lock(PLLA, 1)) {
 			printf("PLLA didn't lock\n");
 			return 1;
@@ -1072,8 +990,6 @@ int pciesrio_setcontrol(unsigned int new_control)
 			    phyVal1 | srio0_speed);
 		if (srio0_mode)
 			setup_srio_mode(SRIO0, srio0_speed);
-		for (phy = 0; phy < 4; phy++)
-			release_reset(phy);
 		if (!check_pll_lock(PLLA, 1)) {
 			printf("PLLA didn't lock\n");
 			return 1;
@@ -1151,8 +1067,6 @@ int pciesrio_setcontrol(unsigned int new_control)
 			setup_srio_mode(SRIO0, srio0_speed);
 		if (srio1_mode)
 			setup_srio_mode(SRIO1, srio1_speed);
-		for (phy = 0; phy < 4; phy++)
-			release_reset(phy);
 		if (!check_pll_lock(PLLA, 1)) {
 			printf("PLLA didn't lock\n");
 			return 1;
@@ -1239,8 +1153,6 @@ int pciesrio_setcontrol(unsigned int new_control)
 			setup_srio_mode(SRIO0, srio0_speed);
 		if (srio1_mode)
 			setup_srio_mode(SRIO1, srio1_speed);
-		for (phy = 0; phy < 4; phy++)
-			release_reset(phy);
 		if (!check_pll_lock(PLLA, 1)) {
 			printf("PLLA didn't lock\n");
 			return 1;
@@ -1349,8 +1261,6 @@ int pciesrio_setcontrol(unsigned int new_control)
 			setup_srio_mode(SRIO0, srio0_speed);
 		if (srio1_mode)
 			setup_srio_mode(SRIO1, srio1_speed);
-		for (phy = 0; phy < 4; phy++)
-			release_reset(phy);
 		if (!check_pll_lock(PLLA, 1)) {
 			printf("PLLA didn't lock\n");
 			return 1;
@@ -1408,6 +1318,22 @@ int pciesrio_setcontrol(unsigned int new_control)
 			    phyVal0 | 0x18);
 		break;
 	}
+
+	ncr_read32(NCP_REGION_ID(0x115, 0), 0x0, &phyVal0);
+	phyVal0 |= 1;
+	ncr_write32(NCP_REGION_ID(0x115, 0), 0x0, phyVal0);
+	mdelay(100);
+
+	switch (pci_srio_sata_mode) {
+	case 1:
+		writel(0x70120, PCIE0_DBI_BASE + 0x710);
+		writel(0x104be, PCIE0_DBI_BASE + 0x80c);
+		writel(0x1017201, PCIE0_DBI_BASE + 0x8a8);
+		break;
+	default:
+		break;
+	}
+
 	return 0;
 }
 

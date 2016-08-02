@@ -466,42 +466,6 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 
 	data = (struct pci_hose_data *)hose->priv_data;
 
-	/* set the number of lanes */
-	axxia_pcie_readl_rc(hose, PCIE_PORT_LINK_CONTROL, &val);
-	val &= ~PORT_LINK_MODE_MASK;
-	
-	debug("NUmber of lanes: %08x \n\r", data->lanes);
-
-	switch (data->lanes) {
-	case 1:
-		val |= PORT_LINK_MODE_1_LANES;
-	break;
-	case 2:
-		val |= PORT_LINK_MODE_2_LANES;
-	break;
-	case 4:
-		val |= PORT_LINK_MODE_4_LANES;
-	break;
-	}
-	axxia_pcie_writel_rc(hose, val, PCIE_PORT_LINK_CONTROL);
-
-	/* set link width speed control register */
-	axxia_pcie_readl_rc(hose, PCIE_LINK_WIDTH_SPEED_CONTROL, &val);
-	val &= ~PORT_LOGIC_LINK_WIDTH_MASK;
-	switch (data->lanes) {
-	case 1:
-		val |= PORT_LOGIC_LINK_WIDTH_1_LANES;
-	break;
-	case 2:
-		val |= PORT_LOGIC_LINK_WIDTH_2_LANES;
-	break;
-	case 4:
-		val |= PORT_LOGIC_LINK_WIDTH_4_LANES;
-	break;
-	}
-
-	axxia_pcie_writel_rc(hose, val, PCIE_LINK_WIDTH_SPEED_CONTROL);
-
 	/* setup bus numbers */
 	axxia_pcie_readl_rc(hose, PCI_PRIMARY_BUS, &val);
 
@@ -534,7 +498,6 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 	val |= 0x1;
 	axxia_cc_gpreg_writel(hose, 0x1, PEI_GENERAL_CORE_CTL_REG);
 	mdelay(100); //jl
-
 }
 
 static int axxia_pcie_establish_link(struct pci_controller *hose)
@@ -552,8 +515,6 @@ static int axxia_pcie_establish_link(struct pci_controller *hose)
 
 int pci_axxia_init(struct pci_controller *hose, int port)
 {
-	u32 val;
-
 	pci_set_ops(hose,
 		    pcie_read_config_byte,
 		    pcie_read_config_word,
@@ -633,10 +594,6 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 	}
 	/* program correct class for RC */
 	axxia_pcie_wr_own_conf(hose, PCI_CLASS_DEVICE, 2, PCI_CLASS_BRIDGE_PCI);
-
-	axxia_pcie_rd_own_conf(hose, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, &val);
-	val |= PORT_LOGIC_SPEED_CHANGE;
-	axxia_pcie_wr_own_conf(hose, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, val);
 
 	hose->first_busno = 0;
 	hose->current_busno = hose->last_busno+1;
