@@ -296,7 +296,7 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_12, *((ncp_uint32_t *)&reg12));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_13, (ncp_uint32_t *)&reg13);
-	reg13.tmrd = 8;
+	reg13.tmrd = ctm->tMRD;
 	reg13.trtp_ap = ctm->tRTP;/*4;*/ /* for auto-precharge get from speedbin_ddr4 */
 	/*reg13.trtp = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tRTP : ncp_ps_to_clk(parms->tck_ps,7500);*/
 	reg13.trtp = ncp_ps_to_clk(parms->tck_ps,7500);
@@ -341,7 +341,7 @@ ncp_cm_denali_init_56xx(
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_19, (ncp_uint32_t *)&reg19);
 	reg19.reg_dimm_enable = (parms->rdimm_misc & 0x1);
 	/* For mirroring, 0 means std. pinout, 1 means mirrored wiring */
-	reg19.address_mirroring = (parms->address_mirroring) ? 0xa : 0x0; /* bit 0 for cs0 ....3 for cs3 */
+	reg19.address_mirroring = (parms->address_mirroring) ? 0x2 : 0x0; /* bit 0 for cs0 ....1 for cs1 */
 	reg19.optimal_rmodw_en = 0x1;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_19, *((ncp_uint32_t *)&reg19));
 
@@ -607,12 +607,16 @@ ncp_cm_denali_init_56xx(
 		 */
 		if (parms->dram_class == NCP_SM_DDR4_MODE)
 		{
-			/* check */
-			if ((parms->CAS_latency == 16) ||
-					(parms->CAS_latency == 18) ||
-					(parms->CAS_latency == 14))
+			/* For 1866,2133,2400 set 10:9 01, for 1600 set as '00*/
+			if (parms->ddrClockSpeedMHz != 800)
 			{
-				tmp = 1;
+#if 0
+				/* check */
+				if ((parms->CAS_latency == 16) ||
+						(parms->CAS_latency == 18) ||
+						(parms->CAS_latency == 14))
+#endif
+					tmp = 1;
 			}
 			else
 			{
@@ -741,8 +745,12 @@ ncp_cm_denali_init_56xx(
 		reg49.mr6_data_0 |= ((parms->dram_class == NCP_SM_DDR4_MODE) ? (tmp << 10) : 0x0);
 #endif
 	}
+#if 0
+	/* While debugging a random CMEM training error issue- this was looked at. Not sure why this
+	 * was there in the first place- until this is known keeping this code commented out */
 	/* HACK */
 	reg49.mr6_data_0 |= 0x800;
+#endif
 	ctm->mr6 = reg49.mr6_data_0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_49, *((ncp_uint32_t *)&reg49));
 

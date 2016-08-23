@@ -394,6 +394,7 @@ ncp_sm_ddr4_phy_reg_dump(
 	ncp_region_id_t 	phyReg 	= NCP_REGION_ID(smNode, NCP_SYSMEM_TGT_PHY);
 	ncp_uint32_t		numbytes = 0, bytecnt = 0, tmp = 0, period = 0, freq = 0, numranks = 0, numislands = 0;
 	ncp_uint32_t		errorindicated = 0, vreferrorindicated = 0, bits = 0, field = 0, val = 0;
+	ncp_uint32_t		warnindicated = 0, vrefwarnindicated = 0;
 
 	ncp_phy_DX0GCR0_5600_t regDX0GCR0 = {0};
 	ncp_phy_DX0GCR5_5600_t regDX0GCR5 = {0};
@@ -607,8 +608,8 @@ ncp_sm_ddr4_phy_reg_dump(
 	ncr_read32(phyReg, NCP_PHY_MR6_5600, &tmp);
 	printf ("MR6 = 0x%x\n",tmp);
 	printf ("    - tCCD_L \t\t= %s\n", ((regMR6.tccdl == 0) ? "4 - <= 1333" :
-				(regMR6.tccdl == 1) ? "5 - <= 1866" :
-				(regMR6.tccdl == 2) ? "6 - <= 2400" :
+				(regMR6.tccdl == 1) ? "5 - <= 1600/1866" :
+				(regMR6.tccdl == 2) ? "6 - <= 2133/2400" :
 				"ERROR"));
 	printf ("    - VREF Trained value = 0x%X\n",(tmp & 0x7f)); /* from jedec */
 
@@ -661,8 +662,11 @@ ncp_sm_ddr4_phy_reg_dump(
 		printf ("NOTE: DQS Gate Training does NOT use data comparison.\n");
 	}
 
-	numranks = regDTCR1.ranken;
-	if (regDTCR1.ranken == 3)  
+	if (regDTCR1.ranken == 1)  
+	{
+		numranks = 1;
+	}
+	else if (regDTCR1.ranken == 3)  
 	{
 		numranks = 2;
 	}
@@ -743,7 +747,9 @@ ncp_sm_ddr4_phy_reg_dump(
 	}
 	printf ("\n");
 	errorindicated = 0;
+	warnindicated = 0;
 	vreferrorindicated = 0;
+	vrefwarnindicated = 0;
 
 	printf ("Gate Train Error\t");
 	for (bytecnt = 0; bytecnt < numbytes; bytecnt++) 
@@ -821,8 +827,8 @@ ncp_sm_ddr4_phy_reg_dump(
 	{
 		/* DXnGSR3 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR3_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR3);
-		errorindicated += regDX0GSR3.hvwrn;
-		vreferrorindicated += regDX0GSR3.hvwrn;
+		warnindicated += regDX0GSR3.hvwrn;
+		vrefwarnindicated += regDX0GSR3.hvwrn;
 		printf (" %d%d%d%d \t", 
 				((regDX0GSR3.hvwrn & 0x8) ? 1 : 0),
 				((regDX0GSR3.hvwrn & 0x4) ? 1 : 0),
@@ -851,8 +857,8 @@ ncp_sm_ddr4_phy_reg_dump(
 	{
 		/* DXnGSR3 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR3_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR3);
-		errorindicated += regDX0GSR3.dvwrn;
-		vreferrorindicated += regDX0GSR3.dvwrn;
+		warnindicated += regDX0GSR3.dvwrn;
+		vrefwarnindicated += regDX0GSR3.dvwrn;
 		printf (" %d%d%d%d \t", 
 				((regDX0GSR3.dvwrn & 0x8) ? 1 : 0),
 				((regDX0GSR3.dvwrn & 0x4) ? 1 : 0),
@@ -907,7 +913,7 @@ ncp_sm_ddr4_phy_reg_dump(
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
-		errorindicated += regDX0GSR2.rdwn;
+		warnindicated += regDX0GSR2.rdwn;
 		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.rdwn & 0x8) ? 1 : 0),
 				((regDX0GSR2.rdwn & 0x4) ? 1 : 0),
@@ -935,7 +941,7 @@ ncp_sm_ddr4_phy_reg_dump(
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
-		errorindicated += regDX0GSR2.wdwn;
+		warnindicated += regDX0GSR2.wdwn;
 		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.wdwn & 0x8) ? 1 : 0),
 				((regDX0GSR2.wdwn & 0x4) ? 1 : 0),
@@ -963,7 +969,7 @@ ncp_sm_ddr4_phy_reg_dump(
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
-		errorindicated += regDX0GSR2.rewn;
+		warnindicated += regDX0GSR2.rewn;
 		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.rewn & 0x8) ? 1 : 0),
 				((regDX0GSR2.rewn & 0x4) ? 1 : 0),
@@ -991,7 +997,7 @@ ncp_sm_ddr4_phy_reg_dump(
 	{
 		/* DXnGSR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0GSR2_5600 + (0x100 * bytecnt)), (ncp_uint32_t *)&regDX0GSR2);
-		errorindicated += regDX0GSR2.wewn;
+		warnindicated += regDX0GSR2.wewn;
 		printf (" %d%d%d%d \t", 
 				((regDX0GSR2.wewn & 0x8) ? 1 : 0),
 				((regDX0GSR2.wewn & 0x4) ? 1 : 0),
@@ -1018,6 +1024,10 @@ ncp_sm_ddr4_phy_reg_dump(
 		printf ("\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n");
 		printf ("ERROR: See above for a training error indicated\n");
 		printf ("ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n");
+	}
+
+	if (warnindicated) {
+		printf ("\nWarning: See above for a training warning indicated\n");
 	}
 
 	ncr_read32(phyReg, NCP_PHY_RANKIDR_5600, (ncp_uint32_t *)&regRANKIDR);
@@ -1465,7 +1475,7 @@ ncp_sm_ddr4_phy_training(
 	regDTCR0.dtmpr = (parms->dram_class == NCP_SM_DDR4_MODE) ? 0x1 : 0x0; /* Data Training using MPR */
 	regDTCR0.dtcmpd = 0x1; /* DQS Gate training compare data */
 	regDTCR0.rfshent = 0x1; /* previously 0x9 : Assuming PHY refresh enabled during training */
-	regDTCR0.dtwbddm = 0x1; /* Data training write bit deskew data mask */
+	regDTCR0.dtwbddm = parms->dm_masking; /* Data training write bit deskew data mask */
 	regDTCR0.dtbdc = 0x1; /* Data training bit deskew centering enables */
 	regDTCR0.dtdrs = 0x0; /* DTDRS Data training debug rank select */
 	regDTCR0.dtdbs = 0x0; /* DTDBS Data training debug byte select */
@@ -2309,6 +2319,7 @@ ncp_sm_ddr4_phy_init(
 	ncp_phy_ZQ3PR_5600_t regZQ3PR = {0};
 	ncp_phy_ACIOCR0_5600_t regACIOCR0 = {0};
 	/*ncp_phy_DX0GCR0_5600_t regDX0GCR0 = {0};*/
+	ncp_phy_PLLCR0_5600_t 	regPLLCR0 = {0};
 
 	ncp_denali_DENALI_CTL_00_5600_t reg00 = {0};
 
@@ -2320,6 +2331,18 @@ ncp_sm_ddr4_phy_init(
 		errprintf("WARNING: PHY still configured!! PLEASE RESET. \n");
 		return ncpStatus;
 	}
+
+	/* PLLCR0 */
+	ncr_read32(phyReg, NCP_PHY_PLLCR0_5600, (ncp_uint32_t *)&regPLLCR0);
+	if (parms->ddrClockSpeedMHz != 800)
+	{
+		regPLLCR0.frqsel = 0; /* 440-600MHz rates- note this is one-fourth DRAM rate */
+	}
+	else
+	{
+		regPLLCR0.frqsel = 1; /* 225-490MHz rates- note this is one-fourth DRAM rate */
+	}
+	ncr_write32(phyReg, NCP_PHY_PLLCR0_5600, *((ncp_uint32_t *)&regPLLCR0));
 
 	/* PGCR0 */
 	ncr_read32(phyReg, NCP_PHY_PGCR0_5600, (ncp_uint32_t *)&regPGCR0);
@@ -2394,8 +2417,33 @@ ncp_sm_ddr4_phy_init(
 
 	/* DTPR1 */
 	ncr_read32(phyReg, NCP_PHY_DTPR1_5600, (ncp_uint32_t *)&regDTPR1);
-	regDTPR1.tmrd = ctm->tMRD;
-	regDTPR1.tmod = ctm->tMOD;
+	regDTPR1.tmrd = ctm->tMRD - 8; /* per Synopsys 8000923590 */
+	switch(ctm->tMOD)
+	{
+		case 24:
+			regDTPR1.tmod = 0;
+			break;
+		case 25:
+			regDTPR1.tmod = 1;
+			break;
+		case 26:
+			regDTPR1.tmod = 2;
+			break;
+		case 27:
+			regDTPR1.tmod = 3;
+			break;
+		case 28:
+			regDTPR1.tmod = 4;
+			break;
+		case 29:
+			regDTPR1.tmod = 5;
+			break;
+		case 30:
+			regDTPR1.tmod = 6;
+			break;
+		default:
+			regDTPR1.tmod = 4; /* power-up-default */
+	}
 	regDTPR1.tfaw = ctm->tFAW;
 	/*regDTPR1.twlmrd = default */
 	ncr_write32(phyReg, NCP_PHY_DTPR1_5600, *((ncp_uint32_t *)&regDTPR1));

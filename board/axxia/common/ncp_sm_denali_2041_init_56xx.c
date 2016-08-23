@@ -384,10 +384,12 @@ ncp_sm_common_setup_56xx(
 				ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_2x[parms->sdram_device_density]));
 				ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_2x[parms->sdram_device_density]) + 10000)));
 				ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_2x[parms->sdram_device_density] + 10000));
+				break;
 			case NCP_SM_REFRESH_MODE_4X:
 				ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_4x[parms->sdram_device_density]));
 				ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_4x[parms->sdram_device_density]) + 10000)));
 				ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_4x[parms->sdram_device_density] + 10000));
+				break;
 			default:
 				;
 		}
@@ -433,7 +435,7 @@ ncp_sm_common_setup_56xx(
 		/*ctm->tRP = 14;*/
 		/*ctm->tFAW = 38;*/
 		/*ctm->tRCD = 14;*/
-		ctm->tMOD = 12; /* on MC this should be 12 and on PHY this should be 4 */
+		/*ctm->tMOD = 12;*/ /* on MC this should be 12 and on PHY this should be 4 */
 		/*ctm->tCKE = 6;*/
 		/*ctm->tXS = 0x200;*/
 		/*ctm->tCCD_L = 0x0;*/
@@ -802,7 +804,7 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_13 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_13_5600, (ncp_uint32_t *)&reg13);
-	reg13.tmrd = 8;
+	reg13.tmrd = ctm->tMRD;
 	reg13.trtp_ap = ctm->tRTP;/* was 4;*/ /* for auto-precharge get from speedbin_ddr4 */
 	/*reg13.trtp = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tRTP : ncp_ps_to_clk(parms->tck_ps,7500);*/
 	reg13.trtp = ncp_ps_to_clk(parms->tck_ps,7500);
@@ -966,7 +968,7 @@ ncp_sm_denali_2041_init_56xx(
 
 	/* DENALI_CTL_34 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_34_5600, (ncp_uint32_t *)&reg34);
-	reg34.rdimm_tmrd = 8;
+	reg34.rdimm_tmrd = ctm->tMRD;
 	reg34.rdimm_cw_hold_cke_en = (parms->rdimm_misc & 0x1);
 	reg34.rdimm_cww_req = 0; /* trigger really */
 	ncr_write32(ctlReg, NCP_DENALI_CTL_34_5600, *((ncp_uint32_t *)&reg34));
@@ -1063,7 +1065,7 @@ ncp_sm_denali_2041_init_56xx(
 	reg46.cke_delay = 3;
 	reg46.enable_quick_srefresh = 1;
 	reg46.srefresh_exit_no_refresh = 0;
-	reg46.pwrup_srefresh_exit = 0;
+	reg46.pwrup_srefresh_exit = (parms->ddrRecovery == TRUE) ? 1 : 0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_46_5600, *((ncp_uint32_t *)&reg46));
 
 
@@ -1385,8 +1387,6 @@ ncp_sm_denali_2041_init_56xx(
 			}
 		}
 	}
-	/* HACK: */
-	/*reg80.mr2_data_0 &= ~(0x40);*/
 	ctm->mr2 = reg80.mr2_data_0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_80_5600, *((ncp_uint32_t *)&reg80));
 
@@ -1421,8 +1421,11 @@ ncp_sm_denali_2041_init_56xx(
 			reg82.mr3_data_0 = 0;
 		}
 	}
-	/* HACK: For 1866,2133,2400 set 10:9 01, for 1600 set as '00*/
-	reg82.mr3_data_0 |= 0x200;
+	/* For 1866,2133,2400 set 10:9 01, for 1600 set as '00*/
+	if (parms->ddrClockSpeedMHz != 800)
+	{
+		reg82.mr3_data_0 |= 0x200;
+	}
 	ctm->mr3 = reg82.mr3_data_0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_82_5600, *((ncp_uint32_t *)&reg82));
 
@@ -1517,8 +1520,12 @@ ncp_sm_denali_2041_init_56xx(
 		reg85.mr6_data_0 &= ~(0x1c00);
 		reg85.mr6_data_0 |= ((parms->dram_class == NCP_SM_DDR4_MODE) ? (tmp << 10) : 0x0);
 	}
+#if 0
+	/* While debugging a random CMEM training error issue- this was looked at. Not sure why this
+	 * was there in the first place- until this is known keeping this code commented out */
 	/* HACK */
 	reg85.mr6_data_0 |= 0x800;
+#endif
 	ctm->mr6 = reg85.mr6_data_0;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_85_5600, *((ncp_uint32_t *)&reg85));
 
