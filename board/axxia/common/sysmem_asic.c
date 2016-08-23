@@ -258,11 +258,17 @@ sysmem_init(void)
 #error "Invalid Chip Type!"
 #endif
 
+	if (sysmem->num_interfaces > ((sizeof(sm_nodes) / sizeof(unsigned)))) {
+		printf("Number of Interfaces is Too Large\n");
+
+		return -1;
+	}
+
 	/* Disable System Cache */
 	__asm_disable_l3_cache();
 
 	/* Initialize Memory */
-	for (i = 0; i < sizeof(sm_nodes)/sizeof(unsigned); ++i) {
+	for (i = 0; i < sysmem->num_interfaces; ++i) {
 		rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
 
 		if (NCP_ST_SUCCESS != rc) {
@@ -271,6 +277,42 @@ sysmem_init(void)
 
 			return -1;
 		}
+	}
+
+	/* Set up the VAT */
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1000, 0xa200000f);
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1004, 0xffffff00);
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1008, 0);
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x100c, 0);
+
+	if (1 == sysmem->num_interfaces) {
+		unsigned int value;
+
+		NCP_COMMENT("Setting single-ELM-0 mode\n");
+
+		writel(0x4, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x27 << 16)) + 0x8));
+
+		value = readl(ELM0 + 4);
+		value &= 0xfffffdff;
+		writel(value, ELM0 + 4);
+	} else {
+#ifdef CONFIG_TARGET_AXM5600
+		writel(0x4, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0xe, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0xe, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0xe, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0xe, ((DICKENS | (0x27 << 16)) + 0x8));
+#endif
 	}
 
 	/* Initialize the ELMs */
