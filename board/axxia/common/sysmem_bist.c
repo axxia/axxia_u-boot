@@ -43,8 +43,6 @@ static unsigned int nodes[] = {0x22, 0xf, 0x23, 0x24}; /* Four Controllers */
 
 #ifndef CONFIG_AXXIA_EMU
 
-#define number_of_nodes() (sizeof(nodes) / sizeof(unsigned int))
-
 struct bist_test {
 	unsigned int node;
 	unsigned int region;
@@ -53,6 +51,20 @@ struct bist_test {
 	unsigned int bits;
 	enum bist_type type;
 };
+
+/*
+  ------------------------------------------------------------------------------
+  number_of_nodes
+*/
+
+static size_t
+number_of_nodes(void)
+{
+	if (sysmem->num_interfaces <= (sizeof(nodes) / sizeof(unsigned int)))
+		return sysmem->num_interfaces;
+
+	return (sizeof(nodes) / sizeof(unsigned int));
+}
 
 /*
   ------------------------------------------------------------------------------
