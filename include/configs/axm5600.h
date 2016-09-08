@@ -685,7 +685,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_USB_XHCI_AXXIA
 #define CONFIG_CMD_USB 1
 #define CONFIG_USB_XHCI 1
-#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS 1
+#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS 4
 #define CONFIG_USB_STORAGE 1
 #define CONFIG_CMD_USB_STORAGE 1
 #define CONFIG_CMD_EXT2 1

@@ -58,6 +58,8 @@ static void dwc3_phy_reset(struct dwc3 *dwc3_reg)
 
 	/* Clear USB2 PHY reset */
 	clrbits_le32(&dwc3_reg->g_usb2phycfg, DWC3_GUSB2PHYCFG_PHYSOFTRST);
+
+	mdelay(100);
 }
 
 static void dwc3_core_soft_reset(struct dwc3 *dwc3_reg)
@@ -110,6 +112,10 @@ static int dwc3_core_init(struct dwc3 *dwc3_reg)
 		reg |= DWC3_GCTL_U2RSTECN;
 
 	writel(reg, &dwc3_reg->g_ctl);
+
+	reg = readl(&dwc3_reg->g_usb3pipectl[0]);
+	reg &= ~(1 << 18);
+	writel(reg, &dwc3_reg->g_usb3pipectl[0]);
 
 	return 0;
 }
