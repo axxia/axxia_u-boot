@@ -38,6 +38,19 @@ NCP_API ncp_uint32_t sm_nodes[NCP_EXTMEM_NUM_NODES];
 
 #endif
 
+#ifndef NCP_CHECK_DISABLED
+
+#define NCP_SYSMEM_VALIDATE_HANDLE(_myHdl) ({ \
+    ncp_st_t _st = NCP_ST_SUCCESS; \
+    if ( _myHdl == NULL ) {\
+           _st = NCP_ST_SYSMEM_INVALID_HANDLE; \
+    } \
+    _st; \
+})
+#else /* #ifndef NCP_CHECK_DISABLED */
+#define NCP_SYSMEM_VALIDATE_HANDLE(_myHdl) NCP_ST_SUCCESS
+#endif
+
 #define NCP_SYSCACHE_ENABLE_INIT_VAL    0xed
 
 /* Targets for sysmem nodes */
@@ -337,6 +350,8 @@ typedef struct {
     ncp_uint32_t		packedDqDmDqsSlewRates;
     ncp_uint32_t		packedPHYTrainingOptions; /* All training options per RDL positions 9..17 in PIR */
 
+    /* new for XLF */
+    ncp_uint8_t         interface_sel; /* to support x1,x2,x3,x4 DRAM configuration as a bit-mask */
 } ncp_sm_parms_t;
 
 /* 
@@ -345,7 +360,7 @@ typedef struct {
 typedef struct {
     ncp_sm_parms_t  sm_parms;
     ncp_sm_parms_t  cm_parms;
-    ncp_sem_t lock;
+    ncp_mutex_t lock;
 } ncp_sysmem_t;
 
 

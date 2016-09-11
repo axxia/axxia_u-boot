@@ -1315,7 +1315,7 @@ ncp_sm_ddr4_phy_reg_dump(
 #DXnGSR3
 #DXnGSR4
 #DXnGSR5
-	 */
+*/
 
 	NCP_RETURN_LABEL
 		return ncpStatus;
@@ -1594,14 +1594,14 @@ ncp_sm_ddr4_phy_training(
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 			errprintf("POLL timeout while waiting for write levelling training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
-			return ncpStatus;
+			NCP_CALL(NCP_ST_POLL_TIMEOUT);
 		}
 
 		/* Checking for Error's */
 		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
 		if (ncpStatus == NCP_ST_ERROR)
 		{
-			return ncpStatus;
+			NCP_CALL(NCP_ST_ERROR);
 		}
 
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
@@ -1691,14 +1691,14 @@ ncp_sm_ddr4_phy_training(
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 			errprintf("POLL timeout while waiting for read DQS gate training to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
-			return ncpStatus;
+			NCP_CALL(NCP_ST_POLL_TIMEOUT);
 		}
 
 		/* Checking for Error's */
 		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
 		if (ncpStatus == NCP_ST_ERROR)
 		{
-			return ncpStatus;
+			NCP_CALL(NCP_ST_ERROR);
 		}
 
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
@@ -1769,14 +1769,14 @@ ncp_sm_ddr4_phy_training(
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 			errprintf("POLL timeout while waiting for write level adjustment to complete [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
-			return ncpStatus;
+			NCP_CALL(NCP_ST_POLL_TIMEOUT);
 		}
 
 		/* Checking for Error's */
 		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
 		if (ncpStatus == NCP_ST_ERROR)
 		{
-			return ncpStatus;
+			NCP_CALL(NCP_ST_ERROR);
 		}
 
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
@@ -1865,14 +1865,14 @@ ncp_sm_ddr4_phy_training(
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 			errprintf("POLL timeout while SRD training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
-			return ncpStatus;
+			NCP_CALL(NCP_ST_POLL_TIMEOUT);
 		}
 
 		/* Checking for Error's */
 		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
 		if (ncpStatus == NCP_ST_ERROR)
 		{
-			return ncpStatus;
+			NCP_CALL(NCP_ST_ERROR);
 		}
 
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
@@ -1938,14 +1938,14 @@ ncp_sm_ddr4_phy_training(
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 			errprintf("POLL timeout while read data bit deskew training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
-			return ncpStatus;
+			NCP_CALL(NCP_ST_POLL_TIMEOUT);
 		}
 
 		/* Checking for Error's */
 		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
 		if (ncpStatus == NCP_ST_ERROR)
 		{
-			return ncpStatus;
+			NCP_CALL(NCP_ST_ERROR);
 		}
 
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
@@ -2011,14 +2011,14 @@ ncp_sm_ddr4_phy_training(
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 			errprintf("POLL timeout while write data bit deskew training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
-			return ncpStatus;
+			NCP_CALL(NCP_ST_POLL_TIMEOUT);
 		}
 
 		/* Checking for Error's */
 		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
 		if (ncpStatus == NCP_ST_ERROR)
 		{
-			return ncpStatus;
+			NCP_CALL(NCP_ST_ERROR);
 		}
 
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
@@ -2084,14 +2084,14 @@ ncp_sm_ddr4_phy_training(
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 			errprintf("POLL timeout while read data eye training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
-			return ncpStatus;
+			NCP_CALL(NCP_ST_POLL_TIMEOUT);
 		}
 
 		/* Checking for Error's */
 		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
 		if (ncpStatus == NCP_ST_ERROR)
 		{
-			return ncpStatus;
+			NCP_CALL(NCP_ST_ERROR);
 		}
 
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
@@ -2157,14 +2157,14 @@ ncp_sm_ddr4_phy_training(
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 			errprintf("POLL timeout while write data eye training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
-			return ncpStatus;
+			NCP_CALL(NCP_ST_POLL_TIMEOUT);
 		}
 
 		/* Checking for Error's */
 		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
 		if (ncpStatus == NCP_ST_ERROR)
 		{
-			return ncpStatus;
+			NCP_CALL(NCP_ST_ERROR);
 		}
 
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
@@ -2230,14 +2230,14 @@ ncp_sm_ddr4_phy_training(
 		{
 			ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 			errprintf("POLL timeout while VREF training [line:%d] PGSR0= 0x%x\n",__LINE__, tmp);
-			return ncpStatus;
+			NCP_CALL(NCP_ST_POLL_TIMEOUT);
 		}
 
 		/* Checking for Error's */
 		ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
 		if (ncpStatus == NCP_ST_ERROR)
 		{
-			return ncpStatus;
+			NCP_CALL(NCP_ST_ERROR);
 		}
 
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
@@ -2329,18 +2329,44 @@ ncp_sm_ddr4_phy_init(
 	{
 		/* AC PLL lock set */
 		errprintf("WARNING: PHY still configured!! PLEASE RESET. \n");
-		return ncpStatus;
+		NCP_RETURN(NCP_ST_SUCCESS);
 	}
 
 	/* PLLCR0 */
 	ncr_read32(phyReg, NCP_PHY_PLLCR0_5600, (ncp_uint32_t *)&regPLLCR0);
-	if (parms->ddrClockSpeedMHz != 800)
+	/* PLL frequency select- select the operating range of the PLL. Supports upto 2400Mbps
+	 * this is one-fourth DRAM rate */
+	if (((parms->ddrClockSpeedMHz/2) >= 561) && ((parms->ddrClockSpeedMHz/2) <= 667))
 	{
-		regPLLCR0.frqsel = 0; /* 440-600MHz rates- note this is one-fourth DRAM rate */
+		regPLLCR0.frqsel = 0;
 	}
-	else
+	else if (((parms->ddrClockSpeedMHz/2) >= 472) && ((parms->ddrClockSpeedMHz/2) <= 560))
 	{
-		regPLLCR0.frqsel = 1; /* 225-490MHz rates- note this is one-fourth DRAM rate */
+		regPLLCR0.frqsel = 1;
+	}
+	else if (((parms->ddrClockSpeedMHz/2) >= 397) && ((parms->ddrClockSpeedMHz/2) <= 471))
+	{
+		regPLLCR0.frqsel = 2;
+	}
+	else if (((parms->ddrClockSpeedMHz/2) >= 333) && ((parms->ddrClockSpeedMHz/2) <= 396))
+	{
+		regPLLCR0.frqsel = 3;
+	}
+	else if (((parms->ddrClockSpeedMHz/2) >= 280) && ((parms->ddrClockSpeedMHz/2) <= 332))
+	{
+		regPLLCR0.frqsel = 4;
+	}
+	else if (((parms->ddrClockSpeedMHz/2) >= 236) && ((parms->ddrClockSpeedMHz/2) <= 279))
+	{
+		regPLLCR0.frqsel = 5;
+	}
+	else if (((parms->ddrClockSpeedMHz/2) >= 198) && ((parms->ddrClockSpeedMHz/2) <= 235))
+	{
+		regPLLCR0.frqsel = 6;
+	}
+	else if (((parms->ddrClockSpeedMHz/2) >= 166) && ((parms->ddrClockSpeedMHz/2) <= 197))
+	{
+		regPLLCR0.frqsel = 7;
 	}
 	ncr_write32(phyReg, NCP_PHY_PLLCR0_5600, *((ncp_uint32_t *)&regPLLCR0));
 
@@ -2357,7 +2383,7 @@ ncp_sm_ddr4_phy_init(
 		ncr_write32(phyReg, NCP_PHY_DXCCR_5600, *((ncp_uint32_t *)&regDXCCR));
 	}
 
-	for (i = 0; i < 9; i++)
+	for (i = 0; i < ((parms->version == NCP_CHIP_ACP56xx) ? 9 : 5); i++)
 	{
 		/* DX0BDLR0 .. DX8BDLR2 */
 		ncr_read32(phyReg, (NCP_PHY_DX0BDLR0_5600 + (0x100 * i)), &tmp);
@@ -2888,14 +2914,14 @@ ncp_sm_ddr4_phy_init(
 	{
 		ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
 		errprintf("POLL timeout during PHY init [line:%d] exp 0x1f read 0x%x\n",__LINE__, tmp);
-		return ncpStatus;
+		NCP_CALL(NCP_ST_POLL_TIMEOUT);
 	}
 
 	/* Checking for Error's */
 	ncpStatus = (ncp_sm_ddr4_phy_training_error_check(dev, smNode));
 	if (ncpStatus == NCP_ST_ERROR)
 	{
-		return ncpStatus;
+		NCP_CALL(NCP_ST_ERROR);
 	}
 
 	ncr_read32(phyReg, NCP_PHY_PGSR0_5600, &tmp);
@@ -3188,13 +3214,13 @@ ncp_sysmem_init_synopphy(
 
 	NCP_CALL(ncp_sm_ddr4_post_phy_training_mc_setup(dev, smNode, parms));
 
-ncp_return:
+	NCP_RETURN_LABEL
 #ifdef NCP_SM_PHY_REG_DUMP
-	if (NCP_ST_SUCCESS != ncpStatus)
-	{
-		/* Dump contents of synop phy regs */
-		NCP_CALL(ncp_sm_ddr4_phy_reg_dump(dev, smNode));
-	}
+		if (NCP_ST_SUCCESS != ncpStatus)
+		{
+			/* Dump contents of synop phy regs */
+			NCP_CALL(ncp_sm_ddr4_phy_reg_dump(dev, smNode));
+		}
 #endif
 	return ncpStatus;
 }

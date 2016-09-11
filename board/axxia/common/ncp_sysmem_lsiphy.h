@@ -169,16 +169,27 @@ typedef parameters_mem_t     ncp_sm_parms_t;
 #define NCP_SYSMEM_NUM_NODES 2
 #define NCP_EXTMEM_NUM_NODES 4
 
-#define NCP_CALL(s) \
-    ncpStatus = (s); \
-    if (ncpStatus != NCP_ST_SUCCESS) { \
-        printf("ncpStatus=%d\n", (int) ncpStatus); \
-        printf("%s:%s:%d\n", \
-              __FILE__, __FUNCTION__, __LINE__); \
-        goto ncp_return; \
+#define NCP_CALL(s)						    \
+    ncpStatus = (s);						    \
+    if (ncpStatus != NCP_ST_SUCCESS) {				    \
+	printf("ncpStatus=%d\n", (int) ncpStatus);		    \
+	printf("%s:%s:%d\n",					    \
+	       __FILE__, __FUNCTION__, __LINE__);		    \
+	goto ncp_return;					    \
     }
 
+#define NCP_RETURN(f)						    \
+    do {							    \
+        ncpStatus = (f);					    \
+	if (ncpStatus != NCP_ST_SUCCESS) {			    \
+	    printf("ncpStatus=%d\n", (int) ncpStatus);		    \
+	    printf("%s:%s:%d\n",				    \
+		   __FILE__, __FUNCTION__, __LINE__);		    \
+	}							    \
+	goto ncp_return;					    \
+    } while (0)
 
+/* if you are going to use this macro remember to remove return -1 */
 #define NCP_SM_POLL_FOR_OP_DONE(_region) \
     do { \
         ncp_denali_DENALI_CTL_13_t ctl_13_mask = { 0 }; \

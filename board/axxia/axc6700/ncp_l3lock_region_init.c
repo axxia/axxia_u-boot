@@ -38,6 +38,7 @@ ncp_l3lock_region_init ( ncp_dev_hdl_t   dev, ncp_l3lock_region_info_t *l3lock_p
 	ncp_uint32_t	numLockedWays=0;
 	int		i=0, j=0;
 	ncp_uint64_t	regValue = 0;
+        ncp_uint32_t tmp;
 
 #ifndef __UBOOT__	
 	NCP_ASSERT(l3lock_params != NULL, NCP_ST_INVALID_PARAMETER);
@@ -68,8 +69,8 @@ ncp_l3lock_region_init ( ncp_dev_hdl_t   dev, ncp_l3lock_region_info_t *l3lock_p
 		}
 	}
 
-
 	/* Setup secure mode */
+        ncr_read32( NCP_REGION_ID(0x170, 0x1), 0x42800, &tmp);
 	ncr_write32( NCP_REGION_ID(0x170, 1), 0x42800, 0x2);
 
 	/* setup regions */
@@ -95,7 +96,10 @@ ncp_l3lock_region_init ( ncp_dev_hdl_t   dev, ncp_l3lock_region_info_t *l3lock_p
 
 	}
 
-ncp_return:
+	/* Set it back to non-secure mode or the mode we started with. */
+	ncr_write32( NCP_REGION_ID(0x170, 1), 0x42800, tmp);
+
+NCP_RETURN_LABEL
 	return ncpStatus;
 }
 

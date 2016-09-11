@@ -25,6 +25,7 @@
 #include <asm/io.h>
 
 #include "ncp_sysmem_ext.h"
+#include "ncp_sysmem_lsiphy.h"
 
 #if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
 #include "../axc6700/ncp_l3lock_region.h"
@@ -239,6 +240,9 @@ sysmem_init(void)
 	int i;
 	ncp_uint32_t version_save;
 	int rc = NCP_ST_SUCCESS;
+#ifdef CONFIG_AXXIA_ANY_XLF
+	int ncpStatus = NCP_ST_SUCCESS;
+#endif
 
 #ifdef DISPLAY_PARAMETERS
 	display_mem_parameters("System Memory", sysmem);
@@ -264,10 +268,27 @@ sysmem_init(void)
 		return -1;
 	}
 
+	/* X9 requires sysmem parameters version 3, XLF requires version 4. */
+#ifdef CONFIG_AXXIA_ANY_XLF
+	if (4 != version_save) {
+		printf("Wrong Memory Parameter Version: %d\n", version_save);
+
+		return -1;
+	}
+#endif
+#ifdef CONFIG_AXXIA_ANY_56XX
+	if (3 != version_save) {
+		printf("Wrong Memory Parameter Version: %d\n", version_save);
+
+		return -1;
+	}
+#endif
+
 	/* Disable System Cache */
 	__asm_disable_l3_cache();
 
 	/* Initialize Memory */
+#ifdef CONFIG_AXXIA_ANY_56XX
 	for (i = 0; i < sysmem->num_interfaces; ++i) {
 		rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
 
@@ -278,6 +299,31 @@ sysmem_init(void)
 			return -1;
 		}
 	}
+#endif
+#ifdef CONFIG_AXXIA_ANY_XLF
+	/*
+	  For x1 any single interface is ok, for x2 0 & 2 or 1 & 3
+	  are only valid, for x3 any 3 ok, for x4 all
+	*/
+	if ((sysmem->interface_sel > 0) &&
+	    (sysmem->interface_sel != 0xf) && !(sysmem->interface_sel % 3))
+		NCP_CALL(NCP_ST_INVALID_VALUE);
+
+	/*
+	  supports DRAM configuration of the kind x1,x2,x3,x4
+	*/
+	for (i = 0; i < 4; i++)
+		if (0 != (sysmem->interface_sel & (1 << i))) {
+                        rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
+
+			if (NCP_ST_SUCCESS != rc) {
+				printf("Initializing Sysmem Node 0x%x Failed!\n",
+				       sm_nodes[i]);
+
+				return -1;
+			}
+		}
+#endif
 
 	/* Set up the VAT */
 	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1000, 0xa200000f);
@@ -285,6 +331,8 @@ sysmem_init(void)
 	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1008, 0);
 	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x100c, 0);
 
+	/* Then the ELM mode. */
+#ifdef CONFIG_AXXIA_ANY_56XX
 	if (1 == sysmem->num_interfaces) {
 		unsigned int value;
 
@@ -303,7 +351,6 @@ sysmem_init(void)
 		value &= 0xfffffdff;
 		writel(value, ELM0 + 4);
 	} else {
-#ifdef CONFIG_TARGET_AXM5600
 		writel(0x4, ((DICKENS | (0x20 << 16)) + 0x8));
 		writel(0x4, ((DICKENS | (0x21 << 16)) + 0x8));
 		writel(0x4, ((DICKENS | (0x22 << 16)) + 0x8));
@@ -312,8 +359,82 @@ sysmem_init(void)
 		writel(0xe, ((DICKENS | (0x25 << 16)) + 0x8));
 		writel(0xe, ((DICKENS | (0x26 << 16)) + 0x8));
 		writel(0xe, ((DICKENS | (0x27 << 16)) + 0x8));
-#endif
 	}
+#endif
+#ifdef CONFIG_AXXIA_ANY_XLF
+	if (0 != (sysmem->interface_sel & 0x1)) {
+                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x2);
+
+                /* use only elm0 */
+		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x27 << 16)) + 0x8));
+
+                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x0);
+	}
+
+	if (0 != (sysmem->interface_sel & 0x2)) {
+                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x2);
+
+                /* use only elm1 */
+		writel(0x8, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x27 << 16)) + 0x8));
+
+                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x0);
+	}
+
+	if (0 != (sysmem->interface_sel & 0x4)) {
+                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x2);
+
+                /* use only elm2 */
+		writel(0x15, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x27 << 16)) + 0x8));
+
+                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x0);
+	}
+
+	if (0 != (sysmem->interface_sel & 0x8)) {
+                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x2);
+
+                /* use only elm2 */
+		writel(0x1a, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x1a, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x1a, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x1a, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x1a, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x1a, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x1a, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0x1a, ((DICKENS | (0x27 << 16)) + 0x8));
+
+                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x0);
+	}
+
+	/*set bit 9 of ELMs to force to use single ELM*/
+	for (i = 0; i < 4; ++i)	{
+		unsigned int tmp;
+
+                ncr_read32(NCP_REGION_ID(0x167, i), 0x0004, &tmp);
+                tmp &= 0xFFFFF9FF;
+                ncr_write32(NCP_REGION_ID(0x167, i), 0x0004, tmp);
+	}
+#endif
 
 	/* Initialize the ELMs */
 	rc = ncp_elm_init(NULL, sysmem);
@@ -358,6 +479,8 @@ sysmem_init(void)
 	*/
 
 	sysmem->version = version_save;
+
+	NCP_RETURN_LABEL;
 
 	return rc;
 }

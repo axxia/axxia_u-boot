@@ -3849,6 +3849,9 @@ typedef struct {
 	ncp_uint32_t packedAddrCmdCtrlClkSlewRates;
 	ncp_uint32_t packedDqDmDqsSlewRates;
 	ncp_uint32_t packedPHYTrainingOptions;
+#ifdef CONFIG_AXXIA_ANY_XLF
+	ncp_uint32_t interface_sel;
+#endif
 	/* This is the ncp_l3lock_region_info_t structure from the RTE. */
 	ncp_uint32_t total_l3_locked_size;
 	ncp_uint32_t region[4];

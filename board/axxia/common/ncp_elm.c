@@ -112,7 +112,7 @@ ncp_elm_init(
                     break;
     
                 default:
-		    return NCP_ST_ERROR;
+		    NCP_CALL (NCP_ST_ERROR);
             }
 	}
 	else

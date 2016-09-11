@@ -206,7 +206,7 @@ ncp_sm_common_setup_56xx(
 			(parms->ddrClockSpeedMHz != 1066) &&
 			(parms->ddrClockSpeedMHz != 1200))
 	{
-		errprintf("ddr4 clock speed must be 800/933/1066/1200 MHz\n");
+		errprintf("ddr4 clock speed must be 800/933/1066/1200 MHz (passing %d)\n", parms->ddrClockSpeedMHz);
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -253,7 +253,7 @@ ncp_sm_common_setup_56xx(
 			 ((parms->ddrClockSpeedMHz == 1066) && ((parms->tck_ps < 938) || (parms->tck_ps > 1600))) ||
 			 ((parms->ddrClockSpeedMHz == 1200) && ((parms->tck_ps < 833) || (parms->tck_ps > 1600)))))
 	{
-		errprintf("ddr4 invalid tck_ps clock-period in pico-sec \n");
+		errprintf("ddr4 invalid tck_ps clock-period in pico-sec (passing %d)\n", parms->tck_ps);
 		NCP_CALL(NCP_ST_ERROR);
 	}
 
@@ -299,7 +299,7 @@ ncp_sm_common_setup_56xx(
 				(speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex] != 0xff)) binnedCLIndex++;
 		if (speedbin_ddr4_vals[clkSpeedIndex].binned_CL[binnedCLIndex] == 0xff)
 		{
-			errprintf("invalid binned_CAS_latency\n");
+			errprintf("invalid binned_CAS_latency (passing %d)\n", parms->binned_CAS_latency);
 			NCP_CALL(NCP_ST_ERROR);
 		}
 
@@ -309,7 +309,7 @@ ncp_sm_common_setup_56xx(
 				(speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal] != 0xff)) tmpVal++;
 		if (speedbin_ddr4_vals[clkSpeedIndex].CL_config[tmpVal] == 0xff)
 		{
-			errprintf("invalid CAS_latency\n");
+			errprintf("invalid CAS_latency (passing %d)\n", parms->CAS_latency);
 			NCP_CALL(NCP_ST_ERROR);
 		}
 	}
