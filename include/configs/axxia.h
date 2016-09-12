@@ -3667,7 +3667,6 @@ typedef struct {
 } __attribute__((packed)) parameters_voltage_t;
 #endif
 
-#ifdef CONFIG_AXXIA_ARM
 typedef struct {
 	unsigned version;
 	unsigned flags;
@@ -3687,6 +3686,16 @@ typedef struct {
 	unsigned sm1pll_div;
 	unsigned sm1pll_frac;
 	unsigned sm1pll_psd;
+#ifdef CONFIG_AXXIA_ANY_XLF
+	unsigned sm2pll_flags;
+	unsigned sm2pll_div;
+	unsigned sm2pll_frac;
+	unsigned sm2pll_psd;
+	unsigned sm3pll_flags;
+	unsigned sm3pll_div;
+	unsigned sm3pll_frac;
+	unsigned sm3pll_psd;
+#endif
 	unsigned tm0pll_flags;
 	unsigned tm0pll_div;
 	unsigned tm0pll_frac;
@@ -3695,59 +3704,24 @@ typedef struct {
 	unsigned fabpll_div;
 	unsigned fabpll_frac;
 	unsigned fabpll_psd;
+#ifdef CONFIG_AXXIA_ANY_56XX
 	unsigned nrcp0pll_flags;
 	unsigned nrcp0pll_div;
 	unsigned nrcp0pll_frac;
 	unsigned nrcp0pll_psd;
+#endif
+#ifdef CONFIG_AXXIA_ANY_XLF
+	unsigned dsppll0_flags;
+	unsigned dsppll0_div;
+	unsigned dsppll0_frac;
+	unsigned dsppll0_psd;
+#endif
 	unsigned cpu_csw;
+#ifdef CONFIG_AXXIA_ANY_XLF
+	unsigned dsp_csw;
+#endif
 	unsigned sys_csw;
 } __attribute__ ((packed)) parameters_clocks_t;
-#else  /* CONFIG_AXXIA_ARM */
-typedef struct {
-#ifdef CONFIG_AXXIA_25xx
-	unsigned syspll_prms;
-	unsigned syspll_ctrl;
-	unsigned syspll_mcgc;
-	unsigned syspll_mcgc1;
-	unsigned syspll_psd;
-	unsigned ppcpll_prms;
-	unsigned ppcpll_ctrl;
-	unsigned ppcpll_mcgc;
-	unsigned ppcpll_mcgc1;
-	unsigned ppcpll_psd;
-	unsigned smpll_prms;
-	unsigned smpll_ctrl;
-	unsigned smpll_mcgc;
-	unsigned smpll_mcgc1;
-	unsigned smpll_psd;
-	unsigned tmpll_prms;
-	unsigned tmpll_ctrl;
-	unsigned tmpll_mcgc;
-	unsigned tmpll_mcgc1;
-	unsigned tmpll_psd;
-	unsigned per_mcgc;
-	unsigned per_mcgc1;
-#else
-	unsigned sys_control;
-	unsigned sys_lftune_upper;
-	unsigned sys_lftune_lower;
-	unsigned sys_fftune;
-	unsigned sys_locktune;
-	unsigned ppc_control;
-	unsigned ppc_lftune_upper;
-	unsigned ppc_lftune_lower;
-	unsigned ppc_fftune;
-	unsigned ppc_locktune;
-	unsigned ddr0_control;
-	unsigned ddr1_control;
-	unsigned ddr_lftune_upper;
-	unsigned ddr_lftune_lower;
-	unsigned ddr_fftune;
-	unsigned ddr_locktune;
-#endif
-} __attribute__ ((packed)) parameters_clocks_t;
-
-#endif	/* CONFIG_AXXIA_ARM */
 
 typedef struct {
 	unsigned version;
