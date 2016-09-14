@@ -3711,10 +3711,10 @@ typedef struct {
 	unsigned nrcp0pll_psd;
 #endif
 #ifdef CONFIG_AXXIA_ANY_XLF
-	unsigned dsppll0_flags;
-	unsigned dsppll0_div;
-	unsigned dsppll0_frac;
-	unsigned dsppll0_psd;
+	unsigned dsppll_flags;
+	unsigned dsppll_div;
+	unsigned dsppll_frac;
+	unsigned dsppll_psd;
 #endif
 	unsigned cpu_csw;
 #ifdef CONFIG_AXXIA_ANY_XLF
@@ -4003,7 +4003,7 @@ int ssp_init(int);
 
 typedef enum {
 	clock_system, clock_core, clock_memory, clock_peripheral,
-	clock_fab, clock_treemem, clock_emmc
+	clock_fab, clock_treemem, clock_emmc, clock_dsp
 } acp_clock_t;
 
 int acp_clock_get(acp_clock_t, ncp_uint32_t *);

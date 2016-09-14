@@ -1273,7 +1273,7 @@ board_init_f(ulong dummy)
 	}
 #endif	/* CONFIG_AXXIA_SPL_DIAGNOSTICS */
 
-#if !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM)
+#if !defined(CONFIG_AXXIA_EMU)
 	puts("");
 	axxia_display_clocks();
 #endif
