@@ -142,7 +142,12 @@ misc_init_r(void)
 /*	writel(0xf, SYSCON + 0xcc); */
 
 	/* Enable EVENT (sev/wfe) signals to all cores */
-	writel(0xffff, SYSCON + 0x14);
+#ifdef CONFIG_AXXIA_XLF
+	writel(0xffffffff, SYSCON + 0x40);
+	writel(0xffffffff, SYSCON + 0x44);
+#else
+ 	writel(0xffff, SYSCON + 0x14); 
+#endif
 
 #endif	/* CONFIG_AXXIA_SIM */
 
