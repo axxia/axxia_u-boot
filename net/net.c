@@ -403,7 +403,7 @@ int net_loop(enum proto_t protocol)
 	net_init();
 
 #ifdef CONFIG_NET_ONCE
-	if ((eth_get_dev()->state == ETH_STATE_PASSIVE) && (protocol != DHCP)) {
+	if ((eth_get_dev()->state == ETH_STATE_PASSIVE) && (protocol != DHCP) && (net_state != NETLOOP_FAIL)) {
 		eth_init_state_only();
 	} else {
 #endif
