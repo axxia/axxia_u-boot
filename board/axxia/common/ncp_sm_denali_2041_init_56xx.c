@@ -1753,7 +1753,14 @@ ncp_sm_denali_2041_init_56xx(
 	ncr_read32(ctlReg, NCP_DENALI_CTL_123_5600, (ncp_uint32_t *)&reg123);
 	reg123.cs_map = parms->topology;
 	reg123.burst_on_fly_bit = 0xc;
-	reg123.reduc = (parms->primary_bus_width == 2) ? 1 : 0;
+	if (parms->version == NCP_CHIP_ACP56xx)
+	{
+		reg123.reduc = (parms->primary_bus_width == 2) ? 1 : 0;
+	}
+	else if (parms->version == NCP_CHIP_ACPXLF)
+	{
+		reg123.reduc = 1;
+	}
 	reg123.memdata_ratio_0 = (parms->sdram_device_width == 1) ? 3 : 2;
 	ncr_write32(ctlReg, NCP_DENALI_CTL_123_5600, *((ncp_uint32_t *)&reg123));
 

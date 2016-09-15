@@ -5617,8 +5617,8 @@ typedef struct
 typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
-     unsigned      ranken_rsvd                               : 14;
-     unsigned      ranken                                    :  2;
+     unsigned      ranken_rsvd                               : 12;
+     unsigned      ranken                                    :  4;
      unsigned      reserved_15_14                            :  2;
      unsigned      dtrank                                    :  2;
      unsigned      reserved_11                               :  1;
@@ -5640,8 +5640,8 @@ typedef struct
      unsigned      reserved_11                               :  1;
      unsigned      dtrank                                    :  2;
      unsigned      reserved_15_14                            :  2;
-     unsigned      ranken                                    :  2;
-     unsigned      ranken_rsvd                               : 14;
+     unsigned      ranken                                    :  4;
+     unsigned      ranken_rsvd                               : 12;
 #endif
 } ncp_phy_DTCR1_5600_t;
 

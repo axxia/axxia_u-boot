@@ -362,8 +362,8 @@ sysmem_init(void)
 	}
 #endif
 #ifdef CONFIG_AXXIA_ANY_XLF
-	if (0 != (sysmem->interface_sel & 0x1)) {
-                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x2);
+	if (0x1 == sysmem->num_interfaces) {
+		writel(2, (MMAP_SCB + 0x42800));
 
                 /* use only elm0 */
 		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
@@ -375,55 +375,49 @@ sysmem_init(void)
 		writel(0x3, ((DICKENS | (0x26 << 16)) + 0x8));
 		writel(0x3, ((DICKENS | (0x27 << 16)) + 0x8));
 
-                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x0);
-	}
-
-	if (0 != (sysmem->interface_sel & 0x2)) {
-                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x2);
+		writel(0, (MMAP_SCB + 0x42800));
+	} else if (0x2 == sysmem->num_interfaces) {
+		writel(2, (MMAP_SCB + 0x42800));
 
                 /* use only elm1 */
-		writel(0x8, ((DICKENS | (0x20 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x21 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x22 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x23 << 16)) + 0x8));
 		writel(0x8, ((DICKENS | (0x24 << 16)) + 0x8));
 		writel(0x8, ((DICKENS | (0x25 << 16)) + 0x8));
 		writel(0x8, ((DICKENS | (0x26 << 16)) + 0x8));
 		writel(0x8, ((DICKENS | (0x27 << 16)) + 0x8));
 
-                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x0);
-	}
-
-	if (0 != (sysmem->interface_sel & 0x4)) {
-                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x2);
+		writel(0, (MMAP_SCB + 0x42800));
+	} else if (0x3 == sysmem->num_interfaces) {
+		writel(2, (MMAP_SCB + 0x42800));
 
                 /* use only elm2 */
-		writel(0x15, ((DICKENS | (0x20 << 16)) + 0x8));
-		writel(0x15, ((DICKENS | (0x21 << 16)) + 0x8));
-		writel(0x15, ((DICKENS | (0x22 << 16)) + 0x8));
-		writel(0x15, ((DICKENS | (0x23 << 16)) + 0x8));
-		writel(0x15, ((DICKENS | (0x24 << 16)) + 0x8));
-		writel(0x15, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x25 << 16)) + 0x8));
 		writel(0x15, ((DICKENS | (0x26 << 16)) + 0x8));
 		writel(0x15, ((DICKENS | (0x27 << 16)) + 0x8));
 
-                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x0);
-	}
-
-	if (0 != (sysmem->interface_sel & 0x8)) {
-                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x2);
+		writel(0, (MMAP_SCB + 0x42800));
+	} else if (0x4 == sysmem->num_interfaces) {
+		writel(2, (MMAP_SCB + 0x42800));
 
                 /* use only elm2 */
-		writel(0x1a, ((DICKENS | (0x20 << 16)) + 0x8));
-		writel(0x1a, ((DICKENS | (0x21 << 16)) + 0x8));
-		writel(0x1a, ((DICKENS | (0x22 << 16)) + 0x8));
-		writel(0x1a, ((DICKENS | (0x23 << 16)) + 0x8));
-		writel(0x1a, ((DICKENS | (0x24 << 16)) + 0x8));
-		writel(0x1a, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x25 << 16)) + 0x8));
 		writel(0x1a, ((DICKENS | (0x26 << 16)) + 0x8));
 		writel(0x1a, ((DICKENS | (0x27 << 16)) + 0x8));
 
-                ncr_write32(NCP_REGION_ID(0x170,0x1), 0x42800, 0x0);
+		writel(0, (MMAP_SCB + 0x42800));
 	}
 
 	/*set bit 9 of ELMs to force to use single ELM*/
@@ -431,8 +425,9 @@ sysmem_init(void)
 		unsigned int tmp;
 
                 ncr_read32(NCP_REGION_ID(0x167, i), 0x0004, &tmp);
-                tmp &= 0xFFFFF9FF;
-                ncr_write32(NCP_REGION_ID(0x167, i), 0x0004, tmp);
+                tmp &= 0xfffff9ff;
+		tmp |= ((sysmem->num_interfaces - 1) << 9);
+		ncr_write32(NCP_REGION_ID(0x167, i), 0x0004, tmp);
 	}
 #endif
 
