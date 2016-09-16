@@ -1,6 +1,21 @@
 /*
- *  drivers/i2c/axm_i2c.c
+ *  Copyright (C) 2016 Intel (john.jacques@intel.com)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307	 USA
  */
+
 #include <common.h>
 #include <asm/io.h>
 #include <div64.h>
@@ -25,115 +40,142 @@ static unsigned int initialized;
 #define MST_STATUS_NA  (1<<4)  /* NAK on address phase */
 #define MST_STATUS_ERR (MST_STATUS_NAK | MST_STATUS_AL | MST_STATUS_TSS)
 
-#define CHIP_READ(_chip)  ((chip << 1) | 1)
-#define CHIP_WRITE(_chip) ((chip << 1) | 0)
+#define CHIP_READ(chip)  (((chip) << 1) | 1)
+#define CHIP_WRITE(chip) (((chip) << 1) | 0)
 
 /*
- * ns_to_clk - Convert nanoseconds to clock cycles for the given clock
- * frequency.
- */
-static unsigned long
-ns_to_clk(unsigned long long ns, unsigned long clk_mhz)
+  ------------------------------------------------------------------------------
+  ns_to_clk
+
+  Convert nanoseconds to clock cycles for the given clock frequency.
+*/
+
+static unsigned int
+ns_to_clk(unsigned int ns, unsigned int clk_mhz)
 {
-	return lldiv(ns*clk_mhz, 1000);
+	debug("%s:%d - ns=%u clk_mhz=%u return=%u\n",
+	      __FILE__, __LINE__, ns, clk_mhz, (ns * (clk_mhz / 1000)));
+
+	return ns * (clk_mhz / 1000);
 }
 
 /*
- * i2c_base_addr - Return the I2C controller base address for currently
- * selected bus.
- */
-static unsigned long
+  ------------------------------------------------------------------------------
+  i2c_base_addr
+
+  Return the I2C controller base address for currently selected bus.
+*/
+
+static void *
 i2c_base_addr(void)
 {
-#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF_SIM)
-	unsigned long long i2c_addr = I2C0;
-#else
-	unsigned long i2c_addr = I2C0;
-#endif
+	void *i2c_addr = NULL;
 
-#ifdef CONFIG_I2C_MULTI_BUS
+#if defined(CONFIG_I2C_MULTI_BUS)
 	switch (i2c_get_bus_num()) {
 	case 0:
-		i2c_addr = I2C0;
+		i2c_addr = (void *)I2C0;
 		break;
 	case 1:
-		i2c_addr = I2C1;
+		i2c_addr = (void *)I2C1;
 		break;
-#ifndef CONFIG_AXXIA_25xx
 	case 2:
-		i2c_addr = I2C2;
+		i2c_addr = (void *)I2C2;
 		break;
 	case 3:
-		i2c_addr = I2C3;
+		i2c_addr = (void *)I2C3;
 		break;
-#endif
-#ifdef CONFIG_AXXIA_XLF_SIM
+#if defined(CONFIG_AXXIA_ANY_XLF)
 	case 4:
-		i2c_addr = I2C4;
+		i2c_addr = (void *)I2C4;
 		break;
 	case 5:
-		i2c_addr = I2C5;
+		i2c_addr = (void *)I2C5;
 		break;
 	case 6:
-		i2c_addr = I2C6;
+		i2c_addr = (void *)I2C6;
 		break;
 	case 7:
-		i2c_addr = I2C7;
+		i2c_addr = (void *)I2C7;
 		break;
 	case 8:
-		i2c_addr = I2C8;
+		i2c_addr = (void *)I2C8;
 		break;
 	case 9:
-		i2c_addr = I2C9;
+		i2c_addr = (void *)I2C9;
 		break;
 	case 10:
-		i2c_addr = I2C10;
+		i2c_addr = (void *)I2C10;
 		break;
 	case 11:
-		i2c_addr = I2C11;
+		i2c_addr = (void *)I2C11;
 		break;
-#endif
+	case 12:
+		i2c_addr = (void *)I2C12;
+		break;
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 	default:
-		return 0;
+		break;
 	}
-#endif
+#else  /* CONFIG_I2C_MULTI_BUS */
+	i2c_addr = (void *)I2C0;
+#endif  /* CONFIG_I2C_MULTI_BUS */
+
+	debug("%s:%d - returning 0x%p\n", __FILE__, __LINE__, i2c_addr);
 
 	return i2c_addr;
 }
 
+/*
+  ------------------------------------------------------------------------------
+  i2c_initialized
+*/
+
 static int
 i2c_initialized(void)
 {
-	if (!(initialized & (1<<current_bus))) {
-		printf("I2C dev %d not initialized\n", current_bus);
+	if (!(initialized & (1 << current_bus))) {
+		printf("I2C dev %d is not initialized\n", current_bus);
+
 		return 0;
 	}
+
 	return 1;
 }
 
 /*
- * i2c_check_status - Check status of the current transfer.
- * Return -1 on transfer error.
- */
+  ------------------------------------------------------------------------------
+  i2c_check_status
+
+  Check status of the current transfer.  Return -1 on transfer error.
+*/
+
 static int
 i2c_check_status(unsigned int status, unsigned int *acc_status)
 {
-	if (status & MST_STATUS_ERR) {
-		debug("i2c: transfer ABORTED (status %#x/%#x)\n", status, *acc_status);
+	if (status & MST_STATUS_ERR)
 		return -1;
-	}
+
 	if (status & MST_STATUS_SNS)
 		*acc_status |= MST_STATUS_SNS;
+
 	if (status & MST_STATUS_SCC)
 		*acc_status |= MST_STATUS_SCC;
+
+	debug("%s:%d - *acc_status=0x%x\n", __FILE__, __LINE__, *acc_status);
+
 	return 0;
 }
 
 /*
- * i2c_addr_to_buf - Convert 32-bit integer to uchar buffer.
- */
+  ------------------------------------------------------------------------------
+  i2c_addr_to_buf
+
+  Convert 32-bit integer to uchar buffer.
+*/
+
 static void
-i2c_addr_to_buf(uint addr, int alen, uchar *abuf)
+i2c_addr_to_buf(unsigned int addr, int alen, unsigned char *abuf)
 {
 	while (--alen >= 0) {
 		abuf[alen] = addr & 0xff;
@@ -142,38 +184,37 @@ i2c_addr_to_buf(uint addr, int alen, uchar *abuf)
 }
 
 /*
- * i2c_write_bytes - Perform single I2C write.
- *
- * <START> <chip_addr R/nW=0> <addr[0]> ... <addr[len-1]> <data[0]> <data[1]>
- * ... <data[len-1]>
- */
-#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF_SIM)
-int
-i2c_write_bytes(unsigned long long i2c_addr, uchar chip,
+  ------------------------------------------------------------------------------
+  i2c_write_bytes
+
+  Perform single I2C write.
+
+  <START> <chip_addr R/nW=0>
+  <addr[0]> <addr[1]> ... <addr[len-1]>
+  <data[0]> <data[1]> ... <data[len-1]>
+*/
+
+static int
+i2c_write_bytes(void *i2c_addr, unsigned char chip,
 		const uchar *addr, int alen,
 		const uchar *data, int dlen)
-#else
-int
-i2c_write_bytes(unsigned long i2c_addr, uchar chip,
-		const uchar *addr, int alen,
-		const uchar *data, int dlen)
-#endif
 {
 	int result = 0;
 	int len = alen + dlen;
 	unsigned int status;
-	unsigned int acc_status = 0;/* Accumulated status bits
-				     * to determine when transfer
-				     *is complete */
+	/* Accumulated status bits to determine when transfer is complete. */
+	unsigned int acc_status = 0;
 	unsigned int done_bits = MST_STATUS_SNS;
 
-	debug("_i2c_write: chip=%#x, addr=[%02x %02x] alen=%d buffer=[%02x %02x %02x %02x], len=%d\n",
-	      chip, addr[0], addr[1], alen, data[0], data[1], data[2], data[3], len);
+	debug("%s:%d - i2c_addr=0x%p chip=%u alen=%d dlen=%d\n",
+	      __FILE__, __LINE__, i2c_addr, chip, alen, dlen);
 
 	/* TX # bytes */
 	writel(len, i2c_addr + AI2C_REG_I2C_X7_MST_TX_XFER);
+
 	/* RX 0 bytes */
 	writel(0, i2c_addr + AI2C_REG_I2C_X7_MST_RX_XFER);
+
 	/* Chip address for write */
 	writel(CHIP_WRITE(chip), i2c_addr + AI2C_REG_I2C_X7_MST_ADDR_1);
 
@@ -186,28 +227,35 @@ i2c_write_bytes(unsigned long i2c_addr, uchar chip,
 		if (status & MST_STATUS_TFL) {
 			/* Data to TX FIFO (at least five bytes of space) */
 			int i;
+		
 			for (i = 0; i < 5 && len > 0; i++) {
-				unsigned txbyte = 0;
+				unsigned int txbyte = 0;
+
 				if (alen > 0) {
 					txbyte = *addr++;
 					--alen;
 				} else {
 					txbyte = *data++;
 				}
+
 				writel(txbyte,
 				       i2c_addr + AI2C_REG_I2C_X7_MST_DATA);
 				--len;
 			}
 		}
+
 		result = i2c_check_status(status, &acc_status);
+
 		if (result < 0)
-			break;
+			return -1;
 	}
+
 	/* Wait for state machine to go IDLE */
 	while (readl(i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND) & 0x8)
 		;
 
-	debug("i2c_write: transfer finished, xfr_rx=%u/%u xfr_tx=%u/%u\n",
+	debug("%s:%d - transfer finished, xfr_rx=%u/%u xfr_tx=%u/%u\n",
+	      __FILE__, __LINE__,
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_RX_XFER),
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_RX_BYTES_XFRD),
 	      readl(i2c_addr + AI2C_REG_I2C_X7_MST_TX_XFER),
@@ -217,23 +265,21 @@ i2c_write_bytes(unsigned long i2c_addr, uchar chip,
 }
 
 /*
- * i2c_read_bytes - Performs a single I2C read.
- *
- * <START> <chip_addr R/nW=1> <buffer[0]> <buffer[1]> ... <buffer[len-1]>
- */
-#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF_SIM)
+  ------------------------------------------------------------------------------
+  i2c_read_bytes
+
+  Performs a single I2C read.
+
+  <START> <chip_addr R/nW=1> <buffer[0]> <buffer[1]> ... <buffer[len-1]>
+*/
+
 int
-i2c_read_bytes(unsigned long long i2c_addr, uchar chip, uchar *buffer, int len)
-#else
-int
-i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len)
-#endif
+i2c_read_bytes(void *i2c_addr, uchar chip, unsigned char *buffer, int len)
 {
 	int result = 0;
 	unsigned int status;
-	unsigned int acc_status = 0;/* Accumulated status bits
-				     * to determine when transfer
-				     * is complete */
+	/* Accumulated status bitsto determine when transfer is complete. */
+	unsigned int acc_status = 0;
 	unsigned int done_bits = MST_STATUS_SNS;
 
 	/* Read 'len' bytes */
@@ -279,15 +325,14 @@ i2c_read_bytes(unsigned long i2c_addr, uchar chip, uchar *buffer, int len)
 
 
 /*
- * i2c_stop - Generate STOP on the I2C bus to terminate a transaction.
- */
-#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF_SIM)
-int
-i2c_stop(unsigned long long i2c_addr)
-#else
-int
-i2c_stop(unsigned long i2c_addr)
-#endif
+  ------------------------------------------------------------------------------
+  i2c_stop
+
+  Generate STOP on the I2C bus to terminate a transaction.
+*/
+
+static int
+i2c_stop(void *i2c_addr)
 {
 	int rc = 0;
 	unsigned int status;
@@ -299,6 +344,7 @@ i2c_stop(unsigned long i2c_addr)
 	while (acc_status != done_bits) {
 		status = readl(i2c_addr + AI2C_REG_I2C_X7_MST_INT_STATUS);
 		rc = i2c_check_status(status, &acc_status);
+
 		if (rc < 0)
 			break;
 	}
@@ -321,11 +367,7 @@ i2c_stop(unsigned long i2c_addr)
 int
 i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 {
-#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF_SIM)
-	unsigned long long i2c_addr = i2c_base_addr();
-#else
-	unsigned long i2c_addr = i2c_base_addr();
-#endif
+	void *i2c_addr = i2c_base_addr();
 	int rc;
 
 	if (!i2c_initialized())
@@ -365,11 +407,7 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 int
 i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 {
-#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF_SIM)
-	unsigned long long i2c_addr = i2c_base_addr();
-#else
-	unsigned long i2c_addr = i2c_base_addr();
-#endif
+	void *i2c_addr = i2c_base_addr();
 	int rc;
 
 	if (!i2c_initialized())
@@ -404,11 +442,7 @@ i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 int
 i2c_probe(uchar chip)
 {
-#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF_SIM)
-	unsigned long long i2c_addr = i2c_base_addr();
-#else
-	unsigned long i2c_addr = i2c_base_addr();
-#endif
+	void *i2c_addr = i2c_base_addr();
 	int rc;
 	uchar dummy;
 
@@ -423,25 +457,28 @@ i2c_probe(uchar chip)
 }
 
 /*
- * i2c_init
- */
+  ------------------------------------------------------------------------------
+  i2c_init
+*/
+
 void
 i2c_init(int speed, int slave)
 {
-#if defined(CONFIG_AXXIA_56XX_SIM) || defined(CONFIG_AXXIA_XLF_SIM)
-	unsigned long long i2c_addr = i2c_base_addr();
-#else
-	unsigned long i2c_addr = i2c_base_addr();
-#endif
+	void *i2c_addr = i2c_base_addr();
 
-	debug("i2c_init: speed=%d slave=%#x\n", speed, slave);
+	if (NULL == i2c_addr) {
+		debug("%s:%d - I2C Address is NULL!\n", __FILE__, __LINE__);
+
+		return;
+	}
+
+	debug("%s:%d - speed=%d slave=%#x\n", __FILE__, __LINE__, speed, slave);
 
 	/* Enable Master Mode */
 	writel(0x1, i2c_addr + AI2C_REG_I2C_X7_GLOBAL_CONTROL);
 
 	i2c_set_bus_speed(speed);
-
-	initialized |= (1<<current_bus);
+	initialized |= ( 1 << current_bus);
 }
 
 /*
@@ -450,7 +487,7 @@ i2c_init(int speed, int slave)
 int
 i2c_set_bus_speed(unsigned int speed)
 {
-	unsigned long long i2c_addr = i2c_base_addr();
+	void *i2c_addr = i2c_base_addr();
 	unsigned per_clock;
 	unsigned clk_mhz;
 	unsigned divisor;
@@ -529,12 +566,17 @@ i2c_set_bus_speed(unsigned int speed)
 	return 0;
 }
 
-#ifdef CONFIG_I2C_MULTI_BUS
+#if defined(CONFIG_I2C_MULTI_BUS)
+
 int
 i2c_set_bus_num(unsigned int bus)
 {
-	if (bus >= CONFIG_SYS_MAX_I2C_BUS)
+	if (bus >= CONFIG_SYS_MAX_I2C_BUS) {
+		debug("%s:%d - bus, %u, is out of range!\n",
+		      __FILE__, __LINE__, bus);
+
 		return -1;
+	}
 
 	current_bus = bus;
 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
@@ -542,9 +584,17 @@ i2c_set_bus_num(unsigned int bus)
 	return 0;
 }
 
+/*
+  ------------------------------------------------------------------------------
+  i2c_get_bus_num
+*/
+
 unsigned int
 i2c_get_bus_num(void)
 {
+	debug("%s:%d - current_bus=%u\n", __FILE__, __LINE__, current_bus);
+
 	return current_bus;
 }
-#endif
+
+#endif	/* CONFIG_I2C_MULTI_BUS */
