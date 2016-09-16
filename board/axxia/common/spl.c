@@ -1101,6 +1101,18 @@ board_init_f(ulong dummy)
 	unsigned int pvalue;
 	int i;
 
+	/*
+	  Work-Around for Hardware Debug
+
+	  Reverse the polarity of coresight_ap_deviceen.
+
+	  Without this update, JTAG debugging won't work.
+	*/
+
+	writel(0xab, (SYSCON + 0x2000));
+	writel(0x4700000, (SYSCON + 0x2008));
+	writel(0, (SYSCON + 0x2000));
+
 	/* Set the CNTFRQ register. */
 	asm volatile("msr cntfrq_el0, %0"
 		     : : "r" (COUNTER_FREQUENCY) : "memory");
