@@ -70,8 +70,13 @@ ncp_l3lock_region_init ( ncp_dev_hdl_t   dev, ncp_l3lock_region_info_t *l3lock_p
 	}
 
 	/* Setup secure mode */
+#ifdef __UBOOT__
+	tmp = readl(MMAP_SCB + 0x42800);
+	writel(2, (MMAP_SCB + 0x42800));
+#else  /* __UBOOT__ */
         ncr_read32( NCP_REGION_ID(0x170, 0x1), 0x42800, &tmp);
 	ncr_write32( NCP_REGION_ID(0x170, 1), 0x42800, 0x2);
+#endif	/* __UBOOT__ */
 
 	/* setup regions */
 	for (j=0; j < 4; j++)
@@ -82,25 +87,37 @@ ncp_l3lock_region_init ( ncp_dev_hdl_t   dev, ncp_l3lock_region_info_t *l3lock_p
 			
 		for (i=0x20; i <= 0x27; i++)
 		{
+#ifdef __UBOOT__
+			writel((unsigned int)(regValue & 0xffffffff),
+			       ((DICKENS | (i << 16)) + 0x48 + (j * 8)));
+			writel((unsigned int)((regValue >> 32)& 0xffffffff),
+			       ((DICKENS | (i << 16)) + 0x4c + (j * 8)));
+#else  /* __UBOOT__ */
 			ncr_write32( NCP_REGION_ID(0x1e0, i), 0x0048+(j*8), 
 					(ncp_uint32_t)(regValue & 0xFFFFFFFF));
 			ncr_write32( NCP_REGION_ID(0x1e0, i), 0x0048+(j*8)+4, 
 					(ncp_uint32_t)((regValue >> 32) & 0xFFFFFFFF));
+#endif	/* __UBOOT__ */
 		}
 	}
 
 	/* setup number of locked ways */
 	for (i=0x20; i <= 0x27; i++)
 	{
-        	ncr_write32( NCP_REGION_ID(0x1e0, i), 0x0040, numLockedWays);
-
+#ifdef __UBOOT__
+		writel(numLockedWays, ((DICKENS | (i << 16)) + 0x40));
+#else  /* __UBOOT__ */
+		ncr_write32( NCP_REGION_ID(0x1e0, i), 0x0040, numLockedWays);
+#endif	/* __UBOOT__ */
 	}
 
 	/* Set it back to non-secure mode or the mode we started with. */
+#ifdef __UBOOT__
+	writel(tmp, (MMAP_SCB + 0x42800));
+#else  /* __UBOOT__ */
 	ncr_write32( NCP_REGION_ID(0x170, 1), 0x42800, tmp);
+#endif	/* __UBOOT__ */
 
 NCP_RETURN_LABEL
 	return ncpStatus;
 }
-
-
