@@ -561,6 +561,11 @@
 #define AI2C_REG_I2C_X7_MST_ARP_INT_STATUS (0x00C8)   /*!< Offset to reg
                                                         Master ARP Interrupt
                                                         Status */
+
+#define CONFIG_AXXIA_USB0
+#define CONFIG_AXXIA_USB1
+#define CONFIG_USB_MAX_CONTROLLER_COUNT 2
+
 #endif	/* CONFIG_TARGET_HARDWARE */
 
 /*
@@ -701,9 +706,19 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
   ==============================================================================
 */
 
-#define DICKENS (0x4000000000)
-#define IO      (0x8080000000)
-#define AXI2SER (0x8002000000)
+#define DICKENS   (0x4000000000)
+#define IO        (0x8080000000)
+#define AXI2SER0  (0x8002000000)
+#define AXI2SER1  (0x8002400000)
+#define AXI2SER2  (0x8002800000)
+#define AXI2SER3  (0x8002c00000)
+#define AXI2SER4  (0x8003000000)
+#define AXI2SER5  (0x8003400000)
+#define AXI2SER6  (0x8003800000)
+#define AXI2SER7  (0x8003c00000)
+#define AXI2SER8  (0x8004000000)
+#define AXI2SER9  (0x8004400000)
+#define AXI2SER10 (0x8004800000)
 
 #define UART0_ADDRESS (0x8080000000)
 #define UART1_ADDRESS (0x8080010000)
@@ -821,34 +836,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 #define CONFIG_PCIE0_BUS_START 0x00000000
 
-#endif
-
-/*
-  ==============================================================================
-  ==============================================================================
-  USB
-  ==============================================================================
-  ==============================================================================
-*/
-
-/* USB support */
-#ifdef CONFIG_AXXIA_USB
-#define CONFIG_CMD_USB 1
-#define CONFIG_USB_EHCI 1
-#define CONFIG_USB_STORAGE 1
-#define CONFIG_CMD_USB_STORAGE 1
-#define CONFIG_USB_ULPI 1
-#define CONFIG_USB_ULPI_VIEWPORT 1
-#define CONFIG_CMD_EXT2 1
-#define CONFIG_CMD_EXT4 1
-#define CONFIG_DOS_PARTITION 1
-#define CONFIG_USB_ADDR (IO+0x140000)
-#define CONFIG_EHCI_IS_TDI 1
-#define CONFIG_CMD_LSI_ULPI 1
-#endif
-
-#ifndef __ASSEMBLY__
-int usb_phy_init(void);
 #endif
 
 /*
@@ -1623,31 +1610,6 @@ extern unsigned *phyRegs;
 #define CONFIG_UBOOT_SIZE                (2 * 1024 * 1024)
 #define CONFIG_UBOOT_OFFSET_REDUND       (3 * 1024 * 1024)
 #define CONFIG_UBOOT_SIZE_REDUND         CONFIG_UBOOT_SIZE
-
-#define AXI2SER6 0x8003800000
-
-#define SSP_LANE0_ANA_RX_SCOPE_VDCC (AXI2SER6 + 0x4098)
-#define COMPDISTUNE0                (AXI2SER6 + 0x40000)
-#define OTGTUNE0                    (AXI2SER6 + 0x40004)
-#define SQRXTUNE0                   (AXI2SER6 + 0x40008)
-#define TXFSLSTUNE0                 (AXI2SER6 + 0x4000c)
-#define TXHSXVTUNE0                 (AXI2SER6 + 0x40010)
-#define TXPREEMPAMPTUNE0            (AXI2SER6 + 0x40014)
-#define TXPREEMPPULSETUNE0          (AXI2SER6 + 0x40018)
-#define TXRESTUNE0                  (AXI2SER6 + 0x4001c)
-#define TXRISETUNE0                 (AXI2SER6 + 0x40020)
-#define TXVREFTUNE0                 (AXI2SER6 + 0x40024)
-
-#define COMPDISTUNE0_VALUE       4
-#define OTGTUNE0_VALUE           4
-#define SQRXTUNE0_VALUE          3
-#define TXFSLSTUNE0_VALUE        3
-#define TXHSXVTUNE0_VALUE        3
-#define TXPREEMPAMPTUNE0_VALUE   0
-#define TXPREEMPPULSETUNE0_VALUE 0
-#define TXRESTUNE0_VALUE         1
-#define TXRISETUNE0_VALUE        2
-#define TXVREFTUNE0_VALUE        8
 
 #define CONFIG_GICV3
 #define GICD_BASE (0x8010000000)

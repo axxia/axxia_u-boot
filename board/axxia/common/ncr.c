@@ -359,7 +359,7 @@ ncr_read32_0x153(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
 	ncp_uint64_t address;
 
-	address = AXI2SER + 0x0 + (NCP_TARGET_ID(region) * 0x10000) + offset;
+	address = AXI2SER0 + 0x0 + (NCP_TARGET_ID(region) * 0x10000) + offset;
 	*value = readl(POINTER(address));
 
 	return 0;
@@ -375,7 +375,7 @@ ncr_write32_0x153(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
 	ncp_uint64_t address;
 
-	address = AXI2SER + 0x0 + (NCP_TARGET_ID(region) * 0x10000) + offset;
+	address = AXI2SER0 + 0x0 + (NCP_TARGET_ID(region) * 0x10000) + offset;
 	writel(value, POINTER(address));
 
 	return 0;
@@ -391,7 +391,7 @@ ncr_read32_0x155(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
 	ncp_uint64_t address;
 
-	address = AXI2SER + 0x00800000 + (NCP_TARGET_ID(region) * 0x00010000) + offset;
+	address = AXI2SER0 + 0x00800000 + (NCP_TARGET_ID(region) * 0x00010000) + offset;
 	*value = readl(POINTER(address));
 
 	return 0;
@@ -407,7 +407,7 @@ ncr_write32_0x155(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
 	ncp_uint64_t address;
 
-	address = AXI2SER + 0x00800000 + (NCP_TARGET_ID(region) * 0x00010000) + offset;
+	address = AXI2SER0 + 0x00800000 + (NCP_TARGET_ID(region) * 0x00010000) + offset;
 	writel(value, POINTER(address));
 
 	return 0;
@@ -424,7 +424,7 @@ ncr_read32_0x156(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
 	ncp_uint64_t address;
 
-	address = AXI2SER + 0x00c00000 + (NCP_TARGET_ID(region) * 0x4000) + offset;
+	address = AXI2SER0 + 0x00c00000 + (NCP_TARGET_ID(region) * 0x4000) + offset;
 	*value = readl(POINTER(address));
 
 	return 0;
@@ -440,7 +440,7 @@ ncr_write32_0x156(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
 	ncp_uint64_t address;
 
-	address = AXI2SER + 0x00c00000 + (NCP_TARGET_ID(region) * 0x4000) + offset;
+	address = AXI2SER0 + 0x00c00000 + (NCP_TARGET_ID(region) * 0x4000) + offset;
 	writel(value, POINTER(address));
 
 	return 0;
@@ -456,7 +456,7 @@ ncr_read32_0x165(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
 	ncp_uint64_t address;
 
-	address = AXI2SER + 0x01400000 + (NCP_TARGET_ID(region) * 0x10000) + offset;
+	address = AXI2SER0 + 0x01400000 + (NCP_TARGET_ID(region) * 0x10000) + offset;
 	*value = readl(POINTER(address));
 
 	return 0;
@@ -472,7 +472,7 @@ ncr_write32_0x165(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
 	ncp_uint64_t address;
 
-	address = AXI2SER + 0x01400000 + (NCP_TARGET_ID(region) * 0x10000) + offset;
+	address = AXI2SER0 + 0x01400000 + (NCP_TARGET_ID(region) * 0x10000) + offset;
 	writel(value, POINTER(address));
 
 	return 0;
@@ -489,7 +489,7 @@ ncr_read32_0x167(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
 	ncp_uint64_t address;
 
-	address = AXI2SER + 0x01c00000 + (NCP_TARGET_ID(region) * 0x10000) + offset;
+	address = AXI2SER0 + 0x01c00000 + (NCP_TARGET_ID(region) * 0x10000) + offset;
 	*value = readl(POINTER(address));
 
 	return 0;
@@ -505,7 +505,7 @@ ncr_write32_0x167(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
 	ncp_uint64_t address;
 
-	address = AXI2SER + 0x01c00000 + (NCP_TARGET_ID(region) * 0x10000) + offset;
+	address = AXI2SER0 + 0x01c00000 + (NCP_TARGET_ID(region) * 0x10000) + offset;
 	writel(value, POINTER(address));
 
 	return 0;

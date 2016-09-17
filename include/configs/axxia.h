@@ -4118,12 +4118,74 @@ unsigned int set_watchdog_timeout(unsigned int);
 /*
   ==============================================================================
   ==============================================================================
-  Errata
+  USB
   ==============================================================================
   ==============================================================================
 */
 
+#if defined(CONFIG_AXXIA_USB0) || defined(CONFIG_AXXIA_USB1)
+#define CONFIG_USB_XHCI_AXXIA
+#define CONFIG_CMD_USB 1
+#define CONFIG_USB_XHCI 1
+#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS 4
+#define CONFIG_USB_STORAGE 1
+#define CONFIG_CMD_USB_STORAGE 1
+#define CONFIG_CMD_EXT2 1
+#define CONFIG_CMD_EXT4 1
+#define CONFIG_DOS_PARTITION 1
+
+/* Work Around Values */
+
+#define SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE 1
+#define COMPDISTUNE0_VALUE                4
+#define OTGTUNE0_VALUE                    4
+#define SQRXTUNE0_VALUE                   3
+#define TXFSLSTUNE0_VALUE                 3
+#define TXHSXVTUNE0_VALUE                 3
+#define TXPREEMPAMPTUNE0_VALUE            0
+#define TXPREEMPPULSETUNE0_VALUE          0
+#define TXRESTUNE0_VALUE                  1
+#define TXRISETUNE0_VALUE                 2
+#define TXVREFTUNE0_VALUE                 8
+#define PCSRXLOSMASK_VALUE                0x3e8
+#define PCSTXDEEMPH3P4DB_VALUE            0x16
+#define PCSTXDEEMPH6DB_VALUE              0x16
+#define PCSTXSWINGFULL_VALUE              0x7a
+#define TXVBOOSTLVL_VALUE                 4
+
+/* Work Around Offsets */
+
+#define SSP_LANE0_ANA_RX_SCOPE_VDCC 0x04098
+#define COMPDISTUNE0                0x40000
+#define OTGTUNE0                    0x40004
+#define SQRXTUNE0                   0x40008
+#define TXFSLSTUNE0                 0x4000c
+#define TXHSXVTUNE0                 0x40010
+#define TXPREEMPAMPTUNE0            0x40014
+#define TXPREEMPPULSETUNE0          0x40018
+#define TXRESTUNE0                  0x4001c
+#define TXRISETUNE0                 0x40020
+#define TXVREFTUNE0                 0x40024
+#define PCSRXLOSMASK                0x40038
+#define PCSTXDEEMPH3P4DB            0x4003c
+#define PCSTXDEEMPH6DB              0x40040
+#define PCSTXSWINGFULL              0x40044
+#define TXVBOOSTLVL                 0x40048
+
+#define AXXIA_USB0_BASE (AXI2SER6 + 0)
+#define AXXIA_USB1_BASE (AXI2SER6 + 0x80000)
+
+#endif
+
 /*#define DISABLE_USB3*/
+
+/*
+  ==============================================================================
+  ==============================================================================
+  Errata
+  ==============================================================================
+  ==============================================================================
+*/
 
 /*
   U-Boot will only use this much memory when relocating, loading

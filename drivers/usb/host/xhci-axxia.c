@@ -30,8 +30,7 @@ struct axxia_xhci {
 	struct dwc3 *dwc3_reg;
 };
 
-static struct axxia_xhci axxia;
-
+static struct axxia_xhci axxia[CONFIG_USB_MAX_CONTROLLER_COUNT];
 
 void dwc3_set_mode(struct dwc3 *dwc3_reg, u32 mode)
 {
@@ -140,28 +139,47 @@ static void axxia_xhci_core_exit(struct axxia_xhci *axxia)
 {
 }
 
-int xhci_hcd_init(int index, struct xhci_hccr **hccr, struct xhci_hcor **hcor)
+/*
+  ------------------------------------------------------------------------------
+  xhci_hcd_init
+*/
+
+int
+xhci_hcd_init(int index, struct xhci_hccr **hccr, struct xhci_hcor **hcor)
 {
-	struct axxia_xhci *ctx = &axxia;
+	struct axxia_xhci *ctx;
 	int ret;
 
-	ctx->hcd = (struct xhci_hccr *)(0x009000000000);
+	if (CONFIG_USB_MAX_CONTROLLER_COUNT <= index) {
+		puts("XHCI: controller index out of range\n");
+
+		return -EINVAL;
+	}
+
+	ctx = &axxia[index];
+
+	if (0 == index)
+		ctx->hcd = (struct xhci_hccr *)(0x9000000000);
+	else if (1 == index)
+		ctx->hcd = (struct xhci_hccr *)(0x9800000000);
 
 	ctx->dwc3_reg = (struct dwc3 *)((char *)(ctx->hcd) + DWC3_REG_OFFSET);
 
-
 	ret = axxia_xhci_core_init(ctx);
+
 	if (ret) {
-		puts("XHCI: failed to initialize controller\n");
+		printf("XHCI%d: failed to initialize controller\n", index);
+
 		return -EINVAL;
 	}
 
 	*hccr = (ctx->hcd);
-	*hcor = (struct xhci_hcor *)((uintptr_t) *hccr
-				+ HC_LENGTH(xhci_readl(&(*hccr)->cr_capbase)));
+	*hcor = (struct xhci_hcor *)
+		((uintptr_t)*hccr
+		 + HC_LENGTH(xhci_readl(&(*hccr)->cr_capbase)));
 
-	debug("Axxia-xhci: init hccr %lx and hcor %lx hc_length %ld\n",
-	      (uintptr_t)*hccr, (uintptr_t)*hcor,
+	debug("Axxia-xhci%d: init hccr %lx and hcor %lx hc_length %ld\n",
+	      index, (uintptr_t)*hccr, (uintptr_t)*hcor,
 	      (uintptr_t)HC_LENGTH(xhci_readl(&(*hccr)->cr_capbase)));
 
 	return 0;
@@ -169,7 +187,7 @@ int xhci_hcd_init(int index, struct xhci_hccr **hccr, struct xhci_hcor **hcor)
 
 void xhci_hcd_stop(int index)
 {
-	struct axxia_xhci *ctx = &axxia;
+	struct axxia_xhci *ctx = &axxia[index];
 
 	axxia_xhci_core_exit(ctx);
 }

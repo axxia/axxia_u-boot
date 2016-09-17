@@ -1198,29 +1198,31 @@ board_init_f(ulong dummy)
 	writel(0x120a122f, 0x800404028c);
 #endif
 
-#ifdef CONFIG_AXXIA_USB
 	/*
-	  The USB phy reads the values stored in the following
+	  The USB phys read the values stored in the following
 	  registers when enabled.  Some of the default values need to
 	  be changed.
 
-	  After wrting the new values, use SYSCON to reset the USB phy.
+	  After wrting the new values, use SYSCON to reset the USB phys.
 	*/
-	writel(COMPDISTUNE0_VALUE, COMPDISTUNE0);
-	writel(OTGTUNE0_VALUE, OTGTUNE0);
-	writel(SQRXTUNE0_VALUE, SQRXTUNE0);
-	writel(TXFSLSTUNE0_VALUE, TXFSLSTUNE0);
-	writel(TXHSXVTUNE0_VALUE, TXHSXVTUNE0);
-	writel(TXPREEMPAMPTUNE0_VALUE, TXPREEMPAMPTUNE0);
-	writel(TXPREEMPPULSETUNE0_VALUE, TXPREEMPPULSETUNE0);
-	writel(TXRESTUNE0_VALUE, TXRESTUNE0);
-	writel(TXRISETUNE0_VALUE, TXRISETUNE0);
-	writel(TXVREFTUNE0_VALUE, TXVREFTUNE0);
-	writel(PCSRXLOSMASK_VALUE, PCSRXLOSMASK);
-	writel(PCSTXDEEMPH3P4DB_VALUE, PCSTXDEEMPH3P4DB);
-	writel(PCSTXDEEMPH6DB_VALUE, PCSTXDEEMPH6DB);
-	writel(PCSTXSWINGFULL_VALUE, PCSTXSWINGFULL);
-	writel(TXVBOOSTLVL_VALUE, TXVBOOSTLVL);
+
+#ifdef CONFIG_AXXIA_USB0
+
+	writel(COMPDISTUNE0_VALUE, AXXIA_USB0_BASE + COMPDISTUNE0);
+	writel(OTGTUNE0_VALUE, AXXIA_USB0_BASE + OTGTUNE0);
+	writel(SQRXTUNE0_VALUE, AXXIA_USB0_BASE + SQRXTUNE0);
+	writel(TXFSLSTUNE0_VALUE, AXXIA_USB0_BASE + TXFSLSTUNE0);
+	writel(TXHSXVTUNE0_VALUE, AXXIA_USB0_BASE + TXHSXVTUNE0);
+	writel(TXPREEMPAMPTUNE0_VALUE, AXXIA_USB0_BASE + TXPREEMPAMPTUNE0);
+	writel(TXPREEMPPULSETUNE0_VALUE, AXXIA_USB0_BASE + TXPREEMPPULSETUNE0);
+	writel(TXRESTUNE0_VALUE, AXXIA_USB0_BASE + TXRESTUNE0);
+	writel(TXRISETUNE0_VALUE, AXXIA_USB0_BASE + TXRISETUNE0);
+	writel(TXVREFTUNE0_VALUE, AXXIA_USB0_BASE + TXVREFTUNE0);
+	writel(PCSRXLOSMASK_VALUE, AXXIA_USB0_BASE + PCSRXLOSMASK);
+	writel(PCSTXDEEMPH3P4DB_VALUE, AXXIA_USB0_BASE + PCSTXDEEMPH3P4DB);
+	writel(PCSTXDEEMPH6DB_VALUE, AXXIA_USB0_BASE + PCSTXDEEMPH6DB);
+	writel(PCSTXSWINGFULL_VALUE, AXXIA_USB0_BASE + PCSTXSWINGFULL);
+	writel(TXVBOOSTLVL_VALUE, AXXIA_USB0_BASE + TXVBOOSTLVL);
 
 	/* Switch the USB interrupt from edge to level. */
 	value = readl(0x9000200004);
@@ -1229,31 +1231,95 @@ board_init_f(ulong dummy)
 
 	/* Reset the USB PHY. */
 	writel(0xab, (SYSCON + 0x2000));
+#if defined(CONFIG_AXXIA_ANY_56XX)
 	value = readl(SYSCON + 0x2044);
 	value |= (1 << 17);
 	writel(value, (SYSCON + 0x2044));
 	udelay(1);
 	value &= ~(1 << 17);
 	writel(value, (SYSCON + 0x2044));
+#elif defined(CONFIG_AXXIA_ANY_XLF)
+	value = readl(SYSCON + 0x20a0);
+	value |= (1 << 29);
+	writel(value, (SYSCON + 0x20a0));
+	udelay(1);
+	value &= ~(1 << 29);
+	writel(value, (SYSCON + 0x20a0));
+#endif
 	writel(0, (SYSCON + 0x2000));
 
 	do {
 		udelay(10);
-		value = readl(AXI2SER6 + 0x6c);
+		value = readl(AXXIA_USB0_BASE + 0x6c);
 	} while (0 != (value & (1 << 2)));
 
-	writel(0x8, (AXI2SER6 + 0xc));
-	value = readl(AXI2SER6 + 0x10) & 0x3ff;
+	writel(0x8, AXXIA_USB0_BASE + 0xc);
+	value = readl(AXXIA_USB0_BASE + 0x10) & 0x3ff;
 
 	if (60 < value)
-		writel(42, (AXI2SER6 + 0x10));
+		writel(42, AXXIA_USB0_BASE + 0x10);
 
-	writel(0x54c, (AXI2SER6 + 0xc));
-	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE, SSP_LANE0_ANA_RX_SCOPE_VDCC);
-	writel(0x400, AXI2SER6 + 0x24040);
-	writel(0x6, AXI2SER6 + 0x40bc);
-	writel(0x80, AXI2SER6 + 0xd4);
-#endif	/* CONFIG_AXXIA_USB */
+	writel(0x54c, AXXIA_USB0_BASE + 0xc);
+	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE,
+	       AXXIA_USB0_BASE + SSP_LANE0_ANA_RX_SCOPE_VDCC);
+	writel(0x400, AXXIA_USB0_BASE + 0x24040);
+	writel(0x6, AXXIA_USB0_BASE + 0x40bc);
+	writel(0x80, AXXIA_USB0_BASE + 0xd4);
+
+#endif	/* CONFIG_AXXIA_USB0 */
+
+#ifdef CONFIG_AXXIA_USB1
+
+	writel(COMPDISTUNE0_VALUE, AXXIA_USB1_BASE + COMPDISTUNE0);
+	writel(OTGTUNE0_VALUE, AXXIA_USB1_BASE + OTGTUNE0);
+	writel(SQRXTUNE0_VALUE, AXXIA_USB1_BASE + SQRXTUNE0);
+	writel(TXFSLSTUNE0_VALUE, AXXIA_USB1_BASE + TXFSLSTUNE0);
+	writel(TXHSXVTUNE0_VALUE, AXXIA_USB1_BASE + TXHSXVTUNE0);
+	writel(TXPREEMPAMPTUNE0_VALUE, AXXIA_USB1_BASE + TXPREEMPAMPTUNE0);
+	writel(TXPREEMPPULSETUNE0_VALUE, AXXIA_USB1_BASE + TXPREEMPPULSETUNE0);
+	writel(TXRESTUNE0_VALUE, AXXIA_USB1_BASE + TXRESTUNE0);
+	writel(TXRISETUNE0_VALUE, AXXIA_USB1_BASE + TXRISETUNE0);
+	writel(TXVREFTUNE0_VALUE, AXXIA_USB1_BASE + TXVREFTUNE0);
+	writel(PCSRXLOSMASK_VALUE, AXXIA_USB1_BASE + PCSRXLOSMASK);
+	writel(PCSTXDEEMPH3P4DB_VALUE, AXXIA_USB1_BASE + PCSTXDEEMPH3P4DB);
+	writel(PCSTXDEEMPH6DB_VALUE, AXXIA_USB1_BASE + PCSTXDEEMPH6DB);
+	writel(PCSTXSWINGFULL_VALUE, AXXIA_USB1_BASE + PCSTXSWINGFULL);
+	writel(TXVBOOSTLVL_VALUE, AXXIA_USB1_BASE + TXVBOOSTLVL);
+
+	/* Switch the USB interrupt from edge to level. */
+	value = readl(0x9800200004);
+	value &= ~2;
+	writel(value, 0x9800200004);
+
+	/* Reset the USB PHY. */
+	writel(0xab, (SYSCON + 0x2000));
+	value = readl(SYSCON + 0x20a0);
+	value |= (1 << 31);
+	writel(value, (SYSCON + 0x20a0));
+	udelay(1);
+	value &= ~(1 << 31);
+	writel(value, (SYSCON + 0x20a0));
+	writel(0, (SYSCON + 0x2000));
+
+	do {
+		udelay(10);
+		value = readl(AXXIA_USB1_BASE + 0x6c);
+	} while (0 != (value & (1 << 2)));
+
+	writel(0x8, AXXIA_USB1_BASE + 0xc);
+	value = readl(AXXIA_USB1_BASE + 0x10) & 0x3ff;
+
+	if (60 < value)
+		writel(42, AXXIA_USB1_BASE + 0x10);
+
+	writel(0x54c, AXXIA_USB1_BASE + 0xc);
+	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE,
+	       AXXIA_USB1_BASE + SSP_LANE0_ANA_RX_SCOPE_VDCC);
+	writel(0x400, AXXIA_USB1_BASE + 0x24040);
+	writel(0x6, AXXIA_USB1_BASE + 0x40bc);
+	writel(0x80, AXXIA_USB1_BASE + 0xd4);
+
+#endif	/* CONFIG_AXXIA_USB1 */
 
 	rc = axxia_initialize();
 	if (0 != rc)

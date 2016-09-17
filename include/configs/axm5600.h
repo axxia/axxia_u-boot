@@ -32,7 +32,7 @@
  * undefine if model is handling it
 */
 
-#define CONFIG_AXXIA_USB
+#define CONFIG_AXXIA_USB0
 #define CONFIG_AXXIA_USB_POWERCYCLE
 
 /*
@@ -249,7 +249,7 @@
  * undefine if model is handling it
 */
 
-#define CONFIG_AXXIA_USB
+#define CONFIG_AXXIA_USB0
 #define CONFIG_AXXIA_USB_POWERCYCLE
 #define CONFIG_AXXIA_USB_WA_54631
 
@@ -367,6 +367,8 @@ int axxia_sysmem_check_ecc(void);
 
 /*#define PEI_SETUP_IN_LINUX*/
 
+#define CONFIG_USB_MAX_CONTROLLER_COUNT 1
+
 /*
   ==============================================================================
   ==============================================================================
@@ -403,42 +405,6 @@ int axxia_sysmem_check_ecc(void);
 #define CONFIG_UBOOT_SIZE                (2 * 1024 * 1024)
 #define CONFIG_UBOOT_OFFSET_REDUND       (3 * 1024 * 1024)
 #define CONFIG_UBOOT_SIZE_REDUND         CONFIG_UBOOT_SIZE
-
-#define AXI2SER6 0x8003800000
-
-#define SSP_LANE0_ANA_RX_SCOPE_VDCC (AXI2SER6 + 0x4098)
-#define COMPDISTUNE0                (AXI2SER6 + 0x40000)
-#define OTGTUNE0                    (AXI2SER6 + 0x40004)
-#define SQRXTUNE0                   (AXI2SER6 + 0x40008)
-#define TXFSLSTUNE0                 (AXI2SER6 + 0x4000c)
-#define TXHSXVTUNE0                 (AXI2SER6 + 0x40010)
-#define TXPREEMPAMPTUNE0            (AXI2SER6 + 0x40014)
-#define TXPREEMPPULSETUNE0          (AXI2SER6 + 0x40018)
-#define TXRESTUNE0                  (AXI2SER6 + 0x4001c)
-#define TXRISETUNE0                 (AXI2SER6 + 0x40020)
-#define TXVREFTUNE0                 (AXI2SER6 + 0x40024)
-#define PCSRXLOSMASK                (AXI2SER6 + 0x40038)
-#define PCSTXDEEMPH3P4DB            (AXI2SER6 + 0x4003c)
-#define PCSTXDEEMPH6DB              (AXI2SER6 + 0x40040)
-#define PCSTXSWINGFULL              (AXI2SER6 + 0x40044)
-#define TXVBOOSTLVL                 (AXI2SER6 + 0x40048)
-
-#define SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE 1
-#define COMPDISTUNE0_VALUE                4
-#define OTGTUNE0_VALUE                    4
-#define SQRXTUNE0_VALUE                   3
-#define TXFSLSTUNE0_VALUE                 3
-#define TXHSXVTUNE0_VALUE                 3
-#define TXPREEMPAMPTUNE0_VALUE            0
-#define TXPREEMPPULSETUNE0_VALUE          0
-#define TXRESTUNE0_VALUE                  1
-#define TXRISETUNE0_VALUE                 2
-#define TXVREFTUNE0_VALUE                 8
-#define PCSRXLOSMASK_VALUE                0x3e8
-#define PCSTXDEEMPH3P4DB_VALUE            0x16
-#define PCSTXDEEMPH6DB_VALUE              0x16
-#define PCSTXSWINGFULL_VALUE              0x7a
-#define TXVBOOSTLVL_VALUE                 4
 
 /*
   ==============================================================================
@@ -548,9 +514,16 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
   ==============================================================================
 */
 
-#define DICKENS (0x8000000000)
-#define IO      (0x8080000000)
-#define AXI2SER (0x8002000000)
+#define DICKENS   (0x8000000000)
+#define IO        (0x8080000000)
+#define AXI2SER0  (0x8002000000)
+#define AXI2SER1  (0x8002400000)
+#define AXI2SER2  (0x8002800000)
+#define AXI2SER3  (0x8002c00000)
+#define AXI2SER4  (0x8003000000)
+#define AXI2SER5  (0x8003400000)
+#define AXI2SER6  (0x8003800000)
+#define AXI2SER7  (0x8003c00000)
 
 #define UART0_ADDRESS (0x8080000000)
 #define UART1_ADDRESS (0x8080010000)
@@ -670,31 +643,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_PCIE1_BUS_START 0x00000000
 #define CONFIG_PCIE2_BUS_START 0x00000000
 
-#endif
-
-/*
-  ==============================================================================
-  ==============================================================================
-  USB
-  ==============================================================================
-  ==============================================================================
-*/
-
-/* USB support */
-#ifdef CONFIG_AXXIA_USB
-#define CONFIG_USB_XHCI_AXXIA
-#define CONFIG_CMD_USB 1
-#define CONFIG_USB_XHCI 1
-#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS 4
-#define CONFIG_USB_STORAGE 1
-#define CONFIG_CMD_USB_STORAGE 1
-#define CONFIG_CMD_EXT2 1
-#define CONFIG_CMD_EXT4 1
-#define CONFIG_DOS_PARTITION 1
-#endif
-
-#ifndef __ASSEMBLY__
-int usb_phy_init(void);
 #endif
 
 /*
