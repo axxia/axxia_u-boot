@@ -561,6 +561,9 @@
 #define AI2C_REG_I2C_X7_MST_ARP_INT_STATUS (0x00C8)   /*!< Offset to reg
                                                         Master ARP Interrupt
                                                         Status */
+
+#define CONFIG_AXXIA_USB
+
 #endif	/* CONFIG_TARGET_HARDWARE */
 
 /*
@@ -833,19 +836,52 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 /* USB support */
 #ifdef CONFIG_AXXIA_USB
+#define CONFIG_USB_XHCI_AXXIA
 #define CONFIG_CMD_USB 1
-#define CONFIG_USB_EHCI 1
+#define CONFIG_USB_XHCI 1
+#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS 4
 #define CONFIG_USB_STORAGE 1
 #define CONFIG_CMD_USB_STORAGE 1
-#define CONFIG_USB_ULPI 1
-#define CONFIG_USB_ULPI_VIEWPORT 1
 #define CONFIG_CMD_EXT2 1
 #define CONFIG_CMD_EXT4 1
 #define CONFIG_DOS_PARTITION 1
-#define CONFIG_USB_ADDR (IO+0x140000)
-#define CONFIG_EHCI_IS_TDI 1
-#define CONFIG_CMD_LSI_ULPI 1
 #endif
+
+#define AXI2SER6 0x8003800000
+
+#define SSP_LANE0_ANA_RX_SCOPE_VDCC (AXI2SER6 + 0x4098)
+#define COMPDISTUNE0                (AXI2SER6 + 0x40000)
+#define OTGTUNE0                    (AXI2SER6 + 0x40004)
+#define SQRXTUNE0                   (AXI2SER6 + 0x40008)
+#define TXFSLSTUNE0                 (AXI2SER6 + 0x4000c)
+#define TXHSXVTUNE0                 (AXI2SER6 + 0x40010)
+#define TXPREEMPAMPTUNE0            (AXI2SER6 + 0x40014)
+#define TXPREEMPPULSETUNE0          (AXI2SER6 + 0x40018)
+#define TXRESTUNE0                  (AXI2SER6 + 0x4001c)
+#define TXRISETUNE0                 (AXI2SER6 + 0x40020)
+#define TXVREFTUNE0                 (AXI2SER6 + 0x40024)
+#define PCSRXLOSMASK                (AXI2SER6 + 0x40038)
+#define PCSTXDEEMPH3P4DB            (AXI2SER6 + 0x4003c)
+#define PCSTXDEEMPH6DB              (AXI2SER6 + 0x40040)
+#define PCSTXSWINGFULL              (AXI2SER6 + 0x40044)
+#define TXVBOOSTLVL                 (AXI2SER6 + 0x40048)
+
+#define SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE 1
+#define COMPDISTUNE0_VALUE                4
+#define OTGTUNE0_VALUE                    4
+#define SQRXTUNE0_VALUE                   3
+#define TXFSLSTUNE0_VALUE                 3
+#define TXHSXVTUNE0_VALUE                 3
+#define TXPREEMPAMPTUNE0_VALUE            0
+#define TXPREEMPPULSETUNE0_VALUE          0
+#define TXRESTUNE0_VALUE                  1
+#define TXRISETUNE0_VALUE                 2
+#define TXVREFTUNE0_VALUE                 8
+#define PCSRXLOSMASK_VALUE                0x3e8
+#define PCSTXDEEMPH3P4DB_VALUE            0x16
+#define PCSTXDEEMPH6DB_VALUE              0x16
+#define PCSTXSWINGFULL_VALUE              0x7a
+#define TXVBOOSTLVL_VALUE                 4
 
 #ifndef __ASSEMBLY__
 int usb_phy_init(void);
