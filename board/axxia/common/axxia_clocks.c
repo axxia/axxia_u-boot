@@ -904,7 +904,7 @@ axxia_display_clocks(void)
 
 	acp_clock_get(clock_peripheral, &speed);
 	speed /= 1000;
-	printf("    Peripheral: %4u MHz\n", speed);
+	printf("    Peripheral: %4u MHz\n\n", speed);
 #endif	/* CONFIG_AXXIA_EMU */
 
 	return;

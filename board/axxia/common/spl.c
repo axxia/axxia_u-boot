@@ -1370,7 +1370,7 @@ board_init_f(ulong dummy)
 		check_memory_ranges();
 	}
 
-	printf("\nSystem Initialized\n\n");
+	printf("System Initialized\n\n");
 
 	/* Move the stack to ram. */
 	asm volatile ("mov sp, %0" : : "r" (CONFIG_SYS_INIT_SP_ADDR));
