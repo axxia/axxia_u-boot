@@ -31,7 +31,7 @@
 #include <asm/io.h>
 
 #ifndef SYSCACHE_ONLY_MODE
-/*#define ENABLE_DMA*/
+#define ENABLE_DMA
 #endif
 
 /* SSP registers mapping */
