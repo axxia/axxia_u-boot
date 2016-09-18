@@ -65,6 +65,10 @@ SECTIONS
 
 	_end = .;
 
+	. = ALIGN(0x10000);
+	__PGT__ = .;
+	. += 0x10000;
+
 	. = ALIGN(8);
 
 	.bss_start : {

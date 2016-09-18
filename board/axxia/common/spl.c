@@ -819,10 +819,11 @@ load_image(void)
 	struct spi_flash *flash;
 	struct image_header header;
 	unsigned int bytes_written = 0;
-	unsigned int buffer[64];
+	unsigned int buffer[1024];
 	unsigned int offset = CONFIG_UBOOT_OFFSET;
 	unsigned int size;
-	unsigned int output = 0;
+	unsigned long output = 0;
+	int ret = 0;
 
 	/*
 	  Initialize L3 cache by writing to all locations.  Write the
@@ -859,14 +860,18 @@ load_image(void)
 
 		if (0 < size) {
 			spi_flash_read(flash, offset,
-				       size > 256 ? 256 : size, buffer);
-			size -= size > 256 ? 256 : size;
+				       size > 4096 ? 4096 : size, buffer);
+			size -= size > 4096 ? 4096 : size;
 		}
 
-		memcpy((void *)(NCA + 0x1000), buffer, 256);
-		ncr_write(NCP_REGION_ID(0x200, 1), 0, output, 256, NULL);
-		bytes_written += 256;
-		output += 256;
+		ret = gpdma_xfer((void *)output, (void *)buffer, 4096, 1);
+		if (ret != 0) {
+			printf("xfer failed %d, %u\n", ret, bytes_written);
+			break;
+		}
+		bytes_written += 4096;
+		output += 4096;
+		offset += 4096;
 	}
 
 	return;

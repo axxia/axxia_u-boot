@@ -284,6 +284,8 @@
   ==============================================================================
 */
 
+/*#define SYSCACHE_ONLY_MODE*/
+
 #define AXXIA_OR_IN_FUSE_FORCE
 
 #define CONFIG_GICV3
@@ -413,7 +415,9 @@ int axxia_sysmem_check_ecc(void);
 
 #ifdef SYSCACHE_ONLY_MODE
 #ifndef __ASSEMBLY__
-void ncr_l3tags(void);
+int gpdma_reset(void);
+int gpdma_xfer(void *, void *, size_t, int);
+int gpdma_fill(void *, unsigned char, size_t, int);
 #endif
 #endif
 

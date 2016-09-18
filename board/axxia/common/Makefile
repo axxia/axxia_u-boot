@@ -53,7 +53,7 @@ endif
 ## All Builds
 
 obj-y += lsi.o ncr.o sysmem_size.o parameters.o sbb.o axxia_clocks.o
-obj-y += cache.o outer_cache.o gpdma.o
+obj-y += cache.o outer_cache.o gpdma.o lowlevel.o
 
 ifdef CONFIG_HW_WATCHDOG
 obj-y += watchdog.o

@@ -49,4 +49,4 @@ endif
 ################################################################################
 ## All Builds
 
-obj-y   += failure.o version.o spi.o lowlevel.o
+obj-y   += failure.o version.o spi.o

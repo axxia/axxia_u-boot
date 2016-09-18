@@ -175,12 +175,18 @@ board_get_usable_ram_top(ulong total_size)
 	unsigned long osmemory_value;
 
 	osmemory_string = getenv("osmemory");
+
 	if (NULL != osmemory_string) {
 		osmemory_value = simple_strtoul(osmemory_string, NULL, 0);
 		osmemory_value *= (1024 * 1024);
 	} else {
+#ifdef SYSCACHE_ONLY_MODE
+		osmemory_value = (phys_size_t)SYSCACHE_SIZE;
+#else
 		osmemory_value = OSMEMORY_DEFAULT;
+#endif
 	}
+
 	return osmemory_value;
 }
 

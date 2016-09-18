@@ -22,9 +22,10 @@
 
 #include <config.h>
 #include <common.h>
+#include <malloc.h>
 #include <asm/io.h>
 
-#define GPDMA_TRACE
+/*#define GPDMA_TRACE*/
 
 static unsigned int
 greadl(unsigned long address)
@@ -85,6 +86,7 @@ gwritel(unsigned int value, unsigned long address)
 #define    DMA_CONFIG_SRC_SPACE(x)		(((x) & 7) << 23)
 #define    DMA_CONFIG_PRIORITY_ROW		(1<<21)
 #define    DMA_CONFIG_PRIORITY			(1<<20)
+#define    DMA_CONFIG_CH_FULL_PRIORITY          (1<<19)
 #define    DMA_CONFIG_LAST_BLOCK		(1<<15)
 #define    DMA_CONFIG_CLEAR_FIFO		(1<<14)
 #define    DMA_CONFIG_START_MEM_LOAD		(1<<13)
@@ -161,6 +163,99 @@ gwritel(unsigned int value, unsigned long address)
 #define  GEN_CONFIG_INT_EDGE(_ch)               (1<<(_ch))
 #define SOFT_RESET                              0xf08
 
+#if defined(CONFIG_ANY_XLF)
+#define GPDMA0_AXPROT_OVERRIDE 0x45800
+#else
+#define GPDMA0_AXPROT_OVERRIDE 0x48800
+#endif
+
+/*
+  ------------------------------------------------------------------------------
+  _gpdma
+
+  Use the GPDMA to write or fill memory.
+*/
+
+int
+_gpdma(void *dest, size_t dest_size, void *src, size_t src_size, int secure)
+{
+	unsigned int gpdma0_axprot_override;
+	unsigned int gpdma0_status;
+	int retries = 1000;
+
+	/* Make sure no other transactions are in process. */
+	gpdma0_status = greadl(GPDMA0 + DMA_STATUS);
+
+	if (0 != (gpdma0_status & DMA_STATUS_CH_ACTIVE))
+		return -1;
+
+	/* Clear status bits. */
+	gwritel((DMA_STATUS_TR_COMPLETE | DMA_STATUS_BLK_COMPLETE),
+		GPDMA0 + DMA_STATUS);
+
+	/* Set gpdma0_axprot_override to secure or non-secure. */
+	gpdma0_axprot_override = readl(MMAP_SCB + GPDMA0_AXPROT_OVERRIDE);
+
+	if (0 == secure)
+		writel(3, MMAP_SCB + GPDMA0_AXPROT_OVERRIDE);
+	else
+		writel(2, MMAP_SCB + GPDMA0_AXPROT_OVERRIDE);
+
+	/* Set up the segment registers (top 8 bits of address). */
+	gwritel((((unsigned long)dest & 0xff00000000) >> 32),
+		GPDMA0 + DMA_DST_ADDR_SEG);
+	gwritel((((unsigned long)src & 0xff00000000) >> 32),
+		GPDMA0 + DMA_SRC_ADDR_SEG);
+
+	/* Set up the rest of the address. */
+	gwritel(((unsigned long)dest & 0xffffffff), GPDMA0 + DMA_DST_CUR_ADDR);
+	gwritel(((unsigned long)src & 0xffffffff), GPDMA0 + DMA_SRC_CUR_ADDR);
+
+	/* Remaing setup. */
+	gwritel(0x425, GPDMA0 + DMA_SRC_ACCESS);
+	gwritel(0x25, GPDMA0 + DMA_DST_ACCESS);
+	gwritel(0xffffffff, GPDMA0 + DMA_SRC_MASK);
+	gwritel(16, GPDMA0 + DMA_X_MODIF_SRC);
+	gwritel(16, GPDMA0 + DMA_X_MODIF_DST);
+	gwritel((src_size / 16) - 1, GPDMA0 + DMA_X_SRC_COUNT);
+	gwritel(0, GPDMA0 + DMA_Y_SRC_COUNT);
+	gwritel((dest_size / 16) - 1, GPDMA0 + DMA_X_DST_COUNT);
+	gwritel(0, GPDMA0 + DMA_Y_DST_COUNT);
+
+	/* Start the transfer. */
+	gwritel(DMA_CONFIG_DST_SPACE(1) |
+		DMA_CONFIG_SRC_SPACE(1) |
+		DMA_CONFIG_CH_FULL_PRIORITY |
+		DMA_CONFIG_LAST_BLOCK |
+		DMA_CONFIG_FULL_DESCR_ADDR |
+		DMA_CONFIG_WAIT_FOR_TASK_CNT2 |
+		DMA_CONFIG_WAIT_FOR_TASK_CNT1 |
+		DMA_CONFIG_TX_EN |
+		DMA_CONFIG_CHAN_EN, GPDMA0 + DMA_CHANNEL_CONFIG);
+
+	/* Wait for completion. */
+	while (0 < retries--) {
+		if (0 != (greadl(GPDMA0 + DMA_STATUS) & 0x8) &&
+		    0 == greadl(GPDMA0 + DMA_X_SRC_COUNT) &&
+		    0 == greadl(GPDMA0 + DMA_X_DST_COUNT))
+			break;
+
+#ifdef GPDMA_TRACE
+		mdelay(1000);
+#else
+		udelay(1);
+#endif
+	}
+
+	/* Restore gpdma0_axprot_override. */
+	writel(gpdma0_axprot_override, MMAP_SCB + GPDMA0_AXPROT_OVERRIDE);
+
+	if (0 == retries)
+		return -2;
+
+	return 0;
+}
+
 /*
   ==============================================================================
   ==============================================================================
@@ -193,87 +288,32 @@ gpdma_reset(void)
   Do a direct DMA (no descriptors) transfer.
 */
 
-#if defined(CONFIG_ANY_XLF)
-#define GPDMA0_AXPROT_OVERRIDE 0x45800
-#else
-#define GPDMA0_AXPROT_OVERRIDE 0x48800
-#endif
-
 int
 gpdma_xfer(void *dest, void *src, size_t size, int secure)
 {
-	unsigned int gpdma0_axprot_override;
-	unsigned int gpdma0_status;
-	unsigned int gpdma0_channel_config;
+	return _gpdma(dest, size, src, size, secure);
+}
 
-	/* Make sure no other transactions are in process. */
-	gpdma0_status = greadl(GPDMA0 + DMA_STATUS);
+/*
+  ------------------------------------------------------------------------------
+  gpdma_fill
 
-	if (0 != (gpdma0_status & DMA_STATUS_CH_ACTIVE))
+  Fill memory using the GPDMA.
+*/
+
+int
+gpdma_fill(void *dest, unsigned char value, size_t size, int secure)
+{
+	unsigned char *buffer;
+	int rc;
+
+	buffer = memalign(64, 128);
+	if (NULL == buffer)
 		return -1;
 
-	/* Clear status bits. */
-	gwritel((DMA_STATUS_TR_COMPLETE | DMA_STATUS_BLK_COMPLETE),
-		GPDMA0 + DMA_STATUS);
+	memset(buffer, value, 128);
+	rc = _gpdma(dest, size, buffer, 0, secure);
+	free(buffer);
 
-	/* Set gpdma0_axprot_override to secure or non-secure. */
-	gpdma0_axprot_override = readl(MMAP_SCB + GPDMA0_AXPROT_OVERRIDE);
-
-	if (0 == secure)
-		writel(3, MMAP_SCB + GPDMA0_AXPROT_OVERRIDE);
-	else
-		writel(2, MMAP_SCB + GPDMA0_AXPROT_OVERRIDE);
-
-	/* Set up the segment registers (top 8 bits of address). */
-	gwritel((((unsigned long)dest & 0xff00000000) >> 32),
-		GPDMA0 + DMA_DST_ADDR_SEG);
-	gwritel((((unsigned long)src & 0xff00000000) >> 32),
-		GPDMA0 + DMA_SRC_ADDR_SEG);
-
-	/* Set up the rest of the address. */
-	gwritel(((unsigned long)dest & 0xffffffff), GPDMA0 + DMA_DST_CUR_ADDR);
-	gwritel(((unsigned long)src & 0xffffffff), GPDMA0 + DMA_SRC_CUR_ADDR);
-
-	/* Make sure the destination is cachable. 0x170.0.0 */
-
-	/*
-	  Per conversation...
-
-	  SRC_SIZE = 128 bits
-	  SRC_BURST = 4
-	  MODIF_SRC = 63 (64 bytes)
-	  SRC_COUNT = size / 64
-	  Y_SRC_COUNT = 0
-	  Y_MODIF_SRC doesn't matter
-	  SRC_MASK = all 1s
-	*/
-
-	gwritel((DMA_SRC_ACCESS_SRC_BURST(0) | DMA_SRC_ACCESS_SRC_SIZE(0)),
-		GPDMA0 + DMA_SRC_ACCESS);
-	gwritel((DMA_SRC_ACCESS_SRC_BURST(0) | DMA_SRC_ACCESS_SRC_SIZE(0)),
-		GPDMA0 + DMA_DST_ACCESS);
-	gwritel(0xffffffff, GPDMA0 + DMA_SRC_MASK);
-	gwritel(64, GPDMA0 + DMA_X_MODIF_SRC);
-	gwritel(64, GPDMA0 + DMA_X_MODIF_DST);
-	gwritel((size / 64), GPDMA0 + DMA_X_SRC_COUNT);
-	gwritel(0, GPDMA0 + DMA_Y_SRC_COUNT);
-	gwritel((size / 64), GPDMA0 + DMA_X_DST_COUNT);
-	gwritel(0, GPDMA0 + DMA_Y_DST_COUNT);
-
-	/* Start the transfer. */
-	gpdma0_channel_config = greadl(GPDMA0 + DMA_CHANNEL_CONFIG);
-	gpdma0_channel_config |= 3;
-	gwritel(gpdma0_channel_config, GPDMA0 + DMA_CHANNEL_CONFIG);
-
-	do {
-		mdelay(1000);
-		printf("COUNTS: 0x%x 0x%x\n",
-		       readl(GPDMA0 + DMA_X_SRC_COUNT),
-		       readl(GPDMA0 + DMA_X_DST_COUNT));
-	} while (0 == (greadl(GPDMA0 + DMA_STATUS) & 1));
-
-	/* Restore gpdma0_axprot_override. */
-	writel(gpdma0_axprot_override, MMAP_SCB + GPDMA0_AXPROT_OVERRIDE);
-
-	return 0;
+	return rc;
 }

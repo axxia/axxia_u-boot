@@ -363,6 +363,8 @@
   ==============================================================================
 */
 
+/*#define SYSCACHE_ONLY_MODE*/
+
 /*
   Switch to normal mode on v1.0 silicon.  Note that v1.0 silicon does
   not fully support normal mode.  Linux boots, but coherent IO is not
@@ -605,7 +607,9 @@ void display_va_attr(void *);
 
 #ifdef SYSCACHE_ONLY_MODE
 #ifndef __ASSEMBLY__
-void ncr_l3tags(void);
+int gpdma_reset(void);
+int gpdma_xfer(void *, void *, size_t, int);
+int gpdma_fill(void *, unsigned char, size_t, int);
 #endif
 #endif
 

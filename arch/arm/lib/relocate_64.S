@@ -71,7 +71,9 @@ relocate_done:
 	ic	iallu		/* i-cache invalidate all */
 	isb	sy
 4:	ldp	x0, x1, [sp, #16]
+#ifndef SYSCACHE_ONLY_MODE
 	bl	__asm_flush_dcache_range
+#endif
 5:	ldp	x29, x30, [sp],#16
 	ret
 ENDPROC(relocate_code)
