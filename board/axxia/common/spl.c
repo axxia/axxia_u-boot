@@ -1228,8 +1228,24 @@ board_init_f(ulong dummy)
 
 #if defined(CONFIG_AXXIA_XLF) || defined(CONFIG_AXXIA_XLF_EMU)
 	/* Set the default TTYPE for NCAP (v3 only, XLF). */
+#if defined(CONFIG_AXXIA_EMU)
 	writel(0x22002ba1, 0x800404024c);
 	writel(0x120a122f, 0x800404028c);
+#else
+	{
+		int cluster ;
+		u64 a53_ncap_base = 0x8004040000ULL; /* 0x168.1.0 */
+
+		for (cluster = 0;
+			cluster < 8;
+			cluster++, a53_ncap_base += 0x00040000) {
+
+				writel(0x22002ba1, a53_ncap_base + 0x24c);
+				writel(0x120a122f, a53_ncap_base + 0x28c);
+		}
+	}
+
+#endif
 #endif
 
 	/*
