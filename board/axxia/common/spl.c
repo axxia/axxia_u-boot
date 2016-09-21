@@ -581,6 +581,8 @@ check_memory_ranges(void)
 				  1, spl_mtest_ecc);
 	}
 
+	axxia_sysmem_check_ecc();
+
 	return;
 }
 
