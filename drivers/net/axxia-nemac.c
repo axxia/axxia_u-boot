@@ -599,10 +599,20 @@ nemac_eth_send(struct eth_device *dev, void *packet, int length)
 
 	desc->ctrl = cpu_to_le32(DCTRL_INTR | DCTRL_SOP | DCTRL_EOP |
 				 DCTRL_SWAP | DCTRL_TX_CRC);
+	desc->pdu_len = cpu_to_le16(length);
+
+	/*
+	  The xfer_len must be a multiple of 64 -- only pdu_len will
+	  be transferred by the hardware.
+	*/
+
+	if (0 != (length % 64))
+		length += 64 - (length % 64);
+
 	desc->xfer_len = cpu_to_le16(length);
-	desc->pdu_len = desc->xfer_len;
 	desc->bufptr = cpu_to_le64((u64)packet);
 	pr_desc("TX", desc);
+	mb();			/* Make sure the above completed. */
 	writel(queue_inc_head(&priv->txq), priv->reg + NEM_DMA_TXHEAD_PTR);
 
 	for (tmo = 0; queue_get_tail(&priv->txq) == NULL; ++tmo) {
