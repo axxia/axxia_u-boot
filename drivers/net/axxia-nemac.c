@@ -211,9 +211,12 @@ DECLARE_GLOBAL_DATA_PTR;
 #define    MAX_IFG(_x)			(((_x) & 0x3ff) << 0)	 /* 0..1023 */
 #define NEM_DMA_CTL			0x3000
 #define   DMACTL_RST			(1 << 31)
+#define   DMACTL_RX_DISABLE_PREALIGN    (1 << 19)
+#define   DMACTL_TX_DISABLE_PREALIGN    (1 << 18)
+#define   DMACTL_TX_FORCE_ORDERING      (1 << 17)
 #define   DMACTL_EN			(1 << 16)
 #define   DMACTL_ALLOW_TX_PAUSE		(1 << 15)
-#define   DMACTL_FORCE_RX_ORDER		(1 << 14)
+#define   DMACTL_RX_FORCE_ORDERING	(1 << 14)
 #define   DMACTL_TX_TAIL_PTR_EN		(1 << 13)
 #define   DMACTL_RX_TAIL_PTR_EN		(1 << 12)
 #define   DMACTL_AXI_BURST(_n)		((_n) <<  8)
@@ -473,6 +476,7 @@ nemac_eth_init(struct eth_device *dev, bd_t *board_info)
 		desc->xfer_len = PKTSIZE_ALIGN;
 		desc->pdu_len = 0;
 		desc->bufptr = cpu_to_le64((u64)net_rx_packets[i]);
+		mb();
 		writel(queue_inc_head(&priv->rxq),
 		       priv->reg + NEM_DMA_RXHEAD_PTR);
 	}
@@ -489,7 +493,9 @@ nemac_eth_init(struct eth_device *dev, bd_t *board_info)
 
 	/* Enable DMA and tail-ptr writeback */
 	tmp = readl(priv->reg + NEM_DMA_CTL);
-	tmp |= DMACTL_EN | DMACTL_TX_TAIL_PTR_EN | DMACTL_RX_TAIL_PTR_EN;
+	tmp |= DMACTL_EN | DMACTL_TX_TAIL_PTR_EN | DMACTL_RX_TAIL_PTR_EN |
+		DMACTL_RX_FORCE_ORDERING | DMACTL_TX_FORCE_ORDERING |
+		DMACTL_TX_DISABLE_PREALIGN | DMACTL_RX_DISABLE_PREALIGN;
 	writel(tmp, priv->reg + NEM_DMA_CTL);
 
 	/* Start up the PHY */
@@ -536,6 +542,7 @@ nemac_eth_recv(struct eth_device *dev)
 		int status = cpu_to_le32(desc->ctrl);
 		unsigned char *pkt = (unsigned char *)le64_to_cpu(desc->bufptr);
 
+		mb();
 		queue_inc_tail(&priv->rxq);
 
 		pr_desc("RX", desc);
@@ -549,6 +556,7 @@ nemac_eth_recv(struct eth_device *dev)
 		desc->ctrl = cpu_to_le32(DCTRL_INTR | DCTRL_SWAP);
 		desc->xfer_len = PKTSIZE_ALIGN;
 		desc->pdu_len = 0;
+		mb();
 		writel(queue_inc_head(&priv->rxq),
 		       priv->reg + NEM_DMA_RXHEAD_PTR);
 	}
@@ -612,7 +620,7 @@ nemac_eth_send(struct eth_device *dev, void *packet, int length)
 	desc->xfer_len = cpu_to_le16(length);
 	desc->bufptr = cpu_to_le64((u64)packet);
 	pr_desc("TX", desc);
-	mb();			/* Make sure the above completed. */
+	mb();
 	writel(queue_inc_head(&priv->txq), priv->reg + NEM_DMA_TXHEAD_PTR);
 
 	for (tmo = 0; queue_get_tail(&priv->txq) == NULL; ++tmo) {
@@ -624,6 +632,8 @@ nemac_eth_send(struct eth_device *dev, void *packet, int length)
 		if (check_dma_error(priv))
 			return 0;
 	}
+
+	mb();
 	queue_inc_tail(&priv->txq);
 
 	return 0;
