@@ -1106,6 +1106,9 @@ board_init_f(ulong dummy)
 	int rc;
 	unsigned int value;
 	unsigned int pvalue;
+#if defined(CONFIG_AXXIA_ANY_56XX)
+	unsigned int lor;
+#endif
 	int i;
 
 	/*
@@ -1147,6 +1150,30 @@ board_init_f(ulong dummy)
 	if ((value & 0x00000001))
 		for (i = 0; i < 9; i++)
 			writel(0, (SYSCON + (0xdc + (4 * i))));
+
+	/*
+	 * For robustness, reboot chip in quiet post power-up
+	 * electrical environment.
+	 */
+
+#if defined(CONFIG_AXXIA_ANY_56XX)
+	lor = readl(SYSCON + 0x2004);
+
+	if ((value & 0x00000001) && (0 == (lor & 0x80))) {
+		/* Write the key. */
+		writel(0xab, 0x8002c02000);
+		/* Clear the pin reset bit. */
+		writel(0x1, 0x8002c00100);
+		/* Cause a chip reset.  Hardware delays this for 1024 cycles */
+		writel(0x2, 0x8002c02008);
+		/* Enable all cores. */
+		writel(0x0, 0x8002c02010);
+		/* Clear the key. */
+		writel(0, 0x8002c02000);
+		/* Let the reset happen. */
+		wfi();
+	}
+#endif
 
 	/*
 	 * Set bit 2 of 0xdc if the last reset was caused by a watchdog
