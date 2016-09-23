@@ -631,8 +631,8 @@ ncp_sm_ddr4_phy_reg_dump(
 	printf ("tRCD \t= %d\n",  regDTPR5.trcd);
 
 	printf ("tRFC \t= %d\t",  regDTPR4.trfc);
-	printf ("tMRD \t= %d\t",  regDTPR1.tmrd);
-	printf ("tMOD \t= %d\t",  regDTPR1.tmod);
+	printf ("tMRD \t= %d\t",  regDTPR1.tmrd + 8);
+	printf ("tMOD \t= %d\t",  regDTPR1.tmod + 24);
 	printf ("tWLMRD \t= %d\t",regDTPR1.twlmrd);
 	printf ("tWLO \t= %d\n",  regDTPR4.twlo);
 
@@ -694,31 +694,49 @@ ncp_sm_ddr4_phy_reg_dump(
 	printf ("\n");
 
 	/* ZQnPR */
-	printf ("Output Impedance\t");
+	printf ("Output Impedance   \t");
 	for (bytecnt = 0; bytecnt < numislands; bytecnt++) 
 	{
 		ncr_read32(phyReg, (NCP_PHY_ZQ0PR_5600 + (0x10 * bytecnt)), (ncp_uint32_t *)&regZQ0PR);
-		printf (" %s \t", (((regZQ0PR.zqdiv & 0xF) == 1 ) ? "240 ohm" :
-					((regZQ0PR.zqdiv & 0xF) == 3 ) ? "120 ohm" :
-					((regZQ0PR.zqdiv & 0xF) == 5 ) ? "80 ohm" :
-					((regZQ0PR.zqdiv & 0xF) == 7 ) ? "60 ohm" :
-					((regZQ0PR.zqdiv & 0xF) == 9 ) ? "48 ohm" :
-					((regZQ0PR.zqdiv & 0xF) == 11 ) ? "40 ohm" :
-					((regZQ0PR.zqdiv & 0xF) == 13 ) ? "34 ohm" :
+		printf (" %s \t", ((regZQ0PR.zprog_asym_drv_pu == 0 ) ? "480 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 1 ) ? "240 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 2 ) ? "160 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 3 ) ? "120 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 4 ) ? "96 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 5 ) ? "80 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 6 ) ? "68.6 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 7 ) ? "60 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 8 ) ? "53.3 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 9 ) ? "48 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 10 ) ? "43.6 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 11 ) ? "40 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 12 ) ? "36.9 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 13 ) ? "34.3 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 14 ) ? "32 ohm" :
+					(regZQ0PR.zprog_asym_drv_pu == 15 ) ? "30 ohm" :
 					"UNKNOWN"));
-	} 
+	}
 	printf ("\n");
-	printf ("ODT settings\t\t");
+	printf ("ODT settings   \t\t");
 	for (bytecnt = 0; bytecnt < numislands; bytecnt++) 
 	{
 		ncr_read32(phyReg, (NCP_PHY_ZQ0PR_5600 + (0x10 * bytecnt)), (ncp_uint32_t *)&regZQ0PR);
-		printf (" %s \t", ((((regZQ0PR.zqdiv & 0xF0) >> 4) == 1 ) ? "240 ohm" :
-					(((regZQ0PR.zqdiv & 0xF0) >> 4) == 3 ) ? "120 ohm" :
-					(((regZQ0PR.zqdiv & 0xF0) >> 4) == 5 ) ? "80 ohm" :
-					(((regZQ0PR.zqdiv & 0xF0) >> 4) == 7 ) ? "60 ohm" :
-					(((regZQ0PR.zqdiv & 0xF0) >> 4) == 9 ) ? "48 ohm" :
-					(((regZQ0PR.zqdiv & 0xF0) >> 4) == 11 ) ? "40 ohm" :
-					(((regZQ0PR.zqdiv & 0xF0) >> 4) == 13 ) ? "34 ohm" :
+		printf (" %s \t", ((regZQ0PR.zprog_pu_odt_only == 0 ) ? "480 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 1 ) ? "240 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 2 ) ? "160 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 3 ) ? "120 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 4 ) ? "96 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 5 ) ? "80 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 6 ) ? "68.6 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 7 ) ? "60 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 8 ) ? "53.3 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 9 ) ? "48 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 10 ) ? "43.6 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 11 ) ? "40 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 12 ) ? "36.9 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 13 ) ? "34.3 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 14 ) ? "32 ohm" :
+					(regZQ0PR.zprog_pu_odt_only == 15 ) ? "30 ohm" :
 					"UNKNOWN"));
 	}
 	printf ("\n");
@@ -1154,7 +1172,7 @@ ncp_sm_ddr4_phy_reg_dump(
 		}
 		else 
 		{
-			printf (" +%.1f \t",((double)regDX0GTR0.dgsl/2));
+			printf (" +%d \t",(regDX0GTR0.dgsl/2));
 		}		      
 	}
 	printf ("\n");
@@ -2380,6 +2398,13 @@ ncp_sm_ddr4_phy_init(
 		/* DXCCR */
 		ncr_read32(phyReg, NCP_PHY_DXCCR_5600, (ncp_uint32_t *)&regDXCCR);
 		regDXCCR.msbudq = 4;
+		ncr_write32(phyReg, NCP_PHY_DXCCR_5600, *((ncp_uint32_t *)&regDXCCR));
+	}
+	else if (parms->enableECC == FALSE)
+	{
+		/* DXCCR - power-up-default is 4 hence this is needed chip-independant */
+		ncr_read32(phyReg, NCP_PHY_DXCCR_5600, (ncp_uint32_t *)&regDXCCR);
+		regDXCCR.msbudq = 0;
 		ncr_write32(phyReg, NCP_PHY_DXCCR_5600, *((ncp_uint32_t *)&regDXCCR));
 	}
 
