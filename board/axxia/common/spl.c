@@ -1390,6 +1390,16 @@ board_init_f(ulong dummy)
 	axxia_display_clocks();
 #endif
 
+	/*
+	  The NEMAC DMA engine does not, in all cases, keep unaligned
+	  packets in order.  To keep this from happening, set the
+	  rd_iss bit to 1 in the nemdma_asib_fn_mode register.
+	  Setting this bits forces reads to be done sequentially.
+	 */
+	value = readl(PERIPH_SCB + 0x44108);
+	value |= 1;
+	writel(value, (PERIPH_SCB + 0x44108));
+
 #ifdef SYSCACHE_ONLY_MODE
 	load_image();
 	printf("U-Boot Loaded in System Cache, Jumping to Monitor\n");
