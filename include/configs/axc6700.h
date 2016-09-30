@@ -682,6 +682,7 @@ int is_asic( void );
 #define CONFIG_SPI_FLASH
 #define CONFIG_SPI_FLASH_SPANSION
 #define CONFIG_SPI_FLASH_ATMEL
+#define CONFIG_SPI_FLASH_STMICRO
 
 /*
   ==============================================================================
