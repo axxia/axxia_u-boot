@@ -1,7 +1,7 @@
 /*
  *  drivers/gpio/axxia_gpio.c
  *
- *  Copyright (C) 2013 LSI (john.jacques@lsi.com)
+ *  Copyright (C) 2016 Intel (john.jacques@intel.com)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
   Axxia systems contain two ARM PL061 GPIOs.
  */
 
-/*#define DEBUG*/
 #include <common.h>
 #include <asm/gpio.h>
 #include <asm/io.h>
@@ -48,6 +47,28 @@
 
 /*
   ------------------------------------------------------------------------------
+  name_to_gpio
+*/
+
+int name_to_gpio(const char *name)
+{
+	char *separator = strchr(name, '_');
+	int group, pin;
+
+	if (NULL == separator)
+		return -1;
+
+	group = simple_strtoul(name, NULL, 10);
+	pin = simple_strtoul(separator + 1, NULL, 10);
+
+	if ((group >= GPIO_GROUPS) || (pin < 0))
+		return -1;
+
+	return (group * GPIO_PINS_PER_GROUP + pin);
+}
+
+/*
+  -----------------------------------------------------------------------------
   read_reg
 */
 
@@ -57,11 +78,7 @@ read_reg(axxia_gpio_t gpio, unsigned long offset)
 	unsigned long base;
 	unsigned long value;
 
-	if (AXXIA_GPIO_0 == gpio)
-		base = GPIO0_ADDRESS;
-	else
-		base = GPIO1_ADDRESS;
-
+	base = GPIO_BASE_ADDRESS + gpio * GPIO_GROUP_OFFSET;
 	value = readl(base + offset);
 	debug("%s:%d - Read 0x%lx from 0x%lx\n",
 	      __FILE__, __LINE__, value, (base + offset));
@@ -79,11 +96,7 @@ write_reg(axxia_gpio_t gpio, unsigned long value, unsigned long offset)
 {
 	unsigned long base;
 
-	if (AXXIA_GPIO_0 == gpio)
-		base = GPIO0_ADDRESS;
-	else
-		base = GPIO1_ADDRESS;
-
+	base = GPIO_BASE_ADDRESS + gpio * GPIO_GROUP_OFFSET;
 	debug("%s:%d - Writing 0x%lx to 0x%lx\n",
 	      __FILE__, __LINE__, value, (base + offset));
 	writel(value, (base + offset));
@@ -157,10 +170,10 @@ axxia_gpio_get(axxia_gpio_t gpio, int pin)
 
 	data = read_reg(gpio, (GPIODATA + ((1 << pin) * 4)));
 
-	if (0 == data)
-		return 0;
-	else
+	if (0 != data)
 		return 1;
+
+	return 1;
 }
 
 /*
@@ -201,16 +214,16 @@ int
 gpio_direction_input(unsigned pin)
 {
 	int rc;
+	int group, pin_in_group;
 
 	debug("%s:%d - GPIO pin %d set to input.\n", __FILE__, __LINE__, pin);
 
-	if (15 < pin)
+	if (GPIO_GROUPS * GPIO_PINS_PER_GROUP < pin)
 		return -1;
 
-	if (8 > pin)
-		rc = axxia_gpio_set_direction(AXXIA_GPIO_0, pin, 0);
-	else
-		rc = axxia_gpio_set_direction(AXXIA_GPIO_1, (pin - 8), 0);
+	group = pin / GPIO_PINS_PER_GROUP;
+	pin_in_group = pin % GPIO_PINS_PER_GROUP;
+	rc = axxia_gpio_set_direction(group, pin_in_group, 0);
 
 	if (-1 == rc)
 		return -1;
@@ -229,20 +242,18 @@ int
 gpio_direction_output(unsigned pin, int value)
 {
 	int rc;
+	int group, pin_in_group;
 
 	debug("%s:%d - GPIO pin %d set to output containing %d.\n",
 	      __FILE__, __LINE__, pin, value);
 
-	if (15 < pin)
+	if (GPIO_GROUPS * GPIO_PINS_PER_GROUP < pin)
 		return -1;
 
-	if (8 > pin) {
-		rc = axxia_gpio_set_direction(AXXIA_GPIO_0, pin, 1);
-		rc |= axxia_gpio_set(AXXIA_GPIO_0, pin, value);
-	} else {
-		rc = axxia_gpio_set_direction(AXXIA_GPIO_1, (pin - 8), 1);
-		rc |= axxia_gpio_set(AXXIA_GPIO_1, (pin - 8), value);
-	}
+	group = pin / GPIO_PINS_PER_GROUP;
+	pin_in_group = pin % GPIO_PINS_PER_GROUP;
+	rc = axxia_gpio_set_direction(group, pin_in_group, 1);
+	rc |= axxia_gpio_set(group, pin_in_group, value);
 
 	if (-1 == rc)
 		return -1;
@@ -261,13 +272,17 @@ int
 gpio_get_value(unsigned pin)
 {
 	int value;
+	int group, pin_in_group;
 
-	if (8 > pin)
-		value = axxia_gpio_get(AXXIA_GPIO_0, pin);
-	else
-		value = axxia_gpio_get(AXXIA_GPIO_1, (pin - 8));
+	if (GPIO_GROUPS * GPIO_PINS_PER_GROUP < pin)
+		return -1;
 
-	debug("%s:%d - GPIO pin %u is at %d.\n", __FILE__, __LINE__, pin, value);
+	group = pin / GPIO_PINS_PER_GROUP;
+	pin_in_group = pin % GPIO_PINS_PER_GROUP;
+	value = axxia_gpio_get(group, pin_in_group);
+
+	debug("%s:%d - GPIO pin %u is at %d.\n",
+	      __FILE__, __LINE__, pin, value);
 
 	return value;
 }
@@ -282,12 +297,17 @@ gpio_get_value(unsigned pin)
 int
 gpio_set_value(unsigned pin, int value)
 {
-	debug("%s:%d - GPIO pin %d set to %d.\n", __FILE__, __LINE__, pin, value);
+	int group, pin_in_group;
 
-	if (8 > pin)
-		axxia_gpio_set(AXXIA_GPIO_0, pin, value);
-	else
-		axxia_gpio_set(AXXIA_GPIO_1, (pin - 8), value);
+	debug("%s:%d - GPIO pin %d set to %d.\n",
+	      __FILE__, __LINE__, pin, value);
+
+	if (GPIO_GROUPS * GPIO_PINS_PER_GROUP < pin)
+		return -1;
+
+	group = pin / GPIO_PINS_PER_GROUP;
+	pin_in_group = pin % GPIO_PINS_PER_GROUP;
+	axxia_gpio_set(group, pin_in_group, value);
 
 	return 0;
 }
@@ -305,7 +325,7 @@ gpio_request(unsigned pin, const char *label)
 	debug("%s:%d - GPIO pin %d requested by %s\n",
 	      __FILE__, __LINE__, pin, label);
 
-	if (16 > pin)
+	if (GPIO_GROUPS * GPIO_PINS_PER_GROUP < pin)
 		return 0;
 
 	return -1;

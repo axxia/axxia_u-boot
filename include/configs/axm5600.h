@@ -503,7 +503,10 @@ int is_asic( void );
 #ifndef __ASSEMBLY__
 #define CONFIG_CMD_GPIO
 
-typedef enum { AXXIA_GPIO_0, AXXIA_GPIO_1 } axxia_gpio_t;
+typedef enum {
+	AXXIA_GPIO0,
+	AXXIA_GPIO1
+} axxia_gpio_t;
 
 int axxia_gpio_get_direction(axxia_gpio_t gpio, int pin);
 int axxia_gpio_set_direction(axxia_gpio_t gpio, int pin, int direction);
@@ -555,8 +558,13 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define I2C2	I2C2_ADDRESS
 #define I2C3	I2C3_ADDRESS
 
-#define GPIO0_ADDRESS (IO + 0x180000)
-#define GPIO1_ADDRESS (IO + 0x190000)
+#define GPIO_BASE_ADDRESS   (IO + 0x180000)
+#define GPIO_GROUP_OFFSET   (0x10000)
+#define GPIO_GROUPS         (2)
+#define GPIO_PINS_PER_GROUP (8)
+
+#define GPIO_GPIO0_ADDRESS (GPIO_BASE_ADDRESS + GPIO_GROUP_OFFSET * 0)
+#define GPIO_GPIO1_ADDRESS (GPIO_BASE_ADDRESS + GPIO_GROUP_OFFSET * 1)
 
 #define MMAP_GPREG   (0x8032900000)
 #define MMAP_SCB     (0x8032000000)
