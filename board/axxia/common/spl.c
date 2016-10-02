@@ -821,7 +821,10 @@ load_image(void)
 	struct spi_flash *flash;
 	struct image_header header;
 	unsigned int bytes_written = 0;
-	unsigned int buffer[1024];
+	/* 
+ 	  GPDMA requires 16 byte alignment for a source address.
+ 	*/
+	unsigned int buffer[64] __attribute__ ((aligned(16)));
 	unsigned int offset = CONFIG_UBOOT_OFFSET;
 	unsigned int size;
 	unsigned long output = 0;
@@ -862,18 +865,18 @@ load_image(void)
 
 		if (0 < size) {
 			spi_flash_read(flash, offset,
-				       size > 4096 ? 4096 : size, buffer);
-			size -= size > 4096 ? 4096 : size;
+				       size > 256 ? 256 : size, buffer);
+			size -= size > 256 ? 256 : size;
 		}
 
-		ret = gpdma_xfer((void *)output, (void *)buffer, 4096, 1);
+		ret = gpdma_xfer((void *)output, (void *)buffer, 256, 1);
 		if (ret != 0) {
 			printf("xfer failed %d, %u\n", ret, bytes_written);
 			break;
 		}
-		bytes_written += 4096;
-		output += 4096;
-		offset += 4096;
+		bytes_written += 256;
+		output += 256;
+		offset += 256;
 	}
 
 	return;
@@ -1417,6 +1420,8 @@ board_init_f(ulong dummy)
 	writel(value, (PERIPH_SCB + 0x44108));
 
 #ifdef SYSCACHE_ONLY_MODE
+	if (0 != setup_security())
+		acp_failure(__FILE__, __func__, __LINE__);
 	load_image();
 	printf("U-Boot Loaded in System Cache, Jumping to Monitor\n");
 	jump_to_monitor((void *)0x8031001000);

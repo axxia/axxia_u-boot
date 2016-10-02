@@ -73,6 +73,14 @@ setup_security(void)
         /* 0x170.1.0x8 = 1 */
         writel(0x1, (MMAP_SCB + 0x8));
 
+#ifdef SYSCACHE_ONLY_MODE
+        /*
+          The RNI NIC-400 is currently configured to signal non-secured transactions only. 
+          Override all transactions coming out of RNI as a SECURE. Use it only in a Secure state.
+        */
+        writel(0x2, (MMAP_SCB + 0x42800));
+#endif
+
 	/*
 	  Set up the TZC
 	*/

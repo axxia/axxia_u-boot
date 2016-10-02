@@ -236,7 +236,6 @@ _gpdma(void *dest, size_t dest_size, void *src, size_t src_size, int secure)
 	/* Wait for completion. */
 	while (0 < retries--) {
 		if (0 != (greadl(GPDMA0 + DMA_STATUS) & 0x8) &&
-		    0 == greadl(GPDMA0 + DMA_X_SRC_COUNT) &&
 		    0 == greadl(GPDMA0 + DMA_X_DST_COUNT))
 			break;
 
@@ -250,7 +249,7 @@ _gpdma(void *dest, size_t dest_size, void *src, size_t src_size, int secure)
 	/* Restore gpdma0_axprot_override. */
 	writel(gpdma0_axprot_override, MMAP_SCB + GPDMA0_AXPROT_OVERRIDE);
 
-	if (0 == retries)
+	if (0 >= retries)
 		return -2;
 
 	return 0;

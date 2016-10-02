@@ -364,6 +364,7 @@
 */
 
 /*#define SYSCACHE_ONLY_MODE*/
+#define CONFIG_ANY_XLF
 
 /*
   Switch to normal mode on v1.0 silicon.  Note that v1.0 silicon does
