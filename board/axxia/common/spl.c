@@ -1466,6 +1466,28 @@ board_init_f(ulong dummy)
 #endif	/* CONFIG_SPL_ENV_SUPPORT */
 
 	/*
+	 * The counter frequency in simulation can vary, and may need
+	 * to be adjusted for performance.  The following will set
+	 * CNTFRQ_EL0 to the value specified by the environment
+	 * variable "cntfrq_override".
+	 */
+
+	{
+		char *cntfrq_ovr_str;
+		unsigned int cntfrq_ovr;
+
+		cntfrq_ovr_str = getenv("cntfrq_override");
+
+		if (NULL != cntfrq_ovr_str) {
+			cntfrq_ovr = simple_strtoul(cntfrq_ovr_str, NULL, 0);
+			printf("Resetting the CNTFRQ Register to %u.\n",
+				cntfrq_ovr);
+			asm volatile("msr cntfrq_el0, %0"
+				     : : "r" (cntfrq_ovr) : "memory");
+		}
+	}
+
+	/*
 	  Load U-Boot in memory and jump to the monitor.
 	*/
 
