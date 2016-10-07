@@ -360,7 +360,7 @@ ft_update_pei(void *blob)
 	node = fdt_path_offset(blob, "/soc/pcie@d000000000");
 
 	if (0 <= node) {
-		if (0 != (pciesrio->control & (1 << 1))) {
+		if (0 != (pciesrio->control & (1 << 2))) {
 			/* If PEI2 is enabled, set OKAY; */
 			rc = fdt_set_node_status(blob, node,
 						 FDT_STATUS_OKAY, 0);

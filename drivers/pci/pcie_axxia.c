@@ -613,7 +613,7 @@ pci_init_board(void)
 	unsigned int value;
 
 	ncr_read32(NCP_REGION_ID(0x115, 0), 0, &value);
-	debug("vlaue=0x%x\n", value);
+	debug("value=0x%x\n", value);
 #endif
 
 #ifdef ACP_PEI0
