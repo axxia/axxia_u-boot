@@ -48,6 +48,7 @@ set_outer_cache_state:
 	add	x10, x10, 1
 	cmp	x10, 0x27
 	ble	1b
+	b	set_outer_cache_state_succeeded
 
 set_outer_cache_state_failed:
 	mov	x0, -1
