@@ -3750,6 +3750,12 @@ typedef struct {
 	unsigned char sdram_rtt_wr[4];
 	unsigned char sdram_data_drv_imp[4];
 	unsigned char sdram_rtt_park[4];
+	unsigned char dq_map_0[18];
+ 	unsigned char unused_0[2];
+	unsigned char dq_map_1[18];
+ 	unsigned char unused_1[2];
+	ncp_uint32_t dq_map_odd_rank_swap_0;
+	ncp_uint32_t dq_map_odd_rank_swap_1;
 } __attribute__((packed)) per_sysmem_sdram_parms_t;
 
 typedef struct {
@@ -3809,12 +3815,6 @@ typedef struct {
 	ncp_uint32_t rdlvl_gate_interval;
 	ncp_uint32_t preamble_support;
 	ncp_uint32_t crc_mode;
-	unsigned char dq_map_0[18];
- 	unsigned char unused_0[2];
-	unsigned char dq_map_1[18];
- 	unsigned char unused_1[2];
-	ncp_uint32_t dq_map_odd_rank_swap_0;
-	ncp_uint32_t dq_map_odd_rank_swap_1;
 	per_sysmem_sdram_parms_t per_smem[4];
 	ncp_uint32_t packedDqDmDqsODT;
 	ncp_uint32_t packedAddrCmdCtrlOI;
@@ -3823,9 +3823,7 @@ typedef struct {
 	ncp_uint32_t packedAddrCmdCtrlClkSlewRates;
 	ncp_uint32_t packedDqDmDqsSlewRates;
 	ncp_uint32_t packedPHYTrainingOptions;
-#ifdef CONFIG_AXXIA_ANY_XLF
 	ncp_uint32_t interface_sel;
-#endif
 	/* This is the ncp_l3lock_region_info_t structure from the RTE. */
 	ncp_uint32_t total_l3_locked_size;
 	ncp_uint32_t region[4];

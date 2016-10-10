@@ -268,21 +268,12 @@ sysmem_init(void)
 		return -1;
 	}
 
-	/* X9 requires sysmem parameters version 3, XLF requires version 4. */
-#ifdef CONFIG_AXXIA_ANY_XLF
-	if (4 != version_save) {
+	/* X9 and XLF require sysmem parameters version 5, */
+	if (5 != version_save) {
 		printf("Wrong Memory Parameter Version: %d\n", version_save);
 
 		return -1;
 	}
-#endif
-#ifdef CONFIG_AXXIA_ANY_56XX
-	if (3 != version_save) {
-		printf("Wrong Memory Parameter Version: %d\n", version_save);
-
-		return -1;
-	}
-#endif
 
 	/* Disable System Cache */
 	__asm_disable_l3_cache();

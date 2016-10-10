@@ -141,6 +141,7 @@ ncp_cm_denali_init_56xx(
 	ncp_memory_controller_DENALI_CTL_134_t reg134 = {0};
 	ncp_memory_controller_DENALI_CTL_139_t reg139 = {0};
 	ncp_memory_controller_DENALI_CTL_140_t reg140 = {0};
+	ncp_memory_controller_DENALI_CTL_142_t reg142 = {0};
 	ncp_memory_controller_DENALI_CTL_143_t reg143 = {0};
 	ncp_memory_controller_DENALI_CTL_144_t reg144 = {0};
 
@@ -254,14 +255,19 @@ ncp_cm_denali_init_56xx(
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_09, (ncp_uint32_t *)&reg09);
 	if (parms->dram_class == NCP_SM_DDR4_MODE)
 	{
-		if (parms->ddrClockSpeedMHz <= 300)
+		if (parms->ca_parity_en == TRUE)
+		{
+			if (parms->ddrClockSpeedMHz <= 300)
+				reg09.ca_parity_lat = 0;
+			else if (parms->ddrClockSpeedMHz <= 1066)
+				reg09.ca_parity_lat = 4;
+			else
+				reg09.ca_parity_lat = 5;
+		}
+		else if (parms->ca_parity_en == FALSE)
+		{
 			reg09.ca_parity_lat = 0;
-		else if (parms->ddrClockSpeedMHz <= 1067)
-			reg09.ca_parity_lat = 4;
-		else
-			reg09.ca_parity_lat = 5;
-		if (parms->ca_parity_en == FALSE)
-			reg09.ca_parity_lat = 0;
+		}
 		reg09.tmod_par = ncp_ps_to_clk(parms->tck_ps,15000) + reg09.ca_parity_lat;
 		reg09.tmrd_par = ncp_ps_to_clk(parms->tck_ps,15000) + reg09.ca_parity_lat;
 		reg09.additive_lat = parms->additive_latency; /* option to reggen tcl */
@@ -290,8 +296,16 @@ ncp_cm_denali_init_56xx(
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_12, (ncp_uint32_t *)&reg12);
 	reg12.trp = ctm->tRP;
-	reg12.twtr_l = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWTR_L : 0x0;
-	reg12.twtr = ncp_ps_to_clk(parms->tck_ps,2500);
+	if (parms->crc_mode & 0x1)
+	{
+		reg12.twtr = ctm->tWTR_S + Max(4, ncp_ps_to_clk(parms->tck_ps, 3750));
+		reg12.twtr_l = ctm->tWTR_L + Max(4, ncp_ps_to_clk(parms->tck_ps, 3750));
+	}
+	else
+	{
+		reg12.twtr = ncp_ps_to_clk(parms->tck_ps,2500);
+		reg12.twtr_l = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWTR_L : 0x0;
+	}
 	reg12.tras_min = ctm->tRAS;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_12, *((ncp_uint32_t *)&reg12));
 
@@ -312,14 +326,28 @@ ncp_cm_denali_init_56xx(
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_15, (ncp_uint32_t *)&reg15);
 	/*reg15.tcke = ctm->tCKE;*/
 	reg15.tcke = ncp_ps_to_clk(parms->tck_ps,5000);
-	reg15.tckesr = reg15.tcke + 1; /* tCKE + 1nCK */
+	if (parms->ca_parity_en == TRUE)
+	{
+		reg15.tckesr = reg15.tcke + 1 + reg09.ca_parity_lat;
+	}
+	else
+	{
+		reg15.tckesr = reg15.tcke + 1; /* tCKE + 1nCK */
+	}
 	reg15.twr_mpr = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR_MPR : 0x0;
 	reg15.writeinterp = 0; /* for both ddr3, ddr4 */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_15, *((ncp_uint32_t *)&reg15));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_16, (ncp_uint32_t *)&reg16);
 	reg16.trcd = ctm->tRCD;
-	reg16.twr = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR : ncp_ps_to_clk(parms->tck_ps,15000);
+	if (parms->crc_mode & 0x1)
+	{
+		reg16.twr = ctm->tWR + Max(5, ncp_ps_to_clk(parms->tck_ps, 3750));
+	}
+	else
+	{
+		reg16.twr = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tWR : ncp_ps_to_clk(parms->tck_ps,15000);
+	}
 	reg16.tvref = (parms->dram_class == NCP_SM_DDR4_MODE) ? ncp_ps_to_clk(parms->tck_ps, 150000) : 0x0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_16, *((ncp_uint32_t *)&reg16));
 
@@ -332,8 +360,17 @@ ncp_cm_denali_init_56xx(
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_18, (ncp_uint32_t *)&reg18);
 	reg18.tras_lockout = 1;
-	reg18.tdal = (parms->dram_class == NCP_SM_DDR4_MODE) ? (ctm->tWR + ctm->tRP) 
-		: ( ncp_ps_to_clk(parms->tck_ps,15000) + ctm->tRP); /* tWR + roundup(tRP/tCK) */
+	if (parms->crc_mode & 0x1)
+	{
+		reg18.tdal = (parms->dram_class == NCP_SM_DDR4_MODE) ? 
+			((ctm->tWR + Max(4, ncp_ps_to_clk(parms->tck_ps, 3750))) + ctm->tRP) 
+			: ( ncp_ps_to_clk(parms->tck_ps,15000) + ctm->tRP); /* tWR + roundup(tRP/tCK) */
+	}
+	else
+	{
+		reg18.tdal = (parms->dram_class == NCP_SM_DDR4_MODE) ? (ctm->tWR + ctm->tRP) 
+			: ( ncp_ps_to_clk(parms->tck_ps,15000) + ctm->tRP); /* tWR + roundup(tRP/tCK) */
+	}
 	reg18.bstlen = parms->bstlen;/* 1 for BL2, 2 for BL4, 3 for BL8 */
 	reg18.trp_ab = parms->CAS_latency;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_18, *((ncp_uint32_t *)&reg18));
@@ -384,7 +421,14 @@ ncp_cm_denali_init_56xx(
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_29, (ncp_uint32_t *)&reg29);
 	reg29.lowpower_refresh_enable = 0x0;
-	reg29.cksre = (parms->ddrClockSpeedMHz < 1066) ? 0xa : 0xb;;
+	if (parms->ca_parity_en == TRUE)
+	{
+		reg29.cksre = ((parms->ddrClockSpeedMHz < 1066) ? 0xa : 0xb) + reg09.ca_parity_lat;
+	}
+	else
+	{
+		reg29.cksre = (parms->ddrClockSpeedMHz < 1066) ? 0xa : 0xb;
+	}
 	reg29.cksrx = (parms->ddrClockSpeedMHz < 1066) ? 0xa : 0xb;;
 	reg29.lp_cmd = 0x0;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_29, *((ncp_uint32_t *)&reg29));
@@ -577,6 +621,10 @@ ncp_cm_denali_init_56xx(
 		{
 			reg44.mr2_data_0 |= 0x40;
 		}
+		if (parms->crc_mode & 0x1)
+		{
+			reg44.mr2_data_0 |= 0x1000;
+		}
 	}
 	else
 	{
@@ -676,7 +724,8 @@ ncp_cm_denali_init_56xx(
 		 * A12		read dbi 0 = disable
 		 * A13, A17	RFU
 		 */
-		reg48.mr5_data_0 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[cmId].sdram_rtt_park[0]) |
+		reg48.mr5_data_0 = ((parms->ca_parity_en) ? (reg09.ca_parity_lat - 3) : 0x0) |
+			NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[cmId].sdram_rtt_park[0]) |
 			((parms->dm_masking << 10) /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
 	}
 	ctm->mr5 = reg48.mr5_data_0;
@@ -842,6 +891,10 @@ ncp_cm_denali_init_56xx(
 		{
 			reg52.mr2_data_1 |= 0x40;
 		}
+		if (parms->crc_mode & 0x1)
+		{
+			reg52.mr2_data_1 |= 0x1000;
+		}
 	}
 	else
 	{
@@ -878,7 +931,8 @@ ncp_cm_denali_init_56xx(
 		 * A12		read dbi 0 = disable
 		 * A13, A17	RFU
 		 */
-		reg56.mr5_data_1 = NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[cmId].sdram_rtt_park[1]) |
+		reg56.mr5_data_1 = ((parms->ca_parity_en) ? (reg09.ca_parity_lat - 3) : 0x0) |
+			NCP_SM_ENCODE_RTT_PARK_DDR4(parms->per_smem[cmId].sdram_rtt_park[1]) |
 			((parms->dm_masking << 10) /* enable data mask */) | (parms->dbi_wr_en << 11) | (parms->dbi_rd_en << 12);
 	}
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_56, *((ncp_uint32_t *)&reg56));
@@ -991,12 +1045,20 @@ ncp_cm_denali_init_56xx(
 	reg97.odt_wr_map_cs0 = wr_ODT[0];
 	reg97.odt_rd_map_cs1 = rd_ODT[1];
 	reg97.odt_wr_map_cs1 = wr_ODT[1];
-	reg97.todtl_2cmd = (parms->additive_latency + parms->CAS_write_latency -2 + 1);/* was 0x8 */
+	reg97.todtl_2cmd = (parms->additive_latency + parms->CAS_write_latency + reg09.ca_parity_lat - 1);/* was 0x8 */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_97, *((ncp_uint32_t *)&reg97));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_98, (ncp_uint32_t *)&reg98);
-	reg98.todth_wr = 0x6;
-	reg98.todth_rd = 0x6;
+	if (parms->crc_mode & 0x1)
+	{
+		reg98.todth_rd = 0x7;
+		reg98.todth_wr = 0x7;
+	}
+	else
+	{
+		reg98.todth_rd = 0x6;
+		reg98.todth_wr = 0x6;
+	}
 	reg98.odt_en = 0x1;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_98, *((ncp_uint32_t *)&reg98));
 
@@ -1163,23 +1225,31 @@ ncp_cm_denali_init_56xx(
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_139, *((ncp_uint32_t *)&reg139));
 
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_140, (ncp_uint32_t *)&reg140);
-	reg140.tdfi_wrcslat = 0x8; /* wrlat_adj - 6 - (preamble_support >> 1) Should this be the calculation ?. */
+	reg140.tdfi_wrcslat = 0x8 + reg09.ca_parity_lat; /* wrlat_adj - 6 - (preamble_support >> 1) Should this be the calculation ?. */
 	reg140.tdfi_parin_lat = (parms->dram_class == NCP_SM_DDR4_MODE) ? 0x0 : 0x1; /* from reg tcl */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_140, *((ncp_uint32_t *)&reg140));
 
-	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_143, (ncp_uint32_t *)&reg143);
-	value = 0;
-	for (i=0; i < 4; i++)
-	{
-		value |= (parms->dq_map_0[i] << (8 * i));
-	}
-	reg143.dq_map_0 = value;
-	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_143, *((ncp_uint32_t *)&reg143));
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_142, (ncp_uint32_t *)&reg142);
+	reg142.crc_mode = parms->crc_mode;
+	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_142, *((ncp_uint32_t *)&reg142));
 
-	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_144, (ncp_uint32_t *)&reg144);
-	reg144.dq_map_0 = (parms->dq_map_0[4] | (parms->dq_map_0[5] << 8));
-	reg144.dq_map_odd_rank_swap_0 = parms->dq_map_odd_rank_swap_0;
-	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_144, *((ncp_uint32_t *)&reg144));
+	/* DQ is only relevant if crc is enabled and crc_mode programmed to 0x3, hence this check */
+	if (parms->crc_mode == 0x3)
+	{
+		ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_143, (ncp_uint32_t *)&reg143);
+		value = 0;
+		for (i=0; i < 4; i++)
+		{
+			value |= (parms->per_smem[cmId].dq_map_0[i] << (8 * i));
+		}
+		reg143.dq_map_0 = value;
+		ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_143, *((ncp_uint32_t *)&reg143));
+
+		ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_144, (ncp_uint32_t *)&reg144);
+		reg144.dq_map_0 = (parms->per_smem[cmId].dq_map_0[4] | (parms->per_smem[cmId].dq_map_0[5] << 8));
+		reg144.dq_map_odd_rank_swap_0 = parms->per_smem[cmId].dq_map_odd_rank_swap_0;
+		ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_144, *((ncp_uint32_t *)&reg144));
+	}
 
 	/* DDR configuration */
 

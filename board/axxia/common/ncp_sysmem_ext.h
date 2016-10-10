@@ -189,6 +189,10 @@ typedef struct __attribute__((packed)) {
     unsigned char sdram_rtt_wr[4];		/* packed as intf-0 rank-0, intf-0 rank-1, intf-0 rank-2, intf-0 rank-3 */
     unsigned char sdram_data_drv_imp[4];	/* packed as intf-0 rank-0, intf-0 rank-1, intf-0 rank-2, intf-0 rank-3 */
     unsigned char sdram_rtt_park[4];		/* packed as intf-0 rank-0, intf-0 rank-1, intf-0 rank-2, intf-0 rank-3 */
+    ncp_uint8_t	dq_map_0[18]; 		/* defines the DQ mapping of the output DQ pins from the MC/PHY per DIMM. For X9 specify all 18 bytes, for XLF specify info in 7:0 and 17th location. CMEM uses locations 5:0 */
+    ncp_uint8_t	dq_map_1[18]; 		/* defines the DQ mapping of the output DQ pins from the MC/PHY per DIMM. For X9 specify all 18 bytes, for XLF specify info in 7:0 and 17th locatio. CMEM does not use this  */
+    ncp_uint8_t	dq_map_odd_rank_swap_0; /* defines which chip-select per DIMM will use the DQ swapping. 4 bits representing chip-selects */
+    ncp_uint8_t	dq_map_odd_rank_swap_1; /* XLF only: 4 bits representing chip-selects */
 } ncp_per_sysmem_sdram_parms_t;
 
 #endif	/* __UBOOT__ */
@@ -336,10 +340,6 @@ typedef struct {
     ncp_uint16_t		rdlvl_gate_interval;	/* Max long count sequences between gate training */
     ncp_uint8_t			preamble_support;	/* defines the read (bit0) and write (bit 1) preamble support of b'0-1 cycle, or b'1-2 cycle preamble */
     ncp_uint8_t			crc_mode;		/* Bit(0): 1 to enable crc gen/checking, Bit(1): 1: performed in MC, 0: in PHY */
-    ncp_uint8_t			dq_map_0[18]; 		/* defines the DQ mapping of the output DQ pins from the MC/PHY per DIMM. For X9 specify all 18 bytes, for XLF specify info in 7:0 and 17th location. CMEM uses locations 5:0 */
-    ncp_uint8_t			dq_map_1[18]; 		/* defines the DQ mapping of the output DQ pins from the MC/PHY per DIMM. For X9 specify all 18 bytes, for XLF specify info in 7:0 and 17th locatio. CMEM does not use this  */
-    ncp_uint8_t			dq_map_odd_rank_swap_0; /* defines which chip-select per DIMM will use the DQ swapping. 4 bits representing chip-selects */
-    ncp_uint8_t			dq_map_odd_rank_swap_1; /* XLF only: 4 bits representing chip-selects */
 
     ncp_per_sysmem_sdram_parms_t    per_smem[4];	/* X9 uses 0,1 indices, XLF uses 0,1,2,3 indices */
     ncp_uint32_t		packedDqDmDqsODT;
