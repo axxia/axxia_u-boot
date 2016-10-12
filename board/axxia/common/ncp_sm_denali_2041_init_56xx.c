@@ -364,18 +364,8 @@ ncp_sm_common_setup_56xx(
         ctm->tRRD_S = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRRD_S[parms->sdram_device_width])));
         ctm->tRRD_L = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRRD_L[parms->sdram_device_width])));
         ctm->tFAW = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tFAW[parms->sdram_device_width])));
-        if (parms->crc_mode & 0x1)
-        {
-            ctm->tWTR_S = Max(2, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWTR_S)));
-            ctm->tWTR_S += Max(5, ncp_ps_to_clk(parms->tck_ps, 3750));
-            ctm->tWTR_L = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWTR_L)));
-            ctm->tWTR_L += Max(5, ncp_ps_to_clk(parms->tck_ps, 3750));
-        }
-        else
-        {
-            ctm->tWTR_S = Max(2, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWTR_S)));
-            ctm->tWTR_L = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWTR_L)));
-        }
+        ctm->tWTR_S = Max(2, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWTR_S)));
+        ctm->tWTR_L = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWTR_L)));
         ctm->tRTP = Max(4, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tRTP)));
         ctm->tWR = ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tWR));
         ctm->tMRD = speedbin_ddr4_vals[clkSpeedIndex].tMRD;
@@ -813,8 +803,16 @@ ncp_sm_denali_2041_init_56xx(
     reg12.trp = ctm->tRP;
     if (parms->crc_mode & 0x1)
     {
+        if (parms->ddrClockSpeedMHz == 800)
+        {
         reg12.twtr = ctm->tWTR_S + Max(4, ncp_ps_to_clk(parms->tck_ps, 3750));
         reg12.twtr_l = ctm->tWTR_L + Max(4, ncp_ps_to_clk(parms->tck_ps, 3750));
+    }
+    else
+    {
+            reg12.twtr = ctm->tWTR_S + Max(5, ncp_ps_to_clk(parms->tck_ps, 3750));
+            reg12.twtr_l = ctm->tWTR_L + Max(5, ncp_ps_to_clk(parms->tck_ps, 3750));
+        }
     }
     else
     {
@@ -865,7 +863,14 @@ ncp_sm_denali_2041_init_56xx(
     reg16.trcd = ctm->tRCD;
     if (parms->crc_mode & 0x1)
     {
+        if (parms->ddrClockSpeedMHz == 800)
+        {
+            reg16.twr = ctm->tWR + Max(4, ncp_ps_to_clk(parms->tck_ps, 3750));
+        }
+        else
+        {
         reg16.twr = ctm->tWR + Max(5, ncp_ps_to_clk(parms->tck_ps, 3750));
+    }
     }
     else
     {
@@ -889,9 +894,18 @@ ncp_sm_denali_2041_init_56xx(
     reg18.tras_lockout = 1;
     if (parms->crc_mode & 0x1)
     {
+        if (parms->ddrClockSpeedMHz == 800)
+        {
         reg18.tdal = (parms->dram_class == NCP_SM_DDR4_MODE) ? 
             ((ctm->tWR + Max(4, ncp_ps_to_clk(parms->tck_ps, 3750))) + ctm->tRP) 
             : ( ncp_ps_to_clk(parms->tck_ps,15000) + ctm->tRP); /* tWR + roundup(tRP/tCK) */
+    }
+    else
+    {
+            reg18.tdal = (parms->dram_class == NCP_SM_DDR4_MODE) ? 
+                ((ctm->tWR + Max(5, ncp_ps_to_clk(parms->tck_ps, 3750))) + ctm->tRP) 
+                : ( ncp_ps_to_clk(parms->tck_ps,15000) + ctm->tRP); /* tWR + roundup(tRP/tCK) */
+        }
     }
     else
     {
