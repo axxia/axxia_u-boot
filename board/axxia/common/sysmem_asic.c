@@ -222,6 +222,133 @@ cmem_init(void)
 }
 
 /*
+ * dickens_init()
+ *
+ * Set up the Dickens HNF slave node IDs and ELM
+ * based on number of system memory interfaces.
+ * Also set up the NCA VAT.
+ *
+ * This has been broken out of sysmem_init() into
+ * a separate function so that it can be called 
+ * for the DDR retention case where we don't call
+ * sysmem_init() but still need to set up the HNF.
+ */
+void dickens_init(void)
+{
+#ifdef CONFIG_AXXIA_ANY_XLF
+	int i;
+#endif
+
+	/* Set up the VAT */
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1000, 0xa200000f);
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1004, 0xffffff00);
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1008, 0);
+	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x100c, 0);
+
+	/* Then the ELM mode. */
+#ifdef CONFIG_AXXIA_ANY_56XX
+	if (1 == sysmem->num_interfaces) {
+		unsigned int value;
+
+		NCP_COMMENT("Setting single-ELM-0 mode\n");
+
+		writel(0x4, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x27 << 16)) + 0x8));
+
+		value = readl(ELM0 + 4);
+		value &= 0xfffffdff;
+		writel(value, ELM0 + 4);
+	} else {
+		writel(0x4, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x4, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0xe, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0xe, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0xe, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0xe, ((DICKENS | (0x27 << 16)) + 0x8));
+	}
+#endif
+
+#ifdef CONFIG_AXXIA_ANY_XLF
+	if (0x1 == sysmem->num_interfaces) {
+		writel(2, (MMAP_SCB + 0x42800));
+
+                /* use only elm0 */
+		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x27 << 16)) + 0x8));
+
+		writel(0, (MMAP_SCB + 0x42800));
+	} else if (0x2 == sysmem->num_interfaces) {
+		writel(2, (MMAP_SCB + 0x42800));
+
+                /* use only elm1 */
+		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x27 << 16)) + 0x8));
+
+		writel(0, (MMAP_SCB + 0x42800));
+	} else if (0x3 == sysmem->num_interfaces) {
+		writel(2, (MMAP_SCB + 0x42800));
+
+                /* use only elm2 */
+		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x27 << 16)) + 0x8));
+
+		writel(0, (MMAP_SCB + 0x42800));
+	} else if (0x4 == sysmem->num_interfaces) {
+		writel(2, (MMAP_SCB + 0x42800));
+
+                /* use only elm2 */
+		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
+		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x22 << 16)) + 0x8));
+		writel(0x8, ((DICKENS | (0x23 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x24 << 16)) + 0x8));
+		writel(0x15, ((DICKENS | (0x25 << 16)) + 0x8));
+		writel(0x1a, ((DICKENS | (0x26 << 16)) + 0x8));
+		writel(0x1a, ((DICKENS | (0x27 << 16)) + 0x8));
+
+		writel(0, (MMAP_SCB + 0x42800));
+	}
+
+	/*set bit 9 of ELMs to force to use single ELM*/
+	for (i = 0; i < 4; ++i)	{
+		unsigned int tmp;
+
+                ncr_read32(NCP_REGION_ID(0x167, i), 0x0004, &tmp);
+                tmp &= 0xfffff9ff;
+		tmp |= ((sysmem->num_interfaces - 1) << 9);
+		ncr_write32(NCP_REGION_ID(0x167, i), 0x0004, tmp);
+	}
+#endif
+}
+
+
+/*
   ------------------------------------------------------------------------------
   sysmem_init
 */
@@ -316,111 +443,9 @@ sysmem_init(void)
 		}
 #endif
 
-	/* Set up the VAT */
-	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1000, 0xa200000f);
-	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1004, 0xffffff00);
-	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x1008, 0);
-	ncr_write32(NCP_REGION_ID(0x16, 0x10), 0x100c, 0);
 
-	/* Then the ELM mode. */
-#ifdef CONFIG_AXXIA_ANY_56XX
-	if (1 == sysmem->num_interfaces) {
-		unsigned int value;
-
-		NCP_COMMENT("Setting single-ELM-0 mode\n");
-
-		writel(0x4, ((DICKENS | (0x20 << 16)) + 0x8));
-		writel(0x4, ((DICKENS | (0x21 << 16)) + 0x8));
-		writel(0x4, ((DICKENS | (0x22 << 16)) + 0x8));
-		writel(0x4, ((DICKENS | (0x23 << 16)) + 0x8));
-		writel(0x4, ((DICKENS | (0x24 << 16)) + 0x8));
-		writel(0x4, ((DICKENS | (0x25 << 16)) + 0x8));
-		writel(0x4, ((DICKENS | (0x26 << 16)) + 0x8));
-		writel(0x4, ((DICKENS | (0x27 << 16)) + 0x8));
-
-		value = readl(ELM0 + 4);
-		value &= 0xfffffdff;
-		writel(value, ELM0 + 4);
-	} else {
-		writel(0x4, ((DICKENS | (0x20 << 16)) + 0x8));
-		writel(0x4, ((DICKENS | (0x21 << 16)) + 0x8));
-		writel(0x4, ((DICKENS | (0x22 << 16)) + 0x8));
-		writel(0x4, ((DICKENS | (0x23 << 16)) + 0x8));
-		writel(0xe, ((DICKENS | (0x24 << 16)) + 0x8));
-		writel(0xe, ((DICKENS | (0x25 << 16)) + 0x8));
-		writel(0xe, ((DICKENS | (0x26 << 16)) + 0x8));
-		writel(0xe, ((DICKENS | (0x27 << 16)) + 0x8));
-	}
-#endif
-#ifdef CONFIG_AXXIA_ANY_XLF
-	if (0x1 == sysmem->num_interfaces) {
-		writel(2, (MMAP_SCB + 0x42800));
-
-                /* use only elm0 */
-		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x22 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x23 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x24 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x25 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x26 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x27 << 16)) + 0x8));
-
-		writel(0, (MMAP_SCB + 0x42800));
-	} else if (0x2 == sysmem->num_interfaces) {
-		writel(2, (MMAP_SCB + 0x42800));
-
-                /* use only elm1 */
-		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x22 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x23 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x24 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x25 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x26 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x27 << 16)) + 0x8));
-
-		writel(0, (MMAP_SCB + 0x42800));
-	} else if (0x3 == sysmem->num_interfaces) {
-		writel(2, (MMAP_SCB + 0x42800));
-
-                /* use only elm2 */
-		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x22 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x23 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x24 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x25 << 16)) + 0x8));
-		writel(0x15, ((DICKENS | (0x26 << 16)) + 0x8));
-		writel(0x15, ((DICKENS | (0x27 << 16)) + 0x8));
-
-		writel(0, (MMAP_SCB + 0x42800));
-	} else if (0x4 == sysmem->num_interfaces) {
-		writel(2, (MMAP_SCB + 0x42800));
-
-                /* use only elm2 */
-		writel(0x3, ((DICKENS | (0x20 << 16)) + 0x8));
-		writel(0x3, ((DICKENS | (0x21 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x22 << 16)) + 0x8));
-		writel(0x8, ((DICKENS | (0x23 << 16)) + 0x8));
-		writel(0x15, ((DICKENS | (0x24 << 16)) + 0x8));
-		writel(0x15, ((DICKENS | (0x25 << 16)) + 0x8));
-		writel(0x1a, ((DICKENS | (0x26 << 16)) + 0x8));
-		writel(0x1a, ((DICKENS | (0x27 << 16)) + 0x8));
-
-		writel(0, (MMAP_SCB + 0x42800));
-	}
-
-	/*set bit 9 of ELMs to force to use single ELM*/
-	for (i = 0; i < 4; ++i)	{
-		unsigned int tmp;
-
-                ncr_read32(NCP_REGION_ID(0x167, i), 0x0004, &tmp);
-                tmp &= 0xfffff9ff;
-		tmp |= ((sysmem->num_interfaces - 1) << 9);
-		ncr_write32(NCP_REGION_ID(0x167, i), 0x0004, tmp);
-	}
-#endif
+    /* set up the Dickens HNF */
+    dickens_init();
 
 	/* Initialize the ELMs */
 	rc = ncp_elm_init(NULL, sysmem);

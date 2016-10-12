@@ -44,6 +44,7 @@ Public Interface
 ncp_st_t
 ncp_elm_init(ncp_dev_hdl_t, ncp_sm_parms_t *);
 
+void dickens_init(void);
 
 /*
 ------------------------------------------------------------------------------
@@ -124,7 +125,7 @@ axxia_initialize(void)
 
 			printf("initializing ELMs for ddrRecovery\n");
 
-			/* Initialize the ELMs */
+			/* Initialize Dickens and the ELMs */
 			version_save = sysmem->version;
 #if defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_SIM)
 			sysmem->version = NCP_CHIP_ACP56xx;
@@ -133,6 +134,9 @@ axxia_initialize(void)
 #else
 #error "Invalid Chip Type!"
 #endif
+
+            dickens_init();
+
 			rc = ncp_elm_init(NULL, sysmem);
 
 			sysmem->version = version_save;
