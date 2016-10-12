@@ -269,8 +269,6 @@ ft_update_pei(void *blob)
 
 	/*
 	  In this case, Linux will set up the PEIs.
-
-	  TODO: Update SRIO handling.
 	*/
 
 	/* Add the pei_control node and set control based on the parameters. */
@@ -374,6 +372,89 @@ ft_update_pei(void *blob)
 
 		if (0 != rc)
 			printf("%s:%d - Couldn't set PEI2 status!\n",
+			       __FILE__, __LINE__);
+	}
+
+	/* DTS for rapidio is using 0x prefix. For now I'm using 0x here as
+	well. Or should I unify DTS notation?
+	*/
+	node = fdt_path_offset(blob, "/soc/rapidio@0xb000000000");
+
+	if (0 <= node) {
+		if (0 != (pciesrio->control & (1 << 3))) {
+			/* If SRIO0 is enabled, set OKAY; */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
+			printf("Enabling SRIO0\n");
+		} else {
+			/* otherwise, set DISABLE. */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_DISABLED, 0);
+			printf("Disabling SRIO0\n");
+		}
+
+		if (0 != rc)
+			printf("%s:%d - Couldn't set SRIO0 status!\n",
+			       __FILE__, __LINE__);
+	}
+
+	node = fdt_path_offset(blob, "/soc/rapidio@0xb800000000");
+
+	if (0 <= node) {
+		if (0 != (pciesrio->control & (1 << 4))) {
+			/* If SRIO1 is enabled, set OKAY; */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
+			printf("Enabling SRIO1\n");
+		} else {
+			/* otherwise, set DISABLE. */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_DISABLED, 0);
+			printf("Disabling SRIO1\n");
+		}
+
+		if (0 != rc)
+			printf("%s:%d - Couldn't set SRIO1 status!\n",
+			       __FILE__, __LINE__);
+	}
+
+	node = fdt_path_offset(blob, "/soc/sata@a000000000");
+
+	if (0 <= node) {
+		if (0 != (pciesrio->control & (1 << 5))) {
+			/* If SATA0 is enabled, set OKAY; */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
+			printf("Enabling SATA0\n");
+		} else {
+			/* otherwise, set DISABLE. */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_DISABLED, 0);
+			printf("Disabling SATA0\n");
+		}
+
+		if (0 != rc)
+			printf("%s:%d - Couldn't set SATA0 status!\n",
+			       __FILE__, __LINE__);
+	}
+
+	node = fdt_path_offset(blob, "/soc/sata@a000010000");
+
+	if (0 <= node) {
+		if (0 != (pciesrio->control & (1 << 6))) {
+			/* If SATA1 is enabled, set OKAY; */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_OKAY, 0);
+			printf("Enabling SATA1\n");
+		} else {
+			/* otherwise, set DISABLE. */
+			rc = fdt_set_node_status(blob, node,
+						 FDT_STATUS_DISABLED, 0);
+			printf("Disabling SATA1\n");
+		}
+
+		if (0 != rc)
+			printf("%s:%d - Couldn't set SATA1 status!\n",
 			       __FILE__, __LINE__);
 	}
 
