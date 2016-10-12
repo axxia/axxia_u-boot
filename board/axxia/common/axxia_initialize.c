@@ -169,9 +169,7 @@ axxia_initialize(void)
 	  =========
 	*/
 
-#if defined(CONFIG_AXXIA_ANY_56XX) && \
-  !defined(CONFIG_AXXIA_EMU) && !defined(CONFIG_AXXIA_SIM) && \
-  !defined(PEI_SETUP_IN_LINUX)
+#if defined(CONFIG_AXXIA_PCI) && !defined(PEI_SETUP_IN_LINUX)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_PEI))
 		if (0 != pciesrio_init(pciesrio->control))
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);

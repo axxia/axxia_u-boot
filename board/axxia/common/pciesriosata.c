@@ -561,30 +561,27 @@ void enable_reset(u32 phy)
 {
 	u32 regVal;
 
+#if defined(CONFIG_ANY_XLF)
+	if (0 != phy)
+		return;
+#endif
+
 	if (phy == 0) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0,
-			   &regVal);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0, &regVal);
 		regVal |= (1 << 5);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, regVal);
 	} else if (phy == 1) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0,
-			   &regVal);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0, &regVal);
 		regVal |= (1 << 14);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, regVal);
 	} else if (phy == 2) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
-			   &regVal);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4, &regVal);
 		regVal |= (1 << 19);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4, regVal);
 	} else if (phy == 3) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
-			   &regVal);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4, &regVal);
 		regVal |= (1 << 29);
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4, regVal);
 	}
 }
 
@@ -592,30 +589,27 @@ void release_reset(u32 phy)
 {
 	u32 regVal;
 
+#if defined(CONFIG_ANY_XLF)
+	if (0 != phy)
+		return;
+#endif
+
 	if (phy == 0) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0,
-			   &regVal);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0, &regVal);
 		regVal &= (~(1 << 5));
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, regVal);
 	} else if (phy == 1) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0,
-			   &regVal);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0, &regVal);
 		regVal &= (~(1 << 14));
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, regVal);
 	} else if (phy == 2) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
-			   &regVal);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4, &regVal);
 		regVal &= (~(1 << 19));
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4, regVal);
 	} else if (phy == 3) {
-		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4,
-			   &regVal);
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0x4, &regVal);
 		regVal &= (~(1 << 29));
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4,
-			    regVal);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4, regVal);
 	}
 }
 
@@ -773,6 +767,7 @@ pei_setup(unsigned int control)
 	unsigned int rc_mode;
 	unsigned int phyVal0;
 	unsigned int phyVal1;
+	unsigned int phyVal2;
 	unsigned int srio0_mode;
 	unsigned int srio1_mode;
 	unsigned int srio0_speed;
@@ -816,13 +811,12 @@ pei_setup(unsigned int control)
 
 	switch (pci_srio_sata_mode) {
 	case 0:
-		/* PEI0x8 */
-		rc_mode = (control & 0x80)<<15;
-		/* Enable PEI0, PEI0 RC mode */
-		phyVal0 = (control & 0x1) | rc_mode;
+		phyVal1 = 0x01000120;
+		ncr_write32(NCP_REGION_ID(0x115, 0), 4, phyVal1);
+		phyVal2 = 0x004a0000;
+		ncr_write32(NCP_REGION_ID(0x115, 0), 8, phyVal2);
+		phyVal0 = 0x84400041;
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0, phyVal0);
-		/* PIPE port select -- Enable PIPE0 interface */
-		ncr_write32(NCP_REGION_ID(0x115, 0), 0x4, (0x1<<24));
 		break;
 	case 1:
 		/*

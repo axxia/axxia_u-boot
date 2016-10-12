@@ -563,7 +563,11 @@ ncr_apb2ser_indirect_setup(
 		baseId = (nodeId - 0x111) * 2;
 	} else {
 		/* node 0x115 */
+#if defined(CONFIG_AXXIA_ANY_56XX)
 		baseId = 0x14;
+#elif defined(CONFIG_AXXIA_ANY_XLF)
+		baseId = 0x1e;
+#endif
 	}
 
 	*indirectOffset = ((baseId + tgtId) * 0x10000);
