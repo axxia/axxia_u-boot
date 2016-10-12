@@ -1477,6 +1477,8 @@ void dump_packet(const char *, void *, int);
   ==============================================================================
 */
 
+#define CONFIG_CMD_EXTMEMMPR
+
 /* If defined, leave the L3 in "Snoop Filter Only" mode. */
 /*#define LEAVE_L3_IN_SFONLY*/
 

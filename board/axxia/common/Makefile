@@ -24,7 +24,7 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-obj-y += axxia.o
+obj-y += axxia.o extmemmpr.o
 
 else
 

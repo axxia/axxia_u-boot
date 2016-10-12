@@ -4225,4 +4225,9 @@ void __asm_disable_l3_cache(void);
 void __asm_enable_l3_cache(void);
 #endif	/* __ASSEMBLY__ */
 
+#ifndef __ASSEMBLY__
+int handle_cmem_mpr(int, int);
+int handle_smem_mpr(int, int);
+#endif	/* __ASSEMBLY__ */
+
 #endif /* __AXXIA_H */

@@ -217,6 +217,7 @@ obj-$(CONFIG_CMD_GPT) += cmd_gpt.o
 obj-$(CONFIG_CMD_ETHSW) += cmd_ethsw.o
 obj-$(CONFIG_CMD_SBB) += cmd_sbb.o
 obj-$(CONFIG_CMD_NCR) += cmd_ncr.o
+obj-$(CONFIG_CMD_EXTMEMMPR) += cmd_extmemmpr.o
 
 # Power
 obj-$(CONFIG_CMD_PMIC) += cmd_pmic.o
