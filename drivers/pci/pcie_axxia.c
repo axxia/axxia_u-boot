@@ -58,7 +58,6 @@
 #define PCIE_ATU_FUNC(x)                (((x) & 0x7) << 16)
 #define PCIE_ATU_UPPER_TARGET           0x91C
 
-
 #undef DEBUG_PCIE
 
 #ifdef CONFIG_PCI
@@ -175,7 +174,7 @@ static void axxia_pcie_prog_viewport_cfg0(struct pci_controller *hose,
 			     PCIE_ATU_REGION_OUTBOUND
 			     | PCIE_ATU_REGION_INDEX0, PCIE_ATU_VIEWPORT);
 	axxia_pcie_writel_rc(hose, data->cfg0_base, PCIE_ATU_LOWER_BASE);
-#if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF_SIM)
+#if defined(CONFIG_AXXIA_ANY_XLF)
 	axxia_pcie_writel_rc(hose, (data->cfg0_base >> 32),
 			     PCIE_ATU_UPPER_BASE);
 #endif
@@ -199,7 +198,7 @@ static void axxia_pcie_prog_viewport_cfg1(struct pci_controller *hose,
 			     PCIE_ATU_VIEWPORT);
 	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
 	axxia_pcie_writel_rc(hose, data->cfg1_base, PCIE_ATU_LOWER_BASE);
-#if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF_SIM)
+#if defined(CONFIG_AXXIA_ANY_XLF)
 	axxia_pcie_writel_rc(hose, (data->cfg1_base >> 32),
 			     PCIE_ATU_UPPER_BASE);
 #endif
@@ -221,7 +220,7 @@ static void axxia_pcie_prog_viewport_mem_outbound(struct pci_controller *hose)
 			     PCIE_ATU_VIEWPORT);
 	axxia_pcie_writel_rc(hose, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
 	axxia_pcie_writel_rc(hose, data->mem_mod_base, PCIE_ATU_LOWER_BASE);
-#if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF_SIM)
+#if defined(CONFIG_AXXIA_ANY_XLF)
 	axxia_pcie_writel_rc(hose, (data->mem_mod_base >> 32),
 			     PCIE_ATU_UPPER_BASE);
 #endif
