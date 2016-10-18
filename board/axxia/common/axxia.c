@@ -391,6 +391,8 @@ ft_board_setup(void *blob, bd_t *bd)
 	int rc;
 	u64 start[CONFIG_NR_DRAM_BANKS];
 	u64 size[CONFIG_NR_DRAM_BANKS];
+	int node;
+	u32 tmp;
 
 	/*
 	  Update the PEI setup.
@@ -401,6 +403,26 @@ ft_board_setup(void *blob, bd_t *bd)
 	if (0 != rc)
 		printf("%s:%d - Couldn't update PEIs!\n",
 		       __FILE__, __LINE__);
+
+	/*
+	  Update the clocks.
+	*/
+
+	node = fdt_path_offset(blob, "/clocks/clk_per");
+
+	if (0 > node) {
+		printf("/clocks/clk_per is missing, skipping update!\n");
+	} else {
+		acp_clock_get(clock_peripheral, &tmp);
+		tmp *= 1000;
+		printf("Peripheral frequency: %u\n", tmp);
+		tmp = htonl(tmp);
+		rc = fdt_setprop(blob, node, "clock-frequency",
+				 &tmp, sizeof(ncp_uint32_t));
+
+		if (0 != rc)
+			printf("Couldn't set peripheral clock frequency!\n");
+	}
 
 	/*
 	  Update the size of system memory in the device tree.
