@@ -4019,6 +4019,7 @@ unsigned int spi_get_per_clk(void);
 #ifndef __ASSEMBLY__
 int sysmem_reset(void);
 unsigned long long sysmem_size(void);
+unsigned long long cmem_size(void);
 #endif
 
 /*
@@ -4207,6 +4208,8 @@ unsigned int set_watchdog_timeout(unsigned int);
 enum bist_type {addr, data};
 int axxia_sysmem_check_ecc(void);
 int axxia_sysmem_bist(unsigned long long address, unsigned long long length,
+		      enum bist_type type);
+int axxia_cmem_bist(unsigned long long address, unsigned long long length,
 		      enum bist_type type);
 int setup_security(void);
 int voltage_init(void);

@@ -31,7 +31,7 @@ else
 ################################################################################
 ## SPL Build
 
-obj-y += sysmem_reset.o spl.o axxia_initialize.o sysmem_bist.o
+obj-y += sysmem_reset.o spl.o axxia_initialize.o sysmem_bist.o cmem_bist.o
 
 ifdef CONFIG_AXXIA_PCI
 obj-y += pciesriosata.o

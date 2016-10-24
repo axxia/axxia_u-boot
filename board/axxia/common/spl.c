@@ -1451,6 +1451,12 @@ board_init_f(ulong dummy)
 		check_memory_ranges();
 	}
 
+	if (0 != (global->flags & PARAMETERS_GLOBAL_RUN_CMEM_BIST)) {
+		printf("Testing Classifier Memory From 0, 0x%llx bytes\n",
+		       cmem_size());
+		axxia_cmem_bist(0ULL, cmem_size(), data);
+	}
+
 	printf("System Initialized\n\n");
 
 	/* Move the stack to ram. */
