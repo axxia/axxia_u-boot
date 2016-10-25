@@ -216,6 +216,13 @@ cmem_init(void)
 
 			return -1;
 		}
+
+        /*
+         * write CMEM config local node scratch register to indicate
+         * U-boot CMEM init complete
+         */
+        ncr_write32(NCP_REGION_ID(cm_nodes[i], 0xff), 0x20, 1);
+
 	}
 
 	return 0;
