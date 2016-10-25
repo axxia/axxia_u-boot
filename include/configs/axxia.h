@@ -4230,4 +4230,10 @@ int handle_cmem_mpr(int, int);
 int handle_smem_mpr(int, int);
 #endif	/* __ASSEMBLY__ */
 
+#ifndef __ASSEMBLY__
+unsigned int calc_chip_vrun(void);
+int set_vrm_to_vrun(unsigned int);
+int voltage_init(void);
+#endif	/* __ASSEMBLY__ */
+
 #endif /* __AXXIA_H */

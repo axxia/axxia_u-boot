@@ -39,32 +39,57 @@
   Returns Vrun in mV.
 */
 
-unsigned long
+unsigned int
 calc_chip_vrun(void)
 {
-	int voltage;
+#if defined(CONFIG_AXXIA_ANY_XLF)
+	return V_SAFE;
+#else
+	unsigned int bin;
+	unsigned int voltage = 0;
 
-	/*
-	  Until the recipe for determining the voltage is available,
-	  play it "safe".
-	*/
+	/* Get the bin; slow, medium, or fast. */
+	ncr_read32(NCP_REGION_ID(0x155, 0xb), 0x15c, &bin);
+	bin = ((bin >> 16) & 0xff);
 
-	voltage = V_SAFE;
+	switch (bin) {
+	case 1:
+		/* slow bin */
+		ncr_read32(NCP_REGION_ID(0x155, 0xb), 0x148, &voltage);
+		voltage = ((voltage >> 16) & 0xff);
+		break;
+	case 2:
+		/* fast bin */
+		ncr_read32(NCP_REGION_ID(0x155, 0xb), 0x148, &voltage);
+		voltage = ((voltage >> 24) & 0xff);
+		break;
+	default:
+		return V_SAFE;
+		break;
+	}
+
+	voltage += 700;
+
+	if (V_MIN > voltage || V_MAX < voltage) {
+		puts("** Voltage Returned For Bin Is Out Of Range **\n");
+		acp_failure(__FILE__, __func__, __LINE__);
+	}
 
 	return voltage;
+#endif
 }
 
 /*
   ------------------------------------------------------------------------------
   set_vrm_to_vrun
 
-  The LSI implementation.  May be replaced by a board specific function.
+  The Intel implementation.  May be replaced by a board specific function.
 */
 
 int __weak
-set_vrm_to_vrun(unsigned long v_run)
+set_vrm_to_vrun(unsigned int v_run)
 {
-	printf("To set the voltage to %lu mV, implement set_vrm_to_vrun().\n",
+	printf("To set the voltage to %u mV, implement set_vrm_to_vrun().\n",
 	       v_run);
 
 	return 0;
