@@ -437,7 +437,6 @@ ncp_cm_denali_init_56xx(
     ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_27, *((ncp_uint32_t *)&reg27));
 
     ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_28, (ncp_uint32_t *)&reg28);
-    reg28.pwrup_srefresh_exit = (parms->ddrRecovery == TRUE) ? 1 : 0;
     reg28.srefresh_exit_no_refresh = 0x0;
     reg28.enable_quick_srefresh = 0x1;
     reg28.cke_delay = 3; /* or 0 */

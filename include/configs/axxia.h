@@ -3828,8 +3828,6 @@ typedef struct {
 	ncp_uint32_t total_l3_locked_size;
 	ncp_uint32_t region[4];
 	/* Only used in U-Boot, not part of the RTE structure. */
-	unsigned ddrRetentionEnable;
-	unsigned ddrRecovery;
 	unsigned long long totalSize;
 } __attribute__((packed)) parameters_mem_t;
 

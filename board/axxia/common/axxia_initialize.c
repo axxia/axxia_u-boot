@@ -33,6 +33,7 @@ Local
 */
 
 unsigned *phyRegs;
+unsigned ddrRecovery;
 
 /*
 ==============================================================================
@@ -77,6 +78,29 @@ axxia_initialize(void)
 		return 0;
 #endif
 
+#ifdef CONFIG_AXXIA_ARM
+#ifdef CONFIG_MEMORY_RETENTION
+	if (0 != (global->flags & PARAMETERS_GLOBAL_ENABLE_RETENTION)) {
+		unsigned value;
+		/*
+		 *  we use bit 0 of the persistent scratch register to
+		 *  inidicate ddrRetention recovery.
+		 */
+		ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x00dc, &value);
+		ddrRecovery = (value & 0x1) ;
+		value &= 0xfffffffe;
+		ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x00dc, value);
+
+		printf("DDR Retention Enabled, Recovery = %d\n",
+		       ddrRecovery);
+	} else {
+		printf("DDR Retention Not Enabled\n");
+	}
+#else
+	ddrRecovery = 0;
+#endif
+#endif
+
 	/*
 	  =======
 	  Voltage
@@ -97,13 +121,32 @@ axxia_initialize(void)
 
 #if !defined(CONFIG_TARGET_EMULATION)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_CLOCKS))
-		if (0 != clocks_init(sysmem->ddrRecovery))
+		if (0 != clocks_init(ddrRecovery))
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 #endif
 
 	serial_initialize();
 	serial_init();
-	(void)sysmem_size();
+
+
+	/*
+	  ===========
+	  Tree Memory
+	  ===========
+	*/
+
+
+#if !defined(CONFIG_AXXIA_EMU)
+    cmem->totalSize = 0;
+	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_CMEM))) {
+		ncr_tracer_enable();
+
+		if (0 != cmem_init())
+			acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+		ncr_tracer_disable();
+	}
+#endif
 
 	/*
 	  =============
@@ -111,9 +154,13 @@ axxia_initialize(void)
 	  =============
 	*/
 
+    sysmem->totalSize = 0;
+
+	(void)sysmem_size();
+
 #if !defined(SYSCACHE_ONLY_MODE) && !defined(CONFIG_TARGET_EMULATION)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) {
-		if (0 == sysmem->ddrRecovery) {
+		if (0 == ddrRecovery) {
 			ncr_tracer_enable();
 
 			if (0 != sysmem_init())
@@ -150,22 +197,6 @@ axxia_initialize(void)
 	}
 #endif
 
-	/*
-	  ===========
-	  Tree Memory
-	  ===========
-	*/
-
-#if !defined(CONFIG_AXXIA_EMU)
-	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_CMEM))) {
-		ncr_tracer_enable();
-
-		if (0 != cmem_init())
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-
-		ncr_tracer_disable();
-	}
-#endif
 
 	/*
 	  =========

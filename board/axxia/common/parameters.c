@@ -401,36 +401,11 @@ parameters_read:
 	voltage = (parameters_voltage_t *)(parameters + header->voltageOffset);
 	clocks = (parameters_clocks_t *)(parameters + header->clocksOffset);
 	sysmem = (parameters_mem_t *)(parameters + header->systemMemoryOffset);
-	sysmem->ddrRetentionEnable = 0;
-	sysmem->ddrRecovery = 0;
-	sysmem->totalSize = 0;
 	cmem = (parameters_mem_t *)
 		(parameters + header->classifierMemoryOffset);
-	cmem->ddrRetentionEnable = 0;
-	cmem->ddrRecovery = 0;
-	cmem->totalSize = 0;
+
 #ifdef CONFIG_AXXIA_ARM
 	retention = (void *)(parameters + header->systemMemoryRetentionOffset);
-#ifdef CONFIG_MEMORY_RETENTION
-	if (0 != (global->flags & PARAMETERS_GLOBAL_ENABLE_RETENTION)) {
-		unsigned value;
-		/*
-		 *  we use bit 0 of the persistent scratch register to
-		 *  inidicate ddrRetention recovery.
-		 */
-		ncr_read32(NCP_REGION_ID(0x156, 0x00), 0x00dc, &value);
-		sysmem->ddrRecovery = (value & 0x1) ;
-		value &= 0xfffffffe;
-		ncr_write32(NCP_REGION_ID(0x156, 0x00), 0x00dc, value);
-
-		printf("DDR Retention Enabled, Recovery = %d\n",
-		       sysmem->ddrRecovery);
-	} else {
-		printf("DDR Retention Not Enabled\n");
-	}
-#else
-	sysmem->ddrRecovery = 0;
-#endif
 #endif
 
 #ifdef DISPLAY_PARAMETERS
