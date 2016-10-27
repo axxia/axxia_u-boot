@@ -127,10 +127,6 @@
 				"mem=2G"
 #define CONFIG_BOOTCOMMAND	"bootm 4010000 - 4000000"
 
-#define V_MIN  700
-#define V_SAFE 910
-#define V_MAX  956
-
 #define CONFIG_MEMORY_RETENTION
 
 #define SSP_DEFAULT_CLOCK  1000000
@@ -198,10 +194,6 @@
 #define CONFIG_BOOTP_ID_CACHE_SIZE 32
 
 /*#define CONFIG_SYS_DCACHE_OFF*/
-
-#define V_MIN   700
-#define V_SAFE  910
-#define V_MAX   956
 
 /*#define CONFIG_MEMORY_RETENTION*/
 
@@ -298,10 +290,6 @@
 
 #define CONFIG_REDUNDANT_UBOOT
 
-#define V_MIN   700
-#define V_SAFE  910
-#define V_MAX   956
-
 #define CONFIG_MEMORY_RETENTION
 
 #define CONFIG_CMD_SBB
@@ -361,6 +349,18 @@ int axxia_initialize(void);
 void display_va_attr(void *);
 int axxia_sysmem_check_ecc(void);
 #endif	/* __ASSEMBLY__ */
+
+/*
+  AVS settings.  Note that there are different minimums depending on the bin.
+
+  The three possible bins are Slow (1), Typical (0), and Fast (2).
+*/
+
+#define V_MIN   860
+#define V_MIN_1 910
+#define V_MIN_2 810
+#define V_SAFE  910
+#define V_MAX   940
 
 #define SYSCACHE_SIZE (8 * SZ_1M)
 

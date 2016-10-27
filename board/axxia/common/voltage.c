@@ -46,7 +46,7 @@ calc_chip_vrun(void)
 	return V_SAFE;
 #else
 	unsigned int bin;
-	unsigned int voltage = 0;
+	unsigned int voltage = V_SAFE;
 
 	/* Get the bin; slow, medium, or fast. */
 	ncr_read32(NCP_REGION_ID(0x155, 0xb), 0x15c, &bin);
@@ -56,24 +56,27 @@ calc_chip_vrun(void)
 	case 1:
 		/* slow bin */
 		ncr_read32(NCP_REGION_ID(0x155, 0xb), 0x148, &voltage);
-		voltage = ((voltage >> 16) & 0xff);
+		voltage = ((voltage >> 16) & 0xff) + 700;
+
+		if (V_MIN_1 > voltage)
+			voltage = V_SAFE;
+
 		break;
 	case 2:
 		/* fast bin */
 		ncr_read32(NCP_REGION_ID(0x155, 0xb), 0x148, &voltage);
-		voltage = ((voltage >> 24) & 0xff);
+		voltage = ((voltage >> 24) & 0xff) + 700;
+
+		if (V_MIN_2 > voltage)
+			voltage = V_SAFE;
+
 		break;
 	default:
-		return V_SAFE;
 		break;
 	}
 
-	voltage += 700;
-
-	if (V_MIN > voltage || V_MAX < voltage) {
-		puts("** Voltage Returned For Bin Is Out Of Range **\n");
-		acp_failure(__FILE__, __func__, __LINE__);
-	}
+	if (V_MAX < voltage)
+		voltage = V_SAFE;
 
 	return voltage;
 #endif

@@ -222,10 +222,6 @@
 				"mem=2G"
 #define CONFIG_BOOTCOMMAND	"bootm 4010000 - 4000000"
 
-#define V_MIN   795
-#define V_SAFE  940
-#define V_MAX  1050
-
 /*#define CONFIG_MEMORY_RETENTION*/
 
 #define SSP_DEFAULT_CLOCK  1000000
@@ -294,10 +290,6 @@
 /*#define CONFIG_SYS_DCACHE_OFF*/
 
 #define CONFIG_SYS_CNTR_FREQ 4000000
-
-#define V_MIN   795
-#define V_SAFE  940
-#define V_MAX  1050
 
 /*#define CONFIG_MEMORY_RETENTION*/
 
@@ -400,10 +392,6 @@
 #define CONFIG_REDUNDANT_UBOOT
 
 #define CONFIG_SYS_CNTR_FREQ 4000000
-
-#define V_MIN   795
-#define V_SAFE  940
-#define V_MAX  1050
 
 #define CONFIG_MEMORY_RETENTION
 
@@ -597,6 +585,14 @@ void acp_failure(const char *, const char *, const int);
 int axxia_initialize(void);
 void display_va_attr(void *);
 #endif	/* __ASSEMBLY__ */
+
+/*
+  AVS settings.
+
+  Not yet supported (TBD for B0, not available on A0).
+*/
+
+#define V_SAFE  910
 
 #define GPDMA0 0x8005020000ULL
 #define GPDMA1 0x8005030000ULL
