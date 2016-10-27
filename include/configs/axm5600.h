@@ -353,12 +353,11 @@ int axxia_sysmem_check_ecc(void);
 /*
   AVS settings.  Note that there are different minimums depending on the bin.
 
-  The three possible bins are Slow (1), Typical (0), and Fast (2).
+  The two possible bins are Slow (0 or 1), and Fast (2).
 */
 
-#define V_MIN   860
 #define V_MIN_1 910
-#define V_MIN_2 810
+#define V_MIN_2 860
 #define V_SAFE  910
 #define V_MAX   940
 

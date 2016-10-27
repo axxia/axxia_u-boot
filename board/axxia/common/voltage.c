@@ -53,8 +53,8 @@ calc_chip_vrun(void)
 	bin = ((bin >> 16) & 0xff);
 
 	switch (bin) {
-	case 1:
-		/* slow bin */
+	case 0:			/* 0 defaults to bin 1 */
+	case 1:			/* slow bin */
 		ncr_read32(NCP_REGION_ID(0x155, 0xb), 0x148, &voltage);
 		voltage = ((voltage >> 16) & 0xff) + 700;
 
@@ -62,8 +62,7 @@ calc_chip_vrun(void)
 			voltage = V_SAFE;
 
 		break;
-	case 2:
-		/* fast bin */
+	case 2:			/* fast bin */
 		ncr_read32(NCP_REGION_ID(0x155, 0xb), 0x148, &voltage);
 		voltage = ((voltage >> 24) & 0xff) + 700;
 
@@ -71,7 +70,7 @@ calc_chip_vrun(void)
 			voltage = V_SAFE;
 
 		break;
-	default:
+	default:		/* anything else, just return V_SAFE */
 		break;
 	}
 
