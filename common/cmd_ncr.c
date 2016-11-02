@@ -72,10 +72,10 @@ do_ncr_read(unsigned long node, unsigned long target, unsigned long offset,
 		printf("0x%08lx\n", value32);
 		break;
 	case 2:
-		printf("0x%08x\n", value16);
+		printf("0x%04x\n", value16);
 		break;
 	case 1:
-		printf("0x%08x\n", value8);
+		printf("0x%02x\n", value8);
 		break;
 	default:
 		/* Invalid Width is Handled Above */

@@ -571,7 +571,7 @@ ncr_apb2ser_indirect_setup(
 	}
 
 	*indirectOffset = ((baseId + tgtId) * 0x10000);
-	mdelay(100);
+	udelay(10);
 	
 	return 0;
 }
@@ -593,7 +593,7 @@ ncr_apb2ser_indirect_access(
     /* build the command1 register */
     pCmd1->valid = 1;
     pCmd1->hwrite = isWrite;
-    pCmd1->tshift = 1;
+    pCmd1->tshift = 0xf;
     pCmd1->htrans = 2; 
     pCmd1->hsize  = (xferWidth == 2) ? 1 : 2;
     pCmd1->haddr  = offset;
@@ -667,6 +667,105 @@ ncr_write32_apb2ser(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value
 
 }
 
+typedef struct
+{
+	unsigned  int                   cr_addr;
+} ncp_cobalt_serdes_ctrl96_r_t;
+
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+	unsigned      reserved_b53                              : 13;
+	unsigned      cr_ack_clear                              :  1;
+	unsigned      cr_rd                                     :  1;
+	unsigned      cr_wr                                     :  1;
+#else    /* Little Endian */
+	unsigned      cr_wr                                     :  1;
+	unsigned      cr_rd                                     :  1;
+	unsigned      cr_ack_clear                              :  1;
+	unsigned      reserved_b53                              : 13;
+#endif
+} ncp_cobalt_serdes_ctrl98_r_t;
+
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+	unsigned      reserved                                  : 15;
+	unsigned      cr_ack                                    :  1;
+#else    /* Little Endian */
+	unsigned      cr_ack                                    :  1;
+	unsigned      reserved                                  : 15;
+#endif
+} ncp_cobalt_serdes_ctrl99_r_t;
+
+static int
+ncr_apb2ser_e12(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value,
+		int isWrite)
+{
+	ncp_cobalt_serdes_ctrl98_r_t hss_cobalt_ctrl_98 = {0};
+	ncp_cobalt_serdes_ctrl99_r_t hss_cobalt_ctrl_99 = {0};
+	ncp_uint16_t e12_addr = 0;
+	ncp_uint32_t indirectOffset = 0;
+	ncp_uint32_t xferWidth = 0;
+
+	if (0 !=
+	    ncr_apb2ser_indirect_setup(region, &indirectOffset, &xferWidth))
+		return -1;
+
+	if ((offset >= 0x1000) && (offset <= 0x10d0))
+		e12_addr = (offset - 0x1000) / 2;
+	else if (offset >= 0x2000)
+		e12_addr = offset / 2;
+
+	ncr_apb2ser_indirect_access(0xc0, indirectOffset,
+				    (ncp_uint32_t *)&e12_addr, 1, 4);
+
+	if (isWrite) {
+		ncr_apb2ser_indirect_access(0xc2, indirectOffset,
+					    value, 1, 4);
+
+		hss_cobalt_ctrl_98.cr_rd = 0; /* bus read strobe */
+		hss_cobalt_ctrl_98.cr_wr = 1;
+	} else  {
+		hss_cobalt_ctrl_98.cr_rd = 1; /* bus read strobe */
+		hss_cobalt_ctrl_98.cr_wr = 0;
+	}
+
+	hss_cobalt_ctrl_98.cr_ack_clear = 0;
+	ncr_apb2ser_indirect_access(0xc4,
+				    indirectOffset,
+				    (ncp_uint32_t *)&hss_cobalt_ctrl_98,
+				    1, 4);
+
+	/* poll for cr_ack to get set */
+
+	do {
+		ncr_apb2ser_indirect_access(0xc6,
+					    indirectOffset,
+					    (ncp_uint32_t *)&hss_cobalt_ctrl_99,
+					    0, 4);
+	} while (0 == hss_cobalt_ctrl_99.cr_ack);
+
+	hss_cobalt_ctrl_98.cr_rd = 0;
+	hss_cobalt_ctrl_98.cr_rd = 0;
+	hss_cobalt_ctrl_98.cr_ack_clear = 1;
+	ncr_apb2ser_indirect_access(0xc4,
+				    indirectOffset,
+				    (ncp_uint32_t *)&hss_cobalt_ctrl_98,
+				    1, 4);
+
+	hss_cobalt_ctrl_98.cr_ack_clear = 0;
+	ncr_apb2ser_indirect_access(0xc4,
+				    indirectOffset,
+				    (ncp_uint32_t *)&hss_cobalt_ctrl_98,
+				    1, 4);
+
+	if (!isWrite)
+		ncr_apb2ser_indirect_access(0x1c0, indirectOffset,
+					    value, 0, 4);
+
+	return 0;
+}
 
 #endif	/* CONFIG_AXXIA_56XX */
 
@@ -692,6 +791,11 @@ ncr_read(ncp_uint32_t region,
 	command_data_register_1_t cdr1;	/* 0x101.0.0xf4 */
 	command_data_register_2_t cdr2;	/* 0x101.0.0xf8 */
 	int wfc_timeout = WFC_TIMEOUT;
+
+	if ((NCP_NODE_ID(region) == 0x115) &&
+	    (NCP_TARGET_ID(region) != 0)) {
+		return ncr_apb2ser_e12(region, address, buffer, 0);
+	}
 
 	if ((NCP_NODE_ID(region) >= 0x110) &&
 	    (NCP_NODE_ID(region) <= 0x11f)) {
@@ -993,6 +1097,11 @@ ncr_write(ncp_uint32_t region,
 	command_data_register_2_t cdr2;
 	int dbs = (number - 1);
 	int wfc_timeout = WFC_TIMEOUT;
+
+	if ((NCP_NODE_ID(region) == 0x115) &&
+	    (NCP_TARGET_ID(region) != 0)) {
+		return ncr_apb2ser_e12(region, address, buffer, 1);
+	}
 
 	if ((NCP_NODE_ID(region) >= 0x110) &&
 	    (NCP_NODE_ID(region) <= 0x11f)) {
