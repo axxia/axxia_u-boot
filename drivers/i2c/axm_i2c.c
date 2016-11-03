@@ -162,8 +162,6 @@ i2c_check_status(unsigned int status, unsigned int *acc_status)
 	if (status & MST_STATUS_SCC)
 		*acc_status |= MST_STATUS_SCC;
 
-	debug("%s:%d - *acc_status=0x%x\n", __FILE__, __LINE__, *acc_status);
-
 	return 0;
 }
 
@@ -334,22 +332,34 @@ i2c_read_bytes(void *i2c_addr, uchar chip, unsigned char *buffer, int len)
 static int
 i2c_stop(void *i2c_addr)
 {
-	int rc = 0;
 	unsigned int status;
 	unsigned int acc_status = 0;
-	unsigned int done_bits = MST_STATUS_SCC;
+	unsigned int retries = 10;
 
 	writel(0xb, i2c_addr + AI2C_REG_I2C_X7_MST_COMMAND);
 
-	while (acc_status != done_bits) {
+	for (;;) {
 		status = readl(i2c_addr + AI2C_REG_I2C_X7_MST_INT_STATUS);
-		rc = i2c_check_status(status, &acc_status);
 
-		if (rc < 0)
-			break;
+		if (0 > i2c_check_status(status, &acc_status)) {
+			error("Bad Status!");
+
+			return -1;
+		}
+
+		if (0 == --retries) {
+			error("Timeout!");
+
+			return -1;
+		}
+
+		if (acc_status == MST_STATUS_SCC)
+			return 0;
+
+		udelay(10);
 	}
-
-	return rc;
+			
+	return 0;
 }
 
 /*
@@ -396,7 +406,9 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 		return 0;
 
 	rc = i2c_read_bytes(i2c_addr, chip, buffer, len);
-	i2c_stop(i2c_addr);
+
+	if (0 != i2c_stop(i2c_addr))
+		return -1;
 
 	return rc;
 }
@@ -431,7 +443,8 @@ i2c_write(uchar chip, uint addr, int alen, uchar *buffer, int len)
 		rc = i2c_write_bytes(i2c_addr, chip, NULL, 0, buffer, len);
 	}
 
-	i2c_stop(i2c_addr);
+	if (0 != i2c_stop(i2c_addr))
+		return -1;
 
 	return rc;
 }
@@ -446,12 +459,13 @@ i2c_probe(uchar chip)
 	int rc;
 	uchar dummy;
 
-
 	if (!i2c_initialized())
 		return -1;
 
 	rc = i2c_read_bytes(i2c_addr, chip, &dummy, 1);
-	i2c_stop(i2c_addr);
+
+	if (0 != i2c_stop(i2c_addr))
+		return -1;
 
 	return rc;
 }
