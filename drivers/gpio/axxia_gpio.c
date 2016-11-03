@@ -165,7 +165,8 @@ axxia_gpio_get(axxia_gpio_t gpio, int pin)
 {
 	unsigned long data;
 
-	if (7 < pin)
+	/* Range check... */
+	if (0 > pin || 7 < pin)
 		return -1;
 
 	data = read_reg(gpio, (GPIODATA + ((1 << pin) * 4)));
@@ -173,7 +174,7 @@ axxia_gpio_get(axxia_gpio_t gpio, int pin)
 	if (0 != data)
 		return 1;
 
-	return 1;
+	return 0;
 }
 
 /*
