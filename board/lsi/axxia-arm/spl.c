@@ -980,6 +980,23 @@ spl_board_init(void)
 	printf("Axxia Version: UNKNOWN\n");
 #endif
 
+	/*
+	  Update the peripheral memory access attributes.
+
+	  A recent change to the chip architecture (JIRA SAAV-637) 
+	*/
+
+	/* PEI */
+	ncr_write32(NCP_REGION_ID(0x149, 0), 0x64, 0xffffff);
+	/* SRIO */
+	ncr_write32(NCP_REGION_ID(0x149, 0), 0x68, 0xffff);
+	/* GPDMA */
+	ncr_write32(NCP_REGION_ID(0x149, 0), 0x6c, 0xffff);
+	/* USB */
+	ncr_write32(NCP_REGION_ID(0x149, 0), 0x74, 0);
+	/* FEMAC */
+	ncr_write32(NCP_REGION_ID(0x149, 0), 0x78, 0);
+
 	rc = axxia_initialize();
 	if (0 != rc)
 		acp_failure(__FILE__, __func__, __LINE__);
