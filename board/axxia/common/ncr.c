@@ -747,7 +747,7 @@ ncr_apb2ser_e12(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value,
 	} while (0 == hss_cobalt_ctrl_99.cr_ack);
 
 	hss_cobalt_ctrl_98.cr_rd = 0;
-	hss_cobalt_ctrl_98.cr_rd = 0;
+	hss_cobalt_ctrl_98.cr_wr = 0;
 	hss_cobalt_ctrl_98.cr_ack_clear = 1;
 	ncr_apb2ser_indirect_access(0xc4,
 				    indirectOffset,
@@ -794,6 +794,10 @@ ncr_read(ncp_uint32_t region,
 
 	if ((NCP_NODE_ID(region) == 0x115) &&
 	    (NCP_TARGET_ID(region) != 0)) {
+		/* Enable the Control Register Clocks */
+		ncr_or(NCP_REGION_ID(0x115, 0), 4, 0x08000108);
+		ncr_or(NCP_REGION_ID(0x115, 0), 8, 0x80000000);
+
 		return ncr_apb2ser_e12(region, address, buffer, 0);
 	}
 
@@ -1100,6 +1104,10 @@ ncr_write(ncp_uint32_t region,
 
 	if ((NCP_NODE_ID(region) == 0x115) &&
 	    (NCP_TARGET_ID(region) != 0)) {
+		/* Enable the Control Register Clocks */
+		ncr_or(NCP_REGION_ID(0x115, 0), 4, 0x08000108);
+		ncr_or(NCP_REGION_ID(0x115, 0), 8, 0x80000000);
+
 		return ncr_apb2ser_e12(region, address, buffer, 1);
 	}
 
