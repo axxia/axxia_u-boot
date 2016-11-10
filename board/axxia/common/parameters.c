@@ -509,13 +509,13 @@ write_parameters(void)
 		       compare, parameters);
 
 		printf("-- Offset --\n"
-		       "     global = 0x%x\n"
-		       "   pciesrio = 0x%x\n"
-		       "    voltage = 0x%x\n"
-		       "     clocks = 0x%x\n"
-		       "     sysmem = 0x%x\n"
-		       "       cmem = 0x%x\n"
-		       "  retention = 0x%x\n",
+		       "     global = 0x%p\n"
+		       "   pciesrio = 0x%p\n"
+		       "    voltage = 0x%p\n"
+		       "     clocks = 0x%p\n"
+		       "     sysmem = 0x%p\n"
+		       "       cmem = 0x%p\n"
+		       "  retention = 0x%p\n",
 		       parameters + header->globalOffset,
 		       parameters + header->pciesrioOffset,
 		       parameters + header->voltageOffset,
