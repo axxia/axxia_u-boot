@@ -791,12 +791,16 @@ ncr_read(ncp_uint32_t region,
 	command_data_register_1_t cdr1;	/* 0x101.0.0xf4 */
 	command_data_register_2_t cdr2;	/* 0x101.0.0xf8 */
 	int wfc_timeout = WFC_TIMEOUT;
+	static int first_115 = 1;
 
 	if ((NCP_NODE_ID(region) == 0x115) &&
 	    (NCP_TARGET_ID(region) != 0)) {
-		/* Enable the Control Register Clocks */
-		ncr_or(NCP_REGION_ID(0x115, 0), 4, 0x08000108);
-		ncr_or(NCP_REGION_ID(0x115, 0), 8, 0x80000000);
+		if (0 != first_115) {
+			/* Enable the Control Register Clocks */
+			ncr_or(NCP_REGION_ID(0x115, 0), 4, 0x08000108);
+			ncr_or(NCP_REGION_ID(0x115, 0), 8, 0x80000000);
+			first_115 = 0;
+		}
 
 		return ncr_apb2ser_e12(region, address, buffer, 0);
 	}
@@ -1101,12 +1105,16 @@ ncr_write(ncp_uint32_t region,
 	command_data_register_2_t cdr2;
 	int dbs = (number - 1);
 	int wfc_timeout = WFC_TIMEOUT;
+	static int first_115 = 1;
 
 	if ((NCP_NODE_ID(region) == 0x115) &&
 	    (NCP_TARGET_ID(region) != 0)) {
-		/* Enable the Control Register Clocks */
-		ncr_or(NCP_REGION_ID(0x115, 0), 4, 0x08000108);
-		ncr_or(NCP_REGION_ID(0x115, 0), 8, 0x80000000);
+		if (0 != first_115) {
+			/* Enable the Control Register Clocks */
+			ncr_or(NCP_REGION_ID(0x115, 0), 4, 0x08000108);
+			ncr_or(NCP_REGION_ID(0x115, 0), 8, 0x80000000);
+			first_115 = 0;
+		}
 
 		return ncr_apb2ser_e12(region, address, buffer, 1);
 	}
