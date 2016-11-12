@@ -112,9 +112,19 @@ static int dwc3_core_init(struct dwc3 *dwc3_reg)
 
 	writel(reg, &dwc3_reg->g_ctl);
 
+#if defined(USB_WA_PHY_STAR_9000952264) || defined(USB_WA_PHY_STAR_9000944754)
 	reg = readl(&dwc3_reg->g_usb3pipectl[0]);
+#if defined(USB_WA_PHY_STAR_9000944754)
 	reg &= ~(1 << 18);
+#endif	/* USB_WA_PHY_STAR_9000944754 */
+#if defined(USB_WA_PHY_STAR_9000952264)
+	reg |= (1 << 28);
+#endif	/* USB_WA_PHY_STAR_9000952264 */
+#if defined(USB_WA_PHY_STAR_9000952264_ALT)
+	reg &= ~(1 << 28);
+#endif	/* USB_WA_PHY_STAR_9000952264_ALT */
 	writel(reg, &dwc3_reg->g_usb3pipectl[0]);
+#endif	/* USB_WA_PHY_STAR_9000952264 || USB_WA_PHY_STAR_9000944754 */
 
 	return 0;
 }

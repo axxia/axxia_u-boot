@@ -1317,6 +1317,8 @@ board_init_f(ulong dummy)
 #endif
 	writel(0, (SYSCON + 0x2000));
 
+#if defined(USB_WA_PHY_STAR_9001023074)
+
 	do {
 		udelay(10);
 		value = readl(AXXIA_USB0_BASE + 0x6c);
@@ -1329,11 +1331,20 @@ board_init_f(ulong dummy)
 		writel(42, AXXIA_USB0_BASE + 0x10);
 
 	writel(0x54c, AXXIA_USB0_BASE + 0xc);
+
+#endif	/* USB_WA_PHY_STAR_9001023074 */
+
+#if defined(USB_WA_PHY_STAR_9000944754)
 	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE,
 	       AXXIA_USB0_BASE + SSP_LANE0_ANA_RX_SCOPE_VDCC);
-	writel(0x400, AXXIA_USB0_BASE + 0x24040);
+#endif	/* USB_WA_PHY_STAR_9000944754 */
+
+#if defined(USB_WA_PHY_STAR_9000952264_ALT)
 	writel(0x6, AXXIA_USB0_BASE + 0x40bc);
 	writel(0x80, AXXIA_USB0_BASE + 0xd4);
+#endif	/* USB_WA_PHY_STAR_9000952264 */
+
+	writel(0x400, AXXIA_USB0_BASE + 0x24040);
 
 #endif	/* CONFIG_AXXIA_USB0 */
 
@@ -1370,23 +1381,12 @@ board_init_f(ulong dummy)
 	writel(value, (SYSCON + 0x20a0));
 	writel(0, (SYSCON + 0x2000));
 
-	do {
-		udelay(10);
-		value = readl(AXXIA_USB1_BASE + 0x6c);
-	} while (0 != (value & (1 << 2)));
-
-	writel(0x8, AXXIA_USB1_BASE + 0xc);
-	value = readl(AXXIA_USB1_BASE + 0x10) & 0x3ff;
-
-	if (60 < value)
-		writel(42, AXXIA_USB1_BASE + 0x10);
-
-	writel(0x54c, AXXIA_USB1_BASE + 0xc);
+#if defined(USB_WA_PHY_STAR_9000944754)
 	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE,
 	       AXXIA_USB1_BASE + SSP_LANE0_ANA_RX_SCOPE_VDCC);
+#endif	/* USB_WA_PHY_STAR_9000944754 */
+
 	writel(0x400, AXXIA_USB1_BASE + 0x24040);
-	writel(0x6, AXXIA_USB1_BASE + 0x40bc);
-	writel(0x80, AXXIA_USB1_BASE + 0xd4);
 
 #endif	/* CONFIG_AXXIA_USB1 */
 
