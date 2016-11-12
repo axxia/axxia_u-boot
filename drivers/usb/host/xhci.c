@@ -812,6 +812,14 @@ static int xhci_submit_root(struct usb_device *udev, unsigned long pipe,
 			xhci_writel(status_reg, reg);
 			break;
 		case USB_PORT_FEAT_POWER:
+#if defined(CONFIG_TARGET_AXXIA)
+			/*
+			  Some devices don't work on the Axxia
+			  development board for 5600 (A0) without this
+			  delay.
+			*/
+			mdelay(50);
+#endif
 			reg |= PORT_POWER;
 			xhci_writel(status_reg, reg);
 			break;
@@ -853,8 +861,8 @@ static int xhci_submit_root(struct usb_device *udev, unsigned long pipe,
 		goto unknown;
 	}
 
-	debug("scrlen = %d\n req->length = %d\n",
-		srclen, le16_to_cpu(req->length));
+	debug("srclen = %d\n req->length = %d\n",
+	      srclen, le16_to_cpu(req->length));
 
 	len = min(srclen, (int)le16_to_cpu(req->length));
 
