@@ -3929,6 +3929,11 @@ int write_parameters(void);
 #define CONFIG_PHY_VITESSE
 #endif
 
+#define MDIO_CONTROL_RD_DATA (0x0)
+#define MDIO_STATUS_RD_DATA  (0x4)
+#define MDIO_CLK_OFFSET      (0x8)
+#define MDIO_CLK_PERIOD      (0xc)
+
 #ifndef MDIO_CLK_OFFSET_DEFAULT
 #ifdef CONFIG_AXXIA_EMU
 /*#define MDIO_CLK_OFFSET_DEFAULT 0x10*/
@@ -3945,6 +3950,12 @@ int write_parameters(void);
 #else
 #define MDIO_CLK_PERIOD_DEFAULT 0xf0
 #endif
+#endif
+
+#ifndef __ASSEMBLY__
+int mdio_initialize(void);
+unsigned short mdio_read(int phy, int reg);
+void mdio_write(int phy, int reg, unsigned short value);
 #endif
 
 #endif	/* CONFIG_SPL_BUILD */

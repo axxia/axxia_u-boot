@@ -20,7 +20,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define BUFFER_GRANULARITY	64
 #define TX_RING_SIZE		(1 * DESCRIPTOR_GRANULARITY)
 #define RX_RING_SIZE		PKTBUFSRX
-#define MDIO_DEV		"axxia-mdio"
+#define MDIO_DEV		"axxia-mdio0"
 
 #define NEM_VERSION_R			0x0000
 #define    MAJOR_REV(_x)		(((_x) >> 24) & 0xff)

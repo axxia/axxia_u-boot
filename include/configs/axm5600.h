@@ -1135,22 +1135,12 @@ int serial_early_init(void);
   ==============================================================================
 */
 
-#define CONFIG_AXXIA_MDIO_BASE 0x8080200000
-
-#define MDIO_CONTROL_RD_DATA (0x8080200000)
-#define MDIO_STATUS_RD_DATA  (0x8080200004)
-#define MDIO_CLK_OFFSET      (0x8080200008)
-#define MDIO_CLK_PERIOD      (0x808020000c)
-
-#ifndef __ASSEMBLY__
-int mdio_initialize( void );
-unsigned short mdio_read( int phy, int reg );
-void mdio_write( int phy, int reg, unsigned short value );
-#endif
+#define CONFIG_AXXIA_MDIO0_BASE 0x8080200000
 
 /*
   SPI
 */
+
 #define CONFIG_AXXIA_PL022_SPI
 #define CONFIG_SYS_SPI_CLK  spi_get_per_clk()
 #define CONFIG_SYS_SPI_BASE (SSP)

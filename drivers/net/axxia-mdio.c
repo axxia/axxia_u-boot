@@ -111,7 +111,12 @@ axxia_mdio_init(void)
 {
 	static int initialized;
 	unsigned long offset, period;
-	struct mii_dev *dev;
+#ifdef CONFIG_AXXIA_MDIO0_BASE
+	struct mii_dev *dev0;
+#endif
+#ifdef CONFIG_AXXIA_MDIO1_BASE
+	struct mii_dev *dev1;
+#endif
 
 	if (initialized)
 		return 0;
@@ -120,39 +125,66 @@ axxia_mdio_init(void)
 	period = getenv_ulong("mdio_clk_period", 0, MDIO_CLK_PERIOD_DEFAULT);
 	debug("MDIO: offset is %#lx, period is %#lx\n", offset, period);
 
-	dev = mdio_alloc();
-	snprintf(dev->name, MDIO_NAME_LEN, "axxia-mdio");
-	dev->priv = (void *)CONFIG_AXXIA_MDIO_BASE;
-	dev->read = axxia_mdio_read;
-	dev->write = axxia_mdio_write;
-	dev->reset = axxia_mdio_reset;
-	if (mdio_register(dev) < 0) {
-		debug("Failed to register MDIO %s\n", dev->name);
-		free(dev);
+#ifdef CONFIG_AXXIA_MDIO0_BASE
+	dev0 = mdio_alloc();
+	snprintf(dev0->name, MDIO_NAME_LEN, "axxia-mdio0");
+	dev0->priv = (void *)CONFIG_AXXIA_MDIO0_BASE;
+	dev0->read = axxia_mdio_read;
+	dev0->write = axxia_mdio_write;
+	dev0->reset = axxia_mdio_reset;
+
+	if (mdio_register(dev0) < 0) {
+		debug("Failed to register MDIO %s\n", dev0->name);
+		free(dev0);
+
 		return -1;
 	}
-	writel(offset, dev->priv + MDIO_REG_CLK_OFFSET);
-	writel(period, dev->priv + MDIO_REG_CLK_PERIOD);
+
+	writel(offset, dev0->priv + MDIO_REG_CLK_OFFSET);
+	writel(period, dev0->priv + MDIO_REG_CLK_PERIOD);
 
 	/* Enable the MDIO Clock. */
 #ifndef CONFIG_TARGET_EMULATION
+#ifdef CONFIG_AXXIA_ANY_56XX
 	writel(0x10, PERIPH_GPREG + 0x18);
 #endif
-
-	initialized = 1;
+#endif
 
 	/*
 	  Set the RGMII Clock Pad Skew
 
-	  This is PHY specific, and may only apply to Victoria.
+	  This is PHY specific, and may only apply to Victoria/Waco.
 	*/
 
 #ifdef CONFIG_TARGET_HARDWARE
-	dev->write(dev, 7, 0, 0xd, 2);
-	dev->write(dev, 7, 0, 0xe, 8);
-	dev->write(dev, 7, 0, 0xd, 0x4002);
-	dev->write(dev, 7, 0, 0xe, 0x3ff);
+	dev0->write(dev0, 7, 0, 0xd, 2);
+	dev0->write(dev0, 7, 0, 0xe, 8);
+	dev0->write(dev0, 7, 0, 0xd, 0x4002);
+	dev0->write(dev0, 7, 0, 0xe, 0x3ff);
 #endif
+
+#endif	/* CONFIG_AXXIA_MDIO0_BASE */
+
+#ifdef CONFIG_AXXIA_MDIO1_BASE
+	dev1 = mdio_alloc();
+	snprintf(dev1->name, MDIO_NAME_LEN, "axxia-mdio1");
+	dev1->priv = (void *)CONFIG_AXXIA_MDIO1_BASE;
+	dev1->read = axxia_mdio_read;
+	dev1->write = axxia_mdio_write;
+	dev1->reset = axxia_mdio_reset;
+
+	if (mdio_register(dev1) < 0) {
+		debug("Failed to register MDIO %s\n", dev1->name);
+		free(dev1);
+
+		return -1;
+	}
+
+	writel(offset, dev1->priv + MDIO_REG_CLK_OFFSET);
+	writel(period, dev1->priv + MDIO_REG_CLK_PERIOD);
+#endif	/* CONFIG_AXXIA_MDIO0_BASE */
+
+	initialized = 1;
 
 	return 0;
 }
