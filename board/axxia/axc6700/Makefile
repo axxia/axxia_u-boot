@@ -26,17 +26,17 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-obj-y += mdio.o phy.o timer_init.o
+obj-y += 
 
 else
 
 ################################################################################
 ## SPL Build
 
-obj-y   += mbist_range.o secure.o ncp_l3lock_region_init.o
+obj-y += secure.o ncp_l3lock_region_init.o
 
 ifdef CONFIG_AXXIA_EMU
-obj-y	+= sysmem_emulation.o
+obj-y += sysmem_emulation.o
 endif
 
 endif
@@ -44,4 +44,4 @@ endif
 ################################################################################
 ## All Builds
 
-obj-y   += failure.o version.o spi.o
+obj-y += failure.o version.o spi.o

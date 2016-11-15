@@ -26,11 +26,10 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-obj-y += mdio.o phy.o timer_init.o
+obj-y += 
 
 ifdef CONFIG_AXXIA_EIOA
-obj-y += eioa.o ncp_task_config_axm55xx.o ncp_task_axm55xx.o
-obj-y += ncp_task_api_entry.o ncp_task_uboot_config_axm55xx.o
+obj-y += eioa.o
 endif
 
 else
@@ -38,10 +37,10 @@ else
 ################################################################################
 ## SPL Build
 
-obj-y   += mbist_range.o secure.o
+obj-y += secure.o
 
 ifdef CONFIG_AXXIA_EMU
-obj-y	+= sysmem_emulation.o
+obj-y += sysmem_emulation.o
 endif
 
 endif
