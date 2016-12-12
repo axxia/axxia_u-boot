@@ -387,7 +387,7 @@ spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	const u8 *txp = dout;
 	u8 *rxp = din;
 #ifdef ENABLE_DMA
-	unsigned long address = NULL;
+	unsigned long address = (unsigned long)NULL;
 	unsigned int direction = 0;
 #endif	/* ENABLE_DMA */
 
