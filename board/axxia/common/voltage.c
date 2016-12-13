@@ -50,7 +50,7 @@ calc_chip_vrun(void)
 
 	/* Get the bin; slow, medium, or fast. */
 	ncr_read32(NCP_REGION_ID(0x155, 0xb), 0x15c, &bin);
-	bin = ((bin >> 16) & 0xff);
+	bin &= 0xff;
 
 	switch (bin) {
 	case 0:			/* 0 defaults to bin 1 */
