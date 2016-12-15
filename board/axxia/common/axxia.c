@@ -266,9 +266,6 @@ ft_update_pei(void *blob)
 	int node;
 	int rc;
 	unsigned int value;
-	unsigned int pei0_lanes = 0;
-	unsigned int pei1_lanes = 0;
-	unsigned int pei2_lanes = 0;
 
 	/*
 	  In this case, Linux will set up the PEIs.
@@ -317,52 +314,6 @@ ft_update_pei(void *blob)
 
 	/* Enable PEIs based on the paramters. */
 
-	value = (pciesrio->control & 0x3c00000) >> 22;
-	/* Set PEI0 number of lanes */
-	switch (value) {
-	case 0:
-		pei0_lanes = 8;
-		break;
-	case 1:
-		pei0_lanes = 4;
-		pei1_lanes = 4;
-		break;
-	case 2:
-		pei0_lanes = 4;
-		pei1_lanes = 2;
-		break;
-	case 3:
-	case 6:
-		pei0_lanes = 2;
-		pei1_lanes = 2;
-		pei2_lanes = 2;
-		break;
-	case 4:
-		pei0_lanes = 2;
-		pei1_lanes = 4;
-		break;
-	case 5:
-		pei0_lanes = 2;
-		pei1_lanes = 2;
-		break;
-	case 7:
-		pei1_lanes = 4;
-		break;
-	case 8:
-		pei1_lanes = 2;
-		break;
-	case 9:
-		pei1_lanes = 2;
-		pei2_lanes = 2;
-		break;
-	default:
-		printf("%s:%d Unsupported lane configuration 0x%x\n", __FILE__,
-		       __LINE__, value);
-		pei0_lanes = 1;
-		pei1_lanes = 1;
-		pei2_lanes = 1;
-	}
-
 	node = fdt_path_offset(blob, "/soc/pcie@c000000000");
 
 	if (0 <= node) {
@@ -382,9 +333,6 @@ ft_update_pei(void *blob)
 		if (0 != rc)
 			printf("%s:%d - Couldn't set PEI0 status!\n",
 			       __FILE__, __LINE__);
-		pei0_lanes = cpu_to_fdt32(pei0_lanes);
-		rc = fdt_setprop(blob, node, "num-lanes",
-				 &pei0_lanes, sizeof(pei0_lanes));
 	}
 
 	node = fdt_path_offset(blob, "/soc/pcie@c800000000");
@@ -405,9 +353,6 @@ ft_update_pei(void *blob)
 		if (0 != rc)
 			printf("%s:%d - Couldn't set PEI1 status!\n",
 			       __FILE__, __LINE__);
-		pei1_lanes = cpu_to_fdt32(pei1_lanes);
-		rc = fdt_setprop(blob, node, "num-lanes",
-				 &pei1_lanes, sizeof(pei1_lanes));
 	}
 
 	node = fdt_path_offset(blob, "/soc/pcie@d000000000");
@@ -428,10 +373,6 @@ ft_update_pei(void *blob)
 		if (0 != rc)
 			printf("%s:%d - Couldn't set PEI2 status!\n",
 			       __FILE__, __LINE__);
-
-		pei2_lanes = cpu_to_fdt32(pei2_lanes);
-		rc = fdt_setprop(blob, node, "num-lanes",
-				 &pei2_lanes, sizeof(pei2_lanes));
 	}
 
 	/* DTS for rapidio is using 0x prefix. For now I'm using 0x here as
