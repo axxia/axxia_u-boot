@@ -136,8 +136,8 @@ bist_result(struct bist_test *test)
 	/* Get the result. */
 	ncr_read32(test->region, NCP_DENALI_CTL_94_5600, &value);
 
-	/* TODO: explain... */
-	ncr_write32(test->region, NCP_DENALI_CTL_93_5600, 0x818);
+	/* Clear bist_go to unfreeze controller operation */
+	ncr_and(test->region, NCP_DENALI_CTL_93_5600, ~(1 << 24));
 
 	if (data == test->type && 1 == (value & 1)) {
 		printf("\tDATA (node 0x%02x): Passed\n",
@@ -195,7 +195,7 @@ bist_start(struct bist_test *test)
 	ncr_write32(test->region, NCP_DENALI_CTL_99_5600, 0);
 	ncr_write32(test->region, NCP_DENALI_CTL_100_5600, 0);
 
-	/* Start the test. */
+	/* Start the test by setting bist_go */
 	ncr_or(test->region, NCP_DENALI_CTL_93, (1 << 24));
 
 	return;
@@ -347,11 +347,12 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length,
 
 		while (0 < remaining) {
 			WATCHDOG_RESET();
-
+			printf(".");
 			if (0 == ncr_poll(test->region, NCP_DENALI_CTL_366_5600,
 					  0x400, 0x400, 100, 10000)) {
 				complete = 1;
 				WATCHDOG_RESET();
+			    printf("\n");
 				check_node_ecc(NCP_NODE_ID(test->region));
 				bist_result(test);
 				break;
@@ -363,7 +364,7 @@ axxia_sysmem_bist(unsigned long long address, unsigned long long length,
 		WATCHDOG_RESET();
 
 		if (0 == complete) {
-			printf("SM Node 0x%x Didn't Complete.\n",
+			printf("\nSM Node 0x%x Didn't Complete.\n",
 			       NCP_NODE_ID(test->region));
 
 			return -1;
