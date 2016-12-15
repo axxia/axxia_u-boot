@@ -173,6 +173,9 @@ bist_result(struct bist_test *test)
 	/* check the result */
 	ncr_read32(test->region, NCP_DENALI_CTL_58_5600, &value);
 
+	/* Clear bist_go to unfreeze controller operation */
+	ncr_and(test->region, NCP_DENALI_CTL_57_5600, ~(1 << 24));
+
 	if (data == test->type && 1 == (value & 1)) {
 		printf("\tDATA (node 0x%02x): Passed\n",
 		       NCP_NODE_ID(test->region));
@@ -191,9 +194,6 @@ bist_result(struct bist_test *test)
 		printf("\tRegion:0x%08x Offset:0x%04x Value:0x%08x\n",
 		       test->region, offsets[i], value);
 	}
-
-	/* unlock bist_go */
-	ncr_and(test->region, NCP_DENALI_CTL_57_5600, ~(1 << 24));
 
 	return;
 }
@@ -231,7 +231,7 @@ bist_start(struct bist_test *test)
 	/* mask applied to data for BIST error checking */
 	ncr_write32(test->region, NCP_DENALI_CTL_61_5600, 0);
 
-	/* set bist go */
+	/* Start the test by setting bist_go */
 	ncr_or(test->region, NCP_DENALI_CTL_57_5600, (1 << 24));
 
 	return;
@@ -336,7 +336,7 @@ axxia_cmem_bist(unsigned long long address, unsigned long long length,
 		/* Fill in the test array. */
 		test->node = node;
 		test->region = NCP_REGION_ID(nodes[node], 0x9);
-		test->high = offset & 0x3f00000000 >> 32;
+		test->high = offset & 0x0300000000 >> 32;
 		test->low = offset & 0xffffffff;
 		test->bits = bits;
 		test->type = type;
@@ -375,15 +375,16 @@ axxia_cmem_bist(unsigned long long address, unsigned long long length,
 		else
 			remaining = 600000;
 
-		remaining *= (size_per_node / (1024 * 1024 * 1024)) + 3;
+		remaining *= (size_per_node / (1024 * 1024 *1024)) + 3 ;
 
 		while (0 < remaining) {
 			WATCHDOG_RESET();
-
+			printf(".");
 			if (0 == ncr_poll(test->region, NCP_DENALI_CTL_84_5600,
 					  0x400, 0x400, 100, 10000)) {
 				complete = 1;
 				WATCHDOG_RESET();
+				printf("\n");
 				check_node_ecc(NCP_NODE_ID(test->region));
 				bist_result(test);
 				break;
@@ -395,7 +396,7 @@ axxia_cmem_bist(unsigned long long address, unsigned long long length,
 		WATCHDOG_RESET();
 
 		if (0 == complete) {
-			printf("CM Node 0x%x Didn't Complete.\n",
+			printf("\nCM Node 0x%x Didn't Complete.\n",
 			       NCP_NODE_ID(test->region));
 
 			return -1;
