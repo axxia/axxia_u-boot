@@ -4126,6 +4126,36 @@ unsigned int set_watchdog_timeout(unsigned int);
 /*
   ==============================================================================
   ==============================================================================
+  Pre-Watchdog and ATF Datalogger #defines
+  ==============================================================================
+  ==============================================================================
+*/
+
+/* Must be defined if ATF datalogger functionality is enabled */
+#define CONFIG_ATF_DATALOGGER
+
+#if defined(CONFIG_ATF_DATALOGGER)
+/* Number of secs prewatchdog timeout is less than watchdog timeout */
+#define PRE_WATCHDOG_DIFF  1
+#define PRE_WATCHDOG_TIMEOUT_SECS (WATCHDOG_TIMEOUT_SECS - PRE_WATCHDOG_DIFF)
+
+/*
+  If prewatchdog timeout is 0 or >= watchdog timer, stop compilation
+   (Prewatchdog time must always be less than watchdog time.
+*/
+#if PRE_WATCHDOG_TIMEOUT_SECS == 0
+#error "PRE_WATCHDOG_TIMEOUT_SECS is zero !"
+#endif
+
+#if PRE_WATCHDOG_TIMEOUT_SECS > PRE_WATCHDOG_TIMEOUT_SECS
+#error "PRE_WATCHDOG_TIMEOUT_SECS is greater than WATCHDOG_TIMEOUT_SECS!"
+#endif
+
+#endif  /* CONFIG_ATF_DATALOGGER */
+
+/*
+  ==============================================================================
+  ==============================================================================
   USB
   ==============================================================================
   ==============================================================================

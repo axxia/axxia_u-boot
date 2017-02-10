@@ -23,6 +23,17 @@
 
 static unsigned int count = 0xffffffff;
 
+	/*
+	  Pre-watchdog timer is required if the ATF Datalogger
+	  functionality is enabled in ATF.  Not required in SPL
+	  builds, since datalogger requires DDR to be active before
+	  use
+	*/
+#if defined(CONFIG_ATF_DATALOGGER) && !defined(CONFIG_SPL_BUILD)
+static unsigned int pre_wdog_count = 0xffffffff;
+#endif
+
+
 static unsigned int
 calculate_count(unsigned int timeout)
 {
@@ -63,6 +74,14 @@ void
 hw_watchdog_reset(void)
 {
 	writel(count, (TIMER5 + TIMER_LOAD));
+
+	/* Kick pre-watchdog timer */
+#if defined(CONFIG_ATF_DATALOGGER) && !defined(CONFIG_SPL_BUILD)
+	writel(pre_wdog_count, (TIMER7 + TIMER_LOAD));
+#endif
+
+
+
 }
 
 /*
@@ -107,6 +126,16 @@ start_watchdog(unsigned int timeout)
 	/* Lock syscon. */
 	writel(0, (SYSCON + 0x2000));
 
+	/* Start pre-watchdog timer (timer 7)*/
+#if defined(CONFIG_ATF_DATALOGGER) && !defined(CONFIG_SPL_BUILD)
+	pre_wdog_count = calculate_count(timeout - PRE_WATCHDOG_DIFF);
+	writel(0, (TIMER7 + TIMER_CONTROL));
+	writel(pre_wdog_count, (TIMER7 + TIMER_LOAD));
+	writel(pre_wdog_count, (TIMER7 + TIMER_VALUE));
+	writel(0xe2, (TIMER7 + TIMER_CONTROL));
+#endif
+
+
 	return 0;
 }
 
@@ -135,6 +164,11 @@ stop_watchdog(void)
 	/* Lock syscon. */
 	writel(0, (SYSCON + 0x2000));
 #endif	/* MAKE_WATCHDOG_PERMANENT */
+
+
+#if defined(CONFIG_ATF_DATALOGGER) && !defined(CONFIG_SPL_BUILD)
+	writel(0, (TIMER7 + TIMER_CONTROL));
+#endif
 
 	return;
 }
@@ -171,6 +205,12 @@ set_watchdog_timeout(unsigned int timeout)
 
 	/* Update the load register. */
 	writel(count, (TIMER5 + TIMER_LOAD));
+
+#if defined(CONFIG_ATF_DATALOGGER) && !defined(CONFIG_SPL_BUILD)
+	pre_wdog_count = calculate_count(timeout - PRE_WATCHDOG_DIFF);
+	writel(pre_wdog_count, (TIMER7 + TIMER_LOAD));
+#endif
+
 
 	return get_watchdog_timeout();
 }
