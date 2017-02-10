@@ -222,6 +222,11 @@ clocks_init( int ddrRecovery )
 	/* SYS/FAB switch. Switch System and FAB clocks individually */
 	value = 0;
 
+	/* clk_nrcp (bits 1:0) */
+	value |= clocks->sys_csw & 0x003;
+	ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
+	udelay(clocks->syspll_psd);
+
 	/* clk_sys (bits 3:2) */
 	value |= clocks->sys_csw & 0x00C;
 	ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
