@@ -305,6 +305,11 @@ clocks_init( int ddrRecovery )
 	       clocks->cpu_csw, clocks->dsp_csw, clocks->sys_csw);
 #endif
 
+    /* Configure system counter to run at 256Mhz (125Mhz reference) */
+    ncr_write32(NCP_REGION_ID(0x19,0x12), 0x244, 0x18);
+    ncr_write32(NCP_REGION_ID(0x19,0x12), 0x248, 0x08);
+    ncr_write32(NCP_REGION_ID(0x19,0x12), 0x254, 0x7d);
+
 	/*
 	  ----------------------------------------------------------------------
 	  PLL Setup
