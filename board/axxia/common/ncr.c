@@ -272,7 +272,7 @@ typedef union {
   ncr_register_read
 */
 
-static __inline__ ncp_uint32_t
+static __inline ncp_uint32_t
 ncr_register_read(unsigned int *address)
 {
 #ifdef NCP_NCA_BIG_ENDIAN
@@ -287,7 +287,7 @@ ncr_register_read(unsigned int *address)
   ncr_register_write
 */
 
-static __inline__ void
+static __inline void
 ncr_register_write(const unsigned value, unsigned int *address)
 {
 #ifdef NCP_NCA_BIG_ENDIAN
@@ -804,9 +804,9 @@ ncr_read(ncp_uint32_t region,
 	 ncp_uint32_t address_upper, ncp_uint32_t address,
 	 int number, void *buffer)
 {
-	command_data_register_0_t cdr0;	/* 0x101.0.0xf0 */
-	command_data_register_1_t cdr1;	/* 0x101.0.0xf4 */
-	command_data_register_2_t cdr2;	/* 0x101.0.0xf8 */
+	command_data_register_0_t cdr0 = {0};	/* 0x101.0.0xf0 */
+	command_data_register_1_t cdr1 = {0};	/* 0x101.0.0xf4 */
+	command_data_register_2_t cdr2 = {0};	/* 0x101.0.0xf8 */
 	int wfc_timeout = WFC_TIMEOUT;
 
 	if ((NCP_NODE_ID(region) >= 0x110) &&
@@ -845,31 +845,22 @@ ncr_read(ncp_uint32_t region,
 	case 0x1d0:
 	case 0x149:
 	case 0x14f:
-#if !defined(CONFIG_AXXIA_56XX) && \
-  !defined(CONFIG_AXXIA_56XX_EMU) && \
-  !defined(CONFIG_AXXIA_XLF) && \
-  !defined(CONFIG_AXXIA_XLF_EMU) && \
-  !defined(CONFIG_AXXIA_SIM)
 		/*
 		  If reading from within NCA/MME_POKE/SCB,
 		  just do the plain and simple read
 		*/
 		if (NULL != buffer) {
-			ncp_uint32_t offset = 0;
+			ncp_uint64_t offset = 0;
 
 			if(NCP_NODE_ID(region) == 0x101) {
-				offset = (NCA + address);
+				offset = (unsigned long)(NCA + address);
 			} else if(NCP_NODE_ID(region) == 0x109) {
-				offset = (MME_POKE + address);
+				offset = ((unsigned long)MME_POKE + address);
 			} else if(NCP_NODE_ID(region) == 0x1d0) {
-				offset = (SCB + address);
+				offset = ((unsigned long)SCB + address);
 			} else if (NCP_NODE_ID(region) == 0x149) {
-				offset = (GPREG + address);
-			} else if (NCP_NODE_ID(region) == 0x14f) {
-				offset = (SRIO_GPREG + address);
-			}
-
-            
+				offset = ((unsigned long)GPREG + address);
+			} 
 
 			while (4 <= number) {
 				*((ncp_uint32_t *)buffer) =
@@ -886,14 +877,13 @@ ncr_read(ncp_uint32_t region,
 				memcpy(buffer, (void *)&temp, number);
 			}
 		}
-#endif	/* Not 5600 */
 		return 0;
 		break;
 	case 0x200:
 		break;
 	default:
 		if(NCP_NODE_ID(region) >= 0x100) {
-			printf("Unhandled read to 0x%lx.0x%lx.0x%lx\n",
+			debug("Unhandled read to 0x%lx.0x%lx.0x%lx\n",
 			       (unsigned long)NCP_NODE_ID(region),
 			       (unsigned long)NCP_TARGET_ID(region),
 			       (unsigned long)address);
@@ -1114,9 +1104,9 @@ ncr_write(ncp_uint32_t region,
 	  ncp_uint32_t address_upper, ncp_uint32_t address,
 	  int number, void *buffer)
 {
-	command_data_register_0_t cdr0;
-	command_data_register_1_t cdr1;
-	command_data_register_2_t cdr2;
+	command_data_register_0_t cdr0 = {0};
+	command_data_register_1_t cdr1 = {0};
+	command_data_register_2_t cdr2 = {0};
 	int dbs = (number - 1);
 	int wfc_timeout = WFC_TIMEOUT;
 
@@ -1163,25 +1153,18 @@ ncr_write(ncp_uint32_t region,
 	case 0x1d0:
 	case 0x149:
 	case 0x14f:
-#if !defined(CONFIG_AXXIA_56XX) && \
-  !defined(CONFIG_AXXIA_56XX_EMU) && \
-  !defined(CONFIG_AXXIA_XLF) && \
-  !defined(CONFIG_AXXIA_XLF_EMU) && \
-  !defined(CONFIG_AXXIA_SIM)
 		if (NULL != buffer) {
-			ncp_uint32_t offset = 0;
+			ncp_uint64_t offset = 0;
 
 			if(NCP_NODE_ID(region) == 0x101) {
-				offset = (NCA + address);
+				offset = (unsigned long)(NCA + address);
 			} else if(NCP_NODE_ID(region) == 0x109) {
-				offset = (MME_POKE + address);
+				offset = (unsigned long)(MME_POKE + address);
 			} else if(NCP_NODE_ID(region) == 0x1d0) {
-				offset = (SCB + address);
+				offset = (unsigned long)(SCB + address);
 			} else if (NCP_NODE_ID(region) == 0x149) {
-				offset = (GPREG + address);
-			} else if (NCP_NODE_ID(region) == 0x14f) {
-				offset = (SRIO_GPREG + address);
-			}
+				offset = (unsigned long)(GPREG + address);
+			} 
 
 			while (4 <= number) {
 				ncr_register_write(*((ncp_uint32_t *)buffer),
@@ -1198,14 +1181,13 @@ ncr_write(ncp_uint32_t region,
 				ncr_register_write(temp, POINTER(offset));
 			}
 		}
-#endif	/* Not 5600 */
 		return 0;
 		break;
 	case 0x200:
 		break;
 	default:
 		if(NCP_NODE_ID(region) >= 0x100) {
-			printf("Unhandled write to 0x%lx.0x%lx.0x%lx\n",
+			debug("Unhandled write to 0x%lx.0x%lx.0x%lx\n",
 			       (unsigned long)NCP_NODE_ID(region),
 			       (unsigned long)NCP_TARGET_ID(region),
 			       (unsigned long)address);
@@ -1386,6 +1368,7 @@ ncr_write32(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 	int rc;
 
 	NCR_TRACE_WRITE32(region, offset, value);
+		
 	rc = ncr_write(region, 0, offset, 4, &value);
 
 	if (0 != rc)
@@ -1445,9 +1428,9 @@ int
 ncr_modify(ncp_uint32_t region, ncp_uint32_t address, int count,
 	   void *masks, void *values)
 {
-	command_data_register_0_t cdr0;
-	command_data_register_1_t cdr1;
-	command_data_register_2_t cdr2;
+	command_data_register_0_t cdr0 = {0};
+	command_data_register_1_t cdr1 = {0};
+	command_data_register_2_t cdr2 = {0};
 	void *data_word_base;
 	int wfc_timeout = WFC_TIMEOUT;
 

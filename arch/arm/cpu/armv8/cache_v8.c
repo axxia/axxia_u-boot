@@ -47,7 +47,12 @@ static void mmu_setup(void)
 	/* Setup an identity-mapping for all RAM space */
 	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
 		ulong start = bd->bi_dram[i].start;
+#ifndef CONFIG_AXXIA_EIOA
 		ulong end = bd->bi_dram[i].start + bd->bi_dram[i].size;
+#else 
+		ulong end = bd->bi_dram[i].start + EIOA_SYSTEM_MEMORY;
+#endif
+
 		for (j = start >> SECTION_SHIFT;
 		     j < end >> SECTION_SHIFT; j++) {
 			set_pgtable_section(page_table, j, j << SECTION_SHIFT,

@@ -108,7 +108,6 @@
 
 #define CONFIG_AXXIA_MDIO
 #define CONFIG_AXXIA_NEMAC
-/*#define CONFIG_AXXIA_EIOA*/
 
 #define CONFIG_EXTRA_ENV_SETTINGS		\
 	"loadaddr=0x80100000\0"			\
@@ -135,7 +134,7 @@
 /*#define CONFIG_SPL_PCI_SUPPORT*/
 
 /*#define CONFIG_AXXIA_FEMAC*/
-/*#define CONFIG_AXXIA_EIOA*/
+#define CONFIG_AXXIA_EIOA
 
 #define CONFIG_CMD_SBB
 
@@ -232,6 +231,7 @@
 
 #define CONFIG_AXXIA_56XX
 #define ARM64
+#define NCP_64
 
 #define CONFIG_AXXIA_AXM_I2C
 
@@ -299,7 +299,11 @@
 /*#define CONFIG_SPL_PCI_SUPPORT*/
 
 /*#define CONFIG_AXXIA_FEMAC*/
-/*#define CONFIG_AXXIA_EIOA*/
+#define CONFIG_AXXIA_EIOA
+#ifdef CONFIG_AXXIA_EIOA
+#define EIOA_SYSTEM_MEMORY ((phys_size_t) 1 << 32)
+#endif
+
 /*#define CONFIG_SPL*/
 
 #define CONFIG_EXTRA_ENV_SETTINGS \

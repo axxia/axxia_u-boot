@@ -29,7 +29,8 @@ ifndef CONFIG_SPL_BUILD
 obj-y += 
 
 ifdef CONFIG_AXXIA_EIOA
-obj-y += eioa.o
+obj-y += eioa.o ncp_task_axm56xx.o mdio.o ncp_task_uboot_config_axm56xx.o
+obj-y += ncp_task_api_entry.o ncp_task_config_axm56xx.o
 endif
 
 else

@@ -27,13 +27,15 @@
     rte/api/nca/include/ncp_dev_config_regs.h.
 */
 
-/* #define DEBUG */
-/* #define NCR_DEBUG */
+/*#define DEBUG*/
+/*#define NCR_DEBUG*/
 /*#define LSI_LOGIO*/
 #include <config.h>
 #include <common.h>
 #include <malloc.h>
 #include <asm/io.h>
+#include <net.h>
+#include <miiphy.h>
 
 /*#define TRACE_ALLOCATION*/
 
@@ -46,12 +48,12 @@
 #include "ncp_task_basetypes.h"
 #include "ncp_task.h"
 #include "ncp_nca_regs.h"
-#include "ncp_nca_reg_defines.h"
+#include "ncp_nodes.h"
+#include "../common/ncp_nca_reg_defines.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
-/*
-  ==============================================================================
+/*==============================================================================
   ==============================================================================
   Private Interface
   ==============================================================================
@@ -81,15 +83,20 @@ extern int dumptx;
     ((portIndex > 0) ? 0x10000 : 0) +                                           \
     ((portIndex > 0) ? (0x1000 * (portIndex - 1)) : 0)
 
+
+/* 
+ * With this release we support only native damain and 
+ * only gmacs.
+ */
 static int port_by_index[] = 
     {  0,   1,  2,  3,  4,  /* eioa0 */
-      16,  17, 18, 19, 20,  /* eioa1 */
-      32,  33,              /* eioa2 */
-      48,  49,              /* eioa3 */
-      64,  65,              /* eioa4 */
-      80,  81,              /* eioa5 */
-      96,  97,              /* eioa6 */
-      112, 113 };           /* eioa7 */
+      16,  17, 18, 		    /* eioa1 */
+      /*32,  33,*/             /* eioa2 */
+      /*48,  49,*/             /* eioa3 */
+      /*64,  65,*/             /* eioa4 */
+      /*80,  81,*/             /* eioa5 */
+      /*96,  97,*/             /* eioa6 */
+      /*112, 113*/ };          /* eioa7 */
 
 static int index_by_port[] = 
     { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa0 */
@@ -103,13 +110,13 @@ static int index_by_port[] =
 
 static int index_by_port_gmac[] = 
     {  0,  1,  2,  3,  4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa0 */
-       5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa1 */
-      10, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa2 */
-      12, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa3 */
-      14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa4 */
-      16, 17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa5 */
-      18, 19, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa6 */
-      20, 21, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }; /* eioa7 */
+       16, 17, 18, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  /* eioa1 */
+      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa2 */
+      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa3 */
+      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa4 */
+      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa5 */
+      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa6 */
+      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }; /* eioa7 */
 
 static int index_by_port_xgmac[] = 
     {  0,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa0 */
@@ -145,10 +152,12 @@ static int port_type_by_index[] =
 };
 
 
-/* TODO: fix the phy addresses for asic */
-static int phy_by_index[] = 
+/* TODO: fix the phy addresses upon ASE
+   - fixed 0x12 (gmac0) through 0x1a (gmac18) */
+int phy_by_index[] = 
 { 
-    0x1c, 0x17, 0x16, 0x15, 0x14, 0x18, 0x13, 0x12, 0x11, 0x10, 0x20, 0x21, 
+    0x12, 0x13, 0x18, 0x19, 0x1b,
+	0x16, 0x17, 0x1a, 0x11, 0x10, 0x20, 0x21, 
     0x30, 0x31, 0x40, 0x41, 0x50, 0x51, 0x60, 0x61, 0x70, 0x71 
 };
 
@@ -201,12 +210,14 @@ typedef struct {
 typedef enum {
 	NCR_COMMAND_NULL,
 	NCR_COMMAND_WRITE,
+	NCR_COMMAND_WRITE64,
 	NCR_COMMAND_READ,
 	NCR_COMMAND_MODIFY,
 	NCR_COMMAND_USLEEP,
 	NCR_COMMAND_POLL,
-	NCR_COMMAND_FUNC
 } ncr_command_code_t;
+
+typedef int (*func_config_port)(int index);
 
 typedef struct {
 	ncr_command_code_t command;
@@ -215,8 +226,6 @@ typedef struct {
 	unsigned value;
 	unsigned mask;
 } ncr_command_t;
-
-typedef int (*func_config_port)(int index);
 
 static int
 ncp_dev_configure(ncr_command_t *commands);
@@ -233,20 +242,18 @@ ncp_task_uboot_config(void);
 void
 ncp_task_uboot_unconfig(void);
 
-#if defined(CONFIG_AXXIA_55XX) || defined(CONFIG_AXXIA_55XX_EMU)
-#include "EIOA55xx/mme.c"
-#include "EIOA55xx/pbm.c"
-#include "EIOA55xx/vp.c"
-#include "EIOA55xx/nca.c"
-#include "EIOA55xx/eioa.c"
-#include "EIOA55xx/hss_gmac.c"
-#include "EIOA55xx/hss_xgmac.c"
+#if defined(CONFIG_AXXIA_56XX)
+#include "EIOA56xx/mme.c"
+#include "EIOA56xx/pbm.c"
+#include "EIOA56xx/vp.c"
+#include "EIOA56xx/nca.c"
+#include "EIOA56xx/eioa.c"
 #else
 #error "EIOA is not defined for this architecture!"
 #endif
 
 ncp_uint32_t
-ncp_caal_regions_acp55xx[] =
+ncp_caal_regions_acp56xx[] =
 {
     NCP_REGION_ID(0x0b, 0x05),      /* SPPV2   */
     NCP_REGION_ID(0x0c, 0x05),      /* SED     */
@@ -269,7 +276,7 @@ ncp_caal_regions_acp55xx[] =
 };
 
 ncp_uint32_t
-ncp_cnal_regions_acp55xx[] =
+ncp_cnal_regions_acp56xx[] =
 {
     NCP_REGION_ID(0x28, 0x05),      /* EIOASM0 */
     NCP_REGION_ID(0x29, 0x05),      /* EIOASM1 */
@@ -290,8 +297,8 @@ static ncp_st_t
 ncp_dev_quiesce(void)
 {
     ncp_st_t         ncpStatus = NCP_ST_SUCCESS;
-    ncp_uint32_t    *pCnalRegions = ncp_cnal_regions_acp55xx;
-    ncp_uint32_t    *pCaalRegions = ncp_caal_regions_acp55xx;
+    ncp_uint32_t    *pCnalRegions = ncp_cnal_regions_acp56xx;
+    ncp_uint32_t    *pCaalRegions = ncp_caal_regions_acp56xx;
     ncp_uint32_t    *pRegion;
     ncp_uint32_t     ort, owt;
     ncp_uint32_t     buf = 0;
@@ -377,50 +384,30 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
           /* word 0 */
+     unsigned      rcaltest_rst                              :  1;
+     unsigned      sm0_sm1_pll_rst                           :  1;
+     unsigned      smc1_rst                                  :  1;
+     unsigned      smc0_rst                                  :  1;
      unsigned      ioctl_rst                                 :  1;
-     unsigned      ram_margin_rst                            :  1;
-     unsigned      pci_srio_phy_rst                          :  1;
-     unsigned      timestamp_rst                             :  1;
-     unsigned      mref2_rst                                 :  1;
-     unsigned      mref1_rst                                 :  1;
-     unsigned      mref0_rst                                 :  1;
-     unsigned      cmem1_phy_io_rst                          :  1;
-     unsigned      cmem0_phy_io_rst                          :  1;
-     unsigned      smem1_phy_io_rst                          :  1;
-     unsigned      smem0_phy_io_rst                          :  1;
+     unsigned      gic500_rst                                :  1;
+     unsigned      reserved0                                 :  1;
      unsigned      pbm_rst                                   :  1;
-     unsigned      ccms_rst                                  :  1;
      unsigned      nic_rst                                   :  1;
      unsigned      pkt_buffer_rst                            :  1;
+     unsigned      ccms_rst                                  :  1;
      unsigned      isbs_rst                                  :  1;
-     unsigned      eioa_phy4_rst                             :  1;
-     unsigned      eioa_phy3_rst                             :  1;
-     unsigned      eioa_phy2_rst                             :  1;
-     unsigned      eioa7_rst                                 :  1;
-     unsigned      eioa6_rst                                 :  1;
-     unsigned      eioa5_rst                                 :  1;
-     unsigned      eioa4_rst                                 :  1;
-     unsigned      eioa3_rst                                 :  1;
-     unsigned      eioa2_rst                                 :  1;
-     unsigned      reserved0                                 :  5;
-     unsigned      ring_bp_rst                               :  1;
-     unsigned      fab_pllctl_rst                            :  1;
-          /* word 1 */
-     unsigned      sys_pllctl_rst                            :  1;
-     unsigned      cpu_pllctl_rst                            :  1;
-     unsigned      smem1_phy_rst                             :  1;
-     unsigned      smem1_pllctl_rst                          :  1;
-     unsigned      smem1_rst                                 :  1;
-     unsigned      smem0_phy_rst                             :  1;
-     unsigned      smem0_pllctl_rst                          :  1;
-     unsigned      smem0_rst                                 :  1;
+     unsigned      eioasm5_rst                               :  1;
+     unsigned      eioasm4_rst                               :  1;
+     unsigned      eioasm3_rst                               :  1;
+     unsigned      eioasm2_rst                               :  1;
+     unsigned      eioasm1_rst                               :  1;
+     unsigned      eioasm0_rst                               :  1;
+     unsigned      eioam1_rst                                :  1;
+     unsigned      eioam0_rst                                :  1;
      unsigned      ccm_rst                                   :  1;
      unsigned      pcx_rst                                   :  1;
      unsigned      isb_rst                                   :  1;
-     unsigned      eioa_phy1_rst                             :  1;
-     unsigned      eioa_phy0_rst                             :  1;
-     unsigned      eioa1_rst                                 :  1;
-     unsigned      eioa0_rst                                 :  1;
+     unsigned      ring_bp_rst                               :  1;
      unsigned      scnt_dist_rst                             :  1;
      unsigned      tmgr_rst                                  :  1;
      unsigned      mtm_rst                                   :  1;
@@ -429,55 +416,34 @@ typedef struct
      unsigned      pic_rst                                   :  1;
      unsigned      dpi_rst                                   :  1;
      unsigned      spp_rst                                   :  1;
+          /* word 1 */
      unsigned      mme_rst                                   :  1;
      unsigned      nca_rst                                   :  1;
-     unsigned      cmem_pllctl_rst                           :  1;
-     unsigned      reserved1                                 :  1;
-     unsigned      cmem1_rst                                 :  1;
-     unsigned      cmem_phy_rst                              :  1;
-     unsigned      cmem0_rst                                 :  1;
-     unsigned      treemem_rst                               :  1;
      unsigned      mppy_rst                                  :  1;
+     unsigned      elm1_rst                                  :  1;
+     unsigned      elm0_rst                                  :  1;
+     unsigned      cmem1_rst                                 :  1;
+     unsigned      cmem0_rst                                 :  1;
+     unsigned      smem1_phy_io_rst                          :  1;
+     unsigned      smem0_phy_io_rst                          :  1;
+     unsigned      cmem1_phy_io_rst                          :  1;
+     unsigned      cmem0_phy_io_rst                          :  1;
+     unsigned      reserved1                                 :  3;
+     unsigned      treemem_rst                               :  1;
+     unsigned      eioa_phy9_rst                             :  1;
+     unsigned      eioa_phy8_rst                             :  1;
+     unsigned      eioa_phy7_rst                             :  1;
+     unsigned      eioa_phy6_rst                             :  1;
+     unsigned      eioa_phy5_rst                             :  1;
+     unsigned      eioa_phy4_rst                             :  1;
+     unsigned      eioa_phy3_rst                             :  1;
+     unsigned      eioa_phy2_rst                             :  1;
+     unsigned      eioa_phy1_rst                             :  1;
+     unsigned      eioa_phy0_rst                             :  1;
+     unsigned      pci_srio_phy_rst                          :  1;
+     unsigned      reserved2                                 :  6;
 #else    /* Little Endian */
           /* word 0 */
-     unsigned      fab_pllctl_rst                            :  1;
-     unsigned      ring_bp_rst                               :  1;
-     unsigned      reserved0                                 :  5;
-     unsigned      eioa2_rst                                 :  1;
-     unsigned      eioa3_rst                                 :  1;
-     unsigned      eioa4_rst                                 :  1;
-     unsigned      eioa5_rst                                 :  1;
-     unsigned      eioa6_rst                                 :  1;
-     unsigned      eioa7_rst                                 :  1;
-     unsigned      eioa_phy2_rst                             :  1;
-     unsigned      eioa_phy3_rst                             :  1;
-     unsigned      eioa_phy4_rst                             :  1;
-     unsigned      isbs_rst                                  :  1;
-     unsigned      pkt_buffer_rst                            :  1;
-     unsigned      nic_rst                                   :  1;
-     unsigned      ccms_rst                                  :  1;
-     unsigned      pbm_rst                                   :  1;
-     unsigned      smem0_phy_io_rst                          :  1;
-     unsigned      smem1_phy_io_rst                          :  1;
-     unsigned      cmem0_phy_io_rst                          :  1;
-     unsigned      cmem1_phy_io_rst                          :  1;
-     unsigned      mref0_rst                                 :  1;
-     unsigned      mref1_rst                                 :  1;
-     unsigned      mref2_rst                                 :  1;
-     unsigned      timestamp_rst                             :  1;
-     unsigned      pci_srio_phy_rst                          :  1;
-     unsigned      ram_margin_rst                            :  1;
-     unsigned      ioctl_rst                                 :  1;
-          /* word 1 */
-     unsigned      mppy_rst                                  :  1;
-     unsigned      treemem_rst                               :  1;
-     unsigned      cmem0_rst                                 :  1;
-     unsigned      cmem_phy_rst                              :  1;
-     unsigned      cmem1_rst                                 :  1;
-     unsigned      reserved1                                 :  1;
-     unsigned      cmem_pllctl_rst                           :  1;
-     unsigned      nca_rst                                   :  1;
-     unsigned      mme_rst                                   :  1;
      unsigned      spp_rst                                   :  1;
      unsigned      dpi_rst                                   :  1;
      unsigned      pic_rst                                   :  1;
@@ -486,21 +452,56 @@ typedef struct
      unsigned      mtm_rst                                   :  1;
      unsigned      tmgr_rst                                  :  1;
      unsigned      scnt_dist_rst                             :  1;
-     unsigned      eioa0_rst                                 :  1;
-     unsigned      eioa1_rst                                 :  1;
-     unsigned      eioa_phy0_rst                             :  1;
-     unsigned      eioa_phy1_rst                             :  1;
+     unsigned      ring_bp_rst                               :  1;
      unsigned      isb_rst                                   :  1;
      unsigned      pcx_rst                                   :  1;
      unsigned      ccm_rst                                   :  1;
-     unsigned      smem0_rst                                 :  1;
-     unsigned      smem0_pllctl_rst                          :  1;
-     unsigned      smem0_phy_rst                             :  1;
-     unsigned      smem1_rst                                 :  1;
-     unsigned      smem1_pllctl_rst                          :  1;
-     unsigned      smem1_phy_rst                             :  1;
-     unsigned      cpu_pllctl_rst                            :  1;
-     unsigned      sys_pllctl_rst                            :  1;
+     unsigned      eioam0_rst                                :  1;
+     unsigned      eioam1_rst                                :  1;
+     unsigned      eioasm0_rst                               :  1;
+     unsigned      eioasm1_rst                               :  1;
+     unsigned      eioasm2_rst                               :  1;
+     unsigned      eioasm3_rst                               :  1;
+     unsigned      eioasm4_rst                               :  1;
+     unsigned      eioasm5_rst                               :  1;
+     unsigned      isbs_rst                                  :  1;
+     unsigned      ccms_rst                                  :  1;
+     unsigned      pkt_buffer_rst                            :  1;
+     unsigned      nic_rst                                   :  1;
+     unsigned      pbm_rst                                   :  1;
+     unsigned      reserved0                                 :  1;
+     unsigned      gic500_rst                                :  1;
+     unsigned      ioctl_rst                                 :  1;
+     unsigned      smc0_rst                                  :  1;
+     unsigned      smc1_rst                                  :  1;
+     unsigned      sm0_sm1_pll_rst                           :  1;
+     unsigned      rcaltest_rst                              :  1;
+          /* word 1 */
+     unsigned      reserved2                                 :  6;
+     unsigned      pci_srio_phy_rst                          :  1;
+     unsigned      eioa_phy0_rst                             :  1;
+     unsigned      eioa_phy1_rst                             :  1;
+     unsigned      eioa_phy2_rst                             :  1;
+     unsigned      eioa_phy3_rst                             :  1;
+     unsigned      eioa_phy4_rst                             :  1;
+     unsigned      eioa_phy5_rst                             :  1;
+     unsigned      eioa_phy6_rst                             :  1;
+     unsigned      eioa_phy7_rst                             :  1;
+     unsigned      eioa_phy8_rst                             :  1;
+     unsigned      eioa_phy9_rst                             :  1;
+     unsigned      treemem_rst                               :  1;
+     unsigned      reserved1                                 :  3;
+     unsigned      cmem0_phy_io_rst                          :  1;
+     unsigned      cmem1_phy_io_rst                          :  1;
+     unsigned      smem0_phy_io_rst                          :  1;
+     unsigned      smem1_phy_io_rst                          :  1;
+     unsigned      cmem0_rst                                 :  1;
+     unsigned      cmem1_rst                                 :  1;
+     unsigned      elm0_rst                                  :  1;
+     unsigned      elm1_rst                                  :  1;
+     unsigned      mppy_rst                                  :  1;
+     unsigned      nca_rst                                   :  1;
+     unsigned      mme_rst                                   :  1;
 #endif
 } __attribute__ ( ( packed ) ) ncp_syscon_reset_mod_r_t;
 
@@ -508,36 +509,40 @@ typedef struct
 {
 #ifdef NCP_BIG_ENDIAN
           /* word 0 */
-     unsigned      reserved0                                 : 12;
-     unsigned      hold_po3                                  :  1;
-     unsigned      hold_po2                                  :  1;
-     unsigned      hold_po1                                  :  1;
-     unsigned      hold_po0                                  :  1;
-     unsigned      reserved1                                 :  5;
-     unsigned      ser2smart_rst                             :  1;
-     unsigned      cpu2tap_rst                               :  1;
-     unsigned      ipi_rst                                   :  1;
-     unsigned      cpm_logic_rst                             :  1;
-     unsigned      tvsense_rst                               :  1;
-     unsigned      nrcp_pllctl_rst                           :  1;
+     unsigned      cpm_rst                                   :  1;
+     unsigned      reserved0                                 : 13;
+     unsigned      sata1_rst                                 :  1;
+     unsigned      sata0_rst                                 :  1;
+     unsigned      reserved1                                 :  4;
      unsigned      nrcp_rst                                  :  1;
-     unsigned      apb2ser3_rst                              :  1;
-     unsigned      apb2ser2_rst                              :  1;
-     unsigned      apb2ser1_rst                              :  1;
-     unsigned      apb2ser0_rst                              :  1;
-          /* word 1 */
-     unsigned      sbb_rst                                   :  1;
      unsigned      reserved2                                 :  1;
-     unsigned      spf_rst                                   :  1;
-     unsigned      usb2_rst                                  :  1;
-     unsigned      reserved3                                 :  7;
-     unsigned      cm3_rst                                   :  1;
+     unsigned      srio_gpreg_rst                            :  1;
+     unsigned      reserved3                                 :  3;
+     unsigned      pei2_rst                                  :  1;
+     unsigned      pei1_rst                                  :  1;
+     unsigned      pei0_rst                                  :  1;
+     unsigned      ipi_rst                                   :  1;
+     unsigned      jtag2axi_rst                              :  1;
+     unsigned      timer_rst                                 :  1;
+          /* word 1 */
+     unsigned      lsm_rst                                   :  1;
+     unsigned      sbb_rst                                   :  1;
+     unsigned      gic490_rst                                :  1;
+     unsigned      gpio_rst                                  :  1;
+     unsigned      usb_rst                                   :  1;
+     unsigned      axi2ser7_rst                              :  1;
+     unsigned      axi2ser6_rst                              :  1;
+     unsigned      axi2ser5_rst                              :  1;
+     unsigned      axi2ser4_rst                              :  1;
+     unsigned      axi2ser3_rst                              :  1;
+     unsigned      axi2ser2_rst                              :  1;
+     unsigned      axi2ser1_rst                              :  1;
+     unsigned      axi2ser0_rst                              :  1;
      unsigned      mtc_rst                                   :  1;
-     unsigned      xvrc_rst                                  :  1;
+     unsigned      usb_phy_rst                               :  1;
      unsigned      gpdma_1_rst                               :  1;
      unsigned      gpdma_0_rst                               :  1;
      unsigned      trng_rst                                  :  1;
-     unsigned      pka_zeroiza_rst                           :  1;
      unsigned      pka__rst                                  :  1;
      unsigned      mdio_rst                                  :  1;
      unsigned      ssp_rst                                   :  1;
@@ -545,40 +550,38 @@ typedef struct
      unsigned      uart_2_rst                                :  1;
      unsigned      uart_1_rst                                :  1;
      unsigned      uart_0_rst                                :  1;
-     unsigned      smb_0_rst                                 :  1;
+     unsigned      smb_rst                                   :  1;
      unsigned      i2c_2_rst                                 :  1;
      unsigned      i2c_1_rst                                 :  1;
      unsigned      i2c_0_rst                                 :  1;
      unsigned      emmc_rst                                  :  1;
-     unsigned      femac_rst                                 :  1;
+     unsigned      gemac_rst                                 :  1;
      unsigned      axis_rst                                  :  1;
 #else    /* Little Endian */
           /* word 0 */
-     unsigned      apb2ser0_rst                              :  1;
-     unsigned      apb2ser1_rst                              :  1;
-     unsigned      apb2ser2_rst                              :  1;
-     unsigned      apb2ser3_rst                              :  1;
-     unsigned      nrcp_rst                                  :  1;
-     unsigned      nrcp_pllctl_rst                           :  1;
-     unsigned      tvsense_rst                               :  1;
-     unsigned      cpm_logic_rst                             :  1;
+     unsigned      timer_rst                                 :  1;
+     unsigned      jtag2axi_rst                              :  1;
      unsigned      ipi_rst                                   :  1;
-     unsigned      cpu2tap_rst                               :  1;
-     unsigned      ser2smart_rst                             :  1;
-     unsigned      reserved1                                 :  5;
-     unsigned      hold_po0                                  :  1;
-     unsigned      hold_po1                                  :  1;
-     unsigned      hold_po2                                  :  1;
-     unsigned      hold_po3                                  :  1;
-     unsigned      reserved0                                 : 12;
+     unsigned      pei0_rst                                  :  1;
+     unsigned      pei1_rst                                  :  1;
+     unsigned      pei2_rst                                  :  1;
+     unsigned      reserved3                                 :  3;
+     unsigned      srio_gpreg_rst                            :  1;
+     unsigned      reserved2                                 :  1;
+     unsigned      nrcp_rst                                  :  1;
+     unsigned      reserved1                                 :  4;
+     unsigned      sata0_rst                                 :  1;
+     unsigned      sata1_rst                                 :  1;
+     unsigned      reserved0                                 : 13;
+     unsigned      cpm_rst                                   :  1;
           /* word 1 */
      unsigned      axis_rst                                  :  1;
-     unsigned      femac_rst                                 :  1;
+     unsigned      gemac_rst                                 :  1;
      unsigned      emmc_rst                                  :  1;
      unsigned      i2c_0_rst                                 :  1;
      unsigned      i2c_1_rst                                 :  1;
      unsigned      i2c_2_rst                                 :  1;
-     unsigned      smb_0_rst                                 :  1;
+     unsigned      smb_rst                                   :  1;
      unsigned      uart_0_rst                                :  1;
      unsigned      uart_1_rst                                :  1;
      unsigned      uart_2_rst                                :  1;
@@ -586,18 +589,24 @@ typedef struct
      unsigned      ssp_rst                                   :  1;
      unsigned      mdio_rst                                  :  1;
      unsigned      pka__rst                                  :  1;
-     unsigned      pka_zeroiza_rst                           :  1;
      unsigned      trng_rst                                  :  1;
      unsigned      gpdma_0_rst                               :  1;
      unsigned      gpdma_1_rst                               :  1;
-     unsigned      xvrc_rst                                  :  1;
+     unsigned      usb_phy_rst                               :  1;
      unsigned      mtc_rst                                   :  1;
-     unsigned      cm3_rst                                   :  1;
-     unsigned      reserved3                                 :  7;
-     unsigned      usb2_rst                                  :  1;
-     unsigned      spf_rst                                   :  1;
-     unsigned      reserved2                                 :  1;
+     unsigned      axi2ser0_rst                              :  1;
+     unsigned      axi2ser1_rst                              :  1;
+     unsigned      axi2ser2_rst                              :  1;
+     unsigned      axi2ser3_rst                              :  1;
+     unsigned      axi2ser4_rst                              :  1;
+     unsigned      axi2ser5_rst                              :  1;
+     unsigned      axi2ser6_rst                              :  1;
+     unsigned      axi2ser7_rst                              :  1;
+     unsigned      usb_rst                                   :  1;
+     unsigned      gpio_rst                                  :  1;
+     unsigned      gic490_rst                                :  1;
      unsigned      sbb_rst                                   :  1;
+     unsigned      lsm_rst                                   :  1;
 #endif
 } __attribute__ ( ( packed ) ) ncp_syscon_reset_axis_r_t;
 
@@ -607,19 +616,27 @@ typedef struct
 #define NCP_REGION_TIMER_TMGR_SYSTEM_COUNT  NCP_REGION_ID(NCP_NODE_TIMER, 0x0012) /* 25.18 */
 #define NCP_REGION_AXIS_APB2SER3_SYSCON     NCP_REGION_ID(NCP_NODE_AXIS_APB2SER3, 0x0000) /* 342.0 */
 
-#define NCP_TMGR_SYSTEM_COUNT_CFG_SYSTEM_COUNTER_CONTROL_5500  (0x00000114)
-#define NCP_SYSCON_KEY                                         (0x00001000)
-#define NCP_SYSCON_RESET_MOD                                   (0x00001038)
-#define NCP_SYSCON_RESET_AXIS                                  (0x00001040)
+#define NCP_TMGR_SYSTEM_COUNT_CFG_SYSTEM_COUNTER_CONTROL       (0x00000114)
+#define NCP_SYSCON_KEY                                         (0x00002000)
+#define NCP_SYSCON_RESET_MOD                                   (0x00002038)
+#define NCP_SYSCON_RESET_AXIS                                  (0x00002040)
 
 static ncp_st_t
 ncp_dev_reset_hw(void)
 {
     ncp_st_t                    ncpStatus = NCP_ST_SUCCESS;
     ncp_st_t                    st = NCP_ST_SUCCESS;
+    /*ncp_uint32_t 				ubootCmemInit = 0;*/
     ncp_uint32_t                *reg = NULL;
     ncp_syscon_reset_mod_r_t    resetReg = {0};
     ncp_syscon_reset_axis_r_t   resetAxisReg = {0};
+
+    /* Make sure the boot counter is decoupled from the Nuevo timestamp */
+    NCP_CALL(ncr_write32(NCP_REGION_TIMER_TMGR_SYSTEM_COUNT,
+         NCP_TMGR_SYSTEM_COUNT_CFG_SYSTEM_COUNTER_CONTROL, 0));
+
+    /* wait for the PIO to complete */
+    udelay(100000);
 
     /* quiesce the system */
     ncpStatus = ncp_dev_quiesce();
@@ -628,23 +645,24 @@ ncp_dev_reset_hw(void)
         NCP_MSG(NCP_MSG_ERROR, "ncp_dev_quiesce failed with %d\n", ncpStatus);
     }
 
-    /* Make sure the boot counter is decoupled from the Nuevo timestamp */
-    NCP_CALL(ncr_write32(NCP_REGION_TIMER_TMGR_SYSTEM_COUNT,
-         NCP_TMGR_SYSTEM_COUNT_CFG_SYSTEM_COUNTER_CONTROL_5500, 0));
-    
-    /* wait for the PIO to complete */
-    udelay(10000);
-
     /* Enable protected writes.  Key is the only field in this register. */
     NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON, NCP_SYSCON_KEY, 0xAB));
 
-    resetReg.mppy_rst         = 1;
+    resetReg.eioa_phy0_rst    = 1;
+    resetReg.eioa_phy1_rst    = 1;
+    resetReg.eioa_phy2_rst    = 1;
+    resetReg.eioa_phy3_rst    = 1;
+    resetReg.eioa_phy4_rst    = 1;
+    resetReg.eioa_phy5_rst    = 1;
+    resetReg.eioa_phy6_rst    = 1;
+    resetReg.eioa_phy7_rst    = 1;
+    resetReg.eioa_phy8_rst    = 1;
+    resetReg.eioa_phy9_rst    = 1;
     resetReg.treemem_rst      = 1;
-    resetReg.cmem0_rst        = 1;
-    resetReg.cmem_phy_rst     = 1;
-    resetReg.cmem1_rst        = 1;
+    resetReg.mppy_rst         = 1;
     resetReg.nca_rst          = 1;
     resetReg.mme_rst          = 1;
+
     resetReg.spp_rst          = 1;
     resetReg.dpi_rst          = 1;
     resetReg.pic_rst          = 1;
@@ -652,70 +670,96 @@ ncp_dev_reset_hw(void)
     resetReg.sed_rst          = 1;
     resetReg.mtm_rst          = 1;
     resetReg.tmgr_rst         = 1;
-    resetReg.eioa0_rst        = 1;
-    resetReg.eioa1_rst        = 1;
-    resetReg.eioa_phy0_rst    = 1;
-    resetReg.eioa_phy1_rst    = 1;
+    resetReg.ring_bp_rst      = 1;
     resetReg.isb_rst          = 1;
     resetReg.pcx_rst          = 1;
     resetReg.ccm_rst          = 1;
-    resetReg.ring_bp_rst      = 1;
-    resetReg.eioa2_rst        = 1;
-    resetReg.eioa3_rst        = 1;
-    resetReg.eioa4_rst        = 1;
-    resetReg.eioa5_rst        = 1;
-    resetReg.eioa6_rst        = 1;
-    resetReg.eioa7_rst        = 1;
-    resetReg.eioa_phy2_rst    = 1;
-    resetReg.eioa_phy3_rst    = 1;
-    resetReg.eioa_phy4_rst    = 1;
+    resetReg.eioam0_rst       = 1;
+    resetReg.eioam1_rst       = 1;
+    resetReg.eioasm0_rst      = 1;
+    resetReg.eioasm1_rst      = 1;
+    resetReg.eioasm2_rst      = 1;
+    resetReg.eioasm3_rst      = 1;
+    resetReg.eioasm4_rst      = 1;
+    resetReg.eioasm5_rst      = 1;
     resetReg.isbs_rst         = 1;
+    resetReg.ccms_rst         = 1;
     resetReg.pkt_buffer_rst   = 1;
     resetReg.nic_rst          = 1;
-    resetReg.ccms_rst         = 1;
     resetReg.pbm_rst          = 1;
-    resetReg.cmem0_phy_io_rst = 1;
-    resetReg.cmem1_phy_io_rst = 1;
-    resetReg.timestamp_rst    = 1;
 
+ /* 
+ *  Read the NTEMC0 local config node scratch register.
+ *  If set then u-boot has initialized the external 
+ *  CMEM and we should not reset it.
+    ncr_read32(NCP_REGION_ID(NCP_NODE_NTEMC(0), 0xff), 0x20, &ubootCmemInit);
+	if(0 == ubootCmemInit) {
+		resetReg.cmem0_rst        = 1;
+		resetReg.cmem1_rst        = 1;
+		resetReg.cmem0_phy_io_rst = 1;
+		resetReg.cmem1_phy_io_rst = 1;
+	}
+ */ 
+
+#define NCP_DEV_ACE
+#ifndef NCP_DEV_ACE
+    resetReg.smem0_phy_io_rst = 1;
+    resetReg.smem1_phy_io_rst = 1;
+    resetReg.smc0_rst         = 1;
+    resetReg.smc1_rst         = 1;
+    resetReg.elm0_rst         = 1;
+    resetReg.elm1_rst         = 1;
+    resetReg.gic500_rst       = 1;
+    resetReg.scnt_dist_rst    = 1;
+#endif
+
+
+    debug("writing NCP_SYSCON_RESET_MOD\n");
     reg = (ncp_uint32_t *)&resetReg;
-    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+    ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
                          NCP_SYSCON_RESET_MOD, 
-                         *reg));
+                         *reg);
     reg++;
-    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+    ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
                          NCP_SYSCON_RESET_MOD + 4, 
-                         *reg));
+                         *reg);
+    debug("Done\n");
+    debug("before writing NCP_SYSCON_RESET_AXIS\n");
 
-    resetAxisReg.nrcp_rst     = 1;
-
+    resetAxisReg.nrcp_rst = 1;
+    debug("writing NCP_SYSCON_RESET_AXIS\n");
     reg = (ncp_uint32_t *)&resetAxisReg;
-    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+    ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
                        NCP_SYSCON_RESET_AXIS,
-                       *reg));
+                       *reg);
     reg++;
-    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+    ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
                        NCP_SYSCON_RESET_AXIS + 4,
-                       *reg));
-    udelay(10000);
-
-    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
-                         NCP_SYSCON_RESET_MOD, 
-                         0));
-    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
-                         NCP_SYSCON_RESET_MOD + 4, 
-                         0));
+                       *reg);
+    debug("Done\n");
+    udelay(100000);
     
-    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+    debug("zeroing NCP_SYSCON_RESET_MOD\n");
+    ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                         NCP_SYSCON_RESET_MOD, 
+                         0);
+    ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                         NCP_SYSCON_RESET_MOD + 4, 
+                         0);
+    debug("Done\n");
+
+    debug("zeroing NCP_SYSCON_RESET_AXIS\n");
+    ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
                          NCP_SYSCON_RESET_AXIS,
-                         0));
-    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
+                         0);
+    ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
                          NCP_SYSCON_RESET_AXIS + 4,
-                         0));
-    udelay(10000);
+                         0);
+    debug("Done\n");
+    udelay(100000);
 
     /* Disable protected writes */
-    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON, NCP_SYSCON_KEY, 0x0));
+    ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON, NCP_SYSCON_KEY, 0x0);
 
 NCP_RETURN_LABEL
     if(st != NCP_ST_SUCCESS)
@@ -727,12 +771,13 @@ ncp_st_t
 ncp_dev_reset_sw(void)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
-    ncp_uint32_t reg;
-    ncp_nca_config_init_reg_t *nca_cfg_init = (ncp_nca_config_init_reg_t *) &reg;
-    ncp_nca_cfg_ring_parity_reg_t *nca_cfg_ring_parity = (ncp_nca_cfg_ring_parity_reg_t *) &reg;
+    ncp_uint32_t reg = 0;
+    ncp_nca_config_init_reg_t *nca_cfg_init = NULL;
+    ncp_nca_cfg_ring_parity_reg_t *nca_cfg_ring_parity = NULL;
 
     /* Enable NCA config ring timeouts */
     ncr_read32(NCP_REGION_ID(0x101, 0), NCP_NCA_CONFIG_INIT_55XX, &reg);
+    nca_cfg_init = (ncp_nca_config_init_reg_t *) &reg;
     nca_cfg_init->cfg_ring_ack_timer_en = 1;
     ncr_write32(NCP_REGION_ID(0x101, 0), NCP_NCA_CONFIG_INIT_55XX, reg);
 
@@ -740,6 +785,7 @@ ncp_dev_reset_sw(void)
 
     /* Enable config ring parity checking */
     ncr_read32(NCP_REGION_ID(0x101, 0), NCP_NCA_CFG_RING_PARITY, &reg);
+    nca_cfg_ring_parity = (ncp_nca_cfg_ring_parity_reg_t *) &reg;
     nca_cfg_ring_parity->cfg_parity_err_en_ring0 = 1;
     nca_cfg_ring_parity->cfg_parity_err_en_ring1 = 1;
     nca_cfg_ring_parity->cfg_parity_err_en_ring2 = 1;
@@ -748,8 +794,13 @@ ncp_dev_reset_sw(void)
     nca_cfg_ring_parity->singlebit_ecc_correct_en = 1;
     ncr_write32(NCP_REGION_ID(0x101, 0), NCP_NCA_CFG_RING_PARITY, reg);
 
-    /* make all masters secure */
-    ncr_write32(NCP_REGION_ID(0x1d0, 0), 0x0014, 0);
+    /* Make all masters secure */
+    writel(0x2, MMAP_SCB + 0x47800);
+
+    /* Enable Gate keeper register to allow secure access from tzc */  
+    writel(0x1, TZC + 0x0008);
+    /*  Enable read/write acccess */                                     
+    writel(0xc0000001, TZC + 0x0110);
 
 NCP_RETURN_LABEL
     return ncpStatus;
@@ -764,17 +815,10 @@ static int
 ncp_dev_reset(void)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
-    
-    /* Quiet the read/write smem transactions */
-    ncpStatus = ncp_dev_quiesce();
-    if(ncpStatus != NCP_ST_SUCCESS)
-    {
-        NCP_MSG(NCP_MSG_ERROR, "ncp_dev_quiesce failed with %d\n", ncpStatus);
-        return -1;
-    }
-    
+
 	/* Reset Modules */
     ncpStatus = ncp_dev_reset_hw();
+    debug("ncp_dev_reset_hw\n");
     if(ncpStatus != NCP_ST_SUCCESS)
     {
         NCP_MSG(NCP_MSG_ERROR, "ncp_dev_reset_hw failed with %d\n", ncpStatus);
@@ -782,6 +826,7 @@ ncp_dev_reset(void)
     }
 
     ncpStatus = ncp_dev_reset_sw();
+    debug("ncp_dev_reset_sw\n");
     if(ncpStatus != NCP_ST_SUCCESS)
     {
         NCP_MSG(NCP_MSG_ERROR, "ncp_dev_reset_sw failed with %d\n", ncpStatus);
@@ -800,15 +845,14 @@ static int
 ncp_dev_do_read(ncr_command_t *command, unsigned *value)
 {
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
-		*value = *((volatile unsigned *)command->offset);
-
-		return 0;
+		*value = *(volatile unsigned*)(unsigned long)command->offset;
 	} else if (0 != ncr_read32(command->region, command->offset, value)) {
-		printf("READ ERROR: n=0x%x t=0x%x o=0x%x\n",
+		debug("READ ERROR: n=0x%x t=0x%x o=0x%x\n",
 			    NCP_NODE_ID(command->region),
 			    NCP_TARGET_ID(command->region), command->offset);
 		return -1;
 	}
+
 #ifdef NCR_DEBUG
 	debug("Read 0x%08x from n=0x%x t=0x%x o=0x%x\n",
 		    *value, NCP_NODE_ID(command->region),
@@ -826,42 +870,66 @@ ncp_dev_do_read(ncr_command_t *command, unsigned *value)
 static int
 ncp_dev_do_write(ncr_command_t *command)
 {
-#ifdef NCR_DEBUG
-	debug(" WRITE: r=0x%x o=0x%x v=0x%x\n",
-		    command->region, command->offset, command->value);
-#endif
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
-		*((volatile unsigned *)command->offset) = command->value;
-#ifdef USE_CACHE_SYNC
-		flush_cache(command->offset, 4);
-#endif
-#if 0 /* TODO: find the equivalent for 55xx */
-	} else if (NCP_REGION_ID(0x148, 0) == command->region) {
-		out_le32((volatile unsigned *)(APB2RC + command->offset),
-			 command->value);
-		flush_cache((APB2RC + command->offset), 4);
-#endif
-	} else {
-#if 0
-        /* HACK: to avoid errors in half switch systems, skip eioa2 and eioa3 */
-        else if(NCP_NODE_ID(command->region) == 0x29 ||
-                NCP_NODE_ID(command->region) == 0x28) {
-                   return 0;
-        }
-#endif
-		if (0 != ncr_write32(command->region, command->offset,
-				     command->value)) {
+ 		*(volatile unsigned*)(unsigned long)(command->offset) = (unsigned) command->value;
+		
+		unsigned int read_back = *(volatile unsigned*)(unsigned long)command->offset;
+		if (read_back != command->value) {
 			printf("WRITE ERROR: n=0x%x t=0x%x o=0x%x "
-				    "v=0x%x\n",
-				    NCP_NODE_ID(command->region),
-				    NCP_TARGET_ID(command->region),
-				    command->offset, command->value);
+				"v=0x%x\n",
+				NCP_NODE_ID(command->region),
+				NCP_TARGET_ID(command->region),
+				command->offset, command->value);
+			return -1;
+		}
+	} else {
+		if (0 != ncr_write32(command->region, command->offset,
+					 command->value)) {
+			printf("WRITE ERROR: n=0x%x t=0x%x o=0x%x "
+					"v=0x%x\n",
+					NCP_NODE_ID(command->region),
+					NCP_TARGET_ID(command->region),
+					command->offset, command->value);
 
 			return -1;
 		}
 	}
-
+	
 	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  ncp_dev_do_write_64
+	
+  This is only for the memory writes. Most likely not necessary as the current 
+  traces do not use the values over 1 word (32 bits) but maybe they will in future
+  so keeping.
+*/
+
+static int
+ncp_dev_do_write_64(ncr_command_t *command)
+{
+	if (NCP_REGION_ID(0x200, 1) == command->region) {
+		printf("val 0x%lx @ addr 0x%lx\n", 
+				(unsigned long)command->value,  (unsigned long)command->offset);
+
+ 		*(volatile unsigned long*)(unsigned long)(command->offset) = (unsigned long) command->value;
+		
+		unsigned long read_back = *(volatile unsigned long*)(unsigned long)command->offset;
+		if (read_back != command->value) {
+			printf("WRITE ERROR: n=0x%x t=0x%x o=0x%x "
+				"v=0x%x\n",
+				NCP_NODE_ID(command->region),
+				NCP_TARGET_ID(command->region),
+				command->offset, command->value);
+			return -1;
+		}
+		
+		return 0;
+	}
+
+	return -1;
 }
 
 /*
@@ -881,24 +949,26 @@ ncp_dev_do_modify(ncr_command_t *command)
         ncp_dev_do_write(command);
 
 		return 0;
-	} else if (0 != ncr_modify32(command->region, command->offset,
+	} 
+
+	if (0 != ncr_modify32(command->region, command->offset,
 			      command->mask, command->value)) {
-		printf("MODIFY ERROR: n=0x%x t=0x%x o=0x%x m=0x%x "
+		debug("MODIFY ERROR: n=0x%x t=0x%x o=0x%x m=0x%x "
 			    "v=0x%x\n",
 			    NCP_NODE_ID(command->region),
 			    NCP_TARGET_ID(command->region), command->offset,
 			    command->mask, command->value);
 
 		return -1;
-	} else {
+	} 
+
 #ifdef NCR_DEBUG
 		debug("MODIFY: r=0x%x o=0x%x m=0x%x v=0x%x\n",
 			    command->region, command->offset,
 			    command->mask, command->value);
 #endif
-	}
 
-	return 0;
+    return 0;
 }
 
 /*
@@ -947,6 +1017,9 @@ ncp_dev_configure(ncr_command_t *commands) {
 		case NCR_COMMAND_WRITE:
 			rc = ncp_dev_do_write(commands);
 			break;
+		case NCR_COMMAND_WRITE64:
+			rc = ncp_dev_do_write_64(commands);
+			break;
 		case NCR_COMMAND_READ:
 			rc = ncp_dev_do_read(commands, &value);
 			break;
@@ -962,20 +1035,11 @@ ncp_dev_configure(ncr_command_t *commands) {
 		case NCR_COMMAND_POLL:
 			rc = ncp_dev_do_poll(commands);
 			break;
-        case NCR_COMMAND_FUNC:
-            if(commands->offset) {
-                func_config_port func_ptr = (func_config_port)commands->offset;
-                /* call the function in offset field with param in value field */
-                rc = func_ptr(commands->value);
-            }
-            break;
 		default:
-			printf("Unknown Command: 0x%x, startCmd=0x%x, curCmd=0x%x, entry#=%d\n",
+			printf("Unknown Command: 0x%x, startCmd=%p, curCmd=%p\n",
 			       (unsigned int)commands->command,
-			       (unsigned int)startCmd,
-			       (unsigned int)commands,
-			       ((unsigned int)commands -
-				(unsigned int)startCmd)/sizeof(ncr_command_t));
+			       startCmd,
+			       commands);
 			rc = -1;
 			break;
 		}
@@ -1007,21 +1071,21 @@ task_send(ncp_task_ncaV2_send_meta_t *taskMetaData)
 			    taskMetaData->pduSegSize0);
 #endif
 
-        if(dumptx) {
-	  axxia_dump_packet("LSI_EIOA TX",
-			    (void *)((unsigned)taskMetaData->pduSegAddr0), 
-			    taskMetaData->pduSegSize0);
-        }
+		if(dumptx) {
+		axxia_dump_packet("LSI_EIOA TX",
+			(void *)(taskMetaData->pduSegAddr0), 
+				taskMetaData->pduSegSize0);
+		}
         
 		ncpStatus = ncp_task_ncav2_send(taskHdl, NULL, taskMetaData, TRUE,
-            NULL, NULL);
-        debug("task_send(): after send. status=%d\n", ncpStatus);
+             		NULL, NULL);
+        debug("task_send(): status=%d\n", ncpStatus);
         
 	} while (NCP_ST_TASK_SEND_QUEUE_FULL == ncpStatus);
 
 	if (NCP_ST_SUCCESS != ncpStatus) {
 		return 0;
-    }
+   	}	
 
 	return taskMetaData->pduSegSize0;
 }
@@ -1030,17 +1094,86 @@ task_send(ncp_task_ncaV2_send_meta_t *taskMetaData)
 
 /*
   ------------------------------------------------------------------------------
+  take_snapshot: this allows seeing the rx/tx counters at the interfaces
+*/
+static int
+take_snapshot(int gmac) 
+{
+	int rc, target = 0xdead, offset = 0xdead, val, number = 56;
+	int offset_rx = 0xf00, offset_tx = 0xe00;
+
+	switch (gmac) {
+	case 0:
+		target = 0x11;                 
+		offset = 0xd0c; /*gmac00_config*/
+		val = 0x0;                    
+		break;
+	case 1:
+		target = 0x12;
+		offset = 0xd0c;
+		val = 0x0;
+		break;
+	case 2: 
+		target = 0x12;
+		offset = 0xd10;
+		val = 0x1;
+		break;
+	case 3:
+		target = 0x12;
+		offset = 0xd14;
+		val = 0x2;
+		break;
+	default:
+		debug("Snapshot for gmac%d not supported\n", gmac);
+		return -1;
+	}
+
+	ncr_write32(NCP_REGION_ID(0x1f, target), offset, 0x45ee);
+	ncr_write32(NCP_REGION_ID(0x1f, target), 0xd40, val);
+	
+	debug("Snapshot for gmac%d\n", gmac);
+	while (0 < number--) {
+		rc = ncr_read(NCP_REGION_ID(0x1f, target), 0, offset_tx, 4, &val);
+		if (0 != val) 
+			debug("value 0x%x\n", val);
+
+		if (0 != rc)
+			return -1;
+
+		offset_tx += 4;
+	}
+
+	number = 56;
+	while (0 < number--) {
+		rc = ncr_read(NCP_REGION_ID(0x1f, target), 0, offset_rx, 4, &val);
+		if (0 != val) 
+			debug("value 0x%x\n", val);
+
+		if (0 != rc)
+			return -1;
+
+		offset_rx += 4;
+	}
+	return 0;
+}
+
+
+/*
+  ------------------------------------------------------------------------------
   line_setup
 */
 
 static int
-line_setup(int index)
+line_setup(int index, struct eth_device *dev)
 {
 	int rc;
-#if defined(CONFIG_AXXIA_55XX)
+#if defined(CONFIG_AXXIA_56XX)
 	int retries = 100000;
 #endif
-#if defined(CONFIG_AXXIA_55XX) || defined(CONFIG_AXXIA_55XX_EMU)
+#if defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_EMU)
+	unsigned short ad_value;
+	unsigned short ge_ad_value;
+#elif defined(CONFIG_AXXIA_56XX)
 	unsigned short ad_value;
 	unsigned short ge_ad_value;
 #endif
@@ -1049,11 +1182,11 @@ line_setup(int index)
 	unsigned gmacPortOffset;
 	unsigned hwPortIndex;
 	unsigned ncr_status;
-	char *envstring;
-	unsigned short status;
 	unsigned top;
 	unsigned bottom;
+	char *envstring;
 	unsigned short control;
+	unsigned short status;
 
     if(index >= 128 || (index < 128 && index_by_port[port_by_index[index]] == -1))
     {
@@ -1063,6 +1196,7 @@ line_setup(int index)
     }
 
     debug("line_setup for port=%d\n", port_by_index[index]);
+
 
 	/* Set the region and offset. */
     if (5 > index) {
@@ -1118,8 +1252,14 @@ line_setup(int index)
 	    return -1;
     }
 
+	debug("gmac1-4 -> nemac1 @0x1f.0x12.0x0) \n"
+		" hwPortIndex 0x%x eioaRegion 0x%x gmacRegion 0x%x gmacPortOffset 0x%x\n",
+			hwPortIndex, eioaRegion, gmacRegion, gmacPortOffset);
+
 	/* Disable stuff. */
 	NCR_CALL(ncr_modify32(gmacRegion, 0x330 + gmacPortOffset, 0x3f, 0));
+	ncr_read32(gmacRegion, 0x330 + gmacPortOffset, &ncr_status);
+	debug("ncr_status 0x%x (expecting 0x0)\n", ncr_status); 
 	NCR_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x8, 0x0));
 	NCR_CALL(ncr_modify32(eioaRegion, 
                 NCP_EIOA_GEN_CFG_REG_OFFSET(hwPortIndex) + 0x0, 
@@ -1134,8 +1274,8 @@ line_setup(int index)
         {
 			phy_by_index[index] = simple_strtoul(envstring, NULL, 0);
 		}
-        
-        mdio_initialize();
+
+    	mdio_initialize();
     }
 
 	/* Check for "macspeed".  If set, ignore the PHYs... */
@@ -1177,43 +1317,88 @@ line_setup(int index)
 
         /* do phy configuration for copper PHY */
         if(phy_media_by_index[index] == EIOA_PHY_MEDIA_COPPER) {
-            control = mdio_read(phy_by_index[index], 0);
-		    ad_value = mdio_read(phy_by_index[index], 4);
-		    ge_ad_value = mdio_read(phy_by_index[index], 9);
+			/* GMAC2, 3, 4, 18 are special ports on Victoria i.e. 
+ 			   they are pure Copper and go through Vitesse PHY’s.
+			   They need correct PHY addresses in ASE also:
+			   GMAC2 (phy 0x18), 3 (phy 0x19), 4 (phy 0x1b), 18 (phy 0x1a)
+			 */
+			switch (phy_by_index[index]) {
+			case 0x18:
+			case 0x19:
+			case 0x1a:
+			case 0x1b:
+				mdio_write(0x18, 0x1f, 0x0000);
+				mdio_write(0x19, 0x1f, 0x0000);
+				mdio_write(0x1a, 0x1f, 0x0000);
+				mdio_write(0x1b, 0x1f, 0x0000);
 
-            control &= 0xdebf; /* clear bit 6, 8 and 13 */
-            ad_value &= 0xfe1f; /* clear bits 5, 6, 7, 8 */
-            ge_ad_value &= 0xcff; /* clear bits 8, 9 */
-            
-            if (0 == strcmp("10MH", envstring)) {
-                ad_value |= 0x20;       /* set bit 5 */
-    		} else if (0 == strcmp("10MF", envstring)) {
-                ad_value |= 0x40;       /* set bit 6 */
-                control |= 0x100; /* set bit 8 */
-    		} else if (0 == strcmp("100MH", envstring)) {
-                ad_value |= 0x80;       /* set bit 7 */
-    			control |= 0x2000; /* set bit 13 */
-    		} else if (0 == strcmp("100MF", envstring)) {
-                ad_value |= 0x100;      /* set bit 8 */
-    		    control |= 0x2100; /* set bit 8, 13 */
-    		} else if (0 == strcmp("1G", envstring)) {
-                ge_ad_value |= 0x300;   /* set bit 8, 9 */
-                control |= 0x40;        /* set bit 6 */
-                control &= 0xdfff;      /* clear bit 13 */
-    		} else {
-    			printf("macspeed must be set to 10MH, 10MF, 100MH, "
-    			       "100MF, or 1G\n");
-    			return -1;
-    		}
-            
-            mdio_write(phy_by_index[index], 4, ad_value);
-		    mdio_write(phy_by_index[index], 9, ge_ad_value);
-            mdio_write(phy_by_index[index], 0, control);
+				mdio_write(0x18, 0x17, 0x0000);
+				mdio_write(0x19, 0x17, 0x0000);
+				mdio_write(0x1a, 0x17, 0x0000);
+				mdio_write(0x1b, 0x17, 0x0000);
+
+				mdio_write(0x18, 0x1f, 0x0003);
+				mdio_write(0x19, 0x1f, 0x0003);
+				mdio_write(0x1a, 0x1f, 0x0003);
+				mdio_write(0x1b, 0x1f, 0x0003);
+
+				mdio_write(0x18, 0x10, 0x3080);
+				mdio_write(0x19, 0x10, 0x3080);
+				mdio_write(0x1a, 0x10, 0x3080);
+				mdio_write(0x1b, 0x10, 0x3080);
+
+				mdio_write(0x18, 0x1f, 0x0010);
+				mdio_write(0x19, 0x1f, 0x0000);
+				mdio_write(0x1a, 0x1f, 0x0000);
+				mdio_write(0x1b, 0x1f, 0x0000);
+
+				mdio_write(0x18, 0x13, 0x000f);
+				mdio_write(0x18, 0x12, 0x80f0);
+				mdio_write(0x18, 0x1f, 0x0000);
+				break;
+			default:
+				control = mdio_read(phy_by_index[index], 0);    
+				ad_value = mdio_read(phy_by_index[index], 4);   
+				ge_ad_value = mdio_read(phy_by_index[index], 9);
+
+				control &= 0xdebf; /* clear bit 6, 8 and 13 */
+				ad_value &= 0xfe1f; /* clear bits 5, 6, 7, 8 */
+				ge_ad_value &= 0xcff; /* clear bits 8, 9 */
+				
+				if (0 == strcmp("10MH", envstring)) {
+					ad_value |= 0x20;       /* set bit 5 */
+				} else if (0 == strcmp("10MF", envstring)) {
+					ad_value |= 0x40;       /* set bit 6 */
+					control |= 0x100; /* set bit 8 */
+				} else if (0 == strcmp("100MH", envstring)) {
+					ad_value |= 0x80;       /* set bit 7 */
+					control |= 0x2000; /* set bit 13 */
+				} else if (0 == strcmp("100MF", envstring)) {
+					ad_value |= 0x100;      /* set bit 8 */
+					control |= 0x2100; /* set bit 8, 13 */
+				} else if (0 == strcmp("1G", envstring)) {
+					ge_ad_value |= 0x300;   /* set bit 8, 9 */
+					control |= 0x40;        /* set bit 6 */
+					control &= 0xdfff;      /* clear bit 13 */
+				} else {
+
+					printf("macspeed must be set to 10MH, 10MF, 100MH, "
+						   "100MF, or 1G\n");
+					return -1;
+				}
+				
+				mdio_write(phy_by_index[index], 4, ad_value);    
+				mdio_write(phy_by_index[index], 9, ge_ad_value); 
+				mdio_write(phy_by_index[index], 0, control);     
+				break;
+			}
+			DELAY();
+			take_snapshot(port_by_index[index]);
         }
 	} else {
 	    /* do phy configuration for copper PHY */
         if(phy_media_by_index[index] == EIOA_PHY_MEDIA_COPPER) {
-#if defined(CONFIG_AXXIA_55XX)
+#if defined(CONFIG_AXXIA_56XX)
     		/* Get ad_value and ge_ad_value from the environment. */
     		envstring = getenv("ad_value");
 
@@ -1232,19 +1417,19 @@ line_setup(int index)
     		}
 
     		/* Set the AN advertise values. */
-    		mdio_write(phy_by_index[index], 4, ad_value);
-    		mdio_write(phy_by_index[index], 9, ge_ad_value);
+			mdio_write(phy_by_index[index], 4, ad_value);
+			mdio_write(phy_by_index[index], 9, ge_ad_value);
 
     		/* Force re-negotiation. */
     		control = mdio_read(phy_by_index[index], 0);
     		control |= 0x1200;
-    		mdio_write(phy_by_index[index], 0, control);
+			mdio_write(phy_by_index[index], 0, control);
 
     		DELAY();
 
     		/* Wait for AN complete. */
     		for (;;) {
-    			status = mdio_read(phy_by_index[index], 1);
+				status = mdio_read(phy_by_index[index], 1);
 
     			if (0 != (status & 0x20))
     				break;
@@ -1265,7 +1450,7 @@ line_setup(int index)
     			if (NCP_USE_ALL_PORTS != eioaPort)
     				return -1; /* Don't Error Out in AUTO Mode. */
     		} else {
-    			status = mdio_read(phy_by_index[index], 0x1c);
+				status = mdio_read(phy_by_index[index], 0x1c);
             }
 #else
     		status = 0x28; /* For FPGA, its 100MF */
@@ -1444,7 +1629,7 @@ initialize_task_io(struct eth_device *dev)
 			    return -1;
             }
         } else {
-			printf("If set, eioaport must be one of the following:\n"
+		printf("If set, eioaport must be one of the following:\n"
                 "\tgmac[0-4,16-20,32,33,48,49,64,65,80,81,96,97,112,113],\n"
                 "\txgmac[0,1,16,17,32,33,48,49,64,65,80,81,96,97,112,113]\n"
                 "\trx-gmac,\n"
@@ -1464,60 +1649,52 @@ initialize_task_io(struct eth_device *dev)
     ncp_task_uboot_domain_bundle_clear();
     debug("done\n");
 
-    debug("Configuring MME...");
-	if (0 != ncp_dev_configure(mme)) {
-		printf("MME Configuration Failed\n");
-		return -1;
-	}
-    debug("done\n");
+	debug("Configuring MME...");
+    if (0 != ncp_dev_configure(mme)) {
+            printf("MME Configuration Failed\n");
+            return -1;
+    }
+	debug("done\n");
 
-    debug("Configuring PBM...");
-    if (0 != ncp_dev_configure(pbm)) {
-		printf("PBM Configuration Failed\n");
-		return -1;
-	}
-    debug("done\n");
+	debug("Configuring PBM...");
+	if (0 != ncp_dev_configure(pbm)) {
+				printf("PBM Configuration Failed\n");
+				return -1;
+		}
+	debug("done\n");
 
-    debug("Configuring VP...");
-	if (0 != ncp_dev_configure(vp)) {
-		printf("Virtual Pipeline Configuration Failed\n");
-		return -1;
-	}
-    debug("done\n");
+	debug("Configuring VP...");
+		if (0 != ncp_dev_configure(vp)) {
+				printf("Virtual Pipeline Configuration Failed\n");
+				return -1;
+		}
+	debug("done\n");
 
-    debug("Configuring NCA...");
-	if (0 != ncp_dev_configure(nca)) {
-		printf("NCA Configuration Failed\n");
-		return -1;
-	}
-    debug("done\n");
+	debug("Configuring NCA...");
+		if (0 != ncp_dev_configure(nca)) {
+				printf("NCA Configuration Failed\n");
+				return -1;
+		}
+	debug("done\n");
+
+	debug("Configuring EIOA...");
+		if (0 != ncp_dev_configure(eioa)) {
+				printf("EIOA Configuration Failed\n");
+				return -1;
+		}
+	debug("done\n");
 
     debug("Configuring Uboot task io...");
     /* initialize task io */
-	NCP_CALL(ncp_task_uboot_config());
+    NCP_CALL(ncp_task_uboot_config());
     debug("done\n");
 
-    debug("Configuring EIOA...");
-	if (0 != ncp_dev_configure(eioa)) {
-		printf("EIOA Configuration Failed\n");
-		return -1;
-	}
-    debug("done\n");
-    
     if((NCP_USE_ALL_PORTS == eioaPort && port_type_by_index[0] == EIOA_PORT_TYPE_GMAC) ||
        (NCP_USE_ALL_PORTS != eioaPort && port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_GMAC)) {
         debug("Configuring all HSS for GMAC...");
-    	if (0 != ncp_dev_configure(hss_gmac)) {
-    		printf("HSS Configuration failed for GMACs.\n");
-    		return -1;
-    	}
     } else if((NCP_USE_ALL_PORTS == eioaPort && port_type_by_index[0] == EIOA_PORT_TYPE_XGMAC) ||
        (NCP_USE_ALL_PORTS != eioaPort && port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_XGMAC)) {
         debug("Configuring all HSS for XGMAC...");
-    	if (0 != ncp_dev_configure(hss_xgmac)) {
-    		printf("HSS Configuration failed for XGMACs.\n");
-    		return -1;
-    	}
     }
     debug("done\n");
 
@@ -1545,36 +1722,37 @@ initialize_task_io(struct eth_device *dev)
 	if (NCP_ST_SUCCESS != ncpStatus) {
         printf("ERROR: status=%d\n", ncpStatus);
 		lsi_eioa_eth_halt(dev);
-
 		return -1;
-	}
+	} else 
+		debug("%s() taskHdl %p recvQueueId %d\n", __func__, taskHdl, (int) recvQueueId);
 
 	/*
 	  Make sure the network is connected.
 	*/
+	
 
 	if (NCP_USE_ALL_PORTS == eioaPort) {
-		/* Use all ports. */
-		for (i = 0; i < EIOA_NUM_PORTS; ++i) {
-            if(port_type_by_index[i] == EIOA_PORT_TYPE_GMAC) {
-    			if (0 != line_setup(i)) {
-                    printf("line_setup failed for gmac%d (all)\n", 
-                            port_by_index[i]);
-    				return -1;
+	    /* Use all ports. */
+	    for (i = 0; i < EIOA_NUM_PORTS; ++i) {
+	        debug("index_by_port[i] %d, port_type_by_index[i] %d\n",
+			index_by_port[i], port_type_by_index[i]);
+                if (index_by_port[i] != -1 && (port_type_by_index[i] == EIOA_PORT_TYPE_GMAC)){
+    			if (0 != line_setup(i, dev)) {
+                            printf("line_setup failed for gmac%d (all)\n", port_by_index[i]);
+    			    return -1;
     			}
-            }
-		}
+            }    
+	    }
 	} else {
-        if(port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_GMAC) {
-            printf("Using EIOA Port GMAC%d\n", eioaPort);
-    		if (0 != line_setup(index_by_port[eioaPort])) {
-                printf("line_setup failed for gmac%d\n", 
-                            eioaPort);
-    			return -1;
+            if ((index_by_port[eioaPort] != -1) && (port_type_by_index[index_by_port[eioaPort]] == EIOA_PORT_TYPE_GMAC)) {
+                printf("Using EIOA Port GMAC%d\n", eioaPort);
+    		if (0 != line_setup(index_by_port[eioaPort], dev)) {
+                    printf("line_setup failed for gmac%d\n",  eioaPort);
+		    return -1;
     		}
-        } else {
-            printf("Using EIOA Port XGMAC%02d\n", eioaPort);
-        }
+            } else {
+                  printf("Using EIOA Port XGMAC%02d\n", eioaPort);
+            }
 	}
 
 	initialized = 1;
@@ -1606,6 +1784,50 @@ typedef struct
 #endif
 } ncp_cfg_phy_ctrl2_r_t;
 
+typedef struct
+{
+#ifdef NCP_BIG_ENDIAN
+     unsigned      reserved0                                 :  2;
+     unsigned      synce1_clk_en                             :  2;
+     unsigned      reserved1                                 :  2;
+     unsigned      synce0_clk_en                             :  2;
+     unsigned      reserved2                                 :  2;
+     unsigned      auto_los_detect                           :  1;
+     unsigned      reserved3                                 :  3;
+     unsigned      tbi_clk_en                                :  2;
+     unsigned      tt_debug_lane_sel                         :  2;
+     unsigned      cr_clk_div_sel                            :  2;
+     unsigned      mdio_soft_rst                             :  1;
+     unsigned      serdes_reset_0                            :  1;
+     unsigned      phy_soft_rst_0                            :  1;
+     unsigned      reg_reset_0                               :  1;
+     unsigned      reserved4                                 :  2;
+     unsigned      lane_qsgmii                               :  2;
+     unsigned      reserved5                                 :  2;
+     unsigned      lane_xfi                                  :  2;
+#else    /* Little Endian */
+     unsigned      lane_xfi                                  :  2;
+     unsigned      reserved5                                 :  2;
+     unsigned      lane_qsgmii                               :  2;
+     unsigned      reserved4                                 :  2;
+     unsigned      reg_reset_0                               :  1;
+     unsigned      phy_soft_rst_0                            :  1;
+     unsigned      serdes_reset_0                            :  1;
+     unsigned      mdio_soft_rst                             :  1; 
+     unsigned      cr_clk_div_sel                            :  2;
+     unsigned      tt_debug_lane_sel                         :  2;
+     unsigned      tbi_clk_en                                :  2;
+     unsigned      reserved3                                 :  3;
+     unsigned      auto_los_detect                           :  1;
+     unsigned      reserved2                                 :  2;
+     unsigned      synce0_clk_en                             :  2;
+     unsigned      reserved1                                 :  2;
+     unsigned      synce1_clk_en                             :  2;
+     unsigned      reserved0                                 :  2;
+#endif
+} ncp_global_global_ctrl0_r_t;
+
+
 /*
   -------------------------------------------------------------------------------
   finalize_task_io
@@ -1615,104 +1837,39 @@ void
 finalize_task_io(void)
 {
     int rc = 0;
-	unsigned value;
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
-
-    /* power down HSS0-4 lanes */
-    {
-        int hss = 0;
-
-        /* loop through the HSS's and power them down */
-        for(hss = 0; hss <= 4; hss++)
-        {
-            int lane = 0;
-            
-            debug("Powering down HSS%d\n", hss);
-            for(lane = 0; lane < 4; lane++)
-            {
-                ncp_uint32_t val32 = 0;
-                ncp_cfg_phy_ctrl2_r_t *phy_ctrl2_reg = (ncp_cfg_phy_ctrl2_r_t *)&val32;
-
-                /* 
-                 * stagger the tx/rx lane power downs 
-                 */
-                ncr_read32(NCP_REGION_ID((0x110 + hss), 0), 0x8, &val32);                
-                phy_ctrl2_reg->rxpd |= 1 << lane;
-                phy_ctrl2_reg->tx_rxdetresetn |= 1 << lane;
-                ncr_write32(NCP_REGION_ID((0x110 + hss), 0), 0x8, val32);
-
-                ncr_read32(NCP_REGION_ID((0x110 + hss), 0), 0x8, &val32);
-                phy_ctrl2_reg->txpd |= 1 << lane;
-                ncr_write32(NCP_REGION_ID((0x110 + hss), 0), 0x8, val32);
-            }
-        }
-    }
     
-	/*
-	  Stop the queue.
-	*/
+    /*
+     *  Stop the queue.
+     */
 
-	/* Disable EIOA gmac NEMACs. */
+    /* Disable EIOA gmac NEMACs. */
     ncr_modify32(NCP_REGION_ID(0x1f, 0x11), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x3c0, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x480, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x540, 0x0000000c, 0x0);
+    ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x300, 0x0000000c, 0x0);
+    ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x3c0, 0x0000000c, 0x0);
+    ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x480, 0x0000000c, 0x0);
+    ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0x540, 0x0000000c, 0x0);
     ncr_modify32(NCP_REGION_ID(0x17, 0x11), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x17, 0x12), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x17, 0x12), 0x3c0, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x17, 0x12), 0x480, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x17, 0x12), 0x540, 0x0000000c, 0x0);
-    ncr_modify32(NCP_REGION_ID(0x28, 0x11), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x28, 0x12), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x29, 0x11), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x29, 0x12), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2a, 0x11), 0x300, 0x0000000c, 0x0);
-    ncr_modify32(NCP_REGION_ID(0x2a, 0x12), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2b, 0x11), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2b, 0x12), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2c, 0x11), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2c, 0x12), 0x300, 0x0000000c, 0x0);
-    ncr_modify32(NCP_REGION_ID(0x2d, 0x11), 0x300, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2d, 0x12), 0x300, 0x0000000c, 0x0);
+    ncr_modify32(NCP_REGION_ID(0x17, 0x12), 0x300, 0x0000000c, 0x0);
+    ncr_modify32(NCP_REGION_ID(0x17, 0x12), 0x3c0, 0x0000000c, 0x0);
+    ncr_modify32(NCP_REGION_ID(0x17, 0x12), 0x480, 0x0000000c, 0x0);
+    ncr_modify32(NCP_REGION_ID(0x17, 0x12), 0x540, 0x0000000c, 0x0);
 
     /* Disable EIOA xgmac NEMACs. */
+#if 0 /* not supported yet */
     ncr_modify32(NCP_REGION_ID(0x1f, 0x11), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0xc00, 0x0000000c, 0x0);
+    ncr_modify32(NCP_REGION_ID(0x1f, 0x12), 0xc00, 0x0000000c, 0x0);
     ncr_modify32(NCP_REGION_ID(0x17, 0x11), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x17, 0x12), 0xc00, 0x0000000c, 0x0);
-    ncr_modify32(NCP_REGION_ID(0x28, 0x11), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x28, 0x12), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x29, 0x11), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x29, 0x12), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2a, 0x11), 0xc00, 0x0000000c, 0x0);
-    ncr_modify32(NCP_REGION_ID(0x2a, 0x12), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2b, 0x11), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2b, 0x12), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2c, 0x11), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2c, 0x12), 0xc00, 0x0000000c, 0x0);
-    ncr_modify32(NCP_REGION_ID(0x2d, 0x11), 0xc00, 0x0000000c, 0x0);
-	ncr_modify32(NCP_REGION_ID(0x2d, 0x12), 0xc00, 0x0000000c, 0x0);
+    ncr_modify32(NCP_REGION_ID(0x17, 0x12), 0xc00, 0x0000000c, 0x0);
+#endif
 
-	/* swreset gmac and xgmac nemacs */
+    /* swreset gmac */
     ncr_or(NCP_REGION_ID(0x1f, 0x11), 0x20, 0x10f);
-	ncr_or(NCP_REGION_ID(0x1f, 0x12), 0x20, 0x10f);
+    ncr_or(NCP_REGION_ID(0x1f, 0x12), 0x20, 0x10f);
     ncr_or(NCP_REGION_ID(0x17, 0x11), 0x20, 0x10f);
-	ncr_or(NCP_REGION_ID(0x17, 0x12), 0x20, 0x10f);
-    ncr_or(NCP_REGION_ID(0x28, 0x11), 0x20, 0x10f);
-	ncr_or(NCP_REGION_ID(0x28, 0x12), 0x20, 0x10f);
-    ncr_or(NCP_REGION_ID(0x29, 0x11), 0x20, 0x10f);
-	ncr_or(NCP_REGION_ID(0x29, 0x12), 0x20, 0x10f);
-    ncr_or(NCP_REGION_ID(0x2a, 0x11), 0x20, 0x10f);
-	ncr_or(NCP_REGION_ID(0x2a, 0x12), 0x20, 0x10f);
-    ncr_or(NCP_REGION_ID(0x2b, 0x11), 0x20, 0x10f);
-	ncr_or(NCP_REGION_ID(0x2b, 0x12), 0x20, 0x10f);
-    ncr_or(NCP_REGION_ID(0x2c, 0x11), 0x20, 0x10f);
-	ncr_or(NCP_REGION_ID(0x2c, 0x12), 0x20, 0x10f);
-    ncr_or(NCP_REGION_ID(0x2d, 0x11), 0x20, 0x10f);
-	ncr_or(NCP_REGION_ID(0x2d, 0x12), 0x20, 0x10f);
+    ncr_or(NCP_REGION_ID(0x17, 0x12), 0x20, 0x10f);
 
-	/* Disable ports in EIOA Cores. */
+    /* Disable ports in EIOA Cores. */
     NCR_CALL(ncr_modify32(NCP_REGION_ID(0x1f, 0x10), 
                 NCP_EIOA_GEN_CFG_REG_OFFSET(0), 0x00000003, 0x0));
     NCR_CALL(ncr_modify32(NCP_REGION_ID(0x1f, 0x10), 
@@ -1733,48 +1890,19 @@ finalize_task_io(void)
                 NCP_EIOA_GEN_CFG_REG_OFFSET(3), 0x00000003, 0x0));
     NCR_CALL(ncr_modify32(NCP_REGION_ID(0x17, 0x10), 
                 NCP_EIOA_GEN_CFG_REG_OFFSET(4), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x28, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(0), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x28, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(1), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x29, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(0), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x29, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(1), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x2a, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(0), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x2a, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(1), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x2b, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(0), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x2b, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(1), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x2c, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(0), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x2c, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(1), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x2d, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(0), 0x00000003, 0x0));
-    NCR_CALL(ncr_modify32(NCP_REGION_ID(0x2d, 0x10), 
-                NCP_EIOA_GEN_CFG_REG_OFFSET(1), 0x00000003, 0x0));
 
-	/* Disable iPCQ 0 (only queue 0 is used) */
-	value = readl(NCA + 0x11800 + (ncaQueueId * 0x10));
-	value &= ~0x00000400;
-	writel(value, (NCA + 0x11800 + (ncaQueueId * 0x10)));
+    /*
+     Shut down task lite.
+    */
 
-	/*
-	  Shut down task lite.
-	*/
-
-	if (taskHdl) {
+    if (taskHdl) {
         NCP_CALL(ncp_task_recv_queue_unbind(taskHdl, recvQueueId));
         NCP_CALL(ncp_task_hdl_remove(taskHdl));
-	}
+    }
 
-	ncp_task_uboot_unconfig();
+    ncp_task_uboot_unconfig();
 
-	initialized = 0;
+    initialized = 0;
 
 ncp_return:
 	return;
@@ -1787,6 +1915,7 @@ ncp_return:
   ==============================================================================
   ==============================================================================
 */
+
 
 /*
   -------------------------------------------------------------------------------
@@ -1828,21 +1957,23 @@ int
 lsi_eioa_eth_send(struct eth_device *dev, void *packet, int length)
 {
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
-	int bytes_sent = 0;
-	void *taskAddr;
-	int i;
+    int bytes_sent = 0;
+    void *taskAddr;
+    int i;
     ncp_task_ncaV2_send_meta_t taskMetaData;
 
-    debug("lsi_eioa_eth_send(): packet=0x%p, length=%d\n",
-	  packet, length);
+    debug("%s(): packet=0x%p, length=%d\n",
+	  __func__, packet, length);
 
 	for (i = 0; i < EIOA_NUM_PORTS; ++i) {
         /* if sending on single port, skip other ports */
-        if(eioaPort != NCP_USE_ALL_PORTS && port_by_index[i] != eioaPort) {
+        if((eioaPort != NCP_USE_ALL_PORTS && port_by_index[i] != eioaPort)
+			/* if send to all skip unsued ports */
+			 || (index_by_port[i] == -1))	{
             continue;
-        }
-
-        debug("lsi_eioa_eth_send(): sending to port=%d\n", eioaPort);
+        }	
+        debug("lsi_eioa_eth_send(): sending to port=%d\n"
+			"index_by_port[%d] %u\n", eioaPort, i, index_by_port[i]);
 
         bytes_sent = 0;
         
@@ -1854,7 +1985,7 @@ lsi_eioa_eth_send(struct eth_device *dev, void *packet, int length)
 		}
 
         /* copy the task to buffer */
-		memcpy(taskAddr, (void *)packet, length);
+	memcpy(taskAddr, (void *)packet, length);
 /* HACK: Temporary invalidate until cache coherency is figured in uboot */
 #ifdef USE_CACHE_SYNC
         flush_cache((unsigned long)taskAddr, length);
@@ -1866,16 +1997,20 @@ lsi_eioa_eth_send(struct eth_device *dev, void *packet, int length)
         taskMetaData.priority       = 0;
         taskMetaData.pduSegSize0    = length;
         taskMetaData.ptrCnt         = 1;
-        taskMetaData.pduSegAddr0    = (ncp_uint64_t)((ncp_uint32_t)taskAddr);
-        taskMetaData.params[0]   = port_by_index[i]; /* output port */
+        taskMetaData.pduSegAddr0    = (ncp_uint64_t)((unsigned long)taskAddr);
+        taskMetaData.params[0]   	= port_by_index[i]; /* parametrized OP */
+		debug("%s(): Send over VP CPUtoEIOA output port %u\n", __func__,
+			(unsigned int) taskMetaData.params[0]);
+
 /* HACK: Temporary invalidate until cache coherency is figured in uboot */
 #ifdef USE_CACHE_SYNC
 		flush_cache((unsigned long)&taskMetaData, sizeof(taskMetaData));
 #endif
 
 		if (length != task_send(&taskMetaData)) {
-			printf("Send Failed on Port %d\n", port_by_index[i]);
+			debug("Send Failed on Port %d\n", port_by_index[i]);
 		} else {
+			debug("Send %d bytes on Port %d\n", length, port_by_index[i]);
 			bytes_sent = length;
 		}
 
@@ -1900,19 +2035,29 @@ ncp_return:
 int
 lsi_eioa_eth_rx(struct eth_device *dev)
 {
-	ncp_st_t ncpStatus;
-	ncp_task_ncaV2_recv_buf_t *task;
-	int bytes_received = 0;
+    ncp_st_t ncpStatus;
+    ncp_task_ncaV2_recv_buf_t *task;
+    int bytes_received = 0;
     ncp_vp_hdl_t vpHdl;
     ncp_uint8_t engineSeqId;
     ncp_uint8_t recvQueueId;
+    static short first = 1;
+    static void* shared_pool_start = NULL;
+	static long unsigned packets_received = 0;
 
     /* receive the task */
     NCP_CALL(ncp_task_ncav2_recv(taskHdl, &recvQueueId, &vpHdl, &engineSeqId, 
                 &task, NULL, FALSE));
 
+	if ((task != NULL) && (first == 1)) {
+		shared_pool_start = (void*) task;
+		first = 0;
+		debug("Shared Pool 2 for the Size start at %p\n", 
+				shared_pool_start);
+	}
+
     if(dumprx) {
-      axxia_dump_packet("LSI_EIOA RX", (void *)((unsigned)task->pduSegAddr0), 
+    	axxia_dump_packet("LSI_EIOA RX", (void *)(task->pduSegAddr0), 
                 task->pduSegSize0);
     }
 
@@ -1921,8 +2066,10 @@ lsi_eioa_eth_rx(struct eth_device *dev)
     invalidate_dcache_all();
 #endif
 
-    debug("lsi_eioa_eth_rx(): received task addr=0x%p, port=%d, size=%d\n", 
-                task, task->params[0], task->pduSegSize0);
+    debug("\nlsi_eioa_eth_rx(): received task:"
+			"1st arrived task_addr=0x%p task_addr=0x%p, port=%d, size=%d\n",
+               shared_pool_start, task, task->params[0], task->pduSegSize0);
+	debug("  packets received up to now %ld\n", packets_received++);
 
     /* 
      * If receiving on any port or on the single configured port, handle the 
@@ -1942,17 +2089,14 @@ lsi_eioa_eth_rx(struct eth_device *dev)
 
     	bytes_received = task->pduSegSize0;
 
+		unsigned char *pkt = (unsigned char *)/*le64_to_cpu*/(task->pduSegAddr0);
         /* copy the received packet to the up layer buffer */
-    	memcpy((void *)NetRxPackets[0], (void *)((unsigned)task->pduSegAddr0),
-	       bytes_received);
-
-        /* give the packet to the up layer */
     	if (0 == loopback && 0 == rxtest)
-    		NetReceive(NetRxPackets[0], bytes_received);
+			net_process_received_packet(pkt, bytes_received);
     }
-
     /* free the buffer */
     NCP_CALL(ncp_task_ncav2_free_rx_task(taskHdl, task));
+
  ncp_return:
     if (NCP_ST_TASK_RECV_QUEUE_EMPTY == ncpStatus) {
 		return 0;
@@ -1973,13 +2117,11 @@ lsi_eioa_eth_rx(struct eth_device *dev)
 void
 lsi_eioa_receive_test(struct eth_device *dev)
 {
-	int packets_received = 0;
-	bd_t *bd = gd->bd;
+	long int packets_received = 0;
 
-    rxtest = 1;
 	eth_halt();
 
-	if (0 != eth_init(bd)) {
+	if (0 != eth_init()) {
         rxtest = 0;
 		eth_halt();
 		return;
@@ -1995,9 +2137,9 @@ lsi_eioa_receive_test(struct eth_device *dev)
 			break;
 	}
 
-    rxtest = 0;
+    	rxtest = 0;
 	eth_halt();
-	printf("EIOA Receive Test Interrupted.  Received %d packets.\n",
+	printf("EIOA Receive Test Interrupted.  Received %ld packets.\n",
 	       packets_received);
 
 	return;
@@ -2011,14 +2153,13 @@ lsi_eioa_receive_test(struct eth_device *dev)
 void
 lsi_eioa_loopback_test(struct eth_device *dev)
 {
-	bd_t *bd = gd->bd;
 	int bytes_received;
 	int packets_looped = 0;
 
 	loopback = 1;
 	eth_halt();
 
-	if (0 != eth_init(bd)) {
+	if (0 != eth_init()) {
         loopback = 0;
 		eth_halt();
 		return;
@@ -2026,8 +2167,8 @@ lsi_eioa_loopback_test(struct eth_device *dev)
 
 	for (;;) {
 		if (0 != (bytes_received = eth_rx())) {
-			if (bytes_received !=
-			    eth_send((void *)NetRxPackets[0], bytes_received)) {
+			unsigned char *pkt = NULL;
+			if (bytes_received != eth_send((void *)pkt, bytes_received)) {
 				printf("lsi_eioa_eth_send() failed.\n");
 			} else {
 				++packets_looped;
@@ -2189,19 +2330,19 @@ line_setup_xgmac(int index)
 		}
 
 		/* Set the AN advertise values. */
-		mdio_write(phy_by_index[index], 4, ad_value);
-		mdio_write(phy_by_index[index], 9, ge_ad_value);
+		phy_write(phy_dev, MDIO_DEVAD_NONE, 4, ad_value);
+		phy_write(phy_dev, MDIO_DEVAD_NONE, 9, ge_ad_value);
 
 		/* Force re-negotiation. */
-		control = mdio_read(phy_by_index[index], 0);
+		control = phy_read(phy_dev, MDIO_DEVAD_NONE, 0);
 		control |= 0x200;
-		mdio_write(phy_by_index[index], 0, control);
+		phy_write(phy_dev, MDIO_DEVAD_NONE, 0, control);
 
 		DELAY();
 
 		/* Wait for AN complete. */
 		for (;;) {
-			status = mdio_read(phy_by_index[index], 1);
+			status = phy_read(phy_dev, MDIO_DEVAD_NONE, 1);
 
 			if (0 != (status & 0x20))
 				break;
@@ -2222,7 +2363,7 @@ line_setup_xgmac(int index)
 			if (NCP_USE_ALL_PORTS != eioaPort)
 				return -1; /* Don't Error Out in AUTO Mode. */
 		} else {
-			status = mdio_read(phy_by_index[index], 0x1c);
+			status = phy_read(phy_dev, MDIO_DEVAD_NONE, 0x1c);
 			printf("GMAC%02d: ", port_by_index[index]);
 
 			switch ((status & 0x18) >> 3) {
@@ -2305,7 +2446,9 @@ line_setup_xgmac(int index)
 
 	return -1;
 }
+#endif /* #if 0 */
 
+#if 0
 /*
   ------------------------------------------------------------------------------
   line_renegotiate
@@ -2322,6 +2465,11 @@ line_renegotiate(int index)
 	unsigned short ad_value;
 	unsigned short ge_ad_value;
 	unsigned short control;
+	struct mii_dev *bus;
+	struct phy_device *phy_dev;
+
+	bus = miiphy_get_dev_by_name("axxia-gmac1");
+	phy_dev = phy_connect(bus, phy_by_index[index], dev, PHY_INTERFACE_MODE_RGMII);
 
 	/* Set the region and offset. */
 	if (4 > index) {
@@ -2362,13 +2510,13 @@ line_renegotiate(int index)
 		}
 
 		/* Set the AN advertise values. */
-		mdio_write(phy_by_index[index], 4, ad_value);
-		mdio_write(phy_by_index[index], 9, ge_ad_value);
+		phy_write(phy_dev, MDIO_DEVAD_NONE, 4, ad_value);
+		phy_write(phy_dev, MDIO_DEVAD_NONE, 9, ge_ad_value);
 
 		/* Force re-negotiation. */
-		control = mdio_read(phy_by_index[index], 0);
+		control = phy_read(phy_dev, MDIO_DEVAD_NONE, 0);
 		control |= 0x200;
-		mdio_write(phy_by_index[index], 0, control);
+		phy_write(phy_dev, MDIO_DEVAD_NONE, 0, control);
 	}
 
 	return 0;
@@ -2424,5 +2572,4 @@ va2pa(void *virtual_address)
 }
 
 
-#endif
-
+#endif /*#if 0*/

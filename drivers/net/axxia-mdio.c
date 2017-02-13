@@ -51,8 +51,7 @@ axxia_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
 		command = readl(base + MDIO_REG_CTRL);
 	} while ((command & 0x80000000) != 0);
 
-	debug("mdio_read: phy@%x [%#x] -> %#x\n", addr, reg, command & 0xffff);
-
+	debug("mdio_read: phy@0x%x [%#x] -> %#x\n", addr, reg, command & 0xffff);
 	return (command & 0xffff);
 }
 
@@ -79,7 +78,9 @@ axxia_mdio_write(struct mii_dev *bus, int addr, int devad, int reg, u16 val)
 
 	/* Write the command */
 	command = 0x08000000;	/* op_code: write */
+	/* Port addr which is device addr */
 	command |= (addr & 0x1f) << 16;
+	/* Regs within the device addr */
 	command |= (reg & 0x1f) << 21;
 	command |= val;
 	writel(command, base + MDIO_REG_CTRL);
@@ -96,7 +97,7 @@ axxia_mdio_write(struct mii_dev *bus, int addr, int devad, int reg, u16 val)
 		command = readl(base + MDIO_REG_CTRL);
 	} while ((command & 0x80000000) != 0);
 
-	debug("mdio_write: phy@%x [%#x] <- %#x\n", addr, reg, val);
+	debug("mdio_write: phy@0x%x [%#x] <- %#x\n", addr, reg, val);
 	return 0;
 }
 
