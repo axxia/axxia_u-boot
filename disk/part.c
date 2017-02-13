@@ -25,6 +25,7 @@ struct block_drvr {
 	int (*select_hwpart)(int dev_num, int hwpart);
 };
 
+#ifdef HAVE_BLOCK_DEVICE
 static const struct block_drvr block_drvr[] = {
 #if defined(CONFIG_CMD_IDE)
 	{ .name = "ide", .get_dev = ide_get_dev, },
@@ -53,6 +54,7 @@ static const struct block_drvr block_drvr[] = {
 #endif
 	{ },
 };
+#endif	/* HAVE_BLOCK_DEVICE */
 
 DECLARE_GLOBAL_DATA_PTR;
 
