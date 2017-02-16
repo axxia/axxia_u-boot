@@ -48,6 +48,7 @@ static void
 display_mem_parameters(const char *title, parameters_mem_t *parameters)
 {
 	int i;
+	int j;
 
 	printf("-- -- %s\n", title);
 
@@ -71,7 +72,8 @@ display_mem_parameters(const char *title, parameters_mem_t *parameters)
 	printf("dramPrechargePolicy=0x%08x\n", parameters->dramPrechargePolicy);
 	printf("open_page_size=0x%08x\n", parameters->open_page_size);
 	printf("syscacheControl=0x%08x\n", parameters->syscacheControl);
-	printf("sdram_device_density=0x%08x\n", parameters->sdram_device_density);
+	printf("sdram_device_density=0x%08x\n",
+	       parameters->sdram_device_density);
 	printf("sdram_device_width=0x%08x\n", parameters->sdram_device_width);
 	printf("CAS_latency=0x%08x\n", parameters->CAS_latency);
 	printf("CAS_write_latency=0x%08x\n", parameters->CAS_write_latency);
@@ -86,40 +88,31 @@ display_mem_parameters(const char *title, parameters_mem_t *parameters)
 	printf("high_temp_dram=0x%08x\n", parameters->high_temp_dram);
 
 	for (i = 0; i < 2; i++) {
-		unsigned *p;
+		per_sysmem_parms_t *p;
 
-		p = (unsigned *)parameters->per_sysmem[i].sdram_rtt_nom;
-		printf("RTTnom=0x%08x\n", *p++);
-		printf("RTTwr=0x%08x\n", *p++);
-		printf("drvimp=0x%08x\n", *p++);
-
-		printf("phy_min_cal_delay=0x%08x\n",
-		       parameters->per_sysmem[i].phy_min_cal_delay);
+		p = &parameters->per_sysmem[i];
+		printf("-- per_sysmem[%d]\n", i);
+		printf("sdram_rtt_nom[] = {0x%x 0x%x 0x%x 0x%x}\n",
+		       p->sdram_rtt_nom[0], p->sdram_rtt_nom[1],
+		       p->sdram_rtt_nom[2], p->sdram_rtt_nom[3]);
+		printf("sdram_rtt_wr[] = {0x%x 0x%x 0x%x 0x%x}\n",
+		       p->sdram_rtt_wr[0], p->sdram_rtt_wr[1],
+		       p->sdram_rtt_wr[2], p->sdram_rtt_wr[3]);
+		printf("sdram_data_drv_imp[] = {0x%x 0x%x 0x%x 0x%x}\n",
+		       p->sdram_data_drv_imp[0], p->sdram_data_drv_imp[1],
+		       p->sdram_data_drv_imp[2], p->sdram_data_drv_imp[3]);
+		printf("phy_min_cal_delay=0x%08x\n", p->phy_min_cal_delay);
 		printf("phy_adr_phase_select=0x%08x\n",
-		       parameters->per_sysmem[i].phy_adr_phase_select);
-		printf("phy_dp_io_vref_set=0x%08x\n",
-		       parameters->per_sysmem[i].phy_dp_io_vref_set);
-		printf("phy_adr_io_vref_set=0x%08x\n",
-		       parameters->per_sysmem[i].phy_adr_io_vref_set);
-		printf("phy_rdlvl_cmp_even=0x%08x\n",
-		       parameters->per_sysmem[i].phy_rdlvl_cmp_even);
-		printf("phy_rdlvl_cmp_odd=0x%08x\n",
-		       parameters->per_sysmem[i].phy_rdlvl_cmp_odd);
+		       p->phy_adr_phase_select);
+		printf("phy_dp_io_vref_set=0x%08x\n", p->phy_dp_io_vref_set);
+		printf("phy_adr_io_vref_set=0x%08x\n", p->phy_adr_io_vref_set);
+		printf("phy_rdlvl_cmp_even=0x%08x\n", p->phy_rdlvl_cmp_even);
+		printf("phy_rdlvl_cmp_odd=0x%08x\n", p->phy_rdlvl_cmp_odd);
 		printf("phy_write_align_finetune=0x%08x\n",
-		       parameters->per_sysmem[i].phy_write_align_finetune);
+		       p->phy_write_align_finetune);
 	}
 
 	printf("dram_class=0x%08x\n", parameters->dram_class);
-
-	for (i = 0; i < 4; i++) {
-		unsigned *p;
-
-		p = (unsigned *)parameters->per_smem[i].sdram_rtt_nom;
-		printf("RTTnom=0x%08x\n", *p++);
-		printf("RTTwr=0x%08x\n", *p++);
-		printf("drvimp=0x%08x\n", *p++);
-	}
-
 	printf("additive_latency=0x%08x\n", parameters->additive_latency);
 	printf("binned_CAS_latency=0x%08x\n", parameters->binned_CAS_latency);
 	printf("tck_ps=0x%08x\n", parameters->tck_ps);
@@ -148,28 +141,61 @@ display_mem_parameters(const char *title, parameters_mem_t *parameters)
 	printf("preamble_support=0x%08x\n", parameters->preamble_support);
 	printf("crc_mode=0x%08x\n", parameters->crc_mode);
 
-	printf("dq_map_0[] = {");
-	for (i = 0; i < 18; i++) {
-		printf("0x%02x", parameters->dq_map_0[i]);
+	for (i = 0; i < 4; ++i) {
+		per_sysmem_sdram_parms_t *p;
 
-		if (i < 17)
-			printf(", ");
+		p = &parameters->per_smem[i];
+		printf("-- per_smem[%d]\n", i);
+		printf("sdram_rtt_nom[] = {0x%x 0x%x 0x%x 0x%x}\n",
+		       p->sdram_rtt_nom[0], p->sdram_rtt_nom[1],
+		       p->sdram_rtt_nom[2], p->sdram_rtt_nom[3]);
+		printf("sdram_rtt_wr[] = {0x%x 0x%x 0x%x 0x%x}\n",
+		       p->sdram_rtt_wr[0], p->sdram_rtt_wr[1],
+		       p->sdram_rtt_wr[2], p->sdram_rtt_wr[3]);
+		printf("sdram_data_drv_imp[] = {0x%x 0x%x 0x%x 0x%x}\n",
+		       p->sdram_data_drv_imp[0], p->sdram_data_drv_imp[1],
+		       p->sdram_data_drv_imp[2], p->sdram_data_drv_imp[3]);
+		printf("sdram_rtt_park[] = {0x%x 0x%x 0x%x 0x%x}\n",
+		       p->sdram_rtt_park[0], p->sdram_rtt_park[1],
+		       p->sdram_rtt_park[2], p->sdram_rtt_park[3]);
+
+		printf("dq_map_0[] = {");
+
+		for (j = 0; j < 18; ++j)
+			printf("0x%x ", p->dq_map_0[j]);
+
+		printf("\n");
+
+		printf("dq_map_1[] = {");
+
+		for (j = 0; j < 18; ++j)
+			printf("0x%x ", p->dq_map_1[j]);
+
+		printf("\n");
+
+		printf("dq_map_odd_rank_swap_0 = 0x%08x\n",
+		       p->dq_map_odd_rank_swap_0);
+		printf("dq_map_odd_rank_swap_1 = 0x%08x\n",
+		       p->dq_map_odd_rank_swap_1);
 	}
-	printf("}\n");
 
-	printf("dq_map_1[] = {");
-	for (i = 0; i < 18; i++) {
-		printf("0x%02x", parameters->dq_map_1[i]);
+	printf("packedDqDmDqsODT=0x%08x\n", parameters->packedDqDmDqsODT);
+	printf("packedAddrCmdCtrlOI=0x%08x\n", parameters->packedAddrCmdCtrlOI);
+	printf("packedClockOI=0x%08x\n", parameters->packedClockOI);
+	printf("packedDqDmDqsOI=0x%08x\n", parameters->packedDqDmDqsOI);
+	printf("packedAddrCmdCtrlClkSlewRates=0x%08x\n",
+	       parameters->packedAddrCmdCtrlClkSlewRates);
+	printf("parameters->parameters->packedDqDmDqsSlewRates=0x%08x\n",
+	       parameters->packedDqDmDqsSlewRates);
+	printf("packedPHYTrainingOptions=0x%08x\n",
+	       parameters->packedPHYTrainingOptions);
+	printf("interface_sel=0x%08x\n", parameters->interface_sel);
+	/* This is the ncp_l3lock_region_info_t structure from the RTE. */
+	printf("total_l3_locked_size=0x%08x\n",
+	       parameters->total_l3_locked_size);
 
-		if (i < 17)
-			printf(", ");
-	}
-	printf("}\n");
-
-	printf("dq_map_odd_rank_swap_0=0x%08x\n",
-	       parameters->dq_map_odd_rank_swap_0);
-	printf("dq_map_odd_rank_swap_1=0x%08x\n",
-	       parameters->dq_map_odd_rank_swap_1);
+	for (i = 0; i < 4; ++i)
+		printf("region[%d] = 0x%08x\n", i, parameters->region[i]);
 
 	return;
 }
