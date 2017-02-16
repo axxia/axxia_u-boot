@@ -25,7 +25,6 @@
  */
 
 /* #define DEBUG */
-/* #define DISPLAY_PARAMETERS */
 
 #include <config.h>
 #include <common.h>

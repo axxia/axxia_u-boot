@@ -1541,6 +1541,27 @@ pei_setup(unsigned int control)
 int
 pciesrio_init(unsigned int control)
 {
+#ifdef DISPLAY_PARAMETERS
+	printf("-- -- PCIe/SRIO\n"
+	       "0x%x, 0x%x\n",
+	       pciesrio->version, pciesrio->control);
+
+	if (2 == pciesrio->version) {
+		printf("0x%x, 0x%x, 0x%x\n"
+		       "0x%x, 0x%x, 0x%x\n"
+		       "0x%x, 0x%x, 0x%x\n",
+		       pciesrio->enable_v_boost,
+		       pciesrio->primary_input_clock,
+		       pciesrio->input_ref_clock_range,
+		       pciesrio->lane_0_eq_main,
+		       pciesrio->lane_0_eq_pre,
+		       pciesrio->lane_0_eq_post,
+		       pciesrio->lane_1_eq_main,
+		       pciesrio->lane_1_eq_pre,
+		       pciesrio->lane_1_eq_post);
+	}
+#endif	/* DISPLAY_PARAMETERS */
+
 	if (0x80000000 != control) {
 #ifdef TRACE
 		printf("%s:%d - Starting Trace: 0x%x\n",

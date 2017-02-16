@@ -286,13 +286,86 @@ ft_update_pei(void *blob)
 	node = fdt_path_offset(blob, "/soc/pei_control");
 
 	if (0 <= node) {
+		/* control */
 		value = cpu_to_fdt32(pciesrio->control);
 		rc = fdt_setprop(blob, node, "control", &value, sizeof(value));
-		printf("%s:%d - control is 0x%x\n",
-		       __FILE__, __LINE__, value);
 
 		if (0 > rc)
 			return -1;
+
+		if (2 == pciesrio->version) {
+			/* enable_v_boost */
+			value = cpu_to_fdt32(pciesrio->enable_v_boost);
+			rc = fdt_setprop(blob, node, "enable_v_boost",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+
+			/* primary_input_clock */
+			value = cpu_to_fdt32(pciesrio->primary_input_clock);
+			rc = fdt_setprop(blob, node, "primary_input_clock",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+
+			/* input_ref_clock_range */
+			value = cpu_to_fdt32(pciesrio->input_ref_clock_range);
+			rc = fdt_setprop(blob, node, "input_ref_clock_range",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+
+			/* lane_0_eq_main */
+			value = cpu_to_fdt32(pciesrio->lane_0_eq_main);
+			rc = fdt_setprop(blob, node, "lane_0_eq_main",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+
+			/* lane_0_eq_pre */
+			value = cpu_to_fdt32(pciesrio->lane_0_eq_pre);
+			rc = fdt_setprop(blob, node, "lane_0_eq_pre",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+
+			/* lane_0_eq_post */
+			value = cpu_to_fdt32(pciesrio->lane_0_eq_post);
+			rc = fdt_setprop(blob, node, "lane_0_eq_post",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+
+			/* lane_1_eq_main */
+			value = cpu_to_fdt32(pciesrio->lane_1_eq_main);
+			rc = fdt_setprop(blob, node, "lane_1_eq_main",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+
+			/* lane_1_eq_pre */
+			value = cpu_to_fdt32(pciesrio->lane_1_eq_pre);
+			rc = fdt_setprop(blob, node, "lane_1_eq_pre",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+
+			/* lane_1_eq_post */
+			value = cpu_to_fdt32(pciesrio->lane_1_eq_post);
+			rc = fdt_setprop(blob, node, "lane_1_eq_post",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+		}
 	} else
 		return -1;
 
