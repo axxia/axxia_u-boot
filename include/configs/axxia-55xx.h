@@ -127,7 +127,7 @@
   the L3 disabled.  It will be re-enabled during the Linux boot in
   recent versions of Axxia Linux.
 */
-#define LEAVE_L3_OFF
+/*#define LEAVE_L3_OFF*/
 
 #define V_MIN   795
 #define V_SAFE  940
