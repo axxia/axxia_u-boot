@@ -286,6 +286,13 @@ ft_update_pei(void *blob)
 	node = fdt_path_offset(blob, "/soc/pei_control");
 
 	if (0 <= node) {
+		/* version */
+		value = cpu_to_fdt32(pciesrio->version);
+		rc = fdt_setprop(blob, node, "version", &value, sizeof(value));
+
+		if (0 > rc)
+			return -1;
+
 		/* control */
 		value = cpu_to_fdt32(pciesrio->control);
 		rc = fdt_setprop(blob, node, "control", &value, sizeof(value));
@@ -294,14 +301,6 @@ ft_update_pei(void *blob)
 			return -1;
 
 		if (2 == pciesrio->version) {
-			/* enable_v_boost */
-			value = cpu_to_fdt32(pciesrio->enable_v_boost);
-			rc = fdt_setprop(blob, node, "enable_v_boost",
-					 &value, sizeof(value));
-
-			if (0 > rc)
-				return -1;
-
 			/* primary_input_clock */
 			value = cpu_to_fdt32(pciesrio->primary_input_clock);
 			rc = fdt_setprop(blob, node, "primary_input_clock",
@@ -342,6 +341,14 @@ ft_update_pei(void *blob)
 			if (0 > rc)
 				return -1;
 
+			/* lane_0_eq_vboost */
+			value = cpu_to_fdt32(pciesrio->lane_0_vboost);
+			rc = fdt_setprop(blob, node, "lane_0_vboost",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+
 			/* lane_1_eq_main */
 			value = cpu_to_fdt32(pciesrio->lane_1_eq_main);
 			rc = fdt_setprop(blob, node, "lane_1_eq_main",
@@ -361,6 +368,14 @@ ft_update_pei(void *blob)
 			/* lane_1_eq_post */
 			value = cpu_to_fdt32(pciesrio->lane_1_eq_post);
 			rc = fdt_setprop(blob, node, "lane_1_eq_post",
+					 &value, sizeof(value));
+
+			if (0 > rc)
+				return -1;
+
+			/* lane_1_vboost */
+			value = cpu_to_fdt32(pciesrio->lane_1_vboost);
+			rc = fdt_setprop(blob, node, "lane_1_vboost",
 					 &value, sizeof(value));
 
 			if (0 > rc)

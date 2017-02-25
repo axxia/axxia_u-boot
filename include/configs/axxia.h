@@ -3729,15 +3729,16 @@ typedef struct {
 	/*
 	  The following are only available when version = 2.
 	*/
-	unsigned enable_v_boost;
 	unsigned primary_input_clock;
 	unsigned input_ref_clock_range;
 	unsigned lane_0_eq_main;
 	unsigned lane_0_eq_pre;
 	unsigned lane_0_eq_post;
+	unsigned lane_0_vboost;
 	unsigned lane_1_eq_main;
 	unsigned lane_1_eq_pre;
 	unsigned lane_1_eq_post;
+	unsigned lane_1_vboost;
 } __attribute__((packed)) parameters_pciesrio_t;
 
 typedef unsigned ncp_uint32_t;
