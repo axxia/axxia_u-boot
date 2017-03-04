@@ -140,7 +140,7 @@ get_pll(ncp_uint32_t plldiv, ncp_uint32_t seldiv)
 }
 
 
-#ifdef CONFIG_AXXIA_56xx
+#ifdef CONFIG_AXXIA_56XX
 void
 serdes_clock_en(void)
 {
@@ -314,6 +314,9 @@ clocks_init( int ddrRecovery )
 #if defined(CONFIG_AXXIA_SIM)
 	clocks_uninitialized = 0;
 #endif
+
+    /* enable serdes clocks */
+    serdes_clock_en();
 
 	return 0;
 }
