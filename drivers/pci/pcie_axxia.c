@@ -26,13 +26,17 @@
 #define PORT_LINK_MODE_1_LANES          (0x1 << 16)
 #define PORT_LINK_MODE_2_LANES          (0x3 << 16)
 #define PORT_LINK_MODE_4_LANES          (0x7 << 16)
+#define PORT_LINK_MODE_8_LANES          (0xf << 16)
 
 #define PCIE_LINK_WIDTH_SPEED_CONTROL   0x80C
 #define PORT_LOGIC_SPEED_CHANGE         (0x1 << 17)
-#define PORT_LOGIC_LINK_WIDTH_MASK      (0x1ff << 8)
+#define PORT_LOGIC_LINK_WIDTH_MASK      (0x1f << 8)
 #define PORT_LOGIC_LINK_WIDTH_1_LANES   (0x1 << 8)
 #define PORT_LOGIC_LINK_WIDTH_2_LANES   (0x2 << 8)
 #define PORT_LOGIC_LINK_WIDTH_4_LANES   (0x4 << 8)
+#define PORT_LOGIC_LINK_WIDTH_8_LANES   (0x8 << 8)
+
+#define PCIE_GEN3_EQ_CONTROL_OFF        0x8a8
 
 #define PCIE_MSI_ADDR_LO                0x820
 #define PCIE_MSI_ADDR_HI                0x824
@@ -644,6 +648,44 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 	val |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY |
 		PCI_COMMAND_MASTER | PCI_COMMAND_SERR;
 	axxia_pcie_writel_rc(hose, val, PCI_COMMAND);
+
+	/* GEN2_CTRL_OFF */
+	axxia_pcie_readl_rc(hose, PCIE_LINK_WIDTH_SPEED_CONTROL, &val);
+	val &= ~PORT_LOGIC_LINK_WIDTH_MASK;
+	switch (data->lanes) {
+	case 2:
+		val |= PORT_LOGIC_LINK_WIDTH_2_LANES;
+		break;
+	case 4:
+		val |= PORT_LOGIC_LINK_WIDTH_4_LANES;
+		break;
+	case 8:
+		val |= PORT_LOGIC_LINK_WIDTH_8_LANES;
+		break;
+	case 1:
+	default:
+		val |= PORT_LOGIC_LINK_WIDTH_1_LANES;
+	}
+	axxia_pcie_writel_rc(hose, val, PCIE_LINK_WIDTH_SPEED_CONTROL);
+
+	/* PORT_LINK_CTRL_OFF */
+	axxia_pcie_readl_rc(hose, PCIE_PORT_LINK_CONTROL, &val);
+	val &= ~PORT_LINK_MODE_MASK;
+	switch (data->lanes) {
+	case 2:
+		val |= PORT_LINK_MODE_2_LANES;
+		break;
+	case 4:
+		val |= PORT_LINK_MODE_4_LANES;
+		break;
+	case 8:
+		val |= PORT_LINK_MODE_8_LANES;
+		break;
+	case 1:
+	default:
+		val |= PORT_LINK_MODE_1_LANES;
+	}
+	axxia_pcie_writel_rc(hose, val, PCIE_PORT_LINK_CONTROL);
 	
 #ifdef ENABLE_LOS_WA
 	/* The default value of GEN3_EQ_CONTROL is not correct. */
@@ -684,7 +726,22 @@ static int axxia_pcie_establish_link(struct pci_controller *hose)
 	return 0;
 }
 
-int pci_axxia_init(struct pci_controller *hose, int port)
+/* program correct class for RC */
+static void pci_axxia_program_rc_class(struct pci_controller *hose)
+{
+	u32 dbi_ro_wr_en;
+	/* program correct class for RC */
+	axxia_pcie_readl_rc(hose, 0x8bc, &dbi_ro_wr_en);
+	/* DBI_RO_WR_EN */
+	if (!(dbi_ro_wr_en & 0x1))
+		axxia_pcie_writel_rc(hose, (dbi_ro_wr_en | 0x1), 0x8bc);
+	axxia_pcie_wr_own_conf(hose, PCI_CLASS_DEVICE, 2, PCI_CLASS_BRIDGE_PCI);
+	/* DBI_RO_WR_EN */
+	if (!(dbi_ro_wr_en & 0x1))
+		axxia_pcie_writel_rc(hose, dbi_ro_wr_en, 0x8bc);
+}
+
+int pci_axxia_init(struct pci_controller *hose, int port, int lanes)
 {
 	pci_set_ops(hose,
 		    pcie_read_config_byte,
@@ -710,7 +767,7 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		hose_data[port].mem_size = CONFIG_SYS_PCIE0_MEMSIZE;
 		hose_data[port].mem_bus_addr = CONFIG_PCIE0_BUS_START;
 		/* Hard code lanes to 4 for now */
-		hose_data[port].lanes = 1;
+		hose_data[port].lanes = lanes;
 		break;
 #endif
 #ifdef ACP_PEI1
@@ -727,6 +784,7 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		hose_data[port].mem_mod_base = CONFIG_SYS_PCIE1_MEMBASE;
 		hose_data[port].mem_size = CONFIG_SYS_PCIE1_MEMSIZE;
 		hose_data[port].mem_bus_addr = CONFIG_PCIE1_BUS_START;
+		hose_data[port].lanes = lanes;
 		break;
 #endif
 #ifdef ACP_PEI2
@@ -743,6 +801,7 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		hose_data[port].mem_mod_base = CONFIG_SYS_PCIE2_MEMBASE;
 		hose_data[port].mem_size = CONFIG_SYS_PCIE2_MEMSIZE;
 		hose_data[port].mem_bus_addr = CONFIG_PCIE2_BUS_START;
+		hose_data[port].lanes = lanes;
 		break;
 #endif
 	}
@@ -763,8 +822,8 @@ int pci_axxia_init(struct pci_controller *hose, int port)
 		debug("Failed to establish PCIe link\n");
 		return 1;
 	}
-	/* program correct class for RC */
-	axxia_pcie_wr_own_conf(hose, PCI_CLASS_DEVICE, 2, PCI_CLASS_BRIDGE_PCI);
+
+	pci_axxia_program_rc_class(hose);
 
 	hose->first_busno = 0;
 	hose->current_busno = hose->last_busno+1;
@@ -782,33 +841,84 @@ pci_init_board(void)
 #endif
 
 #if defined(ACP_PEI0) || defined(ACP_PEI1) || defined(ACP_PEI2)
-	unsigned int value;
+	unsigned int global0_cfg;
+	unsigned int global1_cfg;
+	unsigned int sw_port_config0;
+	unsigned int sw_port_config1;
+	unsigned int pei0_lanes = 0;
+#if defined(ACP_PEI1)
+	unsigned int pei1_lanes = 0;
+#endif
+#if defined(ACP_PEI2)
+	unsigned int pei2_lanes = 0;
+#endif
 
-	ncr_read32(NCP_REGION_ID(0x115, 0), 0, &value);
-	debug("value=0x%x\n", value);
+	ncr_read32(NCP_REGION_ID(0x115, 0x0), 0x0, &global0_cfg);
+	ncr_read32(NCP_REGION_ID(0x115, 0x0), 0x4, &global1_cfg);
+	debug("0x115.0x0.0x0=0x%x\n", global0_cfg);
+	debug("0x115.0x0.0x4=0x%x\n", global1_cfg);
+	sw_port_config0 = (global0_cfg & 0x1c000000) >> 26;
+	sw_port_config1 = (global1_cfg & 0x00c00000) >> 22;
+
+	switch (sw_port_config0) {
+	case 0:
+	case 2:
+		if (sw_port_config1 == 0)
+			pei0_lanes = 8;
+		break;
+	case 1:
+		pei0_lanes = 4;
+		break;
+	case 3:
+		pei0_lanes = 2;
+#if defined(ACP_PEI2)
+		pei2_lanes = 2;
+#endif
+		break;
+	case 7:
+		pei0_lanes = 2;
+		break;
+	}
+
+#if defined(ACP_PEI1) || defined(ACP_PEI2)
+	switch (sw_port_config1) {
+	case 1:
+		pei1_lanes = 4;
+		break;
+	case 2:
+		pei1_lanes = 2;
+		break;
+	case 3:
+		pei1_lanes = 2;
+#if defined(ACP_PEI2)
+		pei2_lanes = 2;
+#endif
+		break;
+	}
+#endif
 #endif
 
 #ifdef ACP_PEI0
 	/* If PEI0 is enabled and in RC mode, enumerate it. */
-	if (0 != (value & (1 << 0)) &&  0 != (value & (1 << 22))) {
+	if (0 != (global0_cfg & (1 << 0)) &&  0 != (global0_cfg & (1 << 22))) {
 		debug("enumerating hose[0]\n");
-		(void)pci_axxia_init(&hose[0], 0);
+		(void)pci_axxia_init(&hose[0], 0, pei0_lanes);
 	}
 #endif
 
 #ifdef ACP_PEI1
 	/* If PEI1 is enabled, enumerate it. */
-	if (0 != (value & (1 << 1))) {
+	if (0 != (global0_cfg & (1 << 1))) {
 		debug("enumerating hose[1]\n");
-		(void)pci_axxia_init(&hose[1], 1);
+		(void)pci_axxia_init(&hose[1], 1, pei1_lanes);
 	}
 #endif
 
 #ifdef ACP_PEI2
 	/* If PEI2 is enabled, enumerate it. */
-	if (0 != (value & (1 << 2))) {
+	if (0 != (global0_cfg & (1 << 2))) {
 		debug("enumerating hose[2]\n");
-		(void)pci_axxia_init(&hose[2], 2);
+		(void)pci_axxia_init(&hose[2], 2, pei2_lanes);
 	}
 #endif
 
