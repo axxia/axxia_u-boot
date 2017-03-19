@@ -627,6 +627,8 @@ nemac_eth_send(struct eth_device *dev, void *packet, int length)
 		if (tmo >= 100000) {
 			puts("TX timeout\n");
 			check_dma_error(priv);
+			dev->halt(dev);
+			dev->init(dev, (bd_t *)NULL);
 			return 0;
 		}
 		if (check_dma_error(priv))
