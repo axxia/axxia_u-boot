@@ -13,6 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
 #include <config.h>
 #include <common.h>
 #include <asm/io.h>
@@ -742,6 +743,160 @@ enable_lane(u32 phy, u32 lane, enum Dir dir)
 		regVal |= (1 << 21);
 
 	ncr_write32(NCP_REGION_ID(0x115, 0), offset, regVal);
+
+	return;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  update_settings
+*/
+
+static void
+update_settings(void)
+{
+	int i;
+	unsigned int region;
+	int number_of_serdes;
+
+	/*
+	  Make sure the parameters are version 2...
+	*/
+
+	if (2 != pciesrio->version)
+		return;
+
+	region = NCP_REGION_ID(0x115, 0);
+
+#if defined(CONFIG_AXXIA_ANY_56XX)
+	number_of_serdes = 4;
+#elif defined(CONFIG_AXXIA_ANY_XLF)
+	number_of_serdes = 1;
+#else
+#error "Invalid Target!"
+#endif
+
+	/*
+	  Set per serdes values.
+	*/
+
+	for (i = 0; i < number_of_serdes; ++i) {
+		unsigned int offset;
+		unsigned int pic;
+		unsigned int ref_range;
+		unsigned int value;
+
+#if defined(CONFIG_AXXIA_ANY_56XX)
+		offset = (0xf8 + (i * 0x18));
+#elif defined(CONFIG_AXXIA_ANY_XLF)
+		offset = 0x44;
+#endif
+
+		if (0 != (pciesrio->primary_input_clock & (0xff << (i * 8))))
+			pic = 2;
+		else
+			pic = 0;
+
+		ref_range = (pciesrio->input_ref_clock_range &
+			     (0xff << (i * 8))) >> (i * 8);
+
+		ncr_read32(region, offset, &value);
+		debug("0x%x.0x%x.0x%x : 0x%x => ",
+		      NCP_NODE_ID(region), NCP_TARGET_ID(region), offset,
+		      value);
+		value &= ~0x72;
+		value |= pic;
+		value |= ref_range << 4;
+		debug("0x%x\n", value);
+		ncr_write32(region, offset, value);
+	}
+
+	/*
+	  Set per lane values.
+	*/
+
+	for (i = 0; i < (number_of_serdes * 2); ++i) {
+		unsigned int offset;
+		unsigned int main;
+		unsigned int pre;
+		unsigned int post;
+		unsigned int boost;
+		unsigned int value;
+
+		if (4 > i) {
+			main = pciesrio->lane_0_eq_main;
+			pre = pciesrio->lane_0_eq_pre;
+			post = pciesrio->lane_0_eq_post;
+			boost = pciesrio->lane_0_vboost;
+		} else {
+			main = pciesrio->lane_1_eq_main;
+			pre = pciesrio->lane_1_eq_pre;
+			post = pciesrio->lane_1_eq_post;
+			boost = pciesrio->lane_1_vboost;
+		}
+
+		switch (i % 4) {
+		case 0:
+			main &= 0x3f;
+			pre &= 0x3f;
+			post &= 0x3f;
+			boost &= 0x3f;
+			break;
+		case 1:
+			main = (main & 0x3f00) >> 8;
+			pre = (pre & 0x3f00) >> 8;
+			post = (post & 0x3f00) >> 8;
+			boost = (boost & 0x3f00) >> 8;
+			break;
+		case 2:
+			main = (main & 0x3f0000) >> 16;
+			pre = (pre & 0x3f0000) >> 16;
+			post = (post & 0x3f0000) >> 16;
+			boost = (boost & 0x3f0000) >> 16;
+			break;
+		case 3:
+			main = (main & 0x3f000000) >> 24;
+			pre = (pre & 0x3f000000) >> 24;
+			post = (post & 0x3f000000) >> 24;
+			boost = (boost & 0x3f000000) >> 24;
+			break;
+		default:
+			printf("Error setting coefficients!\n");
+			break;
+		}
+
+#if defined(CONFIG_AXXIA_ANY_56XX)
+		offset = 0x18 + (i * 0x1c);
+#elif defined(CONFIG_AXXIA_ANY_XLF)
+		offset = 0xc + (i * 0x1c);
+#endif
+
+#if defined(CONFIG_AXXIA_ANY_56XX)
+		ncr_read32(region, offset, &value);
+		debug("0x%x.0x%x.0x%x : 0x%x => ",
+		      NCP_NODE_ID(region), NCP_TARGET_ID(region), offset,
+		      value);
+		value &= ~(1 << 11);
+
+		if (0 != boost)
+			value |= (1 << 11);
+
+		debug("0x%x\n", value);
+		ncr_write32(region, offset, value);
+
+#endif
+
+		offset += 0x8;
+
+		ncr_read32(region, offset, &value);
+		debug("0x%x.0x%x.0x%x : 0x%x => ",
+		      NCP_NODE_ID(region), NCP_TARGET_ID(region), offset,
+		      value);
+		value &= ~0x3f3f3f;
+		value |= ((post << 16) | (pre << 8) | main);
+		debug("0x%x\n", value);
+		ncr_write32(region, offset, value);
+	}
 
 	return;
 }
@@ -1541,6 +1696,28 @@ pei_setup(unsigned int control)
 int
 pciesrio_init(unsigned int control)
 {
+#ifdef DISPLAY_PARAMETERS
+	printf("-- -- PCIe/SRIO\n"
+	       "0x%x, 0x%x\n",
+	       pciesrio->version, pciesrio->control);
+
+	if (2 == pciesrio->version) {
+		printf("0x%x 0x%x\n"
+		       "0x%x, 0x%x, 0x%x 0x%x\n"
+		       "0x%x, 0x%x, 0x%x 0x%x\n",
+		       pciesrio->primary_input_clock,
+		       pciesrio->input_ref_clock_range,
+		       pciesrio->lane_0_eq_main,
+		       pciesrio->lane_0_eq_pre,
+		       pciesrio->lane_0_eq_post,
+		       pciesrio->lane_0_vboost,
+		       pciesrio->lane_1_eq_main,
+		       pciesrio->lane_1_eq_pre,
+		       pciesrio->lane_1_eq_post,
+		       pciesrio->lane_1_vboost);
+	}
+#endif	/* DISPLAY_PARAMETERS */
+
 	if (0x80000000 != control) {
 #ifdef TRACE
 		printf("%s:%d - Starting Trace: 0x%x\n",
@@ -1548,6 +1725,7 @@ pciesrio_init(unsigned int control)
 		ncr_tracer_enable();
 #endif
 		pei_setup(control);
+		update_settings();
 #ifdef TRACE
 		ncr_tracer_disable();
 		printf("%s:%d - Trace is Over\n", __FILE__, __LINE__);
