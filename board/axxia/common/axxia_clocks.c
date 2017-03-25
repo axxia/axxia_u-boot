@@ -140,6 +140,61 @@ get_pll(ncp_uint32_t plldiv, ncp_uint32_t seldiv)
 }
 
 
+#ifdef CONFIG_AXXIA_56XX
+void
+serdes_clock_en(void)
+{
+	int node;
+
+	for (node = 0x110; node <= 0x11a; node++)
+	{
+		if (node == 0x115)
+		{
+			ncr_or(NCP_REGION_ID(node, 0), 0x4, 0x08000108);
+			ncr_or(NCP_REGION_ID(node, 0), 0x8, 0x80000000);
+		}
+		else
+		{
+			ncr_or(NCP_REGION_ID(node, 0), 0x4, 0x05000000);
+		}
+	}
+}
+
+#else
+
+#ifdef CONFIG_AXXIA_XLF
+void
+serdes_clock_en(void)
+{
+	int node;
+
+	for (node = 0x110; node <= 0x11f; node++)
+	{
+		if (node == 0x115)
+		{
+			ncr_or(NCP_REGION_ID(node, 0), 0x00, 0x00000040);
+			ncr_or(NCP_REGION_ID(node, 0), 0x04, 0x00000100);
+			ncr_or(NCP_REGION_ID(node, 0), 0x58, 0x00000004);
+		}
+		else
+		{
+			ncr_or(NCP_REGION_ID(node, 0), 0x04, 0x05000000);
+		}
+	}
+}
+
+#else
+void
+serdes_clock_en(void)
+{
+}
+#endif
+
+#endif
+
+
+
+
 #ifdef CONFIG_SPL_BUILD
 #ifdef CONFIG_AXXIA_ANY_56XX
 /*
@@ -260,6 +315,9 @@ clocks_init( int ddrRecovery )
 #if defined(CONFIG_AXXIA_SIM)
 	clocks_uninitialized = 0;
 #endif
+
+    /* enable serdes clocks */
+    serdes_clock_en();
 
 	return 0;
 }
@@ -411,6 +469,9 @@ clocks_init( int ddrRecovery )
 #if defined(CONFIG_AXXIA_SIM)
 	clocks_uninitialized = 0;
 #endif
+
+    /* enable serdes clocks */
+    serdes_clock_en();
 
 	return 0;
 }
