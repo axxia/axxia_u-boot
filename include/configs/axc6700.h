@@ -833,8 +833,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
   ==============================================================================
 */
 
-#define PCIE0_CC_GPREG_BASE 0xA003008000
-
 #ifdef CONFIG_AXXIA_PCI
 #define CONFIG_PCI_DW 1
 #define CONFIG_PCI 1
