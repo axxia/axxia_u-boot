@@ -6,6 +6,14 @@
 #include <pci.h>
 #include <config.h>
 
+/*
+  The "LOS Work Around"
+*/
+
+#if defined(CONFIG_AXXIA_ANY_56XX)
+#define ENABLE_LOS_WA
+#endif
+
 #define PEI_GENERAL_CORE_CTL_REG 0x38
 #define PEI_SII_PWR_MGMT_REG 0xD4
 #define PEI_SII_DBG_0_MON_REG 0xEC
@@ -432,6 +440,206 @@ int pcie_write_config_dword(struct pci_controller *hose, pci_dev_t dev,
 	return pcie_write_config(hose, (u32)dev, offset, 4, (u32)val);
 }
 
+#ifdef ENABLE_LOS_WA
+static int
+axxia_pcie_los_wa(struct pci_controller *hose)
+{
+	unsigned int value;
+	unsigned int max_loops = 10000; /* determined experimentally */
+
+	/*
+	  There are four SerDes, each with 2 lanes or channels.  The
+	  following uses one byte for each SerDes, and in each byte,
+	  one nibble for each lane.  Only lanes that are in RC mode
+	  and configured for PCIe should be part of the work around.
+	*/
+
+	unsigned int lane_mask;
+
+	/* Which PEI is being used... */
+	int pei;
+
+	struct pci_hose_data *priv;
+
+	priv = (struct pci_hose_data *)hose->priv_data;
+
+	if (PCIE0_DBI_BASE == priv->dbi_base) {
+		pei = 0;
+#ifdef ACP_PEI1
+	} else if (PCIE1_DBI_BASE == priv->dbi_base) {
+		pei = 1;
+#endif
+#ifdef ACP_PEI2
+	} else if (PCIE2_DBI_BASE == priv->dbi_base) {
+		pei = 2;
+#endif
+	} else {
+		error("Invalid Argument!");
+
+		return -1;
+	}
+
+	/* If PEI0, make sure it is configured as the root complex. */
+	if ((0 == pei) && (0 == (pciesrio->control & 0x80)))
+		return 0;
+
+	/*
+	  The "control" value in the parameters defines the number of
+	  lanes used.  Use bits 25:22 to initialize "lane_mask".
+	*/
+
+	switch ((pciesrio->control & 0x3c00000) >> 22) {
+	case 1:
+		/* PEI0x4 and PEI1x4 */
+		if (0 == pei)
+			lane_mask = 0x00001111;
+		else if (1 == pei)
+			lane_mask = 0x11110000;
+		else
+			return 0;
+
+		break;
+	case 2:
+		/* PEI0x2, PEI2x2, and PEI1x2 */
+		if (0 == pei)
+			lane_mask = 0x00000011;
+		else if (1 == pei)
+			lane_mask = 0x00110000;
+		else if (2 == pei)
+			lane_mask = 0x00001100;
+		else
+			return 0;
+
+		break;
+	case 3:
+		/* PEI0x2 and PEI2x2 */
+		if (0 == pei)
+			lane_mask = 0x00000011;
+		else if (2 == pei)
+			lane_mask = 0x11000000;
+		else
+			return 0;
+
+		break;
+	case 4:
+		/* PEI2x2 */
+		if (2 == pei)
+			lane_mask = 0x11000000;
+		else
+			return 0;
+
+		break;
+	default:
+		return 0;
+		break;
+	}
+
+	/* Run the LOS work around until a link is established. */
+
+#if defined(CONFIG_AXXIA_ANY_56XX)
+
+	/*
+	  On 5600, the offsets are
+
+	  LANE0_DIG_ASIC_RX_ASIC_IN_0 0x2022
+	  LANE0_DIG_ASIC_RX_ASIC_OUT_0 0x202e
+	  LANE0_IDG_ASIC_RX_OVRD_IN_0 0x200a
+	*/
+
+#define MAX_TARGET 4
+#define LANE0_DIG_ASIC_RX_ASIC_IN_0 0x2022
+#define LANE1_DIG_ASIC_RX_ASIC_IN_0 0x2222
+#define LANE0_DIG_ASIC_RX_ASIC_OUT_0 0x202e
+#define LANE1_DIG_ASIC_RX_ASIC_OUT_0 0x222e
+#define LANE0_IDG_ASIC_RX_OVRD_IN_0 0x200a
+#define LANE1_IDG_ASIC_RX_OVRD_IN_0 0x220a
+
+#elif defined(CONFIG_AXXIA_ANY_XLF)
+
+	/*
+	    On XLF, the offsets are
+
+	  LANE0_DIG_ASIC_RX_ASIC_IN_0 0x4044
+	  LANE0_DIG_ASIC_RX_ASIC_OUT_0 0x405c
+	  LANE0_IDG_ASIC_RX_OVRD_IN_0 0x4014
+	*/
+
+#define MAX_TARGET 1
+#define LANE0_DIG_ASIC_RX_ASIC_IN_0 0x4044
+#define LANE1_DIG_ASIC_RX_ASIC_IN_0 0x4444
+#define LANE0_DIG_ASIC_RX_ASIC_OUT_0 0x405c
+#define LANE1_DIG_ASIC_RX_ASIC_OUT_0 0x445c
+#define LANE0_IDG_ASIC_RX_OVRD_IN_0 0x4014
+#define LANE1_IDG_ASIC_RX_OVRD_IN_0 0x4414
+
+#else
+#error "Invalid Architecture"
+#endif
+
+	while (0 < --max_loops) {
+		int i;
+		unsigned short temp;
+
+		/* 
+		   In all cases (see the initialization of lane_mask
+		   above), either both lanes or none are used in each
+		   HSS.
+		 */
+
+		for (i = 1; i <= MAX_TARGET; ++i) {
+			if (0 == (lane_mask & (0xff << ((i - 1) * 8))))
+				continue;
+
+			ncr_read(NCP_REGION_ID(0x115, i), 0,
+				 LANE0_DIG_ASIC_RX_ASIC_IN_0, 2, &temp);
+
+			if (2 == ((temp & 0x180) >> 7)) {
+				ncr_read(NCP_REGION_ID(0x115, i), 0,
+					 LANE0_DIG_ASIC_RX_ASIC_OUT_0,
+					 2, &temp);
+
+				if (0 != (temp & 2))
+					temp = 0x4700;
+				else
+					temp = 0x0700;
+
+				ncr_write(NCP_REGION_ID(0x115, i), 0,
+					  LANE0_IDG_ASIC_RX_OVRD_IN_0,
+					  2, &temp);
+			}
+
+			ncr_read(NCP_REGION_ID(0x115, i), 0,
+				 LANE1_DIG_ASIC_RX_ASIC_IN_0, 2, &temp);
+
+			if (2 == ((temp & 0x180) >> 7)) {
+				ncr_read(NCP_REGION_ID(0x115, i), 0,
+					 LANE1_DIG_ASIC_RX_ASIC_OUT_0,
+					 2, &temp);
+
+				if (0 != (temp & 2))
+					temp = 0x4700;
+				else
+					temp = 0x0700;
+
+				ncr_write(NCP_REGION_ID(0x115, i), 0,
+					  LANE1_IDG_ASIC_RX_OVRD_IN_0,
+					  2, &temp);
+			}
+		}
+
+		axxia_cc_gpreg_readl(hose, PEI_SII_PWR_MGMT_REG, &value);
+
+		if (0 != (value & (1 << 12)) && 0x11 == ((value & 0x3f0) >> 4))
+			break;
+	}
+
+	if (0 == max_loops)
+		return -1;
+
+	return 0;
+}
+#endif	/* ENABLE_LOS_WA */
+
 int axxia_pcie_link_up(struct pci_controller *hose)
 {
 	u32 rdlh_lnk, smlh_lnk, smlh_state;
@@ -471,11 +679,11 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 	val &= 0xff000000;
 	val |= 0x00010100;
 	axxia_pcie_writel_rc(hose, val, PCI_PRIMARY_BUS);
-	/* setup memory base, memory limit */
-	membase = ((u32)data->mem_mod_base & 0xfff00000) >> 16; //jl is this needed ?
-	memlimit = (data->mem_size + (u32)data->mem_mod_base) & 0xfff00000;  //jl is this needed ?
-	val = memlimit | membase; //jl is this needed ?
-	
+
+	/* Setup memory base and limit. */
+	membase = ((u32)data->mem_mod_base & 0xfff00000) >> 16;
+	memlimit = (data->mem_size + (u32)data->mem_mod_base) & 0xfff00000;
+	val = memlimit | membase;
 	axxia_pcie_writel_rc(hose, val, PCI_MEMORY_BASE);
 	
 	/* setup command register */
@@ -486,17 +694,30 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 		PCI_COMMAND_MASTER | PCI_COMMAND_SERR;
 	axxia_pcie_writel_rc(hose, val, PCI_COMMAND);
 	
-	
-	/* JL Add Mikes tweak for GEN3_EQ_CONTROL */
-	axxia_pcie_writel_rc(hose, 0x1017201, 0x8a8);  //jl 
+#ifdef ENABLE_LOS_WA
+	/* The default value of GEN3_EQ_CONTROL is not correct. */
+	axxia_pcie_writel_rc(hose, 0x1017221, 0x8a8);
 
 	/* LTSSM enable */
 	axxia_cc_gpreg_readl(hose, PEI_GENERAL_CORE_CTL_REG, &val);
-	mdelay(100);  //jl
-
 	val |= 0x1;
 	axxia_cc_gpreg_writel(hose, 0x1, PEI_GENERAL_CORE_CTL_REG);
-	mdelay(100); //jl
+
+	if (0 != axxia_pcie_los_wa(hose))
+		error("The LOS Work Around Failed!");
+#else  /* ENABLE_LOS_WA */
+	/* The default value of GEN3_EQ_CONTROL is not correct. */
+	axxia_pcie_writel_rc(hose, 0x1017201, 0x8a8);
+
+	/* LTSSM enable */
+	axxia_cc_gpreg_readl(hose, PEI_GENERAL_CORE_CTL_REG, &val);
+	mdelay(100);
+	val |= 0x1;
+	axxia_cc_gpreg_writel(hose, 0x1, PEI_GENERAL_CORE_CTL_REG);
+	mdelay(100);
+#endif	/* ENABLE_LOS_WA */
+
+	return;
 }
 
 static int axxia_pcie_establish_link(struct pci_controller *hose)
