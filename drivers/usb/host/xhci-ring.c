@@ -22,6 +22,35 @@
 
 #include "xhci.h"
 
+static int overcurrentActive = 0;
+static int check_for_overcurrent(struct xhci_ctrl *ctrl, int portIndex)
+{
+	struct xhci_hcor *hcor = ctrl->hcor;
+	volatile uint32_t *status_reg;
+	uint32_t reg;
+
+	/*
+	 * ********************************* FOR UBOOT ONLY **********************************
+	 * Look for a over-current on the port and if there is an
+	 * over-current don't allow the transmission to start.
+	 * ***********************************************************************************
+	 */
+	status_reg = (volatile uint32_t *)(&hcor->portregs[portIndex].or_portsc);
+	reg = xhci_readl(status_reg);
+	if (reg & PORT_OC)
+	{
+		if (!overcurrentActive)
+			printf("over-current detected...Please reset usb port\n");
+		overcurrentActive = 1;
+		return 1;
+	}
+	else
+
+	overcurrentActive = 0;
+
+	return 0;
+
+}
 /**
  * Is this TRB a link TRB or was the last TRB the last TRB in this event ring
  * segment?  I.e. would the updated event TRB pointer step off the end of the
@@ -570,11 +599,17 @@ int xhci_bulk_tx(struct usb_device *udev, unsigned long pipe,
 	u32 trb_fields[4];
 	u64 val_64 = (uintptr_t)buffer;
 
-	debug("dev=%p, pipe=%lx, buffer=%p, length=%d\n",
-		udev, pipe, buffer, length);
+	debug("dev=%p, pipe=%lx, buffer=%p, length=%d, portnr=%d\n",
+		udev, pipe, buffer, length, udev->portnr);
 
 	ep_index = usb_pipe_ep_index(pipe);
 	virt_dev = ctrl->devs[slot_id];
+
+	/* Make sure there is no overcurrent before transmission. */
+	if (check_for_overcurrent(ctrl, (udev->portnr - 1)))
+	{
+		return -1;
+	}
 
 	xhci_inval_cache((uintptr_t)virt_dev->out_ctx->bytes,
 			 virt_dev->out_ctx->size);
@@ -725,6 +760,7 @@ int xhci_bulk_tx(struct usb_device *udev, unsigned long pipe,
 	xhci_inval_cache((uintptr_t)buffer, length);
 
 	return (udev->status != USB_ST_NOT_PROC) ? 0 : -1;
+
 }
 
 /**
@@ -765,6 +801,12 @@ int xhci_ctrl_tx(struct usb_device *udev, unsigned long pipe,
 	ep_index = usb_pipe_ep_index(pipe);
 
 	ep_ring = virt_dev->eps[ep_index].ring;
+
+	/* Make sure there is no overcurrent before transmission. */
+	if (check_for_overcurrent(ctrl, (udev->portnr - 1)))
+	{
+		return -1;
+	}
 
 	/*
 	 * Check to see if the max packet size for the default control
@@ -936,4 +978,5 @@ abort:
 	udev->status = USB_ST_NAK_REC;
 	udev->act_len = 0;
 	return -ETIMEDOUT;
+
 }
