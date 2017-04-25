@@ -132,6 +132,7 @@ do { \
 #else 
 
 #include <asm/io.h>
+#include "ncp_sysmem_ext.h"
 
 /* bindings for UBOOT built */
 
@@ -163,7 +164,6 @@ typedef parameters_mem_t     ncp_sm_parms_t;
 #define NCP_RETURN_LABEL goto ncp_return; ncp_return:
 #define NCP_DEV_BUS_FBRS 0xdead
 
-#include "ncp_sysmem_ext.h"
 
 /* TODO : don't need all this checking for u-boot */
 #define NCP_SYSMEM_NUM_NODES 2

@@ -75,6 +75,8 @@ typedef unsigned char           ncp_bool_t;
 typedef void *                  ncp_dev_hdl_t;
 typedef unsigned                ncp_region_id_t;
 
+#ifndef NCP_STATUS_H
+#define NCP_STATUS_H
 typedef enum {
 	/* Generic Status Codes */
 	NCP_ST_SUCCESS = 0,                /*!< Operation was successful */
@@ -1427,6 +1429,11 @@ typedef enum {
 	 * When the template Id buffer provided is invalid.
 	 */
 	NCP_VPM_INVALID_TEMPLATE_ID_BUFFER             = 2819, /*!< */
+
+    /*!
+     * VP name length param passed is smaller than actual VP name.
+     */
+	NCP_VPM_INVALID_VP_NAME_LEN                 = 2820, /*!< */
 
 	/* I2C codes */
 	NCP_ST_I2C_INVALID_HANDLE                   = 2901, /*!< */
@@ -3564,6 +3571,7 @@ typedef enum {
 	/* MUST BE LAST. DO NOT REMOVE! */
 	NCP_ST_LAST_STATUS_CODE                      = 65535
 } ncp_st_t;
+#endif
 
 /*
  * enumerated type for the four 'standard' topologies

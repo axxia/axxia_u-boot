@@ -316,6 +316,7 @@ ncp_task_buffer_alloc (
 {
     ncp_st_t ncpStatus=NCP_ST_SUCCESS;
 
+	printf("ML_alloc2");
     ncp_task_hdl_t *taskHdl=NULL;
         
     NCP_CALL(ncp_task_v2_get_taskHdl((void *)&taskHdl));        

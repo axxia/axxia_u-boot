@@ -1,0 +1,265 @@
+/**************************************************************************
+ ** INTEL CONFIDENTIAL
+ ** Copyright 2008 - 2015 Intel Corporation All Rights Reserved.
+ **
+ ** The source code contained or described herein and all documents related to 
+ ** the source code ("Material") are owned by Intel Corporation or its 
+ ** suppliers or licensors. Title to the Material remains with 
+ ** Intel Corporation or its suppliers and licensors. 
+ ** The Material contains trade secrets and proprietary and confidential
+ ** information of Intel or its suppliers and licensors. The Material is 
+ ** protected by worldwide copyright and trade secret laws and treaty 
+ ** provisions. No part of the Material may be used, copied, reproduced, 
+ ** modified, published, uploaded, posted, transmitted, distributed, or 
+ ** disclosed in any way without Intel's prior express written permission.
+ **
+ ** No license under any patent, copyright, trade secret or other 
+ ** intellectual property right is granted to or conferred upon you by 
+ ** disclosure or delivery of the Materials, either expressly, by implication, 
+ ** inducement, estoppel or otherwise. Any license under such intellectual 
+ ** property rights must be express and approved by Intel in writing.
+ **  **********************************************************************/
+
+
+#ifndef _NCP_SYSCON_XLF_REG_DEFINES_H_
+#define _NCP_SYSCON_XLF_REG_DEFINES_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+
+    /* NODE 0x0 , TARGET 0xffffffff*/
+
+
+#define     NCP_SYSCON_CPU_CS_xlf                               (0x00000000)
+#define     NCP_SYSCON_DSP_CS_xlf                               (0x00000004)
+#define     NCP_SYSCON_SYS_CS_xlf                               (0x00000008)
+#define     NCP_SYSCON_STOP_CLK_CPU_xlf                         (0x0000000c)
+#define     NCP_SYSCON_STOP_DSP_CPU_xlf                         (0x00000010)
+#define     NCP_SYSCON_STOP_CLK_xlf                             (0x00000014)
+#define     NCP_SYSCON_PLL1OUT_DIV_xlf                          (0x00000018)
+#define     NCP_SYSCON_GIC_DISABLE_xlf                          (0x0000001c)
+#define     NCP_SYSCON_CP15SDISABLE_xlf                         (0x00000020)
+#define     NCP_SYSCON_L1RSTDISABLE_xlf                         (0x00000024)
+#define     NCP_SYSCON_L2RSTDISABLE_xlf                         (0x00000028)
+#define     NCP_SYSCON_DEBUG_SW_EN_xlf                          (0x0000002c)
+#define     NCP_SYSCON_SEI_xlf                                  (0x00000030)
+#define     NCP_SYSCON_PFUSE_xlf                                (0x00000034)
+#define     NCP_SYSCON_FUSE_STAT_xlf                            (0x00000038)
+#define     NCP_SYSCON_SCRATCH_xlf                              (0x0000003c)
+#define     NCP_SYSCON_NMI_ENABLE_xlf                           (0x00000050)
+#define     NCP_SYSCON_NMI_PULSE_ENABLE_A_xlf                   (0x00000054)
+#define     NCP_SYSCON_NMI_PULSE_ENABLE_B_xlf                   (0x00000058)
+#define     NCP_SYSCON_CDC_DEBUG_SW_EN_xlf                      (0x0000005c)
+#define     NCP_SYSCON_SPARE_C0_xlf                             (0x000000c0)
+#define     NCP_SYSCON_SPARE_S0_xlf                             (0x000000c4)
+#define     NCP_SYSCON_SPARE_P0_xlf                             (0x000000c8)
+#define     NCP_SYSCON_PSCRATCH_xlf                             (0x000000dc)
+#define     NCP_SYSCON_RESET_STATUS_xlf                         (0x00000100)
+#define     NCP_SYSCON_RESET_STATUS_FORCE_xlf                   (0x00000104)
+#define     NCP_SYSCON_RESET_CORE_STATUS_xlf                    (0x00000108)
+#define     NCP_SYSCON_RESET_CORE_STATUS_FORCE_xlf              (0x0000010c)
+#define     NCP_SYSCON_CORE_DBG_RESET_STATUS_xlf                (0x00000110)
+#define     NCP_SYSCON_CORE_DBG_RESET_STATUS_FORCE_xlf          (0x00000114)
+#define     NCP_SYSCON_CORE_WARM_RESET_STATUS_xlf               (0x00000118)
+#define     NCP_SYSCON_CORE_WARM_RESET_STATUS_FORCE_xlf         (0x0000011c)
+#define     NCP_SYSCON_CORE_NSTIM_RESET_STATUS_xlf              (0x00000120)
+#define     NCP_SYSCON_CORE_NSTIM_RESET_STATUS_FORCE_xlf        (0x00000124)
+#define     NCP_SYSCON_CPU0_BADDR_xlf                           (0x00000180)
+#define     NCP_SYSCON_CPU1_BADDR_xlf                           (0x00000184)
+#define     NCP_SYSCON_CPU2_BADDR_xlf                           (0x00000188)
+#define     NCP_SYSCON_CPU3_BADDR_xlf                           (0x0000018c)
+#define     NCP_SYSCON_CPU4_BADDR_xlf                           (0x00000190)
+#define     NCP_SYSCON_CPU5_BADDR_xlf                           (0x00000194)
+#define     NCP_SYSCON_CPU6_BADDR_xlf                           (0x00000198)
+#define     NCP_SYSCON_CPU7_BADDR_xlf                           (0x0000019c)
+#define     NCP_SYSCON_CPU8_BADDR_xlf                           (0x000001a0)
+#define     NCP_SYSCON_CPU9_BADDR_xlf                           (0x000001a4)
+#define     NCP_SYSCON_CPU10_BADDR_xlf                          (0x000001a8)
+#define     NCP_SYSCON_CPU11_BADDR_xlf                          (0x000001ac)
+#define     NCP_SYSCON_CPU12_BADDR_xlf                          (0x000001b0)
+#define     NCP_SYSCON_CPU13_BADDR_xlf                          (0x000001b4)
+#define     NCP_SYSCON_CPU14_BADDR_xlf                          (0x000001b8)
+#define     NCP_SYSCON_CPU15_BADDR_xlf                          (0x000001bc)
+#define     NCP_SYSCON_CPU16_BADDR_xlf                          (0x000001c0)
+#define     NCP_SYSCON_CPU17_BADDR_xlf                          (0x000001c4)
+#define     NCP_SYSCON_CPU18_BADDR_xlf                          (0x000001c8)
+#define     NCP_SYSCON_CPU19_BADDR_xlf                          (0x000001cc)
+#define     NCP_SYSCON_CPU20_BADDR_xlf                          (0x000001d0)
+#define     NCP_SYSCON_CPU21_BADDR_xlf                          (0x000001d4)
+#define     NCP_SYSCON_CPU22_BADDR_xlf                          (0x000001d8)
+#define     NCP_SYSCON_CPU23_BADDR_xlf                          (0x000001dc)
+#define     NCP_SYSCON_CPU24_BADDR_xlf                          (0x000001e0)
+#define     NCP_SYSCON_CPU25_BADDR_xlf                          (0x000001e4)
+#define     NCP_SYSCON_CPU26_BADDR_xlf                          (0x000001e8)
+#define     NCP_SYSCON_CPU27_BADDR_xlf                          (0x000001ec)
+#define     NCP_SYSCON_CPU28_BADDR_xlf                          (0x000001f0)
+#define     NCP_SYSCON_CPU29_BADDR_xlf                          (0x000001f4)
+#define     NCP_SYSCON_CPU30_BADDR_xlf                          (0x000001f8)
+#define     NCP_SYSCON_CPU31_BADDR_xlf                          (0x000001fc)
+#define     NCP_SYSCON_KEY_xlf                                  (0x00002000)
+#define     NCP_SYSCON_LOR_xlf                                  (0x00002004)
+#define     NCP_SYSCON_RESET_CTL_xlf                            (0x00002008)
+#define     NCP_SYSCON_RESET_CPU_xlf                            (0x0000200c)
+#define     NCP_SYSCON_HOLD_CPU_xlf                             (0x00002010)
+#define     NCP_SYSCON_PWRUP_CPU_RST_xlf                        (0x00002014)
+#define     NCP_SYSCON_HOLD_L2_xlf                              (0x00002018)
+#define     NCP_SYSCON_HOLD_DBG_xlf                             (0x0000201c)
+#define     NCP_SYSCON_ALLOW_PTM_xlf                            (0x00002020)
+#define     NCP_SYSCON_ALLOW_L2_xlf                             (0x00002024)
+#define     NCP_SYSCON_ALLOW_DBG_xlf                            (0x00002028)
+#define     NCP_SYSCON_DBGRSTREQ_ENABLE_xlf                     (0x0000202c)
+#define     NCP_SYSCON_WARM_RESET_ENABLE_xlf                    (0x00002030)
+#define     NCP_SYSCON_DISABLE_MOD_xlf                          (0x00002034)
+#define     NCP_SYSCON_RESET_FES_xlf                            (0x00002038)
+#define     NCP_SYSCON_RESET_DSP_xlf                            (0x0000203c)
+#define     NCP_SYSCON_HOLD_DSP_xlf                             (0x00002040)
+#define     NCP_SYSCON_HOLD_DSP_DBG_xlf                         (0x00002044)
+#define     NCP_SYSCON_ALLOW_DSP_DBG_xlf                        (0x00002048)
+#define     NCP_SYSCON_RESET_WO_SM_xlf                          (0x0000204c)
+#define     NCP_SYSCON_ZERO_CTL_xlf                             (0x00002050)
+#define     NCP_SYSCON_ZERO_STAT_xlf                            (0x00002054)
+#define     NCP_SYSCON_FUSE_FORCE_xlf                           (0x00002064)
+#define     NCP_SYSCON_FUSE_FORCE2_xlf                          (0x00002068)
+#define     NCP_SYSCON_HOLD_INFRA_xlf                           (0x0000206c)
+#define     NCP_SYSCON_HOLD_STREAM_xlf                          (0x00002070)
+#define     NCP_SYSCON_HOLD_DSSB_xlf                            (0x00002074)
+#define     NCP_SYSCON_CPU_RST_TIMER_xlf                        (0x00002078)
+#define     NCP_SYSCON_RMC_RST_TIMER_xlf                        (0x0000207c)
+#define     NCP_SYSCON_RAC_RST_TIMER_xlf                        (0x00002080)
+#define     NCP_SYSCON_MTC_CTL_xlf                              (0x00002084)
+#define     NCP_SYSCON_MTC_STATUS_xlf                           (0x00002088)
+#define     NCP_SYSCON_ALLOW_TIMER_xlf                          (0x0000208c)
+#define     NCP_SYSCON_SPARE_C1_xlf                             (0x000020b0)
+#define     NCP_SYSCON_SPARE_S1_xlf                             (0x000020b4)
+#define     NCP_SYSCON_SPARE_P1_xlf                             (0x000020b8)
+#define     NCP_SYSCON_PWR_AINACTS_xlf                          (0x00002408)
+#define     NCP_SYSCON_PWR_CPUQREQ_xlf                          (0x0000240c)
+#define     NCP_SYSCON_PWR_CSYSREQ_APB_xlf                      (0x00002410)
+#define     NCP_SYSCON_PWR_CSYSREQ_ATB_xlf                      (0x00002418)
+#define     NCP_SYSCON_PWR_CSYSREQ_CNT_xlf                      (0x0000241c)
+#define     NCP_SYSCON_PWR_CSYSREQ_TS_xlf                       (0x00002420)
+#define     NCP_SYSCON_PWR_DBGPWRDUP_xlf                        (0x00002424)
+#define     NCP_SYSCON_PWR_ISOLATECPU_xlf                       (0x00002428)
+#define     NCP_SYSCON_PWR_ISOLATETOP_xlf                       (0x00002430)
+#define     NCP_SYSCON_PWR_L2FLUSHREQ_xlf                       (0x00002434)
+#define     NCP_SYSCON_PWR_L2QREQ_xlf                           (0x00002438)
+#define     NCP_SYSCON_PWR_PREQ_xlf                             (0x0000243c)
+#define     NCP_SYSCON_PWR_PSTATE_xlf                           (0x00002440)
+#define     NCP_SYSCON_PWR_PWRDNREQ_ACP_xlf                     (0x00002444)
+#define     NCP_SYSCON_PWR_PWRDNREQ_ICCT_xlf                    (0x00002448)
+#define     NCP_SYSCON_PWR_PWRDNREQ_ICDT_xlf                    (0x0000244c)
+#define     NCP_SYSCON_PWR_PWRUPCPU_xlf                         (0x00002450)
+#define     NCP_SYSCON_PWR_PWRUPTOP_xlf                         (0x00002454)
+#define     NCP_SYSCON_PWR_SINACT_xlf                           (0x0000245c)
+#define     NCP_SYSCON_GIC_CPU_ACTIVE_xlf                       (0x00002474)
+#define     NCP_SYSCON_GIC_REACTIVATE_xlf                       (0x00002478)
+#define     NCP_SYSCON_GIC_REACTIVATE_CNT_xlf                   (0x0000247c)
+#define     NCP_SYSCON_PWR_CACTIVE_APB_xlf                      (0x00002480)
+#define     NCP_SYSCON_PWR_CACTIVE_ATB_xlf                      (0x00002488)
+#define     NCP_SYSCON_PWR_CACTIVE_CNT_xlf                      (0x0000248c)
+#define     NCP_SYSCON_PWR_CACTIVE_TS_xlf                       (0x00002490)
+#define     NCP_SYSCON_PWR_CACTIVEM_ACP_xlf                     (0x00002494)
+#define     NCP_SYSCON_PWR_CACTIVEM_ICCT_xlf                    (0x00002498)
+#define     NCP_SYSCON_PWR_CACTIVEM_ICDT_xlf                    (0x0000249c)
+#define     NCP_SYSCON_PWR_CACTIVES_ACP_xlf                     (0x000024a0)
+#define     NCP_SYSCON_PWR_CACTIVES_ICCT_xlf                    (0x000024a4)
+#define     NCP_SYSCON_PWR_CACTIVES_ICDT_xlf                    (0x000024a8)
+#define     NCP_SYSCON_PWR_CPUQACTIVE_xlf                       (0x000024ac)
+#define     NCP_SYSCON_PWR_CPUQACCEPT_xlf                       (0x000024b0)
+#define     NCP_SYSCON_PWR_CPUQDENY_xlf                         (0x000024b4)
+#define     NCP_SYSCON_PWR_CSYSACK_APB_xlf                      (0x000024b8)
+#define     NCP_SYSCON_PWR_CSYSACK_ATB_xlf                      (0x000024c0)
+#define     NCP_SYSCON_PWR_CSYSACK_CNT_xlf                      (0x000024c4)
+#define     NCP_SYSCON_PWR_CSYSACK_TS_xlf                       (0x000024c8)
+#define     NCP_SYSCON_PWR_L2FLUSHDONE_xlf                      (0x000024cc)
+#define     NCP_SYSCON_PWR_L2QACTIVE_xlf                        (0x000024d0)
+#define     NCP_SYSCON_PWR_L2QACCEPT_xlf                        (0x000024d4)
+#define     NCP_SYSCON_PWR_L2QDENY_xlf                          (0x000024d8)
+#define     NCP_SYSCON_PWR_PACTIVE_xlf                          (0x000024dc)
+#define     NCP_SYSCON_PWR_PACCEPT_xlf                          (0x000024e0)
+#define     NCP_SYSCON_PWR_PDENY_xlf                            (0x000024e4)
+#define     NCP_SYSCON_PWR_PWRDNACK_ACP_xlf                     (0x000024e8)
+#define     NCP_SYSCON_PWR_PWRDNACK_ICCT_xlf                    (0x000024ec)
+#define     NCP_SYSCON_PWR_PWRDNACK_ICDT_xlf                    (0x000024f0)
+#define     NCP_SYSCON_PWR_SMPEN_xlf                            (0x000024f8)
+#define     NCP_SYSCON_PWR_STANDBYWFE_xlf                       (0x000024fc)
+#define     NCP_SYSCON_PWR_STANDBYWFI_xlf                       (0x00002500)
+#define     NCP_SYSCON_PWR_STANDBYWFIL2_xlf                     (0x00002504)
+#define     NCP_SYSCON_GIC_WAKE_REQUEST_xlf                     (0x00002508)
+#define     NCP_SYSCON_PSM_WAIT_CNT_xlf                         (0x0000250c)
+#define     NCP_SYSCON_PWR_ENABLE_SELF_PWRDN_xlf                (0x00002510)
+#define     NCP_SYSCON_PWR_PWRDN_CPU_xlf                        (0x00002514)
+#define     NCP_SYSCON_PWR_PWRDN_CLUSTER_xlf                    (0x00002518)
+#define     NCP_SYSCON_PDSM_STATE_IA_xlf                        (0x0000251c)
+#define     NCP_SYSCON_PDSM_STATE_ID_xlf                        (0x00002520)
+#define     NCP_SYSCON_CDC_PREQ_xlf                             (0x000025c8)
+#define     NCP_SYSCON_CDC_PSTATE_xlf                           (0x000025cc)
+#define     NCP_SYSCON_CDC_QACTIVE_xlf                          (0x000025d0)
+#define     NCP_SYSCON_CDC_PACTIVE_xlf                          (0x000025d4)
+#define     NCP_SYSCON_CDC_PACCEPT_xlf                          (0x000025d8)
+#define     NCP_SYSCON_CDC_PDENY_xlf                            (0x000025dc)
+#define     NCP_SYSCON_PCH_CMD_xlf                              (0x00002700)
+#define     NCP_SYSCON_PCH_SM_xlf                               (0x00002704)
+#define     NCP_SYSCON_PCH_CSTATE_xlf                           (0x00002708)
+#define     NCP_SYSCON_PCH_STATE_xlf                            (0x0000270c)
+#define     NCP_SYSCON_PCH_REQ_xlf                              (0x00002710)
+#define     NCP_SYSCON_PCH_WAIT_xlf                             (0x00002714)
+#define     NCP_SYSCON_PCH_PWR_xlf                              (0x00002718)
+#define     NCP_SYSCON_PCH_STAT_xlf                             (0x0000271c)
+#define     NCP_SYSCON_QCH_QACTIVE_xlf                          (0x00002720)
+#define     NCP_SYSCON_QCH_CNT_CTL_xlf                          (0x00002724)
+#define     NCP_SYSCON_QCH_CTL_xlf                              (0x00002740)
+#define     NCP_SYSCON_QCH_REQ_xlf                              (0x00002744)
+#define     NCP_SYSCON_QCH_STAT_xlf                             (0x00002748)
+#define     NCP_SYSCON_CNT_CTL_xlf                              (0x0000275c)
+#define     NCP_SYSCON_BOOTMSGS_xlf                             (0x00010000)
+#define     NCP_SYSCON_BOOTMSGP_xlf                             (0x00010004)
+#define     NCP_SYSCON_SPARE_C2_xlf                             (0x00010008)
+#define     NCP_SYSCON_SPARE_S2_xlf                             (0x0001000c)
+#define     NCP_SYSCON_SPARE_P2_xlf                             (0x00010010)
+#define     NCP_SYSCON_NMI_PULSE_TRIGGER_A_xlf                  (0x00100000)
+#define     NCP_SYSCON_SPARE_C3_xlf                             (0x00100004)
+#define     NCP_SYSCON_SPARE_S3_xlf                             (0x00100008)
+#define     NCP_SYSCON_SPARE_P3_xlf                             (0x0010000c)
+#define     NCP_SYSCON_NMI_PULSE_TRIGGER_B_xlf                  (0x00110000)
+#define     NCP_SYSCON_SPARE_C4_xlf                             (0x00110004)
+#define     NCP_SYSCON_SPARE_S4_xlf                             (0x00110008)
+#define     NCP_SYSCON_SPARE_P4_xlf                             (0x0011000c)
+#define     NCP_SYSCON_INTERRUPT_STATUS_xlf                     (0x00002058)
+#define     NCP_SYSCON_INTERRUPT_STATUS_xlf_SERVICE_MASK        (0x000000ff)
+#define     NCP_SYSCON_INTERRUPT_EN_xlf                         (0x0000205c)
+#define     NCP_SYSCON_INTERRUPT_EN_xlf_SERVICE_MASK            (0x000000ff)
+#define     NCP_SYSCON_INTERRUPT_FRC_xlf                        (0x00002060)
+#define     NCP_SYSCON_INTERRUPT_FRC_xlf_SERVICE_MASK           (0x000000ff)
+#define     NCP_SYSCON_EVENT_ENB_xlf                            (0x00000040)
+#define     NCP_SYSCON_EVENT_ENB_xlf_ACCESS_SIZE                (0x00000008) /* Bytes */
+#define     NCP_SYSCON_PMU_SEL_xlf                              (0x00000048)
+#define     NCP_SYSCON_PMU_SEL_xlf_ACCESS_SIZE                  (0x00000008) /* Bytes */
+#define     NCP_SYSCON_PERSIST_xlf                              (0x000000e0)
+#define     NCP_SYSCON_PERSIST_xlf_ACCESS_SIZE                  (0x00000020) /* Bytes */
+#define     NCP_SYSCON_RESET_MOD_xlf                            (0x00002090)
+#define     NCP_SYSCON_RESET_MOD_xlf_ACCESS_SIZE                (0x00000010) /* Bytes */
+#define     NCP_SYSCON_RESET_AXIS_xlf                           (0x000020a0)
+#define     NCP_SYSCON_RESET_AXIS_xlf_ACCESS_SIZE               (0x00000010) /* Bytes */
+#define     NCP_SYSCON_QCH_FCNT_xlf                             (0x00002728)
+#define     NCP_SYSCON_QCH_FCNT_xlf_ACCESS_SIZE                 (0x00000008) /* Bytes */
+#define     NCP_SYSCON_QCH_GCNT0_xlf                            (0x00002730)
+#define     NCP_SYSCON_QCH_GCNT0_xlf_ACCESS_SIZE                (0x00000008) /* Bytes */
+#define     NCP_SYSCON_QCH_GCNT1_xlf                            (0x00002738)
+#define     NCP_SYSCON_QCH_GCNT1_xlf_ACCESS_SIZE                (0x00000008) /* Bytes */
+#define     NCP_SYSCON_FCNT_xlf                                 (0x00002760)
+#define     NCP_SYSCON_FCNT_xlf_ACCESS_SIZE                     (0x00000008) /* Bytes */
+#define     NCP_SYSCON_GCNT0_xlf                                (0x00002768)
+#define     NCP_SYSCON_GCNT0_xlf_ACCESS_SIZE                    (0x00000008) /* Bytes */
+#define     NCP_SYSCON_GCNT1_xlf                                (0x00002770)
+#define     NCP_SYSCON_GCNT1_xlf_ACCESS_SIZE                    (0x00000008) /* Bytes */
+#define     NCP_SYSCON_GCNT2_xlf                                (0x00002778)
+#define     NCP_SYSCON_GCNT2_xlf_ACCESS_SIZE                    (0x00000008) /* Bytes */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _NCP_SYSCON_XLF_REG_DEFINES_H_ */

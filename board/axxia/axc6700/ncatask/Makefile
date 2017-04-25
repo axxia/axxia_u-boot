@@ -26,23 +26,12 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-obj-y += qos.o 
-obj-$(CONFIG_AXXIA_EIOA) += ncatask/
+ccflags-y += -D_GNU_SOURCE -DNCP_USE_NVM -DNCP_MULTI_THREAD -DNCP_LINUX -DUSE_NCAV3 
+ccflags-y += -I$(srctree)/board/axxia/axc6700/ncatask/include -I$(srctree)/board/axxia/axc6700/ncatask/include/uboot/
 
-else
-
-################################################################################
-## SPL Build
-
-obj-y += secure.o ncp_l3lock_region_init.o
-
-ifdef CONFIG_AXXIA_EMU
-obj-y += sysmem_emulation.o
+obj-y += mdio.o eioa.o
+obj-y += ncp.o mp_free.o mp_malloc.o mp_mstats.o mp_realloc.o ncp_vpm.o 
+obj-y += ncp_sal.o ncp_task.o ncp_config_uboot.o ncp_task_pvt.o ncp_task_pvt_user.o
+obj-y += ncp_sal_linux.o ncp_dev_linux_user.o
 endif
 
-endif
-
-################################################################################
-## All Builds
-
-obj-y += failure.o version.o spi.o
