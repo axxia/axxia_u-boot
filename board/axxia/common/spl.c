@@ -1039,7 +1039,7 @@ load_image(void)
 			header = malloc(12);
 			memcpy(header, (void *)0, 12);
 			sbb_magic = (void *)header;
-			sbb_encrypted = *((unsigned char *)(header + 12));
+			sbb_encrypted = *((unsigned char *)(header + 9));
 			sbb_encrypted &= 1;
 
 			if (0 == strncmp(sbb_magic, "SBB!", 4) &&
