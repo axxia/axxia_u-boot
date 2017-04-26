@@ -46,28 +46,6 @@
 #define GPIOAFSEL 0x420
 
 /*
-  ------------------------------------------------------------------------------
-  name_to_gpio
-*/
-
-int name_to_gpio(const char *name)
-{
-	char *separator = strchr(name, '_');
-	int group, pin;
-
-	if (NULL == separator)
-		return -1;
-
-	group = simple_strtoul(name, NULL, 10);
-	pin = simple_strtoul(separator + 1, NULL, 10);
-
-	if ((group >= GPIO_GROUPS) || (pin < 0))
-		return -1;
-
-	return (group * GPIO_PINS_PER_GROUP + pin);
-}
-
-/*
   -----------------------------------------------------------------------------
   read_reg
 */
@@ -206,6 +184,47 @@ axxia_gpio_set(axxia_gpio_t gpio, int pin, int value)
 
 /*
   ------------------------------------------------------------------------------
+  name_to_gpio
+*/
+
+int name_to_gpio(const char *name)
+{
+	char *separator;
+	int group, pin;
+
+	separator = strchr(name, '_');
+
+	if (NULL != separator) {
+		/*
+		  Older format, though not reasonably described, was
+		  <bank>_<pin>.  If separator is not NULL, assume the
+		  older format.
+		*/
+
+		group = simple_strtoul(name, NULL, 10);
+		pin = simple_strtoul(separator + 1, NULL, 10);
+
+		if ((group >= GPIO_GROUPS) || (pin < 0))
+			return -1;
+
+		return (group * GPIO_PINS_PER_GROUP + pin);
+	}
+
+	/*
+	  Just assume that the pin is 0...(GPIO_GROUPS *
+	  GPIO_PINS_PER_GROUP - 1).
+	*/
+
+	pin = simple_strtoul(name, NULL, 10);
+
+	if ((GPIO_PINS_PER_GROUP * GPIO_GROUPS) <= pin)
+		return -1;
+
+	return pin;
+}
+
+/*
+  ------------------------------------------------------------------------------
   gpio_direction_input
 
   Set the given pin to input.
@@ -326,7 +345,7 @@ gpio_request(unsigned pin, const char *label)
 	debug("%s:%d - GPIO pin %d requested by %s\n",
 	      __FILE__, __LINE__, pin, label);
 
-	if (GPIO_GROUPS * GPIO_PINS_PER_GROUP < pin)
+	if (GPIO_GROUPS * GPIO_PINS_PER_GROUP > pin)
 		return 0;
 
 	return -1;
@@ -343,6 +362,36 @@ int
 gpio_free(unsigned pin)
 {
 	debug("%s:%d - GPIO pin %d freed.\n", __FILE__, __LINE__, pin);
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  gpio_status
+*/
+
+int
+axxia_gpio_status(void)
+{
+	int i;
+
+	printf("Axxia GPIO, %d Banks of %d Pins (%d Total)\n",
+	       GPIO_GROUPS, GPIO_PINS_PER_GROUP,
+	       (GPIO_PINS_PER_GROUP * GPIO_GROUPS));
+
+	for (i = 0; i < (GPIO_PINS_PER_GROUP * GPIO_GROUPS); ++i) {
+		int g;
+		int p;
+
+		g = i / GPIO_PINS_PER_GROUP;
+		p = i % GPIO_PINS_PER_GROUP;
+
+		printf("%02d_%02d:%02d - Direction=%s Value=%d\n",
+		       g, p, i,
+		       0 == axxia_gpio_get_direction(g, p) ? "In " : "Out",
+		       axxia_gpio_get(g, p));
+	}
 
 	return 0;
 }

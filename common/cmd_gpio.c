@@ -215,4 +215,7 @@ U_BOOT_CMD(gpio, 4, 0, do_gpio,
 	   "query and control gpio pins",
 	   "<input|set|clear|toggle> <pin>\n"
 	   "    - input/set/clear/toggle the specified pin\n"
+#ifdef CONFIG_AXXIA
+	   "    - specify the pin as a single integer or <bank>_<pin>\n"
+#endif
 	   "gpio status [-a] [<bank> | <pin>]  - show [all/claimed] GPIOs");

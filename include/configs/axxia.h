@@ -4291,4 +4291,9 @@ int set_vrm_to_vrun(unsigned int);
 int voltage_init(void);
 #endif	/* __ASSEMBLY__ */
 
+#ifndef __ASSEMBLY__
+int axxia_gpio_status(void);
+#define gpio_status axxia_gpio_status
+#endif	/* __ASSEMBLY__ */
+
 #endif /* __AXXIA_H */
