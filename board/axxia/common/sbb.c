@@ -307,13 +307,13 @@ sbb_verify_image(void *source, void *destination,
 		unsigned char sbb_encrypted;
 		unsigned int sbb_size;
 
-		sbb_encrypted = *((unsigned char *)(source + 12));
+		sbb_encrypted = *((unsigned char *)(source + 9));
 		sbb_encrypted &= 1;
 
 		if (0 == strncmp(source, "SBB!", strlen("SBB!")) &&
 		    0 == sbb_encrypted) {
 			sbb_size = ntohl(*((unsigned int *)(source + 4)));
-			memmove((void *)source, (void *)(source + 12),
+			memmove((void *)destination, (void *)(source + 12),
 				sbb_size);
 		}
 	}
