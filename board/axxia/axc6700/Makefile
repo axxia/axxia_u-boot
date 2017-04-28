@@ -26,7 +26,7 @@ ifndef CONFIG_SPL_BUILD
 ################################################################################
 ## Normal Build
 
-obj-y += 
+obj-y += qos.o
 
 else
 

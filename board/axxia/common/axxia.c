@@ -151,6 +151,15 @@ misc_init_r(void)
 
 #endif	/* CONFIG_AXXIA_SIM */
 
+	/*
+	  Update the QoS settings (6700 only... as these are fixed on 5600).
+	*/
+
+#ifdef CONFIG_AXXIA_ANY_XLF
+	if (0 != axxia_set_qos())
+		printf("Setting QoS Failed!\n");
+#endif
+
 	return 0;
 }
 
