@@ -52,11 +52,6 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	unsigned long source;
 	unsigned long destination;
 
-	if (0 == strncmp(argv[1], "h", strlen("h"))) {
-		printf("%s", cmdtp->usage);
-		return 0;
-	}
-
 	if (0 == strncmp(argv[1], "v", strlen("v"))) {
 		int safe = 0;
 
@@ -74,8 +69,6 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			return -1;
 	}
 
-	printf("%s", cmdtp->usage);
-
 	return -1;
 }
 
@@ -86,6 +79,8 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 */
 
 U_BOOT_CMD(sbb, 5, 0, do_sbb,
-	   "sbb command source destination [size (encrrypt only)] [safe]\n",
-	   "     command must be validate|encrypt|decrypt\n" \
-	   "     v,alidate -- Validate Image (safe for double read)\n");
+	   "Provide access to the SBB (Secure Boot Block) functionality.",
+	   "validate source destination\n"
+	   "       v,alidate -- Validate image (safe for double read).\n"
+	   "          source -- Source address.\n"
+	   "     destination -- Destination address. Can be same as source.");
