@@ -10,9 +10,7 @@
   The "LOS Work Around"
 */
 
-#if defined(CONFIG_AXXIA_ANY_56XX)
 #define ENABLE_LOS_WA
-#endif
 
 #define PEI_GENERAL_CORE_CTL_REG 0x38
 #define PEI_SII_PWR_MGMT_REG 0xD4
@@ -463,19 +461,17 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 	/* Which PEI is being used... */
 	int pei;
 
+#if defined(CONFIG_AXXIA_ANY_56XX)
 	struct pci_hose_data *priv;
 
 	priv = (struct pci_hose_data *)hose->priv_data;
+#endif
 
 #ifdef CONFIG_AXXIA_ANY_XLF
-	/*
-	  For now, 0x115.<target != 0>.<offset > 0x1000> accesses do
-	  not work on XLF.  The following work around depends ot this!
-	  So, for now, skip it.
-	*/
 
-	return 0;
-#endif
+	pei = 0;
+
+#else  /* CONFIG_AXXIA_ANY_XLF */
 
 	if (PCIE0_DBI_BASE == priv->dbi_base) {
 		pei = 0;
@@ -493,6 +489,8 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 		return -1;
 	}
 
+#endif	/* CONFIG_AXXIA_ANY_XLF */
+
 	/* If PEI0, make sure it is configured as the root complex. */
 	if ((0 == pei) && (0 == (pciesrio->control & 0x80)))
 		return 0;
@@ -501,6 +499,22 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 	  The "control" value in the parameters defines the number of
 	  lanes used.  Use bits 25:22 to initialize "lane_mask".
 	*/
+
+#ifdef CONFIG_AXXIA_ANY_XLF
+
+	switch ((pciesrio->control & 0x3c00000) >> 22) {
+	case 1:
+		lane_mask = 0x00000011;
+		break;
+	case 2:
+		lane_mask = 0x00000001;
+		break;
+	default:
+		return 0;
+		break;
+	}
+
+#else  /* CONFIG_AXXIA_ANY_XLF */
 
 	switch ((pciesrio->control & 0x3c00000) >> 22) {
 	case 1:
@@ -548,6 +562,8 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 		break;
 	}
 
+#endif	/* CONFIG_AXXIA_ANY_XLF */
+
 	/* Run the LOS work around until a link is established. */
 
 #if defined(CONFIG_AXXIA_ANY_56XX)
@@ -561,12 +577,12 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 	*/
 
 #define MAX_TARGET 4
-#define LANE0_DIG_ASIC_RX_ASIC_IN_0 0x2022
-#define LANE1_DIG_ASIC_RX_ASIC_IN_0 0x2222
+#define LANE0_DIG_ASIC_RX_ASIC_IN_0  0x2022
 #define LANE0_DIG_ASIC_RX_ASIC_OUT_0 0x202e
+#define LANE0_IDG_ASIC_RX_OVRD_IN_0  0x200a
+#define LANE1_DIG_ASIC_RX_ASIC_IN_0  0x2222
 #define LANE1_DIG_ASIC_RX_ASIC_OUT_0 0x222e
-#define LANE0_IDG_ASIC_RX_OVRD_IN_0 0x200a
-#define LANE1_IDG_ASIC_RX_OVRD_IN_0 0x220a
+#define LANE1_IDG_ASIC_RX_OVRD_IN_0  0x220a
 
 #elif defined(CONFIG_AXXIA_ANY_XLF)
 
@@ -579,12 +595,12 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 	*/
 
 #define MAX_TARGET 1
-#define LANE0_DIG_ASIC_RX_ASIC_IN_0 0x4044
-#define LANE1_DIG_ASIC_RX_ASIC_IN_0 0x4444
+#define LANE0_DIG_ASIC_RX_ASIC_IN_0  0x4044
 #define LANE0_DIG_ASIC_RX_ASIC_OUT_0 0x405c
+#define LANE0_IDG_ASIC_RX_OVRD_IN_0  0x4014
+#define LANE1_DIG_ASIC_RX_ASIC_IN_0  0x4444
 #define LANE1_DIG_ASIC_RX_ASIC_OUT_0 0x445c
-#define LANE0_IDG_ASIC_RX_OVRD_IN_0 0x4014
-#define LANE1_IDG_ASIC_RX_OVRD_IN_0 0x4414
+#define LANE1_IDG_ASIC_RX_OVRD_IN_0  0x4414
 
 #else
 #error "Invalid Architecture"
