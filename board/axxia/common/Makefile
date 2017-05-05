@@ -34,7 +34,7 @@ else
 obj-y += sysmem_reset.o spl.o axxia_initialize.o sysmem_bist.o cmem_bist.o
 
 ifdef CONFIG_AXXIA_PCI
-obj-y += pciesriosata.o
+obj-y += pei.o
 endif
 
 ifndef CONFIG_AXXIA_EMU

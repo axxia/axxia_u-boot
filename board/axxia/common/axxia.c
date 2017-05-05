@@ -414,51 +414,49 @@ ft_update_pei(void *blob)
 
 	/* Enable PEIs based on the paramters. */
 
-	value = (pciesrio->control & 0x3c00000) >> 22;
-	/* Set PEI0 number of lanes */
-	switch (value) {
-	case 0:
-		pei0_lanes = 8;
+#if defined(CONFIG_AXXIA_ANY_XLF)
+	switch ((pciesrio->control >> 22) & 0x3) {
+	case 1:
+		pei0_lanes = 2;
 		break;
+	case 2:
+		pei0_lanes = 1;
+		break;
+	default:
+		error("Unsupported PCIe/sRIO Configuration!");
+		pei0_lanes = 0;
+		break;
+	}
+#elif defined(CONFIG_AXXIA_ANY_56XX)
+	switch ((pciesrio->control >> 22) & 0xf) {
 	case 1:
 		pei0_lanes = 4;
 		pei1_lanes = 4;
+		pei2_lanes = 0;
 		break;
 	case 2:
-		pei0_lanes = 4;
-		pei1_lanes = 2;
-		break;
-	case 3:
-	case 6:
 		pei0_lanes = 2;
 		pei1_lanes = 2;
+		pei2_lanes = 2;
+		break;
+	case 3:
+		pei0_lanes = 2;
+		pei1_lanes = 0;
 		pei2_lanes = 2;
 		break;
 	case 4:
-		pei0_lanes = 2;
-		pei1_lanes = 4;
-		break;
-	case 5:
-		pei0_lanes = 2;
-		pei1_lanes = 2;
-		break;
-	case 7:
-		pei1_lanes = 4;
-		break;
-	case 8:
-		pei1_lanes = 2;
-		break;
-	case 9:
-		pei1_lanes = 2;
+		pei0_lanes = 0;
+		pei1_lanes = 0;
 		pei2_lanes = 2;
 		break;
 	default:
-		printf("%s:%d Unsupported lane configuration 0x%x\n", __FILE__,
-		       __LINE__, value);
-		pei0_lanes = 1;
-		pei1_lanes = 1;
-		pei2_lanes = 1;
+		error("Unsupported PCIe/sRIO Configuration!");
+		pei0_lanes = 0;
+		pei1_lanes = 0;
+		pei2_lanes = 0;
+		break;
 	}
+#endif
 
 	node = fdt_path_offset(blob, "/soc/pcie@c000000000");
 

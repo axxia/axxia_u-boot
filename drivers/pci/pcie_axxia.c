@@ -1,3 +1,26 @@
+/*
+ * drivers/pci/pcie_axxia.c
+ *
+ * Copyright (C) 2017 Intel
+ *
+ * This program is free software;you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation;either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY;without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program;if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA 02111-1307 USA
+ */
+
+#define DEBUG
+
 #include <common.h>
 #include <command.h>
 #include <asm/processor.h>
@@ -912,15 +935,19 @@ void
 pci_init_board(void)
 {
 #if defined(CONFIG_TARGET_SIMULATION)
+	debug("PCIe Skipped for Simulation");
+
 	return;
 #endif
 
 #if defined(ACP_PEI0) || defined(ACP_PEI1) || defined(ACP_PEI2)
+	unsigned int pei0_lanes = 0;
 	unsigned int global0_cfg;
+#if defined(CONFIG_AXXIA_ANY_56XX)
 	unsigned int global1_cfg;
 	unsigned int sw_port_config0;
 	unsigned int sw_port_config1;
-	unsigned int pei0_lanes = 0;
+#endif
 #if defined(ACP_PEI1)
 	unsigned int pei1_lanes = 0;
 #endif
@@ -929,12 +956,22 @@ pci_init_board(void)
 #endif
 
 	ncr_read32(NCP_REGION_ID(0x115, 0x0), 0x0, &global0_cfg);
-	ncr_read32(NCP_REGION_ID(0x115, 0x0), 0x4, &global1_cfg);
 	debug("0x115.0x0.0x0=0x%x\n", global0_cfg);
+#if defined(CONFIG_AXXIA_ANY_56XX)
+	ncr_read32(NCP_REGION_ID(0x115, 0x0), 0x4, &global1_cfg);
 	debug("0x115.0x0.0x4=0x%x\n", global1_cfg);
 	sw_port_config0 = (global0_cfg & 0x1c000000) >> 26;
 	sw_port_config1 = (global1_cfg & 0x00c00000) >> 22;
+#endif
 
+#if defined(CONFIG_AXXIA_ANY_XLF)
+	if (2 == ((pciesrio->control & 0x3c00000 )>> 22))
+		pei0_lanes = 1;
+	else
+		pei0_lanes = 2;
+
+	debug("pei0_lanes = %d\n", pei0_lanes);
+#else  /* CONFIG_AXXIA_ANY_XLF */
 	switch (sw_port_config0) {
 	case 0:
 	case 2:
@@ -970,8 +1007,20 @@ pci_init_board(void)
 #endif
 		break;
 	}
+#endif	/* ACP_PEI1 || ACP_PEI2 */
+
+	debug("pei0_lanes = %d\n", pei0_lanes);
+
+#if defined(ACP_PEI1)
+	debug("pei1_lanes = %d\n", pei1_lanes);
 #endif
+
+#if defined(ACP_PEI2)
+	debug("pei2_lanes = %d\n", pei2_lanes);
 #endif
+
+#endif	/* CONFIG_AXXIA_ANY_XLF */
+#endif	/* ACP_PEI0 || ACP_PEI1 || ACP_PEI2 */
 
 #ifdef ACP_PEI0
 	/* If PEI0 is enabled and in RC mode, enumerate it. */
