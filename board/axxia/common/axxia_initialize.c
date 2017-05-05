@@ -139,12 +139,16 @@ axxia_initialize(void)
 #if !defined(CONFIG_AXXIA_EMU)
     cmem->totalSize = 0;
 	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_CMEM))) {
+#if !defined(TRACE_PEI_ACCESSES)
 		ncr_tracer_enable();
+#endif
 
 		if (0 != cmem_init())
 			acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
+#if !defined(TRACE_PEI_ACCESSES)
 		ncr_tracer_disable();
+#endif
 	}
 #endif
 
@@ -161,12 +165,16 @@ axxia_initialize(void)
 #if !defined(SYSCACHE_ONLY_MODE) && !defined(CONFIG_TARGET_EMULATION)
 	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) {
 		if (0 == ddrRecovery) {
+#if !defined(TRACE_PEI_ACCESSES)
 			ncr_tracer_enable();
+#endif
 
 			if (0 != sysmem_init())
 				acp_failure(__FILE__, __FUNCTION__, __LINE__);
 
+#if !defined(TRACE_PEI_ACCESSES)
 			ncr_tracer_disable();
+#endif
 		} else {
 			ncp_uint32_t version_save;
 

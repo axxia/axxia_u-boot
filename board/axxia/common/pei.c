@@ -24,8 +24,7 @@
   working cases.
 */
 
-/*#define TRACE*/
-#ifdef TRACE
+#ifdef TRACE_PEI_ACCESSES
 static inline unsigned int
 _pss_readl(uint32_t volatile *address)
 {
@@ -52,10 +51,10 @@ _pss_writel(unsigned int value, uint32_t volatile *address)
 			printf("%s:%d - ", __FILE__, __LINE__);		\
 			_pss_writel((value), (uint32_t volatile *)(address)); \
 		})
-#else  /* TRACE */
+#else  /* TRACE_PEI_ACCESSES */
 #define pss_readl(address) readl((address))
 #define pss_writel(value, address) writel((value), (address))
-#endif /* TRACE */
+#endif /* TRACE_PEI_ACCESSES */
 
 /*
   Mode enumerations.
@@ -996,6 +995,11 @@ pei_setup(unsigned int control)
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0, reg_val);
 	mdelay(100);		/* TODO: Why is this needed? */
 
+#if defined(TRACE_PEI_ACCESSES)
+	printf("%s:%d - get_config(0x%x) = 0x%x\n",
+	       __FILE__, __LINE__, control, get_config(control));
+#endif
+
 	switch (get_config(control)) {
 	case 1:
 #if defined(CONFIG_AXXIA_ANY_56XX)
@@ -1250,14 +1254,14 @@ pciesrio_init(unsigned int control)
 	}
 
 	if (0x80000000 != control) {
-#ifdef TRACE
+#ifdef TRACE_PEI_ACCESSES
 		printf("%s:%d - Starting Trace: 0x%x\n",
 		       __FILE__, __LINE__, control);
 		ncr_tracer_enable();
 #endif
 		pei_setup(control);
 		update_settings();
-#ifdef TRACE
+#ifdef TRACE_PEI_ACCESSES
 		ncr_tracer_disable();
 		printf("%s:%d - Trace is Over\n", __FILE__, __LINE__);
 #endif

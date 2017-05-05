@@ -4258,6 +4258,38 @@ unsigned int set_watchdog_timeout(unsigned int);
 
 /*#define CONFIG_AXXIA_SPL_DIAGNOSTICS*/
 
+/*
+  Define the following to trace PEI accesses (trace PCIe/sRIO configuration).
+
+  Note that NCR_TRACER should be defined also.
+*/
+
+/*#define TRACE_PEI_ACCESSES*/
+
+/*
+  NCR Tracing
+*/
+
+/*#define NCR_TRACER*/
+
+#ifdef CONFIG_SPL_BUILD
+#ifdef NCR_TRACER
+#define NCR_TRACE( format, args... ) do { \
+if( 0 != ncr_tracer_is_enabled( ) ) { \
+printf( format, ##args ); \
+} \
+} while( 0 );
+#define NCP_COMMENT( format, args... ) do { \
+if( 0 != ncr_tracer_is_enabled( ) ) { \
+printf( "# " format "\n", ##args ); \
+} \
+} while( 0 );
+#else
+#define NCR_TRACE( format, args... )
+#define NCP_COMMENT( format, args... )
+#endif
+#endif
+
 #ifndef __ASSEMBLY__
 enum bist_type {addr, data};
 int axxia_sysmem_check_ecc(void);

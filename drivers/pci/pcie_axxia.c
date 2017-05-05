@@ -19,8 +19,6 @@
  * MA 02111-1307 USA
  */
 
-#define DEBUG
-
 #include <common.h>
 #include <command.h>
 #include <asm/processor.h>
@@ -123,12 +121,82 @@ struct pci_hose_data {
 static struct pci_controller hose[CONFIG_SYS_PCIE_NR_PORTS];
 static struct pci_hose_data hose_data[CONFIG_SYS_PCIE_NR_PORTS];
 
+#ifdef TRACE_PEI_ACCESSES
+static int
+pei_by_dbi(unsigned long dbi_base)
+{
+#ifdef ACP_PEI0
+	if (PCIE0_DBI_BASE == dbi_base)
+		return 0;
+#endif
+#ifdef ACP_PEI1
+	if (PCIE1_DBI_BASE == dbi_base)
+		return 1;
+#endif
+#ifdef ACP_PEI2
+	if (PCIE2_DBI_BASE == dbi_base)
+		return 2;
+#endif
+
+	error("No Valid PEI Found!\n");
+
+	return -1;
+}
+
+static int
+pei_by_cc(unsigned long cc_gpreg_base)
+{
+#ifdef ACP_PEI0
+	if (PCIE0_CC_GPREG_BASE == cc_gpreg_base)
+		return 0;
+#endif
+#ifdef ACP_PEI1
+	if (PCIE1_CC_GPREG_BASE == cc_gpreg_base)
+		return 1;
+#endif
+#ifdef ACP_PEI2
+	if (PCIE2_CC_GPREG_BASE == cc_gpreg_base)
+		return 2;
+#endif
+
+	error("No Valid PEI Found!");
+
+	return -1;
+}
+
+static int
+pei_by_axi(unsigned long axi_gpreg_base)
+{
+#ifdef ACP_PEI0
+	if (PCIE0_AXI_GPREG_BASE == axi_gpreg_base)
+		return 0;
+#endif
+#ifdef ACP_PEI1
+	if (PCIE1_AXI_GPREG_BASE == axi_gpreg_base)
+		return 1;
+#endif
+#ifdef ACP_PEI2
+	if (PCIE2_AXI_GPREG_BASE == axi_gpreg_base)
+		return 2;
+#endif
+
+	error("No Valid PEI Found!\n");
+
+	return -1;
+}
+#endif	/* TRACE_PEI_ACCESSES */
+
 static inline void axxia_pcie_readl_rc(struct pci_controller *hose,
 	u32 reg, u32 *val)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
 	*val = readl(data->dbi_base + reg);
+
+#ifdef TRACE_PEI_ACCESSES
+	printf("PEI%d: Read 0x%x from DBI + 0x%x\n",
+	       pei_by_dbi(data->dbi_base), *val, reg);
+#endif
 }
 
 static inline void axxia_pcie_writel_rc(struct pci_controller *hose,
@@ -137,6 +205,11 @@ static inline void axxia_pcie_writel_rc(struct pci_controller *hose,
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
 	writel(val, data->dbi_base + reg);
+
+#ifdef TRACE_PEI_ACCESSES
+	printf("PEI%d: Wrote 0x%x to DBI + 0x%x\n",
+	       pei_by_dbi(data->dbi_base), val, reg);
+#endif
 }
 
 static inline void axxia_cc_gpreg_writel(struct pci_controller *hose,
@@ -145,6 +218,11 @@ static inline void axxia_cc_gpreg_writel(struct pci_controller *hose,
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
 	writel(val, data->cc_gpreg_base + reg);
+
+#ifdef TRACE_PEI_ACCESSES
+	printf("PEI%d: Wrote 0x%x to CC_GPREG + 0x%x\n",
+	       pei_by_cc(data->cc_gpreg_base), val, reg);
+#endif
 }
 
 static inline void axxia_cc_gpreg_readl(struct pci_controller *hose,
@@ -153,13 +231,24 @@ static inline void axxia_cc_gpreg_readl(struct pci_controller *hose,
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
 	*val = readl(data->cc_gpreg_base + reg);
+
+#ifdef TRACE_PEI_ACCESSES
+	printf("PEI%d: Read 0x%x from CC_GPREG + 0x%x\n",
+	       pei_by_cc(data->cc_gpreg_base), *val, reg);
+#endif
 }
+
 static inline void axxia_axi_gpreg_writel(struct pci_controller *hose,
 	u32 val, u32 reg)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
 	writel(val, data->axi_gpreg_base + reg);
+
+#ifdef TRACE_PEI_ACCESSES
+	printf("PEI%d: Wrote 0x%x from AXI_GPREG + 0x%x\n",
+	       pei_by_axi(data->axi_gpreg_base), val, reg);
+#endif
 }
 
 static inline void axxia_axi_gpreg_readl(struct pci_controller *hose,
@@ -168,6 +257,11 @@ static inline void axxia_axi_gpreg_readl(struct pci_controller *hose,
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
 	*val = readl(data->axi_gpreg_base + reg);
+
+#ifdef TRACE_PEI_ACCESSES
+	printf("PEI%d: Read 0x%x from AXI_GPREG + 0x%x\n",
+	       pei_by_axi(data->axi_gpreg_base), *val, reg);
+#endif
 }
 
 int axxia_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val)

@@ -571,8 +571,6 @@
 
 #define CONFIG_AXXIA_ARM
 
-/*#define NCR_TRACER*/
-
 #ifndef __ASSEMBLY__
 #include <linux/types.h>
 #include <linux/sizes.h>
@@ -881,25 +879,6 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #ifndef __ASSEMBLY__
 int sysmem_init(void);
 int cmem_init(void);
-#endif
-
-
-#ifdef CONFIG_SPL_BUILD
-#ifdef NCR_TRACER
-#define NCR_TRACE( format, args... ) do { \
-if( 0 != ncr_tracer_is_enabled( ) ) { \
-printf( format, ##args ); \
-} \
-} while( 0 );
-#define NCP_COMMENT( format, args... ) do { \
-if( 0 != ncr_tracer_is_enabled( ) ) { \
-printf( "# " format "\n", ##args ); \
-} \
-} while( 0 );
-#else
-#define NCR_TRACE( format, args... )
-#define NCP_COMMENT( format, args... )
-#endif
 #endif
 
 #define LSM     0x8031000000
