@@ -764,13 +764,9 @@ update_settings(void)
 			     (0xff << (i * 8))) >> (i * 8);
 
 		ncr_read32(region, offset, &value);
-		debug("0x%x.0x%x.0x%x : 0x%x => ",
-		      NCP_NODE_ID(region), NCP_TARGET_ID(region), offset,
-		      value);
 		value &= ~0x72;
 		value |= pic;
 		value |= ref_range << 4;
-		debug("0x%x\n", value);
 		ncr_write32(region, offset, value);
 	}
 
@@ -780,85 +776,177 @@ update_settings(void)
 
 	for (i = 0; i < (number_of_serdes * 2); ++i) {
 		unsigned int offset;
+		int eq_override;
 		unsigned int main;
 		unsigned int pre;
 		unsigned int post;
-		unsigned int boost;
 		unsigned int value;
-
+#if defined(CONFIG_AXXIA_ANY_56XX)
+		int boost_override;
+		unsigned int boost;
+#endif
 		if (4 > i) {
 			main = pciesrio->lane_0_eq_main;
 			pre = pciesrio->lane_0_eq_pre;
 			post = pciesrio->lane_0_eq_post;
+#if defined(CONFIG_AXXIA_ANY_56XX)
 			boost = pciesrio->lane_0_vboost;
+#endif
 		} else {
 			main = pciesrio->lane_1_eq_main;
 			pre = pciesrio->lane_1_eq_pre;
 			post = pciesrio->lane_1_eq_post;
+#if defined(CONFIG_AXXIA_ANY_56XX)
 			boost = pciesrio->lane_1_vboost;
+#endif
 		}
 
 		switch (i % 4) {
 		case 0:
-			main &= 0x3f;
+			main &= 0xbf;
 			pre &= 0x3f;
 			post &= 0x3f;
-			boost &= 0x3f;
+#if defined(CONFIG_AXXIA_ANY_56XX)
+			boost &= 0x81;
+#endif
 			break;
 		case 1:
-			main = (main & 0x3f00) >> 8;
+			main = (main & 0xbf00) >> 8;
 			pre = (pre & 0x3f00) >> 8;
 			post = (post & 0x3f00) >> 8;
-			boost = (boost & 0x3f00) >> 8;
+#if defined(CONFIG_AXXIA_ANY_56XX)
+			boost = (boost & 0x8100) >> 8;
+#endif
 			break;
 		case 2:
-			main = (main & 0x3f0000) >> 16;
+			main = (main & 0xbf0000) >> 16;
 			pre = (pre & 0x3f0000) >> 16;
 			post = (post & 0x3f0000) >> 16;
-			boost = (boost & 0x3f0000) >> 16;
+#if defined(CONFIG_AXXIA_ANY_56XX)
+			boost = (boost & 0x810000) >> 16;
+#endif
 			break;
 		case 3:
-			main = (main & 0x3f000000) >> 24;
+			main = (main & 0xbf000000) >> 24;
 			pre = (pre & 0x3f000000) >> 24;
 			post = (post & 0x3f000000) >> 24;
-			boost = (boost & 0x3f000000) >> 24;
+#if defined(CONFIG_AXXIA_ANY_56XX)
+			boost = (boost & 0x81000000) >> 24;
+#endif
 			break;
 		default:
 			printf("Error setting coefficients!\n");
 			break;
 		}
 
-#if defined(CONFIG_AXXIA_ANY_56XX)
-		offset = 0x18 + (i * 0x1c);
-#elif defined(CONFIG_AXXIA_ANY_XLF)
-		offset = 0xc + (i * 0x1c);
-#endif
+		/* Initialize the eq override bit. */
+
+		if (0 != (main & 0x80))
+			eq_override = 1;
+		else
+			eq_override = 0;
+
+		main &= 0x3f;
 
 #if defined(CONFIG_AXXIA_ANY_56XX)
-		ncr_read32(region, offset, &value);
-		debug("0x%x.0x%x.0x%x : 0x%x => ",
-		      NCP_NODE_ID(region), NCP_TARGET_ID(region), offset,
-		      value);
-		value &= ~(1 << 11);
+		/* Initialize the vboost override bit. */
 
-		if (0 != boost)
-			value |= (1 << 11);
+		if (0 != (boost & 0x80))
+			boost_override = 1;
+		else
+			boost_override = 0;
 
-		debug("0x%x\n", value);
-		ncr_write32(region, offset, value);
+		boost &= 1;
+#endif
+
+		/*
+		  To set the EQ values, use the cobalt registers
+		  (0x115.1+), not the config registers (0x115.0).
+		*/
+
+		region = NCP_REGION_ID(0x115, ((i / 2) + 1));
+
+#if defined(CONFIG_AXXIA_ANY_56XX)
+
+		/*
+		  Set VBOOST (5600 only).
+		*/
+
+		if (0 != boost_override) {
+#if 1
+			printf("%s:%d - Disabled (boost_override=%d)\n",
+			       __FILE__, __LINE__, boost_override);
+#else
+			/* Set or clear txN_vboost_en. */
+
+			if (0 == (i % 2))
+				offset = 0xe002;
+			else
+				offset = 0xe202;
+
+			ncr_read32(region, offset, &value);
+
+			if (0 != boost)
+				value |= (1 << 6);
+			else
+				value &= ~(1 << 6);
+
+			value |= (1 << 7); /* override enable */
+
+			ncr_write32(region, offset, value);
+#endif
+		}
 
 #endif
 
-		offset += 0x8;
+		if (0 != eq_override) {
+			/* Set EQ main. */
 
-		ncr_read32(region, offset, &value);
-		debug("0x%x.0x%x.0x%x : 0x%x => ",
-		      NCP_NODE_ID(region), NCP_TARGET_ID(region), offset,
-		      value);
-		value &= ~0x3f3f3f;
-		value |= ((post << 16) | (pre << 8) | main);
-		debug("0x%x\n", value);
-		ncr_write32(region, offset, value);
+			if (0 == (i % 2))
+				offset = 0x24;
+			else
+				offset = 0x44;
+
+#if defined(CONFIG_AXXIA_ANY_XLF)
+			offset *= 2;
+#endif
+
+			ncr_read32(region, offset, &value);
+			value &= ~0x3f;
+			value |= main;
+			ncr_write32(region, offset, value);
+
+			/* Set EQ pre/post. */
+
+			if (0 == (i % 2))
+				offset = 0x26;
+			else
+				offset = 0x46;
+
+#if defined(CONFIG_AXXIA_ANY_XLF)
+			offset *= 2;
+#endif
+
+			ncr_read32(region, offset, &value);
+			value &= ~0xfff;
+			value |= ((post << 6) | pre);
+			ncr_write32(region, offset, value);
+
+			/* Set the override: 0x115.1.<0x16|0x18> bit 4. */
+
+			if (0 == (i % 2))
+				offset = 0x16;
+			else
+				offset = 0x18;
+
+#if defined(CONFIG_AXXIA_ANY_XLF)
+			offset *= 2;
+#endif
+
+			ncr_read32(region, offset, &value);
+			value |= (1 << 4);
+			ncr_write32(region, offset, value);
+		}
 	}
 
 	return;
@@ -1245,7 +1333,7 @@ pciesrio_init(unsigned int control)
 		       pciesrio->lane_1_eq_post,
 		       pciesrio->lane_1_vboost);
 	}
-#endif	/* DISPLAY_PARAMETERS */
+#endif /* DISPLAY_PARAMETERS */
 
 	if (0 != verify_control(control)) {
 		error("Invalid Control Value: 0x%x\n", control);
