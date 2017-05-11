@@ -321,14 +321,6 @@
 
 #define CONFIG_CMD_SBB
 
-/*
-  USB Workarounds for 5600 A0 Silicon.
-*/
-
-#define USB_WA_PHY_STAR_9000944754
-#define USB_WA_PHY_STAR_9000952264_ALT
-#define USB_WA_PHY_STAR_9001023074
-
 #endif	/* CONFIG_TARGET_HARDWARE */
 
 /*

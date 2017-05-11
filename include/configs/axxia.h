@@ -4175,6 +4175,7 @@ unsigned int set_watchdog_timeout(unsigned int);
 */
 
 #if defined(CONFIG_AXXIA_USB0) || defined(CONFIG_AXXIA_USB1)
+
 #define CONFIG_USB_XHCI_AXXIA
 #define CONFIG_CMD_USB 1
 #define CONFIG_USB_XHCI 1
@@ -4223,10 +4224,33 @@ unsigned int set_watchdog_timeout(unsigned int);
 #define PCSTXSWINGFULL              0x40044
 #define TXVBOOSTLVL                 0x40048
 
+/* The PHY */
 #define AXXIA_USB0_BASE (AXI2SER6 + 0)
 #define AXXIA_USB1_BASE (AXI2SER6 + 0x80000)
 
+/* USB Configuration Space */
+#define AXXIA_USB0_CONFIG (0x9000000000)
+#define AXXIA_USB1_CONFIG (0x9800000000)
+
+/*
+  There are two sets of work-arounds (STARs) for USB.  One for the original 5600 and another for the newer 5600 and 6700.  The following macro will return the following.
+
+  0 - Use the work-arounds for 5600 v1.0
+  1 - Use the work-arounds for 5600 ? and 6700
+*/
+
+#ifndef __ASSEMBLY__
+#if defined(CONFIG_AXXIA_ANY_56XX)
+#define USB_WA_LEVEL() \
+	((pfuse & 0x700) >> 8)
+#elif defined(CONFIG_AXXIA_ANY_XLF)
+#define USB_WA_LEVEL() (1)
+#else
+#error "Unsupported Target!"
 #endif
+#endif
+
+#endif	/* CONFIG_AXXIA_USB0 || CONFIG_AXXIA_USB1 */
 
 /*#define DISABLE_USB3*/
 
