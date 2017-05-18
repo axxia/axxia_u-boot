@@ -66,10 +66,10 @@ do_sbb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 				     1, 1))
 			return 0;
 		else
-			return -1;
+			return CMD_RET_FAILURE;
 	}
 
-	return -1;
+	return CMD_RET_USAGE;
 }
 
 /*

@@ -195,6 +195,8 @@ report_errors(unsigned long sbb_interrupt_status, int verbose)
 /*
   ------------------------------------------------------------------------------
   run_sbb_function
+
+  Assumes SBB is enabled...
 */
 
 static int
@@ -204,13 +206,6 @@ run_sbb_function(int function,
 {
 	int i;
 	unsigned long value;
-	int sbb_enabled;
-
-	/* Make sure SBB is enabled. */
-	sbb_enabled = is_sbb_enabled(verbose);
-
-	if (-1 == sbb_enabled || 0 == sbb_enabled)
-		return -1;
 
 	/* Get the semaphore. */
 	if (0 != lock_sbb())
