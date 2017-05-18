@@ -4268,9 +4268,12 @@ unsigned int set_watchdog_timeout(unsigned int);
 
 /*
   NCR Tracing
+
+  To display the values read, define NCR_TRACER_RV.
 */
 
 /*#define NCR_TRACER*/
+/*#define NCR_TRACER_RV*/
 
 #ifdef CONFIG_SPL_BUILD
 #ifdef NCR_TRACER

@@ -64,15 +64,21 @@ ncr_fail(const char *file, const char *function, const int line)
 static int short_read_count = 100;	/* Make sure this isn't in bss. */
 
 void
-ncr_trace_read8(ncp_uint32_t region, ncp_uint32_t offset)
+ncr_trace_read8(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint8_t value)
 {
 	if (100 == short_read_count)
 		short_read_count = 0;
 
 	if (0 == short_read_count) {
 		++short_read_count;
+#ifdef NCR_TRACER_RV
+		printf("ncpRead   -w8 0.%u.%u.0x00%08x [0x%x]",
+		       NCP_NODE_ID(region), NCP_TARGET_ID(region),
+		       offset, value);
+#else
 		printf("ncpRead   -w8 0.%u.%u.0x00%08x",
 		       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
+#endif
 	} else {
 		++short_read_count;
 
@@ -86,19 +92,29 @@ ncr_trace_read8(ncp_uint32_t region, ncp_uint32_t offset)
 }
 
 void
-ncr_trace_read16(ncp_uint32_t region, ncp_uint32_t offset)
+ncr_trace_read16(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint16_t value)
 {
+#ifdef NCR_TRACER_RV
+	printf("ncpRead    0.%u.%u.0x00%08x 1 [0x%x]\n",
+	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
+#else
 	printf("ncpRead    0.%u.%u.0x00%08x 1\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
+#endif
 
 	return;
 }
 
 void
-ncr_trace_read32(ncp_uint32_t region, ncp_uint32_t offset)
+ncr_trace_read32(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
+#ifdef NCR_TRACER_RV
+	printf("ncpRead    0.%u.%u.0x00%08x 1 [0x%x]\n",
+	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
+#else
 	printf("ncpRead    0.%u.%u.0x00%08x 1\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
+#endif
 
 	return;
 }
@@ -172,17 +188,17 @@ ncr_trace_poll(ncp_uint32_t region,
 	return;
 }
 
-#define NCR_TRACE_READ8(region, offset) do {			\
-		if (ncr_tracer_is_enabled()) {			\
-			ncr_trace_read8(region, offset); }	\
+#define NCR_TRACE_READ8(region, offset, value) do {			\
+		if (ncr_tracer_is_enabled()) {				\
+			ncr_trace_read8(region, offset, value); }	\
 	} while (0);
-#define NCR_TRACE_READ16(region, offset) do {			\
-		if (ncr_tracer_is_enabled()) {			\
-			ncr_trace_read16(region, offset); }	\
+#define NCR_TRACE_READ16(region, offset, value) do {			\
+		if (ncr_tracer_is_enabled()) {				\
+			ncr_trace_read16(region, offset, value); }	\
 	} while (0);
-#define NCR_TRACE_READ32(region, offset) do {			\
-		if (ncr_tracer_is_enabled()) {			\
-			ncr_trace_read32(region, offset); }	\
+#define NCR_TRACE_READ32(region, offset, value) do {			\
+		if (ncr_tracer_is_enabled()) {				\
+			ncr_trace_read32(region, offset, value); }	\
 	} while (0);
 #define NCR_TRACE_WRITE8(region, offset, value) do {			\
 		if (ncr_tracer_is_enabled()) {				\
@@ -205,9 +221,9 @@ ncr_trace_poll(ncp_uint32_t region,
 			ncr_trace_poll(region, loops, delay, offset, mask, value); } \
 	} while (0);
 #else
-#define NCR_TRACE_READ8(region, offset) {}
-#define NCR_TRACE_READ16(region, offset) {}
-#define NCR_TRACE_READ32(region, offset) {}
+#define NCR_TRACE_READ8(region, offset, value) {}
+#define NCR_TRACE_READ16(region, offset, value) {}
+#define NCR_TRACE_READ32(region, offset, value) {}
 #define NCR_TRACE_WRITE8(region, offset, value) {}
 #define NCR_TRACE_WRITE16(region, offset, value) {}
 #define NCR_TRACE_WRITE32(region, offset, value) {}
@@ -1007,8 +1023,8 @@ ncr_read8(ncp_uint32_t region, ncp_uint32_t offset, unsigned char *value)
 {
 	int rc;
 
-	NCR_TRACE_READ8(region, offset);
 	rc = ncr_read(region, 0, offset, 1, value);
+	NCR_TRACE_READ8(region, offset, *value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1026,9 +1042,8 @@ ncr_read16(ncp_uint32_t region, ncp_uint32_t offset, unsigned short *value)
 {
 	int rc = 0;
 
-	NCR_TRACE_READ16(region, offset);
-
 	rc = ncr_read(region, 0, offset, 2, value);
+	NCR_TRACE_READ16(region, offset, *value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1046,8 +1061,8 @@ ncr_read32(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 {
 	int rc = 0;
 
-	NCR_TRACE_READ32(region, offset);
 	rc = ncr_read(region, 0, offset, 4, value);
+	NCR_TRACE_READ32(region, offset, *value);
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
@@ -1348,7 +1363,6 @@ ncr_write16( ncp_uint32_t region, ncp_uint32_t offset, unsigned short value )
 	int rc;
 
 	NCR_TRACE_WRITE16(region, offset, value);
-
 	rc = ncr_write(region, 0, offset, 2, &value);
 
 	if (0 != rc)
@@ -1368,7 +1382,6 @@ ncr_write32(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 	int rc;
 
 	NCR_TRACE_WRITE32(region, offset, value);
-		
 	rc = ncr_write(region, 0, offset, 4, &value);
 
 	if (0 != rc)
