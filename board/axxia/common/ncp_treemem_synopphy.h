@@ -24,8 +24,8 @@
 #include "regs/cmem_56xx/ncp_memory_controller_reg_defines.h"
 #include "regs/cmem_56xx/ncp_cmem_cfg_regs.h"
 #include "regs/cmem_56xx/ncp_cmem_cfg_reg_defines.h"
-#include "regs/cmem_56xx/ncp_phy_regs.h"
-#include "regs/cmem_56xx/ncp_phy_reg_defines.h"
+#include "regs/cmem_56xx/ncp_phy_regs_56xx.h"
+#include "regs/cmem_56xx/ncp_phy_reg_defines_56xx.h"
 
 ncp_st_t
 ncp_cm_ddr4_phy_reg_dump(

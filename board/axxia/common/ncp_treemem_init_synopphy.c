@@ -2225,6 +2225,7 @@ ncp_cm_ddr4_phy_init(
 	ncr_read32(phyRegion, NCP_PHY_DSGCR, (ncp_uint32_t *)&regDSGCR);
 	regDSGCR.wrrmode = 1;
 	regDSGCR.rrrmode = 1;
+	regDSGCR.puren = 0;
 	ncr_write32(phyRegion, NCP_PHY_DSGCR, *((ncp_uint32_t *)&regDSGCR));
 
 	/* DCR */
@@ -2725,11 +2726,17 @@ ncp_cm_ddr4_post_phy_training_mc_setup(
 	ncp_st_t		ncpStatus = NCP_ST_SUCCESS;
 	ncp_region_id_t     	ddrRegion;
 
+    ncp_memory_controller_DENALI_CTL_23_t reg23 = {0};
 	ncp_memory_controller_DENALI_CTL_82_t reg82 = {0};
 	ncp_memory_controller_DENALI_CTL_85_t reg85 = {0};
 	ncp_memory_controller_DENALI_CTL_86_t reg86 = {0};
 
 	ddrRegion = NCP_REGION_ID(cmNode, 0x09); /* memory_controller */
+
+    ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_23, (ncp_uint32_t *)&reg23);
+    /* enables refresh commands */
+    reg23.tref_enable = 0x1;
+    ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_23, *((ncp_uint32_t *)&reg23));
 
 	/* DENALI_CTL_82 */
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_82, (ncp_uint32_t *)&reg82);
@@ -2802,11 +2809,7 @@ ncp_treemem_init_synopphy(
 		if (NCP_ST_SUCCESS != ncpStatus)
 		{
 			/* Dump contents of synop phy regs */
-#ifdef __UBOOT__
-			NCP_CALL(ncp_cm_ddr4_phy_reg_dump(dev, cmNode));
-#else
-			NCP_CLEANUP_CALL(ncp_cm_ddr4_phy_reg_dump(dev, cmNode));
-#endif
+			ncp_cm_ddr4_phy_reg_dump(dev, cmNode);
 		}
 #endif
 	return ncpStatus;

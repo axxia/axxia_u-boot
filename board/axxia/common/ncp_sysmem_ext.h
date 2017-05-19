@@ -227,6 +227,8 @@ typedef enum {
 #define NCP_CHIP_ACP15xx            15       /* AXE15xx, aka X15    */
 #define NCP_CHIP_ACP35xx            16       /* AXM35xx, aka X3     */
 #define NCP_CHIP_ACPXLF             24       /* XLF */
+
+extern unsigned ddrRecovery;
 #else 
 /* RTE code */
 typedef ncp_uint32_t 
