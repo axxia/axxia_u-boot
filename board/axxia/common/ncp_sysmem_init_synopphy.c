@@ -2628,6 +2628,7 @@ ncp_sm_ddr4_phy_init(
 	ncr_read32(phyReg, NCP_PHY_DSGCR_5600, (ncp_uint32_t *)&regDSGCR);
 	regDSGCR.wrrmode = 1;
 	regDSGCR.rrrmode = 1;
+	regDSGCR.puren = 0;
 	ncr_write32(phyReg, NCP_PHY_DSGCR_5600, *((ncp_uint32_t *)&regDSGCR));
 
 	/* PHY DCR Register */
@@ -3141,11 +3142,18 @@ ncp_sm_ddr4_post_phy_training_mc_setup(
 	ncp_st_t		ncpStatus = NCP_ST_SUCCESS;
 	ncp_region_id_t 	ctlReg  = NCP_REGION_ID(smNode, NCP_SYSMEM_TGT_DENALI);
 
+    ncp_denali_DENALI_CTL_41_5600_t  reg41 = {0};
 	ncp_denali_DENALI_CTL_125_5600_t reg125 = {0};
 	ncp_denali_DENALI_CTL_368_5600_t reg368 = {0};
 	ncp_denali_DENALI_CTL_369_5600_t reg369 = {0};
 	ncp_denali_DENALI_CTL_370_5600_t reg370 = {0};
 	ncp_denali_DENALI_CTL_371_5600_t reg371 = {0};
+
+    /* DENALI_CTL_41 */
+    ncr_read32(ctlReg, NCP_DENALI_CTL_41_5600, (ncp_uint32_t *)&reg41);
+    /* the refresh command time in clocks */
+    reg41.tref_enable = 1; /* enables refresh commands */
+    ncr_write32(ctlReg, NCP_DENALI_CTL_41_5600, *((ncp_uint32_t *)&reg41));
 
 	/* DENALI_CTL_125 */
 	ncr_read32(ctlReg, NCP_DENALI_CTL_125_5600, (ncp_uint32_t *)&reg125);
@@ -3243,8 +3251,8 @@ ncp_sysmem_init_synopphy(
 #ifdef NCP_SM_PHY_REG_DUMP
 		if (NCP_ST_SUCCESS != ncpStatus)
 		{
-			/* Dump contents of synop phy regs */
-			NCP_CALL(ncp_sm_ddr4_phy_reg_dump(dev, smNode));
+			/* Dump contents of synop phy regs on training failures */
+			ncp_sm_ddr4_phy_reg_dump(dev, smNode);
 		}
 #endif
 	return ncpStatus;

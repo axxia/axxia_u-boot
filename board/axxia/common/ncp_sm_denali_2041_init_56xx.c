@@ -379,16 +379,19 @@ ncp_sm_common_setup_56xx(
                 ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_1x[parms->sdram_device_density]));
                 ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_1x[parms->sdram_device_density]) + 10000)));
                 ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_1x[parms->sdram_device_density] + 10000));
+                ctm->tREFI = ncp_ps_to_clk(parms->tck_ps, ((parms->high_temp_dram == TRUE) ?  3900000 : 7800000));
             break;
             case NCP_SM_REFRESH_MODE_2X:
                 ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_2x[parms->sdram_device_density]));
                 ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_2x[parms->sdram_device_density]) + 10000)));
                 ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_2x[parms->sdram_device_density] + 10000));
+                ctm->tREFI = ncp_ps_to_clk(parms->tck_ps, ((parms->high_temp_dram == TRUE) ?  1950000 : 3900000));
             break;
             case NCP_SM_REFRESH_MODE_4X:
                 ctm->tRFC = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_4x[parms->sdram_device_density]));
                 ctm->tXPR = Max(5, ncp_ps_to_clk(parms->tck_ps,((ddr4refresh_parms_by_density_4x[parms->sdram_device_density]) + 10000)));
                 ctm->tXS = ncp_ps_to_clk(parms->tck_ps,(ddr4refresh_parms_by_density_4x[parms->sdram_device_density] + 10000));
+                ctm->tREFI = ncp_ps_to_clk(parms->tck_ps, ((parms->high_temp_dram == TRUE) ?  975000 : 1950000));
             break;
             default:
                 ;
@@ -397,7 +400,6 @@ ncp_sm_common_setup_56xx(
         ctm->tCKSRE = Max(5, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tCKESR)));
         ctm->tCKE = Max(3, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tCKE)));
         ctm->tMRD_PDA = Max(16, ncp_ps_to_clk(parms->tck_ps, (speedbin_ddr4_vals[clkSpeedIndex].tMRD_PDA)));
-        ctm->tREFI = ncp_ps_to_clk(parms->tck_ps, ((parms->high_temp_dram == TRUE) ?  3900000 : 7800000));
 
         dbgprintf("ctm->speed = %d, ctm->binned_CL = %d, ctm->CL_config = %d, ctm->tRCD = %d, ctm->tRP = %d, ctm->tRAS = %d, ctm->tRC = %d, ctm->tCCD_L = %d, ctm->tCCD_S = %d, ctm->tRRD_S = %d, ctm->tRRD_L = %d, ctm->tFAW = %d, ctm->tWTR_S = %d, ctm->tWTR_L = %d, ctm->tRTP = %d, ctm->tWR = %d, ctm->tMRD = %d, ctm->tMOD = %d, ctm->tMPRR = %d, ctm->tWR_MPR = %d, ctm->tZQinit = %d, ctm->tRFC = %d, ctm->tXPR = %d, ctm->tXS = %d, ctm->tCKESR = %d, ctm->tCKSRE = %d, ctm->tCKE = %d, ctm->tMRD_PDA = %d, ctm->tREFI = %d\n",
                   ctm->speed,
@@ -1087,7 +1089,7 @@ ncp_sm_denali_2041_init_56xx(
     ncr_read32(ctlReg, NCP_DENALI_CTL_41_5600, (ncp_uint32_t *)&reg41);
     /* the refresh command time in clocks */
     reg41.trfc = (parms->dram_class == NCP_SM_DDR4_MODE) ? ctm->tRFC : ncp_ps_to_clk(parms->tck_ps,ddr3refresh_parms_by_density[parms->sdram_device_density]);
-    reg41.tref_enable = 1; /* enables refresh commands */
+    reg41.tref_enable = 0; /* enables refresh commands */
     ncr_write32(ctlReg, NCP_DENALI_CTL_41_5600, *((ncp_uint32_t *)&reg41));
 
 
@@ -1125,6 +1127,11 @@ ncp_sm_denali_2041_init_56xx(
     reg46.cke_delay = 3;
     reg46.enable_quick_srefresh = 1;
     reg46.srefresh_exit_no_refresh = 0;
+#ifdef UBOOT
+    reg46.pwrup_srefresh_exit = (ddrRecovery == TRUE) ? 1 : 0;
+#else
+    reg46.pwrup_srefresh_exit = (parms->ddrRecovery == TRUE) ? 1 : 0;
+#endif
     ncr_write32(ctlReg, NCP_DENALI_CTL_46_5600, *((ncp_uint32_t *)&reg46));
 
 
@@ -1849,7 +1856,7 @@ ncp_sm_denali_2041_init_56xx(
     ncr_read32(ctlReg, NCP_DENALI_CTL_125_5600, (ncp_uint32_t *)&reg125);
     reg125.rd_preamble_training_en = 0x0;
     reg125.preamble_support = parms->preamble_support;
-    reg125.ctrlupd_req_per_aref_en = 0x1;
+    reg125.ctrlupd_req_per_aref_en = 0x0;
     reg125.ctrlupd_req = 0x0;
     ncr_write32(ctlReg, NCP_DENALI_CTL_125_5600, *((ncp_uint32_t *)&reg125));
 
