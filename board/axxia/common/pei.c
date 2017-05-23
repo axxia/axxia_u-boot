@@ -785,7 +785,8 @@ update_settings(void)
 		int boost_override;
 		unsigned int boost;
 #endif
-		if (4 > i) {
+
+		if (0 == (i % 2)) {
 			main = pciesrio->lane_0_eq_main;
 			pre = pciesrio->lane_0_eq_pre;
 			post = pciesrio->lane_0_eq_post;
@@ -801,7 +802,7 @@ update_settings(void)
 #endif
 		}
 
-		switch (i % 4) {
+		switch (i / 2) {
 		case 0:
 			main &= 0xbf;
 			pre &= 0x3f;
