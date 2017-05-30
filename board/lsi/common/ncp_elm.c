@@ -63,10 +63,11 @@ ncp_elm_init(
          * number of bits of address per controller and number
          * of chip-selects
          */
-      if (2 == parms->num_interfaces)
+      if (2 == parms->num_interfaces) {
         sdramSize = parms->totalSize >> 1;
-      else
+      } else {
         sdramSize = parms->totalSize;
+      }
 
         while ( 0 < sdramSize) {
             ++ddrBits;
