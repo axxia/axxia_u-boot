@@ -84,5 +84,36 @@ setup_security(void)
 	/* 0x1d2.0.0x114 = 0xffffffff */
 	writel(0xffffffff, (TZC + 0x114));
 
+	/*
+	  Handle sRIO and GPDMA
+	*/
+
+#if defined(CONFIG_AXXIA_PCI) && defined(CONFIG_AXXIA_ANY_56XX)
+
+	unsigned int value;
+
+	switch ((pciesrio->control >> 22) & 0xf) {
+	case 4:
+		value = readl(PCIAXISCB + 0x18);
+		value |= 1;
+		writel(value, (PCIAXISCB + 0x18));
+		value = readl(PCIAXISCB + 0x47800);
+		value |= 3;
+		writel(value, (PCIAXISCB + 0x47800));
+		/* intentionaly fall through */
+	case 3:
+		value = readl(PCIAXISCB + 0x14);
+		value |= 1;
+		writel(value, (PCIAXISCB + 0x14));
+		value = readl(PCIAXISCB + 0x46800);
+		value |= 3;
+		writel(value, (PCIAXISCB + 0x46800));
+		break;
+	default:
+		break;
+	}
+
+#endif	/* CONFIG_AXXIA_PCI && CONFIG_AXXIA_ANY_56XX */
+
 	return 0;
 }
