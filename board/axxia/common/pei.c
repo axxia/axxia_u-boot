@@ -1000,6 +1000,8 @@ verify_control(unsigned control)
 {
 	unsigned config;
 
+    printf("PCIE/SRIO Configuration Parameter = 0x%08x\n", control);
+
 	if (0x80000000 == control)
 		return 0;
 
@@ -1009,8 +1011,23 @@ verify_control(unsigned control)
 
 	config = get_config(control);
 
-	if (1 != config && 2 != config && 3 != config && 4 != config)
-		return -1;
+	switch (config) 
+	{
+		/* the officially supported configs */
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		/* the undocumented supported configs */
+		case 15:
+			break;
+
+		default:
+			/* return an error for all others */
+			return -1;
+
+	}
+
 #elif defined(CONFIG_AXXIA_ANY_XLF)
 	if (0 != (control & ~0xc00081))
 		return -1;
@@ -1073,7 +1090,11 @@ pei_setup(unsigned int control)
 
 	rc_mode = (control & 0x80) >> 7;
 
-	disable_ltssm(PEI0);
+	if (pei0_mode) disable_ltssm(PEI0);
+#if !defined(CONFIG_AXXIA_ANY_XLF)
+	if (pei1_mode) disable_ltssm(PEI1);
+	if (pei2_mode) disable_ltssm(PEI2);
+#endif
 
 	for (phy = 0; phy < 4; phy++)
 		enable_reset(phy);
@@ -1231,6 +1252,8 @@ pei_setup(unsigned int control)
 		reg_val |= (srio0_mode << 3);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0, reg_val);
 		break;
+
+
 	case 4:
 		/*
 		  SRIO1x2 (HSS10-ch0,1)
@@ -1299,6 +1322,63 @@ pei_setup(unsigned int control)
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0, reg_val);
 		printf("Done\n");
 		break;
+
+
+	/* the undocumented configurations */
+	case 15:
+		/*
+		  UNUSED  (HSS10-ch0,1)
+		  SRIO0x2 (HSS11-ch0,1)
+		  PEI1x4  (HSS12-ch0,1; HSS13-ch0,1)
+		*/
+
+		set_sw_port_config0(pc0_SRIO1x2_SRIO0x2);
+		set_sw_port_config1(pc1_PEI1x4);
+		set_pipe_port_sel(pp_0_1_2_3);
+
+		if (pei1_mode) {
+			release_reset(2);
+			release_reset(3);
+		}
+
+		/* Enable PEI1 */
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0, &reg_val);
+		reg_val |= (pei1_mode << 1);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, reg_val);
+
+		set_srio_mode(SRIO0, srio0_ctrl);
+		set_srio_speed(SRIO0, srio0_speed);
+		if (srio0_mode) {
+			printf("Set up sRIO0 -- %d\n", srio0_speed);
+			setup_srio_mode(SRIO0, srio0_speed);
+			if (release_srio_reset(SRIO0, srio0_speed))
+				srio0_mode = 0;
+		}
+		printf("Enabling sRIO .");
+		/* Power up TX/RX lanes */
+		if (srio0_mode && powerup_srio_lanes(SRIO0, P1))
+			srio0_mode = 0;
+
+		printf(".");
+		/* Set TX clock ready */
+		if (srio0_mode)
+			set_tx_clk_ready();
+
+		/* Power up TX/RX lanes */
+		if (srio0_mode && powerup_srio_lanes(SRIO0, P0))
+			srio0_mode = 0;
+		printf(".");
+
+		if (srio0_mode)
+			enable_srio_lanes(SRIO0);
+		printf(".");
+		/* Enable SRIO0/SRIO1 */
+		ncr_read32(NCP_REGION_ID(0x115, 0), 0, &reg_val);
+		reg_val |= (srio0_mode << 3);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, reg_val);
+		printf("Done\n");
+		break;
+
 #endif
 	default:
 		error("Configuration not Handled: 0x%x\n", get_config(control));
