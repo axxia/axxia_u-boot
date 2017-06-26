@@ -841,23 +841,16 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 		PCI_COMMAND_MASTER | PCI_COMMAND_SERR;
 	axxia_pcie_writel_rc(hose, val, PCI_COMMAND);
 
-	/* GEN2_CTRL_OFF */
+	/*
+	  GEN2_CTRL_OFF
+
+	  To work around a hardware problem, set
+	  PCIE_LINK_WIDTH_SPEED_CONTROL to 1 lane in all cases.
+	*/
+
 	axxia_pcie_readl_rc(hose, PCIE_LINK_WIDTH_SPEED_CONTROL, &val);
 	val &= ~PORT_LOGIC_LINK_WIDTH_MASK;
-	switch (data->lanes) {
-	case 2:
-		val |= PORT_LOGIC_LINK_WIDTH_2_LANES;
-		break;
-	case 4:
-		val |= PORT_LOGIC_LINK_WIDTH_4_LANES;
-		break;
-	case 8:
-		val |= PORT_LOGIC_LINK_WIDTH_8_LANES;
-		break;
-	case 1:
-	default:
-		val |= PORT_LOGIC_LINK_WIDTH_1_LANES;
-	}
+	val |= PORT_LOGIC_LINK_WIDTH_1_LANES;
 	axxia_pcie_writel_rc(hose, val, PCIE_LINK_WIDTH_SPEED_CONTROL);
 
 	/* PORT_LINK_CTRL_OFF */
