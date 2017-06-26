@@ -121,7 +121,6 @@ struct pci_hose_data {
 static struct pci_controller hose[CONFIG_SYS_PCIE_NR_PORTS];
 static struct pci_hose_data hose_data[CONFIG_SYS_PCIE_NR_PORTS];
 
-#ifdef TRACE_PEI_ACCESSES
 static int
 pei_by_dbi(unsigned long dbi_base)
 {
@@ -143,6 +142,17 @@ pei_by_dbi(unsigned long dbi_base)
 	return -1;
 }
 
+static int
+pei_by_hose(struct pci_controller *hose)
+{
+	struct pci_hose_data *priv;
+
+	priv = (struct pci_hose_data *)hose->priv_data;
+
+	return pei_by_dbi(priv->dbi_base);
+}
+
+#ifdef TRACE_PEI_ACCESSES
 static int
 pei_by_cc(unsigned long cc_gpreg_base)
 {
@@ -1005,7 +1015,22 @@ int pci_axxia_init(struct pci_controller *hose, int port, int lanes)
 
 	if (axxia_pcie_establish_link(hose)) {
 		debug("Failed to establish PCIe link\n");
+
 		return 1;
+	} else {
+		unsigned int value;
+
+		axxia_cc_gpreg_readl(hose, PEI_SII_PWR_MGMT_REG, &value);
+
+		if (0 != (value & (1 << 12)) &&
+		    0x11 == ((value & 0x3f0) >> 4)) {
+			axxia_pcie_readl_rc(hose, 0x80, &value);
+
+			printf("PEI%d Link is up: Gen%d x%d\n",
+			       pei_by_hose(hose),
+			       (((value & 0xf0000) >> 16) & 0xff),
+			       (((value & 0x3f00000) >> 20) & 0xff));
+		}
 	}
 
 	pci_axxia_program_rc_class(hose);
