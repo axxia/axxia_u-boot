@@ -574,7 +574,8 @@ static int
 axxia_pcie_los_wa(struct pci_controller *hose)
 {
 	unsigned int value;
-	unsigned int max_loops = 10000; /* determined experimentally */
+	unsigned long timer;
+	int rc = 1;
 
 	/*
 	  There are four SerDes, each with 2 lanes or channels.  The
@@ -733,7 +734,9 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 #error "Invalid Architecture"
 #endif
 
-	while (0 < --max_loops) {
+	timer = get_timer(0);
+
+	while (get_timer(timer) < 2000) {
 		int i;
 		unsigned short temp;
 
@@ -786,14 +789,16 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 
 		axxia_cc_gpreg_readl(hose, PEI_SII_PWR_MGMT_REG, &value);
 
-		if (0 != (value & (1 << 12)) && 0x11 == ((value & 0x3f0) >> 4))
+		if (0 != (value & (1 << 12)) &&
+		    0x11 == ((value & 0x3f0) >> 4)) {
+
+			rc = 0;
+
 			break;
+		}
 	}
 
-	if (0 == max_loops)
-		return -1;
-
-	return 0;
+	return rc;
 }
 #endif	/* ENABLE_LOS_WA */
 
