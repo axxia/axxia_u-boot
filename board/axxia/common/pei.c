@@ -874,10 +874,6 @@ update_settings(void)
 		*/
 
 		if (0 != boost_override) {
-#if 1
-			printf("%s:%d - Disabled (boost_override=%d)\n",
-			       __FILE__, __LINE__, boost_override);
-#else
 			/* Set or clear txN_vboost_en. */
 
 			if (0 == (i % 2))
@@ -893,14 +889,14 @@ update_settings(void)
 				value &= ~(1 << 6);
 
 			value |= (1 << 7); /* override enable */
-
 			ncr_write32(region, offset, value);
-#endif
 		}
 
 #endif
 
 		if (0 != eq_override) {
+			printf("%s:%d - \n", __FILE__, __LINE__);
+
 			/* Set EQ main. */
 
 			if (0 == (i % 2))
@@ -1000,8 +996,6 @@ verify_control(unsigned control)
 {
 	unsigned config;
 
-    printf("PCIE/SRIO Configuration Parameter = 0x%08x\n", control);
-
 	if (0x80000000 == control)
 		return 0;
 
@@ -1042,19 +1036,11 @@ verify_control(unsigned control)
 }
 
 /*
-  ==============================================================================
-  ==============================================================================
-  Public
-  ==============================================================================
-  ==============================================================================
-*/
-
-/*
   ------------------------------------------------------------------------------
   pei_setup
 */
 
-int
+static int
 pei_setup(unsigned int control)
 {
 	unsigned int rc_mode;
@@ -1101,7 +1087,11 @@ pei_setup(unsigned int control)
 
 	/* Disable all interfaces */
 	ncr_read32(NCP_REGION_ID(0x115, 0), 0, &reg_val);
-	reg_val &= ~(0xf | (0x1 << 10) | (0x3 << 29));
+#if defined(CONFIG_AXXIA_ANY_56XX)
+	reg_val &= ~(0xf | (0x1 << 10) | (1 << 29) | (1 << 30));
+#elif defined(CONFIG_AXXIA_ANY_XLF)
+	reg_val &= ~(1 << 0);
+#endif
 	ncr_write32(NCP_REGION_ID(0x115, 0), 0, reg_val);
 	mdelay(100);		/* TODO: Why is this needed? */
 
@@ -1146,7 +1136,6 @@ pei_setup(unsigned int control)
 		if (pei0_mode)
 			for (phy = 0; phy < 2; phy++)
 				release_reset(phy);
-
 		ncr_read32(NCP_REGION_ID(0x115, 0), 0x0, &reg_val);
 		reg_val |= (pei0_mode << 0);
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0x0, reg_val);
@@ -1389,10 +1378,309 @@ pei_setup(unsigned int control)
 }
 
 /*
- *  pciesrio_init
- */
+  ==============================================================================
+  ==============================================================================
+  Public
+  ==============================================================================
+  ==============================================================================
+*/
+
+/*
+  ------------------------------------------------------------------------------
+  pei_reset
+
+  Assumes that pei_init() has been run.
+
+  Only resets PCI ports.
+*/
+
 int
-pciesrio_init(unsigned int control)
+pei_reset(unsigned int control, int pei)
+{
+	enum PCIMode mode;
+	unsigned int ctrl0;
+
+	switch (pei) {
+	case 0:
+		mode = PEI0;
+		break;
+#if defined(CONFIG_AXXIA_ANY_56XX)
+	case 1:
+		mode = PEI1;
+		break;
+	case 2:
+		mode = PEI2;
+		break;
+#endif
+	default:
+		error("Invalid PEI: %d\n", pei);
+		return -1;
+		break;
+	}
+
+	disable_ltssm(mode);
+	ncr_read32(NCP_REGION_ID(0x115, 0), 0, &ctrl0);
+
+	switch (get_config(control)) {
+	case 1:
+#if defined(CONFIG_AXXIA_ANY_56XX)
+		/*
+		  PEI0x4  (HSS10-ch0,1; HSS11-ch0,1)
+		  PEI1x4  (HSS12-ch0,1; HSS13-ch0,1)
+		*/
+
+		switch (mode) {
+		case PEI0:
+			enable_reset(0);
+			enable_reset(1);
+			ctrl0 &= ~(1 << 0);
+			break;
+		case PEI1:
+			enable_reset(2);
+			enable_reset(3);
+			ctrl0 &= ~(1 << 1);
+			break;
+		default:
+			error("Invalid PEI for mode %d!\n",
+			      get_config(control));
+			return -1;
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+		switch (mode) {
+		case PEI0:
+			release_reset(0);
+			release_reset(1);
+			ctrl0 |= (1 << 0);
+			break;
+		case PEI1:
+			release_reset(2);
+			release_reset(3);
+			ctrl0 |= (1 << 1);
+			break;
+		default:
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+#elif defined(CONFIG_AXXIA_ANY_XLF)
+		/*
+		  PEI0x2  (HSS15-ch0,1)
+		*/
+
+		enable_reset(0);
+		ctrl0 &= ~(1 << 0);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+		release_reset(0);
+		ctrl0 |= (1 << 0);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+#else
+#error "Invalid Target!"
+#endif
+
+		break;
+	case 2:
+#if defined(CONFIG_AXXIA_ANY_56XX)
+		/*
+		  PEI0x2  (HSS10-ch0,1)
+		  PEI2x2  (HSS11-ch0,1)
+		  PEI1x2  (HSS12-ch0,1)
+		  UNUSED  (HSS13-ch0,1)
+		*/
+
+		/* Disable srio0 and srio1. */
+		ctrl0 &= ~((1 << 10) | (1 << 3));
+
+		switch (mode) {
+		case PEI0:
+			enable_reset(0);
+			ctrl0 &= ~(1 << 0);
+			break;
+		case PEI1:
+			enable_reset(2);
+			ctrl0 &= ~(1 << 1);
+			break;
+		case PEI2:
+			enable_reset(1);
+			ctrl0 &= ~(1 << 2);
+			break;
+		default:
+			error("Invalid PEI for mode %d!\n",
+			      get_config(control));
+			return -1;
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+		switch (mode) {
+		case PEI0:
+			release_reset(0);
+			ctrl0 |= (1 << 0);
+			break;
+		case PEI1:
+			release_reset(2);
+			ctrl0 |= (1 << 1);
+			break;
+		case PEI2:
+			release_reset(1);
+			ctrl0 |= (1 << 2);
+			break;
+		default:
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+#elif defined(CONFIG_AXXIA_ANY_XLF)
+		/*
+		  PEI0x1  (HSS15-ch0)
+		*/
+
+		enable_reset(0);
+		ctrl0 &= ~(1 << 0);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+		release_reset(0);
+		ctrl0 |= (1 << 0);
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+#else
+#error "Invalid Target!"
+#endif
+		break;
+#if defined(CONFIG_AXXIA_ANY_56XX)
+	case 3:
+		/*
+		  PEI0x2  (HSS10-ch0,1)
+		  SRIO0x2 (HSS11-ch0,1)
+		  UNUSED  (HSS12-ch0,1)
+		  PEI2x2  (HSS13-ch0,1)
+		  INFO: Formerly case 6...
+		*/
+
+		switch (mode) {
+		case PEI0:
+			enable_reset(0);
+			ctrl0 &= ~(1 << 0);
+			break;
+		case PEI2:
+			enable_reset(3);
+			ctrl0 &= ~(1 << 2);
+			break;
+		default:
+			error("Invalid PEI for mode %d!\n",
+			      get_config(control));
+			return -1;
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+		switch (mode) {
+		case PEI0:
+			release_reset(0);
+			ctrl0 |= (1 << 0);
+			break;
+		case PEI2:
+			release_reset(3);
+			ctrl0 |= (1 << 2);
+			break;
+		default:
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+		break;
+	case 4:
+		/*
+		  SRIO1x2 (HSS10-ch0,1)
+		  SRIO0x2 (HSS11-ch0,1)
+		  UNUSED  (HSS12-ch0,1)
+		  PEI2x2  (HSS13-ch0,1)
+		*/
+
+		switch (mode) {
+		case PEI2:
+			enable_reset(3);
+			ctrl0 &= ~(1 << 2);
+			break;
+		default:
+			error("Invalid PEI for mode %d!\n",
+			      get_config(control));
+			return -1;
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+		switch (mode) {
+		case PEI2:
+			release_reset(3);
+			ctrl0 |= (1 << 2);
+			break;
+		default:
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+		break;
+	case 15:
+		/*
+		  UNDOCUMENTED!!!
+
+		  UNUSED  (HSS10-ch0,1)
+		  SRIO0x2 (HSS11-ch0,1)
+		  PEI1x4  (HSS12-ch0,1; HSS13-ch0,1)
+		*/
+
+		switch (mode) {
+		case PEI1:
+			enable_reset(2);
+			enable_reset(3);
+			ctrl0 &= ~(1 << 1);
+			break;
+		default:
+			error("Invalid PEI for mode %d!\n",
+			      get_config(control));
+			return -1;
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+		switch (mode) {
+		case PEI1:
+			release_reset(2);
+			release_reset(3);
+			ctrl0 |= (1 << 1);
+			break;
+		default:
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+		break;
+#endif
+	default:
+		error("Invalid Configuration: 0x%x\n", get_config(control));
+		break;
+	}
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  pei_init
+*/
+
+int
+pei_init(unsigned int control)
 {
 #ifdef DISPLAY_PARAMETERS
 	printf("-- -- PCIe/SRIO\n"
@@ -1429,6 +1717,7 @@ pciesrio_init(unsigned int control)
 		ncr_tracer_enable();
 #endif
 		pei_setup(control);
+		mdelay(100);
 		update_settings();
 #ifdef TRACE_PEI_ACCESSES
 		ncr_tracer_disable();

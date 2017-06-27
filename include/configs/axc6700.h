@@ -1529,7 +1529,6 @@ extern volatile unsigned long long *scratch;
 void axxia_display_clocks(void);
 int clocks_init(int);
 int voltage_init(void);
-int pciesrio_init(unsigned int);
 int is_sbb_enabled(int);
 int sbb_verify_image(void *, void *, int, int, int);
 extern unsigned int pfuse;

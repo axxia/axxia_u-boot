@@ -205,18 +205,5 @@ axxia_initialize(void)
 	}
 #endif
 
-
-	/*
-	  =========
-	  PCIe/SRIO
-	  =========
-	*/
-
-#if defined(CONFIG_AXXIA_PCI) && !defined(PEI_SETUP_IN_LINUX)
-	if (0 != (global->flags & PARAMETERS_GLOBAL_SET_PEI))
-		if (0 != pciesrio_init(pciesrio->control))
-			acp_failure(__FILE__, __FUNCTION__, __LINE__);
-#endif
-
 	return 0;
 }

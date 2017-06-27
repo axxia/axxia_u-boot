@@ -26,16 +26,16 @@ ifndef CONFIG_SPL_BUILD
 
 obj-y += axxia.o extmemmpr.o
 
+ifdef CONFIG_AXXIA_PCI
+obj-y += pei.o
+endif
+
 else
 
 ################################################################################
 ## SPL Build
 
 obj-y += sysmem_reset.o spl.o axxia_initialize.o sysmem_bist.o cmem_bist.o
-
-ifdef CONFIG_AXXIA_PCI
-obj-y += pei.o
-endif
 
 ifndef CONFIG_AXXIA_EMU
 obj-y += ncp_sm_denali_2041_init_56xx.o ncp_sysmem_init_synopphy.o

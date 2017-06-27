@@ -4282,6 +4282,11 @@ unsigned int set_watchdog_timeout(unsigned int);
 
 /*#define CONFIG_AXXIA_SPL_DIAGNOSTICS*/
 
+#ifndef __ASSEMBLY__
+int pei_reset(unsigned int, int);
+int pei_init(unsigned int);
+#endif	/* __ASSEMBLY__ */
+
 /*
   Define the following to trace PEI accesses (trace PCIe/sRIO configuration).
 
