@@ -27,12 +27,6 @@
 #include <pci.h>
 #include <config.h>
 
-/*
-  The "LOS Work Around"
-*/
-
-#define ENABLE_LOS_WA
-
 #define PEI_GENERAL_CORE_CTL_REG 0x38
 #define PEI_SII_PWR_MGMT_REG 0xD4
 #define PEI_SII_DBG_0_MON_REG 0xEC
@@ -120,6 +114,8 @@ struct pci_hose_data {
 
 static struct pci_controller hose[CONFIG_SYS_PCIE_NR_PORTS];
 static struct pci_hose_data hose_data[CONFIG_SYS_PCIE_NR_PORTS];
+
+static int enable_los_wa = 1;
 
 static int
 pei_by_dbi(unsigned long dbi_base)
@@ -569,7 +565,6 @@ int pcie_write_config_dword(struct pci_controller *hose, pci_dev_t dev,
 	return pcie_write_config(hose, (u32)dev, offset, 4, (u32)val);
 }
 
-#ifdef ENABLE_LOS_WA
 static int
 axxia_pcie_los_wa(struct pci_controller *hose)
 {
@@ -806,7 +801,6 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 
 	return rc;
 }
-#endif	/* ENABLE_LOS_WA */
 
 int axxia_pcie_link_up(struct pci_controller *hose)
 {
@@ -896,27 +890,31 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 		}
 		axxia_pcie_writel_rc(hose, val, PCIE_PORT_LINK_CONTROL);
 	
-#ifdef ENABLE_LOS_WA
-		/* The default value of GEN3_EQ_CONTROL is not correct. */
-		axxia_pcie_writel_rc(hose, 0x1017221, 0x8a8);
+		if (0 != enable_los_wa) {
+			/* Update GEN3_EQ_CONTROL */
+			axxia_pcie_writel_rc(hose, 0x1017221, 0x8a8);
 
-		/* LTSSM enable */
-		axxia_cc_gpreg_readl(hose, PEI_GENERAL_CORE_CTL_REG, &val);
-		val |= 0x1;
-		axxia_cc_gpreg_writel(hose, 0x1, PEI_GENERAL_CORE_CTL_REG);
+			/* LTSSM enable */
+			axxia_cc_gpreg_readl(hose,
+					     PEI_GENERAL_CORE_CTL_REG, &val);
+			val |= 0x1;
+			axxia_cc_gpreg_writel(hose,
+					      0x1, PEI_GENERAL_CORE_CTL_REG);
 
-		(void)axxia_pcie_los_wa(hose);
-#else  /* ENABLE_LOS_WA */
-		/* The default value of GEN3_EQ_CONTROL is not correct. */
-		axxia_pcie_writel_rc(hose, 0x1017201, 0x8a8);
+			(void)axxia_pcie_los_wa(hose);
+		} else {
+			/* Update GEN3_EQ_CONTROL */
+			axxia_pcie_writel_rc(hose, 0x1017201, 0x8a8);
 
-		/* LTSSM enable */
-		axxia_cc_gpreg_readl(hose, PEI_GENERAL_CORE_CTL_REG, &val);
-		mdelay(100);
-		val |= 0x1;
-		axxia_cc_gpreg_writel(hose, 0x1, PEI_GENERAL_CORE_CTL_REG);
-		mdelay(100);
-#endif	/* ENABLE_LOS_WA */
+			/* LTSSM enable */
+			axxia_cc_gpreg_readl(hose,
+					     PEI_GENERAL_CORE_CTL_REG, &val);
+			mdelay(100);
+			val |= 0x1;
+			axxia_cc_gpreg_writel(hose,
+					      0x1, PEI_GENERAL_CORE_CTL_REG);
+			mdelay(100);
+		}
 
 		link = axxia_pcie_link_up(hose);
 
@@ -1087,6 +1085,15 @@ pci_init_board(void)
 #if defined(ACP_PEI2)
 	unsigned int pei2_lanes = 0;
 #endif
+	char *los_string;
+
+	los_string = getenv("disable_los_wa");
+
+	if ((NULL != los_string) &&
+	    (0 == strncmp(los_string, "true", strlen("true")))) {
+		enable_los_wa = 0;
+		puts("PCI LOS Work Around Disabled\n");
+	}
 
 	control = pciesrio->control;
 
