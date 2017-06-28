@@ -685,6 +685,13 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 			return 0;
 
 		break;
+	case 15:
+		/* PEI1x4 */
+		if (1 == pei)
+			lane_mask = 0x11110000;
+		else
+			return 0;
+		break;
 	default:
 		return 0;
 		break;
@@ -791,7 +798,6 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 
 		if (0 != (value & (1 << 12)) &&
 		    0x11 == ((value & 0x3f0) >> 4)) {
-
 			rc = 0;
 
 			break;
