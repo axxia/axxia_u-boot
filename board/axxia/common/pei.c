@@ -1,7 +1,7 @@
 /*
- *  board/axxia/common/pciesriosata.c
+ *  board/axxia/common/pei.c
  *
- *  Copyright (C) 2015 Intel (sangeetha.rao@intel.com)
+ *  Copyright (C) 2017 Intel (john.jacques@intel.com)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1007,19 +1007,21 @@ verify_control(unsigned control)
 
 	switch (config) 
 	{
-		/* the officially supported configs */
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-		/* the undocumented supported configs */
-		case 15:
-			break;
+		/* documented and supported */
+	case 1:
+	case 2:
+	case 3:
+	case 4:
+		/* documented but unsupported */
+	case 5:
+		/* undocumented and unsupported */
+	case 15:
+		break;
 
-		default:
-			/* return an error for all others */
-			return -1;
-
+	default:
+		/* return an error for all others */
+		return -1;
+		break;
 	}
 
 #elif defined(CONFIG_AXXIA_ANY_XLF)
@@ -1245,10 +1247,11 @@ pei_setup(unsigned int control)
 
 
 	case 4:
+	case 5:
 		/*
 		  SRIO1x2 (HSS10-ch0,1)
 		  SRIO0x2 (HSS11-ch0,1)
-		  UNUSED  (HSS12-ch0,1)
+		  UNUSED  (HSS12-ch0,1) for config 4, PEI1x2 for config 5
 		  PEI2x2  (HSS13-ch0,1)
 		*/
 
@@ -1257,8 +1260,13 @@ pei_setup(unsigned int control)
 		set_pipe_port_sel(pp_0_1_2_3);
 		set_pipe_nphy(four_phy);
 
-		if (pei1_mode)
+		if (pei1_mode) {
+			writel(0xab, (SYSCON + 0x2000));
+			writel(0x20000000, (SYSCON + 0x2034));
+			writel(0, (SYSCON + 0x2000));
 			release_reset(2);
+		}
+
 		if (pei2_mode)
 			release_reset(3);
 
