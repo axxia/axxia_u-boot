@@ -192,8 +192,9 @@ pei_by_axi(unsigned long axi_gpreg_base)
 }
 #endif	/* TRACE_PEI_ACCESSES */
 
-static inline void axxia_pcie_readl_rc(struct pci_controller *hose,
-				       u32 reg, u32 *val)
+static inline void
+axxia_pcie_readl_rc(struct pci_controller *hose,
+		    u32 reg, u32 *val)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
@@ -205,8 +206,9 @@ static inline void axxia_pcie_readl_rc(struct pci_controller *hose,
 #endif
 }
 
-static inline void axxia_pcie_writel_rc(struct pci_controller *hose,
-					u32 val, u32 reg)
+static inline void
+axxia_pcie_writel_rc(struct pci_controller *hose,
+		     u32 val, u32 reg)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
@@ -218,8 +220,9 @@ static inline void axxia_pcie_writel_rc(struct pci_controller *hose,
 #endif
 }
 
-static inline void axxia_cc_gpreg_writel(struct pci_controller *hose,
-					 u32 val, u32 reg)
+static inline void
+axxia_cc_gpreg_writel(struct pci_controller *hose,
+		      u32 val, u32 reg)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
@@ -231,8 +234,9 @@ static inline void axxia_cc_gpreg_writel(struct pci_controller *hose,
 #endif
 }
 
-static inline void axxia_cc_gpreg_readl(struct pci_controller *hose,
-					u32 reg, u32 *val)
+static inline void
+axxia_cc_gpreg_readl(struct pci_controller *hose,
+		     u32 reg, u32 *val)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
@@ -244,8 +248,9 @@ static inline void axxia_cc_gpreg_readl(struct pci_controller *hose,
 #endif
 }
 
-static inline void axxia_axi_gpreg_writel(struct pci_controller *hose,
-					  u32 val, u32 reg)
+static inline void
+axxia_axi_gpreg_writel(struct pci_controller *hose,
+		       u32 val, u32 reg)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
@@ -257,8 +262,9 @@ static inline void axxia_axi_gpreg_writel(struct pci_controller *hose,
 #endif
 }
 
-static inline void axxia_axi_gpreg_readl(struct pci_controller *hose,
-					 u32 reg, u32 *val)
+static inline void
+axxia_axi_gpreg_readl(struct pci_controller *hose,
+		      u32 reg, u32 *val)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
@@ -270,7 +276,8 @@ static inline void axxia_axi_gpreg_readl(struct pci_controller *hose,
 #endif
 }
 
-int axxia_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val)
+static int
+axxia_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val)
 {
 	*val = readl(addr);
 
@@ -284,7 +291,8 @@ int axxia_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val)
 	return 0;
 }
 
-int axxia_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val)
+static int
+axxia_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val)
 {
 	if (size == 4)
 		writel(val, addr);
@@ -296,8 +304,10 @@ int axxia_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val)
 		return 1;
 	return 0;
 }
-static void axxia_pcie_prog_viewport_cfg0(struct pci_controller *hose,
-					  u32 busdev)
+
+static void
+axxia_pcie_prog_viewport_cfg0(struct pci_controller *hose,
+			      u32 busdev)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
@@ -319,8 +329,9 @@ static void axxia_pcie_prog_viewport_cfg0(struct pci_controller *hose,
 	axxia_pcie_writel_rc(hose, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
 }
 
-static void axxia_pcie_prog_viewport_cfg1(struct pci_controller *hose,
-					  u32 busdev)
+static void
+axxia_pcie_prog_viewport_cfg1(struct pci_controller *hose,
+			      u32 busdev)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
@@ -342,7 +353,8 @@ static void axxia_pcie_prog_viewport_cfg1(struct pci_controller *hose,
 	axxia_pcie_writel_rc(hose, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
 }
 
-static void axxia_pcie_prog_viewport_mem_outbound(struct pci_controller *hose)
+static void
+axxia_pcie_prog_viewport_mem_outbound(struct pci_controller *hose)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
@@ -365,7 +377,8 @@ static void axxia_pcie_prog_viewport_mem_outbound(struct pci_controller *hose)
 	axxia_pcie_writel_rc(hose, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
 }
 
-static void axxia_pcie_prog_viewport_io_outbound(struct pci_controller *hose)
+static void
+axxia_pcie_prog_viewport_io_outbound(struct pci_controller *hose)
 {
 	struct pci_hose_data *data;
 	data = (struct pci_hose_data *)hose->priv_data;
@@ -384,9 +397,9 @@ static void axxia_pcie_prog_viewport_io_outbound(struct pci_controller *hose)
 	axxia_pcie_writel_rc(hose, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
 }
 
-
-static int axxia_pcie_rd_other_conf(struct pci_controller *hose,
-				    u32 devfn, int where, int size, u32 *val)
+static int
+axxia_pcie_rd_other_conf(struct pci_controller *hose,
+			 u32 devfn, int where, int size, u32 *val)
 {
 	u32 address, busdev;
 	struct pci_hose_data *data;
@@ -412,8 +425,9 @@ static int axxia_pcie_rd_other_conf(struct pci_controller *hose,
 	return ret;
 }
 
-static int axxia_pcie_wr_other_conf(struct pci_controller *hose,
-				    u32 devfn, int where, int size, u32 val)
+static int
+axxia_pcie_wr_other_conf(struct pci_controller *hose,
+			 u32 devfn, int where, int size, u32 val)
 {
 	u32 address, busdev;
 	struct pci_hose_data *data;
@@ -439,8 +453,9 @@ static int axxia_pcie_wr_other_conf(struct pci_controller *hose,
 	return ret;
 }
 
-static int axxia_pcie_rd_own_conf(struct pci_controller *hose, int where,
-				  int size, u32 *val)
+static int
+axxia_pcie_rd_own_conf(struct pci_controller *hose, int where,
+		       int size, u32 *val)
 {
 	int ret;
 	struct pci_hose_data *data;
@@ -451,8 +466,9 @@ static int axxia_pcie_rd_own_conf(struct pci_controller *hose, int where,
 	return ret;
 }
 
-static int axxia_pcie_wr_own_conf(struct pci_controller *hose, int where,
-				  int size, u32 val)
+static int
+axxia_pcie_wr_own_conf(struct pci_controller *hose, int where,
+		       int size, u32 val)
 {
 	int ret;
 	struct pci_hose_data *data;
@@ -464,8 +480,10 @@ static int axxia_pcie_wr_own_conf(struct pci_controller *hose, int where,
 }
 
 /* Read the configuration space */
-static int pcie_read_config(struct pci_controller *hose, unsigned int devfn,
-			    int offset, int len, u32 *val) {
+static int
+pcie_read_config(struct pci_controller *hose, unsigned int devfn,
+		 int offset, int len, u32 *val)
+{
 	*val = 0;
 	int ret;
 
@@ -488,8 +506,10 @@ static int pcie_read_config(struct pci_controller *hose, unsigned int devfn,
 }
 
 /* Write the configuration space */
-static int pcie_write_config(struct pci_controller *hose, unsigned int devfn,
-			     int offset, int len, u32 val) {
+static int
+pcie_write_config(struct pci_controller *hose, unsigned int devfn,
+		  int offset, int len, u32 val)
+{
 	int ret;
 
 	/*
@@ -517,8 +537,9 @@ static int pcie_write_config(struct pci_controller *hose, unsigned int devfn,
 	return ret;
 }
 
-int pcie_read_config_byte(struct pci_controller *hose, pci_dev_t dev,
-			  int offset, u8 *val)
+static int
+pcie_read_config_byte(struct pci_controller *hose, pci_dev_t dev,
+		      int offset, u8 *val)
 {
 	u32 v;
 	int rv;
@@ -527,8 +548,9 @@ int pcie_read_config_byte(struct pci_controller *hose, pci_dev_t dev,
 	return rv;
 }
 
-int pcie_read_config_word(struct pci_controller *hose, pci_dev_t dev,
-			  int offset, u16 *val)
+static int
+pcie_read_config_word(struct pci_controller *hose, pci_dev_t dev,
+		      int offset, u16 *val)
 {
 	u32 v;
 	int rv;
@@ -537,8 +559,9 @@ int pcie_read_config_word(struct pci_controller *hose, pci_dev_t dev,
 	return rv;
 }
 
-int pcie_read_config_dword(struct pci_controller *hose, pci_dev_t dev,
-			   int offset, u32 *val)
+static int
+pcie_read_config_dword(struct pci_controller *hose, pci_dev_t dev,
+		       int offset, u32 *val)
 {
 	u32 v;
 	int rv;
@@ -547,20 +570,23 @@ int pcie_read_config_dword(struct pci_controller *hose, pci_dev_t dev,
 	return rv;
 }
 
-int pcie_write_config_byte(struct pci_controller *hose, pci_dev_t dev,
-			   int offset, u8 val)
+static int
+pcie_write_config_byte(struct pci_controller *hose, pci_dev_t dev,
+		       int offset, u8 val)
 {
 	return pcie_write_config(hose, (u32)dev, offset, 1, val);
 }
 
-int pcie_write_config_word(struct pci_controller *hose, pci_dev_t dev,
-			   int offset, u16 val)
+static int
+pcie_write_config_word(struct pci_controller *hose, pci_dev_t dev,
+		       int offset, u16 val)
 {
 	return pcie_write_config(hose, (u32)dev, offset, 2, (u32)val);
 }
 
-int pcie_write_config_dword(struct pci_controller *hose, pci_dev_t dev,
-			    int offset, u32 val)
+static int
+pcie_write_config_dword(struct pci_controller *hose, pci_dev_t dev,
+			int offset, u32 val)
 {
 	return pcie_write_config(hose, (u32)dev, offset, 4, (u32)val);
 }
@@ -752,40 +778,40 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 			if (0 == (lane_mask & (0xff << ((i - 1) * 8))))
 				continue;
 
-			ncr_read(NCP_REGION_ID(0x115, i), 0,
-				 LANE0_DIG_ASIC_RX_ASIC_IN_0, 2, &temp);
+			ncr_read16(NCP_REGION_ID(0x115, i),
+				   LANE0_DIG_ASIC_RX_ASIC_IN_0, &temp);
 
 			if (2 == ((temp & 0x180) >> 7)) {
-				ncr_read(NCP_REGION_ID(0x115, i), 0,
-					 LANE0_DIG_ASIC_RX_ASIC_OUT_0,
-					 2, &temp);
+				ncr_read16(NCP_REGION_ID(0x115, i),
+					   LANE0_DIG_ASIC_RX_ASIC_OUT_0,
+					   &temp);
 
 				if (0 != (temp & 2))
 					temp = 0x4700;
 				else
 					temp = 0x0700;
 
-				ncr_write(NCP_REGION_ID(0x115, i), 0,
-					  LANE0_IDG_ASIC_RX_OVRD_IN_0,
-					  2, &temp);
+				ncr_write16(NCP_REGION_ID(0x115, i),
+					    LANE0_IDG_ASIC_RX_OVRD_IN_0,
+					    temp);
 			}
 
-			ncr_read(NCP_REGION_ID(0x115, i), 0,
-				 LANE1_DIG_ASIC_RX_ASIC_IN_0, 2, &temp);
+			ncr_read16(NCP_REGION_ID(0x115, i),
+				   LANE1_DIG_ASIC_RX_ASIC_IN_0, &temp);
 
 			if (2 == ((temp & 0x180) >> 7)) {
-				ncr_read(NCP_REGION_ID(0x115, i), 0,
-					 LANE1_DIG_ASIC_RX_ASIC_OUT_0,
-					 2, &temp);
+				ncr_read16(NCP_REGION_ID(0x115, i),
+					   LANE1_DIG_ASIC_RX_ASIC_OUT_0,
+					   &temp);
 
 				if (0 != (temp & 2))
 					temp = 0x4700;
 				else
 					temp = 0x0700;
 
-				ncr_write(NCP_REGION_ID(0x115, i), 0,
-					  LANE1_IDG_ASIC_RX_OVRD_IN_0,
-					  2, &temp);
+				ncr_write16(NCP_REGION_ID(0x115, i),
+					    LANE1_IDG_ASIC_RX_OVRD_IN_0,
+					    temp);
 			}
 		}
 
@@ -802,7 +828,8 @@ axxia_pcie_los_wa(struct pci_controller *hose)
 	return rc;
 }
 
-int axxia_pcie_link_up(struct pci_controller *hose)
+static int
+axxia_pcie_link_up(struct pci_controller *hose)
 {
 	u32 rdlh_lnk, smlh_lnk, smlh_state;
 
@@ -824,7 +851,8 @@ int axxia_pcie_link_up(struct pci_controller *hose)
 	return 1;
 }
 
-void axxia_pcie_setup_rc(struct pci_controller *hose)
+static void
+axxia_pcie_setup_rc(struct pci_controller *hose)
 {
 	u32 val;
 	u32 membase;
@@ -932,7 +960,8 @@ void axxia_pcie_setup_rc(struct pci_controller *hose)
 	return;
 }
 
-static int axxia_pcie_establish_link(struct pci_controller *hose)
+static int
+axxia_pcie_establish_link(struct pci_controller *hose)
 {
 	/* setup root complex */
 	axxia_pcie_setup_rc(hose);
@@ -946,7 +975,8 @@ static int axxia_pcie_establish_link(struct pci_controller *hose)
 }
 
 /* program correct class for RC */
-static void pci_axxia_program_rc_class(struct pci_controller *hose)
+static void
+pci_axxia_program_rc_class(struct pci_controller *hose)
 {
 	u32 dbi_ro_wr_en;
 	/* program correct class for RC */
@@ -960,7 +990,8 @@ static void pci_axxia_program_rc_class(struct pci_controller *hose)
 		axxia_pcie_writel_rc(hose, dbi_ro_wr_en, 0x8bc);
 }
 
-int pci_axxia_init(struct pci_controller *hose, int port, int lanes)
+static int
+pci_axxia_init(struct pci_controller *hose, int port, int lanes)
 {
 	pci_set_ops(hose,
 		    pcie_read_config_byte,
@@ -1076,8 +1107,8 @@ pci_init_board(void)
 	return;
 #endif
 
-	unsigned int control;
 #if defined(ACP_PEI0) || defined(ACP_PEI1) || defined(ACP_PEI2)
+	unsigned int control;
 	unsigned int pei0_lanes = 0;
 #if defined(ACP_PEI1)
 	unsigned int pei1_lanes = 0;
@@ -1135,6 +1166,10 @@ pci_init_board(void)
 
 	pei_init(pciesrio->control);
 
+#if defined(TRACE_PEI_ACCESSES)
+	ncr_tracer_enable();
+#endif
+
 #ifdef ACP_PEI0
 	/* If PEI0 is enabled and in RC mode, enumerate it. */
 	if (0 != (control & (1 << 0)) &&
@@ -1159,6 +1194,11 @@ pci_init_board(void)
 		(void)pci_axxia_init(&hose[2], 2, pei2_lanes);
 	}
 #endif
+
+#if defined(TRACE_PEI_ACCESSES)
+	ncr_tracer_disable();
+#endif
+
 #endif
 
 	return;
