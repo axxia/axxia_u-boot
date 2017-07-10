@@ -203,6 +203,16 @@ axxia_initialize(void)
 			}
 		}
 	}
+#elif defined(CONFIG_TARGET_EMULATION)
+	if ((0 != (global->flags & PARAMETERS_GLOBAL_SET_SMEM)) &&
+            (0 == ddrRecovery)) {
+		ncr_tracer_enable();
+
+                if (0 != sysmem_init())
+                        acp_failure(__FILE__, __FUNCTION__, __LINE__);
+
+                ncr_tracer_disable();
+        }
 #endif
 
 	return 0;
