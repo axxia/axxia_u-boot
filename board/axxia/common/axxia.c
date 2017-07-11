@@ -670,11 +670,13 @@ ft_board_setup(void *blob, bd_t *bd)
 	  Update the PEI setup.
 	*/
 
+#if !defined(CONFIG_TARGET_EMULATION)
 	rc = ft_update_pei(blob);
 
 	if (0 != rc)
 		printf("%s:%d - Couldn't update PEIs!\n",
 		       __FILE__, __LINE__);
+#endif
 
 	/*
 	  Update the clocks.
