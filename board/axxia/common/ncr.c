@@ -95,10 +95,10 @@ void
 ncr_trace_read16(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint16_t value)
 {
 #ifdef NCR_TRACER_RV
-	printf("ncpRead    0.%u.%u.0x00%08x 1 [0x%x]\n",
+	printf("ncpRead  -w16 0.%u.%u.0x00%08x 1 [0x%x]\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
 #else
-	printf("ncpRead    0.%u.%u.0x00%08x 1\n",
+	printf("ncpRead  -w16 0.%u.%u.0x00%08x 1\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
 #endif
 
@@ -109,10 +109,10 @@ void
 ncr_trace_read32(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 {
 #ifdef NCR_TRACER_RV
-	printf("ncpRead    0.%u.%u.0x00%08x 1 [0x%x]\n",
+	printf("ncpRead       0.%u.%u.0x00%08x 1 [0x%x]\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
 #else
-	printf("ncpRead    0.%u.%u.0x00%08x 1\n",
+	printf("ncpRead       0.%u.%u.0x00%08x 1\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset);
 #endif
 
@@ -149,7 +149,7 @@ void
 ncr_trace_write16(ncp_uint32_t region,
 		  ncp_uint32_t offset, ncp_uint32_t value)
 {
-	printf("ncpWrite   0.%u.%u.0x00%08x 0x%04x\n",
+	printf("ncpWrite -w16 0.%u.%u.0x00%08x 0x%04x\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
 
 	return;
@@ -159,7 +159,7 @@ void
 ncr_trace_write32(ncp_uint32_t region,
 		  ncp_uint32_t offset, ncp_uint32_t value)
 {
-	printf("ncpWrite   0.%u.%u.0x00%08x 0x%08x\n",
+	printf("ncpWrite      0.%u.%u.0x00%08x 0x%08x\n",
 	       NCP_NODE_ID(region), NCP_TARGET_ID(region), offset, value);
 
 	return;
