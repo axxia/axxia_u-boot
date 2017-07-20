@@ -1299,6 +1299,11 @@ board_init_f(ulong dummy)
 	value &= ~2;
 	writel(value, 0x9000200004);
 
+	/* Assert Controller Reset */
+	value = readl(AXXIA_USB0_CONFIG + 0xc110);
+	value |= (1 << 11);
+	writel(value, (AXXIA_USB0_CONFIG + 0xc110));
+
 	/* Reset the USB PHY. */
 	writel(0xab, (SYSCON + 0x2000));
 #if defined(CONFIG_AXXIA_ANY_56XX)
@@ -1354,6 +1359,11 @@ board_init_f(ulong dummy)
 
 	writel(value, (AXXIA_USB0_CONFIG + 0xc2c0));
 
+	/* De-assert the Controller Reset */
+	value = readl(AXXIA_USB0_CONFIG + 0xc110);
+	value &= ~(1 << 11);
+	writel(value, (AXXIA_USB0_CONFIG + 0xc110));
+
 #endif	/* CONFIG_AXXIA_USB0 */
 
 #ifdef CONFIG_AXXIA_USB1
@@ -1380,6 +1390,11 @@ board_init_f(ulong dummy)
 	value &= ~2;
 	writel(value, 0x9800200004);
 
+	/* Assert Controller Reset */
+	value = readl(AXXIA_USB1_CONFIG + 0xc110);
+	value |= (1 << 11);
+	writel(value, (AXXIA_USB1_CONFIG + 0xc110));
+
 	/* Reset the USB PHY. */
 	writel(0xab, (SYSCON + 0x2000));
 	value = readl(SYSCON + 0x20a0);
@@ -1405,6 +1420,11 @@ board_init_f(ulong dummy)
 	value |= (1 << 28);
 
 	writel(value, (AXXIA_USB1_CONFIG + 0xc2c0));
+
+	/* De-assert the Controller Reset */
+	value = readl(AXXIA_USB1_CONFIG + 0xc110);
+	value &= ~(1 << 11);
+	writel(value, (AXXIA_USB1_CONFIG + 0xc110));
 
 #endif	/* CONFIG_AXXIA_USB1 */
 

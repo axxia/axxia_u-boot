@@ -40,34 +40,33 @@ void dwc3_set_mode(struct dwc3 *dwc3_reg, u32 mode)
 			DWC3_GCTL_PRTCAPDIR(mode));
 }
 
-static int axxia_dwc3_core_soft_reset(struct dwc3 *dwc3_reg)
+static int
+axxia_dwc3_core_soft_reset(struct dwc3 *dwc3_reg)
 {
-	unsigned int value;
-	unsigned long address;
-	int timeout;
+       /* Before Resetting PHY, put Core in Reset */
+       setbits_le32(&dwc3_reg->g_ctl, DWC3_GCTL_CORESOFTRESET);
 
-	address = (unsigned long)(dwc3_reg);
-	address -= DWC3_REG_OFFSET;
-	value = readl(address + 0x20);
-	value |= (1 << 1);
-	writel(value, (address + 0x20));
+       /* Assert USB3 PHY reset */
+       setbits_le32(&dwc3_reg->g_usb3pipectl[0], DWC3_GUSB3PIPECTL_PHYSOFTRST);
 
-	/*
-	  The HCRST gets cleared by hardware after about 160 reads
-	  (based on experimentation).
-	*/
+       /* Assert USB2 PHY reset */
+       setbits_le32(&dwc3_reg->g_usb2phycfg, DWC3_GUSB2PHYCFG_PHYSOFTRST);
 
-	timeout = 1000;
+       mdelay(100);
 
-	do {
-		value = readl(address + 0x20);
-		--timeout;
-	} while ((0 != (value & (1 << 1))) && 0 < timeout);
+       /* Clear USB3 PHY reset */
+       clrbits_le32(&dwc3_reg->g_usb3pipectl[0],
+                    DWC3_GUSB3PIPECTL_PHYSOFTRST);
 
-	if (0 == timeout)
-		return -1;
+       /* Clear USB2 PHY reset */
+       clrbits_le32(&dwc3_reg->g_usb2phycfg, DWC3_GUSB2PHYCFG_PHYSOFTRST);
 
-	return 0;
+       mdelay(100);
+
+       /* After PHYs are stable we can take Core out of reset state */
+       clrbits_le32(&dwc3_reg->g_ctl, DWC3_GCTL_CORESOFTRESET);
+
+       return 0;
 }
 
 static int dwc3_core_init(struct dwc3 *dwc3_reg)
@@ -80,7 +79,7 @@ static int dwc3_core_init(struct dwc3 *dwc3_reg)
 	/* This should read as U3 followed by revision number */
 	if ((revision & DWC3_GSNPSID_MASK) != 0x55330000) {
 		puts("this is not a DesignWare USB3 DRD Core\n");
-		return -EINVAL;
+ 		return -EINVAL;
 	}
 
 	if (0 != axxia_dwc3_core_soft_reset(dwc3_reg)) {
@@ -156,9 +155,9 @@ xhci_hcd_init(int index, struct xhci_hccr **hccr, struct xhci_hcor **hcor)
 	ctx = &axxia[index];
 
 	if (0 == index)
-		ctx->hcd = (struct xhci_hccr *)AXXIA_USB0_CONFIG;
+		ctx->hcd = (struct xhci_hccr *)(0x9000000000);
 	else if (1 == index)
-		ctx->hcd = (struct xhci_hccr *)AXXIA_USB1_CONFIG;
+		ctx->hcd = (struct xhci_hccr *)(0x9800000000);
 
 	ctx->dwc3_reg = (struct dwc3 *)((char *)(ctx->hcd) + DWC3_REG_OFFSET);
 
