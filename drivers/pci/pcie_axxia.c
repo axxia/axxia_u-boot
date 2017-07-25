@@ -750,7 +750,7 @@ axxia_pcie_los_wa(struct pci_controller *hose, unsigned int max_width)
 
 		break;
 	case 5:
-		/* PEI2x2 */
+		/* PEI1x2 and PEI2x2 */
 		if (1 == pei) {
 			lane_mask = 0x00110000;
 
@@ -1226,6 +1226,14 @@ pci_init_board(void)
 	case 4:
 #if defined(ACP_PEI2)
  		pei2_lanes = 2;
+#endif
+		break;
+	case 5:
+#if defined(ACP_PEI1)
+		pei1_lanes = 2;
+#endif
+#if defined(ACP_PEI2)
+		pei2_lanes = 2;
 #endif
 		break;
 	}

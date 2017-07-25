@@ -1639,6 +1639,48 @@ pei_reset(unsigned int control, int pei)
 		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
 
 		break;
+	case 5:
+		/*
+		  SRIO1x2 (HSS10-ch0,1)
+		  SRIO0x2 (HSS11-ch0,1)
+		  PEI1x2  (HSS12-ch0,1)
+		  PEI2x2  (HSS13-ch0,1)
+		*/
+
+		switch (mode) {
+		case PEI1:
+			enable_reset(2);
+			ctrl0 &= ~(1 << 1);
+			break;
+		case PEI2:
+			enable_reset(3);
+			ctrl0 &= ~(1 << 2);
+			break;
+		default:
+			error("Invalid PEI for mode %d!\n",
+			      get_config(control));
+			return -1;
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+		switch (mode) {
+		case PEI1:
+			release_reset(2);
+			ctrl0 |= (1 << 1);
+			break;
+		case PEI2:
+			release_reset(3);
+			ctrl0 |= (1 << 2);
+			break;
+		default:
+			break;
+		}
+
+		ncr_write32(NCP_REGION_ID(0x115, 0), 0, ctrl0);
+
+		break;
 	case 15:
 		/*
 		  UNDOCUMENTED!!!

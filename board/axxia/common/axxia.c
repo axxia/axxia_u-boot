@@ -449,6 +449,11 @@ ft_update_pei(void *blob)
 		pei1_lanes = 0;
 		pei2_lanes = 2;
 		break;
+	case 5:
+		pei0_lanes = 0;
+		pei1_lanes = 2;
+		pei2_lanes = 2;
+		break;
 	default:
 		error("Unsupported PCIe/sRIO Configuration!");
 		pei0_lanes = 0;
@@ -631,7 +636,7 @@ ft_update_pei(void *blob)
 		printf("config: PEI0x2 SRIO0x2 PEI1x4\n");
 		break;
 	case 0x5:
-		printf("config: PEI0x2 SRIO0x2 PEI1x2 SATA0x1 SATA1x1\n");
+		printf("config: SRIO0x2 SRIO1x2 PEI1x2 PEI2x2\n");
 		break;
 	case 0x6:
 		printf("config: PEI0x2 SRIO0x2 PEI1x2 PEI2x2\n");
