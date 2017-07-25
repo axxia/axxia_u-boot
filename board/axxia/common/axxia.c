@@ -620,36 +620,35 @@ ft_update_pei(void *blob)
 	char config = (pciesrio->control >> 22) & 0xf;
 
 	switch (config) {
-	case 0x0:
-		printf("config: PEI0x8\n");
+#if defined(CONFIG_AXXIA_ANY_XLF)
+	case 1:
+		printf("config: PEI0x2\n");
 		break;
-	case 0x1:
+	case 2:
+		printf("config: PEI0x1\n");
+		break;
+#elif defined(CONFIG_AXXIA_ANY_56XX)
+	case 1:
 		printf("config: PEI0x4 PEI1x4\n");
 		break;
-	case 0x2:
-		printf("config: PEI0x4 PEI1x2 SATA0x1 SATA1x1\n");
+	case 2:
+		printf("config: PEI0x2 PEI1x2 PEI2x2\n");
 		break;
-	case 0x3:
-		printf("config: PEI0x2 PEI2x2 PEI1x2 SATA0x1 SATA1x1\n");
+	case 3:
+		printf("config: PEI0x2 SRIO0x2 PEI2x2\n");
 		break;
-	case 0x4:
-		printf("config: PEI0x2 SRIO0x2 PEI1x4\n");
+	case 4:
+		printf("config: SRIO1x2 SRIO0x2 PEI2x2\n");
 		break;
-	case 0x5:
+	case 5:
+		/* UNSUPPORTED */
 		printf("config: SRIO0x2 SRIO1x2 PEI1x2 PEI2x2\n");
 		break;
-	case 0x6:
-		printf("config: PEI0x2 SRIO0x2 PEI1x2 PEI2x2\n");
+	case 15:
+		/* UNSUPPORTED and UNDOCUMENTED */
+		printf("config: SRIO0x2 PEI1x4\n");
 		break;
-	case 0x7:
-		printf("config: SRIO1x2 SRIO0x2 PEI1x4\n");
-		break;
-	case 0x8:
-		printf("config: SRIO1x2 SRIO0x2 PEI1x2 SATA0x1 SATA1x1\n");
-		break;
-	case 0x9:
-		printf("config: SRIO1x2 SRIO0x2 PEI1x2 PEI2x2\n");
-		break;
+#endif
 	default:
 		printf("config: unrecognized(%#08x)\n", config);
 	};
