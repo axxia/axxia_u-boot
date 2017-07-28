@@ -1340,11 +1340,11 @@ board_init_f(ulong dummy)
 		writel(0x54c, AXXIA_USB0_BASE + 0xc);
 	}
 
-	value = readl(AXXIA_USB0_CONFIG + 0xc2c0);
-
 	/* USB_WA_PHY_STAR_9000944754 */
 	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE,
 	       AXXIA_USB0_BASE + SSP_LANE0_ANA_RX_SCOPE_VDCC);
+
+	value = readl(AXXIA_USB0_CONFIG + 0xc2c0);
 	value &= ~(1 << 18);
 
 	if (0 == USB_WA_LEVEL()) {
@@ -1411,14 +1411,14 @@ board_init_f(ulong dummy)
 		value = readl(AXXIA_USB1_BASE + 0x6c);
 	} while (0 != (value & (1 << 2)));
 
-	value = readl(AXXIA_USB1_CONFIG + 0xc2c0);
-
 	/* This is USB_WA_PHY_STAR_9000944754 */
 	writel(SSP_LANE0_ANA_RX_SCOPE_VDCC_VALUE,
 	       AXXIA_USB1_BASE + SSP_LANE0_ANA_RX_SCOPE_VDCC);
-	value &= ~(1 << 18);
-	value |= (1 << 28);
 
+	value = readl(AXXIA_USB1_CONFIG + 0xc2c0);
+	value &= ~(1 << 18);
+	/* USB_WA_PHY_STAR_9000952264 */
+	value |= (1 << 28);
 	writel(value, (AXXIA_USB1_CONFIG + 0xc2c0));
 
 	/* De-assert the Controller Reset */
