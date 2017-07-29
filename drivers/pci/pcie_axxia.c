@@ -133,7 +133,7 @@ pei_by_dbi(unsigned long dbi_base)
 		return 2;
 #endif
 
-	error("No Valid PEI Found!\n");
+	error("No Valid PEI Found!");
 
 	return -1;
 }
@@ -186,7 +186,7 @@ pei_by_axi(unsigned long axi_gpreg_base)
 		return 2;
 #endif
 
-	error("No Valid PEI Found!\n");
+	error("No Valid PEI Found!");
 
 	return -1;
 }
@@ -619,7 +619,7 @@ axxia_pcie_los_wa(struct pci_controller *hose, unsigned int max_width)
 	if ((4 != max_width) &&
 	    (2 != max_width) &&
 	    (1 != max_width)) {
-		error("Invalid Width: %u\n", max_width);
+		error("Invalid Width: %u", max_width);
 
 		return 0;
 	}
@@ -997,7 +997,7 @@ axxia_pcie_setup_rc(struct pci_controller *hose)
 					      0x1, PEI_GENERAL_CORE_CTL_REG);
 
 			if (0 != axxia_pcie_los_wa(hose, data->lanes))
-				error("The LOS Work Around Failed!\n");
+				error("The LOS Work Around Failed!");
 		} else {
 			/* Update GEN3_EQ_CONTROL */
 			axxia_pcie_writel_rc(hose, 0x1017201, 0x8a8);
