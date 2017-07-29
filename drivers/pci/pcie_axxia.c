@@ -596,7 +596,7 @@ axxia_pcie_los_wa(struct pci_controller *hose, unsigned int max_width)
 {
 	unsigned int value;
 	unsigned long timer;
-	int rc = 1;
+	int rc = -1;
 
 	/*
 	  There are four SerDes, each with 2 lanes or channels.  The
@@ -996,7 +996,8 @@ axxia_pcie_setup_rc(struct pci_controller *hose)
 			axxia_cc_gpreg_writel(hose,
 					      0x1, PEI_GENERAL_CORE_CTL_REG);
 
-			(void)axxia_pcie_los_wa(hose, data->lanes);
+			if (0 != axxia_pcie_los_wa(hose, data->lanes))
+				error("The LOS Work Around Failed!\n");
 		} else {
 			/* Update GEN3_EQ_CONTROL */
 			axxia_pcie_writel_rc(hose, 0x1017201, 0x8a8);
