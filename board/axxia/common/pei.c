@@ -1110,6 +1110,7 @@ pei_setup(unsigned int control)
 		  PEI1x4  (HSS12-ch0,1; HSS13-ch0,1)
 		*/
 
+		printf("PEI Configuration 1: PEI0x4 PEI1x4\n");
 		set_sw_port_config0(pc0_PEI0x4);
 		set_sw_port_config1(pc1_PEI1x4);
 		set_pei0_rc_mode(rc_mode);
@@ -1131,6 +1132,7 @@ pei_setup(unsigned int control)
 		  PEI0x2  (HSS15-ch0,1)
 		*/
 
+		printf("PEI Configuration 1: PEI0x2\n");
 		set_pei0_rc_mode(rc_mode);
 		set_pipe_port_sel(pp_0);
 		set_pipe_nphy(one_phy);
@@ -1152,6 +1154,7 @@ pei_setup(unsigned int control)
 		  UNUSED  (HSS13-ch0,1)
 		*/
 
+		printf("PEI Configuration 2: PEI0x2 PEI1x2 PEI2x2\n");
 		set_sw_port_config0(pc0_PEI0x2_PEI2x2);
 		set_sw_port_config1(pc1_PEI1x2_SATA0x1_SATA1x1);
 		set_pei0_rc_mode(rc_mode);
@@ -1175,6 +1178,7 @@ pei_setup(unsigned int control)
 		  PEI0x1  (HSS15-ch0)
 		*/
 
+		printf("PEI Configuration 1: PEI0x1\n");
 		set_pei0_rc_mode(rc_mode);
 		set_pipe_port_sel(pp_0);
 		set_pipe_nphy(one_phy);
@@ -1198,6 +1202,7 @@ pei_setup(unsigned int control)
 		  INFO: Formerly case 6...
 		*/
 
+		printf("PEI Configuration 3: PEI0x2 SRIO0x2 PEI2x2\n");
 		set_pei0_rc_mode(rc_mode);
 		set_sw_port_config0(pc0_PEI0x2_SRIO0x2);
 		set_sw_port_config1(pc1_PEI1x2_PEI2x2);
@@ -1254,6 +1259,11 @@ pei_setup(unsigned int control)
 		  UNUSED  (HSS12-ch0,1) for config 4, PEI1x2 for config 5
 		  PEI2x2  (HSS13-ch0,1)
 		*/
+
+		if (4 == get_config(control))
+			printf("PEI Configuration 4: SRIO0x2 SRIO1x2 PEI2x2\n");
+		else
+			printf("PEI Configuration 5: SRIO0x2 SRIO1x2 PEI1x2 PEI2x2\n");
 
 		set_sw_port_config0(pc0_SRIO1x2_SRIO0x2);
 		set_sw_port_config1(pc1_PEI1x2_PEI2x2);
@@ -1331,6 +1341,7 @@ pei_setup(unsigned int control)
 		  PEI1x4  (HSS12-ch0,1; HSS13-ch0,1)
 		*/
 
+		printf("PEI Configuration 15: SRIO0x2 PEI1x4\n");
 		set_sw_port_config0(pc0_SRIO1x2_SRIO0x2);
 		set_sw_port_config1(pc1_PEI1x4);
 		set_pipe_port_sel(pp_0_1_2_3);
