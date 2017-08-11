@@ -831,7 +831,7 @@ axxia_pcie_los_wa(struct pci_controller *hose, unsigned int max_width)
 
 	timer = get_timer(0);
 
-	while (get_timer(timer) < 2000) {
+	while (get_timer(timer) < 1000) { /* Wait 1 second for a link. */
 		int i;
 		unsigned short temp;
 
