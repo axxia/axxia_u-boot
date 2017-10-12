@@ -1357,6 +1357,13 @@ board_init_f(ulong dummy)
 	printf("Running in System Cache\n");
 #endif
 
+#ifdef LEAVE_DICKENS_NONSECURE
+	printf("Making Dickens Registers Accessible from Non-Secure Masters\n");
+	value = readl(DICKENS + 0);
+	value |= 1;
+	writel(value, (DICKENS + 0));
+#endif
+
 #ifdef CONFIG_HW_WATCHDOG
 	rc = start_watchdog(WATCHDOG_TIMEOUT_SECS);
 

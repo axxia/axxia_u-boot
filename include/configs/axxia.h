@@ -4279,6 +4279,8 @@ unsigned int set_watchdog_timeout(unsigned int);
   ==============================================================================
 */
 
+#define LEAVE_DICKENS_NONSECURE
+
 /*
   U-Boot will only use this much memory when relocating, loading
   images, etc.  The device tree will be updated with the actual size
