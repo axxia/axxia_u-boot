@@ -1098,6 +1098,52 @@ load_image(void)
 
 /*
   ------------------------------------------------------------------------------
+  display_l3_lock
+*/
+
+#ifdef CONFIG_AXXIA_ANY_XLF
+static void
+display_l3_lock(void)
+{
+	unsigned long long base[4][8];
+	unsigned int num_ways[8];
+	int i;
+	int j;
+
+	/* Get the bases... */
+	for (i = 0; i < 4; ++i)
+		for (j = 0; j < 8; ++j)
+			base[i][j] = readq(DICKENS +
+					   (i * 8) + ((j + 0x20) * 0x10000) +
+					   0x48);
+
+	/* Get the ways... */
+	for (i = 0 ; i < 8; ++i)
+		num_ways[i] = readl(DICKENS + ((i + 0x20) * 0x10000) + 0x40);
+
+#ifdef CONFIG_AXXIA_ANY_EMU
+	printf("L3 Cache Line Locking -- Total Size is %d MB\n",
+	       num_ways[0]);
+#else  /* CONFIG_AXXIA_ANY_EMU */
+	printf("L3 Cache Line Locking -- Total Size is %d MB\n",
+	       num_ways[0] * 2);
+#endif	/* CONFIG_AXXIA_ANY_EMU */
+
+	for (i = 0; i < 4; ++i) {
+		printf("\tBase %d : 0x%llx ", i, (base[i][0] & 0xfffffffffff));
+
+		if (0ULL != ((1ULL << 63) & base[i][0]))
+			puts("(valid)\n");
+		else
+			puts("(valid)\n");
+	}
+
+	return;
+}
+#endif	/* CONFIG_AXXIA_ANY_XLF */
+
+/*
+  ------------------------------------------------------------------------------
   board_init_f
 
   Replaces the weakly defined board_init_f in arch/arm/lib/spl.c.
@@ -1431,6 +1477,10 @@ board_init_f(ulong dummy)
 	rc = axxia_initialize();
 	if (0 != rc)
 		acp_failure(__FILE__, __func__, __LINE__);
+
+#ifdef CONFIG_AXXIA_ANY_XLF
+	display_l3_lock();
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 
 #ifdef CONFIG_HW_WATCHDOG
 	/*
