@@ -11,16 +11,21 @@
 
 #define CONFIG_AXXIA
 
-#if defined(CONFIG_AXXIA_XLF_SIM) || \
-  defined(CONFIG_AXXIA_XLF_EMU) || \
-  defined(CONFIG_AXXIA_XLF)
+#if defined(CONFIG_AXXIA_XLF_SIM) ||		\
+	defined(CONFIG_AXXIA_XLF_EMU) ||	\
+	defined(CONFIG_AXXIA_XLF)
 #define CONFIG_AXXIA_ANY_XLF
 #endif
 
-#if defined(CONFIG_AXXIA_56XX_SIM) || \
-  defined(CONFIG_AXXIA_56XX_EMU) || \
-  defined(CONFIG_AXXIA_56XX)
+#if defined(CONFIG_AXXIA_56XX_SIM) ||		\
+	defined(CONFIG_AXXIA_56XX_EMU) ||	\
+	defined(CONFIG_AXXIA_56XX)
 #define CONFIG_AXXIA_ANY_56XX
+#endif
+
+#if defined(CONFIG_AXXIA_56XX_EMU) ||		\
+	defined(CONFIG_AXXIA_XLF_EMU)
+#define CONFIG_AXXIA_ANY_EMU
 #endif
 
 #define CONFIG_AXXIA_SERIAL
