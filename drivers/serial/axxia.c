@@ -139,27 +139,27 @@ __serial_start(void)
 	  How should this be done for reception?
 	*/
 
-	while (0 == (readl(UART0_ADDRESS + UART_FR) & FR_TXFE))
+	while (0 == (readl(CONSOLE_ADDRESS + UART_FR) & FR_TXFE))
 		WATCHDOG_RESET();
 
-	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_BUSY))
+	while (0 != (readl(CONSOLE_ADDRESS + UART_FR) & FR_BUSY))
 		WATCHDOG_RESET();
 
 	/* Disable the UART. */
-	writel(0, UART0_ADDRESS + UART_CR);
+	writel(0, CONSOLE_ADDRESS + UART_CR);
 
 	/* Flush the transmit fifo. */
-	lcr_h = readl(UART0_ADDRESS + UART_LCR_H);
+	lcr_h = readl(CONSOLE_ADDRESS + UART_LCR_H);
 	lcr_h &= ~0x10;
-	writel(lcr_h, UART0_ADDRESS + UART_LCR_H);
+	writel(lcr_h, CONSOLE_ADDRESS + UART_LCR_H);
 
 	/* Reprogram. */
-  	writel(ibrd, UART0_ADDRESS + UART_IBRD);
-	writel(fbrd, UART0_ADDRESS + UART_FBRD);
-	writel(0x70, UART0_ADDRESS + UART_LCR_H);
+  	writel(ibrd, CONSOLE_ADDRESS + UART_IBRD);
+	writel(fbrd, CONSOLE_ADDRESS + UART_FBRD);
+	writel(0x70, CONSOLE_ADDRESS + UART_LCR_H);
 
 	/* Enable */
-	writel(0x301, UART0_ADDRESS + UART_CR);
+	writel(0x301, CONSOLE_ADDRESS + UART_CR);
 
 	return 0;
 }
@@ -173,13 +173,13 @@ static int
 __serial_stop(void)
 {
 	/* Disable the UART. */
-	writel(0, (UART0_ADDRESS + UART_CR));
+	writel(0, (CONSOLE_ADDRESS + UART_CR));
 
 	/* Make sure all transmissions are finished. */
-	while (0 == (readl(UART0_ADDRESS + UART_FR) & FR_TXFE))
+	while (0 == (readl(CONSOLE_ADDRESS + UART_FR) & FR_TXFE))
 		WATCHDOG_RESET();
 
-	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_BUSY))
+	while (0 != (readl(CONSOLE_ADDRESS + UART_FR) & FR_BUSY))
 		WATCHDOG_RESET();
 
 	/* Turn off the timer. */
@@ -217,10 +217,10 @@ __serial_getc(void)
 {
 	int character;
 
-	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_RXFE))
+	while (0 != (readl(CONSOLE_ADDRESS + UART_FR) & FR_RXFE))
 		WATCHDOG_RESET();
 
-	character = readl(UART0_ADDRESS + UART_DR);
+	character = readl(CONSOLE_ADDRESS + UART_DR);
 
 	return character;
 }
@@ -235,7 +235,7 @@ __serial_tstc(void)
 {
 	int return_value = 0;
 
-	return_value = (FR_RXFE != (readl(UART0_ADDRESS + UART_FR) & FR_RXFE));
+	return_value = (FR_RXFE != (readl(CONSOLE_ADDRESS + UART_FR) & FR_RXFE));
 
 	return return_value;
 }
@@ -248,26 +248,26 @@ __serial_tstc(void)
 static void
 __serial_putc( const char c )
 {
-	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_TXFF))
+	while (0 != (readl(CONSOLE_ADDRESS + UART_FR) & FR_TXFF))
 		WATCHDOG_RESET();
 
 	if ('\n' == c) {
-		writel('\r', UART0_ADDRESS + UART_DR);
-		while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_TXFF))
+		writel('\r', CONSOLE_ADDRESS + UART_DR);
+		while (0 != (readl(CONSOLE_ADDRESS + UART_FR) & FR_TXFF))
 			WATCHDOG_RESET();
 	}
 
-	writel(c, UART0_ADDRESS + UART_DR);
+	writel(c, CONSOLE_ADDRESS + UART_DR);
 
 	/*
 	  The following is useful for printf debugging; get all the
 	  characters out!
 	*/
 
-	while (0 == (readl(UART0_ADDRESS + UART_FR) & FR_TXFE))
+	while (0 == (readl(CONSOLE_ADDRESS + UART_FR) & FR_TXFE))
 		WATCHDOG_RESET();
 
-	while (0 != (readl(UART0_ADDRESS + UART_FR) & FR_BUSY))
+	while (0 != (readl(CONSOLE_ADDRESS + UART_FR) & FR_BUSY))
 		WATCHDOG_RESET();
 
 	return;

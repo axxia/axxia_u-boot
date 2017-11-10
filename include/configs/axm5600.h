@@ -539,6 +539,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define UART1_ADDRESS (0x8080010000)
 #define UART2_ADDRESS (0x8080020000)
 #define UART3_ADDRESS (0x8080030000)
+#define CONSOLE_ADDRESS UART0_ADDRESS
 
 #define SCB (IO + 0x96000)
 
