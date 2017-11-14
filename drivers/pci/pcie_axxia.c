@@ -796,16 +796,16 @@ axxia_pcie_los_wa(struct pci_controller *hose, unsigned int max_width)
 
 	  LANE0_DIG_ASIC_RX_ASIC_IN_0 0x2022
 	  LANE0_DIG_ASIC_RX_ASIC_OUT_0 0x202e
-	  LANE0_IDG_ASIC_RX_OVRD_IN_0 0x200a
+	  LANE0_DIG_ASIC_RX_OVRD_IN_0 0x200a
 	*/
 
 #define MAX_TARGET 4
 #define LANE0_DIG_ASIC_RX_ASIC_IN_0  0x2022
 #define LANE0_DIG_ASIC_RX_ASIC_OUT_0 0x202e
-#define LANE0_IDG_ASIC_RX_OVRD_IN_0  0x200a
+#define LANE0_DIG_ASIC_RX_OVRD_IN_0  0x200a
 #define LANE1_DIG_ASIC_RX_ASIC_IN_0  0x2222
 #define LANE1_DIG_ASIC_RX_ASIC_OUT_0 0x222e
-#define LANE1_IDG_ASIC_RX_OVRD_IN_0  0x220a
+#define LANE1_DIG_ASIC_RX_OVRD_IN_0  0x220a
 
 #elif defined(CONFIG_AXXIA_ANY_XLF)
 
@@ -814,16 +814,16 @@ axxia_pcie_los_wa(struct pci_controller *hose, unsigned int max_width)
 
 	  LANE0_DIG_ASIC_RX_ASIC_IN_0 0x4044
 	  LANE0_DIG_ASIC_RX_ASIC_OUT_0 0x405c
-	  LANE0_IDG_ASIC_RX_OVRD_IN_0 0x4014
+	  LANE0_DIG_ASIC_RX_OVRD_IN_0 0x4014
 	*/
 
 #define MAX_TARGET 1
 #define LANE0_DIG_ASIC_RX_ASIC_IN_0  0x4044
 #define LANE0_DIG_ASIC_RX_ASIC_OUT_0 0x405c
-#define LANE0_IDG_ASIC_RX_OVRD_IN_0  0x4014
+#define LANE0_DIG_ASIC_RX_OVRD_IN_0  0x4014
 #define LANE1_DIG_ASIC_RX_ASIC_IN_0  0x4444
 #define LANE1_DIG_ASIC_RX_ASIC_OUT_0 0x445c
-#define LANE1_IDG_ASIC_RX_OVRD_IN_0  0x4414
+#define LANE1_DIG_ASIC_RX_OVRD_IN_0  0x4414
 
 #else
 #error "Invalid Architecture"
@@ -834,6 +834,7 @@ axxia_pcie_los_wa(struct pci_controller *hose, unsigned int max_width)
 	while (get_timer(timer) < 1000) { /* Wait 1 second for a link. */
 		int i;
 		unsigned short temp;
+		unsigned int region;
 
 		/* 
 		   In all cases (see the initialization of lane_mask
@@ -845,40 +846,37 @@ axxia_pcie_los_wa(struct pci_controller *hose, unsigned int max_width)
 			if (0 == (lane_mask & (0xff << ((i - 1) * 8))))
 				continue;
 
-			ncr_read16(NCP_REGION_ID(0x115, i),
-				   LANE0_DIG_ASIC_RX_ASIC_IN_0, &temp);
+			region = NCP_REGION_ID(0x115, i);
+			ncr_read16(region, LANE0_DIG_ASIC_RX_ASIC_IN_0, &temp);
 
 			if (2 == ((temp & 0x180) >> 7)) {
-				ncr_read16(NCP_REGION_ID(0x115, i),
-					   LANE0_DIG_ASIC_RX_ASIC_OUT_0,
+				ncr_read16(region, LANE0_DIG_ASIC_RX_ASIC_OUT_0,
 					   &temp);
 
-				if (0 != (temp & 2))
-					temp = 0x4700;
-				else
-					temp = 0x0700;
-
-				ncr_write16(NCP_REGION_ID(0x115, i),
-					    LANE0_IDG_ASIC_RX_OVRD_IN_0,
-					    temp);
+				if (0 != (temp & 2)) {
+					ncr_write16(region,
+						    LANE0_DIG_ASIC_RX_OVRD_IN_0,
+						    0x4700);
+					ncr_write16(region,
+						    LANE0_DIG_ASIC_RX_OVRD_IN_0,
+						    0x0700);
+				}
 			}
 
-			ncr_read16(NCP_REGION_ID(0x115, i),
-				   LANE1_DIG_ASIC_RX_ASIC_IN_0, &temp);
+			ncr_read16(region, LANE1_DIG_ASIC_RX_ASIC_IN_0, &temp);
 
 			if (2 == ((temp & 0x180) >> 7)) {
-				ncr_read16(NCP_REGION_ID(0x115, i),
-					   LANE1_DIG_ASIC_RX_ASIC_OUT_0,
+				ncr_read16(region, LANE1_DIG_ASIC_RX_ASIC_OUT_0,
 					   &temp);
 
-				if (0 != (temp & 2))
-					temp = 0x4700;
-				else
-					temp = 0x0700;
-
-				ncr_write16(NCP_REGION_ID(0x115, i),
-					    LANE1_IDG_ASIC_RX_OVRD_IN_0,
-					    temp);
+				if (0 != (temp & 2)) {
+					ncr_write16(region,
+						    LANE1_DIG_ASIC_RX_OVRD_IN_0,
+						    0x4700);
+					ncr_write16(region,
+						    LANE1_DIG_ASIC_RX_OVRD_IN_0,
+						    0x0700);
+				}
 			}
 		}
 
