@@ -138,6 +138,14 @@ apply_a57_core_errata:
 	and	x0, x0, #0xE
 	msr	S3_1_c15_c2_0, x0	/* cpuactlr_el1 */
 #endif
+   /* Enable Cache Protection L1 through L2 only for Cortex-A57. */
+#if defined(CONFIG_SPL_BUILD) & defined(CONFIG_CACHE_PROTECTION)
+   mov x0, #0x1 << 21
+   mrs x1, S3_1_C11_C0_2
+   orr x1, x1, x0
+   msr S3_1_C11_C0_2, x1
+   isb
+#endif
 	b 0b
 ENDPROC(apply_core_errata)
 

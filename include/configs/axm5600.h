@@ -233,6 +233,7 @@
 #define ARM64
 #define NCP_64
 
+#define CONFIG_CACHE_PROTECTION
 #define CONFIG_AXXIA_AXM_I2C
 
 /*
