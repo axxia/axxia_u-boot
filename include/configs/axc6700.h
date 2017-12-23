@@ -402,6 +402,11 @@
 #define CONFIG_AXXIA_PCI
 /*#define CONFIG_SPL_PCI_SUPPORT*/
 
+#define CONFIG_AXXIA_EIOA
+#ifdef CONFIG_AXXIA_EIOA
+#define EIOA_SYSTEM_MEMORY ((phys_size_t) 1 << 32)
+#endif
+
 /********** NEMAC PHY ADDRESS *************/
 #define CONFIG_AXXIA_PHY_ADDRESS 0x7
 

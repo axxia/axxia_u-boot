@@ -35,11 +35,19 @@
 #define POINTER(address) ((unsigned long *)((unsigned long)(address)))
 #endif
 
+#define NCR_TRACER
+
 static int ncr_sysmem_mode_disabled = 1;
 static int ncr_tracer_disabled = 1;
 void ncr_tracer_enable( void ) { ncr_tracer_disabled = 0; }
 void ncr_tracer_disable( void ) { ncr_tracer_disabled = 1; }
-int ncr_tracer_is_enabled( void ) { return 0 == ncr_tracer_disabled ? 1 : 0; }
+int ncr_tracer_is_enabled( void ) 
+{ 
+	char *envstring = getenv("ncrdbg");	
+	if (NULL != envstring) 
+		return 1;
+	return 0; 
+}
 void ncr_sysmem_init_mode_enable(void) { ncr_sysmem_mode_disabled = 0; }
 void ncr_sysmem_init_mode_disable(void) { ncr_sysmem_mode_disabled = 1; }
 
@@ -527,6 +535,38 @@ ncr_write32_0x167(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 	return 0;
 }
 
+#ifdef CONFIG_AXXIA_XLF
+
+/*
+  ------------------------------------------------------------------------------
+  ncr_read32_axi2ser
+*/
+
+static int 
+ncr_read32_axi2ser(ncp_uint64_t offset, ncp_uint32_t *value)
+{
+	debug("%s() reading val 0x%x at 0x%llx\n", 
+			__func__, *(volatile ncp_uint32_t *)value, offset);
+	*value = readl(POINTER(offset));
+	return 0;
+}
+
+
+/*
+  ------------------------------------------------------------------------------
+  ncr_write32_axi2ser
+*/
+
+static int 
+ncr_write32_axi2ser(ncp_uint64_t offset, ncp_uint32_t value)
+{
+	debug("%s() writing val 0x%x at 0x%llx\n", 
+			__func__, value, offset);
+	writel(value, POINTER(offset));
+	return 0;
+}
+
+#endif
 
 typedef struct
 {
@@ -856,6 +896,18 @@ ncr_read(ncp_uint32_t region,
 	case 0x167:
 		return ncr_read32_0x167(region, address, (ncp_uint32_t *)buffer);
 		break;
+#ifdef CONFIG_AXXIA_XLF
+	case 0x168:
+	{
+		ncp_uint64_t offset = 0;
+		if (NCP_NODE_ID(region) == 0x168)
+			offset = NCP_TARGET_ID(region) * 0x40000 + 
+						(AXI2SER8 + address);
+
+		return ncr_read32_axi2ser(offset, (ncp_uint32_t *)buffer);
+		break;
+	}
+#endif
 	case 0x101:
 	case 0x109:
 	case 0x1d0:
@@ -869,7 +921,14 @@ ncr_read(ncp_uint32_t region,
 			ncp_uint64_t offset = 0;
 
 			if(NCP_NODE_ID(region) == 0x101) {
-				offset = (unsigned long)(NCA + address);
+				if (NCP_TARGET_ID(region) == 0x0) /* 0x80_2000_0000 */
+					offset = NCA + address; 
+				else if (NCP_TARGET_ID(region) == 0x1) /* 0x80_2008_0000 */
+					offset = NCA + 0x80000 + address; 
+				else if (NCP_TARGET_ID(region) == 0x2) /* 0x80_2210_0000 */
+					offset = NCA + 0x2100000 + address; 
+				else if (NCP_TARGET_ID(region) == 0x3) /* 0x80_2300_0000 */ 
+					offset = NCA + 0x3000000 + address; 
 			} else if(NCP_NODE_ID(region) == 0x109) {
 				offset = ((unsigned long)MME_POKE + address);
 			} else if(NCP_NODE_ID(region) == 0x1d0) {
@@ -1163,6 +1222,18 @@ ncr_write(ncp_uint32_t region,
 		return ncr_write32_0x167(region, address,
 					 *((ncp_uint32_t *)buffer));
 		break;
+#ifdef CONFIG_AXXIA_XLF
+	case 0x168:
+	{
+		ncp_uint64_t offset = 0;
+		if (NCP_NODE_ID(region) == 0x168)
+			offset = NCP_TARGET_ID(region) * 0x40000 + 
+						(AXI2SER8 + address);
+	
+		return ncr_write32_axi2ser(offset, *(ncp_uint32_t *)buffer);
+		break;
+	}
+#endif
 	case 0x101:
 	case 0x109:
 	case 0x1d0:
@@ -1172,14 +1243,21 @@ ncr_write(ncp_uint32_t region,
 			ncp_uint64_t offset = 0;
 
 			if(NCP_NODE_ID(region) == 0x101) {
-				offset = (unsigned long)(NCA + address);
+				if (NCP_TARGET_ID(region) == 0x0) /* 0x80_2000_0000 */
+					offset = NCA + address; 
+				else if (NCP_TARGET_ID(region) == 0x1) /* 0x80_2008_0000 */
+					offset = NCA + 0x80000 + address; 
+				else if (NCP_TARGET_ID(region) == 0x2) /* 0x80_2210_0000 */
+					offset = NCA + 0x2100000 + address; 
+				else if (NCP_TARGET_ID(region) == 0x3) /* 0x80_2300_0000 */ 
+					offset = NCA + 0x3000000 + address; 
 			} else if(NCP_NODE_ID(region) == 0x109) {
 				offset = (unsigned long)(MME_POKE + address);
 			} else if(NCP_NODE_ID(region) == 0x1d0) {
 				offset = (unsigned long)(SCB + address);
 			} else if (NCP_NODE_ID(region) == 0x149) {
 				offset = (unsigned long)(GPREG + address);
-			} 
+			}
 
 			while (4 <= number) {
 				ncr_register_write(*((ncp_uint32_t *)buffer),
