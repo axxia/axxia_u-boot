@@ -1153,6 +1153,32 @@ display_l3_lock(void)
 
 /*
   ------------------------------------------------------------------------------
+  is_xlf_a0
+
+  Detect A0 parts, which need to be configured slightly differently.
+  Display a warning if the part is unfused, and assume !A0 in that
+  case.
+*/
+
+#ifdef CONFIG_AXXIA_ANY_XLF
+
+int
+is_xlf_a0(void)
+{
+	if (0 == pfuse)
+		return 0;
+	else if (0x18 != (pfuse & 0x1f))
+		return 0;
+	else if (0 != ((pfuse & 0x300) >> 8))
+		return 0;
+
+	return 1;
+}
+
+#endif	/* CONFIG_AXXIA_ANY_XLF */
+
+/*
+  ------------------------------------------------------------------------------
   board_init_f
 
   Replaces the weakly defined board_init_f in arch/arm/lib/spl.c.
@@ -1172,14 +1198,20 @@ board_init_f(ulong dummy)
 	/*
 	  Work-Around for Hardware Debug
 
-	  Reverse the polarity of coresight_ap_deviceen.
+	  Reverse the polarity of coresight_ap_deviceen (bit 19)..
 
 	  Without this update, JTAG debugging won't work.
 	*/
 
-	writel(0xab, (SYSCON + 0x2000));
-	writel(0x4700000, (SYSCON + 0x2008));
-	writel(0, (SYSCON + 0x2000));
+#ifdef CONFIG_AXXIA_ANY_XLF
+
+	if (1 == is_xlf_a0()) {
+		writel(0xab, (SYSCON + 0x2000));
+		writel(0x4700000, (SYSCON + 0x2008));
+		writel(0, (SYSCON + 0x2000));
+	}
+
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 
 	/* Set the CNTFRQ register. */
 	asm volatile("msr cntfrq_el0, %0"
@@ -1286,6 +1318,21 @@ board_init_f(ulong dummy)
 #else
 	printf("Axxia ATF Version: UNKNOWN\n");
 #endif
+
+#ifdef CONFIG_AXXIA_ANY_XLF
+
+	puts("XLF CHIP VERSION: ");
+
+	if (0 == pfuse)
+		puts("pfuse is NOT SET, assuming B0\n");
+	else if (0x18 != (pfuse & 0x1f))
+		printf("UNKNOWN CHIP TYPE 0x%x!", (pfuse & 0x1f));
+	else if (0 != ((pfuse & 0x300) >> 8))
+		puts("B0\n");
+	else
+		puts("A0\n");
+
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 
 #ifdef SYSCACHE_ONLY_MODE
 	printf("Running in System Cache\n");

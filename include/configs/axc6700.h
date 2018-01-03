@@ -1512,6 +1512,10 @@ void dump_packet(const char *, void *, int);
   ==============================================================================
 */
 
+#ifndef __ASSEMBLY__
+int is_xlf_a0(void);
+#endif	/* __ASSEMBLY__ */
+
 #define CONFIG_CMD_EXTMEMMPR
 
 /* If defined, leave the L3 in "Snoop Filter Only" mode. */
