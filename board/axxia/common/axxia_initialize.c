@@ -180,6 +180,17 @@ axxia_initialize(void)
 
 			printf("initializing ELMs for ddrRecovery\n");
 
+
+			/*
+			 * for XLF B0 we need to clear the reset_wo_sm bit
+			 * for all other chips it should have already been
+			 * cleared by the reset. we may as well just always
+			 * unconditionally clear it.
+			 */
+			writel(0xab, (SYSCON + 0x2000));
+			writel(0x00, (SYSCON + 0x204c));
+			writel(0, (SYSCON + 0x2000));
+
 			/* Initialize Dickens and the ELMs */
 			version_save = sysmem->version;
 #if defined(CONFIG_AXXIA_56XX) || defined(CONFIG_AXXIA_56XX_SIM)
