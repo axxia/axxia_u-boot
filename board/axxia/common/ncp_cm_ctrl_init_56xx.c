@@ -113,6 +113,9 @@ ncp_cm_denali_init_56xx(
     ncp_memory_controller_DENALI_CTL_82_t reg82 = {0};
     ncp_memory_controller_DENALI_CTL_83_t reg83 = {0};
     ncp_memory_controller_DENALI_CTL_85_t reg85 = {0};
+#ifndef __UBOOT__
+    ncp_memory_controller_DENALI_CTL_86_t reg86 = {0};
+#endif /* __UBOOT__ */
     ncp_memory_controller_DENALI_CTL_96_t reg96 = {0};
     ncp_memory_controller_DENALI_CTL_97_t reg97 = {0};
     ncp_memory_controller_DENALI_CTL_98_t reg98 = {0};
@@ -152,8 +155,12 @@ ncp_cm_denali_init_56xx(
     ncp_uint32_t tmp1=0;
 
 #ifndef UBOOT
-    NCP_TRACEPOINT(Intel_AXXIA_ncp_sysmem, ncp_cm_denali_init_56xx_entry,  NCP_MSG_ENTRY,
-            "dev=%p cmNode=%d parms=%p ctm=%p\n", dev,cmNode,parms,ctm);
+    NCP_TRACEPOINT (Intel_AXXIA_ncp_sysmem, ncp_func_call5, NCP_MSG_CALL,
+            "%s dev=%" PRIx64 " cmNode=%" PRIx64 " parms=%" PRIx64
+            " ctm=%" PRIx64 "\n", __func__,
+            (ncp_uint64_t) (ncp_uintptr_t) (dev), (ncp_uint64_t) (cmNode),
+            (ncp_uint64_t) (ncp_uintptr_t) (parms),
+            (ncp_uint64_t) (ncp_uintptr_t) (ncp_uintptr_t) (ctm));
 #endif
     /* this below is only for sm_parms's per_smem[n] access */
     switch (cmNode) {
@@ -186,6 +193,20 @@ ncp_cm_denali_init_56xx(
     /*cfgRegion = NCP_REGION_ID(cmNode, 0xff);*/ /* cfg_node */
 
     NCP_COMMENT("## Begin CMEM%d config", cmNode);
+
+#ifndef __UBOOT__
+    /* this is required for config reload case */
+
+    /* int acknowlegde */
+    ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_85, (ncp_uint32_t *)&reg85);
+    reg85.int_ack = 0x7fffffff; /* clears associated bit in int_status */
+    ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_85, *((ncp_uint32_t *)&reg85));
+
+    /* int_mask */
+    ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_86, (ncp_uint32_t *)&reg86);
+    reg86.int_mask = 0x7ffffeff;
+    ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_86, *((ncp_uint32_t *)&reg86));
+#endif /* __UBOOT__ */
 
     ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_00, (ncp_uint32_t *)&reg00);
     reg00.dram_class = parms->dram_class; /* ddr3=6, ddr4=10 */
@@ -441,7 +462,11 @@ ncp_cm_denali_init_56xx(
     ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_27, *((ncp_uint32_t *)&reg27));
 
     ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_28, (ncp_uint32_t *)&reg28);
-    reg28.pwrup_srefresh_exit = 0;
+#ifdef UBOOT
+    reg28.pwrup_srefresh_exit = (ddrRecovery == TRUE) ? 1 : 0;
+#else
+    reg28.pwrup_srefresh_exit = (parms->ddrRecovery == TRUE) ? 1 : 0;
+#endif
     reg28.srefresh_exit_no_refresh = 0x0;
     reg28.enable_quick_srefresh = 0x1;
     reg28.cke_delay = 3; /* or 0 */
@@ -1317,7 +1342,9 @@ ncp_cm_denali_init_56xx(
 
     NCP_RETURN_LABEL
 #ifndef UBOOT
-        NCP_TRACEPOINT(Intel_AXXIA_ncp_sysmem, ncp_cm_denali_init_56xx_exit,  NCP_MSG_EXIT,"ncpStatus=%d\n",ncpStatus);
+        NCP_TRACEPOINT (Intel_AXXIA_ncp_sysmem, ncp_func_call2, NCP_MSG_CALL,
+                "%s ncpStatus=%" PRIx64 "\n", __func__,
+                (ncp_uint64_t) ncpStatus);
 #endif
         return ncpStatus;
 }

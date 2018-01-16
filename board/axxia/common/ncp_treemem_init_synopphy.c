@@ -1969,6 +1969,10 @@ ncp_cm_ddr4_phy_init(
 	ncp_phy_PLLCR0_t 	regPLLCR0 = {0};
 
 	ncp_memory_controller_DENALI_CTL_00_t reg00 = {0};
+#ifndef __UBOOT__
+	ncp_memory_controller_DENALI_CTL_85_t reg85 = {0};
+	ncp_memory_controller_DENALI_CTL_86_t reg86 = {0};
+#endif /* __UBOOT__ */
 
 	ncp_uint32_t 		tmp = 0, i =0;
 
@@ -2696,6 +2700,9 @@ ncp_cm_ddr4_phy_init(
 #endif
 
 	/* start MC init operation */
+
+#ifdef __UBOOT__
+
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_00, (ncp_uint32_t *)&reg00);
 	reg00.start = 0x1;
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_00, *((ncp_uint32_t *)&reg00));
@@ -2711,6 +2718,83 @@ ncp_cm_ddr4_phy_init(
 		ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_84, &tmp);
 		errprintf("POLL timeout during MC init [line:%d] exp 0x100 read 0x%x\n",__LINE__, tmp);
 	}
+#else /* __UBOOT__ */
+
+#ifdef FINAL_SOLUTION
+	/*
+	 * The driver for the controller is functional but all irq's are masked except BIT 8.
+	 * The ISR function waits for BIT 8 to finish initialization. It ackowledges irq signal
+	 * preventing unpredictable irq storms, and then informs the ncpCfgTool about 
+	 * initialization. IRQ mask register bit 8 is used as a backword communication channel,
+	 * as this interrupt signal must be masked (till next config reload). 
+	 * If this happens, it means the controller driver is fully functional and ncpCfgTool
+	 * can go forward with training.
+	 *
+	 * So the reading of the irq mask change below is a correct and inteded behaviour!!!
+         * for additional info look into kernel src 
+	 *    -> drivers/edac/axxia_edac-cmc_56xx.c
+         */
+
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_00, (ncp_uint32_t *)&reg00);
+	reg00.start = 0x1;
+	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_00, *((ncp_uint32_t *)&reg00));
+
+        ncpStatus = NCP_ST_SUCCESS;
+        ncpStatus = ncr_poll(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_86,  0x100,  0x100,  1000,  10000);
+        if (ncpStatus == NCP_ST_POLL_TIMEOUT)
+        {
+                ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_85, (ncp_uint32_t *)&reg85);
+                reg85.int_ack = 0x00000100; /* clears associated bit in int_status */
+                ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_85, *((ncp_uint32_t *)&reg85));
+
+                ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_86, &tmp);
+                errprintf("POLL timeout during MC init [line:%d] exp 0x100 read 0x%x\n",__LINE__, tmp);
+        }
+#else /* this is a transition code - it supports all kernels - to be replaced by FINAL_SOLUTION */
+
+	
+	/* The code polls for memory init operation: bit-8 set in either int_mask or int_status
+         * Updated rte should support all versions of the kernel:
+         * -older versions do not ack bit 8 interrupt, and do not mask bit 8
+         * -current version does not ack bit 8 interrupt, but it masks bit 8
+         * -newer version will ack bit 8 interrupt and mask bit 8
+         */
+
+	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_00, (ncp_uint32_t *)&reg00);
+	reg00.start = 0x1;
+	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_00, *((ncp_uint32_t *)&reg00));
+
+	for (ncpStatus = NCP_ST_POLL_TIMEOUT,i=0;i<10;++i) {
+                ncpStatus = (ncpStatus == NCP_ST_POLL_TIMEOUT)?
+                        ncr_poll(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_86,  0x100,  0x100,  1000,  500):
+                        ncpStatus;
+
+                ncpStatus = (ncpStatus == NCP_ST_POLL_TIMEOUT)?
+                        ncr_poll(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_84,  0x100,  0x100,  1000,  500):
+                        ncpStatus;
+        }
+        ncpStatus = (ncpStatus == NCP_ST_POLL_TIMEOUT)?
+                ncr_poll(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_86,  0x100,  0x100,  1000,  1):
+                ncpStatus;
+
+        reg86.int_mask = 0x7fffffff;
+        ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_86, *((ncp_uint32_t *)&reg86));
+
+        if (ncpStatus == NCP_ST_POLL_TIMEOUT)
+        {
+                ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_84, &tmp);
+                errprintf("POLL timeout during MC init [line:%d] exp 0x100 read 0x%x\n",__LINE__, tmp);
+                ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_86, &tmp);
+                errprintf("POLL timeout during MC init [line:%d] exp 0x100 read 0x%x\n",__LINE__, tmp);
+        }
+
+        ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_85, (ncp_uint32_t *)&reg85);
+        reg85.int_ack = 0x00000100; /* clears associated bit in int_status */
+        ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_85, *((ncp_uint32_t *)&reg85));
+#endif /* FINAL SOLUTION */
+
+#endif /* __UBOOT__ */
+
 #endif
 
 	NCP_RETURN_LABEL
@@ -2753,7 +2837,15 @@ ncp_cm_ddr4_post_phy_training_mc_setup(
 	/* DENALI_CTL_86 */
 	/* int_mask */
 	ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_86, (ncp_uint32_t *)&reg86);
+#ifdef __UBOOT__
 	reg86.int_mask = 0x0;
+#else
+    	if (parms->dram_class == NCP_SM_DDR4_MODE) {
+		reg86.int_mask = 0x3ddff701;
+	} else {
+		reg86.int_mask = 0x7fdff701;
+	}
+#endif /* __UBOOT__ */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_86, *((ncp_uint32_t *)&reg86));
 
 	NCP_RETURN_LABEL
