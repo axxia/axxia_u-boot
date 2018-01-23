@@ -1946,7 +1946,10 @@ ncp_task_tqs_cleanup_locks(int tqsId);
  * =========================================
  */
 #ifdef NCP_TASK_NCA_GLOBALS
-ncp_task_swState_t  *pNcpTaskSwState = NULL;        /* SW State */
+#if defined(CONFIG_EIOA_BIG_STRUCT_IN_BSS)
+ncp_task_swState_t   pNcpTaskSwState_in_bss __attribute__((section(".bss")));
+#endif
+ncp_task_swState_t  *pNcpTaskSwState;        /* SW State */
 void                *pNcpTaskDomainBundle = NULL;   /* HW region */
 ncp_uint32_t         ncpTaskDomainBundleMapCnt = 0;
 ncp_uint32_t         ncpTaskPoolMapCnt[NCP_NCAV3_NUM_TASK_MEMORY_POOLS] = {0};

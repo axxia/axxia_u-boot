@@ -404,7 +404,20 @@
 
 #define CONFIG_AXXIA_EIOA
 #ifdef CONFIG_AXXIA_EIOA
+/*
+   Print the memory EIOA uses to the console.
+   It has been observed users load kernel to EIOA memory
+   through... EIOA.
+*/
+/*#define CONFIG_PRINT_EIOA_MEMORY*/
 #define EIOA_SYSTEM_MEMORY ((phys_size_t) 1 << 32)
+/*
+    ncp_task_swState_t is a massive EIOA struct (about 1M).
+    ncp rte in kernel allocates the heap for it but regular
+    U-Boots may don't have enough room for it in there so
+    move it to .bss section with the config below.
+*/
+#define CONFIG_EIOA_BIG_STRUCT_IN_BSS
 #endif
 
 /********** NEMAC PHY ADDRESS *************/
@@ -1125,7 +1138,7 @@ int serial_early_init(void);
  */
 
 #define CONFIG_SYS_LONGHELP	/* undef to save memory */
-/* #define CONFIG_SYS_HUSH_PARSER */	/* use "hush" command parser */ 
+/* #define CONFIG_SYS_HUSH_PARSER */	/* use "hush" command parser */
 #define CONFIG_SYS_CBSIZE		2048
 /* Print Buffer Size */
 #define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \

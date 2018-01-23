@@ -569,7 +569,15 @@ restart:
 			net_arp_wait_packet_ip.s_addr = 0;
 
 			net_cleanup_loop();
-			eth_halt();
+			/* Under Abort eth_halt() leads to unloading eioa
+			   config that doesn't follow up with loading.
+			   Fix it by skipping config flushing. */
+			if (0 == strncmp(eth_get_dev()->name, "LSI_EIOA", 8))
+				/* try to mimick what eth_halt() does with
+				   exception of unloading config */
+				eth_get_dev()->state = ETH_STATE_PASSIVE;
+			else
+				eth_halt();
 			/* Invalidate the last protocol */
 			eth_set_last_protocol(BOOTP);
 

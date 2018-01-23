@@ -11,16 +11,16 @@
 #include "uboot/ncp_mme_ext.h"
 
 /* AXC6732.Engines.NCAv3.NcaDomainInfo.DomainEntry[id=0].startOffset */
-#define DOMAINBOUNDLE_PA           0x82000000   /* 0x82000000 */
+#define DOMAINBOUNDLE_PA           0x82000000ULL   /* 0x82000000 */
 /* AXC6732.Engines.NCAv3.NcaDomainInfo.DomainEntry[id=0].vpIOControlVirtualBaseOffset */
-#define DOMAINBOUNDLE_VA           0x82000000   /* 0x70000000 */
+#define DOMAINBOUNDLE_VA           0x82000000ULL   /* 0x70000000 */
 /* AXC6732.Engines.NCAv3.NcaDomainInfo.DomainEntry[id=0].size */
 #define DOMAINBOUNDLE_SIZE             524288   /* 0x80000 */
 
 
 
 /* AXC6732.Engines.MME.MemoryPoolMap.SharedMemoryPools.SharedMemoryPool[id=2].physicalBaseAddress */
-#define POOL_2_PA                 0x9B800000 /* 0x9B800000 */
+#define POOL_2_PA                 0x9B800000ULL /* 0x9B800000 */
 
 /* AXC6732.Engines.MME.MemoryPoolMap.SharedMemoryPools.SharedMemoryPool[id=2].actualSize */
 #define POOL_2_SIZE               268409088 /* 0xFFF9900 */
@@ -56,6 +56,7 @@ extern unsigned long ncp_nvm_size;
 void *taskIOMem;
 ncp_t *ncp;
 
+void clean_memory_eioa(void);
 /*********************/
 /* for GDB debugging */
 
@@ -501,6 +502,8 @@ ncav3_free_hw(void)
 	return NCP_ST_SUCCESS;
 }
 
+extern ncp_task_swState_t   pNcpTaskSwState_in_bss;
+
 ncp_st_t
 ncp_config_uboot_attach(ncp_uint32_t id, ncp_hdl_t *ncpHdl)
 {
@@ -508,8 +511,6 @@ ncp_config_uboot_attach(ncp_uint32_t id, ncp_hdl_t *ncpHdl)
     /* ncp_t               *ncp = NULL; */
     ncp_ncav3_hdl_t *nca     = NULL;
     ncp_dev_hdl_t   devHdl;
-
-	printf("U-Boot NCA attach\n");
 
     ncp = (ncp_t*)malloc(sizeof(ncp_t));
     memset(ncp, 0, sizeof(ncp_t));
@@ -535,7 +536,12 @@ ncp_config_uboot_attach(ncp_uint32_t id, ncp_hdl_t *ncpHdl)
 #endif	/* NCP_USE_NVM */
 
 
+#if defined(CONFIG_EIOA_BIG_STRUCT_IN_BSS)
+	pNcpTaskSwState = &pNcpTaskSwState_in_bss;
+#else
 	pNcpTaskSwState = malloc(sizeof(ncp_task_swState_t));
+#endif
+
 	memset(pNcpTaskSwState,0,sizeof(ncp_task_swState_t));
 
 	pNcpTaskSwState->taskIoResourceLock = malloc(sizeof(ncp_task_v3_mutex_t));
@@ -596,16 +602,9 @@ NCP_RETURN_LABEL
 ncp_st_t
 ncp_config_uboot_detach(ncp_hdl_t *ncpHdl)
 {
-	// clear domain bundle
-	void *ptr = 0;
-	ptr = (void *) DOMAINBOUNDLE_PA;
-	memset(ptr,0,DOMAINBOUNDLE_SIZE);
-	// clear memory pool
-	ptr = (void*) POOL_2_PA;
-	memset(ptr,0,POOL_2_SIZE);
-
-    mme_destroy(ncp);
-    ncav3_free_hw();
+	clean_memory_eioa();
+	mme_destroy(ncp);
+	ncav3_free_hw();
 
 #ifdef NCP_USE_NVM
 	free(pNvmLock);
@@ -617,10 +616,33 @@ ncp_config_uboot_detach(ncp_hdl_t *ncpHdl)
 	free(pNcpTaskSwState->taskIoResourceLock);
 	free(pNcpTaskSwState->tqsSwState[0].pAppProfile);
 	free(pNcpTaskSwState->pidArray);
+#if defined(CONFIG_EIOA_BIG_STRUCT_IN_BSS)
+	/*pNcpTaskSwState_in_bss stays in .bss forever*/;
+#else 
 	free(pNcpTaskSwState);
-	pNcpTaskSwState = 0;
+#endif
+	pNcpTaskSwState = NULL;
 	free(ncp->ncaHdl); // this will free nca;
 	free(ncp);
-	ncp = 0;
+	ncp = NULL;
 	return NCP_ST_SUCCESS;
+}
+
+void
+clean_memory_eioa(void)
+{
+	// clear domain bundle
+	memset((void*)DOMAINBOUNDLE_PA,0,DOMAINBOUNDLE_SIZE);
+	// clear memory pool
+	memset((void*)POOL_2_PA,0,POOL_2_SIZE);
+}
+
+void
+print_memory_eioa(void)
+{
+	printf("LSI_EIOA uses:\n"
+	"-> DomainBoundle	0x%08llX - 0x%08llX\n" /* domain bundle */
+	"-> Pool2		0x%08llX - 0x%08llX\n", /* memory pool 2 */
+	DOMAINBOUNDLE_PA, DOMAINBOUNDLE_PA+DOMAINBOUNDLE_SIZE,
+	POOL_2_PA, POOL_2_PA+POOL_2_SIZE);
 }

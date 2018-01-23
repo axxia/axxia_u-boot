@@ -844,6 +844,15 @@ int eth_initialize(void)
 		putc('\n');
 	}
 
+#if defined(CONFIG_AXXIA_XLF) &&  \
+    /* if you want the print below define the below */ \
+    defined(CONFIG_PRINT_EIOA_MEMORY)
+	if (eth_get_dev_by_name("LSI_EIOA")) {
+		extern void print_memory_eioa(void);
+		print_memory_eioa();
+	}
+#endif
+
 	return num_devices;
 }
 

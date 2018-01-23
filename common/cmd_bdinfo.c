@@ -35,6 +35,8 @@ static void print_eth(int idx)
 }
 
 #ifndef CONFIG_DM_ETH
+extern void print_memory_eioa(void);
+
 __maybe_unused
 static void print_eths(void)
 {
@@ -46,6 +48,10 @@ static void print_eths(void)
 		if (dev) {
 			printf("eth%dname    = %s\n", i, dev->name);
 			print_eth(i);
+#ifdef CONFIG_AXXIA_XLF
+			if (0 == strncmp(dev->name, "LSI_EIOA", 8))
+				print_memory_eioa();
+#endif
 			i++;
 		}
 	} while (dev);

@@ -30,15 +30,15 @@ DECLARE_GLOBAL_DATA_PTR;
 
 /* task NCAv3 */
 #include "uboot/ncp_task_basetypes.h"
-#include "uboot/ncp_task_pvt.h"      
-#include "uboot/ncp_mme_ext.h"       
+#include "uboot/ncp_task_pvt.h"
+#include "uboot/ncp_mme_ext.h"
 #include "ncp_task_basetypes.h"
 #include "ncp_timer_regions.h"
 #include "ncp_tmgr_system_count_reg_defines.h"
 #include "ncp_axis_apb2ser3_regions.h" /* syscon */
 #include "ncp_syscon_xlf_reg_defines.h" /* syscon */
 #include "ncp_ncap_reg_defines.h" /* eg. NCP_NCAP_CONFIG_INIT */
-#include "ncp_cmn_axi_reg_defines.h" /* eg. NCP_CMN_AXI_CFG_RING_ACK_TIMER_CNT */
+#include "ncp_cmn_axi_reg_defines.h" /*eg. NCP_CMN_AXI_CFG_RING_ACK_TIMER_CNT*/
 
 /*==============================================================================
   ==============================================================================
@@ -48,31 +48,38 @@ DECLARE_GLOBAL_DATA_PTR;
 */
 
 static int initialized = 0;
+static char *mac_string = NULL;
+static int gmac = 0xFF;
 static int loopback = 0;
 static int rxtest = 0;
+static int print_once;
 static ncp_task_tqs_hdl_t tqsHdl = NULL;
 static ncp_hdl_t ncpHdl = NULL;
 
+int (*line_setup)(void);
+static int line_setup_gmacs_native(void);
+extern void clean_memory_eioa(void);
+extern void print_memory_eioa(void);
+
 #define ALL_TRACES
-#define SNAPSHOT /*define if you want a snapshot*/
+/*#define SNAPSHOT*/ /*define if you want a snapshot*/
 /*#define PHY*/ /*We don't have ext. PHYs on a Waco */
 
-#define NCP_EIOA_GEN_CFG_REG_OFFSET(portIndex)                                  \
-    0x100000 +                                                                  \
-    ((portIndex > 0) ? 0x10000 : 0) +                                           \
+#define NCP_EIOA_GEN_CFG_REG_OFFSET(portIndex)   \
+    0x100000 +                                   \
+    ((portIndex > 0) ? 0x10000 : 0) +            \
     ((portIndex > 0) ? (0x1000 * (portIndex)) : 0)
 
 /* Native domain is up to 10 gmacs, they are numbered
  * 0-4 and 15-20. Nokia is gmac20 */
-int phy_by_index[21] = 
-{ 
+int phy_by_index[21] =
+{
     0x12, 0x13, 0x18, 0x19, 0x1a, /* EIOA0 */
 	0x0, 0x0, 0x0, 0x0, 0x0, /* don't exist */
 	0x0, 0x0, 0x0, 0x0, 0x0, /* don't exist */
 	0x0, /* do not exist */
 	0x1, 0x17, 0x1b, 0x2, 0x3 /* EIOA1 */
 };
-
 
 typedef enum {
 	NCR_COMMAND_NULL,
@@ -92,12 +99,9 @@ typedef struct {
 	unsigned mask;
 } ncr_command_t;
 
-static int
-ncp_dev_configure(ncr_command_t *commands);
+static int ncp_dev_configure(ncr_command_t *commands);
 
 /* ncp_dev_reset */
-
-
 ncp_uint32_t
 ncp_caal_regions_xlf[] =
 {
@@ -196,10 +200,11 @@ ncp_dev_quiesce(void)
             loop = 0;
             pRegion++;
         }
-        else 
+        else
         {
             if (loop++ > 10000) {
-                NCP_MSG(NCP_MSG_ERROR, "unable to quiesce region 0x%02x.0x%02x! \n",
+                NCP_MSG(NCP_MSG_ERROR, 
+			"unable to quiesce region 0x%02x.0x%02x! \n",
                         NCP_NODE_ID(*pRegion), NCP_TARGET_ID(*pRegion));
                 loop = 0;
                 continue;
@@ -221,10 +226,11 @@ ncp_dev_quiesce(void)
             loop = 0;
             pRegion++;
         }
-        else 
+        else
         {
             if (loop++ > 10000) {
-                NCP_MSG(NCP_MSG_ERROR, "unable to quiesce region 0x%02x.0x%02x! \n",
+                NCP_MSG(NCP_MSG_ERROR, 
+			"unable to quiesce region 0x%02x.0x%02x! \n",
                         NCP_NODE_ID(*pRegion), NCP_TARGET_ID(*pRegion));
                 loop = 0;
                 continue;
@@ -581,7 +587,7 @@ typedef struct
 #endif
 } __attribute__ ( ( packed ) ) ncp_syscon_reset_axis_r_xlf_t;
 
-ncp_st_t                                       
+ncp_st_t
 ncp_dev_reset_hw(void)
 {
     ncp_st_t                    ncpStatus = NCP_ST_SUCCESS;
@@ -595,11 +601,11 @@ ncp_dev_reset_hw(void)
 
 	{
 		p = (ncp_uint32_t *)&resetAxisReg;
-		debug("resetAxisReg addr %p -> %08x %08x %08x %08x\n", 
+		debug("resetAxisReg addr %p -> %08x %08x %08x %08x\n",
 					(void*)p, *p, *(p+1), *(p+2), *(p+3));
 
 		p = (ncp_uint32_t *)&resetReg;
-		debug("resetReg addr %p -> %08x %08x %08x %08x\n", 
+		debug("resetReg addr %p -> %08x %08x %08x %08x\n",
 					(void*)p, *p, *(p+1), *(p+2), *(p+3));
 	}
 
@@ -618,7 +624,8 @@ ncp_dev_reset_hw(void)
     }
 
     /* Enable protected writes.  Key is the only field in this register. */
-    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON, NCP_SYSCON_KEY_xlf, 0xAB));
+    NCP_CALL(ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON, NCP_SYSCON_KEY_xlf,
+		0xAB));
 
     resetReg.mppy_rst         = 1;
     resetReg.ncap0_rst        = 1;
@@ -696,7 +703,7 @@ ncp_dev_reset_hw(void)
     resetReg.timestamp_rst    = 1;
 #endif
 
-    if (ubootCmemInit == 0) 
+    if (ubootCmemInit == 0)
     {
         resetReg.cmem_rst        = 1;
         resetReg.cmem_phy_io_rst = 1;
@@ -724,25 +731,25 @@ ncp_dev_reset_hw(void)
 
 	{
 		p = (ncp_uint32_t *)&resetReg;
-		debug("resetReg (post) addr %p -> %08x %08x %08x %08x\n", 
+		debug("resetReg (post) addr %p -> %08x %08x %08x %08x\n",
 					(void*)p, *p, *(p+1), *(p+2), *(p+3));
 	}
 
     reg = (ncp_uint32_t *)&resetReg;
     ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
-                         NCP_SYSCON_RESET_MOD_xlf, 
+                         NCP_SYSCON_RESET_MOD_xlf,
                          *reg);
     reg++;
     ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
-                         NCP_SYSCON_RESET_MOD_xlf + 0x4, 
+                         NCP_SYSCON_RESET_MOD_xlf + 0x4,
                          *reg);
     reg++;
     ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
-                         NCP_SYSCON_RESET_MOD_xlf + 0x8, 
+                         NCP_SYSCON_RESET_MOD_xlf + 0x8,
                          *reg);
     reg++;
     ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
-                         NCP_SYSCON_RESET_MOD_xlf + 0xc, 
+                         NCP_SYSCON_RESET_MOD_xlf + 0xc,
                          *reg);
     debug("Done\n");
 
@@ -751,7 +758,7 @@ ncp_dev_reset_hw(void)
 	/*resetAxisReg.axi2ser9_rst = 1; */
 	{
 		p = (ncp_uint32_t *)&resetAxisReg;
-		debug("resetAxisReg (post) addr %p -> %08x %08x %08x %08x\n", 
+		debug("resetAxisReg (post) addr %p -> %08x %08x %08x %08x\n",
 					(void*)p, *p, *(p+1), *(p+2), *(p+3));
 	}
 
@@ -777,11 +784,11 @@ ncp_dev_reset_hw(void)
 	debug("de-assert reset for modules and axis\n");
 	for (offset = 0; offset<0x10; offset += 0x4) {
 		ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
-							 NCP_SYSCON_RESET_MOD_xlf + offset,
-							 0);
+			 NCP_SYSCON_RESET_MOD_xlf + offset,
+			 0);
 		ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON,
-							 NCP_SYSCON_RESET_AXIS_xlf + offset,
-							 0);
+			 NCP_SYSCON_RESET_AXIS_xlf + offset,
+			 0);
 	}
 
 
@@ -790,7 +797,7 @@ ncp_dev_reset_hw(void)
 
     /* Disable protected writes */
     ncr_write32(NCP_REGION_AXIS_APB2SER3_SYSCON, NCP_SYSCON_KEY_xlf, 0x0);
-	
+
 NCP_RETURN_LABEL
     if(st != NCP_ST_SUCCESS)
         ncpStatus = st;
@@ -894,7 +901,8 @@ ncp_dev_reset_sw(void)
     nca_cfg_init->cfg_ring_ack_timer_en = 1;
     ncr_write32(NCP_REGION_ID(0x101, 0), NCP_NCAP_CONFIG_INIT, reg);
 
-    ncr_write32(NCP_REGION_ID(0x101, 0), NCP_CMN_AXI_CFG_RING_ACK_TIMER_CNT, 0x5f5e10);
+    ncr_write32(NCP_REGION_ID(0x101, 0), NCP_CMN_AXI_CFG_RING_ACK_TIMER_CNT,
+		0x5f5e10);
 
     /* Enable config ring parity checking */
     ncr_read32(NCP_REGION_ID(0x101, 0), NCP_CMN_AXI_CFG_RING_PARITY, &reg);
@@ -908,10 +916,10 @@ ncp_dev_reset_sw(void)
 	ncr_write32(NCP_REGION_ID(0x101, 0), NCP_CMN_AXI_CFG_RING_PARITY, reg);
 
 	/* TEMP? cfg_tzc400 */
-	/*  
+	/*
 	 *  TZC400 Programming
 	 */
-	 /*  Wait for TZC internal config. 
+	 /*  Wait for TZC internal config.
 	  *  This read will be on hold until tzc finishes internal config */
 	/* Make sure the TZC has finished internal configuration. */
 	(void)readl(TZC + 8);
@@ -921,10 +929,10 @@ ncp_dev_reset_sw(void)
 	writel(0xc000000f, (TZC + 0x110));
 
     /*
-     * SAX1-1213: configure NCAv3 for non-secure access 
+     * SAX1-1213: configure NCAv3 for non-secure access
      * to support CDC DMM
      *
-     * Perform the following writes: 
+     * Perform the following writes:
      *
      * ncpWrite 0x170.1.0x42800 0x3
      * ncpWrite 0x170.1.0x18 0xffff
@@ -1051,29 +1059,32 @@ ncp_dev_do_write(ncr_command_t *command)
 		}
 		break;
 	}
-	
+
 	return 0;
 }
 
 /*
   ------------------------------------------------------------------------------
   ncp_dev_do_write_64
-	
-  This is only for the memory writes. Most likely not necessary as the current 
-  traces do not use the values over 1 word (32 bits) but may be they will in future
-  so leaving in.
+
+  This is only for the memory writes. Most likely not necessary as the current
+  traces do not use the values over 1 word (32 bits) but may be they will in
+  future so leaving as-is.
 */
 
 static int
 ncp_dev_do_write_64(ncr_command_t *command)
 {
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
-		debug("val 0x%lx @ addr 0x%lx\n", 
-				(unsigned long)command->value,  (unsigned long)command->offset);
+		debug("val 0x%lx @ addr 0x%lx\n",
+			(unsigned long)command->value,  
+			(unsigned long)command->offset);
 
- 		*(volatile unsigned long*)(unsigned long)(command->offset) = (unsigned long) command->value;
-		
-		unsigned long read_back = *(volatile unsigned long*)(unsigned long)command->offset;
+		*(volatile unsigned long*)(unsigned long)(command->offset) = 
+			(unsigned long) command->value;
+
+		unsigned long read_back = 
+		*(volatile unsigned long*)(unsigned long)command->offset;
 		if (read_back != command->value) {
 			printf("WRITE ERROR: n=0x%x t=0x%x o=0x%x "
 				"v=0x%x\n",
@@ -1082,7 +1093,7 @@ ncp_dev_do_write_64(ncr_command_t *command)
 				command->offset, command->value);
 			return -1;
 		}
-		
+
 		return 0;
 	}
 
@@ -1106,7 +1117,7 @@ ncp_dev_do_modify(ncr_command_t *command)
         ncp_dev_do_write(command);
 
 		return 0;
-	} 
+	}
 
 	if (0 != ncr_modify32(command->region, command->offset,
 			      command->mask, command->value)) {
@@ -1117,7 +1128,7 @@ ncp_dev_do_modify(ncr_command_t *command)
 			    command->mask, command->value);
 
 		return -1;
-	} 
+	}
 
 #ifdef NCR_DEBUG
 		debug("MODIFY: r=0x%x o=0x%x m=0x%x v=0x%x\n",
@@ -1193,7 +1204,8 @@ ncp_dev_configure(ncr_command_t *commands) {
 			rc = ncp_dev_do_poll(commands);
 			break;
 		default:
-			printf("Unknown Command: 0x%x, startCmd=%p, curCmd=%p\n",
+			printf("Unknown Command: 0x%x, startCmd=%p,"
+				"curCmd=%p\n",
 			       (unsigned int)commands->command,
 			       startCmd,
 			       commands);
@@ -1207,7 +1219,16 @@ ncp_dev_configure(ncr_command_t *commands) {
 		}
 
 		++commands;
+
+		/* print progress every 100 commands */
+		if (
+			( ((unsigned long)commands - (unsigned long)startCmd) /
+				sizeof(*commands) ) % 8000 == 0
+		   )
+			puts(".");
+
 	}
+	puts("\n");
 
 	return rc;
 }
@@ -1232,27 +1253,32 @@ ncp_dev_configure(ncr_command_t *commands) {
  */
 int static
 gmac_set_region_offset(
-	unsigned gmac,
 	unsigned *eioaRegion,
-	unsigned *hwPortGmac, 	
-	unsigned *gmacRegion, 
+	unsigned *hwPortGmac,
+	unsigned *gmacRegion,
 	unsigned *gmacPortOffset)
 {
-	/* Set the region and offset. Just native dmain:
-  		EIOA0: gmac0
-  		EIOA1: gmac16-20. gmac20 is Nokia!!!*/
-    if (5 > gmac) {
-        *hwPortGmac = ((gmac == 0) ? 0 : (gmac - 1));
-		*eioaRegion = NCP_REGION_ID(31, 16); /* 0x1f.0x10 */
-		*gmacRegion = ((gmac == 0) ? NCP_REGION_ID(31, 17) : /* 0x1f.0x11 */ 
-                                     NCP_REGION_ID(31, 18)); /* 0x1f.0x12 */
-		*gmacPortOffset = 0xc * (*hwPortGmac);
+	/* Set the region and offset:
+		EIOA0: gmac0
+		EIOA1: gmac16-20. gmac20 is Nokia!!!
+		EIOA3: gmac48-51. Nokia may use any */
+	if (5 > gmac) {
+	*hwPortGmac = ((gmac == 0) ? 0 : (gmac - 1));
+		*eioaRegion = NCP_REGION_ID(31, 16);
+		*gmacRegion = ((gmac == 0) ? NCP_REGION_ID(31, 17) :
+			NCP_REGION_ID(31, 18));
+		*gmacPortOffset = 0xc0 * (*hwPortGmac);
 	} else if (16 <= gmac && 20 >= gmac) {
-	    *hwPortGmac = ((gmac == 16) ? 0 : (gmac - 17));
-		*eioaRegion = NCP_REGION_ID(23, 16); /* 0x17.0x10 */
-        *gmacRegion = ((gmac == 16) ? NCP_REGION_ID(23, 17) : /* 0x17.0x11 */ 
-                                     NCP_REGION_ID(23, 18)); /* 0x17.0x12 */
-		*gmacPortOffset = 0xc * (*hwPortGmac);
+		*hwPortGmac = ((gmac == 16) ? 0 : (gmac - 17));
+		*eioaRegion = NCP_REGION_ID(23, 16);
+		*gmacRegion = ((gmac == 16) ? NCP_REGION_ID(23, 17) :
+			NCP_REGION_ID(23, 18));
+		*gmacPortOffset = 0xc0 * (*hwPortGmac);
+	} else if (48 <= gmac && 51 >= gmac) {
+		*hwPortGmac = (gmac - 48); /*index48 is index0 in the region*/
+		*eioaRegion = NCP_REGION_ID(41, 16); /* 0x29.0x10 */
+		*gmacRegion = NCP_REGION_ID(41, 96); /* 0x29.0x60 */
+		*gmacPortOffset = 0x10000 + (*hwPortGmac) * 0x1000;
 	} else {
 		debug("NetBoot XLF doesn't support gmac%d\n", gmac);
 		return -1;
@@ -1265,40 +1291,60 @@ gmac_set_region_offset(
   ------------------------------------------------------------------------------
   take_snapshot: this allows seeing the rx/tx counters at the interfaces
 */
-int __weak
-take_snapshot(int gmac) 
+int __maybe_unused
+take_snapshot(void)
 {
-	int rc, number = 56;
+	int rc, number;
 	unsigned val, zero = 0;
-	int offset_rx = 0xf00, offset_tx = 0xe00;
+	int offset_tx, offset_rx;
 	/*unsigned eioaRegion;*/
 	unsigned gmacRegion;
 	unsigned gmacPortOffset;
 	unsigned hwPortGmac;
 
-	if (0 != gmac_set_region_offset(gmac, NULL, &hwPortGmac, &gmacRegion, &gmacPortOffset))
+	if (0 != gmac_set_region_offset(NULL, &hwPortGmac, &gmacRegion, 
+			&gmacPortOffset))
 		return -1;
 
-	/* eg. gmac00_config @0x17.0x11.0xd0c */
-	debug("gmac0x_config @gmacRegion 0x%x, gmacPortOffset 0x%x, v 0x45ee\n", gmacRegion, 0xd0c + 4 * hwPortGmac);
-	ncr_write32(gmacRegion, 0xd0c + 4 * hwPortGmac, 0x45ee);
+	switch (gmac) {
+	case 20:
+		/* configure snapshot */
+		ncr_write32(gmacRegion, 0xd0c + 4 * hwPortGmac, 
+			0x5ee/*0x45ee*/);
+		/* request snapshot for a gmac */
+		ncr_write32(gmacRegion, 0xd40, hwPortGmac);
+		offset_tx = 0xe00;
+		offset_rx = 0xf00;
 		udelay(5000);
-	/* snapshot @gmacRegion.0xd40 */
-	debug("snapshot @gmacRegion 0x%x, gmacPortOffset 0x%x, v 0x%x\n", gmacRegion, 0xd40, hwPortGmac);
-	ncr_write32(gmacRegion, 0xd40, hwPortGmac);	
+		break;
+	case 48:
+	case 49:
+	case 50:
+	case 51:
+		/* request snapshot for a gmac */
+		ncr_write32(gmacRegion, 0x100, hwPortGmac);
+		offset_tx = 0x200;
+		offset_rx = 0x300;
 		udelay(5000);
-		udelay(5000);
+		break;
+	default:
+		printf("macstats doesn't support gmac%d\n", gmac);
+		return -1;
+	}
 
-	printf("Snapshot for gmac%d\n", gmac);
+
+	printf("tx/rx counters for gmac%d\n", gmac);
+	number = 54;
 	while (0 < number--) {
 		rc = ncr_read32(gmacRegion, offset_tx, &val);
-		if (0 != val) { 
-			zero = 1;
-			printf("%08x\t", val);
-		}
 
 		if (0 != rc)
 			return -1;
+
+		if (0 != val) {
+			zero = 1;
+			printf("%08x ", val);
+		}
 
 		offset_tx += 4;
 	}
@@ -1306,45 +1352,47 @@ take_snapshot(int gmac)
 	number = 56;
 	while (0 < number--) {
 		rc = ncr_read32(gmacRegion, offset_rx, &val);
-		if (0 != val) { 
-			zero = 1;
-			printf("%08x\t", val);
-		}
 
 		if (0 != rc)
 			return -1;
+
+		if (0 != val) {
+			zero = 1;
+			printf("%08x ", val);
+		}
 
 		offset_rx += 4;
 	}
 	if (zero == 0)
 		printf("00000000\n");
-	else 
+	else
 		printf("\n");
-	
+
 
 	return 0;
 }
 
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   ncp_task_uboot_domain_bundle_clear
 */
 
 void static
 ncp_task_uboot_domain_bundle_clear(void)
 {
+	clean_memory_eioa();
 	return;
 }
 
 /*
-  -------------------------------------------------------------------------------
-  line_setup
+  ------------------------------------------------------------------------------
+  line_setup_gmacs_native
 */
 
 int
-line_setup(int index) {
-	ncp_st_t         ncpStatus = NCP_ST_SUCCESS;
+line_setup_gmacs_native(void) {
+	ncp_st_t   ncpStatus = NCP_ST_SUCCESS;
 	unsigned ncr_status;
 	unsigned gmacRegion;
 	unsigned gmacPortOffset;
@@ -1355,41 +1403,40 @@ line_setup(int index) {
 	char *oneg = "1G";
 	char *envstring = getenv("phy_address");
 
-	if (envstring)
-		phy_by_index[index] = simple_strtoul(envstring, NULL, 0);
-
 	mdio_initialize();
 
 	/* Check for "macspeed" */
 	envstring = getenv("macspeed");
-	if (NULL == envstring) 
+	if (NULL == envstring)
 		envstring = oneg;
-		
-	debug("Setting gmac%d to %s\n", index, envstring);
 
-	if (0 != gmac_set_region_offset(index, &eioaRegion, &hwPortGmac, &gmacRegion, &gmacPortOffset))
+	debug("Setting gmac%d to %s\n", gmac, envstring);
+
+	if (0 != gmac_set_region_offset(&eioaRegion, &hwPortGmac, &gmacRegion,
+			&gmacPortOffset))
 		return -1;
 
-	debug("eioaRegion 0x%08x, hwPortGmac 0x%08x, gmacRegion 0x%08x, gmacPortOffset 0x%08x\n",
-				eioaRegion, hwPortGmac, gmacRegion, gmacPortOffset);
+	debug("eioaRegion 0x%08x, hwPortGmac 0x%08x, gmacRegion 0x%08x,"
+	      "gmacPortOffset 0x%08x\n",
+	      eioaRegion, hwPortGmac, gmacRegion, gmacPortOffset);
 
-	/* 
- 		Disable stuff. 
-	 */
+	/*
+		Disable stuff.
+	*/
 
 	/* MAC Enable and Pause Control */
 	NCP_CALL(ncr_modify32(gmacRegion, 0x330 + gmacPortOffset, 0x3f, 0));
 	/* Packet Filter Engine Control */
 	NCP_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x8, 0x0));
-	NCP_CALL(ncr_modify32(eioaRegion, 
-				NCP_EIOA_GEN_CFG_REG_OFFSET(hwPortGmac) + 0x0, 
+	NCP_CALL(ncr_modify32(eioaRegion,
+				NCP_EIOA_GEN_CFG_REG_OFFSET(hwPortGmac) + 0x0,
 				0x00000003, 0x0));
 	NCP_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x4, 0x0));
 
-	/* 
- 		Set macspeed.
+	/*
+		Set macspeed.
 	 */
-	
+
 	NCP_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
 				&ncr_status));
 	ncr_status &= ~0x3c;
@@ -1416,16 +1463,16 @@ line_setup(int index) {
 
 #ifdef PHY
 {
-	unsigned control, ad_value, ge_ad_value;	
+	unsigned control, ad_value, ge_ad_value;
 
-	control = mdio_read(phy_by_index[index], 0);    
-	ad_value = mdio_read(phy_by_index[index], 4);   
-	ge_ad_value = mdio_read(phy_by_index[index], 9);
+	control = mdio_read(phy_by_index[gmac], 0);
+	ad_value = mdio_read(phy_by_index[gmac], 4);
+	ge_ad_value = mdio_read(phy_by_index[gmac], 9);
 
 	control &= 0xdebf; /* clear bit 6, 8 and 13 */
 	ad_value &= 0xfe1f; /* clear bits 5, 6, 7, 8 */
 	ge_ad_value &= 0xcff; /* clear bits 8, 9 */
-	
+
 	if (0 == strcmp("10MH", envstring)) {
 		ad_value |= 0x20;       /* set bit 5 */
 	} else if (0 == strcmp("10MF", envstring)) {
@@ -1447,10 +1494,10 @@ line_setup(int index) {
 			   "100MF, or 1G\n");
 		return -1;
 	}
-	
-	mdio_write(phy_by_index[index], 4, ad_value);    
-	mdio_write(phy_by_index[index], 9, ge_ad_value); 
-	mdio_write(phy_by_index[index], 0, control);     
+
+	mdio_write(phy_by_index[gmac], 4, ad_value);
+	mdio_write(phy_by_index[gmac], 9, ge_ad_value);
+	mdio_write(phy_by_index[gmac], 0, control);
 	udelay(5000);
 }
 #endif
@@ -1464,8 +1511,10 @@ line_setup(int index) {
 	  (ethernet_address[4] << 8) | (ethernet_address[5]);
 
 	/* - EIOA */
-	NCP_CALL(ncr_write32(eioaRegion, NCP_EIOA_GEN_CFG_REG_OFFSET(hwPortGmac) + 0x4, bottom));
-	NCP_CALL(ncr_write32(eioaRegion, NCP_EIOA_GEN_CFG_REG_OFFSET(hwPortGmac) + 0x8, top));
+	NCP_CALL(ncr_write32(eioaRegion, NCP_EIOA_GEN_CFG_REG_OFFSET(hwPortGmac)
+			+ 0x4, bottom));
+	NCP_CALL(ncr_write32(eioaRegion, NCP_EIOA_GEN_CFG_REG_OFFSET(hwPortGmac)
+			+ 0x8, top));
 
 	/* - Source */
 	NCP_CALL(ncr_write32(gmacRegion, 0x304 + gmacPortOffset, bottom));
@@ -1479,12 +1528,12 @@ line_setup(int index) {
 	NCP_CALL(ncr_write32(gmacRegion, 0x350 + gmacPortOffset, bottom));
 	NCP_CALL(ncr_write32(gmacRegion, 0x354 + gmacPortOffset, top));
 
-	/* 
- 		Enable stuff. 
+	/*
+		Enable stuff.
 	 */
 	NCP_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x8, 0x8));
-	NCP_CALL(ncr_modify32(eioaRegion, 
-				NCP_EIOA_GEN_CFG_REG_OFFSET(hwPortGmac) + 0x0, 
+	NCP_CALL(ncr_modify32(eioaRegion,
+				NCP_EIOA_GEN_CFG_REG_OFFSET(hwPortGmac) + 0x0,
 				0x00000003, 0x3));
 	NCP_CALL(ncr_modify32(gmacRegion, 0x300 + gmacPortOffset, 0x4, 0x4));
 	NCP_CALL(ncr_modify32(gmacRegion, 0x330 + gmacPortOffset, 0x3f, 0x09));
@@ -1512,7 +1561,7 @@ void initPacketEcho(void)
     0050   26 27 28 29 2a 2b 2c 2d 2e 2f 30 31 32 33 34 35
     0060   36
     */
-        
+
     packet_echo[0] = 0xda;
     packet_echo[1] = 0xc2;
     packet_echo[2] = 0x93;
@@ -1619,7 +1668,7 @@ void initPacketEcho(void)
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   initialize_task_io
 */
 
@@ -1629,6 +1678,27 @@ initialize_task_io(struct eth_device *dev)
 	ncp_st_t         ncpStatus = NCP_ST_SUCCESS;
 	ncp_uint32_t          devNum = 0;
 
+	print_once = 1;
+
+	mac_string = getenv("gmacport");
+	if (NULL == mac_string) {
+		printf("set gmac port, eg. \"setenv gmacport gmac20\"\n"
+		       "gmacport must be one of the following:\n"
+		       "\tgmac[0-4,16-20,48-51],\n"
+		       "\txgmac[48-51]\n");
+		return -1;
+	} else {
+		if (0 == strncmp(mac_string, "gmac", 4)) {
+			gmac = simple_strtoul(&mac_string[4], NULL, 10);
+		} else if (0 == strncmp(mac_string, "xgmac", 5)) {
+			gmac = simple_strtoul(&mac_string[5], NULL, 10);
+		} else {
+			printf("Invalid gmacport\n");
+		}
+	}
+
+	line_setup = (16 <= gmac && 20 >= gmac) ?
+			line_setup_gmacs_native : NULL;
 
 	debug("Resetting device...");
 	if (0 != ncp_dev_reset()) {
@@ -1643,6 +1713,7 @@ initialize_task_io(struct eth_device *dev)
 
 
 #ifdef ALL_TRACES
+	printf("Loading config for LSI_EIOA");
 	debug("Configuring all.c ...");
 	if (0 != ncp_dev_configure(all)) {
 		printf("all.c Configuration Failed\n");
@@ -1702,7 +1773,8 @@ initialize_task_io(struct eth_device *dev)
 	params.useTxQueue0 = TRUE;
 	params.useTxQueue1 = TRUE;
 	strncpy(processName.name, "TaskRecvLoop", sizeof("TaskRecvLoop"));
-	NCP_CALL(ncp_task_tqs_bind(ncpHdl, RECV_PGIT, &params, &processName, &processName, &tqsHdl));
+	NCP_CALL(ncp_task_tqs_bind(ncpHdl, RECV_PGIT, &params, &processName, 
+		 &processName, &tqsHdl));
 	debug("Bind done, tqsHdl=%p\n", (void*) tqsHdl);
 }
 
@@ -1719,7 +1791,7 @@ initialize_task_io(struct eth_device *dev)
         printf("ERROR: status=%d\n", ncpStatus);
 		lsi_eioa_eth_halt(dev);
 		return -1;
-	} else 
+	} else
 		return 0;
 }
 
@@ -1771,7 +1843,7 @@ void printTask(ncp_task_header_t *task)
 ncp_st_t CreateTask(ncp_task_tqs_hdl_t tqsHdl,
                 ncp_uint8_t vpId,
                 ncp_task_header_t **ppTask,
-				void *packet, int length)
+		void *packet, int length)
 {
     ncp_st_t ncpStatus = NCP_ST_ERROR;
     ncp_task_header_t *task;
@@ -1781,20 +1853,22 @@ ncp_st_t CreateTask(ncp_task_tqs_hdl_t tqsHdl,
     int pduSize = length;
 
     size = 128;
-	NCP_CALL(ncp_task_buffer_alloc(tqsHdl, 1, &num, &size, 2, (void **) &task, 0));
-	memset(task, 0, size);
-	task->params[0] = 0x14;
-	task->headerPool = 2;
-	task->pool0 = 2;
-	task->pduSegSize0 = pduSize;
-	task->pduSize = pduSize;
+    NCP_CALL(ncp_task_buffer_alloc(tqsHdl, 1, &num, &size, 2,
+		(void **) &task, 0));
+    memset(task, 0, size);
+    task->params[0] = gmac;
+    task->headerPool = 2;
+    task->pool0 = 2;
+    task->pduSegSize0 = pduSize;
+    task->pduSize = pduSize;
 
-	size = pduSize;
-	NCP_CALL(ncp_task_buffer_alloc(tqsHdl, 1, &num, &size, 2, (void **) &pData[0], 0));
-	memset(pData[0], 0, size);
-	task->pduSize = size;
-	memcpy(pData[0], packet, length);
-	task->pduSegAddr0 = (ncp_uint64_t) pData[0];
+    size = pduSize;
+    NCP_CALL(ncp_task_buffer_alloc(tqsHdl, 1, &num, &size, 2,
+		(void **) &pData[0], 0));
+    memset(pData[0], 0, size);
+    task->pduSize = size;
+    memcpy(pData[0], packet, length);
+    task->pduSegAddr0 = (ncp_uint64_t) pData[0];
 
     task->ptrCnt = 1;
     task->combinedHeader = 0;
@@ -1823,8 +1897,9 @@ ncp_st_t myCreateTask(ncp_task_tqs_hdl_t tqsHdl,
     int pduSize = 10;
 
     size = 128;
-    NCP_CALL(ncp_task_buffer_alloc(tqsHdl, 1, &num, &size, 2, (void **) &task, 0));
-	memset(task, 0, 128);
+    NCP_CALL(ncp_task_buffer_alloc(tqsHdl, 1, &num, &size, 2,
+		(void **) &task, 0));
+    memset(task, 0, 128);
 	task->params[0] = 0x14;
 	task->headerPool = 2;
 	task->pool0 = 2;
@@ -1833,7 +1908,8 @@ ncp_st_t myCreateTask(ncp_task_tqs_hdl_t tqsHdl,
 	task->pduSize = pduSize;
 
 	size = pduSize;
-	NCP_CALL(ncp_task_buffer_alloc(tqsHdl, 1, &num, &size, 2, (void **) &pData[0], 0));
+	NCP_CALL(ncp_task_buffer_alloc(tqsHdl, 1, &num, &size, 2,
+		(void **) &pData[0], 0));
 	task->pduSize = size;
 	task->pduSegAddr0 = (ncp_uint64_t) pData[0];
 
@@ -1868,10 +1944,10 @@ int pthread_mutex_destroy(void *mutex){
 	return 1;
 }
 
-extern ncp_st_t                                   
+extern ncp_st_t
 ncp_config_uboot_detach(ncp_hdl_t *ncpHdl);
 
-static void
+void
 finalize_task_io(void)
 {
 	/* enable ipcq */
@@ -1891,13 +1967,13 @@ finalize_task_io(void)
 	if ( 0 != ncp_config_uboot_detach(ncpHdl)) {
         printf("Failed to detach\n");
 		return;
-	}	
+	}
 	ncpHdl = 0;
 
 	initialized = 0;
-	return; 
+	return;
 }
- 
+
 /*
   ==============================================================================
   ==============================================================================
@@ -1908,7 +1984,7 @@ finalize_task_io(void)
 
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   lsi_eioae_eth_halt
 */
 
@@ -1929,7 +2005,7 @@ lsi_eioa_eth_halt(struct eth_device *dev)
 int
 lsi_eioa_eth_init(struct eth_device *dev, bd_t *bd)
 {
-	if (0 != initialized) 
+	if (0 != initialized)
 		return 0;
 
 	if (0 != initialize_task_io(dev)) {
@@ -1937,13 +2013,15 @@ lsi_eioa_eth_init(struct eth_device *dev, bd_t *bd)
 		return -1;
 	}
 
-	if (0 != line_setup(20)) {
-		printf("Failed to setup line\n");
-		return -1;
+	if (line_setup) {
+		if (0 != line_setup()) {
+			printf("Failed to setup line\n");
+			return -1;
+		}
 	}
 
 #ifdef SNAPSHOT
-	take_snapshot(20);
+	take_snapshot();
 #endif
 
 	initialized = 1;
@@ -1951,7 +2029,7 @@ lsi_eioa_eth_init(struct eth_device *dev, bd_t *bd)
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   lsi_eioa_eth_send
 */
 
@@ -1986,9 +2064,11 @@ lsi_eioa_eth_send(struct eth_device *dev, void *packet, int length)
 		meta_data.issueCompletion = FALSE;
 		meta_data.taskHeader = newTask;
 
-		ncpStatus = ncp_task_send(tqsHdl, 0, 1, &numSent, &meta_data, TRUE);
+		ncpStatus = ncp_task_send(tqsHdl, 0, 1, &numSent, &meta_data,
+					TRUE);
 		if (ncpStatus != NCP_ST_SUCCESS){
-			printf("error sending task, error code: %d\n",ncpStatus);
+			printf("error sending task, error code: %d\n",
+				ncpStatus);
 			goto ncp_return;
 		}
 	}
@@ -2008,9 +2088,10 @@ ncp_return:
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   lsi_eioa_eth_rx
 */
+
 
 int
 lsi_eioa_eth_rx(struct eth_device *dev)
@@ -2027,7 +2108,10 @@ lsi_eioa_eth_rx(struct eth_device *dev)
 
 	if ((tqsHdl == 0) || (ncpHdl == 0))
 	{
-		printf("lsi_eioa_eth_rx: NCA is not initialized\n");
+		if (0 == print_once) {
+			printf("lsi_eioa_eth_rx: NCA is not initialized\n");
+			print_once = 1;
+		}
 		return -1;
 	}
 
@@ -2047,10 +2131,13 @@ lsi_eioa_eth_rx(struct eth_device *dev)
 		ncp_uint32_t numFree = 0;
 		if (0 == loopback && 0 == rxtest)
 			/* copy the received packet to the up layer buffer */
-			net_process_received_packet((void *)task->pduSegAddr0, bytes_received);
-		ncpStatus = ncp_task_free(tqsHdl, 1, numRx, &numFree, &meta_task, TRUE);
+			net_process_received_packet((void *)task->pduSegAddr0,
+				bytes_received);
+		ncpStatus = ncp_task_free(tqsHdl, 1, numRx, &numFree,
+			&meta_task, TRUE);
 		if (ncpStatus != NCP_ST_SUCCESS){
-			printf("free memory error, status %d freed %d\n",ncpStatus,numFree);
+			printf("free memory error, status %d freed %d\n",
+				ncpStatus, numFree);
 		}
 
 	}
@@ -2071,7 +2158,7 @@ ncp_return:
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   lsi_eioa_receive_test
 */
 
@@ -2089,10 +2176,10 @@ lsi_eioa_receive_test(struct eth_device *dev)
 	}
 
 	for (;;) {
-        int packet_len = eth_rx();
+		int packet_len = eth_rx();
 		if (0 != packet_len) {
 			++packets_received;
-        }
+		}
 
 		if (ctrlc())
 			break;
@@ -2106,7 +2193,7 @@ lsi_eioa_receive_test(struct eth_device *dev)
 }
 
 /*
-  -------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   lsi_eioa_loopback_test
 */
 

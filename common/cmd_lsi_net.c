@@ -44,7 +44,7 @@ extern int dumptx;
   ----------------------------------------------------------------------
   do_net
 */
-  
+
 int
 do_net(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -115,6 +115,51 @@ do_net(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return -1;
 }
 
+extern int take_snapshot(void);
+extern ncp_st_t tx_rx_task(void);
+
+
+#define DEBUG
+#include <config.h>
+
+#ifdef CONFIG_AXXIA_XLF
+int
+do_net_macstats(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	take_snapshot();
+
+	return CMD_RET_SUCCESS;
+}
+#endif	/* CONFIG_AXXIA_XLF */
+
+int
+do_bu(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned magic = 0x27051956;  /* Image Magic Number*/
+	unsigned word0 = 0x1400000a;
+	unsigned *ih = (unsigned*)(volatile unsigned long)0;
+	unsigned ih_magic = be32_to_cpu(*ih);
+	unsigned ih_size = be32_to_cpu(*(ih+3)); /* Image Data Size */
+
+	if (magic == ih_magic) {
+		printf("Found U-Boot mkimage'd.");
+		memmove((void*)0, (void*)0x40, ih_size);
+	} else if (*ih == word0) {
+		printf("Found U-Boot binary.");
+	} else {
+		printf("Not U-Boot. Giving up\n");
+		return CMD_RET_FAILURE;
+	}
+
+	printf(" Booting...\n");
+
+	void (*entry)(void*, void*) = (void(*)(void*,void*)) 0;
+	cleanup_before_linux();
+	entry(NULL, NULL);
+
+	return CMD_RET_FAILURE;
+}
+
 /*
   ======================================================================
   Command Definitions
@@ -131,5 +176,15 @@ U_BOOT_CMD(net, 3, 0, do_net,
 	   "s,end send one packet\n"
 	   "dr toggle the \"dumprx\" flag\n"
 	   "dt toggle the \"dumptx\" flag\n");
+
+U_BOOT_CMD(bu, 1, 1, do_bu,
+	   "boot U-Boot from address 0",
+	   "");
+
+#ifdef CONFIG_AXXIA_XLF
+U_BOOT_CMD(macstats, 1, 0, do_net_macstats,
+	   "run gmac counter stats", 
+	   "");
+#endif	/* CONFIG_AXXIA_XLF */
 
 #endif /* CONFIG_SPL_BUILD */
