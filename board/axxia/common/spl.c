@@ -718,6 +718,37 @@ verify_image(struct spi_flash *flash,
 
 /*
   ------------------------------------------------------------------------------
+  is_xlf_a0
+
+  Detect A0 parts, which need to be configured slightly differently.
+  Display a warning if the part is unfused, and assume !A0 in that
+  case.
+*/
+
+#ifdef CONFIG_AXXIA_ANY_XLF
+
+int
+is_xlf_a0(void)
+{
+	if (0 == pfuse) {
+		unsigned int value;
+
+		/* Handle Un-Fused Parts */
+		ncr_read32(NCP_REGION_ID(0x16, 0xff), 0, &value);
+
+		if (1 == ((value >> 8) & 0x7))
+			return 0; /* B0 */
+	} else if (0 != ((pfuse & 0x700) >> 8)) {
+		return 0;	/* B0 */
+	}
+
+	return 1;		/* A0 */
+}
+
+#endif	/* CONFIG_AXXIA_ANY_XLF */
+
+/*
+  ------------------------------------------------------------------------------
   jump_to_monitor
 
   This function is intentional not made static to enable using a jtag
@@ -727,7 +758,8 @@ verify_image(struct spi_flash *flash,
 
 typedef enum {
 	AXXIA_5600 = 0,
-	AXXIA_6700 = 1
+	AXXIA_6700 = 1,
+	AXXIA_6700_B0 = 2
 } axxia_target_t;
 
 typedef enum {
@@ -780,7 +812,11 @@ jump_to_monitor(void *address)
 	axxia_configuration->target = AXXIA_6700;
 	axxia_configuration->platform = AXXIA_EMU;
 #elif defined(CONFIG_AXXIA_XLF)
-	axxia_configuration->target = AXXIA_6700;
+	if (0 != is_xlf_a0())
+		axxia_configuration->target = AXXIA_6700;
+	else
+		axxia_configuration->target = AXXIA_6700_B0;
+
 	axxia_configuration->platform = AXXIA_HW;
 #endif
 #ifdef SYSCACHE_ONLY_MODE
@@ -1153,32 +1189,6 @@ display_l3_lock(void)
 
 /*
   ------------------------------------------------------------------------------
-  is_xlf_a0
-
-  Detect A0 parts, which need to be configured slightly differently.
-  Display a warning if the part is unfused, and assume !A0 in that
-  case.
-*/
-
-#ifdef CONFIG_AXXIA_ANY_XLF
-
-int
-is_xlf_a0(void)
-{
-	if (0 == pfuse)
-		return 0;
-	else if (0x18 != (pfuse & 0x1f))
-		return 0;
-	else if (0 != ((pfuse & 0x300) >> 8))
-		return 0;
-
-	return 1;
-}
-
-#endif	/* CONFIG_AXXIA_ANY_XLF */
-
-/*
-  ------------------------------------------------------------------------------
   board_init_f
 
   Replaces the weakly defined board_init_f in arch/arm/lib/spl.c.
@@ -1321,16 +1331,23 @@ board_init_f(ulong dummy)
 
 #ifdef CONFIG_AXXIA_ANY_XLF
 
-	puts("XLF CHIP VERSION: ");
+	printf("XLF CHIP VERSION: (0x%x) ", pfuse);
 
-	if (0 == pfuse)
-		puts("pfuse is NOT SET, assuming B0\n");
-	else if (0x18 != (pfuse & 0x1f))
-		printf("UNKNOWN CHIP TYPE 0x%x!", (pfuse & 0x1f));
-	else if (0 != ((pfuse & 0x300) >> 8))
+	if (0 == pfuse) {
+		unsigned int value;
+
+		puts("(via NCA revision) ");
+
+		/* Handle Un-Fused Parts */
+		ncr_read32(NCP_REGION_ID(0x16, 0xff), 0, &value);
+
+		if (1 == ((value >> 8) & 0x7))
+			printf("B0\n");
+	} else if (0 != ((pfuse & 0x700) >> 8)) {
 		puts("B0\n");
-	else
+	} else {
 		puts("A0\n");
+	}
 
 #endif	/* CONFIG_AXXIA_ANY_XLF */
 
