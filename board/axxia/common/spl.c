@@ -1331,7 +1331,7 @@ board_init_f(ulong dummy)
 
 #ifdef CONFIG_AXXIA_ANY_XLF
 
-	printf("XLF CHIP VERSION: (0x%x) ", pfuse);
+	printf("XLF CHIP VERSION: (pfuse=0x%x) ", pfuse);
 
 	if (0 == pfuse) {
 		unsigned int value;
@@ -1342,7 +1342,9 @@ board_init_f(ulong dummy)
 		ncr_read32(NCP_REGION_ID(0x16, 0xff), 0, &value);
 
 		if (1 == ((value >> 8) & 0x7))
-			printf("B0\n");
+			puts("B0\n");
+		else
+			puts("A0\n");
 	} else if (0 != ((pfuse & 0x700) >> 8)) {
 		puts("B0\n");
 	} else {
