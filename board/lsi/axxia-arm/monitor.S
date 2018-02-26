@@ -54,15 +54,30 @@ mon_vectors:
  * NS-SVC.
  */
 2:
-	mrc	p15, 0, r1, c1, c1, 0		@ SCR
 	/*
-	 * Set SCR.NS=1 (needed for setting HVBAR and also returning to NS state)
+	 * Before beginning, invalidate the instruction cache and branch
+	 * predictor array.
+	 */
+	mov	r1, #0
+	/* Invalidate instruction cache to POU. */
+	mcr	p15, 0, r1, c7, c5, 0
+	/* Invalidate brach prediction array. */
+	mcr	p15, 0, r1, c7, c5, 6
+	/* Full system DSB to make sure invalidation is complete. */
+	mcr	p15, 0, r1, c7, c10, 4
+	/* ISB to make sure the instruction stream sees it. */
+	mcr	p15, 0, r1, c7, c5, 4
+
+	/*
+	 * Set SCR.NS=1 (needed for setting HVBAR and also returning to NS
+	 *               state)
 	 *        .IRQ,FIQ,EA=0 (don't take aborts/exceptions to Monitor mode)
 	 *        .FW,AW=1 (CPSR.A,F modifiable in NS state)
 	 *        .nET=0 (early termination OK)
 	 *        .SCD=0 (SMC in NS mode OK, so we can call secure firmware)
 	 *        .HCE=1 (HVC does Hyp call)
 	 */
+	mrc	p15, 0, r1, c1, c1, 0		@ SCR
 	bic	r1, r1, #0x07f
 	ldr	r2, =0x131
 	orr	r1, r1, r2
