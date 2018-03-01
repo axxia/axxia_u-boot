@@ -1214,6 +1214,15 @@ extern unsigned *phyRegs;
 #define CCN_QOS_RNI6_SO_DEFAULT 0x00cc000c
 
 /*
+  Invalidate the instruction cache and BTB when switching to the
+  secure monitor.  This is the suggested work around for variant 2 of
+  the Spectre/Meltdown defect.  See
+  ARM-Trusted-Firmware-Security-Advisory-TFV-6 for details.
+*/
+
+#define CVE_2017_5715
+
+/*
   ==============================================================================
   ==============================================================================
   Include the common Axxia header.

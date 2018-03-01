@@ -54,19 +54,25 @@ mon_vectors:
  * NS-SVC.
  */
 2:
+#ifdef CVE_2017_5715
 	/*
 	 * Before beginning, invalidate the instruction cache and branch
 	 * predictor array.
+	 *
+	 * Note that on A15, bit 0 of the ACTLR must be set for the
+	 * following to work.
 	 */
+
 	mov	r1, #0
-	/* Invalidate instruction cache to POU. */
+	/* Invalidate instruction cache to POU. (only needed on A15) */
 	mcr	p15, 0, r1, c7, c5, 0
-	/* Invalidate brach prediction array. */
+	/* Invalidate brach prediction array. (nop on A15) */
 	mcr	p15, 0, r1, c7, c5, 6
 	/* Full system DSB to make sure invalidation is complete. */
 	mcr	p15, 0, r1, c7, c10, 4
 	/* ISB to make sure the instruction stream sees it. */
 	mcr	p15, 0, r1, c7, c5, 4
+#endif /* CVE_2017_5715 */
 
 	/*
 	 * Set SCR.NS=1 (needed for setting HVBAR and also returning to NS

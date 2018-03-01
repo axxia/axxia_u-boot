@@ -506,6 +506,19 @@ wa_811981_stuck:
 wa_811981_okay:
 
 	@@
+	@ Iniitalize the ACTLR register (all cores).
+
+#ifdef CVE_2017_5715
+set_actlr:
+
+	mrc 	p15, 0, r0, c1, c0, 1
+	@ Enable invalidation of the BTB when invalidating
+	@ the instruction cache.
+	orr 	r0, r0, #(1 << 0)
+	mcr 	p15, 0, r0, c1, c0, 1
+#endif /* CVE_2017_5715 */
+
+	@@
 	@ Iniitalize the ACTLR2 register (all cores).
 
 set_actlr2:

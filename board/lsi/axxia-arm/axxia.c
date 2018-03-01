@@ -741,6 +741,13 @@ arch_early_init_r(void)
 	printf("Axxia Version: UNKNOWN\n");
 #endif
 
+	{
+		unsigned int actlr_value;
+
+		asm ("mrc p15, 0, %0, c1, c0, 1" : "=r" (actlr_value));
+		printf("actlr: 0x%x\n", actlr_value);
+	}
+
 	/*
 	  System Memory Size
 	*/
