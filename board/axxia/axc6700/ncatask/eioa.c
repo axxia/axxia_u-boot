@@ -203,7 +203,7 @@ ncp_dev_quiesce(void)
         else
         {
             if (loop++ > 10000) {
-                NCP_MSG(NCP_MSG_ERROR, 
+                NCP_MSG(NCP_MSG_ERROR,
 			"unable to quiesce region 0x%02x.0x%02x! \n",
                         NCP_NODE_ID(*pRegion), NCP_TARGET_ID(*pRegion));
                 loop = 0;
@@ -229,7 +229,7 @@ ncp_dev_quiesce(void)
         else
         {
             if (loop++ > 10000) {
-                NCP_MSG(NCP_MSG_ERROR, 
+                NCP_MSG(NCP_MSG_ERROR,
 			"unable to quiesce region 0x%02x.0x%02x! \n",
                         NCP_NODE_ID(*pRegion), NCP_TARGET_ID(*pRegion));
                 loop = 0;
@@ -1077,13 +1077,13 @@ ncp_dev_do_write_64(ncr_command_t *command)
 {
 	if (NCP_REGION_ID(0x200, 1) == command->region) {
 		debug("val 0x%lx @ addr 0x%lx\n",
-			(unsigned long)command->value,  
+			(unsigned long)command->value,
 			(unsigned long)command->offset);
 
-		*(volatile unsigned long*)(unsigned long)(command->offset) = 
+		*(volatile unsigned long*)(unsigned long)(command->offset) =
 			(unsigned long) command->value;
 
-		unsigned long read_back = 
+		unsigned long read_back =
 		*(volatile unsigned long*)(unsigned long)command->offset;
 		if (read_back != command->value) {
 			printf("WRITE ERROR: n=0x%x t=0x%x o=0x%x "
@@ -1302,14 +1302,14 @@ take_snapshot(void)
 	unsigned gmacPortOffset;
 	unsigned hwPortGmac;
 
-	if (0 != gmac_set_region_offset(NULL, &hwPortGmac, &gmacRegion, 
+	if (0 != gmac_set_region_offset(NULL, &hwPortGmac, &gmacRegion,
 			&gmacPortOffset))
 		return -1;
 
 	switch (gmac) {
 	case 20:
 		/* configure snapshot */
-		ncr_write32(gmacRegion, 0xd0c + 4 * hwPortGmac, 
+		ncr_write32(gmacRegion, 0xd0c + 4 * hwPortGmac,
 			0x5ee/*0x45ee*/);
 		/* request snapshot for a gmac */
 		ncr_write32(gmacRegion, 0xd40, hwPortGmac);
@@ -1669,6 +1669,24 @@ void initPacketEcho(void)
 
 /*
   ------------------------------------------------------------------------------
+  only_digits. A helper finction.
+*/
+
+#include <linux/ctype.h>
+int
+only_digits(char *c)
+{
+	while (*c != '\0') {
+		if (!isdigit(*c)) {
+			return -1;
+		}
+		c++;
+	}
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
   initialize_task_io
 */
 
@@ -1677,24 +1695,35 @@ initialize_task_io(struct eth_device *dev)
 {
 	ncp_st_t         ncpStatus = NCP_ST_SUCCESS;
 	ncp_uint32_t          devNum = 0;
+	int parsed_fine = 0;
 
 	print_once = 1;
 
 	mac_string = getenv("gmacport");
-	if (NULL == mac_string) {
+
+	/* Parse gmacport along the way:
+	   - allow string 'gmac' prefixed
+	   - following only digits up to 'NULL' (this is to prevent such as gmac48-51)
+	   - finally test if the digit is a port number permitted
+	 */
+	if (0 == strncmp(mac_string,"gmac",4)) {
+		if (0 == only_digits(mac_string+4)) {
+			gmac = (int) simple_strtoul(mac_string+4, NULL, 10);
+			switch (gmac) {
+				case 0: case 1: case 2: case 3: case 4:
+				case 16: case 17: case 18: case 19: case 20:
+				case 48: case 49: case 50: case 51:
+					parsed_fine = 1; /* parsed fine, go ahead */
+					break;
+			}
+		}
+	}
+
+	if (!parsed_fine) {
 		printf("set gmac port, eg. \"setenv gmacport gmac20\"\n"
 		       "gmacport must be one of the following:\n"
-		       "\tgmac[0-4,16-20,48-51],\n"
-		       "\txgmac[48-51]\n");
+		       "\tgmac[0,1,2,3,4,16,17,18,19,20,48,49,50,51]\n");
 		return -1;
-	} else {
-		if (0 == strncmp(mac_string, "gmac", 4)) {
-			gmac = simple_strtoul(&mac_string[4], NULL, 10);
-		} else if (0 == strncmp(mac_string, "xgmac", 5)) {
-			gmac = simple_strtoul(&mac_string[5], NULL, 10);
-		} else {
-			printf("Invalid gmacport\n");
-		}
 	}
 
 	line_setup = (16 <= gmac && 20 >= gmac) ?
@@ -1773,7 +1802,7 @@ initialize_task_io(struct eth_device *dev)
 	params.useTxQueue0 = TRUE;
 	params.useTxQueue1 = TRUE;
 	strncpy(processName.name, "TaskRecvLoop", sizeof("TaskRecvLoop"));
-	NCP_CALL(ncp_task_tqs_bind(ncpHdl, RECV_PGIT, &params, &processName, 
+	NCP_CALL(ncp_task_tqs_bind(ncpHdl, RECV_PGIT, &params, &processName,
 		 &processName, &tqsHdl));
 	debug("Bind done, tqsHdl=%p\n", (void*) tqsHdl);
 }

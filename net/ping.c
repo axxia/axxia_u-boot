@@ -79,6 +79,7 @@ void ping_start(void)
 	ping_send();
 }
 
+extern bool pong;
 void ping_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 {
 	struct icmp_hdr *icmph = (struct icmp_hdr *)&ip->udp_src;
@@ -97,6 +98,9 @@ void ping_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 		debug_cond(DEBUG_DEV_PKT,
 			   "Got ICMP ECHO REQUEST, return %d bytes\n",
 			   eth_hdr_size + len);
+		if (pong)
+			printf("Got ping from %pI4. Replying...\n",
+				&ip->ip_src);
 
 		ip->ip_sum = 0;
 		ip->ip_off = 0;

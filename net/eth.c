@@ -691,11 +691,13 @@ static int on_ethaddr(const char *name, const char *value, enum env_op op,
 				memset(dev->enetaddr, 0, 6);
 			}
 		}
+		dev = dev->next;
 	} while (dev != eth_devices);
 
 	return 0;
 }
 U_BOOT_ENV_CALLBACK(ethaddr, on_ethaddr);
+U_BOOT_ENV_CALLBACK(eth1addr, on_ethaddr);
 
 int eth_write_hwaddr(struct eth_device *dev, const char *base_name,
 		   int eth_number)

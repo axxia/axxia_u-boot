@@ -82,6 +82,12 @@ do_net(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return 0;
 	}
 
+	if( 0 == strncmp(argv[1], "p" , strlen("p") ) ) {
+		lsi_net_pong_test(eth_get_dev());
+
+		return 0;
+	}
+
 	if( 0 == strncmp( argv[1], "r", strlen( "r" ) ) ) {
 		printf( "Receiving Packets -- Ctrl-C to Exit.\n" );
 		lsi_net_receive_test(eth_get_dev());
@@ -167,13 +173,14 @@ do_bu(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 */
 
 U_BOOT_CMD(net, 3, 0, do_net,
-	   "net loopback|receive|send|dr|dt [type]\n",
+	   "net loopback|receive|send|pong|dr|dt [type]\n",
 	   "l,oopback loop all received packets back, specify the type\n"
 	   "     net -- loop packets from the network back out\n"
 	   "     phy -- expect the phy to loop packets back\n"
 	   "            Remeber to put the PHY in loopback mode!\n"
 	   "r,ecevie packets, and dump them to the screen\n"
 	   "s,end send one packet\n"
+	   "p,ing receive ICMP Request and Reply\n"
 	   "dr toggle the \"dumprx\" flag\n"
 	   "dt toggle the \"dumptx\" flag\n");
 

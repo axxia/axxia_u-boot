@@ -1320,6 +1320,7 @@ int lsi_femac_eth_rx(struct eth_device *);
 int lsi_eioa_eth_rx(struct eth_device *);
 
 void lsi_net_receive_test(struct eth_device *);
+void lsi_net_pong_test(struct eth_device *);
 void lsi_net_loopback_test(struct eth_device *, int);
 
 void lsi_femac_receive_test(struct eth_device *);

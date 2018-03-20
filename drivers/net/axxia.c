@@ -27,6 +27,7 @@
 unsigned char ethernet_address[6];
 int dumprx = 0;
 int dumptx = 0;
+bool pong = false;
 
 int axxia_mdio_init(void);
 int nemac_initialize(bd_t *);
@@ -173,46 +174,50 @@ board_eth_init(bd_t *bd)
 #endif
 
 #if defined(CONFIG_AXXIA_EIOA)
-
+{
+	struct eth_device *device;
 	debug("Adding LSI_EIOA device\n");
 
 	/*
 	  Get the Ethernet address from the environment.
+	  Try first eth1addr. If doesn't exist than from ethaddr.
 	*/
-	if (eth_getenv_enetaddr("ethaddr", ethernet_address)) {
-		struct eth_device *device;
-
-		/*
-		  Allocate a device structure and clear it.
-		*/
-
-		device = (struct eth_device *)malloc(sizeof(struct eth_device));
-
-		if (NULL == device) {
-			printf("Unable to allocate memory for LSI_EIOA eth_device.\n");
+	if (!eth_getenv_enetaddr("eth1addr", ethernet_address))
+		if (!eth_getenv_enetaddr("ethaddr", ethernet_address)) {
+			/* returns is_valid... 1=true, 0=false */
+			printf("Failed to add LSI_EIOA device."
+			       " Error getting eth1addr nor ethaddr.\n");
 			return -1;
 		}
 
-		memset((void *)device, 0, sizeof(struct eth_device *));
-		memcpy(device->enetaddr, ethernet_address, (sizeof(unsigned char) * 6));
 
-		/*
-		  Set up the rest of the eth_device structure and register it.
-		*/
+	/*
+	  Allocate a device structure and clear it.
+	*/
 
-		sprintf(device->name, "LSI_EIOA");
-		device->init         = lsi_eioa_eth_init;
-		device->halt         = lsi_eioa_eth_halt;
-		device->send         = lsi_eioa_eth_send;
-		device->recv         = lsi_eioa_eth_rx;
-		device->write_hwaddr = NULL;
+	device = (struct eth_device *)malloc(sizeof(struct eth_device));
 
-		eth_register(device);
-	} else {
-		/* returns is_valid... 1=true, 0=false */
-		printf("Failed to add LSI_EIOA device. Error getting ethaddr.\n");
+	if (NULL == device) {
+		printf("Unable to allocate memory for LSI_EIOA eth_device.\n");
+		return -1;
 	}
 
+	memset((void *)device, 0, sizeof(struct eth_device *));
+	memcpy(device->enetaddr, ethernet_address, (sizeof(unsigned char) * 6));
+
+	/*
+	  Set up the rest of the eth_device structure and register it.
+	*/
+
+	sprintf(device->name, "LSI_EIOA");
+	device->init         = lsi_eioa_eth_init;
+	device->halt         = lsi_eioa_eth_halt;
+	device->send         = lsi_eioa_eth_send;
+	device->recv         = lsi_eioa_eth_rx;
+	device->write_hwaddr = NULL;
+
+	eth_register(device);
+}
 #endif
 
 #if !defined(CONFIG_AXXIA_EIOA) && !defined(CONFIG_AXXIA_FEMAC) && !defined(CONFIG_AXXIA_NEMAC)
@@ -240,6 +245,50 @@ void lsi_net_receive_test(struct eth_device *dev)
 #endif
 		}
 	}
+}
+
+#include <watchdog.h>
+void lsi_net_pong_test(struct eth_device *dev)
+{
+	char *act = getenv("ethact");
+
+	/* set current device to whats in ethact */
+	eth_set_current();
+
+	if (!act)
+		return;
+
+	if ( (0 == strncmp(act, "LSI_EIOA", 8)) ||
+	     (0 == strncmp(act, "NEMAC", 5)) )
+	{
+		printf("Run ICMP ECHO Reply in response to ping"
+		       " -- Ctrl-C to Exit.\n");
+		printf("Listening on %s %s\n",
+			act, strncmp(act,"LSI_EIOA",8) ? "" : getenv("gmacport"));
+
+		pong = true;
+
+		eth_halt();
+
+		if (0 != eth_init()) {
+			pong = false;
+			eth_halt();
+			return;
+		}
+
+		for (;;) {
+			WATCHDOG_RESET();
+			eth_rx(); /*just listen to all the traffic.
+				    Processing of ECHO Reply alreadu sits in
+				    eth_rx()/net_process_received_packet() */
+			if (ctrlc())
+				break;
+		}
+
+		pong = false;
+		eth_halt();
+	}
+	return;
 }
 
 void lsi_net_loopback_test(struct eth_device *dev, int type)
