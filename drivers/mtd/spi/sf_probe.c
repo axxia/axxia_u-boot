@@ -260,6 +260,8 @@ static int spi_flash_validate_params(struct spi_slave *spi, u8 *idcode,
 #if defined(CONFIG_SPI_FLASH_ATMEL) || \
 	defined(CONFIG_SPI_FLASH_MACRONIX) || \
 	defined(CONFIG_SPI_FLASH_SST)
+	/* Do not clear for Cypress SPI NOR 0x6018, as it causes failures. */
+	if (0x01 != idcode[0] || 0x6018 != jedec)
 		spi_flash_cmd_write_status(flash, 0);
 #endif
 
