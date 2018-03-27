@@ -1180,7 +1180,7 @@ display_l3_lock(void)
 		if (0ULL != ((1ULL << 63) & base[i][0]))
 			puts("(valid)\n");
 		else
-			puts("(valid)\n");
+			puts("(invalid)\n");
 	}
 
 	return;
