@@ -265,6 +265,26 @@ static int spi_flash_validate_params(struct spi_slave *spi, u8 *idcode,
 		spi_flash_cmd_write_status(flash, 0);
 #endif
 
+	/*
+	 * Flash powers up read-only, so clear BP# bits.
+	 *
+	 * Note on some flash (like Macronix), QE (quad enable) bit is in the
+	 * same status register as BP# bits, and we need preserve its original
+	 * value during a reboot cycle as this is required by some platforms
+	 * (like Intel ICH SPI controller working under descriptor mode).
+	 */
+	if (idcode[0] == SPI_FLASH_CFI_MFR_ATMEL ||
+	   (idcode[0] == SPI_FLASH_CFI_MFR_SST) ||
+	   (idcode[0] == SPI_FLASH_CFI_MFR_MACRONIX)) {
+		u8 sr = 0;
+
+		if (idcode[0] == SPI_FLASH_CFI_MFR_MACRONIX) {
+			spi_flash_cmd_read_status(flash, &sr);
+			sr &= STATUS_QEB_MXIC;
+		}
+		spi_flash_cmd_write_status(flash, sr);
+	}
+
 	return 0;
 }
 

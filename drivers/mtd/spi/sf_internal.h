@@ -59,7 +59,9 @@ enum {
 #define SPI_FLASH_CFI_MFR_SPANSION	0x01
 #define SPI_FLASH_CFI_MFR_STMICRO	0x20
 #define SPI_FLASH_CFI_MFR_MACRONIX	0xc2
+#define SPI_FLASH_CFI_MFR_SST           0xbf
 #define SPI_FLASH_CFI_MFR_WINBOND	0xef
+#define SPI_FLASH_CFI_MFR_ATMEL         0x1f
 
 /* Erase commands */
 #define CMD_ERASE_4K			0x20
