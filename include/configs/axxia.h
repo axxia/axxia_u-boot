@@ -4136,7 +4136,7 @@ void ncr_disable( void );
 
 #define WATCHDOG_TIMEOUT_SECS 16
 #ifndef CONFIG_TARGET_EMULATION
-#define CONFIG_HW_WATCHDOG
+/*#define CONFIG_HW_WATCHDOG*/
 #endif
 /*#define LEAVE_WATCHDOG_ON*/
 /*#define MAKE_WATCHDOG_PERMANENT*/
@@ -4244,6 +4244,10 @@ unsigned int set_watchdog_timeout(unsigned int);
 /* USB Configuration Space */
 #define AXXIA_USB0_CONFIG (0x9000000000)
 #define AXXIA_USB1_CONFIG (0x9800000000)
+
+/* USB SCB */
+#define USB0_SCB (0x9000400000)
+#define USB1_SCB (0x9800400000)
 
 /*
   There are two sets of work-arounds (STARs) for USB.  One for the original 5600 and another for the newer 5600 and 6700.  The following macro will return the following.

@@ -866,6 +866,8 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 
 #define PCIE0_CC_GPREG_BASE 0xA003008000
 
+#define PCI_SCB 0xa000400000
+
 #define CONFIG_SYS_PCIE0_MEMBASE 0xc000000000
 
 #define CONFIG_SYS_PCIE0_MEMSIZE 0x40000000

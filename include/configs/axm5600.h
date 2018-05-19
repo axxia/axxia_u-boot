@@ -611,6 +611,7 @@ int axxia_gpio_set(axxia_gpio_t gpio, int pin, int value);
 #define CONFIG_SYS_PCIE_NR_PORTS 3
 
 #define PCIAXISCB 0xa000400000
+#define PCI_SCB 0xa000400000
 
 #define PCIE0_DBI_BASE 0xA002000000
 #define PCIE1_DBI_BASE 0xA004000000
