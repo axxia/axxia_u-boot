@@ -37,7 +37,7 @@ setup_security(void)
 	/*
 	  Addresses...
 
-	  0x170.1 - MMAP-SCB (0x8032000000)
+	  0x170.1 - MMAP_SCB (0x8032000000)
 	  0x171.1 - PERIPH_SCB (0x8080400000)
 	  0x172.1 - PCI_SCB (0xa000400000)
 	  0x173.1 - USB_SCB (0x9000400000)

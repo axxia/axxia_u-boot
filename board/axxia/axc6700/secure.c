@@ -129,7 +129,7 @@ setup_security(void)
 
 	writel(0xffff, (MMAP_SCB + 0x08));
 	writel(0xffff, (MMAP_SCB + 0x0c));
-	writel(0xffff, (MMAP_SCB + 0x10));
+	writel(0x0000, (MMAP_SCB + 0x10)); /* Leave LSM Secure */
 	writel(0xffff, (MMAP_SCB + 0x14));
 	writel(0xffff, (MMAP_SCB + 0x18));
 	writel(0xffff, (MMAP_SCB + 0x1c));
@@ -147,7 +147,7 @@ setup_security(void)
 	writel(0xffff, (MMAP_SCB + 0x4c));
 	writel(0xffff, (MMAP_SCB + 0x50));
 	writel(0xffff, (MMAP_SCB + 0x54));
-	writel(0xffff, (MMAP_SCB + 0x58));
+	writel(0x0000, (MMAP_SCB + 0x58)); /* Leave SCP Secure */
 	writel(0xffff, (MMAP_SCB + 0x5c));
 	writel(0xffff, (MMAP_SCB + 0x60));
 	writel(0xffff, (MMAP_SCB + 0x64));
@@ -186,7 +186,7 @@ setup_security(void)
 	writel(0xffff, (PERIPH_SCB + 0x08));
 	writel(0xffff, (PERIPH_SCB + 0x0c));
 	writel(0xffff, (PERIPH_SCB + 0x10));
-	writel(0xffff, (PERIPH_SCB + 0x14));
+	writel(0x0000, (PERIPH_SCB + 0x14)); /* Leave SCB Secure */
 	writel(0xffff, (PERIPH_SCB + 0x18));
 	writel(0xffff, (PERIPH_SCB + 0x1c));
 	writel(0xffff, (PERIPH_SCB + 0x20));
@@ -199,11 +199,11 @@ setup_security(void)
 
 	writel(0xffff, (USB0_SCB + 0x0c));
 	writel(0xffff, (USB0_SCB + 0x10));
-	writel(0xffff, (USB0_SCB + 0x14));
+	writel(0x0000, (USB0_SCB + 0x14)); /* Leave SCB Secure */
 
 	writel(0xffff, (USB1_SCB + 0x0c));
 	writel(0xffff, (USB1_SCB + 0x10));
-	writel(0xffff, (USB1_SCB + 0x14));
+	writel(0x0000, (USB1_SCB + 0x14)); /* Leave SCB Secure */
 
 #endif
 
