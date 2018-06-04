@@ -256,15 +256,6 @@ static int spi_flash_validate_params(struct spi_slave *spi, u8 *idcode,
 	}
 #endif
 
-	/* Flash powers up read-only, so clear BP# bits */
-#if defined(CONFIG_SPI_FLASH_ATMEL) || \
-	defined(CONFIG_SPI_FLASH_MACRONIX) || \
-	defined(CONFIG_SPI_FLASH_SST)
-	/* Do not clear for Cypress SPI NOR 0x6018, as it causes failures. */
-	if (0x01 != idcode[0] || 0x6018 != jedec)
-		spi_flash_cmd_write_status(flash, 0);
-#endif
-
 	/*
 	 * Flash powers up read-only, so clear BP# bits.
 	 *
@@ -273,9 +264,9 @@ static int spi_flash_validate_params(struct spi_slave *spi, u8 *idcode,
 	 * value during a reboot cycle as this is required by some platforms
 	 * (like Intel ICH SPI controller working under descriptor mode).
 	 */
-	if (idcode[0] == SPI_FLASH_CFI_MFR_ATMEL ||
-	   (idcode[0] == SPI_FLASH_CFI_MFR_SST) ||
-	   (idcode[0] == SPI_FLASH_CFI_MFR_MACRONIX)) {
+	if ((idcode[0] == SPI_FLASH_CFI_MFR_ATMEL) ||
+	    (idcode[0] == SPI_FLASH_CFI_MFR_SST) ||
+	    (idcode[0] == SPI_FLASH_CFI_MFR_MACRONIX)) {
 		u8 sr = 0;
 
 		if (idcode[0] == SPI_FLASH_CFI_MFR_MACRONIX) {
