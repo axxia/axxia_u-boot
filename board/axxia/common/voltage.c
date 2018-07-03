@@ -42,12 +42,40 @@
 unsigned int
 calc_chip_vrun(void)
 {
-#if defined(CONFIG_AXXIA_ANY_XLF)
-	return V_SAFE;
-#else
 	unsigned int bin;
 	unsigned int voltage = V_SAFE;
 
+#if defined(CONFIG_AXXIA_ANY_XLF)
+	/* Get the bin; slow, medium, or fast. */
+	ncr_read32(NCP_REGION_ID(0x155, 0x15), 0x15c, &bin);
+	bin &= 0xff;
+
+	switch (bin) {
+	case 1:			/* slow bin */
+		ncr_read32(NCP_REGION_ID(0x155, 0x15), 0x148, &voltage);
+		voltage = (voltage & 0xff) + 700;
+
+		if (V_MIN_1 > voltage)
+			voltage = V_SAFE;
+		break;
+	case 2:			/* typical bin */
+		ncr_read32(NCP_REGION_ID(0x155, 0x15), 0x148, &voltage);
+		voltage = ((voltage >> 8) & 0xff) + 700;
+
+		if (V_MIN_2 > voltage)
+			voltage = V_SAFE;
+		break;
+	case 3:			/* fast bin */
+		ncr_read32(NCP_REGION_ID(0x155, 0x15), 0x148, &voltage);
+		voltage = ((voltage >> 16) & 0xff) + 700;
+
+		if (V_MIN_3 > voltage)
+			voltage = V_SAFE;
+		break;
+	default:
+		break;		/* anything else, just return V_SAFE */
+	}
+#else
 	/* Get the bin; slow, medium, or fast. */
 	ncr_read32(NCP_REGION_ID(0x155, 0xb), 0x15c, &bin);
 	bin &= 0xff;
@@ -73,12 +101,12 @@ calc_chip_vrun(void)
 	default:		/* anything else, just return V_SAFE */
 		break;
 	}
+#endif
 
 	if (V_MAX < voltage)
 		voltage = V_SAFE;
 
 	return voltage;
-#endif
 }
 
 /*

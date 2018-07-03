@@ -604,10 +604,12 @@ void display_va_attr(void *);
 
 /*
   AVS settings.
-
-  Not yet supported (TBD for B0, not available on A0).
 */
 
+#define V_MIN_1 910
+#define V_MIN_2 860
+#define V_MIN_3 810
+#define V_MAX   910
 #define V_SAFE  910
 
 #define GPDMA0 0x8005020000ULL
