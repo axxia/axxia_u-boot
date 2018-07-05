@@ -4107,7 +4107,8 @@ phy_enable_(int phy)
 	  Set up the phy.
 	*/
 
-	if( 0 == strncmp(macspeed, "auto", strlen("auto") ) ) {
+	if( NULL == macspeed ||
+	    0 == strncmp(macspeed, "auto", strlen("auto") ) ) {
 		if (0 != phy_renegotiate(phy, get_env_ad_value())) {
 			printf( "PHY: Auto Negotiation Failed.\n" );
 			return -1;

@@ -48,10 +48,12 @@ unsigned long pfuse __attribute__ ((section ("data")));
 #define CONTROL_MASK 0x3df300
 
 static int
-pll_init_5500(ncp_uint32_t region, ncp_uint32_t *parameters)
+pll_init_5500(ncp_uint32_t region,
+	      ncp_uint32_t prms, ncp_uint32_t ctrl,
+	      ncp_uint32_t csw, ncp_uint32_t div, ncp_uint32_t psd)
 {
 	int i, timeout = 10000;
-	ncp_uint32_t value, prms;
+	ncp_uint32_t value;
 
 	/*
 	  Set the parameter value and reset the PLL, with
@@ -59,11 +61,11 @@ pll_init_5500(ncp_uint32_t region, ncp_uint32_t *parameters)
 
 	  Enable the PLL.
 	*/
-	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0xc00);
-	prms = (parameters[0] & PARAMETER_MASK) | 0x80000000;
+	ncr_write32(region, 0x4, (ctrl & CONTROL_MASK) | 0xc00);
+	prms = (prms & PARAMETER_MASK) | 0x80000000;
 	ncr_write32(region, 0x0, prms);
 	udelay(100);
-	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0xc02);
+	ncr_write32(region, 0x4, (ctrl & CONTROL_MASK) | 0xc02);
 
 	/*
 	  Enable clock_sync for DDR PLLs
@@ -90,7 +92,7 @@ pll_init_5500(ncp_uint32_t region, ncp_uint32_t *parameters)
 	/*
 	  Clear bypass.
 	*/
-	ncr_write32(region, 0x4, (parameters[1] & CONTROL_MASK) | 0x402);
+	ncr_write32(region, 0x4, (ctrl & CONTROL_MASK) | 0x402);
 
 	/*
 	  Clear the lock loss count and interrupt, and enable the count.
@@ -106,36 +108,36 @@ pll_init_5500(ncp_uint32_t region, ncp_uint32_t *parameters)
 	*/
 	if (region == NCP_REGION_ID(0x155, 4)) {
 		/* CPUPLL */
-		if (0 != parameters[3]) {
-			ncr_write32(NCP_REGION_ID(0x156,0), 0x8, parameters[3]);
+		if (0 != div) {
+			ncr_write32(NCP_REGION_ID(0x156,0), 0x8, div);
 			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &value);
 			value |= 0x100000;
 			ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
 			value &= ~0x100000;
 			ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
 		}
-		if (0 != parameters[2]) {
+		if (0 != csw) {
 			/* Switch the cluster clocks individually */
 			value = 0;
 			for (i = 0; i < 4; i++) {
-				value |= parameters[2] & (0x3 << (i * 2));
+				value |= csw & (0x3 << (i * 2));
 				ncr_write32(NCP_REGION_ID(0x156,0), 0x0, value);
-				udelay(parameters[4]);
+				udelay(psd);
 			}
 		}
 	} else {
-		if (0 != parameters[3]) {
+		if (0 != div) {
 			ncr_read32(NCP_REGION_ID(0x156,0), 0xc, &value);
-			value |= parameters[3];
+			value |= div;
 			ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
 			value &= ~0x100000;
 			ncr_write32(NCP_REGION_ID(0x156,0), 0xc, value);
 		}
-		if (0 != parameters[2]) {
+		if (0 != csw) {
 			ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &value);
-			value |= parameters[2];
+			value |= csw;
 			ncr_write32(NCP_REGION_ID(0x156,0), 0x4, value);
-			udelay(parameters[4]);
+			udelay(psd);
 		}
 	}
 
@@ -195,12 +197,18 @@ clocks_init( void )
         clocks->fabpll_csw  = 0x10;
         clocks->fabpll_div  = 0x0;
 	}
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 3), &clocks->fabpll_prms))
+	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 3),
+			       clocks->fabpll_prms, clocks->fabpll_ctrl,
+			       clocks->fabpll_csw, clocks->fabpll_div,
+			       clocks->fabpll_psd))
 		return -1;
 
 
 	/* cpupll */
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 4), &clocks->cpupll_prms))
+	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 4),
+			       clocks->cpupll_prms, clocks->cpupll_ctrl,
+			       clocks->cpupll_csw, clocks->cpupll_div,
+			       clocks->cpupll_psd))
 		return -1;
 
 	/* Debug Clock Setup */
@@ -218,7 +226,10 @@ clocks_init( void )
         clocks->syspll_csw  = 0x4;
         clocks->syspll_div  = 0x0;
     }
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 5), &clocks->syspll_prms))
+	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 5),
+			       clocks->syspll_prms, clocks->syspll_ctrl,
+			       clocks->syspll_csw, clocks->syspll_div,
+			       clocks->syspll_psd))
 		return -1;
 
 	/* NRCP input clock select */
@@ -251,11 +262,17 @@ clocks_init( void )
 
 
 	/* sm0pll */
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 6), &clocks->sm0pll_prms))
+	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 6),
+			       clocks->sm0pll_prms, clocks->sm0pll_ctrl,
+			       clocks->sm0pll_csw, clocks->sm0pll_div,
+			       clocks->sm0pll_psd))
 		return -1;
 
 	/* sm1pll */
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 7), &clocks->sm1pll_prms))
+	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 7),
+			       clocks->sm1pll_prms, clocks->sm1pll_ctrl,
+			       clocks->sm1pll_csw, clocks->sm1pll_div,
+			       clocks->sm1pll_psd))
 		return -1;
 
 	/* Set the peripheral clock */
@@ -289,7 +306,10 @@ clocks_init( void )
 	}
 
 	/* tm0pll */
-	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 8), &clocks->tmpll_prms))
+	if (0 != pll_init_5500(NCP_REGION_ID(0x155, 8),
+			       clocks->tmpll_prms, clocks->tmpll_ctrl,
+			       clocks->tmpll_csw, clocks->tmpll_div,
+			       clocks->tmpll_psd))
 		return -1;
 
 	/*

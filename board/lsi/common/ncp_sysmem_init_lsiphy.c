@@ -1286,7 +1286,7 @@ ncp_sm_lsiphy_static_init(
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
     ncp_region_id_t region = 0;
     ncp_region_id_t ctlRegion;
-    ncp_bool_t      isSysMem;
+    ncp_bool_t      isSysMem = FALSE;
     ncp_uint32_t    memId = 0;
     int             i;
     ncp_uint32_t    vtc_cnt;
@@ -1356,7 +1356,6 @@ ncp_sm_lsiphy_static_init(
         NCP_COMMENT("treemem %d PHY static init", smId - NCP_SYSMEM_NUM_NODES);
         region    = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_PHY);
         ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
-        isSysMem = FALSE;
         parms->num_bytelanes = 2;
         memId = smId - NCP_SYSMEM_NUM_NODES;
         /* TODO??? intrStat/eccEnb functions? */
@@ -3786,7 +3785,7 @@ ncp_sm_lsiphy_runtime_adj(
     ncp_st_t        ncpStatus = NCP_ST_SUCCESS;
     ncp_region_id_t region = 0;
     ncp_region_id_t ctlRegion = 0;
-    ncp_bool_t isSysMem;
+    ncp_bool_t isSysMem = FALSE;
     ncp_uint32_t mask;
     ncp_uint32_t value;
     ncp_uint32_t bl;
@@ -3810,7 +3809,6 @@ ncp_sm_lsiphy_runtime_adj(
                             smId - NCP_SYSMEM_NUM_NODES);
         region = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_PHY);
         ctlRegion = NCP_REGION_ID(sm_nodes[smId], NCP_TREEMEM_TGT_DDR);
-        isSysMem = FALSE;
     }
 #endif
 

@@ -319,6 +319,9 @@ int pci_axxia_init (struct pci_controller *hose, int port)
 			}
 	}
 
+	if (NULL == mbase)
+		return -1;
+
 	/* We only get here if we are RC mode for either PEI0 or PEI1 */
 
 	hose->cfg_addr = mbase;

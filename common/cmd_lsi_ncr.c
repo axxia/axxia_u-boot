@@ -156,6 +156,12 @@ do_ncr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 
 	token = strsep(&input, ".");
+
+	if (NULL == token) {
+		printf("Invalid Input: %s\n", input);
+		return -1;
+	}
+
 	node = simple_strtoul(token, NULL, 0);
 	token = strsep(&input, ".");
 	target = simple_strtoul(token, NULL, 0);

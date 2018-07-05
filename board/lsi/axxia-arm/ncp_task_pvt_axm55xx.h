@@ -39,7 +39,12 @@
 #endif
 
 #if NCP_TASK_COLLECT_STATS
-#define NCP_TASK_INC_STAT(thisStat) { if (NULL != pNcpNcaV2_domainBundle) { pNcpNcaV2_TaskSwState->myTaskStats.stat_##thisStat ++; }} 
+#define NCP_TASK_INC_STAT(thisStat) { \
+    if ((NULL != pNcpNcaV2_domainBundle) && (NULL != pNcpNcaV2_TaskSwState)) \
+    { \
+        pNcpNcaV2_TaskSwState->myTaskStats.stat_##thisStat ++; \
+    } \
+} 
 #else
 #define NCP_TASK_INC_STAT(thisStat)
 #endif

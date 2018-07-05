@@ -297,7 +297,7 @@ long_descriptor(void *virtual, struct par64_reg *par)
 
 	printf("Virtual: 0x%p  Physical: 0x%016llx\n"
 	       "    attr: 0x%x sh: 0x%x\n",
-	       virtual, pa, par->attr, par->sh);
+	       virtual, pa, (unsigned int)par->attr, (unsigned int)par->sh);
 
 	switch ((par->attr & 0xf0) >> 4) {
 	case 0:

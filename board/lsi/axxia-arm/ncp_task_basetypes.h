@@ -240,7 +240,7 @@ ncp_return:
 /*
  * Dummy versions of internal functions
  */
- 
+
 #define ncp_task_v2_get_taskHdl(...)    (NCP_ST_SUCCESS)
 #define ncp_task_v2_store_taskHdl(...)  (NCP_ST_SUCCESS)
 #define ncp_task_v2_destroy_key(...)

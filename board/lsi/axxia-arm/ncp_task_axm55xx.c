@@ -19,6 +19,7 @@
 #define NCP_TASK_USE_55XX_HEADERS
 
 #define NCP_TASK_NCA_GLOBALS
+
 /*
 #define DEBUG
 #include <common.h>
@@ -297,7 +298,9 @@ NCP_RETURN_LABEL
         {
             ncp_nvm_free(myTaskHdl);
         }
-        NCP_TASK_INC_STAT(api_task_hdl_create_err);
+
+	if (NULL != pNcpNcaV2_TaskSwState)
+		NCP_TASK_INC_STAT(api_task_hdl_create_err);
     }
 
     return ncpStatus;
@@ -396,7 +399,7 @@ NCP_RETURN_LABEL
     
     if (NCP_ST_SUCCESS == ncpStatus)
     {
-        NCP_TASK_INC_STAT(api_task_hdl_remove_ok);
+	    NCP_TASK_INC_STAT(api_task_hdl_remove_ok);
     }
     else
     {
@@ -4152,6 +4155,10 @@ ncp_task_v2_mmap_prepare_nca_mmio(ncp_hdl_t ncpHdl, ncp_dev_hdl_t devHdl, ncp_bo
          */
         pNcpNcaV2_TaskSwState->taskIoResourceLock 
             = ncp_nvm_malloc(sizeof(ncp_task_mutex_t));
+
+	if (NULL == pNcpNcaV2_TaskSwState->taskIoResourceLock)
+		NCP_CALL(NCP_ST_NO_MEMORY);
+
         ncp_memset(pNcpNcaV2_TaskSwState->taskIoResourceLock, 
                0, 
                sizeof(ncp_task_mutex_t));        

@@ -54,10 +54,12 @@ decode_range(const char *input, int minimum, int maximum, int range[2])
 	char *string;
 	char *token;
 
-	if (NULL == (string = malloc(strlen(input))))
+	string = malloc(strlen(input + 1));
+
+	if (NULL == string)
 		return -1;
 
-	strcpy(string, input);
+	strncpy(string, input, strlen(input));
 
 	if (0 == strcmp(string, "-1")) {
 		range[0] = minimum;

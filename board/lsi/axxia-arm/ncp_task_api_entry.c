@@ -40,8 +40,6 @@ NCP_EXPORT_SYMBOL(ncp_task_send);
 NCP_EXPORT_SYMBOL(ncp_task_send_segments);
 NCP_EXPORT_SYMBOL(ncp_task_send_queue_flush);
 NCP_EXPORT_SYMBOL(ncp_task_buffer_alloc);
-NCP_EXPORT_SYMBOL(ncp_task_buffer_free);
-
 
 ncp_st_t
 ncp_task_get_default_queueset(
@@ -326,22 +324,3 @@ ncp_task_buffer_alloc (
 NCP_RETURN_LABEL
     return(ncpStatus);
 }
-
-
-ncp_st_t
-ncp_task_buffer_free (
-	void *taskAddr)
-{
-    ncp_st_t ncpStatus=NCP_ST_SUCCESS;
-
-    ncp_task_hdl_t *taskHdl=NULL;
-        
-    NCP_CALL(ncp_task_v2_get_taskHdl((void *)&taskHdl));               
-    NCP_CALL(ncp_task_ncav2_buffer_free(taskHdl,
-                                         taskAddr));        
-    
-NCP_RETURN_LABEL
-    return(ncpStatus);
-}
-
-

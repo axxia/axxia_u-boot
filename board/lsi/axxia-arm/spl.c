@@ -49,6 +49,7 @@ DECLARE_GLOBAL_DATA_PTR;
 */
 
 enum spl_mtest_type {
+	spl_mtest_none = 0,
 	spl_mtest_data = 1,
 	spl_mtest_addr = 2,
 	spl_mtest_mtest = 4,
@@ -492,6 +493,19 @@ int run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len,
 
 	add_sw_addr = malloc(3 * sizeof(unsigned long));
 	add_sw_len = malloc(3 * sizeof(unsigned long));
+
+	if (NULL == add_sw_addr || NULL == add_sw_len) {
+		printf("Memory Allocation Failed\n");
+
+		if (NULL != add_sw_addr)
+			free(add_sw_addr);
+
+		if (NULL != add_sw_len)
+			free(add_sw_len);
+
+		return -1;
+	}
+
 	memset(add_sw_addr, 0, 3 * sizeof(unsigned long));
 	memset(add_sw_len, 0, 3 * sizeof(unsigned long));
 
@@ -684,6 +698,10 @@ int run_spl_mtest_ranges(unsigned long in_addr, unsigned long in_len,
 		} else
 			break;
 	}
+
+	free(add_sw_addr);
+	free(add_sw_len);
+
 	return ret;
 }
 
@@ -722,6 +740,43 @@ axxia_hybrid_mbist(
 	prot_addr = malloc(5 * sizeof(unsigned long));
 	prot_len = malloc(5 * sizeof(unsigned long));
 
+	if (NULL == add_mbist_addr ||
+	    NULL == add_mbist_len ||
+	    NULL == add_sw_addr ||
+	    NULL == add_sw_len ||
+	    NULL == test_addr ||
+	    NULL == test_len ||
+	    NULL == prot_addr ||
+	    NULL == prot_len) {
+		printf("Memory Allocation Failed\n");
+
+		if (NULL != add_mbist_addr)
+			free(add_mbist_addr);
+
+		if (NULL != add_mbist_len)
+			free(add_mbist_len);
+
+		if (NULL != add_sw_addr)
+			free(add_sw_addr);
+
+		if (NULL != add_sw_len)
+			free(add_sw_len);
+
+		if (NULL != test_addr)
+			free(test_addr);
+
+		if (NULL != test_len)
+			free(test_len);
+
+		if (NULL != prot_addr)
+			free(prot_addr);
+
+		if (NULL != prot_len)
+			free(prot_len);
+
+		return -1;
+	}
+
 	memset(add_mbist_addr, 0, 32 * sizeof(unsigned long));
 	memset(add_mbist_len, 0, 32 * sizeof(unsigned long));
 	memset(add_sw_addr, 0, 32 * sizeof(unsigned long));
@@ -733,6 +788,28 @@ axxia_hybrid_mbist(
 
 	mbist_addr = malloc(32 * 3 * sizeof(unsigned long));
 	mbist_len = malloc(32 * 3 * sizeof(unsigned long));
+
+	if (NULL == mbist_addr || NULL == mbist_len) {
+		printf("Memory Allocation Failed\n");
+
+		free(add_mbist_addr);
+		free(add_mbist_len);
+		free(add_sw_addr);
+		free(add_sw_len);
+		free(test_addr);
+		free(test_len);
+		free(prot_addr);
+		free(prot_len);
+
+		if (NULL != mbist_addr)
+			free(mbist_addr);
+
+		if (NULL != mbist_len)
+			free(mbist_len);
+
+		return -1;
+	}
+
 	memset(mbist_addr, 0, 32 * 3 * sizeof(unsigned long));
 	memset(mbist_len, 0, 32 * 3 * sizeof(unsigned long));
 
@@ -791,7 +868,7 @@ axxia_hybrid_mbist(
 				break;
 			}
 		}
-		for (i = 0; i < 96; i++) {
+		for (i = 0; i < 24; i++) {
 			if (test_len[i] != 0) {
 				if ((test_addr[i]+test_len[i]) > memSize) {
 					printf("Testing range exceeds System memory size\n");
@@ -815,6 +892,18 @@ axxia_hybrid_mbist(
 				break;
 		}
 	}
+
+	free(add_mbist_addr);
+	free(add_mbist_len);
+	free(add_sw_addr);
+	free(add_sw_len);
+	free(test_addr);
+	free(test_len);
+	free(prot_addr);
+	free(prot_len);
+	free(mbist_addr);
+	free(mbist_len);
+
 	return ret;
 }
 
@@ -829,18 +918,34 @@ check_memory_ranges(void)
 {
 	unsigned long *ranges = (unsigned long *)&global->memory_ranges;
 	int i;
-	enum spl_mtest_type type;
+	enum spl_mtest_type type = spl_mtest_none;
 #ifdef CONFIG_HYBRID_MBIST
 	unsigned long long *mbist_addr, *mbist_len;
 	mbist_addr = malloc(8 * sizeof(unsigned long long));
 	mbist_len = malloc(8 * sizeof(unsigned long long));
-	memset(mbist_addr, 0, 8 * sizeof(unsigned long long));
-	memset(mbist_len, 0, 8 * sizeof(unsigned long long));
 #else
 	unsigned long memSize;
 	unsigned long *mbist_addr, *mbist_len;
 	mbist_addr = malloc(8 * sizeof(unsigned long));
 	mbist_len = malloc(8 * sizeof(unsigned long));
+#endif
+
+	if (NULL == mbist_addr || NULL == mbist_len) {
+		printf("Memory Allocation Failed\n");
+
+		if (NULL != mbist_addr)
+			free(mbist_addr);
+
+		if (NULL != mbist_len)
+			free(mbist_len);
+
+		return;
+	}
+
+#ifdef CONFIG_HYBRID_MBIST
+	memset(mbist_addr, 0, 8 * sizeof(unsigned long long));
+	memset(mbist_len, 0, 8 * sizeof(unsigned long long));
+#else
 	memset(mbist_addr, 0, 8 * sizeof(unsigned long));
 	memset(mbist_len, 0, 8 * sizeof(unsigned long));
 #endif
@@ -889,6 +994,13 @@ check_memory_ranges(void)
 		}
 	}
 
+	if (spl_mtest_none == type) {
+ 		free(mbist_addr);
+		free(mbist_len);
+
+		return;
+	}
+
 #ifdef CONFIG_HYBRID_MBIST
 	if (axxia_hybrid_mbist(mbist_addr, mbist_len, type) != 0)
 		printf("axxia_hybrid_mbist failed\n");
@@ -909,6 +1021,11 @@ check_memory_ranges(void)
 			break;
 	}
 #endif
+
+	free(mbist_addr);
+	free(mbist_len);
+
+	return;
 }
 
 #endif	/* CONFIG_AXXIA_EMU */
