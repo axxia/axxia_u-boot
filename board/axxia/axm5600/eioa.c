@@ -88,15 +88,33 @@ extern int dumptx;
  * With this release we support only native damain and 
  * only gmacs.
  */
-static int port_by_index[] = 
-    {  0,   1,  2,  3,  4,  /* eioa0 */
-      16,  17, 18, 		    /* eioa1 */
-      /*32,  33,*/             /* eioa2 */
-      /*48,  49,*/             /* eioa3 */
-      /*64,  65,*/             /* eioa4 */
-      /*80,  81,*/             /* eioa5 */
-      /*96,  97,*/             /* eioa6 */
-      /*112, 113*/ };          /* eioa7 */
+
+static int
+port_by_index(int index)
+{
+	switch (index) {
+	case 0:
+		return 0; break;
+	case 1:
+		return 1; break;
+	case 2:
+		return 2; break;
+	case 3:
+		return 3; break;
+	case 4:
+		return 4; break;
+	case 5:
+		return 16; break;
+	case 6:
+		return 17; break;
+	case 7:
+		return 18; break;
+	default:
+		break;
+	}
+
+	return -1;
+}
 
 static int index_by_port[] = 
     { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,   /* eioa0 */
@@ -183,7 +201,7 @@ static int phy_media_by_index[] =
     EIOA_PHY_MEDIA_COPPER, 
 };
 
-#define EIOA_NUM_PORTS (sizeof(port_by_index)/sizeof(int))
+#define EIOA_NUM_PORTS 8
 
 #undef TRACE
 #define TRACE
@@ -1188,14 +1206,16 @@ line_setup(int index, struct eth_device *dev)
 	unsigned short control;
 	unsigned short status;
 
-    if(index >= 128 || (index < 128 && index_by_port[port_by_index[index]] == -1))
-    {
-        printf("Invalid gmac port %d (index=%d)\n", port_by_index[index],
-            index);
-	    return -1;
-    }
+	if ((index >= 128) ||
+	    (index < 128 && -1 == port_by_index(index)) ||
+	    (index_by_port[port_by_index(index)] == -1)) {
+		printf("Invalid gmac port %d (index=%d)\n",
+		       port_by_index(index), index);
 
-    debug("line_setup for port=%d\n", port_by_index[index]);
+	    return -1;
+	}
+
+    debug("line_setup for port=%d\n", port_by_index(index));
 
 
 	/* Set the region and offset. */
@@ -1248,7 +1268,7 @@ line_setup(int index, struct eth_device *dev)
                                       NCP_REGION_ID(45, 18)); /* 0x1f.0x12 */
 		gmacPortOffset = 0xc0 * hwPortIndex;
 	} else {
-	    printf("Invalid gmac port %d\n", port_by_index[index]);
+	    printf("Invalid gmac port %d\n", port_by_index(index));
 	    return -1;
     }
 
@@ -1282,7 +1302,7 @@ line_setup(int index, struct eth_device *dev)
 	envstring = getenv("macspeed");
 
 	if (NULL != envstring) {
-		debug("Setting gmac%d to %s\n", port_by_index[index], envstring);
+		debug("Setting gmac%d to %s\n", port_by_index(index), envstring);
 
 		NCR_CALL(ncr_read32(gmacRegion, 0x324 + gmacPortOffset,
 				    &ncr_status));
@@ -1393,7 +1413,7 @@ line_setup(int index, struct eth_device *dev)
 				break;
 			}
 			DELAY();
-			take_snapshot(port_by_index[index]);
+			take_snapshot(port_by_index(index));
         }
 	} else {
 	    /* do phy configuration for copper PHY */
@@ -1436,7 +1456,7 @@ line_setup(int index, struct eth_device *dev)
 
     			if (0 == retries--) {
     				printf("GMAC%d: AN Timed Out.\n",
-    					    port_by_index[index]);
+    					    port_by_index(index));
     				return -1;
     			}
 
@@ -1445,7 +1465,7 @@ line_setup(int index, struct eth_device *dev)
 
     		if (0 == (status & 0x4)) {
     			printf("GMAC%d: LINK is Down.\n",
-    				    port_by_index[index]);
+    				    port_by_index(index));
 
     			if (NCP_USE_ALL_PORTS != eioaPort)
     				return -1; /* Don't Error Out in AUTO Mode. */
@@ -1455,7 +1475,7 @@ line_setup(int index, struct eth_device *dev)
 #else
     		status = 0x28; /* For FPGA, its 100MF */
 #endif
-    		printf("GMAC%d: ", port_by_index[index]);
+    		printf("GMAC%d: ", port_by_index(index));
 
     		switch ((status & 0x18) >> 3) {
     		case 0:
@@ -1590,11 +1610,11 @@ initialize_task_io(struct eth_device *dev)
     memset_int(phy_media_by_index, phy_media, EIOA_NUM_PORTS);
 
     /* Set the port. */
-	eioaport = getenv("eioaport");
-
-    debug("eioaport=%s\n", eioaport);
+    eioaport = getenv("eioaport");
 
     if (NULL != eioaport) {
+	    debug("eioaport=%s\n", eioaport);
+
         if(strcmp(eioaport, "rx-gmac") == 0) {
             /* set same port type for all ports */
             memset_int(port_type_by_index, EIOA_PORT_TYPE_GMAC, EIOA_NUM_PORTS);
@@ -1738,7 +1758,7 @@ initialize_task_io(struct eth_device *dev)
 			index_by_port[i], port_type_by_index[i]);
                 if (index_by_port[i] != -1 && (port_type_by_index[i] == EIOA_PORT_TYPE_GMAC)){
     			if (0 != line_setup(i, dev)) {
-                            printf("line_setup failed for gmac%d (all)\n", port_by_index[i]);
+                            printf("line_setup failed for gmac%d (all)\n", port_by_index(i));
     			    return -1;
     			}
             }    
@@ -1967,7 +1987,7 @@ lsi_eioa_eth_send(struct eth_device *dev, void *packet, int length)
 
 	for (i = 0; i < EIOA_NUM_PORTS; ++i) {
         /* if sending on single port, skip other ports */
-        if((eioaPort != NCP_USE_ALL_PORTS && port_by_index[i] != eioaPort)
+        if((eioaPort != NCP_USE_ALL_PORTS && port_by_index(i) != eioaPort)
 			/* if send to all skip unsued ports */
 			 || (index_by_port[i] == -1))	{
             continue;
@@ -1998,7 +2018,7 @@ lsi_eioa_eth_send(struct eth_device *dev, void *packet, int length)
         taskMetaData.pduSegSize0    = length;
         taskMetaData.ptrCnt         = 1;
         taskMetaData.pduSegAddr0    = (ncp_uint64_t)((unsigned long)taskAddr);
-        taskMetaData.params[0]   	= port_by_index[i]; /* parametrized OP */
+        taskMetaData.params[0]   	= port_by_index(i); /* parametrized OP */
 		debug("%s(): Send over VP CPUtoEIOA output port %u\n", __func__,
 			(unsigned int) taskMetaData.params[0]);
 
@@ -2008,14 +2028,14 @@ lsi_eioa_eth_send(struct eth_device *dev, void *packet, int length)
 #endif
 
 		if (length != task_send(&taskMetaData)) {
-			debug("Send Failed on Port %d\n", port_by_index[i]);
+			debug("Send Failed on Port %d\n", port_by_index(i));
 		} else {
-			debug("Send %d bytes on Port %d\n", length, port_by_index[i]);
+			debug("Send %d bytes on Port %d\n", length, port_by_index(i));
 			bytes_sent = length;
 		}
 
         /* if sending on single port, skip rest of the ports */
-        if(eioaPort != NCP_USE_ALL_PORTS && port_by_index[i] != eioaPort) {
+        if(eioaPort != NCP_USE_ALL_PORTS && port_by_index(i) != eioaPort) {
             break;
         }
 	}
@@ -2049,7 +2069,10 @@ lsi_eioa_eth_rx(struct eth_device *dev)
     NCP_CALL(ncp_task_ncav2_recv(taskHdl, &recvQueueId, &vpHdl, &engineSeqId, 
                 &task, NULL, FALSE));
 
-	if ((task != NULL) && (first == 1)) {
+    if (NULL == task)
+	    return 0;
+
+    if (1 == first) {
 		shared_pool_start = (void*) task;
 		first = 0;
 		debug("Shared Pool 2 for the Size start at %p\n", 
@@ -2213,9 +2236,9 @@ line_setup_xgmac(int index)
 	unsigned short ge_ad_value;
 	unsigned short control;
 
-    if(index >= 128 || (index < 128 && index_by_port_xgmac[port_by_index[index]] != -1))
+    if(index >= 128 || (index < 128 && index_by_port_xgmac[port_by_index(index)] != -1))
     {
-        printf("Invalid xgmac port %d (index=%d)\n", port_by_index[index],
+        printf("Invalid xgmac port %d (index=%d)\n", port_by_index(index),
             index);
 	    return -1;
     }
@@ -2270,7 +2293,7 @@ line_setup_xgmac(int index)
                                             NCP_REGION_ID(45, 18)); /* 0x1f.0x12 */
 		xgmacPortOffset = 0xc0 * hwPortIndex;
 	} else {
-	    printf("Invalid xgmac port %d\n", port_by_index[index]);
+	    printf("Invalid xgmac port %d\n", port_by_index(index));
 	    return -1;
     }
 
@@ -2349,7 +2372,7 @@ line_setup_xgmac(int index)
 
 			if (0 == retries--) {
 				printf("GMAC%d: AN Timed Out.\n",
-					    port_by_index[index]);
+					    port_by_index(index));
 				return -1;
 			}
 
@@ -2358,13 +2381,13 @@ line_setup_xgmac(int index)
 
 		if (0 == (status & 0x4)) {
 			printf("GMAC%d: LINK is Down.\n",
-				    port_by_index[index]);
+				    port_by_index(index));
 
 			if (NCP_USE_ALL_PORTS != eioaPort)
 				return -1; /* Don't Error Out in AUTO Mode. */
 		} else {
 			status = phy_read(phy_dev, MDIO_DEVAD_NONE, 0x1c);
-			printf("GMAC%02d: ", port_by_index[index]);
+			printf("GMAC%02d: ", port_by_index(index));
 
 			switch ((status & 0x18) >> 3) {
 			case 0:

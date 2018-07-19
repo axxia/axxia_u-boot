@@ -383,11 +383,15 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 	if (!i2c_initialized())
 		return -1;
 
-	if (i2c_addr == 0)
+	if (i2c_addr == 0) {
 		printf("Unsupported bus (%d)\n", i2c_get_bus_num());
+
+		return -1;
+	}
 
 	if (len > 255) {
 		printf("Unsuppoted transfer length (max 255)\n");
+
 		return -1;
 	}
 
@@ -398,6 +402,7 @@ i2c_read(uchar chip, uint addr, int alen, uchar *buffer, int len)
 	if (alen > 0) {
 		uchar abuf[4];
 		i2c_addr_to_buf(addr, alen, abuf);
+
 		if (i2c_write_bytes(i2c_addr, chip, NULL, 0, abuf, alen) < 0)
 			return -1;
 	}
@@ -462,6 +467,12 @@ i2c_probe(uchar chip)
 	if (!i2c_initialized())
 		return -1;
 
+	if (i2c_addr == 0) {
+		printf("Unsupported bus (%d)\n", i2c_get_bus_num());
+
+		return -1;
+	}
+
 	rc = i2c_read_bytes(i2c_addr, chip, &dummy, 1);
 
 	if (0 != i2c_stop(i2c_addr))
@@ -506,6 +517,12 @@ i2c_set_bus_speed(unsigned int speed)
 	unsigned clk_mhz;
 	unsigned divisor;
 	unsigned t_high, t_low, t_setup;
+
+	if (i2c_addr == 0) {
+		printf("Unsupported bus (%d)\n", i2c_get_bus_num());
+
+		return -1;
+	}
 
 	current_speed = speed;
 

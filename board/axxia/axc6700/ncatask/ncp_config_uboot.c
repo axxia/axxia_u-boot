@@ -159,6 +159,10 @@ mme_config(ncp_t *ncp)
     ncp_uint32_t    blockId   = 0;
 
     mme = malloc(sizeof(ncp_mme_t));
+
+    if (NULL == mme)
+	    return NCP_ST_NO_MEMORY;
+
     memset(mme, 0, sizeof(ncp_mme_t));
 
     ncp->mmeHdl = (ncp_mme_t *)mme;
@@ -513,11 +517,22 @@ ncp_config_uboot_attach(ncp_uint32_t id, ncp_hdl_t *ncpHdl)
     ncp_dev_hdl_t   devHdl;
 
     ncp = (ncp_t*)malloc(sizeof(ncp_t));
+
+    if (NULL == ncp)
+	    return NCP_ST_NO_MEMORY;
+
     memset(ncp, 0, sizeof(ncp_t));
     ncp->domainId = 0;
     ncp->domainIsInternal = TRUE;
 
     nca = (ncp_ncav3_hdl_t*)malloc(sizeof(ncp_ncav3_hdl_t));
+
+    if (NULL == nca) {
+	    free(ncp);
+
+	    return NCP_ST_NO_MEMORY;
+    }
+
     memset(nca, 0, sizeof(ncp_ncav3_hdl_t));
 
 
@@ -545,8 +560,20 @@ ncp_config_uboot_attach(ncp_uint32_t id, ncp_hdl_t *ncpHdl)
 	memset(pNcpTaskSwState,0,sizeof(ncp_task_swState_t));
 
 	pNcpTaskSwState->taskIoResourceLock = malloc(sizeof(ncp_task_v3_mutex_t));
-	memset(pNcpTaskSwState->taskIoResourceLock,0,sizeof(ncp_task_v3_mutex_t));
 
+	if (NULL == pNcpTaskSwState->taskIoResourceLock) {
+#ifdef NCP_USE_NVM
+		free(pNvmLock);
+		free(pNvmActive);
+#endif	/* NCP_USE_NVM */
+#ifndef CONFIG_EIOA_BIG_STRUCT_IN_BSS
+		free(pNcpTaskSwState);
+#endif	/* CONFIG_EIOA_BIG_STRUCT_IN_BSS */
+
+		NCP_CALL(NCP_ST_NO_MEMORY);
+	}
+
+	memset(pNcpTaskSwState->taskIoResourceLock,0,sizeof(ncp_task_v3_mutex_t));
 
 	pNcpTaskSwState->tqsSwState[0].tqsEnabled = TRUE;
 	pNcpTaskSwState->tqsSwState[0].configured = TRUE;
@@ -554,6 +581,20 @@ ncp_config_uboot_attach(ncp_uint32_t id, ncp_hdl_t *ncpHdl)
 	pNcpTaskSwState->tqsSwState[0].validPoolsMask = 4; // just poolid 2
     pNcpTaskSwState->perDomainPoolsMask = 4;
   	pNcpTaskSwState->tqsSwState[0].pAppProfile = malloc(sizeof(ncp_ncav3_application_profile_t));
+
+	if (NULL == pNcpTaskSwState->tqsSwState[0].pAppProfile) {
+#ifdef NCP_USE_NVM
+		free(pNvmLock);
+		free(pNvmActive);
+#endif	/* NCP_USE_NVM */
+		free(pNcpTaskSwState->taskIoResourceLock);
+#ifndef CONFIG_EIOA_BIG_STRUCT_IN_BSS
+		free(pNcpTaskSwState);
+#endif	/* CONFIG_EIOA_BIG_STRUCT_IN_BSS */
+
+		NCP_CALL(NCP_ST_NO_MEMORY);
+	}
+
 	memset(pNcpTaskSwState->tqsSwState[0].pAppProfile,0,sizeof(ncp_ncav3_application_profile_t));
 	pNcpTaskSwState->tqsSwState[0].pAppProfile->baseProfile.uMode = TRUE;
 	pNcpTaskSwState->tqsSwState[0].pAppProfile->baseProfile.completionMode = NCP_TASK_AUTO_COMPLETION_MODE;
@@ -566,6 +607,21 @@ ncp_config_uboot_attach(ncp_uint32_t id, ncp_hdl_t *ncpHdl)
 
 	ncp_task_process_info_t **pidArray;
 	pidArray = malloc(sizeof(ncp_task_process_info_t*) * 10);
+
+	if (NULL == pidArray) {
+#ifdef NCP_USE_NVM
+		free(pNvmLock);
+		free(pNvmActive);
+#endif	/* NCP_USE_NVM */
+#ifndef CONFIG_EIOA_BIG_STRUCT_IN_BSS
+		free(pNcpTaskSwState);
+#endif	/* CONFIG_EIOA_BIG_STRUCT_IN_BSS */
+		free(pNcpTaskSwState->taskIoResourceLock);
+		free(pNcpTaskSwState->tqsSwState[0].pAppProfile);
+
+		NCP_CALL(NCP_ST_NO_MEMORY);
+	}
+
 	memset(pidArray, 0, sizeof(ncp_task_process_info_t*) * 10);
 	pNcpTaskSwState->currPidArrayEntries = 10;
 	pNcpTaskSwState->pidArray = pidArray;

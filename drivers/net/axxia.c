@@ -263,8 +263,7 @@ void lsi_net_pong_test(struct eth_device *dev)
 	{
 		printf("Run ICMP ECHO Reply in response to ping"
 		       " -- Ctrl-C to Exit.\n");
-		printf("Listening on %s %s\n",
-			act, strncmp(act,"LSI_EIOA",8) ? "" : getenv("gmacport"));
+		printf("Listening... (%s)\n", act);
 
 		pong = true;
 

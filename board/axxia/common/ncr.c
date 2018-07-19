@@ -912,7 +912,9 @@ ncr_read(ncp_uint32_t region,
 	case 0x109:
 	case 0x1d0:
 	case 0x149:
+#ifndef CONFIG_AXXIA_ANY_XLF
 	case 0x14f:
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 		/*
 		  If reading from within NCA/MME_POKE/SCB,
 		  just do the plain and simple read
@@ -935,7 +937,14 @@ ncr_read(ncp_uint32_t region,
 				offset = ((unsigned long)SCB + address);
 			} else if (NCP_NODE_ID(region) == 0x149) {
 				offset = ((unsigned long)GPREG + address);
+#ifndef CONFIG_AXXIA_ANY_XLF
+			} else if (NCP_NODE_ID(region) == 0x14f) {
+				offset = (unsigned long)(SRIO_GPREG + address);
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 			} 
+
+			if (0 == offset)
+				return -1;
 
 			while (4 <= number) {
 				*((ncp_uint32_t *)buffer) =
@@ -1238,7 +1247,9 @@ ncr_write(ncp_uint32_t region,
 	case 0x109:
 	case 0x1d0:
 	case 0x149:
+#ifndef CONFIG_AXXIA_ANY_XLF
 	case 0x14f:
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 		if (NULL != buffer) {
 			ncp_uint64_t offset = 0;
 
@@ -1257,7 +1268,14 @@ ncr_write(ncp_uint32_t region,
 				offset = (unsigned long)(SCB + address);
 			} else if (NCP_NODE_ID(region) == 0x149) {
 				offset = (unsigned long)(GPREG + address);
+#ifndef CONFIG_AXXIA_ANY_XLF
+			} else if (NCP_NODE_ID(region) == 0x14f) {
+				offset = (unsigned long)(SRIO_GPREG + address);
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 			}
+
+			if (0 == offset)
+				return -1;
 
 			while (4 <= number) {
 				ncr_register_write(*((ncp_uint32_t *)buffer),

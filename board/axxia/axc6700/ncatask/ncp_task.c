@@ -257,7 +257,11 @@ ncp_task_tqs_bind(
      */
 /*TODO*/
     pvtTqsHdl = malloc(sizeof(ncp_task_pvt_tqsHdl_data_t));
-	memset(pvtTqsHdl,0,sizeof(ncp_task_pvt_tqsHdl_data_t));
+
+    if (NULL == pvtTqsHdl)
+	    NCP_CALL(NCP_ST_NO_MEMORY);
+
+    memset(pvtTqsHdl,0,sizeof(ncp_task_pvt_tqsHdl_data_t));
 
     NCP_NCA_INC_CRITICAL_SECTION(pvtTqsHdl, critSecFlag);
 
@@ -338,15 +342,16 @@ NCP_RETURN_LABEL
         {
             NCP_TASK_INC_ERROR_STAT_VIA_PTQS(&pNcpTaskSwState->tqsSwState[tqsId],
                                              api_task_tqs_hdl_bind_err);
+
+	    if (pidInitDone)
+	    {
+		    /*TODO*/
+		    NCP_CLEANUP_CALL(ncp_task_delete_thread(pvtTqsHdl, threadName));
+	    }
         }
         else
         {
             NCP_TASK_INC_GLOBAL_STAT(api_task_tqs_hdl_bind_err);
-        }
-        if (pidInitDone)
-        {
-            /*TODO*/
-            NCP_CLEANUP_CALL(ncp_task_delete_thread(pvtTqsHdl, threadName));
         }
         if (tqsAttachDone)
         {
@@ -1321,10 +1326,13 @@ ncp_task_buffer_alloc(
         
         pTqs = pvtTqsHdl->pTqs;
         NCP_TASK_PREFETCH_PGIT_FOR_WRITE(pTqs->pCpuPgit);
-        NCP_TASK_PREFETCH_PGIT(pTqs->pNcaPgit);    
-        
-        pAllocator = &pTqs->mmeAllocator[bufferPoolId];  
-        
+        NCP_TASK_PREFETCH_PGIT(pTqs->pNcaPgit);
+
+	if (8 > bufferPoolId)
+		pAllocator = &pTqs->mmeAllocator[bufferPoolId];
+	else
+		NCP_CALL(NCP_ST_INVALID_VALUE);
+
         ncpStatus = ncp_task_bulk_MMEpool_alloc(
                     pvtTqsHdl, 
                     pAllocator,

@@ -1484,6 +1484,10 @@ ncp_task_v2_cpcq_init(
             goto ncp_return;
         }    
             
+	if (NCP_X7_NUM_CPCQ_PER_GROUP <= queueId) {
+		NCP_CALL(NCP_ST_INVALID_VALUE);
+	}
+
         NCP_CALL(NCP_TASK_INITIALIZE_DOMAIN_OBJ_VA(pcq->u.cpcq_info.cPcqOffset,
                                                           nEntries * sizeof(ncp_task_cPCQ_entry_t),
                                                           &pcq->pPCQbase,
@@ -1685,6 +1689,10 @@ ncp_task_v2_opcq_init(
             goto ncp_return;
         }
 
+	if (NCP_X7_NUM_OPCQ_PER_GROUP <= queueId ||
+	    NCP_X7_NUM_IPCQ_PER_GROUP <= queueId) {
+		NCP_CALL(NCP_ST_INVALID_VALUE);
+	}
 
         NCP_CALL(NCP_TASK_INITIALIZE_DOMAIN_OBJ_VA(pcq->u.opcq_info.oPcqOffset,
                                                     nEntries *  sizeof(ncp_task_ncaV2_oPCQ_entry_t),

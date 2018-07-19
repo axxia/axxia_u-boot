@@ -440,7 +440,9 @@ sysmem_init(void)
 
 	/* Initialize Memory */
 #ifdef CONFIG_AXXIA_ANY_56XX
-	for (i = 0; i < sysmem->num_interfaces; ++i) {
+	for (i = 0;
+	     (i < sysmem->num_interfaces) &&
+		     (i < (sizeof(sm_nodes) / sizeof(unsigned))); ++i) {
 		rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
 
 		if (NCP_ST_SUCCESS != rc) {

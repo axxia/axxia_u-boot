@@ -172,6 +172,14 @@ read_parameters(void)
 #else
 	if (1 == do_read) {
 		parameters = malloc(PARAMETERS_SIZE);
+
+		if (NULL == parameters) {
+			printf("%s:%d - malloc() failed.\n",
+			       __FILE__, __LINE__);
+
+			return -1;
+		}
+
 		memset(parameters, 0, PARAMETERS_SIZE);
 	}
 #endif

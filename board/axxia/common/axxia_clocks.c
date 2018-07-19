@@ -48,7 +48,9 @@ static ncp_uint32_t get_pll(ncp_uint32_t, ncp_uint32_t);
 */
 
 static int
-pll_init_frac(ncp_uint32_t region, ncp_uint32_t *parameters)
+pll_init_frac(ncp_uint32_t region,
+	      ncp_uint32_t flags, ncp_uint32_t div,
+	      ncp_uint32_t frac, ncp_uint32_t psd)
 {
 	int timeout = 10000;
 	ncp_uint32_t ctrl, value;
@@ -58,16 +60,16 @@ pll_init_frac(ncp_uint32_t region, ncp_uint32_t *parameters)
 	ncr_write32(region, 0x08, ctrl);
 
 	/* Check if the PLL should be programmed */
-	if (!(parameters[0] & 0x0001)) {
+	if (!(flags & 0x0001)) {
 		return 0;
 	}
 
 	/* Set divider values.  */
-	ncr_write32(region, 0x00, parameters[1]);
+	ncr_write32(region, 0x00, div);
 
 	/* If in fractional mode, write the fraction */
-	if (parameters[0] & 0x0100) {
-		ncr_write32(region, 0x04, parameters[2]);
+	if (flags & 0x0100) {
+		ncr_write32(region, 0x04, frac);
 	}
     
 	/* Clear loss of lock counter and interrupts */
@@ -75,7 +77,7 @@ pll_init_frac(ncp_uint32_t region, ncp_uint32_t *parameters)
 	ncr_write32(region, 0x10, 0x7);
 
 	/* Set control if using external FB divider */
-	if (parameters[0] & 0x1000) {
+	if (flags & 0x1000) {
 		ctrl |= 0x100;
 		ncr_write32(region, 0x08, ctrl);
 	}
@@ -85,7 +87,7 @@ pll_init_frac(ncp_uint32_t region, ncp_uint32_t *parameters)
 
 	/* De-assert pll PD, as well as DACPD and DSMPD in fractional mode */
 	ctrl &= ~0x40;
-	if (parameters[0] & 0x0100) {
+	if (flags & 0x0100) {
 		ctrl &= ~0x30;
 	}
 	ncr_write32(region, 0x08, ctrl);
@@ -109,11 +111,11 @@ pll_init_frac(ncp_uint32_t region, ncp_uint32_t *parameters)
 	ncr_write32(region, 0x08, ctrl);
 
 	/* Enable loss of lock counter */
-	if ((parameters[0] & 0x0010)) {
+	if ((flags & 0x0010)) {
 		ctrl |= 0x80;
 		ncr_write32(region, 0x08, ctrl);
 	}
-	udelay(parameters[3]);
+	udelay(psd);
 
 	return 0;
 }
@@ -240,29 +242,54 @@ clocks_init( int ddrRecovery )
 
 	if (ddrRecovery == 0) {
 		/* sm0pll */
-		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 6), &clocks->sm0pll_flags))
+		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 6),
+				       clocks->sm0pll_flags,
+				       clocks->sm0pll_div,
+				       clocks->sm0pll_frac,
+				       clocks->sm0pll_psd))
 			return -1;
+
 		/* sm1pll */
-		if (0 != pll_init_frac(NCP_REGION_ID(0x165, 1), &clocks->sm1pll_flags))
+		if (0 != pll_init_frac(NCP_REGION_ID(0x165, 1),
+				       clocks->sm1pll_flags,
+				       clocks->sm1pll_div,
+				       clocks->sm1pll_frac,
+				       clocks->sm1pll_psd))
 			return -1;
 	} else {
 		printf("skipping SM PLL setup for ddrRecovery\n");
 	}
 
 	/* cpupll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 7), &clocks->cpupll_flags))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 7),
+			       clocks->cpupll_flags,
+			       clocks->cpupll_div,
+			       clocks->cpupll_frac,
+			       clocks->cpupll_psd))
 		return -1;
 
 	/* syspll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 8), &clocks->syspll_flags))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 8),
+			       clocks->syspll_flags,
+			       clocks->syspll_div,
+			       clocks->syspll_frac,
+			       clocks->syspll_psd))
 		return -1;
 
 	/* fabpll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 9), &clocks->fabpll_flags))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 9),
+			       clocks->fabpll_flags,
+			       clocks->fabpll_div,
+			       clocks->fabpll_frac,
+			       clocks->fabpll_psd))
 		return -1;
 
 	/* tm0pll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x165, 0), &clocks->tm0pll_flags))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x165, 0),
+			       clocks->tm0pll_flags,
+			       clocks->tm0pll_div,
+			       clocks->tm0pll_frac,
+			       clocks->tm0pll_psd))
 		return -1;
 
 
@@ -376,39 +403,75 @@ clocks_init( int ddrRecovery )
 
 	if (ddrRecovery == 0) {
 		/* sm0pll */
-		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 0), &clocks->sm0pll_flags))
+		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 0),
+				       clocks->sm0pll_flags,
+				       clocks->sm0pll_div,
+				       clocks->sm0pll_frac,
+				       clocks->sm0pll_psd))
 			return -1;
 		/* sm1pll */
-		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 1), &clocks->sm1pll_flags))
+		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 1),
+				       clocks->sm1pll_flags,
+				       clocks->sm1pll_div,
+				       clocks->sm1pll_frac,
+				       clocks->sm1pll_psd))
 			return -1;
 		/* sm2pll */
-		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 2), &clocks->sm2pll_flags))
+		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 2),
+				       clocks->sm2pll_flags,
+				       clocks->sm2pll_div,
+				       clocks->sm2pll_frac,
+				       clocks->sm2pll_psd))
 			return -1;
 		/* sm3pll */
-		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 3), &clocks->sm3pll_flags))
+		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 3),
+				       clocks->sm3pll_flags,
+				       clocks->sm3pll_div,
+				       clocks->sm3pll_frac,
+				       clocks->sm3pll_psd))
 			return -1;
 	} else {
 		printf("skipping SM PLL setup for ddrRecovery\n");
 	}
 
 	/* cpupll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 4), &clocks->cpupll_flags))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 4),
+			       clocks->cpupll_flags,
+			       clocks->cpupll_div,
+			       clocks->cpupll_frac,
+			       clocks->cpupll_psd))
 		return -1;
 
 	/* dsppll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 5), &clocks->dsppll_flags))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 5),
+			       clocks->dsppll_flags,
+			       clocks->dsppll_div,
+			       clocks->dsppll_frac,
+			       clocks->dsppll_psd))
 		return -1;
 
 	/* syspll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 6), &clocks->syspll_flags))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 6),
+			       clocks->syspll_flags,
+			       clocks->syspll_div,
+			       clocks->syspll_frac,
+			       clocks->syspll_psd))
 		return -1;
 
 	/* fabpll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 7), &clocks->fabpll_flags))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 7),
+			       clocks->fabpll_flags,
+			       clocks->fabpll_div,
+			       clocks->fabpll_frac,
+			       clocks->fabpll_psd))
 		return -1;
 
 	/* tm0pll */
-	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 8), &clocks->tm0pll_flags))
+	if (0 != pll_init_frac(NCP_REGION_ID(0x155, 8),
+			       clocks->tm0pll_flags,
+			       clocks->tm0pll_div,
+			       clocks->tm0pll_frac,
+			       clocks->tm0pll_psd))
 		return -1;
 
 

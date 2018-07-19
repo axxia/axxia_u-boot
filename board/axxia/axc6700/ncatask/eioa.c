@@ -1706,7 +1706,7 @@ initialize_task_io(struct eth_device *dev)
 	   - following only digits up to 'NULL' (this is to prevent such as gmac48-51)
 	   - finally test if the digit is a port number permitted
 	 */
-	if (0 == strncmp(mac_string,"gmac",4)) {
+	if (NULL != mac_string && 0 == strncmp(mac_string,"gmac",4)) {
 		if (0 == only_digits(mac_string+4)) {
 			gmac = (int) simple_strtoul(mac_string+4, NULL, 10);
 			switch (gmac) {
@@ -1839,9 +1839,9 @@ void printTask(ncp_task_header_t *task)
 
     printf("task->ID 0x%x\n",task->ID);
     printf("task->templateId 0x%x\n",task->templateId);
-    printf("task->headerPool 0x%x\n",task->headerPool);
-    printf("task->headerPoolMref 0x%x\n",task->headerPoolMref);
-    printf("task->combinedHeader 0x%x\n",task->combinedHeader);
+    printf("task->headerPool 0x%x\n",(unsigned int)task->headerPool);
+    printf("task->headerPoolMref 0x%x\n",(unsigned int)task->headerPoolMref);
+    printf("task->combinedHeader 0x%x\n",(unsigned int)task->combinedHeader);
     printf("task->pduSize %d\n",task->pduSize);
     printf("task->pool0 0x%x\n",task->pool0);
     printf("task->pool0Mref 0x%x\n",task->pool0Mref);

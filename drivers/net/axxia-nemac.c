@@ -676,8 +676,16 @@ nemac_initialize(bd_t *bdi)
 	}
 
 	dev = malloc(sizeof(*dev));
+
+	if (!dev) {
+		puts("No memory\n");
+		return -1;
+	}
+
 	priv = malloc(sizeof(*priv));
-	if (!dev || !priv) {
+
+	if (!priv) {
+		free(dev);
 		puts("No memory\n");
 		return -1;
 	}

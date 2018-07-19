@@ -320,6 +320,10 @@ ncp_task_buffer_alloc (
     ncp_task_hdl_t *taskHdl=NULL;
         
     NCP_CALL(ncp_task_v2_get_taskHdl((void *)&taskHdl));        
+
+    if (NULL == taskHdl)
+	    NCP_CALL(NCP_ST_NO_MEMORY);
+
     NCP_CALL(ncp_task_ncav2_buffer_alloc( taskHdl,
                                            size,
 	                                       taskAddr));        
@@ -338,6 +342,10 @@ ncp_task_buffer_free (
     ncp_task_hdl_t *taskHdl=NULL;
         
     NCP_CALL(ncp_task_v2_get_taskHdl((void *)&taskHdl));               
+
+    if (NULL == taskHdl)
+	    NCP_CALL(NCP_ST_NO_MEMORY);
+
     NCP_CALL(ncp_task_ncav2_buffer_free(taskHdl,
                                          taskAddr));        
     

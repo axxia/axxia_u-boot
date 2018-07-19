@@ -423,7 +423,7 @@ ncp_task_uboot_config(void)
     ncp_st_t ncpStatus = NCP_ST_SUCCESS;
     ncp_t     *ncp  = &gNCP;
     ncp_dev_t *dev  = &gDEV;  
-    ncp_nca_t *nca;             
+    ncp_nca_t *nca = NULL;
     int i;
     ncp_task_v2_pcq_grp_t *pPCQgrp;
     ncp_task_pcq_t        *pcq;
@@ -742,6 +742,9 @@ ncp_task_uboot_config(void)
     pNcpNcaV2_TaskSwState->domainIsInternal = ncp->domainIsInternal = TRUE;
 
 NCP_RETURN_LABEL
+    if (NULL != nca)
+        ncp_nvm_free(nca);
+
     return(ncpStatus);
 }        
 

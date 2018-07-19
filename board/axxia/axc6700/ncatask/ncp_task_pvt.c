@@ -2281,7 +2281,8 @@ ncp_st_t ncp_task_init_sw_state(ncp_t *ncp)
         pPool->blocksVAend[2]   = pPool->poolVAEnd;
         strncpy(pPool->name.name,
                 pNcpTaskSwState->fixedPoolInfo.name.name,
-                sizeof(ncp_task_resource_name_t));        
+                sizeof(ncp_task_resource_name_t) - 1);
+	pPool->name.name[sizeof(ncp_task_resource_name_t) - 1] = 0;
     }        
     
     /*

@@ -42,7 +42,7 @@ handle_cmem_mpr(int interface, int page)
 	int i;
 	ncp_uint32_t ctl_35[4];
 
-	if ((interface > (sizeof(nodes) / sizeof(unsigned int))) ||
+	if ((interface >= (sizeof(nodes) / sizeof(unsigned int))) ||
 	    (3 < page) ||
 	    (3 != sysmem->crc_mode)) {
 		error("handl_smem_mpr(): Bad Input! (%d %d %d)\n",
@@ -116,7 +116,7 @@ handle_smem_mpr(int interface, int page)
 	ncp_uint32_t ctl_59[4];
 	ncp_uint32_t ctl_60[4];
 
-	if ((interface > (sizeof(nodes) / sizeof(unsigned int))) ||
+	if ((interface >= (sizeof(nodes) / sizeof(unsigned int))) ||
 	    (3 < page) ||
 	    (3 != sysmem->crc_mode)) {
 		error("handl_smem_mpr(): Bad Input! (%d %d %d)\n",

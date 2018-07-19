@@ -3772,6 +3772,10 @@ ncp_task_v2_output_queueset_bind(
             {
                 pThreadQueueSet->qsLock 
                     = ncp_nvm_malloc(sizeof(ncp_task_mutex_t));
+
+		if (NULL == pThreadQueueSet->qsLock)
+			NCP_CALL(NCP_ST_NO_MEMORY);
+
                 ncp_memset(pThreadQueueSet->qsLock, 0, sizeof(ncp_task_mutex_t));   
                 NCP_TASK_INIT_LOCK(pThreadQueueSet->qsLock, 1, 1);  
             }        
@@ -4149,6 +4153,10 @@ ncp_task_v2_mmap_prepare_nca_mmio(ncp_hdl_t ncpHdl, ncp_dev_hdl_t devHdl, ncp_bo
          */
         pNcpNcaV2_TaskSwState->taskIoResourceLock 
             = ncp_nvm_malloc(sizeof(ncp_task_mutex_t));
+
+	if (NULL == pNcpNcaV2_TaskSwState->taskIoResourceLock)
+		NCP_CALL(NCP_ST_NO_MEMORY);
+
         ncp_memset(pNcpNcaV2_TaskSwState->taskIoResourceLock, 
                0, 
                sizeof(ncp_task_mutex_t));        
@@ -5026,18 +5034,18 @@ ncp_task_v2_get_size_bits(
     
     ncp_st_t ncpStatus=NCP_ST_SUCCESS;
     
-    if (FALSE == pPoolEntry->isCpuManagedPool)
-    {
-        *pSizeBits = 0;
-        return(NCP_ST_SUCCESS);
-    }  
-     
     if ((NULL == pPoolEntry) || (NCP_POOL_KEY != pPoolEntry->poolKey))
     {
         debug("ncp_task_v2_CpuPool_free called with bad pool entry ptr =0x%p\r\n",pPoolEntry);
         NCP_CALL(NCP_ST_INVALID_HANDLE);
     }
     
+    if (FALSE == pPoolEntry->isCpuManagedPool)
+    {
+        *pSizeBits = 0;
+        return(NCP_ST_SUCCESS);
+    }  
+     
     if (   ((ncp_raw_addr_t)taskAddr >  (ncp_raw_addr_t)(pPoolEntry->pool_EndVA)) 
         || ((ncp_raw_addr_t)taskAddr <  (ncp_raw_addr_t)(pPoolEntry->pool_VA)))
     {

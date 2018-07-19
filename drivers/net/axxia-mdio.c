@@ -128,6 +128,13 @@ axxia_mdio_init(void)
 
 #ifdef CONFIG_AXXIA_MDIO0_BASE
 	dev0 = mdio_alloc();
+
+	if (NULL == dev0) {
+		debug("mdio_alloc() failed.\n");
+
+		return -1;
+	}
+
 	snprintf(dev0->name, MDIO_NAME_LEN, "axxia-mdio0");
 	dev0->priv = (void *)CONFIG_AXXIA_MDIO0_BASE;
 	dev0->read = axxia_mdio_read;
@@ -168,6 +175,13 @@ axxia_mdio_init(void)
 
 #ifdef CONFIG_AXXIA_MDIO1_BASE
 	dev1 = mdio_alloc();
+
+	if (NULL == dev1) {
+		debug("mdio_alloc() failed.\n");
+
+		return -1;
+	}
+
 	snprintf(dev1->name, MDIO_NAME_LEN, "axxia-mdio1");
 	dev1->priv = (void *)CONFIG_AXXIA_MDIO1_BASE;
 	dev1->read = axxia_mdio_read;

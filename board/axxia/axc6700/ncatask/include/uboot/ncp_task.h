@@ -165,11 +165,11 @@ typedef struct ncp_task_header_s
                                                (not including the header if combined) */
     ncp_uint32_t        reserved1:5;
     ncp_uint32_t        ptrCnt:3;         /*!< The number of PDUs in this task */
-    ncp_uint32_t        combinedHeader:1; /*!< True if the first PDU contains the header,
+    ncp_uint64_t        combinedHeader:1; /*!< True if the first PDU contains the header,
                                                 false if the header is in a separate buffer */
-    ncp_uint32_t        reserved0:3;
-    ncp_uint32_t        headerPoolMref:1; /*!< Combined or separate header */
-    ncp_uint32_t        headerPool:3;     /*!< The header buffer's pool */
+    ncp_uint64_t        reserved0:3;
+    ncp_uint64_t        headerPoolMref:1; /*!< Combined or separate header */
+    ncp_uint64_t        headerPool:3;     /*!< The header buffer's pool */
 
     /* Bytes 16-47 */
     ncp_uint8_t         params[32];       /*!< Task parameters */
