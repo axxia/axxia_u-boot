@@ -4279,6 +4279,19 @@ unsigned int set_watchdog_timeout(unsigned int);
   ==============================================================================
 */
 
+/*
+  If full access to all registers is required from Linux, all
+  transactions from the CPUs need to be made secure.  The AXI can be
+  configured to change the security level of a transaction to secure.
+  To do this, uncomment '#define FORCE_ALL_AXI_TO_SECURE' below.
+
+  Note that Dickens (CCN) transactions do not go through the AXI.  To
+  allow non secure masters to access the CCN registers, uncomment
+  '#define LEAVE_DICKENS_NONSECURE' below.
+*/
+
+/*#define FORCE_ALL_AXI_TO_SECURE*/
+
 #define LEAVE_DICKENS_NONSECURE
 
 /*

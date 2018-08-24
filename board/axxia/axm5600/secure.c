@@ -187,6 +187,10 @@ setup_security(void)
 
 #endif
 
+#ifdef FORCE_ALL_AXI_TO_SECURE
+	writel(2, (MMAP_SCB + 0x43800));
+#endif
+
 	/*
 	  Set up the TZC
 	*/

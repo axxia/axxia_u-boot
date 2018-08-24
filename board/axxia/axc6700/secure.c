@@ -207,6 +207,10 @@ setup_security(void)
 
 #endif
 
+#ifdef FORCE_ALL_AXI_TO_SECURE
+	writel(2, (MMAP_SCB + 0x43800));
+#endif
+
 #ifdef SYSCACHE_ONLY_MODE
         /*
           The RNI NIC-400 is currently configured to signal
