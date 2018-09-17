@@ -4292,7 +4292,7 @@ unsigned int set_watchdog_timeout(unsigned int);
 
 /*#define FORCE_ALL_AXI_TO_SECURE*/
 
-#define LEAVE_DICKENS_NONSECURE
+/*#define LEAVE_DICKENS_NONSECURE*/
 
 /*
   U-Boot will only use this much memory when relocating, loading
