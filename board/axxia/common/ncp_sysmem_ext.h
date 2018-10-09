@@ -183,7 +183,7 @@ typedef struct __attribute__((packed)) {
 #pragma pack(1)
 typedef struct {
 #else
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed, aligned(8))) {
 #endif
     unsigned char sdram_rtt_nom[4];		/* packed as intf-0 rank-0, intf-0 rank-1, intf-0 rank-2, intf-0 rank-3 */
     unsigned char sdram_rtt_wr[4];		/* packed as intf-0 rank-0, intf-0 rank-1, intf-0 rank-2, intf-0 rank-3 */

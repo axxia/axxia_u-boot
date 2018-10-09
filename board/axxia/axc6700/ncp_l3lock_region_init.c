@@ -87,7 +87,7 @@ ncp_l3lock_region_init (ncp_dev_hdl_t dev,
 		/* Convert the parameter region to a base value. */
 		base = ((ncp_uint64_t)(l3lock_params->region[j] &
 				       0x80000000) << 32);
-		base |= ((l3lock_params->region[j] & 0x00ffffff) << 20);
+		base |= ((ncp_uint64_t)(l3lock_params->region[j] & 0x00ffffff) << 20);
 
 		u = ((base >> 32) & 0xffffffff);
 		l = (base & 0xffffffff);
@@ -97,10 +97,10 @@ ncp_l3lock_region_init (ncp_dev_hdl_t dev,
 			writel(l, (DICKENS + (i * 0x10000) + 0x48 + (j * 8)));
 			writel(u, (DICKENS + (i * 0x10000) + 0x4c + (j * 8)));
 #else  /* __UBOOT__ */
-			ncr_write32(NCP_REGION_ID(0x1e0, i), 0x48 + (j * 8), 
-				    (ncp_uint32_t)(regValue & 0xFFFFFFFF));
+			ncr_write32(NCP_REGION_ID(0x1e0, i), 0x48 + (j * 8),
+				    (ncp_uint32_t)(base & 0xFFFFFFFF));
 			ncr_write32(NCP_REGION_ID(0x1e0, i), 0x4c + (j * 8),
-				    (ncp_uint32_t)((regValue >> 32) &
+				    (ncp_uint32_t)((base >> 32) &
 						   0xFFFFFFFF));
 #endif
 		}
