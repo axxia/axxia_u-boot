@@ -389,9 +389,9 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 	case clock_fab:
 		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &csw);
 
-		if (0 == (csw & 0x00000030)) {
+		if ((0 << 4) == (csw & 0x00000030)) {
 			*frequency = CLK_REF0 / 1000;
-		} else if (1 == (csw & 0x00000030)) {
+		} else if ((1 << 4) == (csw & 0x00000030)) {
 			ncr_read32(NCP_REGION_ID(0x155,3), 0x0, &prms);
 			*frequency = get_pll(prms, 1);
 		} else {
@@ -404,9 +404,9 @@ acp_clock_get(acp_clock_t clock, ncp_uint32_t *frequency)
 	case clock_system:
 		ncr_read32(NCP_REGION_ID(0x156,0), 0x4, &csw);
 
-		if (0 == (csw & 0x0000000c)) {
+		if ((0 << 2) == (csw & 0x0000000c)) {
 			*frequency = CLK_REF0 / 1000;
-		} else if (1 == (csw & 0x0000000c)) {
+		} else if ((1 << 2) == (csw & 0x0000000c)) {
 			ncr_read32(NCP_REGION_ID(0x155,5), 0x0, &prms);
 			*frequency = get_pll(prms, 1);
 		} else {
