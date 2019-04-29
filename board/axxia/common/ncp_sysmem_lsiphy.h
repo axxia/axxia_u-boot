@@ -169,14 +169,15 @@ typedef parameters_mem_t     ncp_sm_parms_t;
 #define NCP_SYSMEM_NUM_NODES 2
 #define NCP_EXTMEM_NUM_NODES 4
 
-#define NCP_CALL(s)						    \
+#define NCP_CALL(s) do {					    \
     ncpStatus = (s);						    \
     if (ncpStatus != NCP_ST_SUCCESS) {				    \
 	printf("ncpStatus=%d\n", (int) ncpStatus);		    \
 	printf("%s:%s:%d\n",					    \
 	       __FILE__, __FUNCTION__, __LINE__);		    \
 	goto ncp_return;					    \
-    }
+    }                                                               \
+} while (0)
 
 #define NCP_RETURN(f)						    \
     do {							    \
