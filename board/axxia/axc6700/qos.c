@@ -34,7 +34,8 @@ axxia_set_qos(void)
 	char *env_qos;
 	char env_name[20];
 	int i;
-	unsigned offsets[] = {
+	unsigned offsets_a0[] = {
+		/* A0 */
 		(0x45 << 16 | 0x210), /* xp5, dev1 */
 		(0x46 << 16 | 0x110), /* xp6, dev0 */
 		(0x48 << 16 | 0x210), /* xp8, dev1 */
@@ -44,10 +45,22 @@ axxia_set_qos(void)
 		(0x51 << 16 | 0x210), /* xp17, dev1 */
 		(0x40 << 16 | 0x110)  /* xp0, dev0 */
 	};
+	unsigned offsets_b0[] = {
+		/* B0 */
+		(0x40 << 16 | 0x110), /* xp0, dev0 */
+		(0x45 << 16 | 0x210), /* xp5, dev1 */
+		(0x46 << 16 | 0x110), /* xp6, dev0 */
+		(0x47 << 16 | 0x110), /* xp7, dev0 */
+		(0x49 << 16 | 0x110), /* xp9, dev0 */
+		(0x4e << 16 | 0x210), /* xp14, dev1 */
+		(0x50 << 16 | 0x110), /* xp16, dev0 */
+		(0x51 << 16 | 0x210)  /* xp17, dev1 */
+	};
 
 	for (i = 0; i < 8; ++i) {
 		sprintf(env_name, "cluster_%d_qos", i);
 		env_qos = getenv(env_name);
+		unsigned offset;
 
 		if (NULL != env_qos) {
 			unsigned long value = simple_strtoul(env_qos, NULL, 0);
@@ -58,9 +71,14 @@ axxia_set_qos(void)
 				continue;
 			}
 
-			writel(value, (DICKENS + offsets[i]));
+			if (0 != is_xlf_a0())
+				offset = offsets_a0[i];
+			else
+				offset = offsets_b0[i];
+
+			writel(value, (DICKENS + offset));
 			debug("QoS: Wrote 0x%lx to 0x%lx (%s)\n",
-			      value, (DICKENS + offsets[i]), env_name);
+			      value, (DICKENS + offset), env_name);
 		}
 	}
 

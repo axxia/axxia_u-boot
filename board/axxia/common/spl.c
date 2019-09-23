@@ -718,37 +718,6 @@ verify_image(struct spi_flash *flash,
 
 /*
   ------------------------------------------------------------------------------
-  is_xlf_a0
-
-  Detect A0 parts, which need to be configured slightly differently.
-  Display a warning if the part is unfused, and assume !A0 in that
-  case.
-*/
-
-#ifdef CONFIG_AXXIA_ANY_XLF
-
-int
-is_xlf_a0(void)
-{
-	if (0 == pfuse) {
-		unsigned int value;
-
-		/* Handle Un-Fused Parts */
-		ncr_read32(NCP_REGION_ID(0x16, 0xff), 0, &value);
-
-		if (1 == ((value >> 8) & 0x7))
-			return 0; /* B0 */
-	} else if (0 != ((pfuse & 0x700) >> 8)) {
-		return 0;	/* B0 */
-	}
-
-	return 1;		/* A0 */
-}
-
-#endif	/* CONFIG_AXXIA_ANY_XLF */
-
-/*
-  ------------------------------------------------------------------------------
   jump_to_monitor
 
   This function is intentional not made static to enable using a jtag
