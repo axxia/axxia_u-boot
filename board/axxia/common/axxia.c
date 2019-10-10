@@ -725,6 +725,37 @@ ft_board_setup(void *blob, bd_t *bd)
 		printf("%s:%d - Couldn't update memory banks!\n",
 		       __FILE__, __LINE__);
 
+	/*
+	  Add the DDR Retention Flag
+	*/
+
+	node = fdt_path_offset(blob, "/soc");
+
+	if (0 <= node)
+		rc = fdt_add_subnode(blob, node, "ddr_retention");
+	else
+		rc = -1;
+
+	if (-1 != rc) {
+		node = fdt_path_offset(blob, "/soc/ddr_retention");
+
+		if (0 <= node) {
+			if (0 == (global->flags & (1 << 5)))
+				tmp = cpu_to_fdt32(0);
+			else
+				tmp = cpu_to_fdt32(1);
+
+			rc = fdt_setprop(blob, node,
+					 "state", &tmp, sizeof(tmp));
+		} else {
+			rc = -1;
+		}
+	}
+
+	if (0 > rc)
+		printf("%s:%d - Couldn't add DDR retention flag!\n",
+		       __FILE__, __LINE__);
+
 #ifdef CONFIG_HW_WATCHDOG
 #ifndef LEAVE_WATCHDOG_ON
 	stop_watchdog();
