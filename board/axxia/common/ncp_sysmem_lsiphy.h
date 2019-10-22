@@ -179,6 +179,7 @@ typedef parameters_mem_t     ncp_sm_parms_t;
     }                                                               \
 } while (0)
 
+
 #define NCP_RETURN(f)						    \
     do {							    \
         ncpStatus = (f);					    \

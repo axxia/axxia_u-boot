@@ -1442,14 +1442,16 @@ ncp_sm_denali_2041_init_56xx(
             reg80.mr2_data_0 = (parms->per_smem[smId].sdram_rtt_wr[0] << 9);
             reg80.mr2_data_0 &= ~(0x38);
             reg80.mr2_data_0 |= (tmp << 3);
-            if (parms->high_temp_dram == TRUE)
-            {
-                reg80.mr2_data_0 |= 0x80;
-            }
-            else
-            {
-                reg80.mr2_data_0 |= 0x40;
-            }
+            /*if (parms->high_temp_dram == TRUE)
+              {
+              reg80.mr2_data_0 |= 0x80;
+              }
+              else
+              {
+              reg80.mr2_data_0 |= 0x40;
+              }*/
+            /* setting A7:A6 LP_ASR to Auto;adjusts period based on temperature */
+            reg80.mr2_data_0 |= 0xC0;
             if (parms->crc_mode & 0x1)
             {
                 reg80.mr2_data_0 |= 0x1000;
@@ -1676,14 +1678,16 @@ ncp_sm_denali_2041_init_56xx(
         reg88.mr2_data_1 = (parms->per_smem[smId].sdram_rtt_wr[1] << 9);
         reg88.mr2_data_1 &= ~(0x38);
         reg88.mr2_data_1 |= (tmp << 3);
-        if (parms->high_temp_dram == TRUE)
-        {
-            reg88.mr2_data_1 |= 0x80;
-        }
-        else
-        {
-            reg88.mr2_data_1 |= 0x40;
-        }
+        /*if (parms->high_temp_dram == TRUE)
+          {
+          reg88.mr2_data_1 |= 0x80;
+          }
+          else
+          {
+          reg88.mr2_data_1 |= 0x40;
+          }*/
+        /* setting A7:A6 LP_ASR to Auto;adjusts period based on temperature */
+        reg88.mr2_data_1 |= 0xC0;
         if (parms->crc_mode & 0x1)
         {
             reg88.mr2_data_1 |= 0x1000;
@@ -2315,14 +2319,16 @@ ncp_sm_denali_2041_init_56xx(
         reg351.mr2_data_2 = (parms->per_smem[smId].sdram_rtt_wr[2] << 9);
         reg351.mr2_data_2 &= ~(0x38);
         reg351.mr2_data_2 |= (tmp << 3);
-        if (parms->high_temp_dram == TRUE)
-        {
-            reg351.mr2_data_2 |= 0x80;
-        }
-        else
-        {
-            reg351.mr2_data_2 |= 0x40;
-        }
+        /*if (parms->high_temp_dram == TRUE)
+          {
+          reg351.mr2_data_2 |= 0x80;
+          }
+          else
+          {
+          reg351.mr2_data_2 |= 0x40;
+          }*/
+        /* setting A7:A6 LP_ASR to Auto;adjusts period based on temperature */
+        reg351.mr2_data_2 |= 0xC0;
         if (parms->crc_mode & 0x1)
         {
             reg351.mr2_data_2 |= 0x1000;
@@ -2450,14 +2456,16 @@ ncp_sm_denali_2041_init_56xx(
         reg359.mr2_data_3 = (parms->per_smem[smId].sdram_rtt_wr[3] << 9);
         reg359.mr2_data_3 &= ~(0x38);
         reg359.mr2_data_3 |= (tmp << 3);
-        if (parms->high_temp_dram == TRUE)
-        {
-            reg359.mr2_data_3 |= 0x80;
-        }
-        else
-        {
-            reg359.mr2_data_3 |= 0x40;
-        }
+        /*if (parms->high_temp_dram == TRUE)
+          {
+          reg359.mr2_data_3 |= 0x80;
+          }
+          else
+          {
+          reg359.mr2_data_3 |= 0x40;
+          }*/
+        /* setting A7:A6 LP_ASR to Auto;adjusts period based on temperature */
+        reg359.mr2_data_3 |= 0xC0;
         if (parms->crc_mode & 0x1)
         {
             reg359.mr2_data_3 |= 0x1000;

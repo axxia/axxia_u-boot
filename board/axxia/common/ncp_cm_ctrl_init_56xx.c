@@ -155,12 +155,7 @@ ncp_cm_denali_init_56xx(
     ncp_uint32_t tmp1=0;
 
 #ifndef UBOOT
-    NCP_TRACEPOINT (Intel_AXXIA_ncp_sysmem, ncp_func_call5, NCP_MSG_CALL,
-            "%s dev=%" PRIx64 " cmNode=%" PRIx64 " parms=%" PRIx64
-            " ctm=%" PRIx64 "\n", __func__,
-            (ncp_uint64_t) (ncp_uintptr_t) (dev), (ncp_uint64_t) (cmNode),
-            (ncp_uint64_t) (ncp_uintptr_t) (parms),
-            (ncp_uint64_t) (ncp_uintptr_t) (ncp_uintptr_t) (ctm));
+    NCP_TRACEPOINT(Intel_AXXIA_ncp_sysmem, ncp_func_call5, NCP_MSG_CALL, "%s dev=%"PRIx64" cmNode=%"PRIx64" parms=%"PRIx64" ctm=%"PRIx64"\n", __func__, (ncp_uint64_t)(ncp_uintptr_t)(dev),(ncp_uint64_t)(cmNode),(ncp_uint64_t)(ncp_uintptr_t)(parms),(ncp_uint64_t)(ncp_uintptr_t)(ncp_uintptr_t)(ctm));
 #endif
     /* this below is only for sm_parms's per_smem[n] access */
     switch (cmNode) {
@@ -666,14 +661,16 @@ ncp_cm_denali_init_56xx(
         reg44.mr2_data_0 = (parms->per_smem[cmId].sdram_rtt_wr[0] << 9);
         reg44.mr2_data_0 &= ~(0x38);
         reg44.mr2_data_0 |= (tmp << 3);
-        if (parms->high_temp_dram == TRUE)
-        {
-            reg44.mr2_data_0 |= 0x80;
-        }
-        else
-        {
-            reg44.mr2_data_0 |= 0x40;
-        }
+        /*if (parms->high_temp_dram == TRUE)
+          {
+          reg44.mr2_data_0 |= 0x80;
+          }
+          else
+          {
+          reg44.mr2_data_0 |= 0x40;
+          }*/
+        /* setting A7:A6 LP_ASR to Auto;adjusts period based on temperature */
+        reg44.mr2_data_0 |= 0xC0;
         if (parms->crc_mode & 0x1)
         {
             reg44.mr2_data_0 |= 0x1000;
@@ -936,14 +933,16 @@ ncp_cm_denali_init_56xx(
         reg52.mr2_data_1 = (parms->per_smem[cmId].sdram_rtt_wr[1] << 9);
         reg52.mr2_data_1 &= ~(0x38);
         reg52.mr2_data_1 |= (tmp << 3);
-        if (parms->high_temp_dram == TRUE)
-        {
-            reg52.mr2_data_1 |= 0x80;
-        }
-        else
-        {
-            reg52.mr2_data_1 |= 0x40;
-        }
+        /*if (parms->high_temp_dram == TRUE)
+          {
+          reg52.mr2_data_1 |= 0x80;
+          }
+          else
+          {
+          reg52.mr2_data_1 |= 0x40;
+          }*/
+        /* setting A7:A6 LP_ASR to Auto;adjusts period based on temperature */
+        reg52.mr2_data_1 |= 0xC0;
         if (parms->crc_mode & 0x1)
         {
             reg52.mr2_data_1 |= 0x1000;
@@ -1342,9 +1341,7 @@ ncp_cm_denali_init_56xx(
 
     NCP_RETURN_LABEL
 #ifndef UBOOT
-        NCP_TRACEPOINT (Intel_AXXIA_ncp_sysmem, ncp_func_call2, NCP_MSG_CALL,
-                "%s ncpStatus=%" PRIx64 "\n", __func__,
-                (ncp_uint64_t) ncpStatus);
+    NCP_TRACEPOINT(Intel_AXXIA_ncp_sysmem, ncp_func_call2, NCP_MSG_CALL,"%s ncpStatus=%"PRIx64"\n", __func__, (ncp_uint64_t)ncpStatus);
 #endif
         return ncpStatus;
 }
