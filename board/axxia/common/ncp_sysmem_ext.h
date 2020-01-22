@@ -227,8 +227,6 @@ typedef enum {
 #define NCP_CHIP_ACP15xx            15       /* AXE15xx, aka X15    */
 #define NCP_CHIP_ACP35xx            16       /* AXM35xx, aka X3     */
 #define NCP_CHIP_ACPXLF             24       /* XLF */
-
-extern unsigned ddrRecovery;
 #else 
 /* RTE code */
 typedef ncp_uint32_t 
@@ -415,6 +413,10 @@ ncp_sysmem_init_lsiphy (ncp_dev_hdl_t dev,
 
 NCP_API ncp_st_t
 ncp_sysmem_init_synopphy (ncp_dev_hdl_t dev, 
+                      ncp_uint32_t smId, 
+                      ncp_sm_parms_t *parms);
+NCP_API ncp_st_t
+ncp_sysmem_init_synopphy_self_refresh (ncp_dev_hdl_t dev, 
                       ncp_uint32_t smId, 
                       ncp_sm_parms_t *parms);
 NCP_API ncp_st_t

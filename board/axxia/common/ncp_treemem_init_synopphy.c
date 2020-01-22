@@ -2841,9 +2841,9 @@ ncp_cm_ddr4_post_phy_training_mc_setup(
 	reg86.int_mask = 0x0;
 #else
     	if (parms->dram_class == NCP_SM_DDR4_MODE) {
-		reg86.int_mask = 0x3d5ff701;
+		reg86.int_mask = 0x3ddff701;
 	} else {
-		reg86.int_mask = 0x7f5ff701;
+		reg86.int_mask = 0x7fdff701;
 	}
 #endif /* __UBOOT__ */
 	ncr_write32(ddrRegion, NCP_MEMORY_CONTROLLER_DENALI_CTL_86, *((ncp_uint32_t *)&reg86));

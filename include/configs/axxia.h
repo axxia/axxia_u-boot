@@ -61,6 +61,9 @@ void ncr_sysmem_init_mode_disable(void);
 #define PARAMETERS_GLOBAL_SET_SMEM                0x00000008
 #define PARAMETERS_GLOBAL_SET_CMEM                0x00000010
 #define PARAMETERS_GLOBAL_ENABLE_RETENTION        0x00000020
+#ifdef CONFIG_AXXIA_ANY_XLF
+#define PARAMETERS_GLOBAL_ENABLE_SELF_REFRESH     0x00000040
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 #define PARAMETERS_GLOBAL_ENABLE_SW_MEM_ECC_TEST  0x00400000
 #define PARAMETERS_GLOBAL_ENABLE_SW_MEM_MTEST     0x00800000
 #define PARAMETERS_GLOBAL_ENABLE_SW_MEM_ADDR_TEST 0x01000000
@@ -4054,10 +4057,20 @@ unsigned int spi_get_per_clk(void);
 */
 
 #ifndef __ASSEMBLY__
+
 int sysmem_reset(void);
 unsigned long long sysmem_size(void);
 unsigned long long cmem_size(void);
-#endif
+
+extern unsigned int syscon_0x0dc;
+extern unsigned int syscon_0x100;
+
+enum ddr_init_type {cold, planned, unplanned};
+
+enum ddr_init_type get_ddr_init_type(void);
+const char *get_ddr_init_name(enum ddr_init_type);
+
+#endif	/* __ASSEMBLY__ */
 
 /*
   ==============================================================================
@@ -4110,10 +4123,14 @@ int ncr_read(ncp_uint32_t, ncp_uint32_t, ncp_uint32_t, int, void *);
 int ncr_read8( ncp_uint32_t, ncp_uint32_t, unsigned char * );
 int ncr_read16( ncp_uint32_t, ncp_uint32_t, unsigned short * );
 int ncr_read32( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t * );
+int ncr_block_read32( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t *,
+		      ncp_uint32_t, ncp_uint32_t );
 int ncr_write(ncp_uint32_t, ncp_uint32_t, ncp_uint32_t, int, void *);
 int ncr_write8( ncp_uint32_t, ncp_uint32_t, unsigned char );
 int ncr_write16( ncp_uint32_t, ncp_uint32_t, unsigned short );
 int ncr_write32( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t );
+int ncr_block_write32( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t *,
+		       ncp_uint32_t, ncp_uint32_t );
 int ncr_modify32( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t, ncp_uint32_t );
 int ncr_and( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t );
 int ncr_or( ncp_uint32_t, ncp_uint32_t, ncp_uint32_t );

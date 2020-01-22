@@ -40,6 +40,10 @@ ifdef CONFIG_AXXIA_EMU
 obj-y += sysmem_emulation.o
 endif
 
+ifndef CONFIG_AXXIA_EMU
+obj-y += ncp_sysmem_init_synopphy_self_refresh.o
+endif
+
 endif
 
 ################################################################################

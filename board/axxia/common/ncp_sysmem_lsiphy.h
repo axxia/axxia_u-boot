@@ -107,8 +107,17 @@ do { \
 #define ncr_write32(_region, _offset, _value) \
     NCP_CALL(ncp_write32(dev, _region, _offset, _value));
 
+#define ncr_dev_write32(_region, _offset, _value) \
+    NCP_CALL(ncp_dev_write32(dev, _region, _offset, _value));
+
 #define ncr_read32(_region, _offset, _value) \
     NCP_CALL(ncp_read32(dev, _region, _offset, _value));
+
+#define ncr_block_read32(_region, _offset, b, c, f) \
+    NCP_CALL(ncp_block_read32(dev, _region, _offset, b, c, f));
+
+#define ncr_block_write32(_region, _offset, b, c, f) \
+    NCP_CALL(ncp_block_write32(dev, _region, _offset, b, c, f));
 
 #define ncr_modify32(_region, _offset, _mask, _value) \
     do { \
@@ -178,7 +187,6 @@ typedef parameters_mem_t     ncp_sm_parms_t;
 	goto ncp_return;					    \
     }                                                               \
 } while (0)
-
 
 #define NCP_RETURN(f)						    \
     do {							    \

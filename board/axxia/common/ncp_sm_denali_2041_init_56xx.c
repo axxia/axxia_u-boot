@@ -1128,7 +1128,7 @@ ncp_sm_denali_2041_init_56xx(
     reg46.enable_quick_srefresh = 1;
     reg46.srefresh_exit_no_refresh = 0;
 #ifdef UBOOT
-    reg46.pwrup_srefresh_exit = (ddrRecovery == TRUE) ? 1 : 0;
+    reg46.pwrup_srefresh_exit = (cold != get_ddr_init_type()) ? 1 : 0;
 #else
     reg46.pwrup_srefresh_exit = (parms->ddrRecovery == TRUE) ? 1 : 0;
 #endif

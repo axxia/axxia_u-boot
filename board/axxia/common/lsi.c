@@ -61,3 +61,87 @@ is_xlf_a0(void)
 }
 
 #endif	/* CONFIG_AXXIA_ANY_XLF */
+
+/*
+  ------------------------------------------------------------------------------
+  get_ddr_init_type
+
+  Return the type of the current DDR init.
+*/
+
+#ifdef CONFIG_AXXIA_ANY_XLF
+
+/*
+  The 6700 Version
+*/
+
+enum ddr_init_type
+get_ddr_init_type(void)
+{
+#ifdef CONFIG_MEMORY_RETENTION
+	if (0 == (global->flags & PARAMETERS_GLOBAL_ENABLE_RETENTION))
+		/* DDR Retention is NOT Enabled... so 'cold' */
+		return cold;
+
+	if (0 == (global->flags & PARAMETERS_GLOBAL_ENABLE_SELF_REFRESH)) {
+		/* DDR Retention is Enabled, but Self Refresh is NOT */
+		if (0 != (syscon_0x0dc & (1 << 0)))
+			return planned;
+	} else {
+		/* All Modes are Enabled */
+		if (0 != (syscon_0x0dc & (1 << 0)))
+			return planned;
+
+		if (0 != (syscon_0x100 & (1 << 12)))
+			return unplanned;
+	}
+#endif	/* CONFIG_MEMORY_RETENTION */
+	return cold;
+}
+#else  /* CONFIG_AXXIA_ANY_XLF */
+
+/*
+  The 5600 Version
+*/
+
+enum ddr_init_type
+get_ddr_init_type(void)
+{
+#ifdef CONFIG_MEMORY_RETENTION
+	if (0 == (global->flags & PARAMETERS_GLOBAL_ENABLE_RETENTION))
+		/* DDR Retention is NOT Enabled... so 'cold' */
+		return cold;
+	else
+		return planned;
+#endif	/* CONFIG_MEMORY_RETENTION */
+	return cold;
+}
+#endif /* CONFIG_AXXIA_ANY_XLF */
+
+const char *
+get_ddr_init_name(enum ddr_init_type type)
+{
+	int i = 0;
+	static char *names[] = {
+		"Unknown",
+		"Cold Reset",
+		"Planned Retention Reset",
+		"Unplanned Retention Reset"
+	};
+
+	switch (type) {
+	case cold:
+		i = 1;
+		break;
+	case planned:
+		i = 2;
+		break;
+	case unplanned:
+		i = 3;
+		break;
+	default:
+		break;
+	}
+
+	return names[i];
+}

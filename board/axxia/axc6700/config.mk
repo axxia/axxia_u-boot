@@ -8,7 +8,7 @@ ifdef CROSS_LIBS
 PLATFORM_LDFLAGS += -L $(CROSS_LIBS)
 endif
 
-KBUILD_CFLAGS += -I./board/$(BOARDDIR)/../common
+KBUILD_CFLAGS += -I./board/$(BOARDDIR) -I./board/$(BOARDDIR)/ncatask/include -I./board/$(BOARDDIR)/../common
 
 ifdef AXXIA_VERSION
 KBUILD_CFLAGS += -DAXXIA_VERSION='"$(AXXIA_VERSION)"'

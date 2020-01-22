@@ -31,6 +31,12 @@
 #include "../axc6700/ncp_l3lock_region.h"
 #endif
 
+extern unsigned int syscon_0x0dc;
+extern unsigned int syscon_0x100;
+
+ncp_st_t
+ncp_sysmem_init_synopphy_self_refresh(ncp_dev_hdl_t, ncp_uint32_t, ncp_sm_parms_t *);
+
 ncp_st_t
 ncp_sysmem_init_synopphy(ncp_dev_hdl_t, ncp_uint32_t, ncp_sm_parms_t *);
 
@@ -402,6 +408,7 @@ sysmem_init(void)
 	int rc = NCP_ST_SUCCESS;
 #ifdef CONFIG_AXXIA_ANY_XLF
 	int ncpStatus = NCP_ST_SUCCESS;
+	int self_refresh = 0;
 #endif
 
 #ifdef DISPLAY_PARAMETERS
@@ -461,13 +468,19 @@ sysmem_init(void)
 	if ((sysmem->interface_sel > 0) &&
 	    (sysmem->interface_sel != 0xf) && !(sysmem->interface_sel % 3))
 		NCP_CALL(NCP_ST_INVALID_VALUE);
+	
+	if (unplanned == get_ddr_init_type())
+		self_refresh = 1;
 
 	/*
 	  supports DRAM configuration of the kind x1,x2,x3,x4
 	*/
 	for (i = 0; i < 4; i++)
 		if (0 != (sysmem->interface_sel & (1 << i))) {
-                        rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
+			if (0 != self_refresh)
+				rc = ncp_sysmem_init_synopphy_self_refresh(NULL, i, sysmem);
+			else
+				rc = ncp_sysmem_init_synopphy(NULL, i, sysmem);
 
 			if (NCP_ST_SUCCESS != rc) {
 				printf("Initializing Sysmem Node 0x%x Failed!\n",
@@ -476,11 +489,11 @@ sysmem_init(void)
 				return -1;
 			}
 		}
+
 #endif
 
-
-    /* set up the Dickens HNF */
-    dickens_init();
+	/* set up the Dickens HNF */
+	dickens_init();
 
 	/* Initialize the ELMs */
 	rc = ncp_elm_init(NULL, sysmem);

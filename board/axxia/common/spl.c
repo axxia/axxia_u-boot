@@ -31,6 +31,9 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+unsigned int syscon_0x0dc __attribute__ ((section ("data")));
+unsigned int syscon_0x100 __attribute__ ((section ("data")));
+
 /*
   ==============================================================================
   ==============================================================================
@@ -929,8 +932,7 @@ load_image(void)
 		  Was the last reset caused by a watchdog timeout?
 		*/
 
-		watchdog_timeout = readl(SYSCON + 0xdc);
-		watchdog_timeout = (0 != (watchdog_timeout & 0x4));
+		watchdog_timeout = (0 != (syscon_0x0dc & 0x4));
 
 		/*
 		  Is this a secure boot?
@@ -1209,6 +1211,7 @@ board_init_f(ulong dummy)
 
 	/* read and clear reset status (write one to clear) */
 	value = readl(SYSCON + 0x100);
+	syscon_0x100 = value;
 	writel(value, (SYSCON + 0x100));
 
 	/*
@@ -1261,16 +1264,22 @@ board_init_f(ulong dummy)
 #endif
 
 	/*
-	 * Set bit 2 of 0xdc if the last reset was caused by a watchdog
-	 * timeout; otherwise, clear it.
+	  Set bit 2 of 0xdc if the last reset was caused by a watchdog
+	  timeout; otherwise, clear it.  Also clear bit 0 if it was
+	  set (used to indicate a planned ddr retention reset).
 	 */
 
 	pvalue = readl(SYSCON + 0xdc);
+	syscon_0x0dc = pvalue;
 
 	if (0 != (value & 0x66))
 		pvalue |= 0x4;
 	else
 		pvalue &= ~0x4;
+
+#ifdef CONFIG_MEMORY_RETENTION
+	pvalue &= ~(1 << 0);
+#endif
 
 	writel(pvalue, (SYSCON + 0xdc));
 	gd->baudrate = CONFIG_BAUDRATE;

@@ -1138,6 +1138,32 @@ ncr_read32(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t *value)
 	return 0;
 }
 
+/*
+  ------------------------------------------------------------------------------
+  ncr_block_read32
+*/
+
+int
+ncr_block_read32(ncp_uint32_t region, ncp_uint32_t offset,
+		 ncp_uint32_t *to, ncp_uint32_t count, ncp_uint32_t flags )
+{
+	int rc;
+
+	if (0 != flags)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	while (0 < count--) {
+		rc = ncr_read32(region, offset, to);
+
+		if (0 != rc)
+			return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+		offset += sizeof(ncp_uint32_t);
+		++to;
+	}
+
+	return 0;
+}
 
 /*
   ------------------------------------------------------------------------------
@@ -1482,6 +1508,33 @@ ncr_write32(ncp_uint32_t region, ncp_uint32_t offset, ncp_uint32_t value)
 
 	if (0 != rc)
 		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	return 0;
+}
+
+/*
+  ------------------------------------------------------------------------------
+  ncr_block_write32
+*/
+
+int
+ncr_block_write32(ncp_uint32_t region, ncp_uint32_t offset,
+		  ncp_uint32_t *to, ncp_uint32_t count, ncp_uint32_t flags )
+{
+	int rc;
+
+	if (0 != flags)
+		return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+	while (0 < count--) {
+		rc = ncr_write32(region, offset, *to);
+
+		if (0 != rc)
+			return ncr_fail(__FILE__, __FUNCTION__, __LINE__);
+
+		offset += sizeof(ncp_uint32_t);
+		++to;
+	}
 
 	return 0;
 }

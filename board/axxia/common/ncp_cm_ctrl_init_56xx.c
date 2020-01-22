@@ -155,7 +155,12 @@ ncp_cm_denali_init_56xx(
     ncp_uint32_t tmp1=0;
 
 #ifndef UBOOT
-    NCP_TRACEPOINT(Intel_AXXIA_ncp_sysmem, ncp_func_call5, NCP_MSG_CALL, "%s dev=%"PRIx64" cmNode=%"PRIx64" parms=%"PRIx64" ctm=%"PRIx64"\n", __func__, (ncp_uint64_t)(ncp_uintptr_t)(dev),(ncp_uint64_t)(cmNode),(ncp_uint64_t)(ncp_uintptr_t)(parms),(ncp_uint64_t)(ncp_uintptr_t)(ncp_uintptr_t)(ctm));
+    NCP_TRACEPOINT (Intel_AXXIA_ncp_sysmem, ncp_func_call5, NCP_MSG_CALL,
+            "%s dev=%" PRIx64 " cmNode=%" PRIx64 " parms=%" PRIx64
+            " ctm=%" PRIx64 "\n", __func__,
+            (ncp_uint64_t) (ncp_uintptr_t) (dev), (ncp_uint64_t) (cmNode),
+            (ncp_uint64_t) (ncp_uintptr_t) (parms),
+            (ncp_uint64_t) (ncp_uintptr_t) (ncp_uintptr_t) (ctm));
 #endif
     /* this below is only for sm_parms's per_smem[n] access */
     switch (cmNode) {
@@ -458,7 +463,7 @@ ncp_cm_denali_init_56xx(
 
     ncr_read32(ddrRegion, (ncp_uint32_t) NCP_MEMORY_CONTROLLER_DENALI_CTL_28, (ncp_uint32_t *)&reg28);
 #ifdef UBOOT
-    reg28.pwrup_srefresh_exit = (ddrRecovery == TRUE) ? 1 : 0;
+    reg28.pwrup_srefresh_exit = (cold != get_ddr_init_type()) ? 1 : 0;
 #else
     reg28.pwrup_srefresh_exit = (parms->ddrRecovery == TRUE) ? 1 : 0;
 #endif
@@ -1341,7 +1346,9 @@ ncp_cm_denali_init_56xx(
 
     NCP_RETURN_LABEL
 #ifndef UBOOT
-    NCP_TRACEPOINT(Intel_AXXIA_ncp_sysmem, ncp_func_call2, NCP_MSG_CALL,"%s ncpStatus=%"PRIx64"\n", __func__, (ncp_uint64_t)ncpStatus);
+        NCP_TRACEPOINT (Intel_AXXIA_ncp_sysmem, ncp_func_call2, NCP_MSG_CALL,
+                "%s ncpStatus=%" PRIx64 "\n", __func__,
+                (ncp_uint64_t) ncpStatus);
 #endif
         return ncpStatus;
 }
