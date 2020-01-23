@@ -205,7 +205,7 @@ serdes_clock_en(void)
 */
 
 int
-clocks_init( int ddrRecovery )
+clocks_init( int skip_ddr_plls )
 {
 	ncp_uint32_t value, i;
 
@@ -240,7 +240,7 @@ clocks_init( int ddrRecovery )
 	  ----------------------------------------------------------------------
 	*/
 
-	if (ddrRecovery == 0) {
+	if (skip_ddr_plls == 0) {
 		/* sm0pll */
 		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 6),
 				       clocks->sm0pll_flags,
@@ -257,7 +257,7 @@ clocks_init( int ddrRecovery )
 				       clocks->sm1pll_psd))
 			return -1;
 	} else {
-		printf("skipping SM PLL setup for ddrRecovery\n");
+		printf("skipping SM PLL setup (DDR Recovery)\n");
 	}
 
 	/* cpupll */
@@ -357,7 +357,7 @@ clocks_init( int ddrRecovery )
 */
 
 int
-clocks_init( int ddrRecovery )
+clocks_init( int skip_ddr_plls )
 {
 	ncp_uint32_t value, i;
 
@@ -401,7 +401,7 @@ clocks_init( int ddrRecovery )
 	  ----------------------------------------------------------------------
 	*/
 
-	if (ddrRecovery == 0) {
+	if (skip_ddr_plls == 0) {
 		/* sm0pll */
 		if (0 != pll_init_frac(NCP_REGION_ID(0x155, 0),
 				       clocks->sm0pll_flags,
@@ -431,7 +431,7 @@ clocks_init( int ddrRecovery )
 				       clocks->sm3pll_psd))
 			return -1;
 	} else {
-		printf("skipping SM PLL setup for ddrRecovery\n");
+		printf("skipping SM PLL setup (DDR Recovery)\n");
 	}
 
 	/* cpupll */
