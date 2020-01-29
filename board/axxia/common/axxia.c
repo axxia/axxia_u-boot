@@ -229,17 +229,6 @@ board_early_init_f(void)
 	printf("\nRunning in System Cache");
 #endif
 
-	{
-		ncp_uint32_t per_clock; 
-		int rc;
-
-		rc = acp_clock_get(clock_peripheral,
-				   (ncp_uint32_t *)&per_clock);
-
-		printf("\nrc=%d per_clock=0x%x/%u\n",
-		       rc, per_clock, per_clock);
-	}
-
 	asm volatile("mrs %0, CurrentEL" : "=r" (el));
 
 	if (0xc == el)
