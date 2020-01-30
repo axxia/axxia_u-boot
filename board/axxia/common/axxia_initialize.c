@@ -145,21 +145,10 @@ axxia_initialize(void)
 	(void)sysmem_size();
 
 #ifdef CONFIG_MEMORY_RETENTION
-#ifdef CONFIG_AXXIA_ANY_XLF
-	if (0 != (global->flags & PARAMETERS_GLOBAL_ENABLE_RETENTION) &&
-	    0 != (global->flags & PARAMETERS_GLOBAL_ENABLE_SELF_REFRESH)) {
-		printf("DDR Retention, with Self Refresh, Enabled\n");
-	} else if (0 != (global->flags & PARAMETERS_GLOBAL_ENABLE_RETENTION)) {
-		printf("DDR Retention, without Self Refresh, Enabled\n");
-	} else {
-		printf("DDR Retention Disabled\n");
-	}
-#else  /* CONFIG_AXXIA_ANY_XLF */
 	if (0 != (global->flags & PARAMETERS_GLOBAL_ENABLE_RETENTION))
 		printf("DDR Retention Enabled\n");
 	else
 		printf("DDR Retention Disabled\n");
-#endif /* CONFIG_AXXIA_ANY_XLF */
 #else  /* CONFIG_MEMORY_RETENTION */
 	printf("DDR Retention Disabled\n");
 #endif	/* CONFIG_MEMORY_RETENTION */
