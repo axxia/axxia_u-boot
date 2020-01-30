@@ -169,6 +169,7 @@ axxia_initialize(void)
 		printf("DDR Init Type: %s\n",
 		       get_ddr_init_name(get_ddr_init_type()));
 
+#ifdef CONFIG_AXXIA_ANY_XLF
 		if (planned == get_ddr_init_type() ||
 		    unplanned == get_ddr_init_type()) {
 			/*
@@ -180,6 +181,7 @@ axxia_initialize(void)
 			writel(0, (SYSCON + 0x204c));
 			writel(0, (SYSCON + 0x2000));
 		}
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 
 		if (planned == get_ddr_init_type()) {
 			ncp_uint32_t version_save;
@@ -221,6 +223,7 @@ axxia_initialize(void)
 		}
 
 #ifdef CONFIG_MEMORY_RETENTION
+#ifdef CONFIG_AXXIA_ANY_XLF
 		/*
 		  If memory retention is enabled, set reset_chip_wo_sm
 		  in reset_wo_sm.
@@ -228,6 +231,7 @@ axxia_initialize(void)
 		writel(0xab, (SYSCON + 0x2000));
 		writel(1, (SYSCON + 0x204c));
 		writel(0, (SYSCON + 0x2000));
+#endif	/* CONFIG_AXXIA_ANY_XLF */
 #endif	/* CONFIG_MEMORY_RETENTION */
 	}
 #elif defined(CONFIG_TARGET_EMULATION)

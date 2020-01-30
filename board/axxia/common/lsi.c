@@ -108,11 +108,11 @@ enum ddr_init_type
 get_ddr_init_type(void)
 {
 #ifdef CONFIG_MEMORY_RETENTION
-	if (0 == (global->flags & PARAMETERS_GLOBAL_ENABLE_RETENTION))
-		/* DDR Retention is NOT Enabled... so 'cold' */
-		return cold;
-	else
+	if (0 != (global->flags & PARAMETERS_GLOBAL_ENABLE_RETENTION) &&
+	    0 != (syscon_0x0dc & (1 << 0)))
 		return planned;
+	else
+		return cold;
 #endif	/* CONFIG_MEMORY_RETENTION */
 	return cold;
 }
