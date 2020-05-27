@@ -504,7 +504,7 @@ sysmem_init(void)
 		return -1;
 	}
 
-	if (0 != sysmem->enableECC) {
+	if (cold == get_ddr_init_type() && 0 != sysmem->enableECC) {
 		rc = ncp_elm_sysmem_fill(NULL, sysmem);
 
 		if (NCP_ST_SUCCESS != rc) {
