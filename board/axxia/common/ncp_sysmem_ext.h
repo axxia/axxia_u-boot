@@ -438,6 +438,8 @@ ncp_elm_init( ncp_dev_hdl_t dev, ncp_sm_parms_t *parms);
 
 NCP_API ncp_st_t 
 ncp_elm_sysmem_fill( ncp_dev_hdl_t dev, ncp_sm_parms_t *parms);
+NCP_API ncp_st_t 
+ncp_elm_sysmem_fill_partial( ncp_dev_hdl_t dev, ncp_sm_parms_t *parms, ncp_uint16_t numCacheLines);
 
 
 NCP_API ncp_st_t

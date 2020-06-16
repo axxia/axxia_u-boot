@@ -265,4 +265,81 @@ NCP_RETURN_LABEL
 
 }
 
+ncp_st_t
+ncp_elm_sysmem_fill_partial(
+        ncp_dev_hdl_t dev,
+        ncp_sm_parms_t *parms,
+        ncp_uint16_t numCacheLines)
+{
+    ncp_st_t         ncpStatus = NCP_ST_SUCCESS;
+    int i;
+
+    NCP_COMMENT("Initializing Partial system memory for ECC");
+
+    if (parms->version == NCP_CHIP_ACP56xx) 
+    {
+	for( i = 0; i < parms->num_interfaces; ++ i ) {
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x40, 0x00000000);
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x44, numCacheLines);
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x48, 0x0);
+	}
+	/* separating init and poll saves significant time during config */
+	for( i = 0; i < parms->num_interfaces; ++ i ) {
+    	    /* poll elmi for completion */
+    	    ncr_poll(NCP_REGION_ID(0x167, i), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
+	}
+    }
+    else if (parms->version == NCP_CHIP_ACPXLF) 
+    {
+	for( i = 0; i < parms->num_interfaces; ++ i ) {
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x40, 0x00000000);
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x44, numCacheLines);
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x48, 0x0);
+	}
+	/* separating init and poll saves significant time during config */
+	for( i = 0; i < parms->num_interfaces; ++ i ) {
+    	    /* poll elmi for completion */
+    	    ncr_poll(NCP_REGION_ID(0x167, i), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
+	}
+    }
+    else
+    {
+#ifndef __UBOOT__
+        /* elm0 */
+        ncr_write32(NCP_REGION_ID(0x158, 0), 0x40, 0x00000000);
+        ncr_write32(NCP_REGION_ID(0x158, 0), 0x44, numCacheLines);
+        ncr_write32(NCP_REGION_ID(0x158, 0), 0x48, 0x0);
+
+        /* elm1 */
+        if (parms->num_interfaces == 2 ) {
+            ncr_write32(NCP_REGION_ID(0x159, 0), 0x40, 0x00000000);
+            ncr_write32(NCP_REGION_ID(0x159, 0), 0x44, numCacheLines);
+            ncr_write32(NCP_REGION_ID(0x159, 0), 0x48, 0x0);
+        }
+    
+        /* poll elm0 for completion */
+        ncr_poll(NCP_REGION_ID(0x158, 0), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
+    
+        /* poll elm1 for completion */
+        if (parms->num_interfaces == 2 ) {
+            ncr_poll(NCP_REGION_ID(0x159, 0), 0x44, 0x1fffffff, 0x0, 10000, 1000000);    
+        }
+
+	/* If ECC is enabled, clear the status bits. */
+	if ((0 != parms->enableECC) && (intrStatFn != NULL)) {
+		/* clear ECC interrupt status bits */
+		for( i = 0; i < parms->num_interfaces; ++ i ) {
+                    intrStatFn(dev, 
+                        NCP_REGION_ID (sm_nodes[i], 0), 
+                        NCP_SM_DENALI_V2_ECC_INTR_BITS);
+
+		}
+	}
+#endif	/* __UBOOT__ */
+    }
+
+NCP_RETURN_LABEL
+    return ncpStatus;
+
+}
 

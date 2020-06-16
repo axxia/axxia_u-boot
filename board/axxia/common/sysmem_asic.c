@@ -49,6 +49,9 @@ ncp_elm_init(ncp_dev_hdl_t, ncp_sm_parms_t *);
 ncp_st_t
 ncp_elm_sysmem_fill(ncp_dev_hdl_t, ncp_sm_parms_t *);
 
+ncp_st_t
+ncp_elm_sysmem_fill_partial(ncp_dev_hdl_t, ncp_sm_parms_t *,  ncp_uint16_t numCacheLines);
+
 #ifdef DISPLAY_PARAMETERS
 static void
 display_mem_parameters(const char *title, parameters_mem_t *parameters)
@@ -492,6 +495,16 @@ sysmem_init(void)
 
 #endif
 
+#if 0
+    /* TEMP!!!
+     * pause the ARM for external host debug 
+     */
+	if (unplanned == get_ddr_init_type()) {
+            printf("Unplanned reset!! putting the ARM to sleep before Dickens init!!!\n");
+            while (1) ;
+    }
+#endif
+
 	/* set up the Dickens HNF */
 	dickens_init();
 
@@ -504,15 +517,26 @@ sysmem_init(void)
 		return -1;
 	}
 
-	if (cold == get_ddr_init_type() && 0 != sysmem->enableECC) {
-		rc = ncp_elm_sysmem_fill(NULL, sysmem);
+	if (0 != sysmem->enableECC) {
+	    if (cold == get_ddr_init_type()) {
+	    	rc = ncp_elm_sysmem_fill(NULL, sysmem);
 
-		if (NCP_ST_SUCCESS != rc) {
-			printf("Filling Sysmem Failed!\n");
+    		if (NCP_ST_SUCCESS != rc) {
+    			printf("Filling Sysmem Failed!\n");
 
-			return -1;
-		}
-	}
+    			return -1;
+    		}
+        }
+        else if (unplanned == get_ddr_init_type()) { 
+	    	rc = ncp_elm_sysmem_fill_partial(NULL, sysmem, 7);
+
+    		if (NCP_ST_SUCCESS != rc) {
+    			printf("Filling Sysmem Failed!\n");
+
+    			return -1;
+    		}
+        }
+    }
 
 #if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
 	ncp_l3lock_region_info = (ncp_l3lock_region_info_t *)
@@ -538,6 +562,17 @@ sysmem_init(void)
 	*/
 
 	sysmem->version = version_save;
+
+#if 0
+    /* TEMP!!!
+     * pause the ARM for external host debug 
+     */
+	if (unplanned == get_ddr_init_type()) {
+            printf("Unplanned reset!! putting the ARM to sleep...\n");
+            while (1) ;
+    }
+#endif
+
 
 	NCP_RETURN_LABEL;
 
