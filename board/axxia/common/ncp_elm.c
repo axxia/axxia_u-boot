@@ -81,21 +81,21 @@ ncp_elm_init(
 
         if ((parms->version == NCP_CHIP_ACP56xx) ||
             (parms->version == NCP_CHIP_ACPXLF))
-	{
-	    ncp_uint32_t	mungebits = 0, mungemask = 0, cscount = 0;
-	    ncp_denali_DENALI_CTL_128_5600_t reg128 = {0};
+    {
+        ncp_uint32_t    mungebits = 0, mungemask = 0, cscount = 0;
+        ncp_denali_DENALI_CTL_128_5600_t reg128 = {0};
 
-	    ncr_read32(NCP_REGION_ID(0x22, NCP_SYSMEM_TGT_DENALI), NCP_DENALI_CTL_128_5600, (ncp_uint32_t *)&reg128);
+        ncr_read32(NCP_REGION_ID(0x22, NCP_SYSMEM_TGT_DENALI), NCP_DENALI_CTL_128_5600, (ncp_uint32_t *)&reg128);
 
-      	    if (4 == parms->num_ranks_per_interface)
-        	cscount = 2;
-      	    else if (2 == parms->num_ranks_per_interface)
-        	cscount = 1;
-      	    else if (1 == parms->num_ranks_per_interface)
-        	cscount = 0;
+              if (4 == parms->num_ranks_per_interface)
+            cscount = 2;
+              else if (2 == parms->num_ranks_per_interface)
+            cscount = 1;
+              else if (1 == parms->num_ranks_per_interface)
+            cscount = 0;
 
-	    mungebits = 4 - (reg128.bg_rotate_en) - ((parms->sdram_device_width == 2) ? 1 /*x16*/ : 0/*x8*/) + cscount;
-	    mungemask = ((1 << mungebits) - 1);
+        mungebits = 4 - (reg128.bg_rotate_en) - ((parms->sdram_device_width == 2) ? 1 /*x16*/ : 0/*x8*/) + cscount;
+        mungemask = ((1 << mungebits) - 1);
 
             switch (parms->num_ranks_per_interface)
             {
@@ -112,11 +112,11 @@ ncp_elm_init(
                     break;
     
                 default:
-		    NCP_CALL (NCP_ST_ERROR);
+            NCP_CALL (NCP_ST_ERROR);
             }
-	}
-	else
-	{
+    }
+    else
+    {
             switch (parms->num_ranks_per_interface)
             {
                 case 1 : 
@@ -131,7 +131,7 @@ ncp_elm_init(
                     xorMask = 0x1f << (ddrBits - 26);
                     break;
             }
-	}	
+    }    
 
         /*
          * now calculate the value for the hash_mask 
@@ -149,22 +149,22 @@ ncp_elm_init(
         mungeValue = (xorMask << 16) | hash_mask;
         /* set ELM munge regsiter */
         if (parms->version == NCP_CHIP_ACP56xx) 
-	{
+    {
             ncr_write32 (NCP_REGION_ID(0x167, 0), 0x1c, mungeValue);
             ncr_write32 (NCP_REGION_ID(0x167, 1), 0x1c, mungeValue);
-	}
+    }
         else if (parms->version == NCP_CHIP_ACPXLF) 
-	{
+    {
             ncr_write32 (NCP_REGION_ID(0x167, 0), 0x1c, mungeValue);
             ncr_write32 (NCP_REGION_ID(0x167, 1), 0x1c, mungeValue);
             ncr_write32 (NCP_REGION_ID(0x167, 2), 0x1c, mungeValue);
             ncr_write32 (NCP_REGION_ID(0x167, 3), 0x1c, mungeValue);
-	}
-	else
-	{	
+    }
+    else
+    {    
             ncr_write32 (NCP_REGION_ID(0x158, 0), 0x1c, mungeValue);
             ncr_write32 (NCP_REGION_ID(0x159, 0), 0x1c, mungeValue);
-	}
+    }
     }
 
 NCP_RETURN_LABEL
@@ -200,29 +200,29 @@ ncp_elm_sysmem_fill(
 
     if (parms->version == NCP_CHIP_ACP56xx) 
     {
-	for( i = 0; i < parms->num_interfaces; ++ i ) {
+    for( i = 0; i < parms->num_interfaces; ++ i ) {
             ncr_write32(NCP_REGION_ID(0x167, i), 0x40, 0x00000000);
             ncr_write32(NCP_REGION_ID(0x167, i), 0x44, numCacheLines);
             ncr_write32(NCP_REGION_ID(0x167, i), 0x48, 0x0);
-	}
-	/* separating init and poll saves significant time during config */
-	for( i = 0; i < parms->num_interfaces; ++ i ) {
-    	    /* poll elmi for completion */
-    	    ncr_poll(NCP_REGION_ID(0x167, i), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
-	}
+    }
+    /* separating init and poll saves significant time during config */
+    for( i = 0; i < parms->num_interfaces; ++ i ) {
+            /* poll elmi for completion */
+            ncr_poll(NCP_REGION_ID(0x167, i), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
+    }
     }
     else if (parms->version == NCP_CHIP_ACPXLF) 
     {
-	for( i = 0; i < parms->num_interfaces; ++ i ) {
+    for( i = 0; i < parms->num_interfaces; ++ i ) {
             ncr_write32(NCP_REGION_ID(0x167, i), 0x40, 0x00000000);
             ncr_write32(NCP_REGION_ID(0x167, i), 0x44, numCacheLines);
             ncr_write32(NCP_REGION_ID(0x167, i), 0x48, 0x0);
-	}
-	/* separating init and poll saves significant time during config */
-	for( i = 0; i < parms->num_interfaces; ++ i ) {
-    	    /* poll elmi for completion */
-    	    ncr_poll(NCP_REGION_ID(0x167, i), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
-	}
+    }
+    /* separating init and poll saves significant time during config */
+    for( i = 0; i < parms->num_interfaces; ++ i ) {
+            /* poll elmi for completion */
+            ncr_poll(NCP_REGION_ID(0x167, i), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
+    }
     }
     else
     {
@@ -247,17 +247,17 @@ ncp_elm_sysmem_fill(
             ncr_poll(NCP_REGION_ID(0x159, 0), 0x44, 0x1fffffff, 0x0, 10000, 1000000);    
         }
 
-	/* If ECC is enabled, clear the status bits. */
-	if ((0 != parms->enableECC) && (intrStatFn != NULL)) {
-		/* clear ECC interrupt status bits */
-		for( i = 0; i < parms->num_interfaces; ++ i ) {
+    /* If ECC is enabled, clear the status bits. */
+    if ((0 != parms->enableECC) && (intrStatFn != NULL)) {
+        /* clear ECC interrupt status bits */
+        for( i = 0; i < parms->num_interfaces; ++ i ) {
                     intrStatFn(dev, 
                         NCP_REGION_ID (sm_nodes[i], 0), 
                         NCP_SM_DENALI_V2_ECC_INTR_BITS);
 
-		}
-	}
-#endif	/* __UBOOT__ */
+        }
+    }
+#endif    /* __UBOOT__ */
     }
 
 NCP_RETURN_LABEL
@@ -272,35 +272,65 @@ ncp_elm_sysmem_fill_partial(
         ncp_uint16_t numCacheLines)
 {
     ncp_st_t         ncpStatus = NCP_ST_SUCCESS;
+    ncp_uint32_t     totCacheLines ;
+    ncp_uint32_t     rankOffset;
+    ncp_uint32_t     init_cache_addr;
     int i;
+    int rank;
+
+    ncp_uint32_t  fill_vals[4][2] = { 
+        {0x0000baba, 0x0011baba},
+        {0x1100baba, 0x1111baba},
+        {0x2200baba, 0x2211baba},
+        {0x3300baba, 0x3311baba}};
+
 
     NCP_COMMENT("Initializing Partial system memory for ECC");
 
+    if (4 == parms->num_interfaces)
+      totCacheLines = (ncp_uint32_t)(parms->totalSize >> 8);
+    else if (2 == parms->num_interfaces)
+      totCacheLines = (ncp_uint32_t)(parms->totalSize >> 7);
+    else
+      totCacheLines = (ncp_uint32_t)(parms->totalSize >> 6);
+
+    rankOffset = totCacheLines / parms->num_ranks_per_interface;
+
     if (parms->version == NCP_CHIP_ACP56xx) 
-    {
-	for( i = 0; i < parms->num_interfaces; ++ i ) {
-            ncr_write32(NCP_REGION_ID(0x167, i), 0x40, 0x00000000);
-            ncr_write32(NCP_REGION_ID(0x167, i), 0x44, numCacheLines);
-            ncr_write32(NCP_REGION_ID(0x167, i), 0x48, 0x0);
-	}
-	/* separating init and poll saves significant time during config */
-	for( i = 0; i < parms->num_interfaces; ++ i ) {
-    	    /* poll elmi for completion */
-    	    ncr_poll(NCP_REGION_ID(0x167, i), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
-	}
+    { 
+      for (rank = 0; rank < parms->num_ranks_per_interface; rank++) {
+        for( i = 0; i < parms->num_interfaces; ++ i ) {
+            init_cache_addr = rank * rankOffset;
+            printf("SM%d rank%d : init %d lines at 0x%08x\n", i, rank, numCacheLines, init_cache_addr);
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x40, init_cache_addr);
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x44, numCacheLines - 1);
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x48, fill_vals[i][rank]);
+        }
+
+        /* poll for each SMEM to complete before advancing to the next rank */
+        for( i = 0; i < parms->num_interfaces; ++ i ) {
+            /* poll elmi for completion */
+            ncr_poll(NCP_REGION_ID(0x167, i), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
+        }
+      }
     }
     else if (parms->version == NCP_CHIP_ACPXLF) 
     {
-	for( i = 0; i < parms->num_interfaces; ++ i ) {
-            ncr_write32(NCP_REGION_ID(0x167, i), 0x40, 0x00000000);
-            ncr_write32(NCP_REGION_ID(0x167, i), 0x44, numCacheLines);
-            ncr_write32(NCP_REGION_ID(0x167, i), 0x48, 0x0);
-	}
-	/* separating init and poll saves significant time during config */
-	for( i = 0; i < parms->num_interfaces; ++ i ) {
-    	    /* poll elmi for completion */
-    	    ncr_poll(NCP_REGION_ID(0x167, i), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
-	}
+      for (rank = 0; rank < parms->num_ranks_per_interface; rank++) {
+        for( i = 0; i < parms->num_interfaces; ++ i ) {
+            init_cache_addr = rank * rankOffset;
+            printf("SM%d rank%d : init %d lines at 0x%08x\n", i, rank, numCacheLines, init_cache_addr);
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x40, init_cache_addr);
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x44, numCacheLines - 1);
+            ncr_write32(NCP_REGION_ID(0x167, i), 0x48, fill_vals[i][rank]);
+        }
+
+        /* poll for each SMEM to complete before advancing to the next rank */
+        for( i = 0; i < parms->num_interfaces; ++ i ) {
+            /* poll elmi for completion */
+            ncr_poll(NCP_REGION_ID(0x167, i), 0x44, 0x1fffffff, 0x0, 10000, 1000000);
+        }
+      }
     }
     else
     {
@@ -325,17 +355,17 @@ ncp_elm_sysmem_fill_partial(
             ncr_poll(NCP_REGION_ID(0x159, 0), 0x44, 0x1fffffff, 0x0, 10000, 1000000);    
         }
 
-	/* If ECC is enabled, clear the status bits. */
-	if ((0 != parms->enableECC) && (intrStatFn != NULL)) {
-		/* clear ECC interrupt status bits */
-		for( i = 0; i < parms->num_interfaces; ++ i ) {
+    /* If ECC is enabled, clear the status bits. */
+    if ((0 != parms->enableECC) && (intrStatFn != NULL)) {
+        /* clear ECC interrupt status bits */
+        for( i = 0; i < parms->num_interfaces; ++ i ) {
                     intrStatFn(dev, 
                         NCP_REGION_ID (sm_nodes[i], 0), 
                         NCP_SM_DENALI_V2_ECC_INTR_BITS);
 
-		}
-	}
-#endif	/* __UBOOT__ */
+        }
+    }
+#endif    /* __UBOOT__ */
     }
 
 NCP_RETURN_LABEL

@@ -52,6 +52,8 @@ ncp_elm_sysmem_fill(ncp_dev_hdl_t, ncp_sm_parms_t *);
 ncp_st_t
 ncp_elm_sysmem_fill_partial(ncp_dev_hdl_t, ncp_sm_parms_t *,  ncp_uint16_t numCacheLines);
 
+#define SYSMEM_PARTIAL_FILL_CACHELINES 4
+
 #ifdef DISPLAY_PARAMETERS
 static void
 display_mem_parameters(const char *title, parameters_mem_t *parameters)
@@ -495,28 +497,16 @@ sysmem_init(void)
 
 #endif
 
-#if 0
-    /* TEMP!!!
-     * pause the ARM for external host debug 
-     */
-	if (unplanned == get_ddr_init_type()) {
-            printf("Unplanned reset!! putting the ARM to sleep before Dickens init!!!\n");
-            while (1) ;
-    }
-#endif
-
 	/* set up the Dickens HNF */
 	dickens_init();
 
-	/* Initialize the ELMs */
-	rc = ncp_elm_init(NULL, sysmem);
-
-	if (NCP_ST_SUCCESS != rc) {
-		printf("Initializing ELMs Failed!\n");
-
-		return -1;
-	}
-
+    /* 
+     * if ECC is enabled then fill memory to initialize it.
+     * for the unplanned retention reset we only need to clear
+     * the first two cachelines.
+     *
+     * This needs to be done before enabling ELM munging
+     */
 	if (0 != sysmem->enableECC) {
 	    if (cold == get_ddr_init_type()) {
 	    	rc = ncp_elm_sysmem_fill(NULL, sysmem);
@@ -528,7 +518,8 @@ sysmem_init(void)
     		}
         }
         else if (unplanned == get_ddr_init_type()) { 
-	    	rc = ncp_elm_sysmem_fill_partial(NULL, sysmem, 7);
+	    	rc = ncp_elm_sysmem_fill_partial(NULL, sysmem, 
+                    SYSMEM_PARTIAL_FILL_CACHELINES);
 
     		if (NCP_ST_SUCCESS != rc) {
     			printf("Filling Sysmem Failed!\n");
@@ -537,6 +528,16 @@ sysmem_init(void)
     		}
         }
     }
+
+	/* now initialize the ELM munging */
+	rc = ncp_elm_init(NULL, sysmem);
+
+	if (NCP_ST_SUCCESS != rc) {
+		printf("Initializing ELMs Failed!\n");
+
+		return -1;
+	}
+
 
 #if defined(CONFIG_AXXIA_XLF_EMU) || defined(CONFIG_AXXIA_XLF)
 	ncp_l3lock_region_info = (ncp_l3lock_region_info_t *)
@@ -562,17 +563,6 @@ sysmem_init(void)
 	*/
 
 	sysmem->version = version_save;
-
-#if 0
-    /* TEMP!!!
-     * pause the ARM for external host debug 
-     */
-	if (unplanned == get_ddr_init_type()) {
-            printf("Unplanned reset!! putting the ARM to sleep...\n");
-            while (1) ;
-    }
-#endif
-
 
 	NCP_RETURN_LABEL;
 
