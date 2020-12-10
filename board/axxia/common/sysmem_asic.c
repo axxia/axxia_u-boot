@@ -502,8 +502,8 @@ sysmem_init(void)
 
     /* 
      * if ECC is enabled then fill memory to initialize it.
-     * for the unplanned retention reset we only need to clear
-     * the first two cachelines.
+     * For the unplanned retention reset we clear the first
+     * four physical cache lines per rank and per interface.
      *
      * This needs to be done before enabling ELM munging
      */
