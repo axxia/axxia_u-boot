@@ -199,6 +199,10 @@ report_errors(unsigned long sbb_interrupt_status, int verbose)
   Assumes SBB is enabled...
 */
 
+#ifdef CONFIG_ANY_56XX
+#define SBB_LOCKUP_WA
+#endif	/* CONFIG_ANY_56XX */
+
 static int
 run_sbb_function(int function,
 		 unsigned long *parameters, int number_of_parameters,
@@ -206,6 +210,9 @@ run_sbb_function(int function,
 {
 	int i;
 	unsigned long value;
+#ifdef SBB_LOCKUP_WA
+	unsigned long aux_ctl;
+#endif
 
 	/* Get the semaphore. */
 	if (0 != lock_sbb())
@@ -219,11 +226,25 @@ run_sbb_function(int function,
 	/* Clear the interrupt status registers. */
 	writel(0xffffffff, (SBB_BASE + 0xe04));
 
+#ifdef SBB_LOCKUP_WA
+	if (0 != axxia_ccn_get((0x86 << 16) + 0x500, &aux_ctl))
+		return -1;
+
+	if (0 != axxia_ccn_set((0x86 << 16) + 0x500, 0x9))
+		return -1;
+#endif
+
 	/* Write the function. */
 	writel(function, (SBB_BASE + 0x804));
 
-	if (function != readl(SBB_BASE + 0x804))
+	if (function != readl(SBB_BASE + 0x804)) {
+#ifdef SBB_LOCKUP_WA
+		if (0 != axxia_ccn_set((0x86 << 16) + 0x500, aux_ctl))
+			return -1;
+#endif
+
 		return -1;
+	}
 
 	/* Wait for the "done" bit. */
 	value = readl(SBB_BASE + 0xe04);
@@ -232,12 +253,21 @@ run_sbb_function(int function,
 		udelay(1000);
 
 		if (ctrlc()) {
+#ifdef SBB_LOCKUP_WA
+			if (0 != axxia_ccn_set((0x86 << 16) + 0x500, aux_ctl))
+				return -1;
+#endif
 			unlock_sbb();
 			return -1;
 		}
 
 		value = readl(SBB_BASE + 0xe04);
 	}
+
+#ifdef SBB_LOCKUP_WA
+	if (0 != axxia_ccn_set((0x86 << 16) + 0x500, aux_ctl))
+		return -1;
+#endif
 
 	/* Release the semaphore. */
 	unlock_sbb();
