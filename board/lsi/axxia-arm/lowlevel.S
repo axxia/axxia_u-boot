@@ -506,6 +506,15 @@ wa_811981_stuck:
 wa_811981_okay:
 
 	@@
+	@ Iniitalize the ACTLR2 register (all cores).
+
+set_actlr2:
+
+	mrc 	p15, 1, r0, c15, c0, 4
+	orr 	r0, r0, #(1 << 0)
+	mcr 	p15, 1, r0, c15, c0, 4
+
+	@@
 	@ Iniitalize the ACTLR register (all cores).
 
 #ifdef CVE_2017_5715
@@ -517,15 +526,6 @@ set_actlr:
 	orr 	r0, r0, #(1 << 0)
 	mcr 	p15, 0, r0, c1, c0, 1
 #endif /* CVE_2017_5715 */
-
-	@@
-	@ Iniitalize the ACTLR2 register (all cores).
-
-set_actlr2:
-
-	mrc 	p15, 1, r0, c15, c0, 4
-	orr 	r0, r0, #(1 << 0)
-	mcr 	p15, 1, r0, c15, c0, 4
 
 #ifndef CONFIG_SPL_BUILD
 
