@@ -1,4 +1,4 @@
-PLATFORM_RELFLAGS += -fno-strict-aliasing -Werror
+PLATFORM_RELFLAGS += -fno-strict-aliasing -Werror -Wno-address-of-packed-member
 
 ifdef CROSS_LIBS
 PLATFORM_LDFLAGS += -L $(CROSS_LIBS)

@@ -20,7 +20,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA 02111-1307 USA
 #
-PLATFORM_RELFLAGS += -fno-common -ffixed-r8 -msoft-float
+PLATFORM_RELFLAGS += -fno-pic -fno-common -ffixed-r8 -msoft-float
 
 # DS-5 doesn't support dwarf 4 until version 5.16.
 PLATFORM_RELFLAGS += -gdwarf-3
