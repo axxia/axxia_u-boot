@@ -3778,6 +3778,8 @@ ncp_task_v2_output_queueset_bind(
             {
                 pThreadQueueSet->qsLock 
                     = ncp_nvm_malloc(sizeof(ncp_task_mutex_t));
+		if (!pThreadQueueSet->qsLock)
+			NCP_CALL(NCP_ST_NO_MEMORY);
                 ncp_memset(pThreadQueueSet->qsLock, 0, sizeof(ncp_task_mutex_t));   
                 NCP_TASK_INIT_LOCK(pThreadQueueSet->qsLock, 1, 1);  
             }        
@@ -5044,6 +5046,11 @@ ncp_task_v2_get_size_bits(
     int i;
     
     ncp_st_t ncpStatus=NCP_ST_SUCCESS;
+
+    if (NULL == pPoolEntry) {
+	    NCP_LOG(NCP_MSG_ERROR, "Pool entry ptr is NULL\r\n");
+	    NCP_CALL(NCP_ST_INVALID_VALUE);
+    }
     
     if (FALSE == pPoolEntry->isCpuManagedPool)
     {

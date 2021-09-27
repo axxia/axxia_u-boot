@@ -54,7 +54,7 @@ decode_range(const char *input, int minimum, int maximum, int range[2])
 	char *string;
 	char *token;
 
-	string = malloc(strlen(input + 1));
+	string = malloc(strlen(input) + 1);
 
 	if (NULL == string)
 		return -1;
