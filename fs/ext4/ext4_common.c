@@ -387,7 +387,7 @@ restart:
 	for (direct_blk_idx = 0; direct_blk_idx < INDIRECT_BLOCKS;
 	     direct_blk_idx++) {
 		root_blknr = read_allocated_block(g_parent_inode,
-						  direct_blk_idx);
+						  direct_blk_idx, NULL);
 		if (root_blknr == 0) {
 			first_block_no_of_root = previous_blknr;
 			break;
@@ -526,7 +526,7 @@ static int search_dir(struct ext2_inode *parent_inode, char *dirname)
 	/* read the block no allocated to a file */
 	for (direct_blk_idx = 0; direct_blk_idx < INDIRECT_BLOCKS;
 		direct_blk_idx++) {
-		blknr = read_allocated_block(parent_inode, direct_blk_idx);
+		blknr = read_allocated_block(parent_inode, direct_blk_idx, NULL);
 		if (blknr == 0)
 			goto fail;
 
@@ -841,7 +841,7 @@ int ext4fs_filename_check(char *filename)
 	/* read the block no allocated to a file */
 	for (direct_blk_idx = 0; direct_blk_idx < INDIRECT_BLOCKS;
 		direct_blk_idx++) {
-		blknr = read_allocated_block(g_parent_inode, direct_blk_idx);
+		blknr = read_allocated_block(g_parent_inode, direct_blk_idx, NULL);
 		if (blknr == 0)
 			break;
 		inodeno = check_filename(filename, blknr);
@@ -1411,7 +1411,7 @@ void ext4fs_allocate_blocks(struct ext2_inode *file_inode,
 #endif
 
 static struct ext4_extent_header *ext4fs_get_extent_block
-	(struct ext2_data *data, char *buf,
+	(struct ext2_data *data, struct ext_block_cache *cache,
 		struct ext4_extent_header *ext_block,
 		uint32_t fileblock, int log2_blksz)
 {
@@ -1441,11 +1441,10 @@ static struct ext4_extent_header *ext4fs_get_extent_block
 		block = le16_to_cpu(index[i].ei_leaf_hi);
 		block = (block << 32) + le32_to_cpu(index[i].ei_leaf_lo);
 
-		if (ext4fs_devread((lbaint_t)block << log2_blksz, 0, blksz,
-				   buf))
-			ext_block = (struct ext4_extent_header *)buf;
-		else
-			return 0;
+		block <<= log2_blksz;
+		if (!ext_cache_read(cache, (lbaint_t)block, blksz))
+			return NULL;
+		ext_block = (struct ext4_extent_header *)cache->buf;
 	}
 }
 
@@ -1502,7 +1501,8 @@ int ext4fs_read_inode(struct ext2_data *data, int ino, struct ext2_inode *inode)
 	return 1;
 }
 
-long int read_allocated_block(struct ext2_inode *inode, int fileblock)
+long int read_allocated_block(struct ext2_inode *inode, int fileblock,
+			      struct ext_block_cache *cache)
 {
 	long int blknr;
 	int blksz;
@@ -1518,20 +1518,26 @@ long int read_allocated_block(struct ext2_inode *inode, int fileblock)
 		- get_fs()->dev_desc->log2blksz;
 
 	if (le32_to_cpu(inode->flags) & EXT4_EXTENTS_FL) {
-		char *buf = zalloc(blksz);
-		if (!buf)
-			return -ENOMEM;
+		struct ext_block_cache *c, cd;
 		struct ext4_extent_header *ext_block;
 		struct ext4_extent *extent;
 		int i = -1;
+
+		if (cache) {
+			c = cache;
+		} else {
+			c = &cd;
+			ext_cache_init(c);
+		}
 		ext_block =
-			ext4fs_get_extent_block(ext4fs_root, buf,
+			ext4fs_get_extent_block(ext4fs_root, c,
 						(struct ext4_extent_header *)
 						inode->b.blocks.dir_blocks,
 						fileblock, log2_blksz);
 		if (!ext_block) {
 			printf("invalid extent block\n");
-			free(buf);
+			if (!cache)
+				ext_cache_fini(c);
 			return -EINVAL;
 		}
 
@@ -1545,19 +1551,23 @@ long int read_allocated_block(struct ext2_inode *inode, int fileblock)
 		if (--i >= 0) {
 			fileblock -= le32_to_cpu(extent[i].ee_block);
 			if (fileblock >= le16_to_cpu(extent[i].ee_len)) {
-				free(buf);
+				if (!cache)
+					ext_cache_fini(c);
 				return 0;
 			}
+
 
 			start = le16_to_cpu(extent[i].ee_start_hi);
 			start = (start << 32) +
 					le32_to_cpu(extent[i].ee_start_lo);
-			free(buf);
+			if (!cache)
+				ext_cache_fini(c);
 			return fileblock + start;
 		}
 
 		printf("Extent Error\n");
-		free(buf);
+		if (!cache)
+			ext_cache_fini(c);
 		return -1;
 	}
 

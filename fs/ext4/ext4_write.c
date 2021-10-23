@@ -438,7 +438,7 @@ static int ext4fs_delete_file(int inodeno)
 		memcpy(&(node_inode->inode), &inode, sizeof(struct ext2_inode));
 
 		for (i = 0; i < no_blocks; i++) {
-			blknr = read_allocated_block(&(node_inode->inode), i);
+			blknr = read_allocated_block(&(node_inode->inode), i, NULL);
 			bg_idx = blknr / blk_per_grp;
 			if (fs->blksz == 1024) {
 				remainder = blknr % blk_per_grp;
@@ -483,7 +483,7 @@ static int ext4fs_delete_file(int inodeno)
 		if (inode.size % fs->blksz)
 			no_blocks++;
 		for (i = 0; i < no_blocks; i++) {
-			blknr = read_allocated_block(&inode, i);
+			blknr = read_allocated_block(&inode, i, NULL);
 			bg_idx = blknr / blk_per_grp;
 			if (fs->blksz == 1024) {
 				remainder = blknr % blk_per_grp;
@@ -688,7 +688,7 @@ void ext4fs_deinit(void)
 		ext4fs_read_inode(ext4fs_root, EXT2_JOURNAL_INO,
 				  &inode_journal);
 		blknr = read_allocated_block(&inode_journal,
-					EXT2_JOURNAL_SUPERBLOCK);
+					EXT2_JOURNAL_SUPERBLOCK, NULL);
 		ext4fs_devread((lbaint_t)blknr * fs->sect_perblk, 0, fs->blksz,
 			       temp_buff);
 		jsb = (struct journal_superblock_t *)temp_buff;
@@ -764,7 +764,7 @@ static int ext4fs_write_file(struct ext2_inode *file_inode,
 		long int blknr;
 		int blockend = fs->blksz;
 		int skipfirst = 0;
-		blknr = read_allocated_block(file_inode, i);
+		blknr = read_allocated_block(file_inode, i, NULL);
 		if (blknr < 0)
 			return -1;
 
