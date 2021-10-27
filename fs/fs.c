@@ -308,7 +308,7 @@ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	}
 	puts("\n");
 
-	sprintf(buf, "0x%x", len_read);
+	sprintf(buf, "%x", len_read);
 	setenv("filesize", buf);
 
 	return 0;
