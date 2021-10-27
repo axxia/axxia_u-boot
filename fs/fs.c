@@ -314,6 +314,25 @@ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	return 0;
 }
 
+static inline int fs_exists_unsupported(const char *filename)
+{
+	return 0;
+}
+
+int file_exists(const char *dev_type, const char *dev_part, const char *file,
+        int fstype)
+{
+	if (fs_set_blk_dev(dev_type, dev_part, fstype))
+		return 0;
+
+	if (fs_type == FS_TYPE_EXT)
+		return ext4fs_exists(file);
+	else if (fs_type == FS_TYPE_FAT)
+		return fat_exists(file);
+
+	return fs_exists_unsupported(file);
+}
+
 int do_ls(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	int fstype)
 {

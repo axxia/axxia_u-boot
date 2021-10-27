@@ -59,6 +59,8 @@ int fs_read(const char *filename, ulong addr, int offset, int len);
  */
 int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 		int fstype, int cmdline_base);
+int file_exists(const char *dev_type, const char *dev_part, const char *file,
+		int fstype);
 int do_ls(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 		int fstype);
 

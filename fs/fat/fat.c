@@ -1240,6 +1240,13 @@ int file_fat_detectfs(void)
 	return 0;
 }
 
+int fat_exists(const char *filename)
+{
+	int ret;
+	ret = do_fat_read_at(filename, 0, NULL, 0, LS_NO);
+	return ret != -1;
+}
+
 int file_fat_ls(const char *dir)
 {
 	return do_fat_read(dir, NULL, 0, LS_YES);
