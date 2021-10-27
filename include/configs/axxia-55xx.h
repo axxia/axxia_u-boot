@@ -153,6 +153,8 @@
 
 #define CONFIG_SYS_HUSH_PARSER
 
+#define CONFIG_USB_EHCI_TXFIFO_THRESH 0x10
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
 	"console=ttyO2,115200n8\0" \
