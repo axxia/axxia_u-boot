@@ -151,6 +151,8 @@
 #define CONFIG_FAT
 #define CONFIG_CMD_FAT
 
+#define CONFIG_SYS_HUSH_PARSER
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x82000000\0" \
 	"console=ttyO2,115200n8\0" \
