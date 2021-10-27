@@ -23,6 +23,7 @@
 
 #include <common.h>
 #include <command.h>
+#include <fs.h>
 
 static int do_test(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -60,6 +61,8 @@ static int do_test(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			adv = 1;
 		else if (strcmp(ap[0], "-z") == 0 || strcmp(ap[0], "-n") == 0)
 			adv = 2;
+		else if (strcmp(ap[0], "-e") == 0)
+			adv = 4;
 		else
 			adv = 3;
 
@@ -129,6 +132,10 @@ static int do_test(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			else if (last_cmp == 1)
 				expr = last_expr && expr;
 			last_cmp = -1;
+		}
+		if (adv == 4) {
+			expr = file_exists(ap[1], ap[2], ap[3], FS_TYPE_ANY);
+			break;
 		}
 
 		ap += adv; left -= adv;

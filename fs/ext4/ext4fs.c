@@ -168,6 +168,14 @@ int ext4fs_read_file(struct ext2fs_node *node, int pos,
 	return len;
 }
 
+int ext4fs_exists(const char *filename)
+{
+	int ret;
+
+	ret = ext4fs_open(filename);
+	return ret != -1;
+}
+
 int ext4fs_ls(const char *dirname)
 {
 	struct ext2fs_node *dirnode;
