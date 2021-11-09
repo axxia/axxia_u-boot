@@ -2159,7 +2159,7 @@ ncp_sm_lsiphy_gate_training(
         gt_stat = (ncp_uint64_t) value << 32;
 
         ncr_read32(phyRegion, NCP_PHY_CFG_SYSMEM_PHY_GTTRAINSTAT0, &value);
-        gt_stat |= value;
+        gt_stat |= (ncp_uint64_t) value;
 
         for (i = 0; i < parms->num_bytelanes; i++)
         {

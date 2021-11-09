@@ -233,8 +233,8 @@ read_parameters(void)
 		int watchdog_timeout;
 		int a_valid;
 		int b_valid;
-		int a_sequence = 0;
-		int b_sequence = 0;
+		unsigned long a_sequence = 0;
+		unsigned long b_sequence = 0;
 
 		ncr_read32(NCP_REGION_ID(0x156, 0), 0xdc,
 			   (ncp_uint32_t *)&watchdog_timeout);
@@ -266,7 +266,7 @@ read_parameters(void)
 			a_valid = 0;
 		}
 
-		debug("%s:%d - a_valid=%d a_sequence=0x%08x\n",
+		debug("%s:%d - a_valid=%d a_sequence=0x%08lx\n",
 		      __FILE__, __LINE__, a_valid, a_sequence);
 		spi_flash_read(flash, CONFIG_PARAMETER_OFFSET_REDUND,
 			       PARAMETERS_SIZE, parameters);
@@ -288,7 +288,7 @@ read_parameters(void)
 			b_valid = 0;
 		}
 
-		debug("%s:%d - b_valid=%d b_sequence=0x%08x\n",
+		debug("%s:%d - b_valid=%d b_sequence=0x%08lx\n",
 		      __FILE__, __LINE__, b_valid, b_sequence);
 
 		if (0 == a_valid && 0 == b_valid) {
@@ -309,7 +309,7 @@ read_parameters(void)
 				copy_in_use = (0 == copy_in_use) ? 1 : 0;
 		}
 
-		printf("Parameters: Watchdog %d A/B Valid %d/%d A/B Sequence %d/%d => %s\n",
+		printf("Parameters: Watchdog %d A/B Valid %d/%d A/B Sequence %ld/%ld => %s\n",
 		       watchdog_timeout, a_valid, b_valid,
 		       a_sequence, b_sequence,
 		       (0 == copy_in_use) ? "A" : "B");

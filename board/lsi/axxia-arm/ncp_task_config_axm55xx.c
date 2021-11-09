@@ -1780,7 +1780,7 @@ ncp_task_v2_set_nca_load_indexes_reg(ncp_dev_hdl_t dev,
                                 NCP_NCA_NPGIT_LOAD_CPU_GRP_INDEXES_55XX, 
                                 (ncp_uint32_t *)&regVal32);
                                 
-        regVal32.load_cpu_index_grp  |= activeGrpMask;
+        regVal32.load_cpu_index_grp  |= (ncp_uint16_t)activeGrpMask;
         
         NCP_DEV_NCA_WRITE_INDIRECT_REG32(dev, 
                                          NCP_REGION_NCA_AXI,  
