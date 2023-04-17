@@ -827,7 +827,7 @@ do_fat_read_at(const char *filename, unsigned long pos, void *buffer,
 	volume_info volinfo;
 	fsdata datablock;
 	fsdata *mydata = &datablock;
-	dir_entry *dentptr = NULL;
+	static dir_entry *dentptr = NULL;
 	__u16 prevcksum = 0xffff;
 	char *subname = "";
 	__u32 cursect;
