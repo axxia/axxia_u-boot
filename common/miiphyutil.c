@@ -154,7 +154,7 @@ struct mii_dev *mdio_alloc(void)
 
 int mdio_register(struct mii_dev *bus)
 {
-	if (!bus || !bus->name || !bus->read || !bus->write)
+	if (!bus || !bus->read || !bus->write)
 		return -1;
 
 	/* check if we have unique name */
