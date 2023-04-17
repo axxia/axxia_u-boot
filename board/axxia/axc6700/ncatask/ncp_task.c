@@ -945,13 +945,15 @@ ncp_task_send(
             
 NCP_RETURN_LABEL
 
-    pvtTqsHdl->completionsIssued[txQueueId] += completionsIssued;
-    NCP_TASKIO_TRACEPOINT(Intel_AXXIA_ncp_nca,
-                          ncp_xlf_task_send_txCompletionInfo, NCP_MSG_DEBUG,
-                          "in send: TxQ_%d completions issued incremented by %d, total = 0x%"PRIx64"\r\n",
-                          (unsigned) txQueueId,
-                          (unsigned) completionsIssued,
-                          pvtTqsHdl->completionsIssued[txQueueId]);
+    if (txQueueId < NCP_NCAV3_NUM_OPCQS_PER_TQS) {
+        pvtTqsHdl->completionsIssued[txQueueId] += completionsIssued;
+        NCP_TASKIO_TRACEPOINT(Intel_AXXIA_ncp_nca,
+                              ncp_xlf_task_send_txCompletionInfo, NCP_MSG_DEBUG,
+                              "in send: TxQ_%d completions issued incremented by %d, total = 0x%"PRIx64"\r\n",
+                              (unsigned) txQueueId,
+                              (unsigned) completionsIssued,
+                              pvtTqsHdl->completionsIssued[txQueueId]);
+    }
 
     if (NCP_ST_SUCCESS == ncpStatus)
     {
@@ -1193,13 +1195,16 @@ ncp_task_complete(
                                         
 NCP_RETURN_LABEL
 
-    pvtTqsHdl->completionsIssued[txQueueId] += *pNumTasksCompleted;
-    NCP_TASKIO_TRACEPOINT(Intel_AXXIA_ncp_nca,
-                          ncp_xlf_task_complete_txCompletionInfo, NCP_MSG_DEBUG,
-                          "in complete: TxQ_%d completions issued incremented by %d, total = 0x%"PRIx64"\r\n",
-                          txQueueId,
-                          *pNumTasksCompleted,
-                          pvtTqsHdl->completionsIssued[txQueueId]);
+    if (txQueueId < NCP_NCAV3_NUM_OPCQS_PER_TQS) {
+        pvtTqsHdl->completionsIssued[txQueueId] += *pNumTasksCompleted;
+        NCP_TASKIO_TRACEPOINT(Intel_AXXIA_ncp_nca,
+                              ncp_xlf_task_complete_txCompletionInfo,
+			      NCP_MSG_DEBUG,
+                              "in complete: TxQ_%d completions issued incremented by %d, total = 0x%"PRIx64"\r\n",
+                              txQueueId,
+                              *pNumTasksCompleted,
+                              pvtTqsHdl->completionsIssued[txQueueId]);
+    }
 
     if (NCP_ST_SUCCESS == ncpStatus)
     {

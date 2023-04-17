@@ -137,7 +137,7 @@ ncp_vp_handle_get(ncp_hdl_t  ncpHdl, ncp_uint64_t cookie, ncp_bool_t bCheckCooki
 
     vpmHdl = (ncp_vpm_t *)hdl->vpmHdl;
 
-    if(!vpmHdl->numVps || vpmHdl->numVps[type] == 0 ||
+    if(vpmHdl->numVps[type] == 0 ||
        !vpmHdl->NCP_POINTER_ARRAY(vpTable, type)) {
         NCP_CALL(NCP_ST_VPM_VP_NOT_FOUND);
     }
