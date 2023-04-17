@@ -759,7 +759,8 @@ typedef struct axxia_configuration {
 	axxia_cache_protection_t cache_protection;
 } axxia_configuration_t;
 
-extern void *__monitor_parameters;
+/* Defined in the SPL linker script [256 bytes]. */
+extern unsigned char __monitor_parameters[256];
 
 void
 jump_to_monitor(void *address)
