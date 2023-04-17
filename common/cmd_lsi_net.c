@@ -143,14 +143,14 @@ do_bu(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned magic = 0x27051956;  /* Image Magic Number*/
 	unsigned word0 = 0x1400000a;
-	unsigned *ih = (unsigned*)(volatile unsigned long)0;
-	unsigned ih_magic = be32_to_cpu(*ih);
-	unsigned ih_size = be32_to_cpu(*(ih+3)); /* Image Data Size */
+	image_header_t *ih = (image_header_t *)(volatile unsigned long)0;
+	unsigned ih_magic = be32_to_cpu(ih->ih_magic);
+	unsigned ih_size = be32_to_cpu(ih->ih_size); /* Image Data Size */
 
 	if (magic == ih_magic) {
 		printf("Found U-Boot mkimage'd.");
 		memmove((void*)0, (void*)0x40, ih_size);
-	} else if (*ih == word0) {
+	} else if (ih->ih_magic == word0) {
 		printf("Found U-Boot binary.");
 	} else {
 		printf("Not U-Boot. Giving up\n");
