@@ -141,7 +141,7 @@ enum command_ret_t {
  *			is left unchanged.
  * @return 0 if the command succeeded, 1 if it failed
  */
-int cmd_process(int flag, int argc, char * const argv[],
+enum command_ret_t cmd_process(int flag, int argc, char * const argv[],
 			       int *repeatable);
 
 #endif	/* __ASSEMBLY__ */
